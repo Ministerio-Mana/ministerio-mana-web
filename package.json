@@ -17,7 +17,7 @@
     "astro": "^5.15.3",
     "leaflet": "^1.9.4",
     "sharp": "^0.33.0",
-    "stripe": "^15.11.0"
+    "stripe": "^20.0.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.5",
