@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-const cspNonce = Astro.locals?.cspNonce;
 ---
 
 <BaseLayout title="Activa tu cuenta | Portal Maná" description="Configura tu contraseña para acceder al Portal Maná.">
@@ -58,13 +57,13 @@ const cspNonce = Astro.locals?.cspNonce;
     </div>
   </main>
 
-  <script type="module" nonce={cspNonce}>
+  <script>
     import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 
     const supabase = getSupabaseBrowserClient();
     const form = document.getElementById('activate-form');
-    const password = document.getElementById('password');
-    const confirm = document.getElementById('password-confirm');
+    const password = document.getElementById('password') as HTMLInputElement;
+    const confirm = document.getElementById('password-confirm') as HTMLInputElement;
     const status = document.getElementById('activate-status');
     const togglePasswordBtn = document.getElementById('toggle-password');
     const eyeIcon = document.getElementById('eye-icon');
@@ -76,7 +75,7 @@ const cspNonce = Astro.locals?.cspNonce;
     const retryBtn = document.getElementById('activate-retry');
     let hasRecoveryContext = false;
 
-    function setFormDisabled(disabled) {
+    function setFormDisabled(disabled: boolean) {
       form?.querySelectorAll('input, button').forEach((el) => {
         if (disabled) {
           el.setAttribute('disabled', 'disabled');
@@ -88,13 +87,13 @@ const cspNonce = Astro.locals?.cspNonce;
       });
     }
 
-    function setGuardMessage(message) {
+    function setGuardMessage(message: string) {
       if (!guard) return;
       guard.textContent = message;
       guard.classList.remove('hidden');
     }
 
-    function showRetry(show) {
+    function showRetry(show: boolean) {
       if (!retryBtn) return;
       if (show) {
         retryBtn.classList.remove('hidden');
@@ -103,7 +102,7 @@ const cspNonce = Astro.locals?.cspNonce;
       }
     }
 
-    function parseParams(rawValue) {
+    function parseParams(rawValue: string) {
       if (!rawValue) return new URLSearchParams();
       const value = rawValue.replace(/^#/, '').replace(/^\?/, '').replace(/^\//, '');
       return new URLSearchParams(value);
@@ -135,7 +134,7 @@ const cspNonce = Astro.locals?.cspNonce;
       }
     }
 
-    async function resolveSessionFromUrl() {
+    async function resolveSessionFromUrl(): Promise<boolean> {
       const { data } = await supabase.auth.getSession();
       if (data?.session) return true;
 
@@ -164,14 +163,29 @@ const cspNonce = Astro.locals?.cspNonce;
       return false;
     }
 
-    async function validateRecoveryLink() {
+    async function withTimeout<T>(promise: Promise<T>, timeoutMs = 12000): Promise<T> {
+      let timeoutId: ReturnType<typeof setTimeout>;
+      const timeoutPromise = new Promise<T>((_resolve, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Tiempo de espera agotado. Intenta de nuevo.')), timeoutMs);
+      });
+      try {
+        const result = await Promise.race([promise, timeoutPromise]);
+        clearTimeout(timeoutId!);
+        return result;
+      } catch (err) {
+        clearTimeout(timeoutId!);
+        throw err;
+      }
+    }
+
+    async function validateRecoveryLink(): Promise<boolean> {
       setFormDisabled(true);
       showRetry(false);
       if (status) status.textContent = 'Validando enlace...';
       let ok = false;
       try {
         ok = await withTimeout(resolveSessionFromUrl(), 10000);
-      } catch (err) {
+      } catch (err: any) {
         setGuardMessage(err?.message || 'No se pudo validar el enlace. Intenta de nuevo.');
         if (status) status.textContent = '';
         showRetry(true);
@@ -210,21 +224,6 @@ const cspNonce = Astro.locals?.cspNonce;
       return recovered ? { ok: true } : { ok: false, error: new Error('Sesion no valida') };
     }
 
-    async function withTimeout(promise, timeoutMs = 12000) {
-      let timeoutId;
-      const timeoutPromise = new Promise((_resolve, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Tiempo de espera agotado. Intenta de nuevo.')), timeoutMs);
-      });
-      try {
-        const result = await Promise.race([promise, timeoutPromise]);
-        clearTimeout(timeoutId);
-        return result;
-      } catch (err) {
-        clearTimeout(timeoutId);
-        throw err;
-      }
-    }
-
     togglePasswordBtn?.addEventListener('click', () => {
       const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
       password.setAttribute('type', type);
@@ -250,7 +249,7 @@ const cspNonce = Astro.locals?.cspNonce;
     });
 
     async function guardSession() {
-      const { url, searchParams, hashParams } = getUrlParams();
+      const { searchParams } = getUrlParams();
       const { accessToken, refreshToken, type, error } = getTokenParams();
       const hasRecoveryType = type === 'recovery';
       const hasToken = Boolean(accessToken || refreshToken || error);
@@ -270,7 +269,7 @@ const cspNonce = Astro.locals?.cspNonce;
         return;
       }
       setGuardMessage(
-        'Abre el enlace que llegó a tu correo para activar tu cuenta. Si no lo ves, revisa la bandeja de spam o solicita un nuevo enlace desde el portal.'
+        'Abre el enlace que llegó a tu correo para activar tu cuenta. Si no lo ves, revisa la bandeja de spam o solicita un nuevo enlace desde el portal.',
       );
       setFormDisabled(true);
       showRetry(false);
@@ -315,7 +314,7 @@ const cspNonce = Astro.locals?.cspNonce;
         const result = await withTimeout(supabase.auth.updateUser({ password: value }), 12000);
         const { error } = result || {};
         if (error) throw error;
-      } catch (err) {
+      } catch (err: any) {
         status.textContent = err?.message || 'No se pudo guardar.';
         showRetry(true);
         setFormDisabled(false);
@@ -327,3 +326,4 @@ const cspNonce = Astro.locals?.cspNonce;
     });
   </script>
 </BaseLayout>
+

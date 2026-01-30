@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-const cspNonce = Astro.locals?.cspNonce;
 ---
 
 <BaseLayout title="Accede al Portal Maná | Ministerio Maná" description="Ingresa al Portal Maná para ver tus aportes y gestionar tu inscripción.">
@@ -127,7 +126,7 @@ const cspNonce = Astro.locals?.cspNonce;
   </main>
 
 
-  <script type="module" nonce={cspNonce}>
+  <script>
     import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
     import { gsap } from 'gsap';
 
@@ -293,3 +292,4 @@ const cspNonce = Astro.locals?.cspNonce;
 
   </script>
 </BaseLayout>
+

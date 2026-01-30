@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-const cspNonce = Astro.locals?.cspNonce;
-
 ---
 
 <BaseLayout title="Portal Maná | Ministerio Maná" description="Gestiona tus aportes y eventos en el Portal Maná." hideHeader hideFooter>
@@ -623,7 +621,7 @@ const cspNonce = Astro.locals?.cspNonce;
     }
   </style>
 
-  <script type="module" nonce={cspNonce}>
-    import '../../scripts/portal-dashboard.js';
+  <script>
+    import '@scripts/portal-dashboard.js';
   </script>
 </BaseLayout>

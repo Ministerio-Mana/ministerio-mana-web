@@ -50,22 +50,15 @@ const cspNonce = Astro.locals?.cspNonce;
   </details>
 </div>
 
-<script type="module" nonce={cspNonce}>
+<script>
   import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 
-  /** @type {HTMLElement | null} */
   const container = document.getElementById('account-button-container');
-  /** @type {HTMLElement | null} */
   const loading = document.getElementById('account-loading');
-  /** @type {HTMLAnchorElement | null} */
   const guestBtn = document.getElementById('account-guest');
-  /** @type {HTMLDetailsElement | null} */
   const loggedBtn = document.getElementById('account-logged');
-  /** @type {HTMLSpanElement | null} */
   const accountName = document.getElementById('account-name');
-  /** @type {HTMLSpanElement | null} */
   const accountInitials = document.getElementById('account-initials');
-  /** @type {HTMLButtonElement | null} */
   const logoutBtn = document.getElementById('btn-logout-header');
 
   function showGuest() {
@@ -142,3 +135,4 @@ const cspNonce = Astro.locals?.cspNonce;
 
   checkSession();
 </script>
+

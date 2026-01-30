@@ -10,6 +10,7 @@ const lead = isPayment
 const subtitle = isPayment
   ? 'Hemos enviado un correo con el comprobante del pago.'
   : 'Hemos enviado un correo con todos los detalles y tu comprobante de reserva.';
+const cumbreEstadoScript = Astro.resolve('../../../scripts/cumbre-estado.js');
 const cspNonce = Astro.locals?.cspNonce;
 ---
 
@@ -67,6 +68,8 @@ const cspNonce = Astro.locals?.cspNonce;
   </div>
 </CumbreLayout>
 
-<script type="module" nonce={cspNonce}>
-  import '../../../scripts/cumbre-estado.js';
-</script>
+<script
+  type="module"
+  src={cumbreEstadoScript}
+  nonce={cspNonce}
+></script>

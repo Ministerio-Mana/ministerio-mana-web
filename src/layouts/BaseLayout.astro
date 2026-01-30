@@ -37,7 +37,7 @@ const cspNonce = Astro.locals?.cspNonce;
     
     <!-- Smooth Scroll & Parallax Animations -->
     {!disableSmoothScroll && (
-    <script type="module" nonce={cspNonce}>
+    <script>
       import Lenis from '@studio-freight/lenis';
       import { gsap } from 'gsap';
       import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -49,12 +49,12 @@ const cspNonce = Astro.locals?.cspNonce;
       
       if (!prefersReducedMotion) {
         lenis = new Lenis({
-          duration: 0.5, // Significantly reduced for immediate response (no "lag")
+          duration: 0.5,
           easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
           orientation: 'vertical',
           gestureOrientation: 'vertical',
           smoothWheel: true,
-          wheelMultiplier: 1, // Natural 1:1 speed, depends on user force
+          wheelMultiplier: 1,
           smoothTouch: false,
           touchMultiplier: 2,
           infinite: false,
@@ -71,7 +71,6 @@ const cspNonce = Astro.locals?.cspNonce;
       
       document.documentElement.setAttribute('data-lenis-enabled', String(!prefersReducedMotion));
       
-      // Home parallax animations
       window.addEventListener('load', () => {
         if (prefersReducedMotion) return;
         

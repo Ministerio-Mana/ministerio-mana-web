@@ -3,11 +3,24 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@components/*": ["src/components/*"],
-      "@layouts/*": ["src/layouts/*"],
-      "@data/*": ["src/data/*"],
-      "@i18n/*": ["src/i18n/*"],
-      "@lib/*": ["src/lib/*"]
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@layouts/*": [
+        "src/layouts/*"
+      ],
+      "@data/*": [
+        "src/data/*"
+      ],
+      "@i18n/*": [
+        "src/i18n/*"
+      ],
+      "@lib/*": [
+        "src/lib/*"
+      ],
+      "@scripts/*": [
+        "src/scripts/*"
+      ]
     }
   }
 }

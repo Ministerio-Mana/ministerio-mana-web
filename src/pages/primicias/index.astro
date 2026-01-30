@@ -6,7 +6,6 @@ import { preferredGatewayForCountry } from '@lib/geo';
 // Server Side Geo Detection (Best Effort)
 // Vercel / Cloudflare headers
 const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO'; // Default to CO if unknown
-const cspNonce = Astro.locals?.cspNonce;
 ---
 
 <BaseLayout title="Primicias y Diezmos | Ministerio Maná" description="Honra a Dios con tus primicias. Plataforma segura de donaciones.">
@@ -93,7 +92,7 @@ const cspNonce = Astro.locals?.cspNonce;
   </main>
 </BaseLayout>
 
-<script type="module" nonce={cspNonce}>
+<script>
   import { gsap } from 'gsap';
 
   window.addEventListener('load', () => {
@@ -135,3 +134,4 @@ const cspNonce = Astro.locals?.cspNonce;
     }
   });
 </script>
+

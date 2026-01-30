@@ -1,4 +1,4 @@
-import type { APIRoute } from 'astro';
+import type { APIContext } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 
@@ -27,7 +27,7 @@ function csvEscape(value: unknown): string {
   return str;
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET = async ({ request }: APIContext) => {
   if (!validateExport(request)) {
     void logSecurityEvent({
       type: 'webhook_invalid',
