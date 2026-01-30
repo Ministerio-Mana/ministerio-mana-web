@@ -1,0 +1,28 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import InscripcionForm from '@components/cumbre2026/InscripcionForm.astro';
+
+const geo = Astro.locals?.geo ?? { country: 'CO' };
+const countryGroup = geo.country === 'CO' ? 'CO' : 'INT';
+---
+
+<CumbreLayout title="Inscripción Cumbre 2026 | Ministerio Maná" description="Reserva tu lugar y el de tu familia.">
+  <div class="min-h-screen py-20 px-4 md:px-8 max-w-7xl mx-auto">
+    
+    <!-- Breadcrumb / Header -->
+    <div class="mb-12 text-center">
+      <a href="/eventos/cumbre-mundial-2026" class="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-4 text-sm font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Volver al inicio
+      </a>
+      <h1 class="font-display font-bold text-3xl md:text-5xl text-white">Inscripción</h1>
+      <p class="text-white/60 mt-2 text-lg">Paso 1 de 2: Reserva y Pago</p>
+    </div>
+
+    <!-- The Form -->
+    <InscripcionForm countryGroup={countryGroup} />
+    
+  </div>
+</CumbreLayout>

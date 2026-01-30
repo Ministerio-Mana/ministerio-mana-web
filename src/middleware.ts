@@ -1,5 +1,4 @@
 import type { MiddlewareHandler } from 'astro';
-import { randomBytes } from 'node:crypto';
 
 type GeoCookie = {
   country: string;
@@ -11,6 +10,8 @@ const GEO_COOKIE_NAME = 'mana_geo';
 const GEO_COOKIE_TTL = 60 * 60 * 12; // 12 hours in seconds
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const IS_PROD = NODE_ENV === 'production';
+const VERCEL_ENV = process.env.VERCEL_ENV || (import.meta as any)?.env?.VERCEL_ENV;
+const IS_VERCEL_PREVIEW = VERCEL_ENV === 'preview';
 const SCRIPT_SRC_BASE = [
   "'self'",
   'https://challenges.cloudflare.com',
@@ -34,6 +35,29 @@ const ENGLISH_COUNTRIES = new Set([
   'US', 'GB', 'UK', 'AU', 'NZ', 'CA', 'IE',
   'TT', 'JM', 'BZ', 'BB', 'LC', 'GD',
 ]);
+
+function bytesToBase64(bytes: Uint8Array): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(bytes).toString('base64');
+  }
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function createNonce(): string {
+  const bytes = new Uint8Array(16);
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+    return bytesToBase64(bytes);
+  }
+  for (let i = 0; i < bytes.length; i += 1) {
+    bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return bytesToBase64(bytes);
+}
 
 function parseGeoCookie(value: string | undefined): GeoCookie | undefined {
   if (!value) return undefined;
@@ -106,11 +130,18 @@ function isLocalhost(request: Request): boolean {
   return host.startsWith('localhost') || host.startsWith('127.') || host.endsWith('.local');
 }
 
-export const onRequest: MiddlewareHandler = async (context, next) => {
+const appMiddleware: MiddlewareHandler = async (context, next) => {
   const { cookies, locals, request } = context;
+  const url = new URL(request.url);
+  const cumbreOnly =
+    (import.meta.env?.PUBLIC_CUMBRE_ONLY ?? process.env?.PUBLIC_CUMBRE_ONLY) === 'true';
   const isSecure = isSecureRequest(request);
 
-  const nonce = randomBytes(16).toString('base64');
+  const nonce = createNonce();
+
+  if (cumbreOnly && url.pathname === '/') {
+    return Response.redirect(`${url.origin}/eventos/cumbre-mundial-2026`, 302);
+  }
 
   if (IS_PROD && !isSecure && !isLocalhost(request)) {
     const url = new URL(request.url);
@@ -167,9 +198,39 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
 
   const scriptSrc = [...SCRIPT_SRC_BASE, `'nonce-${nonce}'`];
+  if (IS_VERCEL_PREVIEW) {
+    scriptSrc.push('https://vercel.live');
+  }
   if (!IS_PROD) {
     scriptSrc.push("'unsafe-eval'");
     scriptSrc.push("'unsafe-inline'"); // useful for rapid dev; remove when all inline scripts have nonce
+  }
+
+  const connectSrc = [
+    "'self'",
+    'https://challenges.cloudflare.com',
+    'https://api.resend.com',
+    'https://checkout.stripe.com',
+    'https://checkout.wompi.co',
+    'https://js.stripe.com',
+  ];
+  const frameSrc = [...FRAME_SRC];
+  if (IS_VERCEL_PREVIEW) {
+    frameSrc.push('https://vercel.live');
+  }
+
+  const supabaseUrl = import.meta.env?.SUPABASE_URL
+    ?? import.meta.env?.PUBLIC_SUPABASE_URL
+    ?? process.env?.SUPABASE_URL
+    ?? process.env?.PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    try {
+      const supabaseOrigin = new URL(supabaseUrl).origin;
+      connectSrc.push(supabaseOrigin);
+      connectSrc.push(supabaseOrigin.replace('https://', 'wss://'));
+    } catch {
+      // ignore malformed supabase url
+    }
   }
 
   const cspDirectives = [
@@ -178,8 +239,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     "style-src 'self' 'unsafe-inline' https://unpkg.com",
     "img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://i.ytimg.com",
     "font-src 'self' data:",
-    "connect-src 'self' https://challenges.cloudflare.com https://api.resend.com https://checkout.stripe.com https://checkout.wompi.co https://js.stripe.com",
-    `frame-src ${FRAME_SRC.join(' ')}`,
+    `connect-src ${connectSrc.join(' ')}`,
+    `frame-src ${frameSrc.join(' ')}`,
     "frame-ancestors 'self'",
     "form-action 'self' https://checkout.stripe.com https://checkout.wompi.co",
     "base-uri 'self'",
@@ -193,3 +254,4 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   return response;
 };
+export const onRequest = appMiddleware;

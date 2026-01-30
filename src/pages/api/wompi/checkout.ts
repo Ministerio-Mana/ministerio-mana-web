@@ -1,10 +1,12 @@
 import type { APIRoute } from 'astro';
 import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
-import { sanitizeDescription, validateCopAmount, safeCountry } from '@lib/donations';
+import { sanitizeDescription, validateCopAmount } from '@lib/donations';
 import { resolveBaseUrl } from '@lib/url';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
+import { parseDonationFormBase } from '@lib/donationInput';
+import { buildDonationReference, createDonation } from '@lib/donationsStore';
 
 export const prerender = false;
 
@@ -72,24 +74,67 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       (data.get('description') ?? data.get('desc'))?.toString(),
       'Donación',
     );
-    const country = safeCountry(data.get('country')?.toString()) ?? 'CO';
+    let donorInfo;
+    try {
+      donorInfo = parseDonationFormBase(data, 'CO');
+    } catch (error: any) {
+      return new Response(JSON.stringify({ ok: false, error: error?.message || 'Datos inválidos' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const baseUrl = resolveBaseUrl(request);
     const redirectUrl = `${baseUrl}/donaciones/gracias`;
 
-    const { url, reference } = buildWompiCheckoutUrl({
+    const reference = buildDonationReference();
+    const { url } = buildWompiCheckoutUrl({
       amountInCents: amountCop * 100,
       currency: 'COP',
       description,
       redirectUrl,
+      reference,
+      email: donorInfo.email,
       customerData: {
-        country,
+        country: donorInfo.country,
+        city: donorInfo.city,
+        'phone-number': donorInfo.phone,
+        'full-name': donorInfo.fullName,
+        'legal-id': donorInfo.documentNumber,
+        'legal-id-type': donorInfo.documentType,
       },
+    });
+
+    await createDonation({
+      provider: 'wompi',
+      status: 'PENDING',
+      amount: amountCop,
+      currency: 'COP',
+      reference,
+      provider_tx_id: null,
+      payment_method: null,
+      donation_type: donorInfo.donationType,
+      project_name: donorInfo.projectName,
+      event_name: donorInfo.eventName,
+      campus: donorInfo.campus,
+      church: donorInfo.church,
+      church_city: donorInfo.city,
+      donor_name: donorInfo.fullName,
+      donor_email: donorInfo.email,
+      donor_phone: donorInfo.phone,
+      donor_document_type: donorInfo.documentType,
+      donor_document_number: donorInfo.documentNumber,
+      donor_country: donorInfo.country,
+      donor_city: donorInfo.city,
+      source: 'donaciones-wompi',
+      cumbre_booking_id: null,
+      raw_event: null,
     });
 
     void logPaymentEvent('wompi', 'checkout.created', reference, {
       amount: amountCop,
       currency: 'COP',
-      country,
+      country: donorInfo.country,
       checkout_url: url,
     });
 

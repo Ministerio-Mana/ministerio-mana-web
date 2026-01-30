@@ -1,0 +1,295 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<BaseLayout title="Accede al Portal Maná | Ministerio Maná" description="Ingresa al Portal Maná para ver tus aportes y gestionar tu inscripción.">
+  <main class="relative min-h-screen flex items-center justify-center p-4 overflow-x-hidden bg-[#EBF1F6]">
+    <!-- Corporate Clean Background -->
+    <div class="absolute inset-0 z-0 overflow-hidden">
+      <!-- Subtle Pattern -->
+      <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23293C74\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+      
+      <!-- Stars Container for GSAP -->
+      <div id="stars-container" class="absolute inset-0 z-0 pointer-events-none"></div>
+
+      <!-- Elegant Gradient Mesh -->
+      <div class="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-[#293C74]/5"></div>
+      
+      <!-- Accent Shapes -->
+      <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#293C74]/10 to-transparent rounded-bl-[100%]"></div>
+      <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#F2C94C]/10 to-transparent rounded-tr-[100%]"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div id="login-card" class="relative z-10 w-full max-w-md opacity-0 translate-y-4">
+      <div class="bg-white border border-white/40 rounded-[2rem] p-8 md:p-12 shadow-[0_20px_60px_-15px_rgba(41,60,116,0.1)] overflow-hidden">
+        
+        <header class="relative mb-8 text-center">
+          <div class="inline-flex items-center justify-center mb-6">
+            <img src="/images/cumbre/logo-ministerio-mana-teal.svg" alt="Ministerio Maná" class="h-20 w-auto object-contain">
+          </div>
+          <h1 class="text-3xl font-display font-bold text-[#293C74] mb-2">Portal Maná</h1>
+          <p class="text-slate-600 text-sm leading-relaxed">Bienvenido al portal de usuarios del Ministerio Maná.</p>
+          <a href="/eventos/cumbre-mundial-2026" class="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#293C74]/80 hover:text-[#293C74]">
+            Volver a la Cumbre
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
+            </svg>
+          </a>
+        </header>
+
+
+          <!-- Initial Password Form (Primary) -->
+          <form id="password-form" class="space-y-4">
+            <div class="space-y-4">
+              <div>
+                <label for="password-email" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Email</label>
+                <input type="email" id="password-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
+              </div>
+              <div>
+                <label for="login-password" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Contraseña</label>
+                <div class="relative group">
+                  <input 
+                    type="password" 
+                    id="login-password"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] placeholder-slate-500 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all pr-12" 
+                    placeholder="••••••••"
+                  >
+                  <button type="button" id="toggle-password-view" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#293C74] transition-colors focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  </button>
+                </div>
+              </div>
+              <button type="submit" id="btn-submit-password" class="w-full bg-[#293C74] text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all">
+                Iniciar Sesión
+              </button>
+            </div>
+            
+            <div class="pt-2 text-center">
+               <button type="button" id="btn-toggle-magic" class="text-xs font-bold text-slate-400 hover:text-[#293C74] underline">
+                 Olvidé mi contraseña (Restablecer)
+               </button>
+            </div>
+          </form>
+
+          <div class="relative py-2">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
+            <div class="relative flex justify-center"><span class="bg-white px-4 text-xs font-bold text-slate-300 uppercase tracking-widest">O</span></div>
+          </div>
+
+          <!-- Secondary Options -->
+           <button type="button" id="btn-passkey" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group mb-4" title="Ingresar con FaceID / TouchID">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-hover:text-[#293C74]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.131A8 8 0 008 8m8.363 12.18c.201-.06.401-.123.6-.192" /></svg>
+              <span class="text-xs font-bold text-slate-600 group-hover:text-[#293C74]">Ingresar con Passkey (Huella / Rostro)</span>
+           </button>
+
+          <!-- Hidden Magic Link Form -->
+          <form id="magic-link-form" class="hidden space-y-4 pt-4 border-t border-slate-100">
+             <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-4">
+                <p class="text-xs text-blue-800 text-center">Te enviaremos un enlace para restablecer tu contraseña.</p>
+             </div>
+             <div>
+                <label for="magic-email" class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Correo Electrónico</label>
+                <input type="email" name="email" id="magic-email" 
+                       class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] font-medium outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400"
+                       placeholder="tu@correo.com">
+             </div>
+             
+             <button type="submit" id="btn-submit-magic" class="w-full bg-white text-[#293C74] border border-[#293C74]/20 font-bold py-4 rounded-2xl hover:bg-[#293C74]/5 transition-all flex items-center justify-center gap-2 group">
+                <span id="btn-text-magic">Enviar enlace de restablecimiento</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+             </button>
+             <button type="button" id="btn-cancel-magic" class="w-full text-center text-[10px] font-bold text-slate-400 hover:underline">Cancelar y volver a contraseña</button>
+          </form>
+
+        </div>
+
+        <div id="login-status-container" class="hidden mt-6 text-center">
+           <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200">
+              <span id="login-status-icon" class="w-2 h-2 rounded-full bg-[#293C74] animate-ping"></span>
+              <p id="login-status" class="text-xs text-slate-600 font-medium"></p>
+           </div>
+        </div>
+
+        <footer class="mt-10 pt-6 border-t border-slate-100 text-center">
+          <a href="https://wa.me/573148297534" class="inline-flex items-center gap-2 text-slate-600 hover:text-[#293C74] transition-colors text-xs font-bold">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.855-1.246L3 20l1.246-4.855A9.863 9.863 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            ¿Necesitas ayuda? Contactar Soporte
+          </a>
+        </footer>
+      </div>
+      
+      <!-- Footer removed -->
+    </div>
+  </main>
+
+
+  <script type="module" nonce={cspNonce}>
+    import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
+    import { gsap } from 'gsap';
+
+    window.addEventListener('load', () => {
+      gsap.to('#login-card', { opacity: 1, y: 0, duration: 1.2, ease: 'power4.out', delay: 0.2 });
+      
+      // Stars Animation
+      const starsContainer = document.getElementById('stars-container');
+      if (starsContainer) {
+        for (let i = 0; i < 30; i += 1) {
+          const star = document.createElement('div');
+          star.className = 'absolute w-[2px] h-[2px] bg-white rounded-full';
+          star.style.left = `${Math.random() * 100}%`;
+          star.style.top = `${Math.random() * 100}%`;
+          starsContainer.appendChild(star);
+          gsap.to(star, { opacity: 0.2, duration: 2 + Math.random() * 3, repeat: -1, yoyo: true, delay: Math.random() * 5 });
+        }
+      }
+    });
+
+    // Elements
+    const magicForm = document.getElementById('magic-link-form');
+    const passwordForm = document.getElementById('password-form');
+    const magicEmailInput = document.getElementById('magic-email');
+    const passwordEmailInput = document.getElementById('password-email');
+    const passwordInput = document.getElementById('login-password');
+    const toggleMagicBtn = document.getElementById('btn-toggle-magic');
+    const cancelMagicBtn = document.getElementById('btn-cancel-magic');
+    const togglePasswordViewBtn = document.getElementById('toggle-password-view');
+    const passkeyBtn = document.getElementById('btn-passkey');
+    
+    const statusContainer = document.getElementById('login-status-container');
+    const statusEl = document.getElementById('login-status');
+    const statusIcon = document.getElementById('login-status-icon');
+
+    let supabase = null;
+    try {
+      supabase = getSupabaseBrowserClient();
+    } catch (err) {
+      console.error('Supabase client not available:', err);
+      showStatus('El portal no está configurado. Escríbenos por WhatsApp.', 'error');
+    }
+
+    // Listen for Auth State Changes (Magic Link Redirect Fix)
+    supabase?.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        showStatus('¡Sesión iniciada! Entrando...', 'success');
+        window.location.href = '/portal';
+      }
+    });
+
+    function showStatus(msg, type = 'loading') {
+      statusContainer.classList.remove('hidden');
+      statusEl.textContent = msg;
+      statusIcon.className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-[#293C74] animate-ping'}`;
+      gsap.from(statusContainer, { scale: 0.9, duration: 0.4, ease: 'back.out' });
+    }
+
+    // Toggle Forms
+    toggleMagicBtn?.addEventListener('click', () => {
+       passwordForm.classList.add('hidden');
+       magicForm.classList.remove('hidden');
+       if (passwordEmailInput.value) magicEmailInput.value = passwordEmailInput.value;
+       magicForm.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    cancelMagicBtn?.addEventListener('click', () => {
+       magicForm.classList.add('hidden');
+       passwordForm.classList.remove('hidden');
+    });
+
+    togglePasswordViewBtn?.addEventListener('click', () => {
+       const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+       passwordInput.setAttribute('type', type);
+       togglePasswordViewBtn.classList.toggle('text-[#293C74]');
+    });
+
+    // Magic Link Submit
+    magicForm?.addEventListener('submit', async (e) => {
+       e.preventDefault();
+       const email = magicEmailInput.value.trim();
+       if (!email) return;
+
+       showStatus('Enviando enlace de restablecimiento...', 'loading');
+       const btn = document.getElementById('btn-submit-magic');
+       btn.disabled = true;
+       btn.classList.add('opacity-50');
+
+       try {
+        const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+        const res = await fetch('/api/auth/send-link', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email, kind: 'recovery', redirectTo }),
+        });
+        const payload = await res.json();
+        if (!res.ok || !payload?.ok) throw new Error(payload?.error || 'Error al enviar enlace.');
+        
+        showStatus('¡Enlace enviado! Revisa tu correo para restablecer.', 'success');
+        magicEmailInput.value = '';
+       } catch (err) {
+         showStatus(err.message, 'error');
+         btn.disabled = false;
+         btn.classList.remove('opacity-50');
+       }
+    });
+
+    // Password Submit
+    passwordForm?.addEventListener('submit', async (e) => {
+       e.preventDefault();
+       const email = passwordEmailInput.value.trim();
+       const password = passwordInput.value.trim();
+       if (!email || !password) return;
+
+       showStatus('Validando contraseña...', 'loading');
+       const btn = document.getElementById('btn-submit-password');
+       btn.disabled = true;
+       btn.classList.add('opacity-50');
+
+       try {
+          if (!supabase) {
+            throw new Error('El portal no está configurado.');
+          }
+          const { error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          showStatus('Acceso correcto. Entrando...', 'success');
+          window.location.href = '/portal';
+       } catch (err) {
+          showStatus('Contraseña incorrecta o usuario no encontrado.', 'error');
+          btn.disabled = false;
+          btn.classList.remove('opacity-50');
+       }
+    });
+
+    // Passkey Handler
+    passkeyBtn?.addEventListener('click', async () => {
+       showStatus('Verificando soporte de Passkeys...', 'loading');
+       try {
+           if (!supabase) {
+             throw new Error('El portal no está configurado.');
+           }
+           // Check if WebAuthn is supported in this Supabase client version
+           if (typeof supabase.auth.signInWithSSO !== 'function') {
+              throw new Error('Passkeys no configurado en esta versión.');
+           }
+           // Placeholder for Passkey flow
+           const { data, error } = await supabase.auth.signInWithSSO({ 
+             domain: 'ministeriomana.com',
+             options: {
+                redirectTo: `${window.location.origin}/portal`
+             } 
+           });
+           
+           if (error) throw error;
+           if (data?.url) window.location.href = data.url;
+           else throw new Error('Debes configurar Passkeys en tu cuenta primero.');
+
+       } catch (err) {
+          showStatus(err.message || 'Función Beta: Contacta soporte para activar.', 'error');
+          setTimeout(() => { showStatus('', 'loading'); statusContainer.classList.add('hidden'); }, 3000);
+       }
+    });
+
+  </script>
+</BaseLayout>

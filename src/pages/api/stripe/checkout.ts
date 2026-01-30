@@ -1,11 +1,13 @@
 import type { APIRoute } from 'astro';
 import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
-import { sanitizeDescription, validateUsdAmount, safeCountry } from '@lib/donations';
+import { sanitizeDescription, validateUsdAmount } from '@lib/donations';
 import { resolveBaseUrl } from '@lib/url';
 import { createStripeDonationSession } from '@lib/stripe';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { stripeSupportedCurrencyCodes } from '@lib/geo';
+import { parseDonationFormBase } from '@lib/donationInput';
+import { buildDonationReference, createDonation } from '@lib/donationsStore';
 
 export const prerender = false;
 
@@ -84,10 +86,46 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       (data.get('description') ?? data.get('desc'))?.toString(),
       'Donation',
     );
-    const country = safeCountry(data.get('country')?.toString()) ?? 'UN';
+    let donorInfo;
+    try {
+      donorInfo = parseDonationFormBase(data, 'UN');
+    } catch (error: any) {
+      return new Response(JSON.stringify({ ok: false, error: error?.message || 'Datos inválidos' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const baseUrl = resolveBaseUrl(request);
     const successUrl = (import.meta.env?.STRIPE_SUCCESS_URL ?? process.env.STRIPE_SUCCESS_URL) || `${baseUrl}/donaciones/gracias`;
     const cancelUrl = (import.meta.env?.STRIPE_CANCEL_URL ?? process.env.STRIPE_CANCEL_URL) || `${baseUrl}/donaciones`;
+
+    const reference = buildDonationReference();
+    const donation = await createDonation({
+      provider: 'stripe',
+      status: 'PENDING',
+      amount: amountUsd,
+      currency,
+      reference,
+      provider_tx_id: null,
+      payment_method: null,
+      donation_type: donorInfo.donationType,
+      project_name: donorInfo.projectName,
+      event_name: donorInfo.eventName,
+      campus: donorInfo.campus,
+      church: donorInfo.church,
+      church_city: donorInfo.city,
+      donor_name: donorInfo.fullName,
+      donor_email: donorInfo.email,
+      donor_phone: donorInfo.phone,
+      donor_document_type: donorInfo.documentType,
+      donor_document_number: donorInfo.documentNumber,
+      donor_country: donorInfo.country,
+      donor_city: donorInfo.city,
+      source: 'donaciones-stripe',
+      cumbre_booking_id: null,
+      raw_event: null,
+    });
 
     const session = await createStripeDonationSession({
       amountUsd,
@@ -96,15 +134,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       successUrl,
       cancelUrl,
       metadata: {
-        country,
+        country: donorInfo.country,
         source: 'donations_form',
+        donation_reference: reference,
+        donation_id: donation.id,
       },
+      customerEmail: donorInfo.email,
     });
 
     void logPaymentEvent('stripe', 'checkout.created', session.id, {
       amount: amountUsd,
       currency,
-      country,
+      country: donorInfo.country,
+      donation_reference: reference,
       session_id: session.id,
       payment_status: session.payment_status,
     });

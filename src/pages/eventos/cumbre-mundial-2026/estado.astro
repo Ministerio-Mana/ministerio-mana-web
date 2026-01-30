@@ -1,0 +1,72 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+
+const { bookingId, source } = Astro.url.searchParams;
+const isPayment = source === 'payment';
+const title = isPayment ? '¡Pago recibido!' : '¡Registro Exitoso!';
+const lead = isPayment
+  ? 'Tu pago fue recibido correctamente.'
+  : 'Tu inscripción y la de tu grupo ha sido confirmada correctamente.';
+const subtitle = isPayment
+  ? 'Hemos enviado un correo con el comprobante del pago.'
+  : 'Hemos enviado un correo con todos los detalles y tu comprobante de reserva.';
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<CumbreLayout title={isPayment ? 'Pago recibido | Cumbre 2026' : '¡Todo listo! | Cumbre 2026'}>
+  <div class="min-h-screen flex items-center justify-center p-6">
+    <div class="relative bg-white/5 border border-white/10 p-12 rounded-[3rem] backdrop-blur-md max-w-lg w-full text-center space-y-8 animate-fade-in-up">
+       
+       <!-- Animated Check Icon -->
+       <div class="w-24 h-24 bg-brand-teal rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(40,166,189,0.5)]">
+         <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+         </svg>
+       </div>
+
+       <div class="space-y-4">
+         <h1 class="font-display text-4xl font-bold text-white">{title}</h1>
+         <p class="text-white/70 text-lg leading-relaxed">{lead}</p>
+         <p class="text-white/50 text-sm">{subtitle}</p>
+       </div>
+
+       <div class="pt-4 space-y-4">
+          {isPayment && (
+            <div id="payment-status-card" class="rounded-2xl border border-white/10 bg-white/5 p-4 text-left">
+              <p class="text-sm text-white/80 font-bold">Estado del pago</p>
+              <p id="payment-status-detail" class="text-sm text-white/70 mt-1">
+                Estamos validando tu pago. Esto puede tardar unos minutos.
+              </p>
+              <p id="payment-status-meta" class="text-xs text-white/50 mt-2"></p>
+            </div>
+          )}
+          {!isPayment && (
+            <div id="activation-cta" class="hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-left">
+              <p class="text-sm text-white/80 font-bold">Activa tu cuenta para continuar</p>
+              <p class="text-xs text-white/60 mt-1">Te enviaremos un enlace para crear tu contraseña y completar el registro.</p>
+              <button id="btn-activar-cuenta" class="mt-3 w-full py-3 bg-brand-gold/90 hover:bg-brand-gold text-[#1B2230] font-bold rounded-xl transition-colors">
+                Activar mi cuenta
+              </button>
+              <p id="activation-status" class="text-xs text-white/60 mt-2"></p>
+            </div>
+          )}
+          {!isPayment && (
+            <a id="btn-completar-registro" href="#" class="hidden w-full py-4 bg-brand-teal/80 hover:bg-brand-teal text-white font-bold rounded-xl transition-colors">
+              Completar datos de asistentes
+            </a>
+          )}
+          <a href="/eventos/cumbre-mundial-2026" class="block w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors">
+            Volver a la Cumbre
+          </a>
+       </div>
+       
+       <!-- Decorative Confetti (CSS only for now) -->
+       <div class="absolute -top-4 -left-4 w-8 h-8 bg-brand-teal rounded-full opacity-50 animate-bounce" style="animation-delay: 0.1s"></div>
+       <div class="absolute -bottom-6 -right-2 w-6 h-6 bg-[#4CC9E0] rounded-full opacity-50 animate-bounce" style="animation-delay: 0.3s"></div>
+    </div>
+  </div>
+</CumbreLayout>
+
+<script type="module" nonce={cspNonce}>
+  import '../../../scripts/cumbre-estado.js';
+</script>

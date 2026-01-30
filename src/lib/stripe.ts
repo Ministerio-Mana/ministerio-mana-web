@@ -65,6 +65,51 @@ export async function createStripeDonationSession(params: StripeSessionParams): 
   });
 }
 
+export async function createStripeInstallmentSession(params: {
+  amount: number;
+  currency: string;
+  description: string;
+  interval: 'month' | 'week';
+  intervalCount: number;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: Record<string, string>;
+  customerEmail?: string;
+}): Promise<Stripe.Checkout.Session> {
+  const stripe = getStripeClient();
+  const amountInMinor = Math.round(params.amount * 100);
+
+  return stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    currency: params.currency.toLowerCase(),
+    allow_promotion_codes: true,
+    metadata: params.metadata,
+    customer_email: params.customerEmail,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: params.currency.toLowerCase(),
+          unit_amount: amountInMinor,
+          recurring: {
+            interval: params.interval,
+            interval_count: params.intervalCount,
+          },
+          product_data: {
+            name: params.description,
+          },
+        },
+      },
+    ],
+    subscription_data: {
+      metadata: params.metadata,
+    },
+    success_url: params.successUrl,
+    cancel_url: params.cancelUrl,
+  });
+}
+
 export function verifyStripeWebhook(payload: string, signature: string | null): Stripe.Event {
   if (!signature) {
     throw new Error('Stripe-Signature ausente');

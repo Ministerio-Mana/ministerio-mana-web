@@ -1,0 +1,629 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+const cspNonce = Astro.locals?.cspNonce;
+
+---
+
+<BaseLayout title="Portal Maná | Ministerio Maná" description="Gestiona tus aportes y eventos en el Portal Maná." hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      
+      <!-- Sidebar / Navigation -->
+      <aside class="w-full lg:w-72 bg-[#293C74] text-white z-20 shadow-xl">
+        <div class="p-8 lg:sticky lg:top-0 flex flex-col h-full">
+          <div class="flex items-center gap-4 mb-12 px-2">
+            <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="h-12 w-auto">
+            <div class="border-l border-white/20 pl-4">
+              <p class="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1">Portal Maná</p>
+              <h2 class="text-xs font-display font-bold text-white">Panel General</h2>
+            </div>
+          </div>
+
+          <nav class="space-y-2">
+            <button data-tab="resumen" class="nav-link active w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+              <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Resumen</span>
+            </button>
+            <button data-tab="reservas" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mis Eventos</span>
+            </button>
+            <button data-tab="pagos" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+              <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mis Aportes</span>
+            </button>
+            <button data-tab="perfil" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mi Perfil</span>
+            </button>
+            <button data-tab="iglesia" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-8 4h8M4 6.5h16M6 3h12a1 1 0 011 1v16a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z" /></svg>
+              <span id="nav-iglesia-label" class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Eventos</span>
+            </button>
+          </nav>
+
+          <div class="mt-auto pt-10">
+            <button id="btn-logout" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/20 text-white/80 hover:text-white hover:bg-white/10 transition-all text-sm font-bold">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+        <div class="max-w-6xl mx-auto">
+          
+          <!-- Loading State (Skeleton) -->
+          <div id="account-loading" class="space-y-10 animate-pulse">
+            <div class="h-10 w-48 bg-slate-200 rounded-xl"></div>
+            <div class="grid md:grid-cols-3 gap-6">
+              <div class="h-40 bg-slate-200 rounded-[2rem]"></div>
+              <div class="h-40 bg-slate-200 rounded-[2rem]"></div>
+              <div class="h-40 bg-slate-200 rounded-[2rem]"></div>
+            </div>
+          </div>
+
+            <div id="account-error" class="hidden text-center py-20">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-400/10 text-red-400 mb-6">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Algo salió mal</h2>
+            <p class="text-slate-600">No pudimos cargar la información de tu cuenta.</p>
+            <button onclick="window.location.reload()" class="mt-6 px-6 py-2 bg-[#293C74] text-white rounded-xl hover:bg-[#293C74]/90 transition-all">Reintentar</button>
+          </div>
+
+          <div id="account-content" class="hidden space-y-12">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p class="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">Portal Maná</p>
+                <h1 class="text-2xl font-display font-bold text-[#293C74]">Panel General</h1>
+              </div>
+              <a href="/eventos/cumbre-mundial-2026" class="inline-flex items-center gap-2 rounded-full border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#293C74] hover:border-[#293C74]/60 hover:bg-[#293C74]/5 transition">
+                Volver a la Cumbre
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
+                </svg>
+              </a>
+            </div>
+            
+            <!-- Tab: Resumen -->
+            <div id="tab-resumen" class="tab-content space-y-10">
+              <header>
+                <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">¡Hola <span id="welcome-name" class="text-brand-teal">...</span>!</h1>
+                <p class="text-slate-600">Este es el resumen de tu participación en los eventos Maná.</p>
+              </header>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Status Card 1 -->
+                <div class="bg-white border border-slate-100 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-slate-200/50">
+                  <div class="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-110 transition-transform text-[#293C74]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4">Total Aportado</p>
+                  <h3 id="stat-total-paid" class="text-4xl font-display font-bold text-[#293C74] leading-none">$0</h3>
+                  <p class="text-xs text-brand-teal mt-2 font-bold">En todas tus reservas</p>
+                </div>
+
+                <!-- Status Card 2 -->
+                <div class="bg-white border border-slate-100 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-slate-200/50">
+                   <div class="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-110 transition-transform text-[#F2C94C]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4">Próximo Abono</p>
+                  <h3 id="stat-next-due" class="text-4xl font-display font-bold text-[#293C74] leading-none">-</h3>
+                  <p class="text-xs text-[#F2C94C] mt-2 font-bold">Plan de cuotas activo</p>
+                </div>
+
+                <!-- Support Card -->
+                <div class="bg-[#293C74] rounded-[2rem] p-8 relative overflow-hidden group text-white shadow-xl shadow-[#293C74]/20">
+                  <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+                  <h3 class="relative text-lg font-bold mb-2">¿Necesitas ayuda?</h3>
+                  <p class="relative text-xs text-white/90 leading-relaxed mb-6">Si tienes dudas con tus aportes, nuestro equipo de soporte está listo para asistirte.</p>
+                  <a href="https://wa.me/573148297534" class="relative inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-[#293C74] text-sm font-bold hover:bg-slate-100 transition-all">
+                    Soporte WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <!-- Important Alerts / Next Step -->
+              <div id="plan-highlight" class="hidden relative p-1 rounded-[2rem] bg-gradient-to-r from-brand-teal/20 via-brand-gold/20 to-brand-teal/20 animate-border-flow overflow-hidden shadow-lg shadow-brand-teal/5">
+                <div class="bg-white rounded-[calc(2rem-2px)] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+                   <div class="w-16 h-16 rounded-2xl bg-[#F2C94C]/10 flex items-center justify-center text-[#F2C94C] shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1.5m.5 0v-4.5m0 0V11m0 5h1m2-1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                   </div>
+                   <div class="text-center md:text-left">
+                      <h4 class="font-bold text-[#293C74]">Recordatorio de abono automático</h4>
+                      <p class="text-slate-600 text-sm">Tu próxima cuota de <span id="highlight-amount" class="text-[#293C74] font-bold">...</span> será procesada el <span id="highlight-date" class="text-[#293C74] font-bold">...</span>.</p>
+                   </div>
+                   <div class="md:ml-auto">
+                      <button data-tab-trigger="reservas" class="text-sm font-bold text-brand-teal hover:underline px-4 py-2">Ver detalles →</button>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Reservas -->
+            <div id="tab-reservas" class="tab-content hidden space-y-10">
+              <header>
+                <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">Mis Eventos</h1>
+                <p class="text-slate-600">Gestiona tus inscripciones a eventos y planes de abono.</p>
+              </header>
+
+              <div class="space-y-10">
+                <div class="space-y-6">
+                   <h2 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Eventos Inscritos</h2>
+                   <div id="bookings-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                   <div id="bookings-empty" class="hidden p-12 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
+                    <p class="text-slate-500">Aún no tienes inscripciones para la Cumbre 2026.</p>
+                   </div>
+                </div>
+
+                <div class="space-y-6">
+                   <h2 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Planes de Abono</h2>
+                   <div id="plans-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                   <div id="plans-empty" class="hidden p-12 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
+                    <p class="text-slate-500">No tienes planes de abono activos.</p>
+                   </div>
+                </div>
+
+                <div class="space-y-6">
+                   <h2 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Cuotas Pendientes</h2>
+                   <div id="installments-list" class="space-y-4"></div>
+                   <div id="installments-empty" class="hidden p-10 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
+                    <p class="text-slate-500">No tienes cuotas pendientes en este momento.</p>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Pagos -->
+            <div id="tab-pagos" class="tab-content hidden space-y-10">
+              <header>
+                <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">Mis Aportes</h1>
+                <p class="text-slate-600">Registro detallado de aportes y abonos realizados.</p>
+              </header>
+
+              <div class="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-lg shadow-slate-200/50">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm">
+                    <thead>
+                      <tr class="text-[10px] font-bold text-[#293C74] uppercase tracking-widest border-b border-slate-100 bg-slate-50/50">
+                        <th class="text-left py-6 px-8">Fecha</th>
+                        <th class="text-left py-6 px-8">Referencia</th>
+                        <th class="text-left py-6 px-8">Detalle</th>
+                        <th class="text-right py-6 px-8">Monto</th>
+                        <th class="text-center py-6 px-8">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody id="payments-table" class="divide-y divide-slate-50"></tbody>
+                  </table>
+                  <div id="payments-empty" class="hidden p-20 text-center">
+                    <p class="text-slate-500">No hay aportes registrados en tu historial.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab: Perfil -->
+            <div id="tab-perfil" class="tab-content hidden space-y-10">
+               <header>
+                 <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">Mi Perfil</h1>
+                 <p class="text-slate-600">Mantén tu información personal actualizada.</p>
+               </header>
+
+               <div class="max-w-3xl bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 space-y-8 shadow-lg shadow-slate-200/50">
+                  <div class="grid gap-6">
+                    <div class="space-y-2">
+                       <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre Completo</label>
+                       <input type="text" id="profile-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
+                    </div>
+                    <div class="space-y-2">
+                       <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Correo Electrónico</label>
+                       <input type="email" id="profile-email" disabled class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-500 cursor-not-allowed">
+                    </div>
+                    <div class="space-y-2">
+                       <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Rol</label>
+                       <input type="text" id="profile-role" disabled class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-500 cursor-not-allowed">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
+                        <input type="text" id="profile-phone" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
+                      </div>
+                      <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
+                        <input type="text" id="profile-city" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
+                        <input type="text" id="profile-country" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
+                      </div>
+                      <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Mi relación con Maná</label>
+                        <select id="profile-affiliation" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                          <option value="">Selecciona una opción</option>
+                          <option value="local">Asisto a una sede</option>
+                          <option value="online">Soy Maná Online</option>
+                          <option value="none">Prefiero no seleccionar</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div id="profile-church-wrapper" class="space-y-2 hidden">
+                      <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre de la sede / iglesia</label>
+                      <input type="text" id="profile-church-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500" placeholder="Ej: Maná Medellín">
+                    </div>
+                  </div>
+
+
+                  <div class="pt-4 flex items-center justify-between gap-4">
+                     <p id="profile-status" class="text-sm font-medium"></p>
+                     <button id="btn-save-profile" class="bg-[#293C74] text-white px-8 py-3 rounded-2xl font-bold hover:shadow-lg hover:shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all text-sm">
+                        Guardar Personales
+                     </button>
+                  </div>
+               </div>
+
+               <!-- Security Section -->
+               <div class="max-w-3xl bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 space-y-6 shadow-lg shadow-slate-200/50">
+                  <div>
+                    <h3 class="text-lg font-bold text-[#293C74]">Seguridad</h3>
+                    <p class="text-sm text-slate-600">Actualiza tu contraseña para ingresar sin enlace mágico.</p>
+                  </div>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                      <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nueva Contraseña</label>
+                      <input type="password" id="security-new-password" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all placeholder-slate-400" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="space-y-2">
+                       <button id="btn-update-password" class="w-full h-full mt-6 md:mt-0 bg-white border border-[#293C74]/20 text-[#293C74] px-6 py-4 rounded-2xl font-bold hover:bg-[#293C74] hover:text-white transition-all text-sm">
+                          Actualizar Contraseña
+                       </button>
+                    </div>
+                  </div>
+                  <p id="security-status" class="text-sm font-medium text-slate-500 min-h-[1.25rem]"></p>
+                  
+                  <!-- Passkeys Section -->
+                  <div class="pt-6 border-t border-slate-100 mt-2">
+                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                           <div class="flex items-center gap-2 mb-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#293C74]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.131A8 8 0 008 8m8.363 12.18c.201-.06.401-.123.6-.192" /></svg>
+                              <h4 class="font-bold text-[#293C74] text-sm">Passkeys (Huella / Rostro)</h4>
+                           </div>
+                           <p class="text-xs text-slate-600 max-w-sm">Vincula tu dispositivo para ingresar sin contraseña la próxima vez.</p>
+                        </div>
+                        <button id="btn-register-passkey" class="bg-white border border-[#293C74]/20 text-[#293C74] px-6 py-3 rounded-2xl font-bold hover:bg-[#293C74] hover:text-white transition-all text-xs flex items-center gap-2">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                           Vincular este dispositivo
+                        </button>
+                     </div>
+                     <p id="passkey-status" class="text-xs text-center mt-2 font-medium"></p>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Tab: Eventos (Antes Iglesia) -->
+            <div id="tab-iglesia" class="tab-content hidden space-y-8">
+              <!-- Header & Event Selector -->
+              <header class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between p-1">
+                <div>
+                  <div class="flex items-center gap-3 mb-2">
+                    <span class="px-3 py-1 rounded-full bg-brand-teal/10 text-brand-teal text-[10px] font-bold uppercase tracking-widest border border-brand-teal/20">Evento Activo</span>
+                    <span id="church-selector-status" class="text-xs text-slate-400"></span>
+                  </div>
+                  <h1 id="iglesia-title" class="text-3xl lg:text-4xl font-display font-bold text-[#293C74]">Cumbre Mundial 2026</h1>
+                  <p id="iglesia-subtitle" class="text-slate-600 mt-1">Gestión operativa y control de asistencia.</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                   <!-- Church Selector (For Admin) -->
+                   <div id="church-selector" class="hidden relative group z-20">
+                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#293C74]">
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                     </div>
+                     <select id="church-selector-input" class="appearance-none bg-white border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-sm font-bold text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all shadow-sm hover:shadow-md cursor-pointer min-w-[240px]">
+                       <option value="">Selecciona una iglesia</option>
+                     </select>
+                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                     </div>
+                   </div>
+
+                   <!-- Event Selector (Mockup for now) -->
+                   <button class="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#293C74] text-xs font-bold uppercase tracking-widest transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      Cambiar Evento
+                   </button>
+                </div>
+              </header>
+
+              <!-- Dashboard Grid -->
+              <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+                
+                <!-- Left Column: Main Data -->
+                <div class="space-y-8">
+                  
+                  <!-- Quick Filters / Search -->
+                   <div class="bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-2">
+                      <div class="relative flex-1">
+                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                         </div>
+                         <input id="church-bookings-search" type="search" class="w-full bg-transparent border-none rounded-xl pl-10 pr-4 py-3 text-[#293C74] placeholder-slate-400 focus:ring-0 text-sm font-medium" placeholder="Buscar inscrito...">
+                      </div>
+                      <select id="church-bookings-status" class="bg-slate-50 border-none rounded-xl px-4 py-3 text-[#293C74] text-sm font-bold focus:ring-0 cursor-pointer">
+                        <option value="">Todos los estados</option>
+                        <option value="PAID">Pagado</option>
+                        <option value="DEPOSIT_OK">Abono</option>
+                        <option value="PENDING">Pendiente</option>
+                      </select>
+                   </div>
+
+                   <!-- Bookings List (Primary) -->
+                   <div class="bg-white border border-slate-100 rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden min-h-[400px]">
+                      <div class="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+                         <h3 class="text-lg font-bold text-[#293C74]">Inscritos Recientes</h3>
+                         <button id="church-export-btn" class="text-xs font-bold text-brand-teal hover:underline flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Exportar CSV
+                         </button>
+                      </div>
+                      <div class="p-6">
+                        <p id="church-export-status" class="text-xs text-slate-500 mb-2"></p>
+                        <div id="church-bookings-empty" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
+                          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                          </div>
+                          <p class="text-sm text-slate-600">No hay registros para mostrar.</p>
+                        </div>
+                        <div id="church-bookings-list" class="hidden space-y-3"></div>
+                      </div>
+                   </div>
+
+                   <!-- Installments Section -->
+                   <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-lg shadow-slate-200/50">
+                      <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-bold text-[#293C74]">Cuotas Pendientes</h3>
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-[10px] font-bold uppercase tracking-widest rounded-full">Atención Requerida</span>
+                      </div>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <input id="church-installments-search" type="search" class="bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Buscar cuota...">
+                        <select id="church-installments-status" class="bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-[#293C74]">
+                          <option value="">Todas</option>
+                          <option value="PENDING">Pendiente</option>
+                          <option value="FAILED">Fallido</option>
+                        </select>
+                      </div>
+                      <p id="church-installments-status-msg" class="text-xs text-slate-500 mb-2"></p>
+                      <div id="church-installments-empty" class="text-center py-8 text-sm text-slate-500">Todo al día.</div>
+                      <div id="church-installments-list" class="hidden space-y-3"></div>
+                   </div>
+                </div>
+
+                <!-- Right Column: Quick Actions & Secondary Data -->
+                <div class="space-y-6">
+                  
+                  <!-- Primary Action Card -->
+                  <div class="bg-gradient-to-br from-[#293C74] to-[#1e2b58] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl shadow-[#293C74]/30">
+                    <div class="absolute top-0 right-0 p-6 opacity-10">
+                       <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 relative z-10">Nueva Inscripción</h3>
+                    <p class="text-white/70 text-sm mb-6 relative z-10">Registra un participante manualmente y gestiona su pago en efectivo.</p>
+                    <button id="church-form-toggle" class="w-full py-3 bg-white text-[#293C74] rounded-xl font-bold text-sm hover:bg-brand-teal hover:text-white transition-all shadow-lg relative z-10">
+                      + Registrar Persona
+                    </button>
+                    <!-- Expandable Form Container (Moved visually, will toggle visibility) -->
+                  </div>
+
+                  <!-- Manual Form Container (Initially Hidden) -->
+                  <div id="church-manual-form-container" class="hidden bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 border-l-4 border-l-brand-teal">
+                      <div class="flex items-center justify-between mb-4">
+                         <h4 class="font-bold text-[#293C74]">Formulario de Registro</h4>
+                         <button id="church-form-close" class="text-xs text-red-500 font-bold hover:underline">Cerrar</button>
+                      </div>
+                      <form id="church-manual-form" class="space-y-4 text-sm" data-collapsed="true">
+                         <!-- Simplified Layout for Sidebar Form -->
+                         <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Nombre Responsable</label>
+                            <input id="church-contact-name" type="text" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2" placeholder="Nombre completo">
+                         </div>
+                         <div class="space-y-2">
+                           <label class="text-[10px] font-bold text-slate-400 uppercase">Email</label>
+                           <input id="church-contact-email" type="email" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2" placeholder="Email">
+                         </div>
+                         <!-- Hidden fields to keep logic working but simplify UI options for now -->
+                         <div class="hidden">
+                           <input id="church-contact-phone" type="text">
+                           <input id="church-document-type" value="CC">
+                           <input id="church-document-number" type="text">
+                           <input id="church-country" value="Colombia">
+                           <input id="church-city" value="Bogota">
+                           <input id="church-name" type="text">
+                         </div>
+
+                         <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="flex justify-between items-center mb-2">
+                              <span class="font-bold text-[#293C74]">Participantes</span>
+                              <button type="button" id="btn-add-participant" class="text-[10px] bg-[#293C74] text-white px-2 py-1 rounded">+ Agregar</button>
+                            </div>
+                            <div id="participants-list" class="space-y-2 text-xs"></div>
+                         </div>
+                         
+                         <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1">
+                               <label class="text-[10px] font-bold text-slate-400 uppercase">Pago</label>
+                               <select id="church-payment-option" class="w-full bg-slate-50 border-slate-200 rounded-xl px-2 py-2 text-xs">
+                                 <option value="FULL">Total</option>
+                                 <option value="DEPOSIT">Abono</option>
+                                 <option value="INSTALLMENTS">Cuotas</option>
+                               </select>
+                            </div>
+                            <div class="space-y-1">
+                               <label class="text-[10px] font-bold text-slate-400 uppercase">Monto</label>
+                               <input id="church-payment-amount" type="number" class="w-full bg-slate-50 border-slate-200 rounded-xl px-2 py-2 text-xs">
+                            </div>
+                         </div>
+                         <input id="church-payment-method" type="text" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2 text-xs" placeholder="Método (Efectivo, etc)">
+                         <input id="church-notes" type="text" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2 text-xs" placeholder="Notas">
+                         <div class="hidden">
+                           <select id="church-payment-frequency"><option value="MONTHLY">Mensual</option></select>
+                           <select id="church-country-group"><option value="CO">CO</option></select>
+                         </div>
+
+                         <div class="pt-2">
+                            <p id="church-form-status" class="text-xs text-center text-slate-500 mb-2"></p>
+                            <button type="submit" class="w-full bg-brand-teal text-white font-bold py-3 rounded-xl hover:shadow-lg transition">Guardar</button>
+                         </div>
+                      </form>
+                  </div>
+
+                  <!-- Team Card -->
+                  <div class="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-lg shadow-slate-200/50">
+                    <h3 class="text-sm font-bold text-[#293C74] mb-4">Equipo Registrado</h3>
+                    <div id="church-members-empty" class="text-xs text-slate-400 text-center py-4">No hay equipo.</div>
+                    <div id="church-members-list" class="hidden space-y-2"></div>
+                    <button id="btn-toggle-invite" class="mt-4 w-full py-2 bg-slate-50 text-[#293C74] text-xs font-bold rounded-xl hover:bg-slate-100 transition">
+                       Gestionar Equipo
+                    </button>
+                  </div>
+
+                  <!-- Invitation Card (Toggleable) -->
+                  <div id="church-invite-card" class="hidden bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-lg shadow-slate-200/50">
+                     <h3 class="text-sm font-bold text-[#293C74] mb-2">Invitar Colaborador</h3>
+                     <div class="space-y-2">
+                        <input id="church-invite-email" type="email" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2 text-xs" placeholder="Correo electrónico">
+                        <div id="church-invite-church-wrapper" class="hidden">
+                           <input id="church-invite-church" type="text" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2 text-xs" placeholder="Iglesia">
+                        </div>
+                        <select id="church-invite-role" class="w-full bg-slate-50 border-slate-200 rounded-xl px-3 py-2 text-xs">
+                           <option value="church_member">Delegado</option>
+                           <option value="church_admin">Líder</option>
+                        </select>
+                        <p id="church-invite-status" class="text-[10px] text-slate-500 h-4"></p>
+                        <button id="church-invite-btn" class="w-full bg-[#293C74] text-white py-2 rounded-xl text-xs font-bold">Enviar</button>
+                     </div>
+                  </div>
+
+                  <div id="admin-users-card" class="bg-slate-900 rounded-[2.5rem] p-6 text-white hidden">
+                     <h3 class="text-sm font-bold mb-2">Panel Superadmin</h3>
+                     <p class="text-xs text-white/60 mb-4">Gestión global de usuarios.</p>
+                     <div id="admin-users-list" class="space-y-2 text-xs text-black"></div>
+                     <div class="mt-4 pt-4 border-t border-white/10">
+                        <input id="admin-invite-email" class="w-full bg-white/10 border-none rounded-lg px-3 py-2 text-xs mb-2 text-white placeholder-white/30" placeholder="Email nuevo admin">
+                        <select id="admin-invite-role" class="w-full bg-white/10 border-none rounded-lg px-3 py-2 text-xs mb-2 text-white">
+                           <option value="admin" class="text-black">Admin</option>
+                           <option value="superadmin" class="text-black">Superadmin</option>
+                        </select>
+                        <button id="admin-invite-btn" class="w-full bg-white text-slate-900 py-2 rounded-lg text-xs font-bold">Crear Admin</button>
+                        <p id="admin-invite-status" class="text-[10px] mt-1 opacity-60"></p>
+                     </div>
+                  </div>
+
+                </div>
+              </div>
+              
+              <!-- Hidden/Utility Sections (Payments Table, etc. moved or simplified) -->
+               <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-lg shadow-slate-200/50">
+                  <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-[#293C74]">Historial de Pagos</h3>
+                    <div class="flex gap-2">
+                       <input id="church-payments-search" type="search" placeholder="Buscar..." class="bg-slate-50 border-none rounded-lg px-3 py-1 text-xs">
+                    </div>
+                  </div>
+                  <div id="church-payments-empty" class="text-center text-sm text-slate-500 py-4">No hay pagos.</div>
+                  <div id="church-payments-list" class="hidden space-y-2"></div>
+               </div>
+
+            </div>
+
+          </div>
+        </div>
+      </section>
+    </div>
+    <div id="onboarding-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div class="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-8 md:p-10">
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Portal Maná</p>
+            <h2 class="text-2xl md:text-3xl font-display font-bold text-[#293C74]">Completa tu perfil</h2>
+            <p class="text-sm text-slate-600 mt-2">Estos datos nos ayudan a organizar tu participación y asignarte correctamente.</p>
+          </div>
+        </div>
+
+        <form id="onboarding-form" class="space-y-5">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre completo</label>
+            <input type="text" id="onboard-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Tu nombre completo">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-2">
+              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
+              <input type="text" id="onboard-phone" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="+57 300 000 0000">
+            </div>
+            <div class="space-y-2">
+              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
+              <input type="text" id="onboard-city" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Ciudad">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-2">
+              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
+              <input type="text" id="onboard-country" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="País">
+            </div>
+            <div class="space-y-2">
+              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Mi relación con Maná</label>
+              <select id="onboard-affiliation" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                <option value="">Selecciona una opción</option>
+                <option value="local">Asisto a una sede</option>
+                <option value="online">Soy Maná Online</option>
+                <option value="none">Prefiero no seleccionar</option>
+              </select>
+            </div>
+          </div>
+          <div id="onboard-church-wrapper" class="space-y-2 hidden">
+            <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre de la sede / iglesia</label>
+            <input type="text" id="onboard-church-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Ej: Maná Medellín">
+          </div>
+
+          <div class="flex items-center justify-between pt-4">
+            <p id="onboarding-status" class="text-sm text-slate-600"></p>
+            <button type="submit" class="bg-[#293C74] text-white px-10 py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all">
+              Guardar perfil
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <style>
+    .nav-link.active {
+      @apply bg-brand-teal text-white;
+    }
+    .nav-link.active span {
+      @apply text-white;
+    }
+    .nav-link.active svg {
+      @apply text-white;
+    }
+
+    @keyframes border-flow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .animate-border-flow {
+      background-size: 200% 200%;
+      animation: border-flow 6s ease infinite;
+    }
+  </style>
+
+  <script type="module" nonce={cspNonce}>
+    import '../../scripts/portal-dashboard.js';
+  </script>
+</BaseLayout>

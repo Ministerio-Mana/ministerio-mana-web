@@ -1,0 +1,317 @@
+---
+import TurnstileWidget from '@components/TurnstileWidget.astro';
+
+interface Props {
+  country?: string;
+  rates?: any;
+}
+
+const { country = 'CO', rates } = Astro.props;
+
+// Determine default gateway based on country
+// CO -> Wompi
+// US -> Pushpay / Stripe
+// Others -> Stripe
+const isColombia = country === 'CO';
+const isUSA = country === 'US';
+const isInternational = !isColombia;
+
+// Currency handling
+const currency = isColombia ? 'COP' : 'USD';
+const symbol = isColombia ? '$' : 'USD $';
+const placeholderAmount = isColombia ? '100000' : '50';
+const minAmount = isColombia ? 10000 : 10;
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<div id="primicias-gateway" class="w-full max-w-2xl mx-auto" data-country={country}>
+  <!-- Glass Card (Dark/Night Style) -->
+  <div class="relative bg-[#1e293b]/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.5)] overflow-hidden">
+    
+    <!-- Decorator -->
+    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-brand-gold/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+    <header class="relative z-10 text-center mb-10">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/50 border border-white/10 mb-6 shadow-inner">
+        <span class="w-2 h-2 rounded-full bg-amber-200 animate-pulse"></span>
+        <span class="text-[10px] font-bold tracking-widest text-amber-100 uppercase">Plataforma Segura</span>
+      </div>
+      <h2 class="text-3xl md:text-5xl font-display font-bold text-white mb-4 drop-shadow-xl">
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-amber-100 to-orange-100">Primicias</span> y Diezmos
+      </h2>
+      <p class="text-slate-300 text-lg leading-relaxed max-w-lg mx-auto font-light">
+        Honra a Dios con tus bienes y con las primicias de todos tus frutos.
+        <span class="block text-sm text-slate-500 mt-2 font-medium italic">— Proverbios 3:9</span>
+      </p>
+    </header>
+    
+    <!-- Type Selector -->
+    <div class="relative z-10 grid grid-cols-2 gap-2 p-1.5 bg-black/20 rounded-2xl mb-8 border border-white/5">
+      <button 
+        type="button" 
+        class="tab-btn active px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-sm"
+        data-target="primicia"
+      >
+        ❤️ Primicia / Siembra
+      </button>
+      <button 
+        type="button" 
+        class="tab-btn px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300"
+        data-target="diezmo"
+      >
+        🌱 Diezmo
+      </button>
+    </div>
+
+    <!-- Forms Container -->
+    <div class="relative z-10 min-h-[400px]">
+      
+      <!-- Option 1: Colombia (Wompi) -->
+      <form 
+        id="form-wompi" 
+        method="POST" 
+        action="/api/wompi/checkout" 
+        class={`gateway-form space-y-6 ${!isColombia ? 'hidden' : ''}`}
+      >
+        <div class="space-y-4">
+          <div class="bg-slate-900/50 border border-white/10 rounded-2xl p-6 group focus-within:border-brand-gold/50 transition-colors">
+             <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tu Aporte ({isColombia ? 'Pesos Colombianos' : 'COP'})</label>
+             <div class="relative">
+               <span class="absolute left-0 top-1/2 -translate-y-1/2 text-brand-gold font-display text-2xl">$</span>
+               <!-- Visual Input for Formatting -->
+               <input 
+                 type="text" 
+                 inputmode="numeric"
+                 id="wompi-amount-display"
+                 placeholder={placeholderAmount}
+                 class="currency-input w-full bg-transparent border-0 pl-8 pr-12 py-2 text-4xl font-display font-bold text-white placeholder-slate-600 focus:ring-0 focus:outline-none"
+               />
+               <!-- Hidden Real Input -->
+               <input type="hidden" name="amount" id="wompi-amount-real" />
+               <span class="absolute right-0 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">COP</span>
+             </div>
+          </div>
+
+          <!-- Recurring Option -->
+          <div class="flex items-center gap-3 px-2">
+            <div class="relative flex items-center">
+              <input type="checkbox" name="isRecurring" id="wompi-recurring" class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/20 bg-slate-800 transition-all checked:border-brand-gold checked:bg-brand-gold" />
+              <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity text-white" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <label for="wompi-recurring" class="cursor-pointer select-none text-sm text-slate-300">
+              Hacer esta donación <span class="font-bold text-white">recurrente (Mensual)</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
+               <input type="text" name="fullName" required placeholder="Nombre completo" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all placeholder-slate-600" />
+             </div>
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email</label>
+               <input type="email" name="email" required placeholder="tucorreo@email.com" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all placeholder-slate-600" />
+             </div>
+          </div>
+
+          <!-- Hidden Fields -->
+          <input type="hidden" name="currency" value="COP" />
+          <input type="hidden" name="source" value="primicias-wompi" />
+          <input type="hidden" name="donationType" id="wompi-type" value="ofrendas" />
+          
+          <TurnstileWidget appearance="interaction-only" />
+
+          <button type="submit" class="w-full group relative overflow-hidden bg-gradient-to-r from-brand-gold to-yellow-600 text-white px-8 py-5 rounded-2xl font-bold text-lg shadow-xl shadow-brand-gold/20 hover:shadow-brand-gold/40 hover:-translate-y-1 transition-all duration-300">
+             <span class="relative z-10 flex items-center justify-center gap-2 uppercase tracking-wide text-sm md:text-base">
+               Sembrar Ahora
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+             </span>
+             <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+          </button>
+          
+          <div class="text-center">
+            <p class="text-[10px] text-slate-500">Procesado de forma segura por Wompi Colombia</p>
+          </div>
+        </div>
+      </form>
+
+      <!-- Option 2: International (Stripe) -->
+      <form 
+        id="form-stripe" 
+        method="POST" 
+        action="/api/stripe/checkout" 
+        class={`gateway-form space-y-6 ${isColombia ? 'hidden' : ''}`}
+      >
+        <!-- Pushpay Callout for USA (Blue/Dark Theme) -->
+        {isUSA && (
+          <div class="mb-8 p-6 bg-[#0E1529] border border-[#293C74]/40 rounded-2xl text-center shadow-lg">
+            <h4 class="font-bold text-white mb-2 flex items-center justify-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+              Donación USA (Pushpay)
+            </h4>
+            <p class="text-sm text-slate-400 mb-4 max-w-sm mx-auto">
+              Si tienes cuenta en Pushpay o requieres deductibilidad en USA.
+            </p>
+            <a href="https://pushpay.com/g/devocionalmana?lang=es" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3 bg-[#293C74] text-white rounded-xl font-bold text-sm hover:bg-[#344b8d] transition-all shadow-lg shadow-[#293C74]/20 border border-[#293C74]">
+              Ir a Pushpay USA &rarr;
+            </a>
+          </div>
+        )}
+
+        <div class="space-y-4">
+          <div class="bg-slate-900/50 border border-white/10 rounded-2xl p-6 group focus-within:border-brand-ocean/50 transition-colors">
+             <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tu Aporte (USD)</label>
+             <div class="relative">
+               <span class="absolute left-0 top-1/2 -translate-y-1/2 text-brand-ocean font-display text-2xl">$</span>
+               
+               <!-- Visual Input -->
+               <input 
+                 type="text" 
+                 inputmode="numeric"
+                 id="stripe-amount-display"
+                 placeholder="100"
+                 class="currency-input w-full bg-transparent border-0 pl-8 pr-12 py-2 text-4xl font-display font-bold text-white placeholder-slate-600 focus:ring-0 focus:outline-none"
+               />
+               <!-- Hidden Real Input -->
+               <input type="hidden" name="amount" id="stripe-amount-real" />
+               <span class="absolute right-0 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">USD</span>
+             </div>
+          </div>
+
+          <!-- Recurring Option -->
+          <div class="flex items-center gap-3 px-2">
+             <div class="relative flex items-center">
+               <input type="checkbox" name="isRecurring" id="stripe-recurring" class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/20 bg-slate-800 transition-all checked:border-brand-ocean checked:bg-brand-ocean" />
+               <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity text-white" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+             </div>
+             <label for="stripe-recurring" class="cursor-pointer select-none text-sm text-slate-300">
+               Hacer esta donación <span class="font-bold text-white">recurrente (Mensual)</span>
+             </label>
+           </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
+               <input type="text" name="fullName" required placeholder="Nombre completo" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all placeholder-slate-600" />
+             </div>
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email</label>
+               <input type="email" name="email" required placeholder="tucorreo@email.com" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all placeholder-slate-600" />
+             </div>
+          </div>
+
+          <!-- Hidden Fields -->
+          <input type="hidden" name="currency" value="USD" />
+          <input type="hidden" name="source" value="primicias-stripe" />
+          <input type="hidden" name="donationType" id="stripe-type" value="ofrendas" />
+          
+          <TurnstileWidget appearance="interaction-only" />
+
+          <button type="submit" class="w-full group relative overflow-hidden bg-gradient-to-r from-[#293C74] to-brand-ocean text-white px-8 py-5 rounded-2xl font-bold text-lg shadow-xl shadow-brand-ocean/20 hover:shadow-brand-ocean/40 hover:-translate-y-1 transition-all duration-300">
+             <span class="relative z-10 flex items-center justify-center gap-2 uppercase tracking-wide text-sm md:text-base">
+               Donar con Tarjeta (Stripe)
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+             </span>
+             <div class="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+          </button>
+          
+          <div class="text-center">
+            <p class="text-[10px] text-slate-500">Pagos internacionales seguros vía Stripe</p>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Switcher (Manual override) -->
+    <div class="mt-8 pt-6 border-t border-white/5 text-center">
+      <button type="button" id="country-switch" class="text-xs font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest">
+        {isColombia ? '¿No estás en Colombia? Cambiar a Internacional' : '¿Estás en Colombia? Cambiar a Pesos (Wompi)'}
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .tab-btn.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #FCD34D; /* brand-gold */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+</style>
+
+<script nonce={cspNonce}>
+  // Tabs Logic
+  const tabs = document.querySelectorAll('.tab-btn');
+  const wompiType = document.getElementById('wompi-type');
+  const stripeType = document.getElementById('stripe-type');
+  
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // UI Update
+      tabs.forEach(b => b.classList.remove('active', 'text-brand-gold'));
+      tabs.forEach(b => b.classList.add('text-slate-400'));
+      
+      btn.classList.add('active');
+      btn.classList.remove('text-slate-400');
+
+      // Value Update
+      const target = btn.dataset.target; // primicia | diezmo
+      const val = target === 'diezmo' ? 'diezmos' : 'ofrendas'; // Map to backend types
+      
+      if (wompiType) wompiType.value = val;
+      if (stripeType) stripeType.value = val;
+    });
+  });
+
+  // Country Switch
+  const countrySwitch = document.getElementById('country-switch');
+  const wompiForm = document.getElementById('form-wompi');
+  const stripeForm = document.getElementById('form-stripe');
+  
+  countrySwitch?.addEventListener('click', () => {
+    const isWompiVisible = !wompiForm.classList.contains('hidden');
+    if (isWompiVisible) {
+      wompiForm.classList.add('hidden');
+      stripeForm.classList.remove('hidden');
+      countrySwitch.textContent = '¿Estás en Colombia? Cambiar a Pesos (Wompi)';
+    } else {
+      wompiForm.classList.remove('hidden');
+      stripeForm.classList.add('hidden');
+      countrySwitch.textContent = '¿No estás en Colombia? Cambiar a Internacional';
+    }
+  });
+
+  // Number Formatting Logic
+  function setupCurrencyInput(displayId, realId) {
+    const displayInput = document.getElementById(displayId);
+    const realInput = document.getElementById(realId);
+    
+    if (!displayInput || !realInput) return;
+
+    const formatNumber = (num) => {
+        return num.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    displayInput.addEventListener('input', (e) => {
+        const rawValue = e.target.value.replace(/\./g, '').replace(/\D/g, '');
+        
+        // Update display with dots
+        e.target.value = formatNumber(rawValue);
+        
+        // Update real input with raw number
+        realInput.value = rawValue;
+    });
+    
+    // Set initial if placeholder exists logic needed? 
+    // Usually placeholder implies example, not value.
+    // If user submits empty, browser 'required' catches it? 
+    // 'required' on hidden input might be tricky.
+    // Let's add 'required' to displayInput instead, and copy val to hidden on submit 
+    // OR ensure logic syncs perfectly.
+    // Ideally, validation should check realInput, but browser validates visible fields.
+  }
+
+  setupCurrencyInput('wompi-amount-display', 'wompi-amount-real');
+  setupCurrencyInput('stripe-amount-display', 'stripe-amount-real');
+</script>

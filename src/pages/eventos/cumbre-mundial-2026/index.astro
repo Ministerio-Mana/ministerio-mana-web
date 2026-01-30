@@ -1,0 +1,175 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+
+const eventDetails = {
+  date: "Julio 2026",
+  location: "Rionegro, Colombia",
+  price: "Desde $150 USD" 
+};
+
+const whatsappOnly =
+  (import.meta.env?.PUBLIC_CUMBRE_WHATSAPP_ONLY ?? process.env?.PUBLIC_CUMBRE_WHATSAPP_ONLY) === 'true';
+
+const ctaHref = whatsappOnly
+  ? 'https://wa.me/573148297534?text=Hola%20quiero%20inscribirme%20a%20la%20Cumbre%20Mundial%202026'
+  : '/eventos/cumbre-mundial-2026/inscripcion';
+
+const ctaLabel = whatsappOnly ? 'Inscripciones por WhatsApp' : 'Reservar Cupo';
+const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGISTRO';
+---
+
+<CumbreLayout title="Cumbre Mundial 2026 | Ministerio Maná" description="Únete a la gran reunión de la familia Maná en Rionegro, Colombia.">
+  
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex flex-col justify-center items-center text-center px-6 py-20 overflow-hidden bg-brand-void">
+    
+    <!-- Background Elements -->
+    <div class="absolute inset-0 z-0">
+        <!-- High Quality Fishermen Background -->
+        <div class="absolute inset-0 bg-[url('/images/cumbre/fishermen-bg-highres.jpg')] bg-cover bg-center opacity-40 mix-blend-luminosity"></div>
+        
+        <!-- Gradient Mesh for Depth -->
+        <div class="absolute inset-0 bg-gradient-to-b from-brand-void/90 via-brand-void/70 to-brand-void"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-brand-void/80 via-transparent to-brand-void/80"></div>
+        
+        <!-- Glow effects -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-brand-ocean/20 blur-[120px] mix-blend-screen opacity-50 rounded-full pointer-events-none"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-center justify-center space-y-10 animate-fade-in-up">
+      
+      <!-- Top Badge: Ministry Name -->
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-4 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse"></span>
+        <span class="text-xs md:text-sm font-bold tracking-[0.3em] text-white/80 uppercase">Ministerio Maná</span>
+      </div>
+
+      <!-- Main Visual Stack -->
+      <div class="relative flex flex-col items-center">
+        
+        <!-- Massive Title -->
+        <h1 class="font-display font-black text-6xl md:text-8xl lg:text-9xl tracking-tighter leading-[0.85] text-white drop-shadow-2xl uppercase">
+          <span class="block bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-gray-400">Cumbre</span>
+          <span class="block bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-gray-400">Mundial</span>
+        </h1>
+
+        <!-- Year & Subtitle -->
+        <div class="relative mt-2 md:mt-4">
+             <span class="block font-display font-black text-5xl md:text-7xl lg:text-[8rem] text-brand-ocean/10 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 scale-150 select-none">
+                2026
+             </span>
+             <h2 class="font-display font-black text-2xl md:text-4xl lg:text-5xl text-brand-ocean tracking-wide uppercase drop-shadow-lg">
+                De Discipulado
+             </h2>
+        </div>
+
+        <!-- Integrated High-Res Logo -->
+        <div class="mt-12 md:mt-16 relative group">
+           <div class="absolute inset-0 bg-brand-gold/20 blur-[40px] rounded-full group-hover:bg-brand-gold/30 transition-all duration-700"></div>
+           <img 
+              src="/images/cumbre/cumbre-2026-logo-white.svg" 
+              alt="Ven y Ayúdanos" 
+              class="relative w-72 md:w-96 h-auto object-contain animate-float-slow drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+           />
+           <!-- Arched Text Effect (Visual Reinforcement if needed, but logo has text) -->
+        </div>
+
+      </div>
+
+      <!-- Action Area -->
+      <div class="flex flex-col items-center gap-6 mt-8">
+         <p class="text-lg md:text-2xl text-white/80 font-light max-w-2xl text-center leading-relaxed">
+            Un tiempo sobrenatural de conexión, visión y renovación espiritual.
+         </p>
+         
+         <div class="flex flex-col sm:flex-row gap-4">
+             <!-- Primary CTA -->
+             <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="group relative px-10 py-4 bg-brand-ocean text-white font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] hover:shadow-[0_0_60px_rgba(40,166,189,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                <span class="relative z-10 flex items-center gap-2 uppercase tracking-wider">
+                  {ctaLabel}
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                </span>
+                <div class="absolute inset-0 bg-gradient-to-r from-brand-ocean via-[#4CC9E0] to-brand-ocean opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+             </a>
+
+             <!-- More Info -->
+             <a href="#detalles" class="px-10 py-4 border border-white/20 hover:bg-white/5 text-white font-medium rounded-full transition-colors uppercase tracking-wide text-sm flex items-center">
+                Más Información
+             </a>
+
+             <!-- Portal CTA -->
+             <a href="/portal" class="px-10 py-4 border border-brand-gold/40 text-brand-gold font-semibold rounded-full transition-colors uppercase tracking-wide text-sm flex items-center hover:bg-brand-gold/10">
+                Ir a Portal Maná
+             </a>
+         </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- Info Section -->
+  <section id="detalles" class="relative py-24 px-6 bg-black/20 backdrop-blur-sm border-y border-white/5">
+    <div class="container mx-auto max-w-5xl">
+      <div class="grid md:grid-cols-3 gap-12">
+        <!-- Feature 1 -->
+        <div class="space-y-4 text-center md:text-left">
+          <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto md:mx-0 text-brand-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white">Familia Global</h3>
+          <p class="text-white/60 leading-relaxed text-sm">
+            Reúnete con pastores, líderes y familias de todas las sedes nacionales e internacionales.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="space-y-4 text-center md:text-left">
+          <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto md:mx-0 text-brand-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white">Flexibilidad de alojamiento</h3>
+          <p class="text-white/60 leading-relaxed text-sm">
+            El lugar cuenta con habitaciones tipo seminario (cama y nido por habitación). Si prefieres mayor comodidad,
+            puedes hospedarte en hoteles cercanos (se pagan por separado) y elegir el precio sin alojamiento.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="space-y-4 text-center md:text-left">
+          <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto md:mx-0 text-brand-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-white">Pago flexible</h3>
+          <p class="text-white/60 leading-relaxed text-sm">
+            Puedes pagar a cuotas o de forma diferida. El abono igual o superior al 50% garantiza el cupo con alojamiento.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-24 px-6 text-center">
+    <div class="max-w-2xl mx-auto space-y-8 bg-gradient-to-b from-white/5 to-transparent p-12 rounded-[3rem] border border-white/10 backdrop-blur-md">
+      <h2 class="text-3xl md:text-4xl font-bold text-white">¿Listo para ser parte?</h2>
+      <p class="text-white/70">
+        Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.
+      </p>
+      <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="inline-block px-10 py-5 bg-white text-brand-dark font-black text-xl rounded-full hover:scale-105 transition-transform">
+        {ctaLabelCaps}
+      </a>
+      <p class="text-xs text-white/40">
+        <a href="/eventos/cumbre-mundial-2026/condiciones" class="underline hover:text-white">Ver condiciones comerciales</a>.
+      </p>
+    </div>
+  </section>
+
+</CumbreLayout>

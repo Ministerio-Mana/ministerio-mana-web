@@ -1,0 +1,528 @@
+---
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<div id="registro-app" class="max-w-4xl mx-auto space-y-8">
+  
+  <!-- Loading State -->
+  <div id="loading-state" class="text-center py-20">
+     <div class="w-16 h-16 border-4 border-brand-teal border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+     <p class="text-white/60">Cargando datos de tu reserva...</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="error-state" class="hidden text-center py-20 bg-red-500/10 border border-red-500/20 rounded-3xl">
+     <p class="text-red-400 font-bold text-lg mb-2">No pudimos cargar la reserva</p>
+     <p class="text-white/60 text-sm max-w-md mx-auto">Verifica que el enlace sea correcto o contacta a soporte.</p>
+  </div>
+
+  <!-- Auth Required State -->
+  <div id="auth-state" class="hidden text-center py-20 bg-brand-teal/10 border border-brand-teal/30 rounded-3xl">
+     <p class="text-brand-teal font-bold text-lg mb-2">Activa tu cuenta para continuar</p>
+     <p class="text-white/60 text-sm max-w-md mx-auto">Te enviaremos un enlace para crear tu contraseña y volver a este formulario.</p>
+     <button id="auth-cta" type="button" class="mt-6 px-6 py-3 rounded-xl bg-brand-teal text-white font-bold hover:bg-brand-teal/90 transition-all">
+       Enviar enlace de activación
+     </button>
+     <p id="auth-status" class="text-xs text-white/60 mt-3"></p>
+  </div>
+
+  <!-- Main Content -->
+  <div id="main-content" class="hidden space-y-8">
+     
+     <!-- Booking Summary -->
+     <div class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-wrap gap-6 justify-between items-center">
+        <div>
+           <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-1">Reserva #</p>
+           <p class="text-2xl font-mono font-bold text-white" id="booking-ref">...</p>
+        </div>
+        <div>
+           <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-1">Titular</p>
+           <p class="text-lg text-white" id="booking-holder">...</p>
+        </div>
+        <div class="text-right">
+           <p class="text-xs uppercase tracking-wider text-white/50 font-bold mb-1">Estado</p>
+           <span class="inline-block px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30">Confirmado</span>
+        </div>
+     </div>
+
+     <form id="details-form" class="space-y-6">
+        <div id="participants-container" class="space-y-4">
+           <!-- Cards injected here -->
+        </div>
+
+        <div class="pt-8 border-t border-white/10 flex justify-end">
+           <button type="submit" id="btn-save" class="bg-brand-teal text-white px-8 py-4 rounded-xl font-bold shadow-[0_0_20px_rgba(40,166,189,0.3)] hover:scale-105 transition-transform">
+              Guardar y Finalizar
+           </button>
+        </div>
+     </form>
+
+  </div>
+</div>
+
+<template id="participant-card-template">
+  <div class="participant-card bg-white/5 border border-white/10 rounded-2xl overflow-hidden transition-all hover:border-brand-teal/50">
+     <!-- Header -->
+     <div class="p-4 bg-white/5 flex justify-between items-center cursor-pointer toggle-btn">
+        <div class="flex items-center gap-4">
+           <div class="w-10 h-10 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center font-bold index-badge">1</div>
+           <div>
+              <p class="font-bold text-white text-lg name-display">Nombre</p>
+              <p class="text-xs text-white/50 type-display">Tipo</p>
+           </div>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/40 arrow-icon transform transition-transform" viewBox="0 0 20 20" fill="currentColor">
+           <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+     </div>
+     
+     <!-- Body -->
+     <div class="card-body p-6 space-y-6 border-t border-white/5"> <!-- Hidden by default handled by JS height? or just class hidden -->
+        <!-- Personal ID -->
+        <div class="grid md:grid-cols-2 gap-4">
+           <div>
+              <label class="block text-xs text-white/60 mb-2 uppercase font-bold">Tipo Documento</label>
+              <select name="docType" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-brand-teal">
+                 <option value="CC">Cédula de Ciudadanía</option>
+                 <option value="TI">Tarjeta de Identidad</option>
+                 <option value="PASSPORT">Pasaporte</option>
+                 <option value="CE">Cédula de Extranjería</option>
+              </select>
+           </div>
+           <div>
+              <label class="block text-xs text-white/60 mb-2 uppercase font-bold">Número Documento</label>
+              <input type="text" name="docNumber" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-brand-teal" placeholder="123456789">
+           </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+           <div>
+              <label class="block text-xs text-white/60 mb-2 uppercase font-bold">Fecha Nacimiento</label>
+              <input
+                type="text"
+                name="birthDate"
+                class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-brand-teal js-date"
+                placeholder="DD / MM / AAAA"
+                inputmode="numeric"
+                autocomplete="bday"
+              >
+           </div>
+           <div>
+              <label class="block text-xs text-white/60 mb-2 uppercase font-bold">Género</label>
+              <select name="gender" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-brand-teal">
+                 <option value="">Seleccionar</option>
+                 <option value="M">Masculino</option>
+                 <option value="F">Femenino</option>
+              </select>
+           </div>
+        </div>
+
+        <!-- Menu Type -->
+        <div>
+           <label class="block text-xs text-white/60 mb-2 uppercase font-bold">Tipo de menú</label>
+           <select name="menuType" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-brand-teal">
+              <option value="">Seleccionar</option>
+              <option value="TRADICIONAL">Menú tradicional</option>
+              <option value="VEGETARIANO">Menú vegetariano</option>
+           </select>
+           <p class="text-xs text-white/30 mt-1">Solo contamos con menú tradicional o vegetariano.</p>
+        </div>
+     </div>
+  </div>
+</template>
+
+<style>
+  .flatpickr-calendar {
+    background: #0b1222;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.55);
+    border-radius: 16px;
+    padding: 8px;
+    color: #e2e8f0;
+  }
+  .flatpickr-months {
+    background: #0b1222;
+    border-radius: 12px;
+    padding: 8px 6px 0;
+  }
+  .flatpickr-current-month {
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+  .flatpickr-weekday {
+    color: rgba(148, 163, 184, 0.9);
+    font-weight: 600;
+  }
+  .flatpickr-day {
+    color: #e2e8f0;
+    border-radius: 10px;
+  }
+  .flatpickr-day:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: transparent;
+  }
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange {
+    background: #22d3ee;
+    color: #0f172a;
+    border-color: transparent;
+  }
+  .flatpickr-day.today {
+    border-color: rgba(34, 211, 238, 0.5);
+  }
+  .flatpickr-prev-month,
+  .flatpickr-next-month {
+    color: #94a3b8;
+  }
+  .flatpickr-time input,
+  .flatpickr-time .flatpickr-time-separator {
+    color: #e2e8f0;
+  }
+</style>
+
+<script type="module" nonce={cspNonce}>
+  import flatpickr from 'flatpickr';
+  import 'flatpickr/dist/flatpickr.min.css';
+
+  let supabase = null;
+  let calendarReady = false;
+
+  async function getSupabase() {
+    if (supabase) return supabase;
+    try {
+      const { getSupabaseBrowserClient } = await import('@lib/supabaseBrowser');
+      supabase = getSupabaseBrowserClient();
+    } catch (err) {
+      console.warn('[registro] Supabase no disponible', err);
+      supabase = null;
+    }
+    return supabase;
+  }
+
+  const REGISTRO = {
+     booking: null,
+     bookingEmail: '',
+     draft: null,
+     
+     init() {
+        const params = new URLSearchParams(window.location.search);
+        this.bookingId = params.get('bookingId');
+        this.token = params.get('token');
+        this.isMock = params.get('mock') === 'true';
+
+        if(!this.bookingId || !this.token) {
+           this.showError();
+           return;
+        }
+
+        this.fetchData();
+     },
+
+     async fetchData() {
+        try {
+           if(this.isMock) {
+              // Simulate API delay
+              await new Promise(r => setTimeout(r, 1000));
+              this.booking = {
+                 reference: 'MANA-2026-X99',
+                 holder: 'Juan Pérez',
+                 participants: [
+                    { id: 1, name: 'Juan Pérez', type: 'lodging' },
+                    { id: 2, name: 'María Gómez', type: 'lodging' },
+                    { id: 3, name: 'Tomás Pérez', type: 'child_7_13' }
+                 ]
+              };
+           } else {
+              // Real API call
+              const res = await fetch(`/api/cumbre2026/booking/get?bookingId=${this.bookingId}&token=${this.token}`);
+              if(!res.ok) throw new Error('Fetch failed');
+              const payload = await res.json();
+              if (!payload?.ok) throw new Error(payload?.error || 'Fetch failed');
+              const booking = payload.booking || {};
+              this.booking = {
+                 reference: (booking.id || this.bookingId || '').toString().slice(0, 8).toUpperCase(),
+                 holder: booking.contact_name || booking.contact_email || 'Participante',
+                 participants: payload.participants || []
+              };
+              this.bookingEmail = (booking.contact_email || '').toString().trim().toLowerCase();
+           }
+
+           const allowed = await this.ensureAuth();
+           if (!allowed) return;
+           await this.fetchDraft();
+           this.render();
+
+        } catch(e) {
+           console.error(e);
+           this.showError();
+        }
+     },
+     
+     async ensureAuth() {
+        if (this.isMock) return true;
+        const client = await getSupabase();
+        if (!client) return true; // allow access with token when Supabase env is missing
+        try {
+          const { data } = await client.auth.getSession();
+          if (data?.session) return true;
+        } catch (err) {
+          console.error(err);
+        }
+        this.showAuthRequired();
+        return false;
+     },
+     
+     async fetchDraft() {
+        if (this.isMock) return;
+        try {
+          const res = await fetch(`/api/cumbre2026/registration/draft?bookingId=${this.bookingId}&token=${this.token}`);
+          if (!res.ok) return;
+          const payload = await res.json();
+          if (payload?.ok) {
+            this.draft = payload.draft || null;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+     },
+
+     render() {
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
+
+        // Header
+        document.getElementById('booking-ref').textContent = this.booking.reference || '—';
+        document.getElementById('booking-holder').textContent = this.booking.holder || '—';
+
+        const container = document.getElementById('participants-container');
+        const tmpl = document.getElementById('participant-card-template');
+
+        const draftMap = new Map();
+        (this.draft?.participants || []).forEach((entry) => {
+          if (entry?.id) {
+            draftMap.set(entry.id, entry);
+          }
+        });
+
+        this.booking.participants.forEach((p, idx) => {
+           const clone = tmpl.content.cloneNode(true);
+           const card = clone.querySelector('.participant-card');
+           
+           card.querySelector('.index-badge').textContent = idx + 1;
+           card.querySelector('.name-display').textContent = p.full_name || p.name || 'Participante';
+           card.querySelector('.type-display').textContent = this.formatType(p.package_type || p.type);
+           const prefill = draftMap.get(p.id) || {};
+           
+           // Toggle Logic
+           const body = card.querySelector('.card-body');
+           const arrow = card.querySelector('.arrow-icon');
+           clone.querySelector('.toggle-btn').addEventListener('click', () => {
+              body.classList.toggle('hidden');
+              arrow.classList.toggle('rotate-180');
+           });
+           
+           // Inputs naming (participantId as prefix/array)
+           card.querySelectorAll('input, select, textarea').forEach(input => {
+             input.name = `p_${p.id}_${input.name}`;
+           });
+           
+           // Prefill values
+           card.querySelector(`[name="p_${p.id}_docType"]`).value = prefill.documentType || p.document_type || 'CC';
+           card.querySelector(`[name="p_${p.id}_docNumber"]`).value = prefill.documentNumber || p.document_number || '';
+           card.querySelector(`[name="p_${p.id}_birthDate"]`).value = prefill.birthdate || p.birthdate || '';
+           card.querySelector(`[name="p_${p.id}_gender"]`).value = prefill.gender || p.gender || '';
+           card.querySelector(`[name="p_${p.id}_menuType"]`).value = prefill.dietType || p.diet_type || '';
+
+           container.appendChild(clone);
+        });
+
+        this.initCalendars();
+        
+        // Form submit
+        document.getElementById('details-form').addEventListener('submit', (e) => this.handleSubmit(e));
+        this.attachAutosave();
+     },
+
+     initCalendars() {
+        if (calendarReady) return;
+        const inputs = document.querySelectorAll('.js-date');
+        inputs.forEach((input) => {
+          if (input.dataset.fpApplied) return;
+          flatpickr(input, {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'd / m / Y',
+            allowInput: true,
+            maxDate: 'today',
+            disableMobile: true,
+          });
+          input.dataset.fpApplied = 'true';
+        });
+        calendarReady = true;
+     },
+
+     formatType(type) {
+        const labels = {
+           lodging: 'Asistencia + alimentación + alojamiento',
+           no_lodging: 'Asistencia + alimentación (sin alojamiento)',
+           child_0_7: 'Niño 0-4',
+           child_7_13: 'Niño 5-10'
+        };
+        return labels[type] || type;
+     },
+
+     showError() {
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('error-state').classList.remove('hidden');
+     },
+
+     showAuthRequired() {
+        document.getElementById('loading-state').classList.add('hidden');
+        document.getElementById('auth-state').classList.remove('hidden');
+        const cta = document.getElementById('auth-cta');
+        const status = document.getElementById('auth-status');
+        cta?.addEventListener('click', async () => {
+          if (!status) return;
+          if (!this.bookingEmail) {
+            status.textContent = 'No encontramos tu correo. Escríbenos por WhatsApp.'; 
+            return;
+          }
+          status.textContent = 'Enviando enlace...';
+          cta.setAttribute('disabled', 'disabled');
+          cta.classList.add('opacity-70');
+          try {
+            const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+            const res = await fetch('/api/auth/send-link', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ email: this.bookingEmail, kind: 'magiclink', redirectTo }),
+            });
+            const payload = await res.json();
+            if (!res.ok || !payload?.ok) {
+              throw new Error(payload?.error || 'No se pudo enviar el enlace.');
+            }
+            status.textContent = 'Enlace enviado. Revisa tu correo para activar tu cuenta.';
+          } catch (err) {
+            console.error(err);
+            status.textContent = err?.message || 'No se pudo enviar el enlace.';
+          } finally {
+            cta.removeAttribute('disabled');
+            cta.classList.remove('opacity-70');
+          }
+        });
+     },
+
+     attachAutosave() {
+        const form = document.getElementById('details-form');
+        if (!form || this.isMock) return;
+        let timer = null;
+        const handler = () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => this.saveDraft(), 900);
+        };
+        form.querySelectorAll('input, select, textarea').forEach((el) => {
+          el.addEventListener('input', handler);
+          el.addEventListener('change', handler);
+        });
+     },
+
+     async saveDraft() {
+        try {
+          const form = document.getElementById('details-form');
+          const fd = new FormData(form);
+          const participants = [];
+
+          this.booking.participants.forEach((p) => {
+            const participantId = p.id;
+            if (!participantId) return;
+            const prefix = `p_${participantId}_`;
+            participants.push({
+              id: participantId,
+              documentType: fd.get(`${prefix}docType`),
+              documentNumber: fd.get(`${prefix}docNumber`),
+              birthdate: fd.get(`${prefix}birthDate`),
+              gender: fd.get(`${prefix}gender`),
+              dietType: fd.get(`${prefix}menuType`),
+            });
+          });
+
+          await fetch('/api/cumbre2026/registration/draft', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json',
+            },
+            body: JSON.stringify({
+              bookingId: this.bookingId,
+              token: this.token,
+              participants,
+            }),
+          });
+        } catch (err) {
+          console.error(err);
+        }
+     },
+     
+     async handleSubmit(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-save');
+        btn.textContent = 'Guardando...';
+        btn.disabled = true;
+
+        try {
+          const form = document.getElementById('details-form');
+          const fd = new FormData(form);
+          const participants = [];
+
+          this.booking.participants.forEach((p) => {
+            const participantId = p.id;
+            if (!participantId) return;
+            const prefix = `p_${participantId}_`;
+            participants.push({
+              id: participantId,
+              documentType: fd.get(`${prefix}docType`),
+              documentNumber: fd.get(`${prefix}docNumber`),
+              birthdate: fd.get(`${prefix}birthDate`),
+              gender: fd.get(`${prefix}gender`),
+              dietType: fd.get(`${prefix}menuType`),
+            });
+          });
+
+          const res = await fetch('/api/cumbre2026/registration/submit', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json',
+            },
+            body: JSON.stringify({
+              bookingId: this.bookingId,
+              token: this.token,
+              participants,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data?.ok) {
+            throw new Error(data?.error || 'No se pudo guardar el registro');
+          }
+
+          // Clear draft on success
+          await fetch('/api/cumbre2026/registration/draft', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ bookingId: this.bookingId, token: this.token, participants: [] }),
+          });
+
+          window.location.href = `/eventos/cumbre-mundial-2026/estado?bookingId=${this.bookingId}&token=${this.token}`;
+        } catch (err) {
+          console.error(err);
+          alert(err?.message || 'No se pudo guardar. Intenta nuevamente.');
+          btn.textContent = 'Guardar y Finalizar';
+          btn.disabled = false;
+          return;
+        }
+     }
+  };
+
+  window.addEventListener('DOMContentLoaded', () => REGISTRO.init());
+</script>

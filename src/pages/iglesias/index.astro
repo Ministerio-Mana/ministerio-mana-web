@@ -10,6 +10,7 @@ const churchesRaw = (churchesData as any[]).map((c) => ({
 }));
 const churches = churchesRaw.sort((a, b) => (a.city || '').localeCompare(b.city || ''));
 const countries = Array.from(new Set(churches.map((c) => c.country))).sort();
+const cspNonce = Astro.locals?.cspNonce;
 ---
 <BaseLayout title="Iglesias — Planea tu visita" description="Encuentra la sede de Maná más cercana y planea tu visita.">
   <section class="section">
@@ -93,7 +94,7 @@ const countries = Array.from(new Set(churches.map((c) => c.country))).sort();
     </div>
   </section>
 
-  <script is:inline>
+  <script is:inline nonce={cspNonce}>
     (() => {
       const searchInput = document.getElementById('churches-search');
       const countrySelect = document.getElementById('churches-country');

@@ -1,0 +1,137 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import PrimiciasGateway from '@components/primicias/PrimiciasGateway.astro';
+import { preferredGatewayForCountry } from '@lib/geo';
+
+// Server Side Geo Detection (Best Effort)
+// Vercel / Cloudflare headers
+const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO'; // Default to CO if unknown
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<BaseLayout title="Primicias y Diezmos | Ministerio Maná" description="Honra a Dios con tus primicias. Plataforma segura de donaciones.">
+  <main class="relative min-h-screen bg-brand-void overflow-x-hidden text-white selection:bg-brand-gold selection:text-brand-void">
+    
+    <!-- Background Effects (Night Wheat Field) -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+      <!-- Main Image -->
+      <div class="absolute inset-0 bg-[url('/images/primicias-wheat-night-bg.png')] bg-cover bg-center"></div>
+      
+      <!-- Overlays for Readability -->
+      <div class="absolute inset-0 bg-gradient-to-b from-brand-void/30 via-transparent to-brand-void/90"></div>
+      <div class="absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-brand-void to-transparent"></div>
+      
+      <!-- Gold Sparkles -->
+      <div id="gold-stars" class="absolute inset-0 opacity-50"></div>
+    </div>
+
+    <!-- Navigation / Header -->
+    <nav class="relative z-50 flex items-center justify-between px-6 py-6 md:px-12">
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform backdrop-blur-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" /></svg>
+        </div>
+        <span class="font-bold text-white/60 hover:text-white text-sm tracking-widest uppercase transition-colors">Volver al Inicio</span>
+      </a>
+      
+      <div class="hidden md:flex items-center gap-4">
+        <div class="flex items-center gap-2 text-xs font-bold text-white/40 uppercase tracking-widest">
+           <span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(74,222,128,0.5)]"></span>
+           Sitio Seguro
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative z-10 container mx-auto px-4 pt-8 pb-24 md:pt-16">
+      
+      <div class="flex flex-col lg:flex-row items-start gap-12 lg:gap-20">
+        <!-- Sidebar / Context (Desktop) -->
+        <div class="hidden lg:block w-full max-w-sm pt-12 space-y-12">
+           <div class="space-y-6">
+             <h1 class="font-display text-5xl font-bold text-white leading-tight drop-shadow-xl">
+               El poder de la <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-orange-100 italic">Primicia</span>
+             </h1>
+             <p class="text-slate-300 text-lg leading-relaxed font-light">
+               La primicia no es una ofrenda cualquiera, es la evidencia de que Dios está en primer lugar en tu corazón y en tus finanzas.
+             </p>
+           </div>
+           
+           <div class="space-y-6">
+             <div class="flex items-start gap-4 group">
+               <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-2xl group-hover:bg-brand-gold/20 transition-colors">🌱</div>
+               <div>
+                 <h3 class="font-bold text-white text-lg">Siembra con Fe</h3>
+                 <p class="text-sm text-slate-400 leading-relaxed mt-1">Cada semilla plantada en el reino tiene el potencial de una cosecha sobrenatural.</p>
+               </div>
+             </div>
+             <div class="flex items-start gap-4 group">
+               <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-2xl group-hover:bg-brand-gold/20 transition-colors">🔓</div>
+               <div>
+                 <h3 class="font-bold text-white text-lg">Abre los Cielos</h3>
+                 <p class="text-sm text-slate-400 leading-relaxed mt-1">El diezmo es la llave que abre las ventanas de los cielos sobre tu casa.</p>
+               </div>
+             </div>
+           </div>
+
+           <div class="p-8 bg-black/40 backdrop-blur-md rounded-3xl border border-white/10 relative overflow-hidden shadow-2xl">
+             <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-gold/10 rounded-full blur-3xl"></div>
+             <blockquote class="text-slate-200 italic mb-4 relative z-10 font-medium leading-relaxed">
+               "Honra a Jehová con tus bienes, y con las primicias de todos tus frutos; y serán llenos tus graneros con abundancia..."
+             </blockquote>
+             <cite class="block text-xs font-bold text-brand-gold uppercase not-italic tracking-wider relative z-10">— Proverbios 3:9-10</cite>
+           </div>
+        </div>
+
+        <!-- Component Area -->
+        <div class="flex-1 w-full flex justify-center lg:justify-start">
+           <PrimiciasGateway country={country} />
+        </div>
+      </div>
+
+    </div>
+  </main>
+</BaseLayout>
+
+<script type="module" nonce={cspNonce}>
+  import { gsap } from 'gsap';
+
+  window.addEventListener('load', () => {
+    // Elegant entrance
+    gsap.from('#primicias-gateway', {
+      y: 50,
+      opacity: 0,
+      duration: 1,
+      ease: 'power3.out',
+      delay: 0.2
+    });
+
+    // Gold sparkles
+    const starContainer = document.getElementById('gold-stars');
+    if (starContainer) {
+       for(let i=0; i<40; i++) {
+         const star = document.createElement('div');
+         const size = Math.random() * 3 + 1;
+         star.style.width = `${size}px`;
+         star.style.height = `${size}px`;
+         star.style.backgroundColor = '#FCD34D'; // amber-300
+         star.style.position = 'absolute';
+         star.style.borderRadius = '50%';
+         star.style.left = `${Math.random() * 100}%`;
+         star.style.top = `${Math.random() * 100}%`;
+         star.style.opacity = Math.random().toString();
+         
+         starContainer.appendChild(star);
+         
+         gsap.to(star, {
+           y: -100,
+           opacity: 0,
+           duration: Math.random() * 10 + 5,
+           repeat: -1,
+           ease: 'none',
+           delay: Math.random() * 10
+         });
+       }
+    }
+  });
+</script>

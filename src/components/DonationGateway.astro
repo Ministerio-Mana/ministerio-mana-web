@@ -97,6 +97,188 @@ const copPerUsd: number | null =
         >
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              name="fullName"
+              required
+              placeholder="Nombre y apellido"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Correo
+            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="tucorreo@email.com"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Teléfono / WhatsApp
+            </label>
+            <input
+              type="text"
+              name="phone"
+              required
+              placeholder="3000000000"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+            />
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Tipo de documento
+              </label>
+              <select
+                name="documentType"
+                required
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              >
+                <option value="" disabled selected>Selecciona</option>
+                <option value="CC">CC</option>
+                <option value="CE">CE</option>
+                <option value="NIT">NIT</option>
+                <option value="TI">TI</option>
+                <option value="PAS">Pasaporte</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Número de documento
+              </label>
+              <input
+                type="text"
+                name="documentNumber"
+                required
+                placeholder="Documento"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                País
+              </label>
+              <input
+                type="text"
+                name="country"
+                required
+                value="CO"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Ciudad
+              </label>
+              <input
+                type="text"
+                name="city"
+                required
+                placeholder="Ciudad"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Iglesia
+              </label>
+              <input
+                type="text"
+                name="church"
+                required
+                placeholder="Iglesia o sede"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Campus
+              </label>
+              <input
+                type="text"
+                name="campus"
+                placeholder="Campus Maná"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Tipo de donación
+              </label>
+              <select
+                name="donationType"
+                required
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              >
+                <option value="" disabled selected>Selecciona</option>
+                <option value="diezmos">Diezmos</option>
+                <option value="ofrendas">Ofrendas</option>
+                <option value="misiones">Misiones</option>
+                <option value="campus">Campus</option>
+                <option value="evento">Evento</option>
+                <option value="general">General</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Proyecto
+              </label>
+              <input
+                type="text"
+                name="projectName"
+                required
+                placeholder="Proyecto"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Evento
+            </label>
+            <input
+              type="text"
+              name="eventName"
+              required
+              placeholder="Evento"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
               Valor (COP) – ingresa tu donación en pesos colombianos
             </label>
             <input
@@ -161,6 +343,188 @@ const copPerUsd: number | null =
           action="/api/stripe/checkout"
           class="space-y-4"
         >
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              name="fullName"
+              required
+              placeholder="Nombre y apellido"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Correo
+            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="tucorreo@email.com"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Teléfono / WhatsApp
+            </label>
+            <input
+              type="text"
+              name="phone"
+              required
+              placeholder="+1 555 000 0000"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+            />
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Tipo de documento
+              </label>
+              <select
+                name="documentType"
+                required
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              >
+                <option value="" disabled selected>Selecciona</option>
+                <option value="CC">CC</option>
+                <option value="CE">CE</option>
+                <option value="NIT">NIT</option>
+                <option value="TI">TI</option>
+                <option value="PAS">Pasaporte</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Número de documento
+              </label>
+              <input
+                type="text"
+                name="documentNumber"
+                required
+                placeholder="Documento"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                País
+              </label>
+              <input
+                type="text"
+                name="country"
+                required
+                placeholder="US, ES, CO..."
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Ciudad
+              </label>
+              <input
+                type="text"
+                name="city"
+                required
+                placeholder="Ciudad"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Iglesia
+              </label>
+              <input
+                type="text"
+                name="church"
+                required
+                placeholder="Iglesia o sede"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Campus
+              </label>
+              <input
+                type="text"
+                name="campus"
+                placeholder="Campus Maná"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Tipo de donación
+              </label>
+              <select
+                name="donationType"
+                required
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              >
+                <option value="" disabled selected>Selecciona</option>
+                <option value="diezmos">Diezmos</option>
+                <option value="ofrendas">Ofrendas</option>
+                <option value="misiones">Misiones</option>
+                <option value="campus">Campus</option>
+                <option value="evento">Evento</option>
+                <option value="general">General</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">
+                Proyecto
+              </label>
+              <input
+                type="text"
+                name="projectName"
+                required
+                placeholder="Proyecto"
+                class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Evento
+            </label>
+            <input
+              type="text"
+              name="eventName"
+              required
+              placeholder="Evento"
+              class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+            />
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">
               Monto (USD)

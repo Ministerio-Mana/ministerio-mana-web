@@ -1,0 +1,188 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import { buildInstallmentReference } from '@lib/cumbre2026';
+import { buildWompiCheckoutUrl } from '@lib/wompi';
+import { createStripeDonationSession } from '@lib/stripe';
+import { resolveBaseUrl } from '@lib/url';
+import { getInstallmentByLinkToken, updateInstallment } from '@lib/cumbreStore';
+
+const token = Astro.params.token ?? '';
+const baseUrl = resolveBaseUrl(Astro.request);
+
+const formatCurrency = (amount: number, currency: string) => {
+  if (currency === 'COP') {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount || 0);
+  }
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2 }).format(amount || 0);
+};
+
+const formatDateLong = (date: string) => {
+  const dt = new Date(`${date}T00:00:00-05:00`);
+  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'long', timeZone: 'America/Bogota' }).format(dt);
+};
+
+let status: 'invalid' | 'paid' | 'ready' | 'error' = 'invalid';
+let title = 'Link de pago inválido';
+let subtitle = 'Este enlace no es válido o ya expiró.';
+let paymentUrl: string | null = null;
+let installmentLabel = '';
+let amountLabel = '';
+let dueDateLabel = '';
+let contactName = '';
+
+if (token) {
+  const linkData = await getInstallmentByLinkToken(token);
+  const installment = linkData?.installment ?? null;
+  const plan = installment?.plan ?? null;
+  const booking = installment?.booking ?? null;
+  const link = linkData?.link ?? null;
+
+  if (!installment || !plan || !booking || !link) {
+    status = 'invalid';
+  } else if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) {
+    status = 'invalid';
+    title = 'Link vencido';
+    subtitle = 'Este enlace ya expiró. Solicita un nuevo link de pago.';
+  } else if (installment.status === 'PAID' || link.used_at) {
+    status = 'paid';
+    title = 'Cuota pagada';
+    subtitle = 'Esta cuota ya fue registrada como pagada.';
+  } else if (plan.status !== 'ACTIVE') {
+    status = 'error';
+    title = 'Plan inactivo';
+    subtitle = 'Este plan de cuotas no está activo en este momento.';
+  } else {
+    const amount = Number(installment.amount || 0);
+    if (!amount || amount <= 0) {
+      status = 'error';
+      title = 'Monto inválido';
+      subtitle = 'No se pudo preparar el cobro. Contacta al equipo de soporte.';
+    } else {
+      const description = `Cumbre Mundial 2026 - Cuota ${installment.installment_index}/${plan.installment_count}`;
+      const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${encodeURIComponent(booking.id)}&source=payment`;
+
+      let reference = installment.provider_reference || null;
+      if (!reference) {
+        reference = buildInstallmentReference({
+          bookingId: booking.id,
+          planId: plan.id,
+          installmentIndex: installment.installment_index,
+        });
+        await updateInstallment(installment.id, { provider_reference: reference });
+      }
+
+      if ((plan.currency || installment.currency) === 'USD' || plan.provider === 'stripe') {
+        const session = await createStripeDonationSession({
+          amountUsd: amount,
+          currency: 'USD',
+          description,
+          successUrl: statusUrl,
+          cancelUrl: statusUrl,
+          customerEmail: booking.contact_email || undefined,
+          metadata: {
+            cumbre_booking_id: booking.id,
+            cumbre_plan_id: plan.id,
+            cumbre_installment_id: installment.id,
+            cumbre_reference: reference,
+          },
+        });
+        paymentUrl = session.url || null;
+      } else {
+        const { url } = buildWompiCheckoutUrl({
+          amountInCents: Math.round(amount * 100),
+          currency: 'COP',
+          description,
+          redirectUrl: statusUrl,
+          reference,
+          email: booking.contact_email || undefined,
+          customerData: {
+            name: booking.contact_name || '',
+            phone: booking.contact_phone || '',
+          },
+        });
+        paymentUrl = url;
+      }
+
+      if (paymentUrl) {
+        status = 'ready';
+        title = 'Pagar cuota';
+        subtitle = 'Completa el pago para mantener tu plan al día.';
+        installmentLabel = `${installment.installment_index}/${plan.installment_count}`;
+        amountLabel = formatCurrency(amount, plan.currency || installment.currency || 'COP');
+        dueDateLabel = formatDateLong(installment.due_date);
+        contactName = booking.contact_name || '';
+      } else {
+        status = 'error';
+        title = 'No se pudo crear el link';
+        subtitle = 'Intenta nuevamente o contáctanos por WhatsApp.';
+      }
+    }
+  }
+}
+---
+
+<CumbreLayout title="Pagar cuota | Cumbre 2026" description="Pago seguro de cuotas Cumbre Mundial 2026" variant="light">
+  <section class="px-4 md:px-8 py-16">
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-white/80 border border-brand-navy/10 rounded-[2rem] p-8 md:p-10 shadow-xl">
+        <div class="space-y-3">
+          <p class="text-xs font-bold uppercase tracking-[0.3em] text-brand-navy/60">Cumbre Mundial 2026</p>
+          <h1 class="text-3xl md:text-4xl font-display font-bold text-brand-navy">{title}</h1>
+          <p class="text-brand-navy/70">{subtitle}</p>
+        </div>
+
+        {status === 'ready' && (
+          <div class="mt-8 space-y-6">
+            <div class="grid gap-4 md:grid-cols-3">
+              <div class="rounded-2xl bg-brand-navy/5 p-4">
+                <p class="text-xs uppercase tracking-widest text-brand-navy/50">Cuota</p>
+                <p class="text-lg font-semibold text-brand-navy">{installmentLabel}</p>
+              </div>
+              <div class="rounded-2xl bg-brand-navy/5 p-4">
+                <p class="text-xs uppercase tracking-widest text-brand-navy/50">Vence</p>
+                <p class="text-lg font-semibold text-brand-navy">{dueDateLabel}</p>
+              </div>
+              <div class="rounded-2xl bg-brand-navy/5 p-4">
+                <p class="text-xs uppercase tracking-widest text-brand-navy/50">Valor</p>
+                <p class="text-lg font-semibold text-brand-navy">{amountLabel}</p>
+              </div>
+            </div>
+
+            {contactName && (
+              <p class="text-sm text-brand-navy/60">Hola {contactName.split(' ')[0]}, confirma tu pago con el botón de abajo.</p>
+            )}
+
+            <a
+              href={paymentUrl ?? '#'}
+              class="inline-flex items-center justify-center w-full md:w-auto px-8 py-4 rounded-full bg-brand-teal text-white font-bold shadow-lg hover:shadow-xl hover:translate-y-[-1px] transition"
+            >
+              Pagar ahora
+            </a>
+
+            <p class="text-xs text-brand-navy/50">
+              Si ya realizaste el pago, ignora este enlace. Si necesitas ayuda, escríbenos por WhatsApp.
+            </p>
+          </div>
+        )}
+
+        {status === 'paid' && (
+          <div class="mt-8 space-y-4">
+            <p class="text-sm text-brand-navy/70">Gracias. Nuestro sistema ya registra este pago.</p>
+            <a href="/eventos/cumbre-mundial-2026" class="inline-flex items-center justify-center w-full md:w-auto px-6 py-3 rounded-full border border-brand-navy/20 text-brand-navy font-semibold hover:bg-brand-navy/5 transition">
+              Volver a la Cumbre
+            </a>
+          </div>
+        )}
+
+        {(status === 'invalid' || status === 'error') && (
+          <div class="mt-8 space-y-4">
+            <p class="text-sm text-brand-navy/70">Si crees que es un error, contáctanos para validar tu cuota.</p>
+            <a href="/eventos/cumbre-mundial-2026" class="inline-flex items-center justify-center w-full md:w-auto px-6 py-3 rounded-full border border-brand-navy/20 text-brand-navy font-semibold hover:bg-brand-navy/5 transition">
+              Volver a la Cumbre
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+</CumbreLayout>

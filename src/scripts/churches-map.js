@@ -2,14 +2,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import churchesData from '../data/churches.json';
 
-type Church = {
-  name: string;
-  city?: string;
-  lat?: number;
-  lng?: number;
-};
-
-const churches = churchesData as Church[];
+/** @type {{name: string, city?: string, lat?: number, lng?: number}[]} */
+const churches = churchesData;
 
 function initMap() {
   const container = document.getElementById('churches-map');

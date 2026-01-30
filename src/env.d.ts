@@ -15,6 +15,10 @@ declare namespace App {
 }
 
 interface ImportMetaEnv {
+  readonly SUPABASE_URL?: string;
+  readonly SUPABASE_ANON_KEY?: string;
+  readonly PUBLIC_SUPABASE_URL?: string;
+  readonly PUBLIC_SUPABASE_ANON_KEY?: string;
   readonly TURNSTILE_SITE_KEY?: string;
   readonly TURNSTILE_SECRET_KEY?: string;
   readonly STRIPE_SECRET_KEY?: string;

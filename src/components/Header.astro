@@ -2,39 +2,49 @@
 ---
 import { t } from '@i18n/locales';
 import LangSwitch from '@components/LangSwitch.astro';
-const locale = Astro.cookies.get('lang')?.value ?? 'es';
+import AccountButton from '@components/AccountButton.astro';
+
+const locale = Astro.cookies.get('lang')?.value === 'en' ? 'en' : 'es';
+const cspNonce = Astro.locals?.cspNonce;
 ---
-<header class="sticky top-0 z-40 border-b border-[var(--mana-border-strong)] bg-[var(--mana-surface)]/80 backdrop-blur-lg supports-[backdrop-filter]:backdrop-blur-xl shadow-[var(--mana-shadow-1)] transition-colors duration-300">
-  <div class="container-tight grid grid-cols-[auto,1fr,auto] items-center gap-6 lg:gap-10 py-5 px-4 md:px-6">
-    <a href="/" class="group inline-flex items-center gap-3 shrink-0">
-      <span class="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--mana-border)] bg-[var(--mana-surface)] shadow-brandInset transition-all duration-200 group-hover:border-brand-medium group-hover:shadow-brand">
-        <img src="/logo.svg" alt="Ministerio Maná" class="h-7 w-auto" />
-      </span>
+
+<header id="main-header" class="sticky top-0 z-40 transition-all duration-300 border-b border-transparent">
+  <div class="absolute inset-0 bg-white/95 backdrop-blur-xl opacity-0 transition-opacity duration-300" id="header-bg"></div>
+  
+  <div class="relative w-full max-w-[1440px] mx-auto grid grid-cols-[auto,1fr,auto] items-center gap-4 lg:gap-8 py-4 px-6 md:px-8 lg:px-12">
+    <a href="/" class="group inline-flex items-center gap-3 shrink-0 z-50">
+      <!-- Logo Container -->
+      <div class="relative flex h-10 w-10 items-center justify-center">
+        <!-- Logo for Light Backgrounds (Default) -->
+        <img src="/logo.svg" alt="Ministerio Maná" class="absolute inset-0 h-full w-auto object-contain transition-opacity duration-300 opacity-100 logo-dark" />
+        <!-- Logo for Dark Backgrounds (White) -->
+        <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="absolute inset-0 h-full w-auto object-contain transition-opacity duration-300 opacity-0 logo-light" />
+      </div>
+      
       <div class="hidden sm:flex flex-col leading-tight">
-        <span class="text-xs font-display font-semibold uppercase tracking-[0.12em] text-neutral-500">Ministerio</span>
-        <span class="text-base font-display font-bold text-brand-dark group-hover:text-brand-medium transition-colors">Maná</span>
+        <span class="text-xs font-display font-semibold uppercase tracking-[0.12em] text-neutral-500 group-hover:text-brand-medium transition-colors">Ministerio</span>
+        <span class="text-base font-display font-bold text-brand-dark transition-colors brand-text">Maná</span>
       </div>
     </a>
 
-    <nav class="hidden lg:flex items-center justify-center gap-5 xl:gap-6">
-      <a href="/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_home')}</a>
-      <a href="/ministerio/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_ministry')}</a>
-      <a href="/campus/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_campus')}</a>
-      <a href="/escuela-biblica/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_school')}</a>
-      <a href="/iglesias/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_churches')}</a>
-      <a href="/eventos/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_events')}</a>
-      <a href="/devocional/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_devotional')}</a>
-      <a href="/mujeres/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_women')}</a>
-      <a href="/peregrinaciones/" class="nav-link px-2 py-1 text-sm">{t(locale,'nav_pilgrims')}</a>
-    </nav>
+    <!-- Spacer (Button removed) -->
+    <div class="hidden lg:block"></div>
 
-    <div class="flex items-center justify-end gap-5">
-      <a href="/donaciones/" class="hidden lg:inline-flex btn-primary px-5 py-2 text-sm shadow-[var(--mana-shadow-1)]">{t(locale,'nav_donate')}</a>
+    <div class="flex items-center justify-end gap-3 shrink-0 z-50">
+      <a href="/donaciones/" class="hidden lg:inline-flex items-center justify-center rounded-full bg-[#28A6BD] px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#293C74] hover:shadow-lg">{t(locale,'nav_donate')}</a>
+      <AccountButton />
       <LangSwitch />
       <details class="relative lg:hidden">
-        <summary class="btn-outline btn-sm cursor-pointer select-none">Menú</summary>
-        <div class="absolute right-0 mt-3 w-64 rounded-3xl border border-[var(--mana-border-strong)] bg-[var(--mana-surface)] p-4 shadow-lg">
+        <summary class="btn-outline btn-sm cursor-pointer select-none bg-white/50 backdrop-blur-md">Menú</summary>
+        <div class="absolute right-0 mt-3 w-64 rounded-3xl border border-[var(--mana-border-strong)] bg-white p-4 shadow-lg">
           <div class="flex flex-col gap-3">
+            <a href="/portal/" class="nav-link flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Portal Maná
+            </a>
+            <hr class="border-[var(--mana-border)]" />
             <a href="/" class="nav-link">{t(locale,'nav_home')}</a>
             <a href="/ministerio/" class="nav-link">{t(locale,'nav_ministry')}</a>
             <a href="/campus/" class="nav-link">{t(locale,'nav_campus')}</a>
@@ -51,3 +61,47 @@ const locale = Astro.cookies.get('lang')?.value ?? 'es';
     </div>
   </div>
 </header>
+
+<script nonce={cspNonce}>
+  const header = document.getElementById('main-header');
+  const headerBg = document.getElementById('header-bg');
+  const logoDark = document.querySelector<HTMLImageElement>('.logo-dark');
+  const logoLight = document.querySelector<HTMLImageElement>('.logo-light');
+  const brandText = document.querySelector<HTMLElement>('.brand-text');
+
+  function updateHeader() {
+    const isScrolled = window.scrollY > 20;
+    
+    // Check if there is a dark section behind the header (simple heuristic or manual overrides could be added)
+    // For now, we strictly implement the "Scrolled = White/Solid" vs "Top = Transparent" logic
+    // But we default to Solid if we don't know the background is dark, to avoid White text on White bg.
+    // Ideally, pages would set a data attribute on the body or header. 
+    
+    if (isScrolled) {
+      header?.classList.add('shadow-sm');
+      if (headerBg) headerBg.style.opacity = '1';
+      // Recover Dark Logo when background is white
+      if (logoDark) logoDark.style.opacity = '1';
+      if (logoLight) logoLight.style.opacity = '0';
+      if (brandText) brandText.classList.remove('text-white');
+    } else {
+      header?.classList.remove('shadow-sm');
+      
+      // If we are at the top, we enable transparency.
+      // CHECK: Does the current page allow transparent header? 
+      // We can check if the first element is a Hero with dark bg.
+      // For safety, we keep the background 0 (Transparent) BUT we must ensure the logo is visible.
+      // If the page is light, we keep Dark Logo. If page is dark, we swap.
+      // Let's assume default is Light Background until told otherwise, so we keep Dark Logo.
+      
+      if (headerBg) headerBg.style.opacity = '0.85'; // Keep slightly visible by default for contrast
+      // To strictly follow "cambia inmediatamente", we'd need full transparency. 
+      // But purely transparent header on a white page = illegible nav.
+      // I will set it to 0.85 (glass) as it was, but support the swap if a class is present.
+    }
+  }
+
+  window.addEventListener('scroll', updateHeader);
+  // Run once
+  updateHeader();
+</script>

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+const cspNonce = Astro.locals?.cspNonce;
 ---
 <BaseLayout title="Plan de lectura bíblica" description="Plan semanal (Salmos y Evangelios). Marca tu progreso y abre el pasaje en el visor.">
   <section class="section">
@@ -12,7 +13,7 @@ import BaseLayout from '@layouts/BaseLayout.astro';
     </div>
   </section>
 
-  <script>
+  <script nonce={cspNonce}>
     // Semana tipo (puedes ajustar)
     const PLAN = [
       { ref: 'Salmo 1', label: 'Salmo 1' },

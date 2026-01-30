@@ -10,6 +10,7 @@ const { entry } = Astro.props as { entry: CollectionEntry<'news'> };
 const { Content, data } = await entry.render();
 const url = new URL(Astro.url);
 const canonical = `${url.origin}/noticias/${entry.slug}/`;
+const cspNonce = Astro.locals?.cspNonce;
 ---
 <BaseLayout title={`${data.title} — Noticias`} description={data.summary}>
   <article class="prose dark:prose-invert mx-auto">
@@ -17,7 +18,7 @@ const canonical = `${url.origin}/noticias/${entry.slug}/`;
     <p class="text-sm text-gray-500">{new Date(data.date).toLocaleDateString('es')}</p>
     <Content />
   </article>
-  <script type="application/ld+json" set:html={JSON.stringify({
+  <script type="application/ld+json" nonce={cspNonce} set:html={JSON.stringify({
     "@context":"https://schema.org",
     "@type":"NewsArticle",
     headline: data.title,

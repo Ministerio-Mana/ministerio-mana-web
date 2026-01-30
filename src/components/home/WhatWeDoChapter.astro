@@ -1,0 +1,97 @@
+---
+const chips = [
+  {
+    title: 'Devocional diario',
+    desc: 'Palabra fresca cada mañana, con guía y oración para tu jornada.',
+    cta: { href: '/devocional/', label: 'Ir al devocional' },
+    color: 'from-blue-500 to-cyan-400'
+  },
+  {
+    title: 'Mujeres que creen',
+    desc: 'Mentoría, encuentros y comunidad para mujeres que abrazan su diseño.',
+    cta: { href: '/mujeres/', label: 'Visitar Mujeres' },
+    color: 'from-pink-500 to-rose-400'
+  },
+  {
+    title: '21 Retos',
+    desc: 'Desafíos semanales para crecer en carácter, oración y servicio.',
+    cta: { href: '/campus/', label: 'Explorar retos' },
+    color: 'from-amber-400 to-orange-500'
+  },
+  {
+    title: 'Comunidad e iglesias',
+    desc: 'Sedes y grupos donde nadie camina solo; planifica tu visita.',
+    cta: { href: '/iglesias/', label: 'Ver iglesias' },
+    color: 'from-emerald-400 to-teal-500'
+  },
+  {
+    title: 'Recursos y cursos',
+    desc: 'Escuela Bíblica, cursos TEO 100–103 y materiales para discipular.',
+    cta: { href: '/escuela-biblica/', label: 'Ir a Escuela Bíblica' },
+    color: 'from-violet-500 to-purple-600'
+  },
+];
+---
+
+<section id="cap-que-hacemos" class="relative min-h-[150vh] bg-neutral-50">
+  <div class="container-tight sticky top-0 flex min-h-screen items-center" data-chips-section>
+    <div class="grid gap-16 md:grid-cols-[0.8fr_1.2fr] items-start w-full">
+      
+      <!-- Left: Navigation Chips -->
+      <div class="space-y-8" data-animate="fade-up">
+        <div class="space-y-2">
+            <p class="text-xs font-bold tracking-[0.25em] uppercase text-brand-medium/70">Qué hacemos</p>
+            <h2 class="text-4xl md:text-5xl font-black text-brand-dark">Capítulos de Maná</h2>
+        </div>
+        <p class="text-lg text-neutral-600 leading-relaxed">
+          Cada área tiene un propósito claro. Desplázate y verás cómo cambia el enfoque de nuestra misión.
+        </p>
+        
+        <div class="flex flex-wrap gap-3">
+          {chips.map((chip, i) => (
+            <button
+              type="button"
+              class="group relative px-5 py-2.5 rounded-full border border-neutral-200 bg-white text-sm font-bold text-neutral-600 transition-all hover:border-brand-teal/50 hover:text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-teal/20 chip-active:bg-brand-dark chip-active:text-white chip-active:border-transparent chip-active:shadow-lg"
+              data-chip
+              data-index={i}
+            >
+              <span class="relative z-10">{chip.title.split(' ')[0]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Right: Content Cards -->
+      <div class="relative min-h-[400px]">
+        {chips.map((chip, i) => (
+            <article
+              class="absolute top-0 left-0 w-full p-10 rounded-3xl bg-white border border-neutral-100 shadow-2xl shadow-brand-dark/5 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]"
+              data-chip-panel
+              style={`opacity:${i === 0 ? '1' : '0'}; transform:${i === 0 ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)'}; pointer-events:${i === 0 ? 'auto' : 'none'}`}
+            >
+              <!-- Decorative Gradient Blob -->
+              <div class={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${chip.color} opacity-10 rounded-bl-[100px] rounded-tr-[20px] pointer-events-none`}></div>
+
+              <div class="relative z-10 space-y-6">
+                  <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-xs font-bold uppercase tracking-widest text-neutral-500">
+                    Área 0{i + 1}
+                  </div>
+                  
+                  <h3 class="text-4xl font-bold text-brand-dark">{chip.title}</h3>
+                  <p class="text-xl text-neutral-600 leading-relaxed max-w-lg">{chip.desc}</p>
+                  
+                  <div class="pt-6">
+                    <a href={chip.cta.href} class="group inline-flex items-center gap-3 text-brand-dark font-bold hover:text-brand-teal transition-colors">
+                        <span class="border-b-2 border-brand-teal/20 group-hover:border-brand-teal transition-all">{chip.cta.label}</span>
+                        <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                    </a>
+                  </div>
+              </div>
+            </article>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

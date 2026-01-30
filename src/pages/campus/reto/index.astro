@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+const cspNonce = Astro.locals?.cspNonce;
 ---
 <BaseLayout title="Reto de Campus · 7 conversaciones" description="Cada semana, metas de 7 conversaciones por campus.">
   <section class="section grid md:grid-cols-2 gap-6">
@@ -26,7 +27,7 @@ import BaseLayout from '@layouts/BaseLayout.astro';
     </article>
   </section>
 
-  <script>
+  <script nonce={cspNonce}>
     async function loadScore() {
       const res = await fetch('/api/campus/reto/score');
       const { rows, weekStart } = await res.json();

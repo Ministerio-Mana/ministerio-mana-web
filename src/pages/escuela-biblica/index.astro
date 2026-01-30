@@ -1,218 +1,233 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-
-const title = 'Escuela Bíblica Maná';
-const description =
-  'Formación bíblica y discipular basada en SABER, SER y HACER. Cursos TEO 100–103 para crecer en tu fe y carácter.';
+const cspNonce = Astro.locals?.cspNonce;
 ---
 
-<BaseLayout {title} {description}>
-  <section class="container-tight py-12 space-y-10">
-    <!-- HERO -->
-    <header class="space-y-4">
-      <p class="text-sm font-semibold tracking-[0.18em] uppercase text-emerald-500">
-        Ministerio Maná · Formación
-      </p>
-      <h1 class="text-3xl md:text-4xl font-extrabold text-slate-900">
-        Escuela Bíblica Maná
-      </h1>
-      <p class="text-lg text-slate-600 max-w-3xl">
-        Un espacio de formación bíblica y discipular en modalidad virtual,
-        donde crecerás en el conocimiento de Dios, en tu carácter y en tu
-        servicio, para amar, obedecer y reflejar a Cristo en tu día a día.
-      </p>
-
-      <div class="flex flex-col sm:flex-row gap-3 mt-4">
-        <a
-          href="https://escuelabiblicamana.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-sky-600 shadow-md hover:shadow-lg transition"
-        >
-          Ir a escuelabiblicamana.com
-        </a>
-        <a
-          href="#cursos"
-          class="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100"
-        >
-          Ver cursos TEO 100–103
-        </a>
-      </div>
-    </header>
-
-    <!-- ENFOQUE SABER / SER / HACER -->
-    <section class="grid gap-6 md:grid-cols-3">
-      <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100">
-        <h2 class="text-sm font-semibold text-emerald-500 tracking-[0.18em] uppercase">
-          SABER
-        </h2>
-        <h3 class="mt-1 font-semibold text-slate-900">Verdad doctrinal</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Profundizamos en las verdades bíblicas fundamentales para que
-          conozcas quién es Dios, qué dice su Palabra y qué significa nacer de
-          nuevo.
-        </p>
-      </article>
-
-      <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100">
-        <h2 class="text-sm font-semibold text-emerald-500 tracking-[0.18em] uppercase">
-          SER
-        </h2>
-        <h3 class="mt-1 font-semibold text-slate-900">Verdad posicional</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Trabajamos tu identidad en Cristo: cómo te ve Dios, qué significa ser
-          hijo suyo y cómo su amor transforma tu historia y tu carácter.
-        </p>
-      </article>
-
-      <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100">
-        <h2 class="text-sm font-semibold text-emerald-500 tracking-[0.18em] uppercase">
-          HACER
-        </h2>
-        <h3 class="mt-1 font-semibold text-slate-900">Verdad práctica</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Llevamos la Palabra a la vida diaria: decisiones, relaciones,
-          servicio y misión. No solo aprender, sino vivir y acompañar a otros.
-        </p>
-      </article>
-    </section>
-
-    <!-- QUÉ ES LA ESCUELA -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-semibold text-slate-900">
-        ¿Qué es la Escuela Bíblica Maná?
-      </h2>
-      <p class="text-sm text-slate-600 max-w-3xl">
-        La Escuela Bíblica Maná es un ministerio de formación educativa
-        cristiana en modalidad virtual. Allí podrás acceder a cursos
-        discipulares, cursos doctrinales y espacios de interacción sobre temas
-        de relevancia bíblica y teológica. Contamos con una plataforma
-        educativa, videos, materiales descargables y un equipo de maestros con
-        experiencia en el ministerio y en la formación bíblica.
-      </p>
-      <p class="text-sm text-slate-600 max-w-3xl">
-        Estudiarás a tu ritmo durante la semana y tendrás foros virtuales en
-        vivo para hacer preguntas, profundizar y aplicar los contenidos a tu
-        vida.
-      </p>
-    </section>
-
-    <!-- CURSOS TEO -->
-    <section id="cursos" class="space-y-4">
-      <h2 class="text-xl font-semibold text-slate-900">
-        Ruta discipular: TEO 100 – 103
-      </h2>
-      <p class="text-sm text-slate-600 max-w-3xl">
-        Nuestros cursos TEO están pensados como un proceso: empiezas por
-        fundamentos, avanzas en conocer a Dios, profundizas en carácter y
-        llegas a sanidad interior y madurez.
-      </p>
-
-      <div class="grid gap-6 md:grid-cols-2">
-        <!-- TEO 100 -->
-        <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100 flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-2">
-            <h3 class="font-semibold text-slate-900">TEO 100 · Nacer de nuevo</h3>
-            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-              Discipulado inicial
+<BaseLayout title="Escuela Bíblica Maná | Formación Integral" description="Amando a quien conozco y obedeciendo a quien amo. Fórmate en nuestra Escuela Bíblica.">
+  <main class="relative min-h-screen bg-slate-50 overflow-x-hidden text-slate-800 selection:bg-teal-500 selection:text-white">
+    
+    <!-- Hero Section -->
+    <div class="relative h-[60vh] md:h-[70vh] flex items-center justify-center overflow-hidden">
+        <!-- Background -->
+        <div class="absolute inset-0 bg-[url('/images/escuela-biblica-hero.png')] bg-cover bg-center"></div>
+        <!-- Gradient Overlay (Teal/Coral) -->
+        <div class="absolute inset-0 bg-gradient-to-r from-teal-900/90 via-teal-800/80 to-rose-900/60 mix-blend-multiply"></div>
+        <div class="absolute inset-0 bg-black/20 backdrop-blur-[1px]"></div>
+        
+        <div class="relative z-10 container mx-auto px-6 text-center text-white space-y-6">
+            <span class="inline-block px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs font-bold uppercase tracking-widest backdrop-blur-md">
+                Formación Ministerial
             </span>
-          </div>
-          <p class="text-sm text-slate-600">
-            Aprende las verdades bíblicas fundamentales para comprender qué
-            significa nacer de nuevo, quién eres delante de Dios y qué espera
-            Él de ti como hijo.
-          </p>
-          <ul class="text-xs text-slate-500 space-y-1">
-            <li><strong>Modalidad:</strong> Virtual en vivo</li>
-            <li><strong>Duración:</strong> 90 minutos de foro por sesión durante 11 semanas</li>
-            <li><strong>Material:</strong> Videos, cuestionarios y archivos descargables</li>
-          </ul>
-        </article>
-
-        <!-- TEO 101 -->
-        <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100 flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-2">
-            <h3 class="font-semibold text-slate-900">TEO 101 · Conociendo a Dios</h3>
-            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-              Fundamentos de fe
-            </span>
-          </div>
-          <p class="text-sm text-slate-600">
-            Explora el carácter de Dios y su voluntad para tu vida. Aprende a
-            amarlo con todo tu corazón, alma y fuerzas, y deja que su amor te
-            transforme.
-          </p>
-          <ul class="text-xs text-slate-500 space-y-1">
-            <li><strong>Modalidad:</strong> Virtual en vivo</li>
-            <li><strong>Duración:</strong> 90 minutos de foro por sesión durante 11 semanas</li>
-            <li><strong>Material:</strong> Videos, cuestionarios y archivos descargables</li>
-          </ul>
-        </article>
-
-        <!-- TEO 102 -->
-        <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100 flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-2">
-            <h3 class="font-semibold text-slate-900">TEO 102 · Crecimiento y carácter</h3>
-            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-              Madurez espiritual
-            </span>
-          </div>
-          <p class="text-sm text-slate-600">
-            Avanza en tu caminar con Jesús añadiendo a tu fe virtud,
-            conocimiento, dominio propio, paciencia, piedad, afecto fraternal y
-            amor. Camina hacia la imagen que Dios tiene de ti.
-          </p>
-          <ul class="text-xs text-slate-500 space-y-1">
-            <li><strong>Modalidad:</strong> Virtual en vivo</li>
-            <li><strong>Duración:</strong> 90 minutos de foro por sesión durante 12 semanas</li>
-            <li><strong>Material:</strong> Lecturas, videos y tiempos de reflexión guiada</li>
-          </ul>
-        </article>
-
-        <!-- TEO 103 -->
-        <article class="p-6 rounded-2xl bg-white shadow-sm border border-slate-100 flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-2">
-            <h3 class="font-semibold text-slate-900">TEO 103 · Sanidad interior</h3>
-            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-              Sanidad y restauración
-            </span>
-          </div>
-          <p class="text-sm text-slate-600">
-            Un recorrido al interior de tu historia, tus heridas y tus
-            pensamientos a la luz de la Palabra, para que el Señor sane,
-            restaure y te lleve a libertad en todas las áreas.
-          </p>
-          <ul class="text-xs text-slate-500 space-y-1">
-            <li><strong>Modalidad:</strong> Virtual en vivo</li>
-            <li><strong>Duración:</strong> 90 minutos de foro por sesión durante 12 semanas</li>
-            <li><strong>Material:</strong> Videos, lecturas y espacios para procesar tu historia</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-
-    <!-- CTA INSCRIPCIONES -->
-    <section class="rounded-3xl bg-gradient-to-r from-emerald-600 via-sky-600 to-indigo-600 p-[1px]">
-      <div class="rounded-[22px] bg-white px-6 py-6 md:px-10 md:py-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div class="space-y-2 max-w-xl">
-          <h2 class="text-xl font-semibold text-slate-900">
-            Inscripciones 2025-2
-          </h2>
-          <p class="text-sm text-slate-600">
-            Si quieres ser parte de la próxima cohorte de la Escuela Bíblica
-            Maná, visita la plataforma y realiza tu inscripción. Allí verás
-            fechas, horarios y requisitos actualizados.
-          </p>
+            <h1 class="font-display text-5xl md:text-7xl font-bold leading-tight drop-shadow-2xl">
+                Escuela Bíblica <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 to-emerald-200">Maná</span>
+            </h1>
+            <p class="text-lg md:text-2xl font-light text-slate-100 max-w-2xl mx-auto leading-relaxed italic">
+                "Amando a quien conozco y obedeciendo a quien amo"
+            </p>
+            <div class="pt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#cursos" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-rose-500 text-white rounded-full font-bold shadow-xl shadow-rose-500/30 hover:bg-rose-600 hover:-translate-y-1 transition-all">
+                    Ver Cursos Disponibles
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                </a>
+                <a href="https://escuelabiblicamana.com/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white border border-white/20 rounded-full font-bold hover:bg-white/20 hover:-translate-y-1 transition-all backdrop-blur-md">
+                    Ir al Aula Virtual
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+            </div>
         </div>
-        <a
-          href="https://escuelabiblicamana.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md"
-        >
-          Ver detalles de inscripción
-        </a>
-      </div>
+        
+        <!-- Wave Divider -->
+        <div class="absolute bottom-0 left-0 right-0">
+            <svg class="w-full h-12 md:h-24 fill-slate-50" viewBox="0 0 1440 320" preserveAspectRatio="none">
+                <path fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Intro / Methodology -->
+    <section class="py-20 container mx-auto px-6">
+        <div class="flex flex-col md:flex-row items-center gap-12 lg:gap-20">
+            <div class="flex-1 space-y-8">
+                <div class="space-y-4">
+                    <div class="inline-flex items-center gap-2 text-rose-500 font-bold uppercase tracking-widest text-sm">
+                        <span class="w-8 h-[2px] bg-rose-500"></span> Metodología
+                    </div>
+                    <h2 class="text-4xl lg:text-5xl font-display font-bold text-slate-800 leading-tight">
+                        Formación Integral: <br/> 
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-500">Saber, Ser y Hacer</span>
+                    </h2>
+                    <p class="text-slate-600 leading-relaxed text-lg">
+                        Las lecciones de nuestros cursos discipulares están organizadas de tal forma que el proceso de formación sea integral, abarcando todas las áreas de la vida del creyente.
+                    </p>
+                </div>
+
+                <div class="grid gap-6">
+                    <div class="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 shrink-0 font-bold text-xl">🧠</div>
+                        <div>
+                            <h3 class="font-bold text-teal-700 text-lg">SABER · Verdad Doctrinal</h3>
+                            <p class="text-slate-600 text-sm mt-1">Verdades bíblicas fundamentales para conocer quién es Dios, qué dice Su Palabra y el significado del nuevo nacimiento.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0 font-bold text-xl">❤️</div>
+                        <div>
+                            <h3 class="font-bold text-rose-700 text-lg">SER · Verdad Posicional</h3>
+                            <p class="text-slate-600 text-sm mt-1">Tu identidad en Cristo: cómo te ve Dios, qué significa ser su hijo y cómo Su amor transforma tu carácter.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0 font-bold text-xl">🤲</div>
+                        <div>
+                            <h3 class="font-bold text-amber-700 text-lg">HACER · Verdad Práctica</h3>
+                            <p class="text-slate-600 text-sm mt-1">La Palabra en la vida diaria: decisiones, relaciones, servicio y misión. Vivir y acompañar a otros.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 relative w-full flex justify-center">
+                 <!-- Aesthetic Image Card -->
+                 <div class="relative w-full max-w-md aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-br from-teal-500 to-rose-500 opacity-20 z-10"></div>
+                    <img src="/images/escuela-biblica-hero.png" alt="Estudiante Maná" class="w-full h-full object-cover grayscale-[20%] contrast-125 hover:scale-105 transition-transform duration-700 decoration-clone" />
+                    
+                    <!-- Floating Badge -->
+                    <div class="absolute bottom-8 left-8 right-8 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-lg z-20 border border-white">
+                        <p class="text-slate-800 font-serif italic text-lg text-center">
+                            "Un espacio para crecer en el conocimiento de Dios, en carácter y en servicio."
+                        </p>
+                    </div>
+                 </div>
+                 <!-- Decorative Dots -->
+                 <div class="absolute -z-10 top-10 -right-10 w-24 h-24 bg-rose-500/20 rounded-full blur-2xl"></div>
+                 <div class="absolute -z-10 -bottom-10 -left-10 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl"></div>
+            </div>
+        </div>
     </section>
-  </section>
+
+    <!-- Cursos Discipulares (Grid) -->
+    <section id="cursos" class="py-24 bg-slate-100 relative overflow-hidden">
+        <!-- Background Elements -->
+        <div class="absolute top-0 left-0 w-full h-64 bg-slate-200/50 -skew-y-3 origin-top-left translate-y-[-50%]"></div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <span class="text-teal-600 font-bold tracking-widest uppercase text-sm">Programa Académico</span>
+                <h2 class="text-4xl font-display font-bold text-slate-800 mt-2 mb-4">Ruta Discipular</h2>
+                <p class="text-slate-500">
+                    Cursos TEO 100–103 diseñados para tu crecimiento espiritual.
+                </p>
+                <div class="w-20 h-1 bg-rose-500 mx-auto rounded-full mt-6"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- TEO 100 -->
+                <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-300 border border-slate-200 hover:-translate-y-2 flex flex-col">
+                    <div class="h-40 bg-slate-800 relative overflow-hidden shrink-0">
+                        <div class="absolute inset-0 bg-gradient-to-br from-teal-500 to-cyan-600 opacity-90"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-white font-display font-bold text-4xl">100</span>
+                        </div>
+                        <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">INICIO</div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 mb-2 group-hover:text-teal-600 transition-colors">Nacer de Nuevo</h3>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed flex-1">
+                            Aprende las verdades fundamentales para comprender qué significa ser un hijo de Dios.
+                        </p>
+                        <div class="pt-4 border-t border-slate-100 mt-2">
+                             <span class="text-[10px] font-bold text-teal-500 uppercase tracking-wider block mb-2">11 Semanas · Virtual</span>
+                             <button class="w-full py-2 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold group-hover:bg-teal-50 group-hover:text-teal-700 transition-colors">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEO 101 -->
+                <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-indigo-900/10 transition-all duration-300 border border-slate-200 hover:-translate-y-2 flex flex-col">
+                    <div class="h-40 bg-slate-800 relative overflow-hidden shrink-0">
+                        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 opacity-90"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-white font-display font-bold text-4xl">101</span>
+                        </div>
+                         <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">FE</div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">Conociendo a Dios</h3>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed flex-1">
+                            Explora el carácter de Dios y su voluntad. Aprende a amarlo con todo tu corazón.
+                        </p>
+                        <div class="pt-4 border-t border-slate-100 mt-2">
+                             <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block mb-2">11 Semanas · Virtual</span>
+                             <button class="w-full py-2 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold group-hover:bg-indigo-50 group-hover:text-indigo-700 transition-colors">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEO 102 -->
+                <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-amber-900/10 transition-all duration-300 border border-slate-200 hover:-translate-y-2 flex flex-col">
+                    <div class="h-40 bg-slate-800 relative overflow-hidden shrink-0">
+                        <div class="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 opacity-90"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-white font-display font-bold text-4xl">102</span>
+                        </div>
+                        <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">CARÁCTER</div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 mb-2 group-hover:text-amber-600 transition-colors">Crecimiento</h3>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed flex-1">
+                           Añade virtud a tu fe. Camina hacia la madurez y la imagen que Dios tiene de ti.
+                        </p>
+                        <div class="pt-4 border-t border-slate-100 mt-2">
+                             <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider block mb-2">12 Semanas · Virtual</span>
+                             <button class="w-full py-2 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold group-hover:bg-amber-50 group-hover:text-amber-700 transition-colors">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEO 103 -->
+                <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-900/10 transition-all duration-300 border border-slate-200 hover:-translate-y-2 flex flex-col">
+                    <div class="h-40 bg-slate-800 relative overflow-hidden shrink-0">
+                        <div class="absolute inset-0 bg-gradient-to-br from-rose-500 to-pink-600 opacity-90"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-white font-display font-bold text-4xl">103</span>
+                        </div>
+                        <div class="absolute top-3 right-3 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded border border-white/20">SANIDAD</div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 mb-2 group-hover:text-rose-600 transition-colors">Sanidad Interior</h3>
+                        <p class="text-xs text-slate-500 mb-4 leading-relaxed flex-1">
+                           Un recorrido por tu historia para que el Señor sane, restaure y te lleve a libertad.
+                        </p>
+                        <div class="pt-4 border-t border-slate-100 mt-2">
+                             <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider block mb-2">12 Semanas · Virtual</span>
+                             <button class="w-full py-2 rounded-lg bg-slate-50 text-slate-600 text-xs font-bold group-hover:bg-rose-50 group-hover:text-rose-700 transition-colors">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-24 bg-teal-900 relative overflow-hidden">
+        <div class="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+        <div class="absolute top-0 right-0 w-96 h-96 bg-rose-500/20 rounded-full blur-[100px]"></div>
+        
+        <div class="container mx-auto px-6 relative z-10 text-center">
+            <h2 class="text-4xl md:text-5xl font-display font-bold text-white mb-6">Inscripciones 2026-1</h2>
+            <p class="text-teal-100 text-xl max-w-2xl mx-auto mb-10">
+                Si quieres ser parte de la próxima escuela, visita nuestra plataforma.
+            </p>
+            <a href="https://escuelabiblicamana.com/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-10 py-5 bg-rose-500 text-white rounded-full font-bold text-lg shadow-lg shadow-rose-900/50 hover:bg-rose-400 hover:scale-105 transition-all">
+                Ir a Plataforma de Inscripción
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+            </a>
+            <p class="mt-6 text-sm text-teal-300">Consulta fechas, horarios y requisitos actualizados.</p>
+        </div>
+    </section>
+
+  </main>
 </BaseLayout>

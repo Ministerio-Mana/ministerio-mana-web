@@ -14,7 +14,10 @@ module.exports = {
           dark: '#1A255C',
           medium: '#3F58A1',
           light: '#CBD9E6',
-          teal: '#28A6BD'
+          teal: '#28A6BD',
+          gold: '#F2C94C',
+          void: '#0B1120',
+          ocean: '#00A9BD'
         },
         accent: {
           DEFAULT: '#F6519B',
@@ -40,6 +43,16 @@ module.exports = {
       backgroundImage: {
         'mana-gradient': 'linear-gradient(135deg, #293C74 0%, #28A6BD 55%, #567C8D 100%)',
         'mana-accent': 'linear-gradient(135deg, rgba(41,60,116,0.12) 0%, rgba(86,124,141,0.16) 100%)'
+      }
+    },
+    animation: {
+      'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      'float-slow': 'float-slow 6s ease-in-out infinite',
+    },
+    keyframes: {
+      'float-slow': {
+        '0%, 100%': { transform: 'translateY(0px)' },
+        '50%': { transform: 'translateY(-15px)' },
       }
     }
   },

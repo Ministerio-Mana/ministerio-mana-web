@@ -1,0 +1,27 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import RegistroFlow from '@components/cumbre2026/RegistroFlow.astro';
+
+const { bookingId } = Astro.params;
+---
+
+<CumbreLayout title="Completar Registro | Cumbre 2026" description="Finaliza tu registro con los datos de los asistentes.">
+  <div class="min-h-screen py-20 px-4 md:px-8 max-w-7xl mx-auto">
+    
+    <!-- Header -->
+    <div class="mb-12 text-center">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-xs font-bold uppercase tracking-wider mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        Pago Exitoso
+      </div>
+      <h1 class="font-display font-bold text-3xl md:text-5xl text-white">Completa tu Registro</h1>
+      <p class="text-white/60 mt-2 text-lg">Necesitamos los datos finales para tu hotel y escarapelas.</p>
+    </div>
+
+    <!-- The Flow -->
+    <RegistroFlow />
+
+  </div>
+</CumbreLayout>

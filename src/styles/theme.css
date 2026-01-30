@@ -1,19 +1,31 @@
 :root {
   /* Paleta en RGB para poder usar transparencia */
-  --mana-navy: 41 60 116;      /* #293C74 */
-  --mana-teal: 40 166 189;     /* #28A6BD */
-  --mana-teal-2: 86 124 141;   /* #567C8D */
-  --mana-sky: 203 217 230;     /* #CBD9E6 */
-  --mana-beige: 245 239 235;   /* #F5EFEB */
-  --mana-white: 255 255 255;   /* #FFFFFF */
+  --mana-navy: 41 60 116;
+  /* #293C74 */
+  --mana-teal: 40 166 189;
+  /* #28A6BD */
+  --mana-teal-2: 86 124 141;
+  /* #567C8D */
+  --mana-sky: 203 217 230;
+  /* #CBD9E6 */
+  --mana-beige: 245 239 235;
+  /* #F5EFEB */
+  --mana-white: 255 255 255;
+  /* #FFFFFF */
 
   /* Gradiente principal */
-  --mana-gradient: linear-gradient(
-    135deg,
-    rgb(var(--mana-navy)) 0%,
-    rgb(var(--mana-teal)) 50%,
-    rgb(var(--mana-teal-2)) 100%
-  );
+  --mana-gradient: linear-gradient(135deg,
+      rgb(var(--mana-navy)) 0%,
+      rgb(var(--mana-teal)) 50%,
+      rgb(var(--mana-teal-2)) 100%);
+
+  /* Ven y Ayúdanos Identity */
+  --mana-gold: 242 201 76;
+  /* #F2C94C */
+  --mana-void: 11 17 32;
+  /* #0B1120 */
+  --mana-ocean: 0 169 189;
+  /* #00A9BD */
 
   /* Radios y sombras suaves */
   --mana-radius-lg: 28px;

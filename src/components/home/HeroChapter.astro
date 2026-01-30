@@ -1,0 +1,117 @@
+---
+interface Props {
+  upcomingEvent?: {
+    title: string;
+    date: Date;
+    category: string;
+    summary: string;
+    slug: string;
+  };
+}
+
+const { upcomingEvent } = Astro.props;
+---
+
+<section class="relative min-h-[140vh]" data-hero>
+  <!-- Celestial Background -->
+  <div class="absolute inset-0 bg-gradient-to-br from-[rgba(41,60,116,0.95)] via-[rgba(40,166,189,0.8)] to-[rgba(41,60,116,0.9)] overflow-hidden">
+    <!-- Starry/Nebula effects -->
+    <div class="absolute inset-0" aria-hidden="true">
+      <div class="absolute top-0 left-1/4 w-[600px] h-[600px] bg-brand-teal/20 rounded-full blur-[120px] mix-blend-screen animate-pulse-slow"></div>
+      <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-brand-medium/30 rounded-full blur-[100px] mix-blend-screen"></div>
+      
+      <!-- Subtle stars/dust -->
+      <div class="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.15),transparent_45%)]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_60%,rgba(200,217,230,0.1),transparent_40%)]"></div>
+    </div>
+  </div>
+
+  <div class="container-tight sticky top-0 flex min-h-screen items-center py-24 px-6 md:px-10 z-10">
+    <div class="grid gap-12 md:grid-cols-[1.2fr_0.8fr] items-center w-full">
+      
+      <!-- Hero Text -->
+      <div class="space-y-8 text-white max-w-3xl" data-animate="fade-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+          <span class="w-2 h-2 rounded-full bg-brand-teal animate-pulse"></span>
+          <span class="text-xs font-bold tracking-[0.2em] uppercase text-white/90">Ministerio Maná</span>
+        </div>
+        
+        <h1 class="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/70">
+          Maná: un ministerio para alimentar tu fe
+        </h1>
+        
+        <p class="text-lg md:text-xl leading-relaxed text-white/85 max-w-2xl font-light">
+          Compartimos el Pan de Vida, caminamos en comunidad y formamos discípulos para que el Evangelio llegue a cada casa y cada campus.
+        </p>
+        
+        <div class="flex flex-wrap gap-4 pt-4">
+          <a href="#cap-que-hacemos" class="mana-btn shadow-[0_0_30px_-5px_var(--mana-teal)] text-lg px-8">
+            Ver lo que hacemos
+          </a>
+          <a href="#cap-historia" class="mana-btn-ghost border-white/30 text-white hover:text-white hover:bg-white/10 hover:border-white/50 text-base">
+            Conocer Maná
+          </a>
+        </div>
+      </div>
+
+      <!-- Upcoming Event Card (Glass) -->
+      <div class="relative group" data-animate="fade-up" style="animation-delay: 200ms;">
+        <!-- Glow effect behind card -->
+        <div class="absolute -inset-1 bg-gradient-to-r from-brand-teal to-brand-medium rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+        
+        <div class="mana-glass p-7 md:p-9 space-y-5 relative transform transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold tracking-[0.22em] uppercase text-brand-teal/90">Próximo encuentro</p>
+            <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+          
+          {upcomingEvent ? (
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-2xl font-bold text-white leading-tight mb-1">{upcomingEvent.title}</h3>
+                <p class="text-sm font-medium text-white/70">
+                  {upcomingEvent.date.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              
+              <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent"></div>
+              
+              <p class="text-sm text-white/80 line-clamp-3 leading-relaxed font-light">
+                {upcomingEvent.summary}
+              </p>
+              
+              <div class="flex flex-wrap gap-3 pt-2">
+                <a href={`/eventos/${upcomingEvent.slug}/`} class="mana-btn text-sm py-2 px-5 bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-md shadow-none hover:shadow-lg transition-all">
+                  Ver detalle
+                </a>
+                <a href="/eventos/" class="text-sm font-semibold text-white/70 hover:text-white flex items-center gap-1 transition-colors px-2">
+                  Ver todos <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div class="text-center py-6">
+              <p class="text-lg text-white/90 font-medium">Pronto anunciaremos nuevas fechas.</p>
+              <p class="text-sm text-white/50 mt-1">Mantente conectado a nuestras redes.</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <!-- Scroll Indicator -->
+  <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-60 animate-bounce">
+    <span class="text-[10px] uppercase tracking-widest text-white/70">Scroll</span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-white">
+      <path d="M7 13L12 18L17 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M7 6L12 11L17 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</section>

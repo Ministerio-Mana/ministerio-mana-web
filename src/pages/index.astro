@@ -1,284 +1,40 @@
-
 ---
 export const prerender = false;
 import BaseLayout from '@layouts/BaseLayout.astro';
-import GlassCard from '@components/GlassCard.astro';
 import { getCollection } from 'astro:content';
+
+// Home Chapters
+import HeroChapter from '@components/home/HeroChapter.astro';
+import HistoryChapter from '@components/home/HistoryChapter.astro';
+import WhatWeDoChapter from '@components/home/WhatWeDoChapter.astro';
+import CommunityChapter from '@components/home/CommunityChapter.astro';
+import CtaChapter from '@components/home/CtaChapter.astro';
+
+// Data Fetching
 const eventsAll = (await getCollection('events')).sort((a, b) => a.data.date.localeCompare(b.data.date));
 const upcoming = eventsAll.slice(0, 3);
-const news = (await getCollection('news'))
-  .sort((a, b) => b.data.date.localeCompare(a.data.date))
-  .slice(0, 3);
+const nextEvent = upcoming.length > 0 ? upcoming[0] : null;
 
-const chips = [
-  {
-    title: 'Devocional diario',
-    desc: 'Palabra fresca cada mañana, con guía y oración para tu jornada.',
-    cta: { href: '/devocional/', label: 'Ir al devocional' },
-  },
-  {
-    title: 'Mujeres que creen',
-    desc: 'Mentoría, encuentros y comunidad para mujeres que abrazan su diseño.',
-    cta: { href: '/mujeres/', label: 'Visitar Mujeres' },
-  },
-  {
-    title: '21 Retos',
-    desc: 'Desafíos semanales para crecer en carácter, oración y servicio.',
-    cta: { href: '/campus/', label: 'Explorar retos' },
-  },
-  {
-    title: 'Comunidad e iglesias',
-    desc: 'Sedes y grupos donde nadie camina solo; planifica tu visita.',
-    cta: { href: '/iglesias/', label: 'Ver iglesias' },
-  },
-  {
-    title: 'Recursos y cursos',
-    desc: 'Escuela Bíblica, cursos TEO 100–103 y materiales para discipular.',
-    cta: { href: '/escuela-biblica/', label: 'Ir a Escuela Bíblica' },
-  },
-];
-
-const history = [
-  {
-    year: '2010',
-    title: 'Devocional Maná',
-    text: 'Carlos inicia el devocional Maná desde Londres; empieza a llegar a familias y amigos.',
-    rotate: '-8deg',
-    pin: { x: 72, y: 26, angle: -35, len: 70, label: 'Londres' },
-  },
-  {
-    year: '2015',
-    title: 'Campus Maná',
-    text: 'Nacen los grupos de jóvenes en universidades y ciudades clave.',
-    rotate: '6deg',
-    pin: { x: 55, y: 52, angle: 20, len: 55, label: 'Campus' },
-  },
-  {
-    year: '2016',
-    title: 'Medellín',
-    text: 'Ministerio Maná se establece en Medellín; base para la expansión.',
-    rotate: '12deg',
-    pin: { x: 42, y: 58, angle: -15, len: 75, label: 'Medellín' },
-  },
-  {
-    year: '2020',
-    title: 'Consolidación digital',
-    text: 'En pandemia, Maná se fortalece como comunidad digital y discipulado virtual.',
-    rotate: '24deg',
-    pin: { x: 28, y: 38, angle: -45, len: 80, label: 'LatAm' },
-  },
-  {
-    year: '2024',
-    title: 'Peregrinaciones',
-    text: 'Viajes a Israel y Turquía para caminar la Palabra en comunidad.',
-    rotate: '30deg',
-    pin: { x: 62, y: 72, angle: 10, len: 60, label: 'Israel' },
-  },
-  {
-    year: '2030',
-    title: 'Ministerio global',
-    text: 'Ser un ministerio bíblico y relevante con presencia internacional y misión activa.',
-    rotate: '40deg',
-    pin: { x: 78, y: 40, angle: 30, len: 70, label: 'Global' },
-  },
-];
+// Prepare prop for Hero
+const heroEvent = nextEvent ? {
+  title: nextEvent.data.title,
+  date: new Date(nextEvent.data.date),
+  category: nextEvent.data.category,
+  summary: nextEvent.data.summary,
+  slug: nextEvent.slug
+} : undefined;
 ---
+
 <BaseLayout title="Ministerio Maná — Bienvenido" description="Iglesias, devocionales, Campus Maná, Escuela Bíblica y eventos.">
-  <link rel="stylesheet" href="/src/styles/global.css" />
+  <!-- Scripts para efectos visuales (se mantienen si son necesarios para el scroll behavior global) -->
   <script src="/js/scroll-story.js" defer></script>
   <script src="/js/history-scroll.js" defer></script>
 
-  <!-- Header hero sticky -->
-  <section class="relative min-h-[140vh]">
-    <div class="absolute inset-0 bg-gradient-to-br from-[rgba(41,60,116,0.92)] via-[rgba(40,166,189,0.75)] to-[rgba(41,60,116,0.68)]">
-      <div class="absolute inset-0" aria-hidden="true">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.12),transparent_40%)]"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_30%)]"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(200,217,230,0.12),transparent_35%)]"></div>
-      </div>
-    </div>
-    <div class="container-tight sticky top-0 flex min-h-screen items-center py-24 px-6 md:px-10">
-      <div class="grid gap-10 md:grid-cols-[1.2fr_0.8fr] items-center w-full">
-        <div class="space-y-8 text-white max-w-3xl" data-animate="fade-up">
-          <p class="text-sm tracking-[0.32em] uppercase text-white/85">Ministerio Maná</p>
-          <h1 class="text-5xl md:text-6xl font-black leading-tight">Maná: un ministerio para alimentar tu fe</h1>
-          <p class="text-lg md:text-xl leading-relaxed text-white/85 max-w-2xl">
-            Compartimos el Pan de Vida, caminamos en comunidad y formamos discípulos para que el Evangelio llegue a cada casa y cada campus.
-          </p>
-          <div class="flex flex-wrap gap-4 pt-2">
-            <a href="#cap-que-hacemos" class="mana-btn shadow-[var(--mana-shadow-2)]">Ver lo que hacemos</a>
-            <a href="#cap-historia" class="mana-btn-ghost border-white/30 text-white hover:text-white">Conocer Maná</a>
-          </div>
-        </div>
-
-        <div class="mana-glass p-6 md:p-7 space-y-3" data-animate="fade-up">
-            <p class="text-xs font-semibold tracking-[0.22em] uppercase text-white/70">Próximo encuentro</p>
-            {upcoming.length > 0 ? (
-              <div class="space-y-2">
-                <h3 class="text-xl font-bold text-white">{upcoming[0].data.title}</h3>
-                <p class="text-sm text-white/85">
-                  {new Date(upcoming[0].data.date).toLocaleDateString('es-CO')} · {upcoming[0].data.category}
-                </p>
-                <p class="text-sm text-white/80 line-clamp-3">{upcoming[0].data.summary}</p>
-                <div class="flex flex-wrap gap-3 pt-2">
-                  <a href={`/eventos/${upcoming[0].slug}/`} class="mana-btn text-sm">Ver detalle</a>
-                  <a href="/eventos/" class="mana-btn-ghost text-white border-white/30 text-sm">Ver todos</a>
-                </div>
-              </div>
-            ) : (
-              <p class="text-sm text-white/80">Pronto anunciaremos el próximo encuentro.</p>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Capítulo 2: Historia -->
-  <section id="cap-historia" class="history-story">
-    <div class="container-tight history-grid">
-      <div class="history-copy">
-        <div class="history-heading" data-animate="fade-up">
-          <p class="history-eyebrow">Nuestra historia</p>
-          <h2 class="history-title">El llamado de alimentar, discipular y enviar</h2>
-          <p class="history-lead">
-            Nacimos para llevar la Palabra a diario, formar discípulos y levantar comunidades donde Cristo sea el centro. Del devocional a Campus Maná y la Escuela Bíblica,
-            caminamos juntos para que nadie se quede sin alimento espiritual.
-          </p>
-        </div>
-
-        <div class="history-scenes" data-history-track>
-          {history.map((item) => (
-            <article
-              class="history-scene"
-              data-history-scene
-              data-year={item.year}
-              data-rotate={item.rotate}
-            >
-              <div class="history-year">{item.year}</div>
-              <div class="history-meta">{item.title}</div>
-              <p class="history-text">{item.text}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-
-      <aside class="history-visual" data-animate="fade-up">
-        <div class="history-vision">
-          <p class="history-vision-label">Visión Maná</p>
-          <h3>Palabra · Comunidad · Misión</h3>
-          <p>
-            Devocional diario, discipulado real, mentoría, campus, Escuela Bíblica, iglesias y peregrinaciones: todo para que Cristo sea conocido.
-          </p>
-        </div>
-        <div class="history-globe" data-history-globe>
-          <div class="history-globe-map" aria-hidden="true"></div>
-          {history.map((item) => (
-            <span
-              class="history-pin"
-              data-history-pin
-              data-year={item.year}
-              style={`--x:${item.pin.x}%; --y:${item.pin.y}%; --angle:${item.pin.angle}deg; --len:${item.pin.len}px;`}
-            >
-              <span class="history-pin-label">{item.pin.label}</span>
-            </span>
-          ))}
-        </div>
-      </aside>
-    </div>
-  </section>
-
-  <!-- Capítulo 3: Qué hacemos (chips) -->
-  <section id="cap-que-hacemos" class="relative min-h-[150vh] bg-gradient-to-b from-white to-[rgb(var(--mana-sky))]">
-    <div class="container-tight sticky top-0 flex min-h-screen items-center" data-chips-section>
-      <div class="grid gap-8 md:grid-cols-[0.9fr_1.1fr] items-start">
-        <div class="space-y-3" data-animate="fade-up">
-          <p class="text-sm tracking-[0.22em] uppercase text-slate-500">Qué hacemos</p>
-          <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900">Capítulos de Maná</h2>
-          <p class="text-base text-slate-600">
-            Cada área tiene un propósito claro. Desplázate y verás cómo cambia el enfoque de nuestra misión.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            {chips.map((chip, i) => (
-              <button
-                type="button"
-                class="rounded-full border px-4 py-2 text-sm font-semibold text-slate-700 transition-all chip-active:border-transparent chip-active:bg-mana-gradient chip-active:text-white"
-                data-chip
-                data-index={i}
-              >
-                {chip.title.split(' ')[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div class="relative space-y-4">
-          {chips.map((chip, i) => (
-            <article
-              class="mana-surface p-6 transition-all duration-500"
-              data-chip-panel
-              style={`opacity:${i === 0 ? '1' : '0'}; transform:${i === 0 ? 'translateY(0)' : 'translateY(12px)'}`}
-            >
-              <p class="text-xs font-semibold tracking-[0.22em] uppercase text-slate-500">Área</p>
-              <h3 class="text-xl font-semibold text-slate-900">{chip.title}</h3>
-              <p class="text-sm text-slate-600 mt-2">{chip.desc}</p>
-              <div class="mt-4">
-                <a href={chip.cta.href} class="mana-btn-ghost">{chip.cta.label}</a>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Capítulo 4: Comunidad / Impacto -->
-  <section class="relative min-h-[140vh] bg-gradient-to-b from-[rgb(var(--mana-sky))] to-[rgb(var(--mana-beige))]">
-    <div class="absolute inset-0" aria-hidden="true">
-      <div class="absolute inset-x-0 top-12 h-64 bg-[radial-gradient(circle_at_30%_20%,rgba(41,60,116,0.12),transparent_40%)]"></div>
-      <div class="absolute inset-x-0 bottom-12 h-64 bg-[radial-gradient(circle_at_70%_80%,rgba(40,166,189,0.14),transparent_45%)]"></div>
-    </div>
-    <div class="container-tight sticky top-0 flex min-h-screen items-center">
-      <div class="space-y-6 w-full">
-        <div class="space-y-2" data-animate="fade-up">
-          <p class="text-sm tracking-[0.22em] uppercase text-slate-500">Comunidad</p>
-          <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900">Impacto y testimonios</h2>
-          <p class="text-base text-slate-600 max-w-3xl">
-            No caminamos solos: iglesias, campus, grupos y mujeres que creen. Aquí hay historias que Dios está escribiendo.
-          </p>
-        </div>
-        <div class="grid gap-4 md:grid-cols-3" data-animate="fade-up">
-          <div class="mana-glass">
-            <p class="text-sm font-semibold">+120 ciudades orando</p>
-            <p class="text-xs text-white/80 mt-2">Registro global de evangelizaciones y muros de oración activos.</p>
-          </div>
-          <div class="mana-glass">
-            <p class="text-sm font-semibold">Campus Maná</p>
-            <p class="text-xs text-white/80 mt-2">Jóvenes equipados para liderazgo y misión en universidades.</p>
-          </div>
-          <div class="mana-glass">
-            <p class="text-sm font-semibold">Mujeres que creen</p>
-            <p class="text-xs text-white/80 mt-2">Mentorías y encuentros que restauran identidad y propósito.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Capítulo 5: CTA final -->
-  <section class="relative min-h-[120vh] bg-gradient-to-b from-[rgba(41,60,116,0.9)] via-[rgba(40,166,189,0.7)] to-[rgba(41,60,116,0.8)] text-white">
-    <div class="container-tight sticky top-0 flex min-h-screen items-center">
-      <div class="space-y-4 max-w-3xl" data-animate="fade-up">
-        <p class="text-sm tracking-[0.22em] uppercase text-white/70">Únete</p>
-        <h2 class="text-3xl md:text-4xl font-extrabold">Comparte, ora, discipula con nosotros</h2>
-        <p class="text-lg text-white/85">
-          Sé parte del movimiento: comparte el Evangelio, apoya la misión y camina en comunidad.
-        </p>
-        <div class="flex flex-wrap gap-3">
-          <a href="/evangeliza/" class="mana-btn">Unirme a Evangeliza</a>
-          <a href="/donaciones/" class="mana-btn-ghost text-white border-white/40">Apoyar la misión</a>
-        </div>
-      </div>
-    </div>
-  </section>
+  <main class="overflow-x-hidden">
+    <HeroChapter upcomingEvent={heroEvent} />
+    <HistoryChapter />
+    <WhatWeDoChapter />
+    <CommunityChapter />
+    <CtaChapter />
+  </main>
 </BaseLayout>

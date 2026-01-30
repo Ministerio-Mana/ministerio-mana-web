@@ -1,0 +1,4 @@
+Cumbre Mundial 2026
+Hola {{1}}, confirmamos tu pago de {{2}}.
+Booking ID: {{3}}.
+Gracias por ser parte de la Cumbre. Si necesitas ayuda, responde este mensaje.
