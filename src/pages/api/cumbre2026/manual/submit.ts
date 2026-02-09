@@ -38,6 +38,12 @@ function normalizeFrequency(raw: string | null | undefined): InstallmentFrequenc
   return 'MONTHLY';
 }
 
+function normalizeCurrency(raw: unknown): 'COP' | 'USD' | null {
+  const value = String(raw || '').trim().toUpperCase();
+  if (value === 'COP' || value === 'USD') return value;
+  return null;
+}
+
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
   const age = Number(ageRaw || 0);
   const lodging = String(lodgingRaw || '').toLowerCase() === 'yes';
@@ -71,15 +77,16 @@ export const POST: APIRoute = async ({ request }) => {
     const documentType = sanitizePlainText(form.get('documentType')?.toString() ?? '', 10).toUpperCase();
     const documentNumber = sanitizePlainText(form.get('documentNumber')?.toString() ?? '', 40);
     const countryRaw = form.get('countryGroup')?.toString() ?? 'CO';
-    const countryGroup = normalizeCountryGroup(countryRaw);
+    let countryGroup = normalizeCountryGroup(countryRaw);
     const contactCountry = sanitizePlainText(form.get('country')?.toString() ?? '', 40);
     const contactCity = normalizeCityName(form.get('city')?.toString() ?? '');
     const contactChurch = normalizeChurchName(form.get('church')?.toString() ?? '');
     const paymentOption = form.get('paymentOption')?.toString() ?? 'FULL';
     const depositDueDateRaw = form.get('deposit_due_date')?.toString().trim() ?? '';
     const paymentMethod = sanitizePlainText(form.get('paymentMethod')?.toString() ?? '', 40);
-    const paymentAmount = Number(form.get('paymentAmount')?.toString() ?? 0);
+    const paymentAmountInput = Number(form.get('paymentAmount')?.toString() ?? 0);
     const frequency = normalizeFrequency(form.get('frequency'));
+    const currencyOverride = normalizeCurrency(form.get('currency'));
 
     if (!contactName || !email || !phone) {
       return new Response(JSON.stringify({ ok: false, error: 'Datos de contacto incompletos' }), {
@@ -128,10 +135,49 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const currency = currencyForGroup(countryGroup);
+    if (currencyOverride) {
+      countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
+    }
+
+    const currency = currencyOverride ?? currencyForGroup(countryGroup);
     const totalAmount = calculateTotals(currency, participants);
     const threshold = depositThreshold(totalAmount);
     const tokenPair = generateAccessToken();
+
+    let installmentSchedule: ReturnType<typeof buildInstallmentSchedule> | null = null;
+    let paymentAmount = 0;
+    if (paymentOption === 'FULL') {
+      paymentAmount = totalAmount;
+    } else if (paymentOption === 'DEPOSIT') {
+      paymentAmount = threshold;
+    } else if (paymentOption === 'INSTALLMENTS') {
+      installmentSchedule = buildInstallmentSchedule({
+        totalAmount,
+        currency,
+        frequency,
+      });
+      paymentAmount = installmentSchedule.installmentAmount;
+    }
+
+    if (Number.isFinite(paymentAmountInput) && paymentAmountInput < 0) {
+      return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede ser negativo' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    if (Number.isFinite(paymentAmountInput) && paymentAmountInput > 0) {
+      paymentAmount = paymentAmountInput;
+    }
+
+    if (paymentAmount > totalAmount) {
+      return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede superar el total' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
 
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('cumbre_bookings')
@@ -182,7 +228,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     let planId: string | null = null;
     if (paymentOption === 'INSTALLMENTS') {
-      const schedule = buildInstallmentSchedule({
+      const schedule = installmentSchedule ?? buildInstallmentSchedule({
         totalAmount,
         currency,
         frequency,
@@ -224,10 +270,9 @@ export const POST: APIRoute = async ({ request }) => {
           headers: { 'content-type': 'application/json' },
         });
       }
-      const remaining = Math.max(totalAmount - threshold, 0);
-      if (remaining > 0) {
+      if (remainingAmount > 0) {
         const schedule = buildDepositSchedule({
-          totalAmount: remaining,
+          totalAmount: remainingAmount,
           currency,
           dueDate: depositDueDateRaw,
         });
@@ -236,7 +281,7 @@ export const POST: APIRoute = async ({ request }) => {
           frequency: 'DEPOSIT',
           startDate: schedule.startDate,
           endDate: schedule.endDate,
-          totalAmount: remaining,
+          totalAmount: remainingAmount,
           currency,
           installmentCount: schedule.installmentCount,
           installmentAmount: schedule.installmentAmount,

@@ -13,7 +13,7 @@ import {
     type PackageType,
 } from '@lib/cumbre2026';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
-import { createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
+import { applyManualPaymentToPlan, createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
@@ -284,13 +284,35 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
     }
 
-    const countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);
+    let countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);
+    if (currencyOverride) {
+        countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
+    }
     const currency = currencyOverride ?? currencyForGroup(countryGroup);
     const totalAmount = calculateTotals(currency, participants.map((p) => p.safe));
     const threshold = depositThreshold(totalAmount);
     const tokenPair = generateAccessToken();
 
-    if (paymentAmountInput != null && paymentAmountInput < 0) {
+    let installmentSchedule: ReturnType<typeof buildInstallmentSchedule> | null = null;
+    let paymentAmount = 0;
+    if (paymentOption === 'FULL') {
+        paymentAmount = totalAmount;
+    } else if (paymentOption === 'DEPOSIT') {
+        paymentAmount = threshold;
+    } else if (paymentOption === 'INSTALLMENTS') {
+        installmentSchedule = buildInstallmentSchedule({
+            totalAmount,
+            currency,
+            frequency,
+        });
+        paymentAmount = installmentSchedule.installmentAmount;
+    }
+
+    if (paymentAmountInput != null) {
+        paymentAmount = paymentAmountInput;
+    }
+
+    if (paymentAmount < 0) {
         return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede ser negativo' }), { status: 400 });
     }
 
@@ -345,15 +367,6 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), { status: 500 });
     }
 
-    let paymentAmount = 0;
-    if (paymentOption === 'FULL') {
-        paymentAmount = totalAmount;
-    } else if (paymentOption === 'DEPOSIT') {
-        paymentAmount = threshold;
-    }
-    if (paymentAmountInput != null) {
-        paymentAmount = paymentAmountInput;
-    }
     if (paymentAmount > totalAmount) {
         return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede superar el total' }), { status: 400 });
     }
@@ -362,28 +375,26 @@ export const POST: APIRoute = async ({ request }) => {
 
     let planId: string | null = null;
     if (paymentOption === 'INSTALLMENTS') {
-        if (remainingAmount > 0) {
-            const schedule = buildInstallmentSchedule({
-                totalAmount: remainingAmount,
-                currency,
-                frequency,
-            });
+        const schedule = installmentSchedule ?? buildInstallmentSchedule({
+            totalAmount,
+            currency,
+            frequency,
+        });
 
-            const plan = await createPaymentPlan({
-                bookingId: booking.id,
-                frequency,
-                startDate: schedule.startDate,
-                endDate: schedule.endDate,
-                totalAmount: remainingAmount,
-                currency,
-                installmentCount: schedule.installmentCount,
-                installmentAmount: schedule.installmentAmount,
-                provider: 'manual',
-                autoDebit: false,
-                installments: schedule.installments,
-            });
-            planId = plan.id;
-        }
+        const plan = await createPaymentPlan({
+            bookingId: booking.id,
+            frequency,
+            startDate: schedule.startDate,
+            endDate: schedule.endDate,
+            totalAmount,
+            currency,
+            installmentCount: schedule.installmentCount,
+            installmentAmount: schedule.installmentAmount,
+            provider: 'manual',
+            autoDebit: false,
+            installments: schedule.installments,
+        });
+        planId = plan.id;
     } else if (paymentOption === 'DEPOSIT') {
         if (!isValidDateOnly(depositDueDateRaw)) {
             return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), { status: 400 });
@@ -436,6 +447,14 @@ export const POST: APIRoute = async ({ request }) => {
                 method: 'manual',
             },
         });
+
+        if (planId && paymentOption === 'INSTALLMENTS') {
+            await applyManualPaymentToPlan({
+                planId,
+                amount: paymentAmount,
+                reference,
+            });
+        }
 
         await createDonation({
             provider: 'physical',

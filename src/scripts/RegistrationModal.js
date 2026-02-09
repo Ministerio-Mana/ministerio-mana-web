@@ -7,6 +7,8 @@ export class RegistrationModal {
         this.currencyOverride = false;
         this.leaderId = 'leader';
         this.paymentAmountTouched = false;
+        this.lastInstallmentAmount = 0;
+        this.lastInstallmentCount = 0;
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -94,6 +96,7 @@ export class RegistrationModal {
         this.currencySelect = document.getElementById('reg-currency');
         this.paymentAmountInput = document.getElementById('manual-payment-amount');
         this.paymentAmountHint = document.getElementById('manual-payment-hint');
+        this.paymentCustomToggle = document.getElementById('manual-payment-custom-toggle');
 
         // Church selector
         this.btnOpenChurchSelector = document.getElementById('btn-open-church-selector');
@@ -163,6 +166,10 @@ export class RegistrationModal {
         this.paymentAmountInput?.addEventListener('input', () => {
             this.paymentAmountTouched = true;
             this.updatePaymentHint();
+        });
+        this.paymentCustomToggle?.addEventListener('change', () => {
+            this.paymentAmountTouched = Boolean(this.paymentCustomToggle?.checked);
+            this.syncPaymentAmount(true);
         });
 
         if (this.depositDueDate) {
@@ -234,7 +241,10 @@ export class RegistrationModal {
         });
 
         this.installmentFrequencyInputs?.forEach(input => {
-            input.addEventListener('change', () => this.updateInstallmentPreview());
+            input.addEventListener('change', () => {
+                this.updateInstallmentPreview();
+                this.syncPaymentAmount(true);
+            });
         });
 
         // Form submission
@@ -687,23 +697,33 @@ export class RegistrationModal {
         const total = this.getTotal();
         const option = this.getSelectedPaymentOption();
         if (option === 'DEPOSIT') return this.getDepositAmount(total);
-        if (option === 'INSTALLMENTS') return 0;
+        if (option === 'INSTALLMENTS') return this.lastInstallmentAmount || 0;
         return total;
     }
 
     updatePaymentHint() {
         if (!this.paymentAmountHint) return;
         const suggested = this.getDefaultPaymentAmount();
-        this.paymentAmountHint.textContent = `Sugerido: ${this.formatPrice(suggested)}`;
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        const label = customEnabled ? 'Sugerido' : 'Automático';
+        this.paymentAmountHint.textContent = `${label}: ${this.formatPrice(suggested)}`;
     }
 
     syncPaymentAmount(force = false) {
         if (!this.paymentAmountInput) return;
-        const shouldSync = force || !this.paymentAmountTouched || !this.paymentAmountInput.value;
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        this.paymentAmountInput.readOnly = !customEnabled;
+        this.paymentAmountInput.classList.toggle('bg-white', customEnabled);
+        this.paymentAmountInput.classList.toggle('bg-slate-50', !customEnabled);
+
+        const shouldSync = (!customEnabled && (force || !this.paymentAmountTouched || !this.paymentAmountInput.value));
         if (shouldSync) {
             const defaultAmount = this.getDefaultPaymentAmount();
             this.paymentAmountInput.value = defaultAmount ? String(defaultAmount) : '';
             if (force) this.paymentAmountTouched = false;
+        } else if (customEnabled && force && !this.paymentAmountInput.value) {
+            const defaultAmount = this.getDefaultPaymentAmount();
+            this.paymentAmountInput.value = defaultAmount ? String(defaultAmount) : '';
         }
         this.updatePaymentHint();
     }
@@ -730,8 +750,8 @@ export class RegistrationModal {
             this.depositAmountLabel.textContent = this.formatPrice(deposit);
         }
 
-        this.syncPaymentAmount();
         this.updateInstallmentPreview();
+        this.syncPaymentAmount();
     }
 
     // Payment UI
@@ -764,6 +784,14 @@ export class RegistrationModal {
     }
 
     updateInstallmentPreview() {
+        const preview = this.getInstallmentPreview();
+        if (this.installmentCount) this.installmentCount.textContent = preview.count;
+        if (this.installmentAmount) this.installmentAmount.textContent = this.formatPrice(preview.amount);
+        this.lastInstallmentAmount = preview.amount;
+        this.lastInstallmentCount = preview.count;
+    }
+
+    getInstallmentPreview() {
         const total = this.getTotal();
         const frequency = document.querySelector('input[name="installment_frequency"]:checked')?.value || 'MONTHLY';
         const deadline = this.getInstallmentDeadline();
@@ -774,12 +802,9 @@ export class RegistrationModal {
         const current = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
         if (end < current) {
-            if (this.installmentCount) this.installmentCount.textContent = '1';
-            if (this.installmentAmount) this.installmentAmount.textContent = this.formatPrice(total);
-            return;
+            return { count: 1, amount: Math.round(total) };
         }
 
-        // Calculate installments
         const dueDates = [];
         let tempDate = new Date(current);
 
@@ -794,9 +819,7 @@ export class RegistrationModal {
 
         const count = Math.max(1, dueDates.length);
         const amount = Math.round(total / count);
-
-        if (this.installmentCount) this.installmentCount.textContent = count;
-        if (this.installmentAmount) this.installmentAmount.textContent = this.formatPrice(amount);
+        return { count, amount };
     }
 
     // Form Submission
@@ -830,6 +853,11 @@ export class RegistrationModal {
 
         const totalAmount = this.getTotal();
         const paymentAmount = this.parsePaymentAmount();
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        if (customEnabled && paymentAmount == null) {
+            this.showAlert('Ingresa el valor pagado hoy para el aporte libre');
+            return;
+        }
         if (paymentAmount != null) {
             if (paymentAmount < 0) {
                 this.showAlert('El monto pagado no puede ser negativo');
