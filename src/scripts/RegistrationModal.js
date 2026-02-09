@@ -4,7 +4,9 @@ export class RegistrationModal {
         this.participants = [];
         this.selectedChurch = null;
         this.currency = 'COP'; // Default to Colombia
+        this.currencyOverride = false;
         this.leaderId = 'leader';
+        this.paymentAmountTouched = false;
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -89,6 +91,9 @@ export class RegistrationModal {
         this.depositSchedule = document.getElementById('deposit-schedule');
         this.depositDueDate = document.getElementById('deposit-due-date');
         this.depositDeadlineLabel = document.getElementById('deposit-deadline-label');
+        this.currencySelect = document.getElementById('reg-currency');
+        this.paymentAmountInput = document.getElementById('manual-payment-amount');
+        this.paymentAmountHint = document.getElementById('manual-payment-hint');
 
         // Church selector
         this.btnOpenChurchSelector = document.getElementById('btn-open-church-selector');
@@ -144,6 +149,21 @@ export class RegistrationModal {
         this.leaderGender?.addEventListener('change', () => this.updateLeaderParticipant());
         this.countryInput?.addEventListener('change', () => this.updateCurrencyFromCountry(this.countryInput?.value));
         this.countryInput?.addEventListener('blur', () => this.updateCurrencyFromCountry(this.countryInput?.value));
+        this.currencySelect?.addEventListener('change', () => {
+            const selected = this.normalizeCurrency(this.currencySelect?.value);
+            this.currencyOverride = true;
+            if (selected !== this.currency) {
+                this.currency = selected;
+                this.paymentAmountTouched = false;
+                this.updateSummary();
+            } else {
+                this.syncPaymentAmount(true);
+            }
+        });
+        this.paymentAmountInput?.addEventListener('input', () => {
+            this.paymentAmountTouched = true;
+            this.updatePaymentHint();
+        });
 
         if (this.depositDueDate) {
             const clampDepositDate = () => this.syncDepositSchedule();
@@ -521,14 +541,21 @@ export class RegistrationModal {
 
     // Pricing Logic
     updateCurrencyFromCountry(value) {
+        if (this.currencyOverride) return;
         const raw = String(value || '').trim().toUpperCase();
         const isColombia = raw === 'CO' || raw === 'COL' || raw.includes('COLOMBIA');
         const isVirtual = raw === 'VIRTUAL' || raw === 'ONLINE' || raw === 'N/A';
         const nextCurrency = (isColombia || isVirtual) ? 'COP' : 'USD';
         if (this.currency !== nextCurrency) {
             this.currency = nextCurrency;
+            if (this.currencySelect) this.currencySelect.value = nextCurrency;
+            this.paymentAmountTouched = false;
             this.updateSummary();
         }
+    }
+
+    normalizeCurrency(value) {
+        return value === 'USD' ? 'USD' : 'COP';
     }
 
     getInstallmentDeadline() {
@@ -648,6 +675,49 @@ export class RegistrationModal {
         return this.participants.reduce((sum, p) => sum + this.getPrice(p.packageType), 0);
     }
 
+    getDepositAmount(total) {
+        return Math.round(total * 0.5 * 100) / 100;
+    }
+
+    getSelectedPaymentOption() {
+        return document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
+    }
+
+    getDefaultPaymentAmount() {
+        const total = this.getTotal();
+        const option = this.getSelectedPaymentOption();
+        if (option === 'DEPOSIT') return this.getDepositAmount(total);
+        if (option === 'INSTALLMENTS') return 0;
+        return total;
+    }
+
+    updatePaymentHint() {
+        if (!this.paymentAmountHint) return;
+        const suggested = this.getDefaultPaymentAmount();
+        this.paymentAmountHint.textContent = `Sugerido: ${this.formatPrice(suggested)}`;
+    }
+
+    syncPaymentAmount(force = false) {
+        if (!this.paymentAmountInput) return;
+        const shouldSync = force || !this.paymentAmountTouched || !this.paymentAmountInput.value;
+        if (shouldSync) {
+            const defaultAmount = this.getDefaultPaymentAmount();
+            this.paymentAmountInput.value = defaultAmount ? String(defaultAmount) : '';
+            if (force) this.paymentAmountTouched = false;
+        }
+        this.updatePaymentHint();
+    }
+
+    parsePaymentAmount() {
+        if (!this.paymentAmountInput) return null;
+        const raw = this.paymentAmountInput.value;
+        if (!raw) return null;
+        const normalized = raw.replace(',', '.');
+        const amount = Number(normalized);
+        if (!Number.isFinite(amount)) return null;
+        return amount;
+    }
+
     updateSummary() {
         const total = this.getTotal();
 
@@ -655,11 +725,12 @@ export class RegistrationModal {
         if (this.summaryTotal) this.summaryTotal.textContent = this.formatPrice(total);
 
         // Update deposit amount
-        const deposit = Math.round(total * 0.5);
+        const deposit = this.getDepositAmount(total);
         if (this.depositAmountLabel) {
             this.depositAmountLabel.textContent = this.formatPrice(deposit);
         }
 
+        this.syncPaymentAmount();
         this.updateInstallmentPreview();
     }
 
@@ -683,6 +754,7 @@ export class RegistrationModal {
         if (value === 'DEPOSIT') {
             this.syncDepositSchedule();
         }
+        this.syncPaymentAmount(true);
 
         if (scrollContainer) {
             requestAnimationFrame(() => {
@@ -756,6 +828,19 @@ export class RegistrationModal {
             }
         }
 
+        const totalAmount = this.getTotal();
+        const paymentAmount = this.parsePaymentAmount();
+        if (paymentAmount != null) {
+            if (paymentAmount < 0) {
+                this.showAlert('El monto pagado no puede ser negativo');
+                return;
+            }
+            if (paymentAmount > totalAmount) {
+                this.showAlert('El monto pagado no puede superar el total');
+                return;
+            }
+        }
+
         const formData = this.collectFormData();
 
         if (this.statusMsg) {
@@ -810,6 +895,7 @@ export class RegistrationModal {
         const paymentOption = document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
         const installmentFrequency = document.querySelector('input[name="installment_frequency"]:checked')?.value || 'MONTHLY';
         const depositDueDate = this.depositDueDate?.value || '';
+        const paymentAmount = this.parsePaymentAmount();
 
         // Get fresh leader data from DOM
         const leaderDocType = document.getElementById('reg-leader-doc-type')?.value || 'CC';
@@ -859,6 +945,7 @@ export class RegistrationModal {
             deposit_due_date: paymentOption === 'DEPOSIT' ? depositDueDate : null,
             total_amount: this.getTotal(),
             currency: this.currency,
+            payment_amount: paymentAmount,
         };
     }
 
@@ -882,12 +969,19 @@ export class RegistrationModal {
     reset() {
         this.participants = [];
         this.selectedChurch = null;
+        this.currencyOverride = false;
+        this.paymentAmountTouched = false;
         this.form?.reset();
 
         // Reset menus
         this.updateMenuOptions(this.leaderMenu, null);
         this.updateMenuOptions(this.companionMenu, null);
 
+        if (this.currencySelect) {
+            this.currency = this.normalizeCurrency(this.currencySelect.value);
+        } else if (this.countryInput) {
+            this.updateCurrencyFromCountry(this.countryInput.value);
+        }
         this.renderParticipants();
         this.updateSummary();
         if (this.statusMsg) this.statusMsg.textContent = '';

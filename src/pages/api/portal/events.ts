@@ -3,6 +3,45 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 
+const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
+const CUMBRE_EVENT = {
+    id: CUMBRE_EVENT_ID,
+    title: 'Cumbre Mundial 2026',
+    description: 'Encuentro global de la familia Maná.',
+    scope: 'GLOBAL',
+    status: 'PUBLISHED',
+    start_date: '2026-06-06T09:00:00-05:00',
+    end_date: '2026-06-08T18:00:00-05:00',
+    location_name: 'Rionegro, Colombia',
+    location_address: 'Rionegro, Antioquia',
+    city: 'Rionegro',
+    country: 'Colombia',
+    banner_url: '/images/cumbre/fishermen-bg-highres.jpg',
+};
+
+async function ensureCumbreEvent(userId?: string | null) {
+    if (!supabaseAdmin) return;
+    const { data: existing, error } = await supabaseAdmin
+        .from('events')
+        .select('id')
+        .eq('id', CUMBRE_EVENT_ID)
+        .maybeSingle();
+
+    if (error) {
+        if (error.code === '42P01') return;
+        console.error('Cumbre seed error:', error);
+        return;
+    }
+    if (existing?.id) return;
+
+    const { error: insertError } = await supabaseAdmin
+        .from('events')
+        .insert({ ...CUMBRE_EVENT, created_by: userId ?? null });
+    if (insertError) {
+        console.error('Cumbre seed insert error:', insertError);
+    }
+}
+
 const EVENT_FIELDS = [
     'title',
     'description',
@@ -39,6 +78,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     if (passwordSession) {
+        await ensureCumbreEvent(null);
         const { data: events, error } = await supabaseAdmin
             .from('events')
             .select('*')
@@ -62,6 +102,10 @@ export const GET: APIRoute = async ({ request }) => {
 
     if (!profile) {
         return new Response(JSON.stringify({ ok: false, error: 'Profile not found' }), { status: 403 });
+    }
+
+    if (['superadmin', 'admin', 'national_pastor', 'pastor'].includes(profile.role || '')) {
+        await ensureCumbreEvent(user.id);
     }
 
     // Build Query manually for Scoping (since admin bypasses RLS)

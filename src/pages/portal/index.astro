@@ -143,6 +143,22 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </div>
 
               <div class="space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <h2 class="text-lg font-bold text-[#293C74]">Campus Maná</h2>
+                    <p class="text-xs text-slate-500">Apoyos mensuales a misioneros y equipos Campus.</p>
+                  </div>
+                  <a id="campus-cta" href="/campus" hidden class="inline-flex items-center gap-2 rounded-full border border-brand-teal/40 text-brand-teal px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-brand-teal/10 transition">
+                    Apoyar campus
+                  </a>
+                </div>
+                <div id="campus-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="campus-empty" class="hidden p-10 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
+                  <p class="text-slate-500">Muy pronto podrás apoyar misioneros Campus desde aquí.</p>
+                </div>
+              </div>
+
+              <div class="space-y-6">
                 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
                   <div>
                     <h2 class="text-lg font-bold text-[#293C74]">Eventos cerca de ti</h2>

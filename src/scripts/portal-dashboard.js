@@ -54,6 +54,9 @@ const summaryEventsEmpty = document.getElementById('summary-events-empty');
 const givingList = document.getElementById('giving-list');
 const givingEmpty = document.getElementById('giving-empty');
 const givingCta = document.getElementById('giving-cta');
+const campusGivingList = document.getElementById('campus-list');
+const campusGivingEmpty = document.getElementById('campus-empty');
+const campusGivingCta = document.getElementById('campus-cta');
 const localEventsList = document.getElementById('local-events-list');
 const localEventsEmpty = document.getElementById('local-events-empty');
 
@@ -262,6 +265,15 @@ function formatCurrency(value, currency) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value || 0);
 }
 
+function formatCurrencyBreakdown(totals) {
+  const copValue = Number(totals?.COP || 0);
+  const usdValue = Number(totals?.USD || 0);
+  return `
+    <span class="block">${formatCurrency(copValue, 'COP')}</span>
+    <span class="block text-xl text-slate-400 font-semibold">${formatCurrency(usdValue, 'USD')}</span>
+  `;
+}
+
 function formatDate(value) {
   if (!value) return '-';
   const date = new Date(value);
@@ -299,9 +311,21 @@ const DONATION_LABELS = {
   general: 'General',
 };
 
+function normalizeDonationType(value) {
+  return (value || '').toString().trim().toLowerCase();
+}
+
 function resolveDonationLabel(value) {
-  const key = (value || '').toString().trim().toLowerCase();
+  const key = normalizeDonationType(value);
   return DONATION_LABELS[key] || 'Aporte';
+}
+
+function isCampusDonation(item) {
+  return normalizeDonationType(item?.donation_type) === 'campus';
+}
+
+function isEventDonation(item) {
+  return normalizeDonationType(item?.donation_type) === 'evento';
 }
 
 function resolveEventDates(booking) {
@@ -638,9 +662,14 @@ async function loadDashboardData(authResult) {
     }
 
     // Calculations for highlights
-    let totalPaidAll = 0;
-    payload.bookings?.forEach(b => totalPaidAll += (b.total_paid || 0));
-    statTotalPaid.textContent = formatCurrency(totalPaidAll, payload.bookings?.[0]?.currency);
+    const totalPaidByCurrency = {};
+    payload.bookings?.forEach((booking) => {
+      const currency = (booking.currency || 'COP').toString().toUpperCase();
+      totalPaidByCurrency[currency] = (totalPaidByCurrency[currency] || 0) + (booking.total_paid || 0);
+    });
+    if (statTotalPaid) {
+      statTotalPaid.innerHTML = formatCurrencyBreakdown(totalPaidByCurrency);
+    }
 
     const activePlans = (payload.plans || []).filter((plan) => plan.status === 'ACTIVE');
     const nextPlanDate = activePlans
@@ -705,6 +734,7 @@ async function loadDashboardData(authResult) {
     renderPayments(paymentsForTable);
     renderSummaryEvents(payload.bookings || [], payload.plans || [], payload.installments || []);
     renderGivingSummary(payload.donations || [], payload.donationSubscriptions || []);
+    renderCampusSummary(payload.donations || [], payload.donationSubscriptions || []);
     renderLocalEvents(payload.events || []);
     renderMemberships(portalMemberships);
     setupInviteAccess();
@@ -2592,9 +2622,11 @@ function renderGivingSummary(donations, subscriptions) {
   givingList.innerHTML = '';
   const recurring = (subscriptions || []).filter((item) => {
     const status = (item.status || 'ACTIVE').toString().toUpperCase();
-    return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status);
+    return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status)
+      && !isEventDonation(item)
+      && !isCampusDonation(item);
   });
-  const oneTime = (donations || []).filter((item) => !item.is_recurring);
+  const oneTime = (donations || []).filter((item) => !item.is_recurring && !isEventDonation(item) && !isCampusDonation(item));
 
   const items = [
     ...recurring.map((item) => ({ ...item, _type: 'recurring' })),
@@ -2667,6 +2699,67 @@ function renderGivingSummary(donations, subscriptions) {
       ` : ''}
     `;
     givingList.appendChild(card);
+  });
+}
+
+function renderCampusSummary(donations, subscriptions) {
+  if (!campusGivingList || !campusGivingEmpty) return;
+  campusGivingList.innerHTML = '';
+
+  const recurring = (subscriptions || []).filter((item) => {
+    const status = (item.status || 'ACTIVE').toString().toUpperCase();
+    return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status) && isCampusDonation(item);
+  });
+  const oneTime = (donations || []).filter((item) => !item.is_recurring && isCampusDonation(item));
+  const items = [
+    ...recurring.map((item) => ({ ...item, _type: 'recurring' })),
+    ...oneTime.slice(0, 6).map((item) => ({ ...item, _type: 'one-time' })),
+  ];
+
+  if (campusGivingCta) {
+    campusGivingCta.toggleAttribute('hidden', !items.length);
+  }
+
+  if (!items.length) {
+    campusGivingEmpty.classList.remove('hidden');
+    return;
+  }
+  campusGivingEmpty.classList.add('hidden');
+
+  items.forEach((item) => {
+    const amount = formatCurrency(item.amount || 0, item.currency || 'COP');
+    const schedule = item._type === 'recurring'
+      ? (item.next_reminder_date ? `Próximo: ${formatDate(item.next_reminder_date)}` : 'Próximo: Sin fecha')
+      : (item.created_at ? `Último aporte: ${formatDate(item.created_at)}` : 'Último aporte');
+    const context = item.campus || item.project_name || item.event_name || 'Apoyo Campus';
+    const status = (item.status || (item._type === 'recurring' ? 'ACTIVE' : 'APPROVED')).toString().toUpperCase();
+    const statusMap = {
+      ACTIVE: { label: 'Activo', className: 'bg-emerald-100 text-emerald-700' },
+      PAUSED: { label: 'Pausado', className: 'bg-amber-100 text-amber-700' },
+      CANCELLED: { label: 'Cancelado', className: 'bg-slate-100 text-slate-600' },
+      ENDED: { label: 'Finalizado', className: 'bg-slate-100 text-slate-600' },
+      DISABLED: { label: 'Desactivado', className: 'bg-slate-100 text-slate-600' },
+      APPROVED: { label: 'Aprobado', className: 'bg-emerald-100 text-emerald-700' },
+      PENDING: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
+    };
+    const statusInfo = statusMap[status] || { label: status, className: 'bg-slate-100 text-slate-600' };
+
+    const card = document.createElement('div');
+    card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
+    card.innerHTML = `
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Campus</p>
+          <p class="text-sm font-bold text-[#293C74] mt-1">${context}</p>
+          <p class="text-xs text-slate-500 mt-1">${schedule}</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm font-bold text-brand-teal">${amount}</p>
+          <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${statusInfo.label}</span>
+        </div>
+      </div>
+    `;
+    campusGivingList.appendChild(card);
   });
 }
 
@@ -3335,122 +3428,6 @@ manualModalCancelBtn?.addEventListener('click', closeManualModal);
 manualModal?.addEventListener('click', (e) => {
   if (e.target === manualModal) closeManualModal();
 });
-
-// Manual Registration Form Submit
-// NOTE: manualRegCompanions is a global array managed by modal UI (add/remove logic elsewhere)
-let manualRegCompanions = [];
-
-const manualRegForm = document.getElementById('manual-registration-form');
-manualRegForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const statusEl = document.getElementById('manual-reg-status');
-  const submitBtn = manualRegForm.querySelector('button[type="submit"]');
-
-  if (statusEl) statusEl.textContent = 'Procesando...';
-  if (submitBtn) submitBtn.disabled = true;
-
-  try {
-    // Collect LEADER data
-    const leaderDocType = document.getElementById('reg-leader-doc-type')?.value || 'CC';
-    const leaderDocNumber = document.getElementById('reg-leader-doc-number')?.value?.trim();
-    const leaderName = document.getElementById('reg-leader-name')?.value?.trim();
-    const leaderEmail = document.getElementById('reg-leader-email')?.value?.trim();
-    const leaderPhone = document.getElementById('reg-leader-phone')?.value?.trim();
-    const leaderAge = parseInt(document.getElementById('reg-leader-age')?.value) || null;
-    const leaderMenu = document.getElementById('reg-leader-menu')?.value || 'TRADICIONAL';
-    const leaderPackage = document.getElementById('reg-leader-package')?.value || 'lodging';
-
-    // Validation
-    if (!leaderDocNumber || !leaderName) {
-      throw new Error('Completa al menos Documento y Nombre del responsable');
-    }
-
-    // Get selected church
-    const selectedChurchId = resolveSelectedChurchId();
-    if (!selectedChurchId) {
-      throw new Error('Selecciona una iglesia antes de registrar');
-    }
-
-    // Build participants array (leader + companions)
-    const participants = [
-      {
-        name: leaderName,
-        document_type: leaderDocType,
-        document_number: leaderDocNumber,
-        email: leaderEmail || null,
-        phone: leaderPhone || null,
-        age: leaderAge,
-        packageType: leaderPackage,
-        isLeader: true
-      },
-      ...manualRegCompanions  // Add companions (if any)
-    ];
-
-    // Determine payment option (FULL, DEPOSIT, INSTALLMENTS)
-    const paymentOption = document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
-    const depositDueDate = document.getElementById('deposit-due-date')?.value || '';
-
-    // Calculate total amount based on all participants
-    const currency = 'COP'; // TODO: Make dynamic if needed
-    const priceMap = { lodging: 850000, no_lodging: 660000, child_0_7: 300000, child_7_13: 550000 };
-
-    const totalAmount = participants.reduce((sum, p) => {
-      let pkg = p.packageType;
-      // Auto-adjust package for children
-      if (p.age && p.age < 7) pkg = 'child_0_7';
-      else if (p.age && p.age >= 7 && p.age < 14) pkg = 'child_7_13';
-      return sum + (priceMap[pkg] || 0);
-    }, 0);
-
-    const payload = {
-      church_id: selectedChurchId,
-      country: 'Colombia', // TODO: Extract from church data if available
-      city: '', // TODO: Extract from church data if available
-      participants,
-      payment_option: paymentOption,
-      installment_frequency: paymentOption === 'INSTALLMENTS' ? 'MONTHLY' : null,
-      deposit_due_date: paymentOption === 'DEPOSIT' ? depositDueDate : null,
-      total_amount: totalAmount,
-      currency
-    };
-
-    const res = await fetch('/api/portal/iglesia/register-group', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...portalAuthHeaders },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Error al registrar');
-
-    if (statusEl) {
-      statusEl.textContent = `✅ ¡${participants.length} persona${participants.length > 1 ? 's' : ''} registrada${participants.length > 1 ? 's' : ''}!`;
-      statusEl.className = 'mt-4 text-sm text-center text-white/70';
-    }
-
-    // Refresh church bookings
-    await loadChurchBookings(portalAuthHeaders);
-
-    // Reset form and close modal after delay
-    setTimeout(() => {
-      manualRegForm.reset();
-      manualRegCompanions = []; // Clear companions
-      closeManualModal();
-      if (submitBtn) submitBtn.disabled = false;
-      if (statusEl) statusEl.textContent = '';
-    }, 2000);
-
-  } catch (err) {
-    console.error('Manual registration error:', err);
-    if (statusEl) {
-      statusEl.textContent = `❌ ${err.message}`;
-      statusEl.className = 'mt-4 text-sm text-center text-red-400 font-bold';
-    }
-    if (submitBtn) submitBtn.disabled = false;
-  }
-});
-
-
 
 inviteToggleBtn?.addEventListener('click', () => {
   if (!inviteCard) return;
