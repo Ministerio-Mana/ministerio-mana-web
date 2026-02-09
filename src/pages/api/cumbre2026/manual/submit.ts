@@ -44,6 +44,21 @@ function normalizeCurrency(raw: unknown): 'COP' | 'USD' | null {
   return null;
 }
 
+function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number {
+  const value = String(raw || '').trim();
+  if (!value) return 0;
+  if (currency === 'COP') {
+    const digits = value.replace(/[^\d]/g, '');
+    if (!digits) return 0;
+    const amount = Number(digits);
+    return Number.isFinite(amount) ? amount : 0;
+  }
+  const normalized = value.replace(/[^0-9.,-]/g, '').replace(/,/g, '');
+  if (!normalized) return 0;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
   const age = Number(ageRaw || 0);
   const lodging = String(lodgingRaw || '').toLowerCase() === 'yes';
@@ -84,7 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
     const paymentOption = form.get('paymentOption')?.toString() ?? 'FULL';
     const depositDueDateRaw = form.get('deposit_due_date')?.toString().trim() ?? '';
     const paymentMethod = sanitizePlainText(form.get('paymentMethod')?.toString() ?? '', 40);
-    const paymentAmountInput = Number(form.get('paymentAmount')?.toString() ?? 0);
+    const paymentAmountRaw = form.get('paymentAmount')?.toString() ?? '';
     const frequency = normalizeFrequency(form.get('frequency'));
     const currencyOverride = normalizeCurrency(form.get('currency'));
 
@@ -140,6 +155,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const currency = currencyOverride ?? currencyForGroup(countryGroup);
+    const paymentAmountInput = parseAmountForCurrency(paymentAmountRaw, currency);
     const totalAmount = calculateTotals(currency, participants);
     const threshold = depositThreshold(totalAmount);
     const tokenPair = generateAccessToken();

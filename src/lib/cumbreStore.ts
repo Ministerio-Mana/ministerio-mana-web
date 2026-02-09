@@ -1,7 +1,8 @@
 import { supabaseAdmin } from './supabaseAdmin';
-import { statusFromPaid, depositThreshold, generateAccessToken, hashToken } from './cumbre2026';
+import { statusFromPaid, depositThreshold, generateAccessToken, hashToken, type Currency } from './cumbre2026';
 import { logSecurityEvent } from './securityEvents';
 import { sendCumbreEmail } from './cumbreMailer';
+import { roundCurrency } from './cumbreInstallments';
 
 function ensureSupabase() {
   if (!supabaseAdmin) {
@@ -329,10 +330,21 @@ export async function applyManualPaymentToPlan(params: {
   reference?: string | null;
   paidAt?: string;
 }): Promise<{ paidAmount: number; remainingAmount: number; paidInstallments: number }> {
+  const plan = await getPlanById(params.planId);
+  if (!plan) {
+    return {
+      paidAmount: 0,
+      remainingAmount: Number(params.amount || 0),
+      paidInstallments: 0,
+    };
+  }
+
   const installments = await listPendingInstallments(params.planId);
-  let remaining = Number(params.amount || 0);
+  let remaining = Math.max(Number(params.amount || 0), 0);
   let paidAmount = 0;
   let paidCount = 0;
+  const paidAt = params.paidAt ?? new Date().toISOString();
+  const currency = plan.currency === 'USD' ? 'USD' : 'COP';
 
   for (const installment of installments) {
     const installmentAmount = Number(installment.amount || 0);
@@ -343,19 +355,64 @@ export async function applyManualPaymentToPlan(params: {
     await updateInstallment(installment.id, {
       status: 'PAID',
       provider_reference: params.reference ?? installment.provider_reference ?? null,
-      paid_at: params.paidAt ?? new Date().toISOString(),
+      paid_at: paidAt,
       last_error: null,
     });
   }
 
-  if (paidAmount > 0) {
-    await addPlanPayment(params.planId, paidAmount);
-    await refreshPlanNextDueDate(params.planId);
+  const maxPayable = Math.max(Number(plan.total_amount || 0) - Number(plan.amount_paid || 0), 0);
+  const appliedAmount = Math.min(maxPayable, paidAmount + remaining);
+
+  if (appliedAmount > 0) {
+    await addPlanPayment(plan.id, appliedAmount);
   }
 
+  const remainingBalance = Math.max(Number(plan.total_amount || 0) - (Number(plan.amount_paid || 0) + appliedAmount), 0);
+  const pendingAfter = installments.slice(paidCount);
+
+  if (pendingAfter.length === 0) {
+    await refreshPlanNextDueDate(plan.id);
+    return {
+      paidAmount: appliedAmount,
+      remainingAmount: remainingBalance,
+      paidInstallments: paidCount,
+    };
+  }
+
+  if (remainingBalance <= 0) {
+    await Promise.all(pendingAfter.map((installment) => updateInstallment(installment.id, {
+      status: 'PAID',
+      provider_reference: params.reference ?? installment.provider_reference ?? null,
+      paid_at: paidAt,
+      last_error: null,
+    })));
+    await refreshPlanNextDueDate(plan.id);
+    return {
+      paidAmount: appliedAmount,
+      remainingAmount: 0,
+      paidInstallments: paidCount + pendingAfter.length,
+    };
+  }
+
+  const pendingCount = pendingAfter.length;
+  const average = roundCurrency(remainingBalance / pendingCount, currency as Currency);
+  let accumulated = 0;
+
+  await Promise.all(pendingAfter.map((installment, index) => {
+    const isLast = index === pendingCount - 1;
+    const amount = isLast
+      ? roundCurrency(remainingBalance - accumulated, currency as Currency)
+      : average;
+    accumulated = roundCurrency(accumulated + amount, currency as Currency);
+    return updateInstallment(installment.id, { amount });
+  }));
+
+  await updatePaymentPlan(plan.id, { installment_amount: average });
+  await refreshPlanNextDueDate(plan.id);
+
   return {
-    paidAmount,
-    remainingAmount: remaining,
+    paidAmount: appliedAmount,
+    remainingAmount: remainingBalance,
     paidInstallments: paidCount,
   };
 }

@@ -269,7 +269,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               </div>
               <div class="space-y-2">
                 <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Valor pagado hoy</label>
-                <input type="number" id="manual-payment-amount" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="0">
+                <input type="text" id="manual-payment-amount" inputmode="decimal" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="0">
                 <div class="flex items-center justify-between text-[11px] text-slate-500 ml-1">
                   <span id="manual-payment-hint">Automático: $0</span>
                   <label class="inline-flex items-center gap-2 font-semibold text-slate-500 cursor-pointer">

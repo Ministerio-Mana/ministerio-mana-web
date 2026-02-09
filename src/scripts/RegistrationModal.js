@@ -165,6 +165,10 @@ export class RegistrationModal {
         });
         this.paymentAmountInput?.addEventListener('input', () => {
             this.paymentAmountTouched = true;
+            const amount = this.parsePaymentAmount();
+            if (amount !== null) {
+                this.paymentAmountInput.value = this.formatInputAmount(amount);
+            }
             this.updatePaymentHint();
         });
         this.paymentCustomToggle?.addEventListener('change', () => {
@@ -677,8 +681,16 @@ export class RegistrationModal {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
-            maximumFractionDigits: 0
+            maximumFractionDigits: 2
         }).format(amount);
+    }
+
+    formatInputAmount(amount) {
+        if (!Number.isFinite(amount)) return '';
+        if (this.currency === 'COP') {
+            return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(amount);
+        }
+        return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
     }
 
     getTotal() {
@@ -719,23 +731,29 @@ export class RegistrationModal {
         const shouldSync = (!customEnabled && (force || !this.paymentAmountTouched || !this.paymentAmountInput.value));
         if (shouldSync) {
             const defaultAmount = this.getDefaultPaymentAmount();
-            this.paymentAmountInput.value = defaultAmount ? String(defaultAmount) : '';
+            this.paymentAmountInput.value = defaultAmount ? this.formatInputAmount(defaultAmount) : '';
             if (force) this.paymentAmountTouched = false;
         } else if (customEnabled && force && !this.paymentAmountInput.value) {
             const defaultAmount = this.getDefaultPaymentAmount();
-            this.paymentAmountInput.value = defaultAmount ? String(defaultAmount) : '';
+            this.paymentAmountInput.value = defaultAmount ? this.formatInputAmount(defaultAmount) : '';
         }
         this.updatePaymentHint();
     }
 
-    parsePaymentAmount() {
-        if (!this.paymentAmountInput) return null;
-        const raw = this.paymentAmountInput.value;
+    parsePaymentAmount(rawValue) {
+        if (!this.paymentAmountInput && rawValue === undefined) return null;
+        const raw = (rawValue ?? this.paymentAmountInput?.value ?? '').toString().trim();
         if (!raw) return null;
-        const normalized = raw.replace(',', '.');
+        if (this.currency === 'COP') {
+            const digits = raw.replace(/[^\d]/g, '');
+            if (!digits) return null;
+            const amount = Number(digits);
+            return Number.isFinite(amount) ? amount : null;
+        }
+        const normalized = raw.replace(/[^0-9.,]/g, '').replace(/,/g, '');
+        if (!normalized) return null;
         const amount = Number(normalized);
-        if (!Number.isFinite(amount)) return null;
-        return amount;
+        return Number.isFinite(amount) ? amount : null;
     }
 
     updateSummary() {
@@ -818,7 +836,10 @@ export class RegistrationModal {
         }
 
         const count = Math.max(1, dueDates.length);
-        const amount = Math.round(total / count);
+        const rawAmount = total / count;
+        const amount = this.currency === 'COP'
+            ? Math.round(rawAmount)
+            : Math.round(rawAmount * 100) / 100;
         return { count, amount };
     }
 

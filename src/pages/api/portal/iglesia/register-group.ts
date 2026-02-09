@@ -43,11 +43,23 @@ function normalizeCurrency(raw: unknown): 'COP' | 'USD' | null {
     return null;
 }
 
-function parseAmount(raw: unknown): number | null {
+function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number | null {
     if (raw === null || raw === undefined || raw === '') return null;
-    const amount = Number(raw);
-    if (!Number.isFinite(amount)) return null;
-    return amount;
+    if (typeof raw === 'number') {
+        return Number.isFinite(raw) ? raw : null;
+    }
+    const value = String(raw || '').trim();
+    if (!value) return null;
+    if (currency === 'COP') {
+        const digits = value.replace(/[^\d]/g, '');
+        if (!digits) return null;
+        const amount = Number(digits);
+        return Number.isFinite(amount) ? amount : null;
+    }
+    const normalized = value.replace(/[^0-9.,-]/g, '').replace(/,/g, '');
+    if (!normalized) return null;
+    const amount = Number(normalized);
+    return Number.isFinite(amount) ? amount : null;
 }
 
 function resolveCountryGroup(rawCountryGroup: unknown, rawCountry: unknown): 'CO' | 'INT' {
@@ -165,7 +177,7 @@ export const POST: APIRoute = async ({ request }) => {
     const depositDueDateRaw = (body.deposit_due_date ?? body.depositDueDate ?? '').toString().trim();
     const frequency = normalizeFrequency(body.installment_frequency ?? body.installmentFrequency);
     const currencyOverride = normalizeCurrency(body.currency ?? body.currencyCode);
-    const paymentAmountInput = parseAmount(body.payment_amount ?? body.paymentAmount);
+    const paymentAmountRaw = body.payment_amount ?? body.paymentAmount;
 
     // STRICT RBAC: Validate requested church is within authorized scope
     let resolvedChurchId: string | null = isUuid(rawChurchId) ? String(rawChurchId) : null;
@@ -289,6 +301,7 @@ export const POST: APIRoute = async ({ request }) => {
         countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
     }
     const currency = currencyOverride ?? currencyForGroup(countryGroup);
+    const paymentAmountInput = parseAmountForCurrency(paymentAmountRaw, currency);
     const totalAmount = calculateTotals(currency, participants.map((p) => p.safe));
     const threshold = depositThreshold(totalAmount);
     const tokenPair = generateAccessToken();
