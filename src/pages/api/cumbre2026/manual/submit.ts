@@ -14,6 +14,8 @@ import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline,
 import { createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
+import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
 
@@ -67,6 +69,26 @@ function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType
   return lodging ? 'lodging' : 'no_lodging';
 }
 
+async function findIdempotentBooking(idempotencyKey: string | null, expectedParticipants: number) {
+  if (!supabaseAdmin || !idempotencyKey) return null;
+  const { data: booking, error } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .select('id')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (error || !booking?.id) return null;
+  const { count, error: countError } = await supabaseAdmin
+    .from('cumbre_participants')
+    .select('id', { count: 'exact', head: true })
+    .eq('booking_id', booking.id);
+  if (countError) return null;
+  if ((count ?? 0) >= expectedParticipants) {
+    return booking;
+  }
+  await cleanupCumbreBooking(booking.id);
+  return null;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   const form = await request.formData();
   const token = form.get('token')?.toString();
@@ -85,6 +107,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
+  let createdBookingId: string | null = null;
   try {
     const contactName = sanitizePlainText(form.get('contactName')?.toString() ?? '', 120);
     const email = (form.get('email')?.toString() ?? '').trim().toLowerCase();
@@ -158,7 +181,6 @@ export const POST: APIRoute = async ({ request }) => {
     const paymentAmountInput = parseAmountForCurrency(paymentAmountRaw, currency);
     const totalAmount = calculateTotals(currency, participants);
     const threshold = depositThreshold(totalAmount);
-    const tokenPair = generateAccessToken();
 
     let installmentSchedule: ReturnType<typeof buildInstallmentSchedule> | null = null;
     let paymentAmount = 0;
@@ -194,6 +216,72 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
+    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
+    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+
+    if (planOption === 'DEPOSIT') {
+      if (!isValidDateOnly(depositDueDateRaw)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      const deadline = getInstallmentDeadline();
+      const today = new Date();
+      const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      if (depositDueDateRaw < todayValue) {
+        return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (depositDueDateRaw > deadline) {
+        return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha límite' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+
+    const idempotencySeed = JSON.stringify({
+      source: 'cumbre-manual',
+      contactName,
+      email,
+      phone,
+      totalAmount,
+      currency,
+      paymentAmount,
+      planOption,
+      frequency,
+      depositDueDateRaw: depositDueDateRaw || null,
+      contactChurch,
+      participants: participants.map((entry: any) => ({
+        fullName: entry.fullName,
+        packageType: entry.packageType,
+        relationship: entry.relationship,
+      })),
+    });
+    const idempotencyKey = buildIdempotencyKey({
+      request,
+      rawKey: form.get('idempotencyKey') ?? form.get('idempotency_key'),
+      fallbackSeed: idempotencySeed,
+    });
+
+    const existingBooking = await findIdempotentBooking(idempotencyKey, participants.length);
+    if (existingBooking) {
+      return new Response(JSON.stringify({
+        ok: true,
+        bookingId: existingBooking.id,
+        token: null,
+        planId: null,
+        idempotent: true,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const tokenPair = generateAccessToken();
 
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('cumbre_bookings')
@@ -215,17 +303,35 @@ export const POST: APIRoute = async ({ request }) => {
         payment_method: paymentMethod || 'manual',
         payment_status: paymentAmount > 0 ? 'APPROVED' : 'PENDING',
         token_hash: tokenPair.hash,
+        idempotency_key: idempotencyKey,
         source: 'cumbre-manual',
       })
       .select('id')
       .single();
 
     if (bookingError || !booking) {
+      if (idempotencyKey) {
+        const existing = await findIdempotentBooking(idempotencyKey, participants.length);
+        if (existing) {
+          return new Response(JSON.stringify({
+            ok: true,
+            bookingId: existing.id,
+            token: null,
+            planId: null,
+            idempotent: true,
+          }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+      }
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear la reserva' }), {
         status: 500,
         headers: { 'content-type': 'application/json' },
       });
     }
+
+    createdBookingId = booking.id;
 
     const participantRows = participants.map((participant) => ({
       booking_id: booking.id,
@@ -239,14 +345,8 @@ export const POST: APIRoute = async ({ request }) => {
       .insert(participantRows);
 
     if (participantError) {
-      return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), {
-        status: 500,
-        headers: { 'content-type': 'application/json' },
-      });
+      throw new Error('No se pudo guardar participantes');
     }
-
-    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
-    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
 
     let planId: string | null = null;
     if (planOption === 'INSTALLMENTS') {
@@ -271,27 +371,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
       planId = plan.id;
     } else if (planOption === 'DEPOSIT') {
-      if (!isValidDateOnly(depositDueDateRaw)) {
-        return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), {
-          status: 400,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-      const deadline = getInstallmentDeadline();
-      const today = new Date();
-      const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      if (depositDueDateRaw < todayValue) {
-        return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), {
-          status: 400,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-      if (depositDueDateRaw > deadline) {
-        return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha límite' }), {
-          status: 400,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
       if (remainingAmount > 0) {
         const schedule = buildDepositSchedule({
           totalAmount: remainingAmount,
@@ -381,6 +460,9 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'content-type': 'application/json' },
     });
   } catch (error: any) {
+    if (createdBookingId) {
+      await cleanupCumbreBooking(createdBookingId);
+    }
     console.error('[cumbre.manual] error', error);
     return new Response(JSON.stringify({ ok: false, error: 'Error creando reserva manual' }), {
       status: 500,

@@ -11,6 +11,8 @@ export class RegistrationModal {
         this.lastInstallmentAmount = 0;
         this.lastInstallmentCount = 0;
         this.paymentOptionBackup = null;
+        this.idempotencyKey = null;
+        this.lastSubmissionSignature = null;
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -868,6 +870,13 @@ export class RegistrationModal {
         return { count, amount };
     }
 
+    generateIdempotencyKey() {
+        if (window.crypto?.randomUUID) {
+            return window.crypto.randomUUID();
+        }
+        return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
     // Form Submission
     async handleSubmit(e) {
         e.preventDefault();
@@ -916,6 +925,12 @@ export class RegistrationModal {
         }
 
         const formData = this.collectFormData();
+        const submissionSignature = JSON.stringify(formData);
+        if (!this.idempotencyKey || this.lastSubmissionSignature !== submissionSignature) {
+            this.idempotencyKey = this.generateIdempotencyKey();
+            this.lastSubmissionSignature = submissionSignature;
+        }
+        formData.idempotencyKey = this.idempotencyKey;
 
         if (this.statusMsg) {
             this.statusMsg.textContent = 'Registrando grupo...';
@@ -1046,6 +1061,8 @@ export class RegistrationModal {
         this.currencyOverride = false;
         this.paymentAmountTouched = false;
         this.leaderDraft = null;
+        this.idempotencyKey = null;
+        this.lastSubmissionSignature = null;
         this.form?.reset();
 
         // Reset menus

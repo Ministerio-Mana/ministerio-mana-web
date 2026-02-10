@@ -10,12 +10,15 @@ import {
   calculateTotals,
   depositThreshold,
   generateAccessToken,
+  hashToken,
 } from '@lib/cumbre2026';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
+import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
+import { buildIdempotencyKey, isSafeTokenCandidate } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
 
@@ -60,10 +63,31 @@ function parseParticipants(raw: unknown) {
   return raw;
 }
 
+async function findIdempotentBooking(idempotencyKey: string | null) {
+  if (!supabaseAdmin || !idempotencyKey) return null;
+  const { data: booking, error } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .select('id, total_amount, deposit_threshold, currency')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (error || !booking?.id) return null;
+  const { data: participants, error: participantsError } = await supabaseAdmin
+    .from('cumbre_participants')
+    .select('id, full_name, package_type')
+    .eq('booking_id', booking.id);
+  if (participantsError) return null;
+  if (!participants || participants.length === 0) {
+    await cleanupCumbreBooking(booking.id);
+    return null;
+  }
+  return { booking, participants };
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   const contentType = request.headers.get('content-type') || '';
   let payload: any = {};
 
+  let createdBookingId: string | null = null;
   try {
     if (contentType.includes('application/json')) {
       payload = await request.json();
@@ -189,7 +213,36 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       totalAmount = getTestAmount(currency);
     }
     const threshold = depositThreshold(totalAmount);
-    const token = generateAccessToken();
+    const rawIdempotencyKey = buildIdempotencyKey({
+      request,
+      rawKey: payload.idempotencyKey ?? payload.idempotency_key,
+    });
+    const idempotencyKey = rawIdempotencyKey && isSafeTokenCandidate(rawIdempotencyKey)
+      ? rawIdempotencyKey
+      : null;
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentBooking(idempotencyKey);
+      if (existing) {
+        return new Response(JSON.stringify({
+          ok: true,
+          bookingId: existing.booking.id,
+          token: idempotencyKey,
+          currency: existing.booking.currency,
+          totalAmount: existing.booking.total_amount,
+          depositThreshold: existing.booking.deposit_threshold,
+          participants: existing.participants,
+          idempotent: true,
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+
+    const token = idempotencyKey
+      ? { token: idempotencyKey, hash: hashToken(idempotencyKey) }
+      : generateAccessToken();
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
@@ -213,11 +266,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         status: 'PENDING',
         deposit_threshold: threshold,
         token_hash: token.hash,
+        idempotency_key: idempotencyKey,
       })
       .select('id')
       .single();
 
     if (bookingError || !booking) {
+      if (idempotencyKey) {
+        const existing = await findIdempotentBooking(idempotencyKey);
+        if (existing) {
+          return new Response(JSON.stringify({
+            ok: true,
+            bookingId: existing.booking.id,
+            token: idempotencyKey,
+            currency: existing.booking.currency,
+            totalAmount: existing.booking.total_amount,
+            depositThreshold: existing.booking.deposit_threshold,
+            participants: existing.participants,
+            idempotent: true,
+          }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+      }
       void logSecurityEvent({
         type: 'payment_error',
         identifier: 'cumbre.booking',
@@ -229,6 +301,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
+
+    createdBookingId = booking.id;
 
     const participantRows = participants.map(({ safe, raw }) => ({
       booking_id: booking.id,
@@ -254,20 +328,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         ip: clientAddress,
         detail: participantsError.message,
       });
+      await cleanupCumbreBooking(booking.id);
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), {
         status: 500,
         headers: { 'content-type': 'application/json' },
       });
     }
 
-    await sendCumbreEmail('booking_received', {
-      to: email,
-      fullName: contactName || undefined,
-      bookingId: booking.id,
-      totalAmount,
-      totalPaid: 0,
-      currency,
-    });
+    try {
+      await sendCumbreEmail('booking_received', {
+        to: email,
+        fullName: contactName || undefined,
+        bookingId: booking.id,
+        totalAmount,
+        totalPaid: 0,
+        currency,
+      });
+    } catch (mailError) {
+      console.error('[cumbre.booking] email error', mailError);
+    }
 
     try {
       const baseUrl = resolveBaseUrl(request);
@@ -297,6 +376,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       headers: { 'content-type': 'application/json' },
     });
   } catch (error: any) {
+    if (createdBookingId) {
+      await cleanupCumbreBooking(createdBookingId);
+    }
     console.error('[cumbre.booking] error', error);
     void logSecurityEvent({
       type: 'payment_error',

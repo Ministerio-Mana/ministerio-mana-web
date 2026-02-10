@@ -440,6 +440,20 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
 
     if (bookingError || !booking) {
+        if (idempotencyKey) {
+            const existing = await findIdempotentBooking(idempotencyKey, participants.length);
+            if (existing) {
+                return new Response(
+                    JSON.stringify({
+                        ok: true,
+                        message: `Grupo registrado exitosamente (${participants.length} participante${participants.length > 1 ? 's' : ''})`,
+                        booking_id: existing.id,
+                        idempotent: true,
+                    }),
+                    { status: 200 }
+                );
+            }
+        }
         console.error('Error inserting bookings:', bookingError);
         return new Response(JSON.stringify({ ok: false, error: 'Error al crear registros' }), { status: 500 });
     }

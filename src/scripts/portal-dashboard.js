@@ -60,6 +60,13 @@ const campusGivingCta = document.getElementById('campus-cta');
 const localEventsList = document.getElementById('local-events-list');
 const localEventsEmpty = document.getElementById('local-events-empty');
 
+const generateIdempotencyKey = () => {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 const bookingsList = document.getElementById('bookings-list');
 const bookingsEmpty = document.getElementById('bookings-empty');
 const plansList = document.getElementById('plans-list');
@@ -74,6 +81,8 @@ const churchForm = document.getElementById('church-manual-form');
 const churchFormToggle = document.getElementById('church-form-toggle');
 const churchNameInput = document.getElementById('church-name');
 const churchFormStatus = document.getElementById('church-form-status');
+let churchFormIdempotencyKey = null;
+let churchFormSignature = null;
 const churchBookingsEmpty = document.getElementById('church-bookings-empty');
 const churchBookingsList = document.getElementById('church-bookings-list');
 const churchBookingsSearch = document.getElementById('church-bookings-search');
@@ -2185,6 +2194,12 @@ function initChurchManualForm() {
       notes: document.getElementById('church-notes')?.value || '',
       participants: collectParticipants(),
     };
+    const signature = JSON.stringify(payload);
+    if (!churchFormIdempotencyKey || churchFormSignature !== signature) {
+      churchFormIdempotencyKey = generateIdempotencyKey();
+      churchFormSignature = signature;
+    }
+    payload.idempotencyKey = churchFormIdempotencyKey;
 
     try {
       const res = await fetch('/api/portal/iglesia/submit', {
@@ -2198,6 +2213,8 @@ function initChurchManualForm() {
       await loadChurchBookings();
       await loadChurchPayments();
       churchForm.reset();
+      churchFormIdempotencyKey = null;
+      churchFormSignature = null;
       participantsList.innerHTML = '';
       participantsList.appendChild(buildParticipantRow());
       await fetch('/api/portal/iglesia/draft', { method: 'DELETE', headers: portalAuthHeaders });
