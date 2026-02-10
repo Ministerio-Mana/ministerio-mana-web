@@ -6,9 +6,11 @@ export class RegistrationModal {
         this.currency = 'COP'; // Default to Colombia
         this.currencyOverride = false;
         this.leaderId = 'leader';
+        this.leaderDraft = null;
         this.paymentAmountTouched = false;
         this.lastInstallmentAmount = 0;
         this.lastInstallmentCount = 0;
+        this.paymentOptionBackup = null;
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -32,7 +34,7 @@ export class RegistrationModal {
     init() {
         this.cacheDOM();
         this.bindEvents();
-        this.updateSummary();
+        this.updateLeaderParticipant();
         if (this.countryInput) {
             this.updateCurrencyFromCountry(this.countryInput.value);
         }
@@ -40,6 +42,10 @@ export class RegistrationModal {
         // Set initial menu states
         this.updateMenuOptions(this.leaderMenu, null);
         this.updateMenuOptions(this.companionMenu, null);
+
+        if (this.paymentCustomToggle?.checked) {
+            this.handleCustomPaymentToggle();
+        }
     }
 
     cacheDOM() {
@@ -85,6 +91,7 @@ export class RegistrationModal {
 
         // Payment
         this.paymentOptions = document.querySelectorAll('input[name="payment_option"]');
+        this.paymentOptionsContainer = document.getElementById('payment-options-container');
         this.installmentDetails = document.getElementById('installment-details');
         this.depositAmountLabel = document.getElementById('deposit-amount-label');
         this.installmentFrequencyInputs = document.querySelectorAll('input[name="installment_frequency"]');
@@ -173,7 +180,7 @@ export class RegistrationModal {
         });
         this.paymentCustomToggle?.addEventListener('change', () => {
             this.paymentAmountTouched = Boolean(this.paymentCustomToggle?.checked);
-            this.syncPaymentAmount(true);
+            this.handleCustomPaymentToggle();
         });
 
         if (this.depositDueDate) {
@@ -347,9 +354,13 @@ export class RegistrationModal {
         const birthdate = this.leaderBirthdate?.value || '';
         const gender = this.leaderGender?.value || '';
 
-        if (!name) return;
-
         const packageType = age !== null ? this.getPackageTypeFromAge(age, packageChoice) : packageChoice;
+        this.leaderDraft = { packageType };
+
+        if (!name) {
+            this.updateSummary();
+            return;
+        }
 
         const existing = this.participants.find(p => p.isLeader);
         if (existing) {
@@ -694,7 +705,12 @@ export class RegistrationModal {
     }
 
     getTotal() {
-        return this.participants.reduce((sum, p) => sum + this.getPrice(p.packageType), 0);
+        const items = [...this.participants];
+        const hasLeader = items.some((p) => p.isLeader);
+        if (!hasLeader && this.leaderDraft?.packageType) {
+            items.push(this.leaderDraft);
+        }
+        return items.reduce((sum, p) => sum + this.getPrice(p.packageType), 0);
     }
 
     getDepositAmount(total) {
@@ -776,20 +792,25 @@ export class RegistrationModal {
     updatePaymentUI() {
         const scrollContainer = document.getElementById('modal-scroll-container');
         const previousScroll = scrollContainer ? scrollContainer.scrollTop : 0;
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+
+        if (this.paymentOptionsContainer) {
+            this.paymentOptionsContainer.classList.toggle('hidden', customEnabled);
+        }
         const selected = document.querySelector('input[name="payment_option"]:checked');
         const value = selected?.value || 'FULL';
 
         if (this.installmentDetails) {
-            this.installmentDetails.classList.toggle('hidden', value !== 'INSTALLMENTS');
+            this.installmentDetails.classList.toggle('hidden', customEnabled || value !== 'INSTALLMENTS');
         }
         if (this.depositSchedule) {
-            this.depositSchedule.classList.toggle('hidden', value !== 'DEPOSIT');
+            this.depositSchedule.classList.toggle('hidden', customEnabled || value !== 'DEPOSIT');
         }
 
-        if (value === 'INSTALLMENTS') {
+        if (!customEnabled && value === 'INSTALLMENTS') {
             this.updateInstallmentPreview();
         }
-        if (value === 'DEPOSIT') {
+        if (!customEnabled && value === 'DEPOSIT') {
             this.syncDepositSchedule();
         }
         this.syncPaymentAmount(true);
@@ -799,6 +820,10 @@ export class RegistrationModal {
                 scrollContainer.scrollTop = previousScroll;
             });
         }
+    }
+
+    handleCustomPaymentToggle() {
+        this.updatePaymentUI();
     }
 
     updateInstallmentPreview() {
@@ -1020,6 +1045,7 @@ export class RegistrationModal {
         this.selectedChurch = null;
         this.currencyOverride = false;
         this.paymentAmountTouched = false;
+        this.leaderDraft = null;
         this.form?.reset();
 
         // Reset menus

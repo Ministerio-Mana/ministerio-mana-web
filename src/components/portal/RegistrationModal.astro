@@ -280,43 +280,43 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               </div>
             </div>
 
-            <div class="grid gap-4">
+            <div id="payment-options-container" class="grid gap-4">
               <!-- Full Payment -->
               <label class="cursor-pointer group">
                 <input type="radio" name="payment_option" value="FULL" class="peer sr-only" checked>
-                <div class="flex items-center gap-5 p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#293C74]/30 peer-checked:border-brand-teal peer-checked:bg-brand-teal/5 peer-checked:shadow-md transition-all">
+                <div class="flex items-center gap-5 p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#293C74]/30 peer-checked:border-brand-teal peer-checked:bg-brand-teal/5 peer-checked:shadow-md peer-checked:[&_.payment-option-dot]:border-brand-teal peer-checked:[&_.payment-option-dot]:bg-brand-teal transition-all">
                   <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">💳</div>
                   <div class="flex-1">
                     <span class="block font-bold text-[#293C74] text-base group-hover:text-brand-teal transition-colors">Pago Total (Efectivo)</span>
                     <span class="block text-xs text-slate-500 mt-1">El participante paga el 100% ahora</span>
                   </div>
-                  <div class="w-6 h-6 rounded-full border-2 border-slate-200 peer-checked:border-brand-teal peer-checked:bg-brand-teal transition-all"></div>
+                  <div class="payment-option-dot w-6 h-6 rounded-full border-2 border-slate-200 transition-all"></div>
                 </div>
               </label>
               
               <!-- Deposit -->
               <label class="cursor-pointer group">
                 <input type="radio" name="payment_option" value="DEPOSIT" class="peer sr-only">
-                <div class="flex items-center gap-5 p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#293C74]/30 peer-checked:border-brand-teal peer-checked:bg-brand-teal/5 peer-checked:shadow-md transition-all">
+                <div class="flex items-center gap-5 p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#293C74]/30 peer-checked:border-brand-teal peer-checked:bg-brand-teal/5 peer-checked:shadow-md peer-checked:[&_.payment-option-dot]:border-brand-teal peer-checked:[&_.payment-option-dot]:bg-brand-teal transition-all">
                   <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🏦</div>
                   <div class="flex-1">
                     <span class="block font-bold text-[#293C74] text-base group-hover:text-brand-teal transition-colors">Abono Inicial (50%)</span>
                     <span class="block text-xs text-slate-500 mt-1">Paga <span id="deposit-amount-label" class="font-bold text-brand-teal">$0</span> para reservar cupo</span>
                   </div>
-                  <div class="w-6 h-6 rounded-full border-2 border-slate-200 peer-checked:border-brand-teal peer-checked:bg-brand-teal transition-all"></div>
+                  <div class="payment-option-dot w-6 h-6 rounded-full border-2 border-slate-200 transition-all"></div>
                 </div>
               </label>
 
               <!-- Installments -->
               <label class="cursor-pointer group">
                 <input type="radio" name="payment_option" value="INSTALLMENTS" class="peer sr-only">
-                <div class="flex items-center gap-5 p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#293C74]/30 peer-checked:border-brand-teal peer-checked:bg-brand-teal/5 peer-checked:shadow-md transition-all">
+                <div class="flex items-center gap-5 p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#293C74]/30 peer-checked:border-brand-teal peer-checked:bg-brand-teal/5 peer-checked:shadow-md peer-checked:[&_.payment-option-dot]:border-brand-teal peer-checked:[&_.payment-option-dot]:bg-brand-teal transition-all">
                   <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">📅</div>
                   <div class="flex-1">
                     <span class="block font-bold text-[#293C74] text-base group-hover:text-brand-teal transition-colors">Plan de Cuotas</span>
                     <span class="block text-xs text-slate-500 mt-1">Paga mes a mes hasta el 15 de mayo de 2026</span>
                   </div>
-                  <div class="w-6 h-6 rounded-full border-2 border-slate-200 peer-checked:border-brand-teal peer-checked:bg-brand-teal transition-all"></div>
+                  <div class="payment-option-dot w-6 h-6 rounded-full border-2 border-slate-200 transition-all"></div>
                 </div>
               </label>
             </div>
