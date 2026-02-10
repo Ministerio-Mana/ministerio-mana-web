@@ -273,8 +273,11 @@ export const POST: APIRoute = async ({ request }) => {
       console.error('[portal.iglesia.submit] invite error', inviteError);
     }
 
+    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
+    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+
     let planId: string | null = null;
-    if (paymentOption === 'INSTALLMENTS') {
+    if (planOption === 'INSTALLMENTS') {
       const schedule = buildInstallmentSchedule({
         totalAmount,
         currency,
@@ -295,7 +298,7 @@ export const POST: APIRoute = async ({ request }) => {
         installments: schedule.installments,
       });
       planId = plan.id;
-    } else if (paymentOption === 'DEPOSIT') {
+    } else if (planOption === 'DEPOSIT') {
       if (!isValidDateOnly(depositDueDateRaw)) {
         return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), {
           status: 400,
@@ -357,7 +360,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
 
-      if (planId && paymentOption === 'INSTALLMENTS') {
+      if (planId && planOption === 'INSTALLMENTS') {
         await applyManualPaymentToPlan({
           planId,
           amount: paymentAmount,

@@ -325,6 +325,9 @@ export const POST: APIRoute = async ({ request }) => {
         paymentAmount = paymentAmountInput;
     }
 
+    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
+    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+
     if (paymentAmount < 0) {
         return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede ser negativo' }), { status: 400 });
     }
@@ -387,7 +390,7 @@ export const POST: APIRoute = async ({ request }) => {
     const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
 
     let planId: string | null = null;
-    if (paymentOption === 'INSTALLMENTS') {
+    if (planOption === 'INSTALLMENTS') {
         const schedule = installmentSchedule ?? buildInstallmentSchedule({
             totalAmount,
             currency,
@@ -408,7 +411,7 @@ export const POST: APIRoute = async ({ request }) => {
             installments: schedule.installments,
         });
         planId = plan.id;
-    } else if (paymentOption === 'DEPOSIT') {
+    } else if (planOption === 'DEPOSIT') {
         if (!isValidDateOnly(depositDueDateRaw)) {
             return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), { status: 400 });
         }
@@ -461,7 +464,7 @@ export const POST: APIRoute = async ({ request }) => {
             },
         });
 
-        if (planId && paymentOption === 'INSTALLMENTS') {
+        if (planId && planOption === 'INSTALLMENTS') {
             await applyManualPaymentToPlan({
                 planId,
                 amount: paymentAmount,

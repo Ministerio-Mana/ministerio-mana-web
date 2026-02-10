@@ -182,7 +182,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    if (Number.isFinite(paymentAmountInput) && paymentAmountInput > 0) {
+    if (paymentAmountInput != null) {
       paymentAmount = paymentAmountInput;
     }
 
@@ -212,7 +212,10 @@ export const POST: APIRoute = async ({ request }) => {
         total_paid: 0,
         status: 'PENDING',
         deposit_threshold: threshold,
+        payment_method: paymentMethod || 'manual',
+        payment_status: paymentAmount > 0 ? 'APPROVED' : 'PENDING',
         token_hash: tokenPair.hash,
+        source: 'cumbre-manual',
       })
       .select('id')
       .single();
@@ -242,8 +245,11 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
+    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+
     let planId: string | null = null;
-    if (paymentOption === 'INSTALLMENTS') {
+    if (planOption === 'INSTALLMENTS') {
       const schedule = installmentSchedule ?? buildInstallmentSchedule({
         totalAmount,
         currency,
@@ -264,7 +270,7 @@ export const POST: APIRoute = async ({ request }) => {
         installments: schedule.installments,
       });
       planId = plan.id;
-    } else if (paymentOption === 'DEPOSIT') {
+    } else if (planOption === 'DEPOSIT') {
       if (!isValidDateOnly(depositDueDateRaw)) {
         return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), {
           status: 400,
@@ -325,7 +331,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
 
-      if (planId && paymentOption === 'INSTALLMENTS') {
+      if (planId && planOption === 'INSTALLMENTS') {
         await applyManualPaymentToPlan({
           planId,
           amount: paymentAmount,
