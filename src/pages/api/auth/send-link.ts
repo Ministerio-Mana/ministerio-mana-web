@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { sendAuthLink } from '@lib/authMailer';
 import { resolveBaseUrl } from '@lib/url';
 import { verifyTurnstile } from '@lib/turnstile';
+import { enforceRateLimit } from '@lib/rateLimit';
+import { logSecurityEvent } from '@lib/securityEvents';
 
 export const prerender = false;
 
@@ -30,6 +32,7 @@ function makeTraceId(): string {
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const userAgent = request.headers.get('user-agent') || '';
   const payload = await request.json().catch(() => null);
   const email = String(payload?.email || '').trim().toLowerCase();
   const kind = String(payload?.kind || payload?.type || '').trim();
@@ -42,9 +45,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const traceId = makeTraceId();
 
-  const enforceTurnstile = Boolean(payload?.enforceTurnstile);
   const hasSecret = Boolean(env('TURNSTILE_SECRET_KEY'));
-  if (enforceTurnstile && isProduction() && hasSecret) {
+  if (isProduction() && hasSecret) {
     const token = String(payload?.turnstileToken || payload?.['cf-turnstile-response'] || payload?.captchaToken || '');
     if (!token) {
       return new Response(JSON.stringify({ ok: false, error: 'Captcha requerido' }), {
@@ -54,11 +56,34 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
     const okCaptcha = await verifyTurnstile(token, clientAddress);
     if (!okCaptcha) {
+      void logSecurityEvent({
+        type: 'captcha_failed',
+        identifier: 'auth.send-link',
+        ip: clientAddress,
+        userAgent,
+        detail: 'Turnstile invalido',
+      });
       return new Response(JSON.stringify({ ok: false, error: 'Captcha invalido' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
+  }
+
+  const rateKey = `auth.send-link:${clientAddress ?? 'unknown'}`;
+  const rateAllowed = await enforceRateLimit(rateKey);
+  if (!rateAllowed) {
+    void logSecurityEvent({
+      type: 'rate_limited',
+      identifier: rateKey,
+      ip: clientAddress,
+      userAgent,
+      detail: 'Auth send-link',
+    });
+    return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes' }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   const baseUrl = resolveBaseUrl(request);

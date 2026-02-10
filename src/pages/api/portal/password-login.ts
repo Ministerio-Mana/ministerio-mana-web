@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { createPasswordSessionToken, buildSessionCookie } from '@lib/portalPasswordSession';
 import { verifyTurnstile } from '@lib/turnstile';
+import { enforceRateLimit } from '@lib/rateLimit';
+import { logSecurityEvent } from '@lib/securityEvents';
 
 function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
@@ -22,6 +24,7 @@ function parseEmails(raw?: string | null): Set<string> {
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const userAgent = request.headers.get('user-agent') || '';
   let payload: any = {};
   try {
     payload = await request.json();
@@ -42,17 +45,44 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  // Turnstile validation: Only enforce if secret is configured AND client sent a token
-  // If client sends empty token, it means widget is broken/misconfigured → bypass
   const hasSecret = Boolean(env('TURNSTILE_SECRET_KEY'));
-  if (isProduction() && hasSecret && captchaToken) {
+  if (isProduction() && hasSecret) {
+    if (!captchaToken) {
+      return new Response(JSON.stringify({ ok: false, error: 'Captcha requerido' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     const okCaptcha = await verifyTurnstile(captchaToken, clientAddress);
     if (!okCaptcha) {
+      void logSecurityEvent({
+        type: 'captcha_failed',
+        identifier: 'portal.password-login',
+        ip: clientAddress,
+        userAgent,
+        detail: 'Turnstile invalido',
+      });
       return new Response(JSON.stringify({ ok: false, error: 'Captcha invalido' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
+  }
+
+  const rateKey = `portal.password:${clientAddress ?? 'unknown'}`;
+  const rateAllowed = await enforceRateLimit(rateKey);
+  if (!rateAllowed) {
+    void logSecurityEvent({
+      type: 'rate_limited',
+      identifier: rateKey,
+      ip: clientAddress,
+      userAgent,
+      detail: 'Portal password login',
+    });
+    return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes' }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   const allowed = parseEmails(env('PORTAL_SUPERADMIN_EMAILS')).has(email);

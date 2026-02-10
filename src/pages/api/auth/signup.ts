@@ -2,18 +2,63 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
+import { verifyTurnstile } from '@lib/turnstile';
+import { enforceRateLimit } from '@lib/rateLimit';
+import { logSecurityEvent } from '@lib/securityEvents';
 
-export const POST: APIRoute = async ({ request }) => {
+function env(key: string): string | undefined {
+    return import.meta.env?.[key] ?? process.env?.[key];
+}
+
+function isProduction(): boolean {
+    const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+    return runtimeEnv === 'production';
+}
+
+export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!supabaseAdmin) {
         return new Response(JSON.stringify({ ok: false, error: 'Server configuration error' }), { status: 500 });
     }
 
     try {
         const body = await request.json();
-        const { email, password, firstName, lastName } = body;
+        const { email, password, firstName, lastName, turnstileToken } = body;
+        const userAgent = request.headers.get('user-agent') || '';
 
         if (!email || !password || !firstName || !lastName) {
             return new Response(JSON.stringify({ ok: false, error: 'Faltan campos requeridos' }), { status: 400 });
+        }
+
+        const rateKey = `auth.signup:${clientAddress ?? 'unknown'}`;
+        const rateAllowed = await enforceRateLimit(rateKey);
+        if (!rateAllowed) {
+            void logSecurityEvent({
+                type: 'rate_limited',
+                identifier: rateKey,
+                ip: clientAddress,
+                userAgent,
+                detail: 'Auth signup',
+            });
+            return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes' }), { status: 429 });
+        }
+
+        const hasSecret = Boolean(env('TURNSTILE_SECRET_KEY'));
+        if (isProduction() && hasSecret) {
+            const token = String(turnstileToken || body?.['cf-turnstile-response'] || '');
+            if (!token) {
+                return new Response(JSON.stringify({ ok: false, error: 'Captcha requerido' }), { status: 400 });
+            }
+            const okCaptcha = await verifyTurnstile(token, clientAddress);
+            if (!okCaptcha) {
+                void logSecurityEvent({
+                    type: 'captcha_failed',
+                    identifier: 'auth.signup',
+                    ip: clientAddress,
+                    userAgent,
+                    detail: 'Turnstile invalido',
+                });
+                return new Response(JSON.stringify({ ok: false, error: 'Captcha invalido' }), { status: 400 });
+            }
         }
 
         const strength = validatePasswordStrength(password);

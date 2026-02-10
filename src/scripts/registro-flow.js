@@ -4,6 +4,20 @@ import flatpickr from 'flatpickr';
   let supabase = null;
   let calendarReady = false;
 
+  function resetTurnstile() {
+    if (window.turnstile && typeof window.turnstile.reset === 'function') {
+      window.turnstile.reset();
+    }
+  }
+
+  function getTurnstileToken() {
+    const widget = document.querySelector('.cf-turnstile');
+    if (!widget) return { ok: true, token: '' };
+    const token = window.turnstile?.getResponse?.() || '';
+    if (!token) return { ok: false, error: 'Captcha requerido.' };
+    return { ok: true, token };
+  }
+
   async function getSupabase() {
     if (supabase) return supabase;
     try {
@@ -497,10 +511,21 @@ import flatpickr from 'flatpickr';
           cta.classList.add('opacity-70');
           try {
             const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+            const captcha = getTurnstileToken();
+            if (!captcha.ok) {
+              status.textContent = captcha.error || 'Captcha requerido.';
+              resetTurnstile();
+              return;
+            }
             const res = await fetch('/api/auth/send-link', {
               method: 'POST',
               headers: { 'content-type': 'application/json' },
-              body: JSON.stringify({ email: this.bookingEmail, kind: 'magiclink', redirectTo }),
+              body: JSON.stringify({
+                email: this.bookingEmail,
+                kind: 'magiclink',
+                redirectTo,
+                turnstileToken: captcha.token,
+              }),
             });
             const payload = await res.json();
             if (!res.ok || !payload?.ok) {
@@ -510,6 +535,7 @@ import flatpickr from 'flatpickr';
           } catch (err) {
             console.error(err);
             status.textContent = err?.message || 'No se pudo enviar el enlace.';
+            resetTurnstile();
           } finally {
             cta.removeAttribute('disabled');
             cta.classList.remove('opacity-70');

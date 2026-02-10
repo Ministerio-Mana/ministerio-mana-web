@@ -43,6 +43,12 @@ const submitBtn = document.getElementById('btn-submit');
 const passwordBtn = document.getElementById('btn-submit-password');
 let lastAction = 'otp';
 
+function getTurnstileToken() {
+  const widget = document.querySelector('.cf-turnstile');
+  if (!widget) return '';
+  return window.turnstile?.getResponse?.() || '';
+}
+
 submitBtn?.addEventListener('click', () => {
   lastAction = 'otp';
 });
@@ -84,10 +90,11 @@ form?.addEventListener('submit', async (event) => {
     }
 
     const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+    const captchaToken = getTurnstileToken();
     const res = await fetch('/api/auth/send-link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email, kind: 'magiclink', redirectTo }),
+      body: JSON.stringify({ email, kind: 'magiclink', redirectTo, turnstileToken: captchaToken }),
     });
     const payload = await res.json();
     if (!res.ok || !payload?.ok) {

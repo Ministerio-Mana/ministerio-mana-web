@@ -214,6 +214,9 @@ const formatTestAmount = (value, currency) =>
                </div>
                <p id="leader-auth-status" class="text-xs text-white/60 mt-3"></p>
                <p id="leader-auth-note" class="text-xs text-white/50 mt-2"></p>
+               <div class="mt-4 flex justify-center">
+                  <TurnstileWidget id="leader-turnstile" appearance="always" theme="auto" />
+               </div>
             </div>
              
              <div class="space-y-1">
@@ -604,6 +607,32 @@ const formatTestAmount = (value, currency) =>
 
 <script type="module" nonce={cspNonce}>
   // Simple Vanilla JS Logic
+  function getTurnstileTokenFor(selector) {
+    const widget = document.querySelector(selector);
+    if (!widget) return { ok: true, token: '' };
+    const widgetId = widget.getAttribute('data-widget-id');
+    const token = widgetId
+      ? (window.turnstile?.getResponse?.(widgetId) || '')
+      : (window.turnstile?.getResponse?.() || '');
+    if (!token) return { ok: false, error: 'Captcha requerido. Completa la verificacion.' };
+    return { ok: true, token, widgetId };
+  }
+
+  function resetTurnstileFor(selector, widgetId) {
+    if (!window.turnstile || typeof window.turnstile.reset !== 'function') return;
+    if (widgetId) {
+      window.turnstile.reset(widgetId);
+      return;
+    }
+    const widget = document.querySelector(selector);
+    const resolvedId = widget?.getAttribute('data-widget-id');
+    if (resolvedId) {
+      window.turnstile.reset(resolvedId);
+      return;
+    }
+    window.turnstile.reset();
+  }
+
   const APP = {
     step: 1,
     participants: [],
@@ -784,6 +813,12 @@ const formatTestAmount = (value, currency) =>
          if (status) status.textContent = 'Ingresa tu correo para enviar el enlace.';
          return;
        }
+       const captcha = getTurnstileTokenFor('#leader-turnstile');
+       if (!captcha.ok) {
+         if (status) status.textContent = captcha.error || 'Captcha requerido.';
+         resetTurnstileFor('#leader-turnstile', captcha.widgetId);
+         return;
+       }
        if (btn) {
          btn.disabled = true;
          btn.textContent = 'Enviando...';
@@ -794,7 +829,7 @@ const formatTestAmount = (value, currency) =>
          const res = await fetch('/api/auth/send-link', {
            method: 'POST',
            headers: { 'content-type': 'application/json' },
-           body: JSON.stringify({ email, kind: 'magiclink', redirectTo }),
+           body: JSON.stringify({ email, kind: 'magiclink', redirectTo, turnstileToken: captcha.token }),
          });
          const payload = await res.json();
          if (!res.ok || !payload?.ok) {
@@ -804,6 +839,7 @@ const formatTestAmount = (value, currency) =>
        } catch (err) {
          console.error(err);
          if (status) status.textContent = err?.message || 'No se pudo enviar el enlace.';
+         resetTurnstileFor('#leader-turnstile', captcha.widgetId);
        } finally {
          if (btn) {
            btn.disabled = false;

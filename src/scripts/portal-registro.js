@@ -12,6 +12,20 @@ const starsContainer = document.getElementById('stars-container');
 const passwordInput = document.getElementById('reg-password');
 const toggleBtn = document.getElementById('toggle-password-reg');
 
+function resetTurnstile() {
+    if (window.turnstile && typeof window.turnstile.reset === 'function') {
+        window.turnstile.reset();
+    }
+}
+
+function getTurnstileToken() {
+    const widget = document.querySelector('.cf-turnstile');
+    if (!widget) return { ok: true, token: '' };
+    const token = window.turnstile?.getResponse?.() || '';
+    if (!token) return { ok: false, error: 'Captcha requerido.' };
+    return { ok: true, token };
+}
+
 // Password Toggle
 toggleBtn?.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -58,11 +72,15 @@ form?.addEventListener('submit', async (e) => {
     statusEl?.classList.add('hidden');
 
     try {
+        const captcha = getTurnstileToken();
+        if (!captcha.ok) {
+            throw new Error(captcha.error || 'Captcha requerido.');
+        }
         // Use our backend endpoint instead of Supabase Auth directly
         const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, firstName, lastName })
+            body: JSON.stringify({ email, password, firstName, lastName, turnstileToken: captcha.token })
         });
 
         const data = await res.json();
@@ -86,6 +104,7 @@ form?.addEventListener('submit', async (e) => {
 
     } catch (err) {
         console.error('Registration error:', err);
+        resetTurnstile();
         if (statusEl) {
             statusEl.classList.remove('hidden', 'bg-green-50', 'text-green-600');
             statusEl.classList.add('bg-red-50', 'text-red-800');

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { sanitizePlainText } from '@lib/validation';
 
 const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
 const CUMBRE_EVENT = {
@@ -61,7 +62,17 @@ function sanitizeEventPayload(body: Record<string, any>) {
     EVENT_FIELDS.forEach((field) => {
         const value = body?.[field];
         if (value === undefined || value === '') return;
-        payload[field] = value;
+        if (field === 'banner_url') {
+            const raw = String(value || '').trim();
+            const safeUrl = raw.startsWith('/') || raw.startsWith('https://') || raw.startsWith('http://') ? raw : '';
+            if (safeUrl) {
+                payload[field] = safeUrl;
+            }
+            return;
+        }
+        const maxLength = field === 'description' ? 600 : 160;
+        const safeValue = sanitizePlainText(String(value ?? ''), maxLength);
+        if (safeValue) payload[field] = safeValue;
     });
     if (payload.scope) payload.scope = String(payload.scope).toUpperCase();
     if (payload.status) payload.status = String(payload.status).toUpperCase();

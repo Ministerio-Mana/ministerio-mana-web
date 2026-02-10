@@ -16,6 +16,20 @@ const registroUrl = bookingId && token
   ? `/eventos/cumbre-mundial-2026/registro?bookingId=${encodeURIComponent(bookingId)}&token=${encodeURIComponent(token)}`
   : '/eventos/cumbre-mundial-2026';
 
+function resetTurnstile() {
+  if (window.turnstile && typeof window.turnstile.reset === 'function') {
+    window.turnstile.reset();
+  }
+}
+
+function getTurnstileToken() {
+  const widget = document.querySelector('.cf-turnstile');
+  if (!widget) return { ok: true, token: '' };
+  const tokenValue = window.turnstile?.getResponse?.() || '';
+  if (!tokenValue) return { ok: false, error: 'Captcha requerido.' };
+  return { ok: true, token: tokenValue };
+}
+
 if (completeBtn) {
   completeBtn.href = registroUrl;
 }
@@ -184,6 +198,12 @@ async function sendMagicLink() {
     activationStatus.textContent = 'No encontramos tu correo. Escríbenos por WhatsApp para ayudarte.';
     return;
   }
+  const captcha = getTurnstileToken();
+  if (!captcha.ok) {
+    activationStatus.textContent = captcha.error || 'Captcha requerido.';
+    resetTurnstile();
+    return;
+  }
   activationStatus.textContent = 'Enviando enlace...';
   activateBtn?.setAttribute('disabled', 'disabled');
   activateBtn?.classList.add('opacity-60');
@@ -192,7 +212,7 @@ async function sendMagicLink() {
     const res = await fetch('/api/auth/send-link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email, kind: 'magiclink', redirectTo }),
+      body: JSON.stringify({ email, kind: 'magiclink', redirectTo, turnstileToken: captcha.token }),
     });
     const payload = await res.json();
     if (!res.ok || !payload?.ok) {
@@ -202,6 +222,7 @@ async function sendMagicLink() {
   } catch (err) {
     console.error(err);
     activationStatus.textContent = err?.message || 'No se pudo enviar el enlace.';
+    resetTurnstile();
   } finally {
     activateBtn?.removeAttribute('disabled');
     activateBtn?.classList.remove('opacity-60');

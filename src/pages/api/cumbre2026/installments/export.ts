@@ -8,11 +8,17 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
+function isProduction(): boolean {
+  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+  return runtimeEnv === 'production';
+}
+
 function validateExport(request: Request): boolean {
   const secret = env('CUMBRE_EXPORT_SECRET');
   if (!secret) return false;
   const header = request.headers.get('x-export-secret');
   if (header && header === secret) return true;
+  if (isProduction()) return false;
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
   return Boolean(token && token === secret);
