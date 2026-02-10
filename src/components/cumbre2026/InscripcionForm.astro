@@ -1507,6 +1507,13 @@ const formatTestAmount = (value, currency) =>
        return Math.round(amount * 100) / 100;
     },
 
+    generateIdempotencyKey() {
+       if (window.crypto?.randomUUID) {
+          return window.crypto.randomUUID();
+       }
+       return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    },
+
     updateInstallmentPreview() {
        const total = this.getEffectiveTotal();
        const frequency = this.getInstallmentFrequency();
@@ -1691,6 +1698,12 @@ const formatTestAmount = (value, currency) =>
           turnstile: fd.get('cf-turnstile-response'),
           testMode,
        };
+       const signature = JSON.stringify(data);
+       if (!this.idempotencyKey || this.lastBookingSignature !== signature) {
+          this.idempotencyKey = this.generateIdempotencyKey();
+          this.lastBookingSignature = signature;
+       }
+       data.idempotencyKey = this.idempotencyKey;
 
        this.dom.errorMsg.classList.add('hidden');
        const btn = this.dom.payBtn;

@@ -77,9 +77,6 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
     }
   </style>
 
-  <!-- RoughNotation for hand-drawn scribble effects -->
-  <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
-
   <!-- Scripts -->
   <script src="../../scripts/campus-donation.js"></script>
 
@@ -267,11 +264,20 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   <!-- ===== RoughNotation Script ===== -->
   <script is:inline>
     // Wait for both DOM and RoughNotation to be ready
-    function initAnnotations() {
-      if (typeof RoughNotation === 'undefined') {
-        setTimeout(initAnnotations, 200);
-        return;
-      }
+    function loadRoughNotation() {
+      return new Promise((resolve) => {
+        if (typeof RoughNotation !== 'undefined') { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/rough-notation/lib/rough-notation.iife.js';
+        s.onload = () => resolve();
+        s.onerror = () => console.warn('RoughNotation failed to load');
+        document.head.appendChild(s);
+      });
+    }
+
+    async function initAnnotations() {
+      await loadRoughNotation();
+      if (typeof RoughNotation === 'undefined') return;
       
       const { annotate } = RoughNotation;
       
