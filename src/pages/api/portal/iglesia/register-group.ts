@@ -580,7 +580,11 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
-        await recomputeBookingTotals(booking.id);
+        try {
+            await recomputeBookingTotals(booking.id);
+        } catch (error) {
+            console.error('[portal.iglesia.register-group] recompute error', error);
+        }
     } catch (error) {
         await cleanupCumbreBooking(booking.id);
         console.error('Error inserting bookings:', error);

@@ -184,6 +184,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     const list = document.getElementById('participants-list');
     const input = document.getElementById('participants-json');
     const bookingForm = document.getElementById('manual-booking-form');
+    const idempotencyInput = document.getElementById('manual-idempotency-key');
     const paymentOption = document.getElementById('payment-option');
     const frequencyWrapper = document.getElementById('frequency-wrapper');
     const frequencySelect = document.getElementById('frequency-select');
@@ -197,6 +198,15 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     const depositDeadlineLabel = document.getElementById('deposit-deadline-label');
     const installmentDeadline = bookingForm?.dataset?.installmentDeadline || '2026-05-15';
     let paymentAmountTouched = false;
+    let bookingIdempotencyKey = null;
+    let bookingSignature = null;
+
+    const generateIdempotencyKey = () => {
+      if (window.crypto?.randomUUID) {
+        return window.crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    };
 
     const prices = {
       COP: {
@@ -457,6 +467,31 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       if (parsedPayment !== null) {
         formData.set('paymentAmount', String(parsedPayment));
       }
+      const signature = JSON.stringify({
+        contactName: formData.get('contactName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        documentType: formData.get('documentType'),
+        documentNumber: formData.get('documentNumber'),
+        countryGroup: formData.get('countryGroup'),
+        country: formData.get('country'),
+        city: formData.get('city'),
+        church: formData.get('church'),
+        paymentOption: formData.get('paymentOption'),
+        paymentAmount: formData.get('paymentAmount'),
+        frequency: formData.get('frequency'),
+        depositDueDate: formData.get('deposit_due_date'),
+        currency: formData.get('currency'),
+        participants: formData.get('participants'),
+      });
+      if (!bookingIdempotencyKey || bookingSignature !== signature) {
+        bookingIdempotencyKey = generateIdempotencyKey();
+        bookingSignature = signature;
+      }
+      if (idempotencyInput) {
+        idempotencyInput.value = bookingIdempotencyKey;
+      }
+      formData.set('idempotencyKey', bookingIdempotencyKey);
       const res = await fetch(form.action, {
         method: 'POST',
         body: formData,
@@ -464,6 +499,8 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       const payload = await res.json();
       if (payload?.ok) {
         status.textContent = `Reserva creada: ${payload.bookingId}`;
+        bookingIdempotencyKey = null;
+        bookingSignature = null;
       } else {
         status.textContent = payload?.error || 'No se pudo crear la reserva';
       }

@@ -488,7 +488,11 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    await recomputeBookingTotals(booking.id);
+    try {
+      await recomputeBookingTotals(booking.id);
+    } catch (error) {
+      console.error('[portal.iglesia.submit] recompute error', error);
+    }
 
     return new Response(JSON.stringify({
       ok: true,
