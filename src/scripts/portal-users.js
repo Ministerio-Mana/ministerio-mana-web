@@ -21,10 +21,19 @@ const btnSubmit = document.getElementById('btn-submit-create');
 const roleSelect = document.getElementById('user-role-select');
 const passwordInput = document.getElementById('user-password-input');
 const togglePasswordBtn = document.getElementById('toggle-password-user');
+const scopeCountryWrapper = document.getElementById('user-scope-country');
+const scopeCountryInput = document.getElementById('user-country-input');
+const scopeCountryList = document.getElementById('user-country-list');
+const scopeChurchWrapper = document.getElementById('user-scope-church');
+const scopeChurchSelect = document.getElementById('user-church-select');
 
 let currentUserRole = 'user';
+let currentUserCountry = '';
+let currentUserChurchId = '';
 let currentToken = '';
 let allUsers = [];
+let churchesCatalog = [];
+let scopeListenerAttached = false;
 
 const roleTranslations = {
     'superadmin': 'Super Admin',
@@ -48,6 +57,19 @@ const roleOrder = [
     'user',
 ];
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
 // Password Toggle
 togglePasswordBtn?.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -70,6 +92,8 @@ async function init() {
         if (res.ok) {
             const profile = await res.json();
             currentUserRole = profile.role || 'user';
+            currentUserCountry = profile.country || '';
+            currentUserChurchId = profile.church_id || '';
 
             // Hide Create Button for Roles that cannot create users
             if (currentUserRole === 'campus_missionary' || currentUserRole === 'user') {
@@ -82,6 +106,8 @@ async function init() {
         }
     } catch (e) { console.error(e); }
 
+    await loadChurches();
+
     // 2. Load Users
     loadUsers(token);
 
@@ -90,6 +116,70 @@ async function init() {
 
     searchInput?.addEventListener('input', () => applyFilters());
     roleFilter?.addEventListener('change', () => applyFilters());
+}
+
+async function loadChurches() {
+    if (!scopeChurchSelect || !scopeCountryList) return;
+    try {
+        const res = await fetch('/api/portal/churches');
+        if (!res.ok) return;
+        const data = await res.json();
+        churchesCatalog = Array.isArray(data) ? data : [];
+        populateScopeOptions();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function populateScopeOptions() {
+    if (!scopeChurchSelect || !scopeCountryList) return;
+    const countryFiltered = (currentUserRole === 'national_pastor' && currentUserCountry)
+        ? churchesCatalog.filter(c => c.country === currentUserCountry)
+        : churchesCatalog;
+    scopeChurchSelect.innerHTML = '<option value="">Selecciona una iglesia</option>' +
+        countryFiltered
+            .map(c => {
+                const safeId = escapeAttr(c.id || '');
+                const safeCity = escapeHtml(c.city || 'Ciudad');
+                const safeName = escapeHtml(c.name || '');
+                return `<option value="${safeId}">${safeCity} · ${safeName}</option>`;
+            })
+            .join('');
+
+    const countries = Array.from(new Set(churchesCatalog.map(c => c.country).filter(Boolean))).sort();
+    scopeCountryList.innerHTML = countries.map(c => `<option value="${escapeAttr(c)}"></option>`).join('');
+}
+
+function updateScopeFields(role) {
+    const needsCountry = role === 'national_pastor';
+    const needsChurch = role === 'pastor' || role === 'local_collaborator';
+
+    if (scopeCountryWrapper && scopeCountryInput) {
+        scopeCountryWrapper.classList.toggle('hidden', !needsCountry);
+        scopeCountryInput.disabled = !needsCountry || (needsCountry && currentUserRole === 'national_pastor');
+        if (!needsCountry) {
+            scopeCountryInput.value = '';
+        } else if (currentUserRole === 'national_pastor' && currentUserCountry) {
+            scopeCountryInput.value = currentUserCountry;
+        }
+    }
+
+    if (scopeChurchWrapper && scopeChurchSelect) {
+        scopeChurchWrapper.classList.toggle('hidden', !needsChurch);
+        scopeChurchSelect.disabled = !needsChurch;
+        if (!needsChurch) {
+            scopeChurchSelect.value = '';
+        } else if ((currentUserRole === 'pastor' || currentUserRole === 'local_collaborator') && currentUserChurchId) {
+            scopeChurchSelect.value = currentUserChurchId;
+            scopeChurchSelect.disabled = true;
+        }
+    }
+}
+
+function attachScopeListener() {
+    if (scopeListenerAttached || !roleSelect) return;
+    roleSelect.addEventListener('change', () => updateScopeFields(roleSelect.value));
+    scopeListenerAttached = true;
 }
 
 async function loadUsers(token) {
@@ -139,18 +229,19 @@ function roleBadgeClass(role) {
 function renderRoleCell(user) {
     if (currentUserRole === 'superadmin') {
         const options = roleOrder.map((role) => {
-            const label = roleTranslations[role] || role;
+            const label = escapeHtml(roleTranslations[role] || role);
+            const safeRole = escapeAttr(role);
             const selected = user.role === role ? 'selected' : '';
-            return `<option value="${role}" ${selected}>${label}</option>`;
+            return `<option value="${safeRole}" ${selected}>${label}</option>`;
         }).join('');
         return `
-            <select data-action="role" data-user-id="${user.user_id}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
+            <select data-action="role" data-user-id="${escapeAttr(user.user_id || '')}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
                 ${options}
             </select>
         `;
     }
 
-    const label = roleTranslations[user.role] || user.role || 'Usuario';
+    const label = escapeHtml(roleTranslations[user.role] || user.role || 'Usuario');
     const badgeClass = roleBadgeClass(user.role);
     return `
         <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}">
@@ -179,17 +270,22 @@ function renderTable(users) {
     if (tbody) {
         tbody.innerHTML = users.map(u => {
             const fullName = u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Sin nombre';
+            const safeFullName = escapeHtml(fullName);
+            const safeEmail = escapeHtml(u.email || '');
+            const safeEmailAttr = escapeAttr(u.email || '');
+            const updatedLabel = new Date(u.updated_at || u.created_at).toLocaleDateString();
+            const safeUpdatedLabel = escapeHtml(updatedLabel);
             const resetButton = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
-                ? `<button data-action="reset" data-email="${u.email}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">Reset contraseña</button>`
+                ? `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">Reset contraseña</button>`
                 : '';
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
-                    <td class="py-3 pl-2 font-medium text-[#293C74]">${fullName}</td>
-                    <td class="py-3 text-slate-500">${u.email}</td>
+                    <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
+                    <td class="py-3 text-slate-500">${safeEmail}</td>
                     <td class="py-3">
                         ${renderRoleCell(u)}
                     </td>
-                    <td class="py-3 text-slate-400 text-xs">${new Date(u.updated_at || u.created_at).toLocaleDateString()}</td>
+                    <td class="py-3 text-slate-400 text-xs">${safeUpdatedLabel}</td>
                     <td class="py-3 text-right pr-2">
                         ${resetButton || '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>'}
                     </td>
@@ -286,6 +382,9 @@ function setupModal(token) {
                 opt.textContent = roleTranslations[role] || role;
                 roleSelect.appendChild(opt);
             });
+            attachScopeListener();
+            populateScopeOptions();
+            updateScopeFields(roleSelect.value);
         }
     });
 

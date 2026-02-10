@@ -85,6 +85,8 @@ export const POST: APIRoute = async ({ request }) => {
   let churchNameFromRole: string | null = null;
   let isAllowed = false;
   let isAdmin = false;
+  let isNational = false;
+  let allowedCountry: string | null = null;
 
   const user = await getUserFromRequest(request);
   if (!user?.email) {
@@ -101,14 +103,33 @@ export const POST: APIRoute = async ({ request }) => {
     userId = user.id;
     const profile = await ensureUserProfile(user);
     const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
+    const activeMembership = memberships.find((m: any) =>
       ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
     );
-    isAdmin = Boolean(profile && isAdminRole(profile.role));
-    isAllowed = Boolean(profile && (isAdmin || hasChurchRole));
+    const hasChurchRole = Boolean(activeMembership);
+    const role = profile?.role || 'user';
+    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
+    if (!allowedRoles.includes(role) && !hasChurchRole) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    isAdmin = Boolean(profile && isAdminRole(role));
+    if (role === 'national_pastor') {
+      isNational = true;
+      allowedCountry = profile?.country || null;
+      if (!allowedCountry) {
+        return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+    isAllowed = Boolean(profile && (isAdmin || isNational || hasChurchRole || role === 'pastor' || role === 'local_collaborator'));
     const membership = memberships.find((m: any) => m?.church?.id);
     churchId = membership?.church?.id || profile?.church_id || null;
-    churchNameFromRole = membership?.church?.name || null;
+    churchNameFromRole = membership?.church?.name || profile?.church_name || null;
   }
 
   if (!isAllowed) {
@@ -119,6 +140,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   let createdBookingId: string | null = null;
+  let selectedChurchFromPayload: any = null;
   try {
     const contactName = sanitizePlainText(payload.contactName ?? '', 120);
     const email = (payload.email ?? '').toString().trim().toLowerCase();
@@ -136,6 +158,27 @@ export const POST: APIRoute = async ({ request }) => {
     const rawPaymentAmount = Number(payload.paymentAmount ?? 0);
     const paymentAmount = Number.isFinite(rawPaymentAmount) ? rawPaymentAmount : 0;
     const frequency = normalizeFrequency(payload.frequency);
+
+    if (isNational) {
+      if (!churchIdFromPayload) {
+        return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      const { data: church } = await supabaseAdmin
+        .from('churches')
+        .select('id, name, city, country')
+        .eq('id', churchIdFromPayload)
+        .maybeSingle();
+      if (!church?.id || (allowedCountry && church.country !== allowedCountry)) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta iglesia' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      selectedChurchFromPayload = church;
+    }
 
     if (!contactName || !email || !phone) {
       return new Response(JSON.stringify({ ok: false, error: 'Datos de contacto incompletos' }), {
@@ -266,6 +309,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     let resolvedChurchId = churchId;
     let resolvedChurchName = churchNameFromRole || contactChurchRaw;
+
+    if (isNational && selectedChurchFromPayload?.id) {
+      resolvedChurchId = selectedChurchFromPayload.id;
+      resolvedChurchName = selectedChurchFromPayload.name || resolvedChurchName;
+    }
 
     if (isAdmin && churchIdFromPayload) {
       const { data: selectedChurch } = await supabaseAdmin

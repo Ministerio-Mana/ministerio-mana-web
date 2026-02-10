@@ -12,7 +12,9 @@ export const prerender = false;
 async function getPortalContext(request: Request) {
   let isAllowed = false;
   let isAdmin = false;
+  let isNational = false;
   let churchId: string | null = null;
+  let country: string | null = null;
   let profile: any = null;
 
   const user = await getUserFromRequest(request);
@@ -26,19 +28,27 @@ async function getPortalContext(request: Request) {
   } else {
     profile = await ensureUserProfile(user);
     const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
+    const activeMembership = memberships.find((m: any) =>
       ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
     );
-    isAdmin = Boolean(profile && isAdminRole(profile.role));
-    isAllowed = Boolean(profile && (isAdmin || hasChurchRole));
-    churchId = memberships.find((m: any) => m?.church?.id)?.church?.id || profile?.church_id || null;
+    const hasChurchRole = Boolean(activeMembership);
+    const role = profile?.role || 'user';
+    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
+    if (!allowedRoles.includes(role) && !hasChurchRole) {
+      return { ok: false, isAdmin: false, churchId: null, profile: profile ?? null, isNational: false, country: null };
+    }
+    isAdmin = Boolean(profile && isAdminRole(role));
+    isNational = role === 'national_pastor';
+    isAllowed = Boolean(profile && (isAdmin || isNational || hasChurchRole || role === 'pastor' || role === 'local_collaborator'));
+    country = profile?.country || null;
+    churchId = profile?.church_id || activeMembership?.church?.id || null;
   }
 
   if (!isAllowed) {
     return { ok: false, isAdmin: false, churchId: null, profile: profile ?? null };
   }
 
-  return { ok: true, isAdmin, churchId, profile };
+  return { ok: true, isAdmin, isNational, churchId, profile, country };
 }
 
 function formatCurrency(amount: number, currency: string): string {
@@ -92,11 +102,31 @@ export const POST: APIRoute = async ({ request }) => {
   const isAuto = (plan?.provider === 'wompi' && plan?.provider_payment_method_id)
     || (plan?.provider === 'stripe' && plan?.provider_subscription_id);
 
-  if (!ctx.isAdmin && booking?.church_id && targetChurch && booking.church_id !== targetChurch) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
-      headers: { 'content-type': 'application/json' },
-    });
+  if (!ctx.isAdmin) {
+    if (ctx.isNational) {
+      if (!booking?.church_id || !ctx.country) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      const { data: church } = await supabaseAdmin
+        .from('churches')
+        .select('id, country')
+        .eq('id', booking.church_id)
+        .maybeSingle();
+      if (!church?.id || church.country !== ctx.country) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    } else if (booking?.church_id && targetChurch && booking.church_id !== targetChurch) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
   }
 
   if (isAuto) {

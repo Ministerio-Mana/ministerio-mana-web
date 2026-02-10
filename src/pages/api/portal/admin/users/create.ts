@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
+import { sanitizePlainText } from '@lib/validation';
 
 export const POST: APIRoute = async ({ request }) => {
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
@@ -30,7 +31,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const body = await request.json();
-    const { email, password, firstName, lastName, role, churchId } = body;
+    const { email, password, firstName, lastName, role, churchId, country } = body;
 
     if (!email || !password || !firstName || !lastName) {
         return new Response(JSON.stringify({ ok: false, error: 'Faltan campos requeridos' }), { status: 400 });
@@ -69,20 +70,73 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
     }
 
-    // Scope Assignment (Church / Country)
-    let targetChurchId = churchId || null;
-    let targetCountry = null;
+    const requestedCountry = sanitizePlainText(country || '', 80);
+    const requestedChurchId = churchId || null;
 
-    if (creatorRole === 'pastor' || creatorRole === 'local_collaborator') {
-        // Enforce Church Scope
-        targetChurchId = creatorProfile.church_id;
-        if (!targetChurchId) {
-            return new Response(JSON.stringify({ ok: false, error: 'Error: Tu usuario no tiene una iglesia asignada.' }), { status: 400 });
+    // Scope Assignment (Church / Country)
+    let targetChurchId: string | null = null;
+    let targetCountry: string | null = null;
+    let targetChurchName: string | null = null;
+    let targetCity: string | null = null;
+
+    const needsChurch = ['pastor', 'local_collaborator'].includes(targetRole);
+    const needsCountry = targetRole === 'national_pastor';
+
+    let churchInfo: any = null;
+    if (requestedChurchId) {
+        const { data: church } = await supabaseAdmin
+            .from('churches')
+            .select('id, name, city, country')
+            .eq('id', requestedChurchId)
+            .maybeSingle();
+        if (!church?.id) {
+            return new Response(JSON.stringify({ ok: false, error: 'Iglesia no encontrada' }), { status: 404 });
         }
-    } else if (creatorRole === 'national_pastor') {
-        // Enforce Country Scope (National Pastor assigns their country to the new user)
-        targetCountry = creatorProfile.country;
-        // Church ID remains null unless they selected one? (Not implemented in UI yet)
+        churchInfo = church;
+    }
+
+    if (needsCountry) {
+        if (creatorRole === 'national_pastor') {
+            targetCountry = creatorProfile.country || null;
+            if (!targetCountry) {
+                return new Response(JSON.stringify({ ok: false, error: 'Tu usuario no tiene país asignado.' }), { status: 400 });
+            }
+        } else {
+            if (!requestedCountry) {
+                return new Response(JSON.stringify({ ok: false, error: 'Selecciona un país para el pastor nacional.' }), { status: 400 });
+            }
+            targetCountry = requestedCountry;
+        }
+    }
+
+    if (needsChurch) {
+        if (creatorRole === 'pastor' || creatorRole === 'local_collaborator') {
+            targetChurchId = creatorProfile.church_id;
+            if (!targetChurchId) {
+                return new Response(JSON.stringify({ ok: false, error: 'Error: Tu usuario no tiene una iglesia asignada.' }), { status: 400 });
+            }
+        } else if (creatorRole === 'national_pastor') {
+            if (!requestedChurchId || !churchInfo?.id) {
+                return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia válida.' }), { status: 400 });
+            }
+            if (creatorProfile.country && churchInfo.country !== creatorProfile.country) {
+                return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta iglesia.' }), { status: 403 });
+            }
+            targetChurchId = churchInfo.id;
+        } else {
+            if (!requestedChurchId || !churchInfo?.id) {
+                return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia válida.' }), { status: 400 });
+            }
+            targetChurchId = churchInfo.id;
+        }
+    }
+
+    if (churchInfo?.id) {
+        targetChurchName = churchInfo.name || null;
+        targetCity = churchInfo.city || null;
+        if (!targetCountry) {
+            targetCountry = churchInfo.country || null;
+        }
     }
 
     // Backend Check: Ensure email doesn't exist already (Supabase createUser handles this, but good to check Profile)
@@ -117,6 +171,8 @@ export const POST: APIRoute = async ({ request }) => {
             last_name: lastName,
             role: targetRole,
             church_id: targetChurchId,
+            church_name: targetChurchName,
+            city: targetCity,
             country: targetCountry, // Assign country if applicable
             updated_at: new Date().toISOString()
         });

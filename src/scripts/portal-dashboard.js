@@ -6,6 +6,18 @@ const DEBUG = import.meta.env?.DEV === true;
 const dlog = (...args) => { if (DEBUG) console.log(...args); };
 const dwarn = (...args) => { if (DEBUG) console.warn(...args); };
 
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#96;');
+
+const safeText = (value, fallback = '') => escapeHtml(value ?? fallback);
+const safeAttr = (value, fallback = '') => escapeAttr(value ?? fallback);
+
 async function clearStaleServiceWorkersOnce() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return false;
   if (sessionStorage.getItem('portal_sw_cleared') === '1') return false;
@@ -243,6 +255,12 @@ let churchParticipantsCount = 0;
 let portalAuthHeaders = {};
 let portalIsAdmin = false;
 let portalIsSuperadmin = false;
+let portalIsCountryPastor = false;
+let portalRole = 'user';
+let portalScope = 'church';
+let portalCanSelectChurch = false;
+let portalAllowAllChurches = false;
+let portalAllowCustomChurch = false;
 let portalSelectedChurchId = null;
 let portalChurchesCatalog = [];
 let portalIsCustomChurch = false;
@@ -264,6 +282,12 @@ function isAllChurchesSelected() {
 function resolveSelectedChurchId() {
   if (!portalSelectedChurchId || isAllChurchesSelected()) return '';
   return portalSelectedChurchId;
+}
+
+function requiresScopedChurchSelection() {
+  return (portalIsAdmin || portalIsCountryPastor)
+    && !resolveSelectedChurchId()
+    && !portalIsCustomChurch;
 }
 
 function formatCurrency(value, currency) {
@@ -542,11 +566,10 @@ async function loadDashboardData(authResult) {
     authMode = sessionPayload.mode || 'supabase';
     portalProfile = sessionPayload.profile || {};
     portalMemberships = sessionPayload.memberships || [];
-    portalIsAdmin = portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin';
-    portalIsSuperadmin = portalProfile?.role === 'superadmin';
-    if (portalIsAdmin && !portalSelectedChurchId) {
-      portalSelectedChurchId = ALL_CHURCHES_VALUE;
-    }
+    portalRole = portalProfile?.role || 'user';
+    portalIsAdmin = portalRole === 'admin' || portalRole === 'superadmin';
+    portalIsSuperadmin = portalRole === 'superadmin';
+    portalIsCountryPastor = portalRole === 'national_pastor';
 
     dlog('[DEBUG] Data loaded. Profile:', portalProfile);
 
@@ -627,7 +650,9 @@ async function loadDashboardData(authResult) {
     const hasChurchRole = (portalMemberships || []).some(
       (membership) => ['church_admin', 'church_member'].includes(membership?.role) && membership?.status !== 'pending',
     );
-    const hasChurchAccess = portalIsAdmin || hasChurchRole;
+    const hasChurchAccess = portalIsAdmin
+      || hasChurchRole
+      || ['national_pastor', 'pastor', 'local_collaborator'].includes(myRole);
     const membershipChurch = portalMemberships.find((item) => item?.church?.id)?.church || null;
 
     if (!portalSelectedChurchId && membershipChurch?.id && !portalIsAdmin) {
@@ -810,14 +835,17 @@ function setupInviteAccess() {
   if (!inviteCard) return;
   const profileRole = portalProfile?.role || 'user';
   const membershipRoles = (portalMemberships || []).map((m) => m?.role);
-  const canInvite = profileRole === 'admin' || profileRole === 'superadmin' || membershipRoles.includes('church_admin');
+  const canInvite = ['admin', 'superadmin', 'national_pastor', 'pastor'].includes(profileRole)
+    || membershipRoles.includes('church_admin');
   if (!canInvite) {
     inviteCard.classList.add('hidden');
     return;
   }
   inviteCard.classList.remove('hidden');
-  if (profileRole === 'admin' || profileRole === 'superadmin') {
+  const canInvitePastor = ['admin', 'superadmin', 'national_pastor'].includes(profileRole);
+  if (canInvitePastor) {
     inviteChurchWrapper?.classList.remove('hidden');
+    inviteRole?.querySelector('option[value="church_admin"]')?.removeAttribute('disabled');
   } else {
     inviteChurchWrapper?.classList.add('hidden');
     if (inviteRole) {
@@ -915,12 +943,19 @@ async function loadChurchSelector(headers = {}) {
     if (window.advancedChurchSelector && churches.length > 0) {
       window.advancedChurchSelector.setChurches(churches);
     }
-    const isAdmin = Boolean(payload.isAdmin);
+    const canSelect = Boolean(payload.canSelect);
+    const allowAll = Boolean(payload.allowAll);
+    const allowCustom = Boolean(payload.allowCustom);
+    const scope = payload.scope || 'church';
+    portalScope = scope;
+    portalCanSelectChurch = canSelect;
+    portalAllowAllChurches = allowAll;
+    portalAllowCustomChurch = allowCustom;
     churchSelectorInput.innerHTML = '';
-    if (isAdmin) {
+    if (allowAll) {
       const allOption = document.createElement('option');
       allOption.value = ALL_CHURCHES_VALUE;
-      allOption.textContent = 'Todos';
+      allOption.textContent = scope === 'country' ? 'Todos (País)' : 'Todos';
       churchSelectorInput.appendChild(allOption);
     } else {
       const placeholder = document.createElement('option');
@@ -938,21 +973,37 @@ async function loadChurchSelector(headers = {}) {
       churchSelectorInput.appendChild(option);
     });
 
-    const customOption = document.createElement('option');
-    customOption.value = CUSTOM_CHURCH_VALUE;
-    customOption.textContent = 'Otra iglesia (manual)';
-    churchSelectorInput.appendChild(customOption);
+    if (inviteChurchInput) {
+      inviteChurchInput.innerHTML = '<option value="">Selecciona una iglesia</option>';
+      churches.forEach((church) => {
+        const option = document.createElement('option');
+        option.value = church.id;
+        option.textContent = `${church.city || 'Ciudad'} - ${church.name}`;
+        inviteChurchInput.appendChild(option);
+      });
+    }
+
+    if (allowCustom) {
+      const customOption = document.createElement('option');
+      customOption.value = CUSTOM_CHURCH_VALUE;
+      customOption.textContent = 'Otra iglesia (manual)';
+      churchSelectorInput.appendChild(customOption);
+    }
 
     portalSelectedChurchId = payload.selectedChurchId || '';
     portalIsCustomChurch = false;
-    if (isAdmin && !portalSelectedChurchId) {
+    if (allowAll && !portalSelectedChurchId) {
       portalSelectedChurchId = ALL_CHURCHES_VALUE;
     }
     if (portalSelectedChurchId) {
       churchSelectorInput.value = portalSelectedChurchId;
+      if (inviteChurchInput && resolveSelectedChurchId()) {
+        inviteChurchInput.value = resolveSelectedChurchId();
+      }
     } else if (churches.length === 1) {
       portalSelectedChurchId = churches[0].id;
       churchSelectorInput.value = portalSelectedChurchId;
+      if (inviteChurchInput) inviteChurchInput.value = portalSelectedChurchId;
       await saveChurchSelection(portalSelectedChurchId, headers);
     }
 
@@ -972,7 +1023,7 @@ async function loadChurchSelector(headers = {}) {
       }
     }
 
-    if (isAdmin) {
+    if (canSelect) {
       churchSelector.classList.remove('hidden');
     } else {
       churchSelector.classList.add('hidden');
@@ -989,7 +1040,9 @@ async function loadChurchSelector(headers = {}) {
     }
 
     if (isAllChurchesSelected()) {
-      churchSelectorStatus.textContent = 'Mostrando todos los registros (incluye sin iglesia / virtual).';
+      churchSelectorStatus.textContent = scope === 'country'
+        ? 'Mostrando todas las iglesias de tu país.'
+        : 'Mostrando todos los registros (incluye sin iglesia / virtual).';
     } else {
       churchSelectorStatus.textContent = churches.length ? 'Selecciona una iglesia para ver los registros.' : 'No hay iglesias disponibles.';
     }
@@ -1028,6 +1081,10 @@ if (churchSelectorInput) {
       await saveChurchSelection(selectedChurchId, portalAuthHeaders);
     } else {
       portalSelectedChurchId = null;
+    }
+
+    if (inviteChurchInput) {
+      inviteChurchInput.value = resolveSelectedChurchId();
     }
 
     const emptyEl = document.getElementById('church-dashboard-empty');
@@ -1097,10 +1154,12 @@ async function saveChurchSelection(churchId, headers = {}) {
     const payload = await res.json();
     if (!res.ok || !payload.ok) throw new Error(payload.error || 'No se pudo guardar');
     portalSelectedChurchId = payload.churchId || '';
-    if (!portalSelectedChurchId && portalIsAdmin && churchId === null) {
+    if (!portalSelectedChurchId && portalAllowAllChurches && churchId === null) {
       portalSelectedChurchId = ALL_CHURCHES_VALUE;
     }
-    churchSelectorStatus.textContent = isAllChurchesSelected() ? 'Mostrando todas las iglesias.' : 'Iglesia seleccionada.';
+    churchSelectorStatus.textContent = isAllChurchesSelected()
+      ? (portalScope === 'country' ? 'Mostrando todas las iglesias del país.' : 'Mostrando todas las iglesias.')
+      : 'Iglesia seleccionada.';
 
     if (churchNameInput) {
       const resolvedId = resolveSelectedChurchId();
@@ -1690,7 +1749,7 @@ function renderChurchMembers(list) {
 
 async function loadChurchMembers(headers = {}) {
   if (!churchMembersList || !churchMembersEmpty) return;
-  if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
+  if (requiresScopedChurchSelection()) {
     churchMembersEmpty.textContent = 'Selecciona una iglesia para ver el equipo.';
     churchMembersEmpty.classList.remove('hidden');
     churchMembersList.classList.add('hidden');
@@ -2142,7 +2201,7 @@ async function saveChurchDraft() {
 
 function initChurchManualForm() {
   if (!churchForm || !participantsList || !addParticipantBtn) return;
-  if (portalIsAdmin && !resolveSelectedChurchId() && !portalIsCustomChurch) {
+  if (requiresScopedChurchSelection()) {
     if (churchFormStatus) {
       churchFormStatus.textContent = 'Selecciona una iglesia en el panel superior antes de registrar.';
     }
@@ -2167,11 +2226,11 @@ function initChurchManualForm() {
   churchForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!churchFormStatus) return;
-    if (portalIsAdmin && !resolveSelectedChurchId() && !portalIsCustomChurch) {
+    if (requiresScopedChurchSelection()) {
       churchFormStatus.textContent = 'Selecciona una iglesia en el panel superior.';
       return;
     }
-    if (portalIsAdmin && portalIsCustomChurch && !churchNameInput?.value?.trim()) {
+    if ((portalIsAdmin || portalIsCountryPastor) && portalIsCustomChurch && !churchNameInput?.value?.trim()) {
       churchFormStatus.textContent = 'Escribe el nombre de la iglesia.';
       return;
     }
@@ -2231,9 +2290,19 @@ function initInviteForm() {
     if (!inviteStatus) return;
     inviteStatus.textContent = 'Enviando invitación...';
     try {
+      const selectedChurchId = inviteChurchInput?.value || resolveSelectedChurchId();
+      if ((portalIsAdmin || portalIsCountryPastor) && !selectedChurchId) {
+        inviteStatus.textContent = 'Selecciona una iglesia antes de invitar.';
+        return;
+      }
+      if (portalIsCustomChurch) {
+        inviteStatus.textContent = 'Selecciona una iglesia del listado para invitar.';
+        return;
+      }
       const payload = {
         email: inviteEmail.value.trim(),
         role: inviteRole.value,
+        churchId: selectedChurchId || undefined,
         church: inviteChurchInput?.value?.trim() || '',
       };
       const res = await fetch('/api/portal/iglesia/invite', {
@@ -3407,7 +3476,7 @@ churchFormToggle?.addEventListener('click', () => {
   console.log('[DEBUG] Open manual registration modal clicked');
 
   // Validation: Check if admin has selected a church
-  if (portalIsAdmin && !resolveSelectedChurchId() && !portalIsCustomChurch) {
+  if (requiresScopedChurchSelection()) {
     showPortalAlert('Por favor selecciona una iglesia en el panel superior antes de registrar.');
     return;
   }
@@ -3732,6 +3801,18 @@ function populateChurchesUI(catalog) {
       opt.textContent = `${c.city} - ${c.name}`;
       churchSelectorInput.appendChild(opt);
     });
+  }
+
+  if (inviteChurchInput) {
+    inviteChurchInput.innerHTML = '<option value="">Selecciona una iglesia</option>';
+    catalog.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = `${c.city || 'Ciudad'} - ${c.name}`;
+      inviteChurchInput.appendChild(opt);
+    });
+    const selected = resolveSelectedChurchId();
+    if (selected) inviteChurchInput.value = selected;
   }
 }
 

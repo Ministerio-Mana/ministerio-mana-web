@@ -1,7 +1,15 @@
 import type { User } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 
-export type PortalRole = 'user' | 'admin' | 'superadmin';
+export type PortalRole =
+  | 'user'
+  | 'admin'
+  | 'superadmin'
+  | 'national_pastor'
+  | 'pastor'
+  | 'local_collaborator'
+  | 'campus_missionary'
+  | 'leader';
 export type ChurchRole = 'church_admin' | 'church_member';
 
 export type UserProfile = {

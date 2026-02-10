@@ -17,22 +17,31 @@ async function getAccessContext(request: Request) {
   if (user?.email) {
     const profile = await ensureUserProfile(user);
     const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
+    const activeMembership = memberships.find((m: any) =>
       ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
     );
-    const isAdmin = Boolean(profile && isAdminRole(profile.role));
+    const hasChurchRole = Boolean(activeMembership);
+    const role = profile?.role || 'user';
+    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
+    if (!allowedRoles.includes(role) && !hasChurchRole) {
+      return { ok: false };
+    }
+    const isAdmin = Boolean(profile && isAdminRole(role));
+    const isNational = role === 'national_pastor';
     return {
-      ok: Boolean(profile && (isAdmin || hasChurchRole)),
+      ok: Boolean(profile && (isAdmin || isNational || hasChurchRole || role === 'pastor' || role === 'local_collaborator')),
       isAdmin,
+      isNational,
       memberships,
       profile,
+      country: profile?.country || null,
     };
   }
 
   const passwordSession = readPasswordSession(request);
   if (!passwordSession?.email) return { ok: false };
 
-  return { ok: true, isAdmin: true, memberships: [], profile: null };
+  return { ok: true, isAdmin: true, isNational: false, memberships: [], profile: null, country: null };
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -55,7 +64,28 @@ export const GET: APIRoute = async ({ request }) => {
   const requestedChurch = url.searchParams.get('churchId');
   const membershipChurch = ctx.memberships?.find((m: any) => m?.church?.id)?.church?.id || null;
   const profileChurch = (ctx.profile as any)?.portal_church_id || (ctx.profile as any)?.church_id || null;
-  const targetChurch = ctx.isAdmin ? (requestedChurch || profileChurch) : membershipChurch;
+  let targetChurch = ctx.isAdmin ? (requestedChurch || profileChurch) : (membershipChurch || profileChurch);
+
+  if (ctx.isNational) {
+    if (!requestedChurch) {
+      return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    const { data: church } = await supabaseAdmin
+      .from('churches')
+      .select('id, country')
+      .eq('id', requestedChurch)
+      .maybeSingle();
+    if (!church?.id || (ctx.country && church.country !== ctx.country)) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    targetChurch = requestedChurch;
+  }
 
   if (!targetChurch) {
     return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {

@@ -15,6 +15,27 @@ function isUuid(value: string | null | undefined): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+const ROLE_PRIORITY = [
+  'user',
+  'leader',
+  'local_collaborator',
+  'pastor',
+  'campus_missionary',
+  'national_pastor',
+  'admin',
+  'superadmin',
+];
+
+function shouldPromoteRole(currentRole: string | null | undefined, nextRole: string | null) {
+  if (!nextRole) return false;
+  const current = currentRole || 'user';
+  const currentIndex = ROLE_PRIORITY.indexOf(current);
+  const nextIndex = ROLE_PRIORITY.indexOf(nextRole);
+  if (nextIndex === -1) return false;
+  if (currentIndex === -1) return true;
+  return nextIndex > currentIndex;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
@@ -48,6 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const email = String(payload.email).trim().toLowerCase();
   const desiredRole = String(payload.role || 'church_member');
+  const requestedChurchId = isUuid(payload.churchId) ? payload.churchId : null;
 
   // Only Admins can execute creating NEW churches on the fly or inviting global roles
   // Pastors invting collaborators -> usually 'church_member' or 'local_collaborator'
@@ -60,21 +82,34 @@ export const POST: APIRoute = async ({ request }) => {
   // Church Resolution Logic
   if (isAdmin) {
     // Admin can specify any church or create one
-    const churchRaw = normalizeChurchName(payload.church || '');
-    if (churchRaw) {
-      const { data: existing } = await supabaseAdmin.from('churches').select('id, name').ilike('name', churchRaw).maybeSingle();
-      if (existing?.id) {
-        churchId = existing.id;
-        churchName = existing.name;
-      } else {
-        const { data: created } = await supabaseAdmin.from('churches').insert({
-          name: churchRaw,
-          city: normalizeCityName(payload.city || ''),
-          country: sanitizePlainText(payload.country || '', 40) || null,
-          created_by: isUuid(user.id) ? user.id : null,
-        }).select('id, name').single();
-        churchId = created?.id || null;
-        churchName = created?.name || churchRaw;
+    if (requestedChurchId) {
+      const { data: existing } = await supabaseAdmin
+        .from('churches')
+        .select('id, name')
+        .eq('id', requestedChurchId)
+        .maybeSingle();
+      if (!existing?.id) {
+        return new Response(JSON.stringify({ ok: false, error: 'Iglesia no encontrada' }), { status: 404 });
+      }
+      churchId = existing.id;
+      churchName = existing.name;
+    } else {
+      const churchRaw = normalizeChurchName(payload.church || '');
+      if (churchRaw) {
+        const { data: existing } = await supabaseAdmin.from('churches').select('id, name').ilike('name', churchRaw).maybeSingle();
+        if (existing?.id) {
+          churchId = existing.id;
+          churchName = existing.name;
+        } else {
+          const { data: created } = await supabaseAdmin.from('churches').insert({
+            name: churchRaw,
+            city: normalizeCityName(payload.city || ''),
+            country: sanitizePlainText(payload.country || '', 40) || null,
+            created_by: isUuid(user.id) ? user.id : null,
+          }).select('id, name').single();
+          churchId = created?.id || null;
+          churchName = created?.name || churchRaw;
+        }
       }
     }
   } else if (myRole === 'national_pastor') {
@@ -82,7 +117,6 @@ export const POST: APIRoute = async ({ request }) => {
     const myCountry = profile.country;
     if (!myCountry) return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), { status: 403 });
 
-    const requestedChurchId = payload.churchId; // Frontend should pass ID if selecting from list
     // Verify church is in country
     if (requestedChurchId) {
       const { data: church } = await supabaseAdmin.from('churches').select('id, name, country').eq('id', requestedChurchId).single();
@@ -132,6 +166,54 @@ export const POST: APIRoute = async ({ request }) => {
       role: desiredRole,
       status: 'active', // Auto-active for now
     }, { onConflict: 'church_id,user_id' });
+
+  const portalRole = desiredRole === 'church_admin'
+    ? 'pastor'
+    : (desiredRole === 'church_member' ? 'local_collaborator' : null);
+
+  if (portalRole) {
+    const { data: existingProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('role, church_id, city, country')
+      .eq('user_id', targetUserId)
+      .maybeSingle();
+
+    const currentRole = existingProfile?.role || 'user';
+    const shouldUpdateRole = shouldPromoteRole(currentRole, portalRole);
+    const blockChurchUpdate = ['admin', 'superadmin', 'national_pastor'].includes(currentRole);
+
+    const { data: churchInfo } = await supabaseAdmin
+      .from('churches')
+      .select('id, name, city, country')
+      .eq('id', churchId)
+      .maybeSingle();
+
+    const updatePayload: any = {
+      updated_at: new Date().toISOString(),
+    };
+    if (shouldUpdateRole) {
+      updatePayload.role = portalRole;
+    }
+    if (!blockChurchUpdate) {
+      updatePayload.church_id = churchInfo?.id || churchId;
+      updatePayload.church_name = churchInfo?.name || churchName;
+      if (!existingProfile?.city) {
+        updatePayload.city = churchInfo?.city || null;
+      }
+      if (!existingProfile?.country) {
+        updatePayload.country = churchInfo?.country || null;
+      }
+    }
+    if (Object.keys(updatePayload).length > 1) {
+      await supabaseAdmin
+        .from('user_profiles')
+        .upsert({
+          user_id: targetUserId,
+          email,
+          ...updatePayload,
+        }, { onConflict: 'user_id' });
+    }
+  }
 
   return new Response(JSON.stringify({ ok: true, churchId, churchName }), { status: 200 });
 };

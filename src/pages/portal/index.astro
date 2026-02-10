@@ -542,6 +542,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
                                    <option value="church_member">Colaborador (Registrar)</option>
                                    <option value="church_admin">Pastor (Admin)</option>
                                 </select>
+                                <div id="church-invite-church-wrapper" class="hidden space-y-1">
+                                   <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Iglesia / Ciudad</label>
+                                   <select id="church-invite-church" class="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs">
+                                      <option value="">Selecciona una iglesia</option>
+                                   </select>
+                                </div>
                                 <button id="church-invite-btn" class="w-full bg-[#293C74] text-white py-2 rounded-xl text-xs font-bold hover:bg-[#293C74]/90">Enviar Invitación</button>
                                 <p id="church-invite-status" class="text-[10px] text-slate-500 text-center min-h-[1rem]"></p>
                              </div>

@@ -107,6 +107,20 @@ import Sidebar from '@components/portal/Sidebar.astro';
                      </select>
                 </div>
 
+                <div id="user-scope-country" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">País (Pastor Nacional)</label>
+                    <input id="user-country-input" type="text" name="country" list="user-country-list" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="Ej: Colombia">
+                </div>
+
+                <div id="user-scope-church" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Iglesia / Ciudad (Pastor Local)</label>
+                    <select id="user-church-select" name="churchId" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                        <option value="">Selecciona una iglesia</option>
+                    </select>
+                </div>
+
+                <datalist id="user-country-list"></datalist>
+
                 <div class="pt-4 flex gap-3">
                     <button type="button" id="btn-cancel-create" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition-colors">Cancelar</button>
                     <button type="submit" id="btn-submit-create" class="flex-1 py-3 bg-[#293C74] text-white rounded-xl font-bold text-sm shadow-lg hover:brightness-110 transition-colors">Crear Usuario</button>

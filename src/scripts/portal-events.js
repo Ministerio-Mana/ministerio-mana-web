@@ -15,6 +15,27 @@ const eventSubmitBtn = eventForm?.querySelector('button[type="submit"]');
 let authHeaders = {};
 let eventsCache = [];
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function sanitizeUrl(value) {
+    const url = String(value ?? '').trim();
+    if (!url) return '';
+    if (url.startsWith('/') && !url.startsWith('//')) return url;
+    if (/^https?:\/\//i.test(url)) return url;
+    return '';
+}
+
 // Auth & Init
 async function init() {
     const auth = await ensureAuthenticated();
@@ -100,13 +121,23 @@ function renderEvents(events) {
     }
 
     eventsList.innerHTML = events.map(event => {
-        const banner = event.banner_url
-            ? `<div class="h-32 rounded-2xl bg-slate-100 overflow-hidden mb-4">
-                <img src="${event.banner_url}" alt="${event.title}" class="w-full h-full object-cover">
-              </div>`
-            : '';
+        const safeTitle = escapeHtml(event.title || 'Evento');
+        const safeTitleAttr = escapeAttr(event.title || 'Evento');
+        const safeScope = escapeHtml(event.scope || '');
+        const safeDescription = escapeHtml(event.description || 'Sin descripción');
         const locationParts = [event.location_name, event.location_address, event.city, event.country].filter(Boolean);
         const locationLabel = locationParts.length ? locationParts.join(' · ') : 'Virtual';
+        const safeLocation = escapeHtml(locationLabel);
+        const startLabel = event.start_date ? new Date(event.start_date).toLocaleDateString() : '';
+        const safeStartLabel = escapeHtml(startLabel);
+        const safeStatus = escapeHtml(event.status || 'PUBLICADO');
+        const safeEventId = escapeAttr(event.id || '');
+        const bannerUrl = sanitizeUrl(event.banner_url);
+        const banner = bannerUrl
+            ? `<div class="h-32 rounded-2xl bg-slate-100 overflow-hidden mb-4">
+                <img src="${escapeAttr(bannerUrl)}" alt="${safeTitleAttr}" class="w-full h-full object-cover">
+              </div>`
+            : '';
         return `
         <div class="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
             <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
@@ -117,27 +148,27 @@ function renderEvents(events) {
                 ${banner}
                 <div class="flex justify-between items-start mb-4">
                     <span class="px-3 py-1 rounded-full bg-slate-50 text-[10px] font-bold uppercase tracking-widest text-slate-500 border border-slate-100">
-                        ${event.scope}
+                        ${safeScope}
                     </span>
                     <div class="text-right">
-                        <p class="text-xs font-bold text-[#293C74]">${new Date(event.start_date).toLocaleDateString()}</p>
+                        <p class="text-xs font-bold text-[#293C74]">${safeStartLabel}</p>
                         <p class="text-[10px] text-slate-400 uppercase tracking-widest">Inicio</p>
                     </div>
                 </div>
                 
-                <h3 class="text-lg font-bold text-[#293C74] mb-2 group-hover:text-brand-teal transition-colors">${event.title}</h3>
-                <p class="text-sm text-slate-500 line-clamp-2 mb-4">${event.description || 'Sin descripción'}</p>
+                <h3 class="text-lg font-bold text-[#293C74] mb-2 group-hover:text-brand-teal transition-colors">${safeTitle}</h3>
+                <p class="text-sm text-slate-500 line-clamp-2 mb-4">${safeDescription}</p>
                 
                 <div class="flex items-center gap-2 text-xs text-slate-400">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    <span>${locationLabel}</span>
+                    <span>${safeLocation}</span>
                 </div>
 
                 <div class="mt-4 flex items-center justify-between">
-                    <button type="button" class="event-edit text-xs font-bold text-[#293C74] hover:underline" data-event-id="${event.id}">
+                    <button type="button" class="event-edit text-xs font-bold text-[#293C74] hover:underline" data-event-id="${safeEventId}">
                         Editar evento
                     </button>
-                    <span class="text-[10px] uppercase tracking-widest text-slate-400">${event.status || 'PUBLICADO'}</span>
+                    <span class="text-[10px] uppercase tracking-widest text-slate-400">${safeStatus}</span>
                 </div>
             </div>
         </div>

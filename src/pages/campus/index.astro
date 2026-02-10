@@ -2,6 +2,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DonationForm from '@components/campus/DonationForm.astro';
+import MultiDonationFlow from '@components/campus/MultiDonationFlow.astro';
 import { MISIONEROS } from '@data/misioneros';
 
 const title = "Campus Maná | Socios de la Gran Comisión";
@@ -207,29 +208,30 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
         </h2>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-12 lg:gap-20">
+      <!-- Flex grid: 3 cards first row, 2 centered on second row -->
+      <div class="missionaries-grid flex flex-wrap justify-center gap-8 lg:gap-12">
         {MISIONEROS.map((m) => (
-          <article class="relative group">
+          <article class="relative group missionary-card w-full md:w-[calc(33.333%-2rem)] min-w-[280px]">
             <!-- Card Background with GLOW -->
             <div class="absolute inset-0 bg-[#F3F0E6] transform rotate-1 group-hover:rotate-0 transition-transform duration-300 rounded-3xl" style="box-shadow: 10px 10px 0px #2DD4BF;"></div>
             
             <div class="relative z-10 bg-white overflow-hidden p-2 h-full flex flex-col glow-hover border-organic border-2 border-[#001B3A]">
                 <!-- Video/Image Header -->
-                <div class="relative h-72 bg-[#001B3A] overflow-hidden border-organic">
+                <div class="relative h-56 bg-[#001B3A] overflow-hidden border-organic">
                     <iframe src={m.video} class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"></iframe>
                     
                     <!-- Name Tag (organic border) -->
-                    <div class="absolute -bottom-4 -left-2 bg-yellow-400 px-6 py-2 transform -rotate-2 shadow-md z-20 border-organic border-2 border-[#001B3A]">
-                        <h3 class="font-intro text-[#001B3A] text-2xl uppercase">{m.nombre}</h3>
+                    <div class="absolute -bottom-4 -left-2 bg-yellow-400 px-5 py-2 transform -rotate-2 shadow-md z-20 border-organic border-2 border-[#001B3A]">
+                        <h3 class="font-intro text-[#001B3A] text-lg md:text-xl uppercase">{m.nombre}</h3>
                     </div>
                 </div>
 
-                <div class="p-6 pt-10 flex-1 flex flex-col">
-                     <div class="mb-6">
-                        <span class="font-intro text-brand-teal text-sm uppercase tracking-widest bg-brand-teal/10 px-3 py-1 border-organic">{m.rol || "Misionero Campus"}</span>
+                <div class="p-5 pt-8 flex-1 flex flex-col">
+                     <div class="mb-4">
+                        <span class="font-intro text-brand-teal text-xs uppercase tracking-widest bg-brand-teal/10 px-3 py-1 border-organic">{m.rol || "Misionero Campus"}</span>
                      </div>
 
-                    <p class="text-gray-600 mb-8 flex-1 font-intro-reg text-lg leading-relaxed">
+                    <p class="text-gray-600 mb-6 flex-1 font-intro-reg text-base leading-relaxed">
                         "Tu apoyo me permite seguir predicando el evangelio en el campus."
                     </p>
                     
@@ -247,19 +249,9 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
     </div>
   </section>
 
-  <!-- ===== CTA SECTION ===== -->
-  <section class="py-24 bg-brand-teal relative overflow-hidden">
-     <div class="container-tight px-4 text-center relative z-10">
-        <!-- "¿Te unes" SAME visual weight as "AL EQUIPO?" -->
-        <span class="font-summer text-white block mb-[-12px] transform -rotate-2" style="font-size: clamp(7rem, 12vw, 10rem);">¿Te unes</span>
-        <h2 class="font-intro text-[#001B3A] mb-12 uppercase" style="font-size: clamp(5rem, 10vw, 9rem);">
-            AL EQUIPO?
-        </h2>
-        <a href="https://wa.me/573000000000" target="_blank" class="btn-scribble inline-block px-12 py-5 bg-[#001B3A] text-white font-intro text-2xl uppercase shadow-2xl">
-            ESCRÍBENOS
-        </a>
-     </div>
-  </section>
+  <!-- ===== MULTI-MISSIONARY DONATION (replaces CTA) ===== -->
+  <MultiDonationFlow />
+  <script src="../../scripts/campus-multi-donation.js"></script>
 
   <!-- ===== RoughNotation — bundled by Astro/Vite ===== -->
   <script src="../../scripts/campus-annotations.js"></script>
