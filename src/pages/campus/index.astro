@@ -9,14 +9,25 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
 ---
 
 <BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
-  <!-- Import Maná Identity Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Kaushan+Script&display=swap" rel="stylesheet">
-
-  <style>
-    .font-intro { font-family: 'Montserrat', sans-serif; font-weight: 900; }
-    .font-summer { font-family: 'Kaushan Script', cursive; }
+  <!-- Local Maná Identity Fonts -->
+  <style is:global>
+    @font-face {
+      font-family: 'Intro';
+      src: url('/fonts/intro/Intro-Black.woff2') format('woff2');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Summer Loving';
+      src: url('/fonts/SUMMER%20FONT/Summer%20Loving%20Regular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    
+    .font-intro { font-family: 'Intro', sans-serif; }
+    .font-summer { font-family: 'Summer Loving', cursive; }
     
     /* Maná Button Background Style */
     .bg-text-btn {
