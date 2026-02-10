@@ -801,16 +801,16 @@ export class RegistrationModal {
         const value = selected?.value || 'FULL';
 
         if (this.installmentDetails) {
-            this.installmentDetails.classList.toggle('hidden', customEnabled || value !== 'INSTALLMENTS');
+            this.installmentDetails.classList.toggle('hidden', value !== 'INSTALLMENTS');
         }
         if (this.depositSchedule) {
-            this.depositSchedule.classList.toggle('hidden', customEnabled || value !== 'DEPOSIT');
+            this.depositSchedule.classList.toggle('hidden', value !== 'DEPOSIT');
         }
 
-        if (!customEnabled && value === 'INSTALLMENTS') {
+        if (value === 'INSTALLMENTS') {
             this.updateInstallmentPreview();
         }
-        if (!customEnabled && value === 'DEPOSIT') {
+        if (value === 'DEPOSIT') {
             this.syncDepositSchedule();
         }
         this.syncPaymentAmount(true);
