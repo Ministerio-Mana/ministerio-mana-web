@@ -88,7 +88,7 @@ class DonationWidget {
 
         config.options.forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'py-3 px-1 text-sm font-black rounded-sm border-2 border-[#001B3A] bg-white text-[#001B3A] hover:bg-yellow-50 hover:translate-x-[1px] hover:translate-y-[1px] transition-all amount-btn shadow-[2px_2px_0px_0px_transparent]';
+            btn.className = 'py-2 px-1 text-xs font-bold rounded-xl border border-white/10 hover:border-brand-teal/50 hover:bg-brand-teal/10 text-white transition-all amount-btn';
             btn.textContent = opt.label;
             btn.type = 'button';
             btn.dataset.value = opt.value;
@@ -108,11 +108,11 @@ class DonationWidget {
         const all = this.dom.amountsGrid.querySelectorAll('.amount-btn');
         all.forEach(btn => {
             if (btn === selectedBtn) {
-                btn.classList.add('bg-brand-teal', 'shadow-[2px_2px_0px_0px_#001B3A]', '-translate-y-[2px]', '-translate-x-[2px]');
-                btn.classList.remove('bg-white', 'hover:bg-yellow-50', 'shadow-[2px_2px_0px_0px_transparent]');
+                btn.classList.add('selected'); // Logic moved to CSS for cleaner handling
+                btn.classList.remove('border-white/10', 'hover:border-brand-teal/50', 'hover:bg-brand-teal/10', 'text-white');
             } else {
-                btn.classList.remove('bg-brand-teal', 'shadow-[2px_2px_0px_0px_#001B3A]', '-translate-y-[2px]', '-translate-x-[2px]');
-                btn.classList.add('bg-white', 'hover:bg-yellow-50', 'shadow-[2px_2px_0px_0px_transparent]');
+                btn.classList.remove('selected');
+                btn.classList.add('border-white/10', 'hover:border-brand-teal/50', 'hover:bg-brand-teal/10', 'text-white');
             }
         });
     }
@@ -122,9 +122,9 @@ class DonationWidget {
         this.dom.freqBtns.forEach(btn => {
             const isSelected = btn.dataset.freq === this.frequency;
             if (isSelected) {
-                btn.className = 'freq-btn flex-1 py-3 text-sm font-black uppercase rounded-sm border-2 border-[#001B3A] transition-all text-[#001B3A] bg-brand-teal shadow-[2px_2px_0px_0px_#001B3A] transform -translate-y-[1px]';
+                btn.className = 'freq-btn flex-1 py-2 text-xs font-bold uppercase rounded-full transition-all text-[#001B3A] bg-white shadow-lg transform scale-105';
             } else {
-                btn.className = 'freq-btn flex-1 py-3 text-sm font-black uppercase rounded-sm border-2 border-[#001B3A] transition-all text-gray-500 bg-transparent hover:text-[#001B3A] hover:bg-white';
+                btn.className = 'freq-btn flex-1 py-2 text-xs font-bold uppercase rounded-full transition-all text-white/40 hover:text-white';
             }
         });
 
