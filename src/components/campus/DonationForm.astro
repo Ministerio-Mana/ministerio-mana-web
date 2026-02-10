@@ -13,29 +13,29 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
   
   <!-- Title -->
   <div class="mb-6 text-center">
-      <h3 class="font-intro text-[#001B3A] text-xl uppercase tracking-wide">
-        TU APOYO
+      <h3 class="font-intro text-[#001B3A] text-lg uppercase tracking-wide">
+        Tu apoyo ayuda a la extensión
       </h3>
-      <p class="text-xs font-intro-reg text-brand-teal uppercase tracking-widest mt-2">Siembra en el Reino</p>
+      <p class="text-xs font-intro-reg text-brand-teal uppercase tracking-widest mt-1">del Reino</p>
       <div class="w-12 h-[2px] bg-brand-teal mx-auto mt-3 rounded-full"></div>
   </div>
 
   <div class="relative z-10">
-      <!-- Frequency Selector -->
+      <!-- Frequency Selector — scribble buttons -->
       <div class="flex mb-6 gap-3 frequency-selector">
-        <button type="button" class="freq-btn flex-1 py-2 text-xs font-intro uppercase transition-all text-[#001B3A] bg-transparent border-2 border-[#001B3A] hover:bg-brand-teal hover:border-brand-teal hover:text-white" style="border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;" data-freq="monthly">Mensual</button>
-        <button type="button" class="freq-btn flex-1 py-2 text-xs font-intro uppercase transition-all text-gray-400 border-2 border-transparent hover:text-[#001B3A] hover:underline decoration-wavy decoration-brand-teal" data-freq="once">Única vez</button>
+        <button type="button" class="freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-[#001B3A]" data-freq="monthly">Mensual</button>
+        <button type="button" class="freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-gray-400" data-freq="once">Única vez</button>
       </div>
 
-      <!-- Currency Selector -->
+      <!-- Currency Selector — organic border -->
       <div class="mb-6 relative">
           <label class="block text-[10px] font-intro uppercase text-gray-400 mb-2 tracking-widest">Moneda</label>
         <div class="relative">
-            <select class="currency-select w-full appearance-none bg-transparent border-b-2 border-[#001B3A]/20 text-[#001B3A] font-intro text-sm py-2 px-0 pr-8 focus:outline-none focus:border-brand-teal transition-all cursor-pointer">
+            <select class="currency-select select-organic w-full appearance-none text-[#001B3A] font-intro text-sm py-2.5 px-4 pr-8 focus:outline-none cursor-pointer">
                 <option value="COP">🇨🇴 Peso Colombiano (COP)</option>
                 <option value="USD">🇺🇸 Dólar (USD)</option>
             </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-[#001B3A]">
+            <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#001B3A]">
                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
             </div>
         </div>
@@ -46,18 +46,18 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
         <!-- JS populates this -->
       </div>
 
-      <!-- Custom Amount -->
-      <div class="relative mb-8 group-input border-2 border-[#001B3A] p-2" style="border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;">
+      <!-- Custom Amount — organic border -->
+      <div class="relative mb-8 group-input select-organic p-2">
         <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
         <input type="number" 
                class="custom-amount-input w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-6 pr-4 focus:outline-none text-center placeholder-gray-300"
                placeholder="Otro..." min="0">
       </div>
 
-      <!-- CTA Button -->
-      <a href={wompiLink || '#'} target="_blank" class="donate-cta block w-full py-4 bg-[#001B3A] text-white font-intro text-center text-sm uppercase tracking-widest hover:bg-brand-teal hover:text-[#001B3A] transition-all flex items-center justify-center gap-2 shadow-lg" style="border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;">
+      <!-- CTA Button — scribble style -->
+      <a href={wompiLink || '#'} target="_blank" class="donate-cta btn-scribble block w-full py-4 bg-[#001B3A] text-white font-intro text-center text-sm uppercase tracking-widest flex items-center justify-center gap-2">
         <span class="cta-text">Donar Ahora</span>
-        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
       </a>
       
       <p class="text-[10px] text-center text-gray-400 mt-4 font-intro-reg tracking-wide flex items-center justify-center gap-2">
@@ -70,8 +70,41 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
 <style>
     .font-intro { font-family: 'Intro', sans-serif; font-weight: 900; }
     .font-intro-reg { font-family: 'Intro', sans-serif; font-weight: 400; }
+
+    /* Scribble Button in DonationForm context */
+    .btn-scribble {
+        position: relative;
+        z-index: 10;
+        transition: transform 0.2s, background-color 0.3s, color 0.3s;
+    }
+    .btn-scribble::before {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border: 2px solid currentColor;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        z-index: -1;
+        opacity: 0.5;
+        transition: all 0.4s ease;
+    }
+    .btn-scribble:hover::before {
+        border-radius: 15px 255px 15px 255px / 255px 15px 255px 15px;
+        transform: scale(1.06);
+        opacity: 1;
+    }
+
+    /* Organic selector */
+    .select-organic {
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        border: 2px solid #001B3A;
+        background: transparent;
+        transition: border-color 0.3s;
+    }
+    .select-organic:focus, .select-organic:hover {
+        border-color: #2DD4BF;
+    }
     
-    /* Organic Input Focus */
+    /* Focus glow on custom input */
     .group-input:focus-within {
         border-color: #2DD4BF;
         box-shadow: 0 4px 12px rgba(45, 212, 191, 0.2);

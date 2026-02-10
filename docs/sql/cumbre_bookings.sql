@@ -20,6 +20,7 @@ create table if not exists public.cumbre_bookings (
   payment_method text,
   payment_status text,
   token_hash text,
+  idempotency_key text,
   source text,
   church_id uuid references public.churches(id),
   created_by uuid references auth.users(id),
@@ -41,3 +42,6 @@ create index if not exists cumbre_bookings_status_idx
 
 create index if not exists cumbre_bookings_source_idx
   on public.cumbre_bookings(source);
+
+create unique index if not exists cumbre_bookings_idempotency_key_idx
+  on public.cumbre_bookings(idempotency_key);

@@ -22,3 +22,9 @@ alter table cumbre_bookings
 
 alter table cumbre_bookings
   add column if not exists payment_status text;
+
+alter table cumbre_bookings
+  add column if not exists idempotency_key text;
+
+create unique index if not exists cumbre_bookings_idempotency_key_idx
+  on public.cumbre_bookings(idempotency_key);

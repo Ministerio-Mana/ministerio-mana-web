@@ -17,6 +17,8 @@ import { applyManualPaymentToPlan, createPaymentPlan, recordPayment, recomputeBo
 import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
+import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
 
@@ -75,6 +77,26 @@ function packageTypeFromAge(ageRaw: unknown, lodgingRaw: unknown): PackageType {
     if (age <= 4) return 'child_0_7';
     if (age <= 10) return 'child_7_13';
     return lodging ? 'lodging' : 'no_lodging';
+}
+
+async function findIdempotentBooking(idempotencyKey: string | null, expectedParticipants: number) {
+    if (!supabaseAdmin || !idempotencyKey) return null;
+    const { data: booking, error } = await supabaseAdmin
+        .from('cumbre_bookings')
+        .select('id')
+        .eq('idempotency_key', idempotencyKey)
+        .maybeSingle();
+    if (error || !booking?.id) return null;
+    const { count, error: countError } = await supabaseAdmin
+        .from('cumbre_participants')
+        .select('id', { count: 'exact', head: true })
+        .eq('booking_id', booking.id);
+    if (countError) return null;
+    if ((count ?? 0) >= expectedParticipants) {
+        return booking;
+    }
+    await cleanupCumbreBooking(booking.id);
+    return null;
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -304,7 +326,6 @@ export const POST: APIRoute = async ({ request }) => {
     const paymentAmountInput = parseAmountForCurrency(paymentAmountRaw, currency);
     const totalAmount = calculateTotals(currency, participants.map((p) => p.safe));
     const threshold = depositThreshold(totalAmount);
-    const tokenPair = generateAccessToken();
 
     let installmentSchedule: ReturnType<typeof buildInstallmentSchedule> | null = null;
     let paymentAmount = 0;
@@ -325,12 +346,71 @@ export const POST: APIRoute = async ({ request }) => {
         paymentAmount = paymentAmountInput;
     }
 
-    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
-    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
-
     if (paymentAmount < 0) {
         return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede ser negativo' }), { status: 400 });
     }
+    if (paymentAmount > totalAmount) {
+        return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede superar el total' }), { status: 400 });
+    }
+
+    const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
+    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
+    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+
+    if (planOption === 'DEPOSIT') {
+        if (!isValidDateOnly(depositDueDateRaw)) {
+            return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), { status: 400 });
+        }
+        const deadline = getInstallmentDeadline();
+        const today = new Date();
+        const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        if (depositDueDateRaw < todayValue) {
+            return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), { status: 400 });
+        }
+        if (depositDueDateRaw > deadline) {
+            return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha límite' }), { status: 400 });
+        }
+    }
+
+    const idempotencySeed = JSON.stringify({
+        source: 'portal-iglesia',
+        contactEmail,
+        contactPhone,
+        contactName,
+        totalAmount,
+        currency,
+        paymentAmount,
+        planOption,
+        frequency,
+        depositDueDateRaw: depositDueDateRaw || null,
+        churchId: resolvedChurchId,
+        participants: participants.map((p) => ({
+            fullName: p.safe.fullName,
+            packageType: p.safe.packageType,
+            relationship: p.safe.relationship,
+            documentNumber: p.safe.documentNumber,
+        })),
+    });
+    const idempotencyKey = buildIdempotencyKey({
+        request,
+        rawKey: body.idempotencyKey ?? body.idempotency_key,
+        fallbackSeed: idempotencySeed,
+    });
+
+    const existingBooking = await findIdempotentBooking(idempotencyKey, participants.length);
+    if (existingBooking) {
+        return new Response(
+            JSON.stringify({
+                ok: true,
+                message: `Grupo registrado exitosamente (${participants.length} participante${participants.length > 1 ? 's' : ''})`,
+                booking_id: existingBooking.id,
+                idempotent: true,
+            }),
+            { status: 200 }
+        );
+    }
+
+    const tokenPair = generateAccessToken();
 
     const { data: booking, error: bookingError } = await supabaseAdmin
         .from('cumbre_bookings')
@@ -351,6 +431,7 @@ export const POST: APIRoute = async ({ request }) => {
             deposit_threshold: threshold,
             payment_method: 'manual',
             token_hash: tokenPair.hash,
+            idempotency_key: idempotencyKey,
             source: 'portal-iglesia',
             church_id: resolvedChurchId || null,
             created_by: user?.id || profile?.user_id || null,
@@ -363,79 +444,41 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Error al crear registros' }), { status: 500 });
     }
 
-    const participantRows = participants.map((participant) => ({
-        booking_id: booking.id,
-        full_name: participant.safe.fullName,
-        package_type: participant.safe.packageType,
-        relationship: participant.safe.relationship,
-        document_type: participant.safe.documentType,
-        document_number: participant.safe.documentNumber,
-        birthdate: participant.extra?.birthdate || null,
-        gender: sanitizePlainText(participant.extra?.gender ?? '', 20) || null,
-        diet_type: sanitizePlainText(participant.extra?.menu ?? '', 40) || null,
-    }));
+    try {
+        const participantRows = participants.map((participant) => ({
+            booking_id: booking.id,
+            full_name: participant.safe.fullName,
+            package_type: participant.safe.packageType,
+            relationship: participant.safe.relationship,
+            document_type: participant.safe.documentType,
+            document_number: participant.safe.documentNumber,
+            birthdate: participant.extra?.birthdate || null,
+            gender: sanitizePlainText(participant.extra?.gender ?? '', 20) || null,
+            diet_type: sanitizePlainText(participant.extra?.menu ?? '', 40) || null,
+        }));
 
-    const { error: participantError } = await supabaseAdmin
-        .from('cumbre_participants')
-        .insert(participantRows);
+        const { error: participantError } = await supabaseAdmin
+            .from('cumbre_participants')
+            .insert(participantRows);
 
-    if (participantError) {
-        return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), { status: 500 });
-    }
-
-    if (paymentAmount > totalAmount) {
-        return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede superar el total' }), { status: 400 });
-    }
-
-    const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
-
-    let planId: string | null = null;
-    if (planOption === 'INSTALLMENTS') {
-        const schedule = installmentSchedule ?? buildInstallmentSchedule({
-            totalAmount,
-            currency,
-            frequency,
-        });
-
-        const plan = await createPaymentPlan({
-            bookingId: booking.id,
-            frequency,
-            startDate: schedule.startDate,
-            endDate: schedule.endDate,
-            totalAmount,
-            currency,
-            installmentCount: schedule.installmentCount,
-            installmentAmount: schedule.installmentAmount,
-            provider: 'manual',
-            autoDebit: false,
-            installments: schedule.installments,
-        });
-        planId = plan.id;
-    } else if (planOption === 'DEPOSIT') {
-        if (!isValidDateOnly(depositDueDateRaw)) {
-            return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), { status: 400 });
+        if (participantError) {
+            throw new Error('No se pudo guardar participantes');
         }
-        const deadline = getInstallmentDeadline();
-        const today = new Date();
-        const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        if (depositDueDateRaw < todayValue) {
-            return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), { status: 400 });
-        }
-        if (depositDueDateRaw > deadline) {
-            return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha límite' }), { status: 400 });
-        }
-        if (remainingAmount > 0) {
-            const schedule = buildDepositSchedule({
-                totalAmount: remainingAmount,
+
+        let planId: string | null = null;
+        if (planOption === 'INSTALLMENTS') {
+            const schedule = installmentSchedule ?? buildInstallmentSchedule({
+                totalAmount,
                 currency,
-                dueDate: depositDueDateRaw,
+                frequency,
             });
+
             const plan = await createPaymentPlan({
                 bookingId: booking.id,
-                frequency: 'DEPOSIT',
+                frequency,
                 startDate: schedule.startDate,
                 endDate: schedule.endDate,
-                totalAmount: remainingAmount,
+                totalAmount,
                 currency,
                 installmentCount: schedule.installmentCount,
                 installmentAmount: schedule.installmentAmount,
@@ -444,65 +487,91 @@ export const POST: APIRoute = async ({ request }) => {
                 installments: schedule.installments,
             });
             planId = plan.id;
+        } else if (planOption === 'DEPOSIT') {
+            if (remainingAmount > 0) {
+                const schedule = buildDepositSchedule({
+                    totalAmount: remainingAmount,
+                    currency,
+                    dueDate: depositDueDateRaw,
+                });
+                const plan = await createPaymentPlan({
+                    bookingId: booking.id,
+                    frequency: 'DEPOSIT',
+                    startDate: schedule.startDate,
+                    endDate: schedule.endDate,
+                    totalAmount: remainingAmount,
+                    currency,
+                    installmentCount: schedule.installmentCount,
+                    installmentAmount: schedule.installmentAmount,
+                    provider: 'manual',
+                    autoDebit: false,
+                    installments: schedule.installments,
+                });
+                planId = plan.id;
+            }
         }
-    }
 
-    if (paymentAmount > 0) {
-        const reference = buildDonationReference();
-        await recordPayment({
-            bookingId: booking.id,
-            provider: 'manual',
-            providerTxId: null,
-            reference,
-            amount: paymentAmount,
-            currency,
-            status: 'APPROVED',
-            planId,
-            rawEvent: {
-                source: 'portal-iglesia',
-                method: 'manual',
-            },
-        });
-
-        if (planId && planOption === 'INSTALLMENTS') {
-            await applyManualPaymentToPlan({
-                planId,
-                amount: paymentAmount,
+        if (paymentAmount > 0) {
+            const reference = buildDonationReference();
+            await recordPayment({
+                bookingId: booking.id,
+                provider: 'manual',
+                providerTxId: null,
                 reference,
+                amount: paymentAmount,
+                currency,
+                status: 'APPROVED',
+                planId,
+                rawEvent: {
+                    source: 'portal-iglesia',
+                    method: 'manual',
+                },
+            });
+
+            if (planId && planOption === 'INSTALLMENTS') {
+                await applyManualPaymentToPlan({
+                    planId,
+                    amount: paymentAmount,
+                    reference,
+                });
+            }
+
+            await createDonation({
+                provider: 'physical',
+                status: 'APPROVED',
+                amount: paymentAmount,
+                currency,
+                reference,
+                provider_tx_id: null,
+                payment_method: 'manual',
+                donation_type: 'evento',
+                project_name: 'Cumbre Mundial 2026',
+                event_name: 'Cumbre Mundial 2026',
+                campus: resolvedChurchName || null,
+                church: resolvedChurchName || null,
+                church_city: contactCity || null,
+                donor_name: contactName,
+                donor_email: contactEmail || null,
+                donor_phone: contactPhone || null,
+                donor_document_type: contactDocType || null,
+                donor_document_number: contactDocNumber || null,
+                is_recurring: false,
+                donor_country: contactCountry || null,
+                donor_city: contactCity || null,
+                donation_description: null,
+                need_certificate: false,
+                source: 'portal-iglesia',
+                cumbre_booking_id: booking.id,
+                raw_event: null,
             });
         }
 
-        await createDonation({
-            provider: 'physical',
-            status: 'APPROVED',
-            amount: paymentAmount,
-            currency,
-            reference,
-            provider_tx_id: null,
-            payment_method: 'manual',
-            donation_type: 'evento',
-            project_name: 'Cumbre Mundial 2026',
-            event_name: 'Cumbre Mundial 2026',
-            campus: resolvedChurchName || null,
-            church: resolvedChurchName || null,
-            church_city: contactCity || null,
-            donor_name: contactName,
-            donor_email: contactEmail || null,
-            donor_phone: contactPhone || null,
-            donor_document_type: contactDocType || null,
-            donor_document_number: contactDocNumber || null,
-            is_recurring: false,
-            donor_country: contactCountry || null,
-            donor_city: contactCity || null,
-            donation_description: null,
-            need_certificate: false,
-            source: 'portal-iglesia',
-            cumbre_booking_id: booking.id,
-            raw_event: null,
-        });
+        await recomputeBookingTotals(booking.id);
+    } catch (error) {
+        await cleanupCumbreBooking(booking.id);
+        console.error('Error inserting bookings:', error);
+        return new Response(JSON.stringify({ ok: false, error: 'Error al crear registros' }), { status: 500 });
     }
-
-    await recomputeBookingTotals(booking.id);
 
     return new Response(
         JSON.stringify({

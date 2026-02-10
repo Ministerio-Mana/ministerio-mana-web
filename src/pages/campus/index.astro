@@ -37,50 +37,53 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
     .font-intro-reg { font-family: 'Intro', sans-serif; font-weight: 400; }
     .font-summer { font-family: 'Summer Loving', cursive; }
     
-    /* Hand-drawn Button Style */
-    .btn-hand {
+    /* Scribble Button — the user-approved style from ESCRÍBENOS */
+    .btn-scribble {
         position: relative;
         z-index: 10;
-        transition: transform 0.2s;
+        transition: transform 0.2s, background-color 0.3s, color 0.3s;
     }
-    .btn-hand::before {
+    .btn-scribble::before {
         content: '';
         position: absolute;
-        inset: -4px;
-        border: 2px solid currentColor;
+        inset: -6px;
+        border: 2.5px solid currentColor;
         border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
         z-index: -1;
-        transition: all 0.3s ease;
+        opacity: 0.6;
+        transition: all 0.4s ease;
     }
-    .btn-hand:hover::before {
-        border-radius: 25px 155px 25px 155px / 155px 25px 155px 25px;
-        transform: scale(1.05);
+    .btn-scribble:hover::before {
+        border-radius: 15px 255px 15px 255px / 255px 15px 255px 15px;
+        transform: scale(1.06);
+        opacity: 1;
     }
-
-    /* Hand-drawn Underline */
-    .underline-hand {
-        position: relative;
-        display: inline-block;
-    }
-    .underline-hand::after {
-        content: '';
-        position: absolute;
-        bottom: -5px;
-        left: 0;
-        width: 100%;
-        height: 8px;
-        background-image: url("data:image/svg+xml,%3Csvg width='100' height='10' viewBox='0 0 100 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 5C20 8 40 2 98 5' stroke='%232DD4BF' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-        pointer-events: none;
+    .btn-scribble:hover {
+        transform: scale(1.02);
     }
 
-    /* Organic Container */
-    .box-organic {
+    /* Glow Effect for hoverable cards/elements */
+    .glow-hover {
+        transition: box-shadow 0.4s ease;
+    }
+    .glow-hover:hover {
+        box-shadow: 0 0 40px rgba(45, 212, 191, 0.35), 0 0 80px rgba(45, 212, 191, 0.15);
+    }
+
+    /* Organic selector */
+    .select-organic {
         border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
         border: 2px solid #001B3A;
+        background: transparent;
+        transition: border-color 0.3s;
+    }
+    .select-organic:focus, .select-organic:hover {
+        border-color: #2DD4BF;
     }
   </style>
+
+  <!-- RoughNotation for hand-drawn scribble effects -->
+  <script src="https://unpkg.com/rough-notation/lib/rough-notation.iife.js"></script>
 
   <!-- Scripts -->
   <script src="../../scripts/campus-donation.js"></script>
@@ -89,49 +92,28 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   <section class="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-[#001B3A]">
     <!-- Paper Texture Background -->
     <div class="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]"></div>
-    
-    <!-- Hand-drawn Circles Bg -->
-    <svg class="absolute top-10 right-10 w-64 h-64 text-brand-teal/10 animate-pulse-slow" viewBox="0 0 200 200">
-        <path d="M40,100 Q100,20 160,100 T40,100" stroke="currentColor" stroke-width="2" fill="none" class="hand-path"/>
-    </svg>
 
     <!-- Content -->
     <div class="container-tight relative z-10 text-center px-4">
       
-      <div class="mb-4 inline-block relative group">
-        <span class="font-intro text-brand-teal text-xl tracking-widest uppercase relative z-10 px-4">Ministerio Maná</span>
-        <!-- Hand-drawn Border around tag -->
-        <svg class="absolute inset-0 w-full h-full -z-10 text-brand-teal pointer-events-none" viewBox="0 0 300 60" preserveAspectRatio="none">
-             <path d="M5,30 Q150,5 295,30 Q150,55 5,30" stroke="currentColor" stroke-width="2" fill="none" class="group-hover:stroke-[3px] transition-all"/>
-        </svg>
-      </div>
-      
       <div class="relative inline-block mb-6">
-          <!-- Summer Loving as title companion: "Campus" in script above "MANÁ" in Intro -->
-          <span class="font-summer text-brand-teal text-5xl md:text-6xl block mb-2 transform -rotate-2">Campus</span>
+          <!-- Summer Loving as COMPANION, almost same size as Intro title -->
+          <span class="font-summer text-brand-teal text-7xl md:text-8xl block mb-[-4px] transform -rotate-2">Campus</span>
           <h1 class="text-8xl md:text-[10rem] font-intro text-white leading-none tracking-tighter uppercase relative z-10">
             MANÁ
           </h1>
-          
-          <!-- Clean thin arrow (→ style, like reference) -->
-          <span class="absolute -right-12 md:-right-16 bottom-6 text-yellow-400 text-4xl hidden md:block">→</span>
       </div>
 
       <p class="text-xl md:text-2xl text-white/90 font-intro-reg max-w-2xl mx-auto mb-12 leading-relaxed">
-        Levantando una generación <span class="underline-hand font-intro text-white">apasionada</span> por Jesús en las universidades.
+        Levantando una generación <span id="hero-apasionada" class="font-intro text-white">apasionada</span> por Jesús en las universidades.
       </p>
       
       <div class="flex flex-col sm:flex-row gap-8 justify-center items-center">
-        <a href="#misioneros" class="btn-hand px-10 py-4 bg-brand-teal text-[#001B3A] font-intro text-xl uppercase tracking-wider hover:bg-white hover:text-[#001B3A]">
+        <a href="#misioneros" class="btn-scribble px-10 py-4 bg-brand-teal text-[#001B3A] font-intro text-xl uppercase tracking-wider hover:bg-white hover:text-[#001B3A]">
           APOYAR AHORA
         </a>
-        <a href="#vision" class="group flex items-center gap-3 font-intro text-white text-lg hover:text-brand-teal transition-colors tracking-wide">
-          <span class="relative">
-             VER VIDEO
-             <svg class="absolute -bottom-1 left-0 w-full h-2 text-brand-teal scale-x-0 group-hover:scale-x-100 transition-transform origin-left" viewBox="0 0 100 10" preserveAspectRatio="none">
-                 <path d="M0,5 Q50,10 100,5" stroke="currentColor" stroke-width="3" fill="none" />
-             </svg>
-          </span>
+        <a href="#vision" class="btn-scribble px-8 py-3 bg-transparent text-white font-intro text-lg uppercase tracking-wide hover:text-brand-teal">
+          VER VIDEO
         </a>
       </div>
     </div>
@@ -142,37 +124,35 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
     <div class="container-tight px-4 relative z-10">
         <div class="grid md:grid-cols-2 gap-16 items-center">
             <div class="relative group">
-                <!-- Organic Image Container -->
-                <div class="aspect-video relative z-10 overflow-hidden" 
+                <!-- Organic Image Container with GLOW on hover -->
+                <div class="aspect-video relative z-10 overflow-hidden glow-hover" 
                      style="border-radius: 2% 98% 2% 98% / 98% 2% 98% 2%; box-shadow: 15px 15px 0px #001B3A;">
                      <div class="absolute inset-0 bg-gradient-to-tr from-[#001B3A]/40 to-transparent z-10"></div>
-                     <!-- Placeholder for actual video thumbnail if available, using strict color block for now -->
                      <div class="w-full h-full bg-[#001B3A] flex items-center justify-center">
                          <span class="font-intro text-white/20 text-6xl">VIDEO</span>
                      </div>
                      
-                     <!-- Play Button (Hand-drawn) -->
-                     <div class="absolute inset-0 flex items-center justify-center cursor-pointer">
-                        <div class="w-20 h-20 border-4 border-white rounded-full flex items-center justify-center transition-transform group-hover:scale-110" style="border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;">
+                     <!-- Play Button (Organic/Hand-drawn) -->
+                     <div class="absolute inset-0 flex items-center justify-center cursor-pointer z-20">
+                        <div class="w-20 h-20 border-4 border-white flex items-center justify-center transition-transform group-hover:scale-110" style="border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;">
                             <svg class="w-8 h-8 text-white ml-2 fill-current" viewBox="0 0 20 20"><path d="M6 4l10 6-10 6V4z"/></svg>
                         </div>
                      </div>
                 </div>
 
-                <!-- Sticky Note Quote -->
-                <div class="absolute -bottom-10 -right-4 bg-yellow-400 p-6 shadow-lg max-w-xs transform rotate-2 z-20"
-                     style="clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 95% 100%, 0% 100%);">
-                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-4 bg-yellow-600/20 opacity-50 blur-sm"></div>
-                    <p class="font-intro-reg text-[#001B3A] text-lg leading-tight">
-                        "La universidad es el campo misionero más estratégico del mundo."
+                <!-- Organic Quote (NOT rectangular — blob shape) -->
+                <div class="absolute -bottom-8 -right-4 bg-yellow-400 p-5 shadow-lg max-w-[280px] transform rotate-2 z-20"
+                     style="border-radius: 30% 70% 70% 30% / 60% 40% 60% 40%;">
+                    <p class="font-intro-reg text-[#001B3A] text-base leading-snug">
+                        "La universidad es el campo misionero más <span id="quote-estrategico" class="font-intro">estratégico</span> del mundo."
                     </p>
                 </div>
             </div>
             
             <div class="text-[#001B3A]">
                 <div class="mb-8">
-                    <!-- Summer Loving as title companion phrase, bigger, not tiny -->
-                    <span class="font-summer text-brand-teal text-6xl block transform -rotate-3 mb-[-8px] ml-2">Nuestra</span>
+                    <!-- Nuestra: Summer Loving BIGGER and more separated -->
+                    <span class="font-summer text-brand-teal text-7xl block transform -rotate-3 mb-2 ml-2">Nuestra</span>
                     <h2 class="text-7xl md:text-8xl font-intro uppercase leading-none relative inline-block">
                         MISIÓN
                     </h2>
@@ -189,13 +169,17 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
                 </h3>
                 
                 <p class="text-lg mb-8 leading-relaxed font-intro-reg">
-                    Es allí donde se forman los líderes del mañana. Queremos impactar su entorno cercano y el mundo a través del discipulado y la comunidad.
+                    Es allí donde se forman los <span id="vision-lideres" class="font-intro">líderes</span> del mañana. Queremos impactar su entorno cercano y el <span id="vision-mundo" class="font-intro">mundo</span> a través del discipulado y la comunidad.
                 </p>
                 
                 <div class="space-y-6">
                     <div class="flex items-start gap-4 group">
-                        <div class="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal shrink-0 group-hover:bg-brand-teal group-hover:text-white transition-colors">
-                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        <!-- Scribble circle icon -->
+                        <div class="w-12 h-12 flex items-center justify-center text-brand-teal shrink-0 relative">
+                             <svg class="absolute inset-0 w-full h-full" viewBox="0 0 50 50">
+                                 <ellipse cx="25" cy="25" rx="22" ry="20" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(-5deg); transform-origin: center;" class="group-hover:stroke-[3]" transition="stroke-width 0.3s"/>
+                             </svg>
+                             <svg class="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                         </div>
                         <div>
                             <h3 class="font-intro text-xl uppercase">Discipulado Personal</h3>
@@ -203,8 +187,11 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
                         </div>
                     </div>
                     <div class="flex items-start gap-4 group">
-                        <div class="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal shrink-0 group-hover:bg-brand-teal group-hover:text-white transition-colors">
-                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        <div class="w-12 h-12 flex items-center justify-center text-brand-teal shrink-0 relative">
+                             <svg class="absolute inset-0 w-full h-full" viewBox="0 0 50 50">
+                                 <ellipse cx="25" cy="25" rx="22" ry="20" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(3deg); transform-origin: center;" class="group-hover:stroke-[3]" transition="stroke-width 0.3s"/>
+                             </svg>
+                             <svg class="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                         </div>
                         <div>
                             <h3 class="font-intro text-xl uppercase">Comunidad</h3>
@@ -224,34 +211,33 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
 
     <div class="container-tight px-4 relative z-10">
       <div class="text-center mb-24">
-        <!-- Summer Loving companion: title case, never all-caps -->
-        <span class="font-summer text-brand-teal text-6xl block mb-[-4px] transform -rotate-2">Nuestros</span>
-        <h2 class="text-6xl md:text-8xl font-intro text-white uppercase inline-block">
-          EQUIPOS
+        <!-- "Nuestro" almost same size as "EQUIPO" (singular!) -->
+        <span class="font-summer text-brand-teal text-7xl md:text-8xl block mb-[-4px] transform -rotate-2">Nuestro</span>
+        <h2 class="text-7xl md:text-9xl font-intro text-white uppercase inline-block">
+          EQUIPO
         </h2>
       </div>
 
       <div class="grid md:grid-cols-2 gap-12 lg:gap-20">
         {MISIONEROS.map((m) => (
           <article class="relative group">
-            <!-- Organic Card Bg -->
+            <!-- Organic Card Background with GLOW on hover -->
             <div class="absolute inset-0 bg-[#F3F0E6] transform rotate-1 group-hover:rotate-0 transition-transform duration-300 rounded-3xl" style="box-shadow: 10px 10px 0px #2DD4BF;"></div>
             
-            <div class="relative z-10 bg-white rounded-2xl overflow-hidden border-2 border-[#001B3A] p-2 h-full flex flex-col">
+            <div class="relative z-10 bg-white overflow-hidden p-2 h-full flex flex-col glow-hover" style="border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; border: 2px solid #001B3A;">
                 <!-- Video/Image Header -->
-                <div class="relative h-72 bg-[#001B3A] overflow-hidden rounded-xl border border-[#001B3A]/10">
+                <div class="relative h-72 bg-[#001B3A] overflow-hidden" style="border-radius: 200px 10px 180px 10px / 10px 180px 10px 200px;">
                     <iframe src={m.video} class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"></iframe>
                     
-                    <!-- Sticker Name Tag -->
-                    <div class="absolute -bottom-4 -left-2 bg-yellow-400 px-6 py-2 transform -rotate-2 border-2 border-[#001B3A] shadow-md z-20">
+                    <!-- Sticker Name Tag (organic shape) -->
+                    <div class="absolute -bottom-4 -left-2 bg-yellow-400 px-6 py-2 transform -rotate-2 shadow-md z-20" style="border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; border: 2px solid #001B3A;">
                         <h3 class="font-intro text-[#001B3A] text-2xl uppercase">{m.nombre}</h3>
                     </div>
                 </div>
 
                 <div class="p-6 pt-10 flex-1 flex flex-col">
-                     <div class="flex justify-between items-start mb-6">
-                        <span class="font-intro text-brand-teal text-sm uppercase tracking-widest bg-brand-teal/10 px-3 py-1 rounded-full">{m.rol || "Misionero"}</span>
-                        <span class="text-brand-teal text-2xl">→</span>
+                     <div class="mb-6">
+                        <span class="font-intro text-brand-teal text-sm uppercase tracking-widest bg-brand-teal/10 px-3 py-1 rounded-full">{m.rol || "Misionero Campus"}</span>
                      </div>
 
                     <p class="text-gray-600 mb-8 flex-1 font-intro-reg text-lg leading-relaxed">
@@ -276,14 +262,72 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   <!-- CTA General -->
   <section class="py-24 bg-brand-teal relative overflow-hidden">
      <div class="container-tight px-4 text-center relative z-10">
-        <!-- Summer Loving as companion: "Te unes" in script above "AL EQUIPO" in Intro -->
-        <span class="font-summer text-white text-6xl md:text-7xl block mb-2 transform -rotate-2">¿Te unes</span>
-        <h2 class="text-5xl md:text-7xl font-intro text-[#001B3A] mb-12 uppercase">
+        <!-- Summer Loving as companion: BIGGER, almost same size -->
+        <span class="font-summer text-white text-7xl md:text-8xl block mb-2 transform -rotate-2">¿Te unes</span>
+        <h2 class="text-6xl md:text-8xl font-intro text-[#001B3A] mb-12 uppercase">
             AL EQUIPO?
         </h2>
-        <a href="https://wa.me/573000000000" target="_blank" class="btn-hand inline-block px-12 py-5 bg-[#001B3A] text-white font-intro text-2xl uppercase hover:bg-white hover:text-[#001B3A] shadow-2xl">
+        <a href="https://wa.me/573000000000" target="_blank" class="btn-scribble inline-block px-12 py-5 bg-[#001B3A] text-white font-intro text-2xl uppercase hover:bg-white hover:text-[#001B3A] shadow-2xl">
             ESCRÍBENOS
         </a>
      </div>
   </section>
+
+  <!-- RoughNotation Initialization Script -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof RoughNotation === 'undefined') return;
+      
+      const { annotate } = RoughNotation;
+      
+      // Hero: Circle around "apasionada"
+      const apasionada = document.getElementById('hero-apasionada');
+      if (apasionada) {
+        const a = annotate(apasionada, { type: 'circle', color: '#2DD4BF', strokeWidth: 2, padding: 8, animationDuration: 1200 });
+        // Animate on scroll into view
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) { a.show(); observer.unobserve(entry.target); }
+          });
+        }, { threshold: 0.5 });
+        observer.observe(apasionada);
+      }
+
+      // Quote: underline "estratégico"
+      const estrategico = document.getElementById('quote-estrategico');
+      if (estrategico) {
+        const a = annotate(estrategico, { type: 'underline', color: '#001B3A', strokeWidth: 2, animationDuration: 800 });
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) { a.show(); observer.unobserve(entry.target); }
+          });
+        }, { threshold: 0.5 });
+        observer.observe(estrategico);
+      }
+
+      // Vision: circle around "líderes"
+      const lideres = document.getElementById('vision-lideres');
+      if (lideres) {
+        const a = annotate(lideres, { type: 'circle', color: '#2DD4BF', strokeWidth: 2, padding: 5, animationDuration: 1000 });
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) { a.show(); observer.unobserve(entry.target); }
+          });
+        }, { threshold: 0.5 });
+        observer.observe(lideres);
+      }
+
+      // Vision: underline "mundo"
+      const mundo = document.getElementById('vision-mundo');
+      if (mundo) {
+        const a = annotate(mundo, { type: 'underline', color: '#2DD4BF', strokeWidth: 3, animationDuration: 800 });
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) { a.show(); observer.unobserve(entry.target); }
+          });
+        }, { threshold: 0.5 });
+        observer.observe(mundo);
+      }
+    });
+  </script>
 </BaseLayout>

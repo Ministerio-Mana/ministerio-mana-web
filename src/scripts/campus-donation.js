@@ -88,9 +88,7 @@ class DonationWidget {
 
         config.options.forEach(opt => {
             const btn = document.createElement('button');
-            // Organic Button Style
-            btn.className = 'py-2 px-1 text-sm font-intro text-[#001B3A] bg-transparent border-2 border-[#001B3A] hover:bg-[#001B3A] hover:text-white transition-all amount-btn';
-            btn.style.borderRadius = '255px 15px 225px 15px / 15px 225px 15px 255px'; // Organic shape
+            btn.className = 'btn-scribble py-2 px-1 text-sm font-intro text-[#001B3A] bg-transparent transition-all amount-btn';
             btn.textContent = opt.label;
             btn.type = 'button';
             btn.dataset.value = opt.value;
@@ -110,31 +108,26 @@ class DonationWidget {
         const all = this.dom.amountsGrid.querySelectorAll('.amount-btn');
         all.forEach(btn => {
             if (btn === selectedBtn) {
-                btn.classList.add('bg-[#001B3A]', 'text-white');
-                btn.classList.remove('bg-transparent', 'text-[#001B3A]');
+                btn.style.backgroundColor = '#001B3A';
+                btn.style.color = '#fff';
             } else {
-                btn.classList.remove('bg-[#001B3A]', 'text-white');
-                btn.classList.add('bg-transparent', 'text-[#001B3A]');
+                btn.style.backgroundColor = 'transparent';
+                btn.style.color = '#001B3A';
             }
         });
     }
 
     updateUI() {
-        // Update Frequency Buttons
+        // Update Frequency Buttons with scribble style
         this.dom.freqBtns.forEach(btn => {
             const isSelected = btn.dataset.freq === this.frequency;
             if (isSelected) {
-                btn.className = 'freq-btn flex-1 py-2 text-xs font-intro uppercase transition-all text-[#001B3A] bg-transparent border-2 border-[#001B3A]'; // Active state handled by CSS hover mostly, adding explicit border
                 btn.style.backgroundColor = '#2DD4BF';
-                btn.style.borderColor = '#2DD4BF';
                 btn.style.color = '#fff';
             } else {
-                btn.className = 'freq-btn flex-1 py-2 text-xs font-intro uppercase transition-all text-gray-400 border-2 border-transparent hover:text-[#001B3A]';
                 btn.style.backgroundColor = 'transparent';
-                btn.style.borderColor = 'transparent';
-                btn.style.color = '';
+                btn.style.color = '#9CA3AF';
             }
-            btn.style.borderRadius = '255px 15px 225px 15px / 15px 225px 15px 255px';
         });
 
         // Update Provider & Symbol
