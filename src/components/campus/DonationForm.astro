@@ -11,15 +11,13 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
 
 <div class="donation-widget relative p-6 transition-all group overflow-visible" data-wompi={wompiLink} data-stripe={stripePriceId} data-slug={slug}>
   
-  <!-- Hand-drawn Title -->
+  <!-- Title -->
   <div class="mb-6 text-center">
-      <h3 class="font-intro text-[#001B3A] text-xl uppercase tracking-wide relative inline-block">
+      <h3 class="font-intro text-[#001B3A] text-xl uppercase tracking-wide">
         TU APOYO
-        <svg class="absolute -bottom-2 -left-2 w-[110%] h-3 text-brand-teal" viewBox="0 0 100 10" preserveAspectRatio="none">
-             <path d="M0,5 Q50,8 100,5" stroke="currentColor" stroke-width="3" fill="none" class="hand-path"/>
-        </svg>
       </h3>
-      <p class="text-xs font-intro-reg text-brand-teal uppercase tracking-widest mt-1">Siembra en el Reino</p>
+      <p class="text-xs font-intro-reg text-brand-teal uppercase tracking-widest mt-2">Siembra en el Reino</p>
+      <div class="w-12 h-[2px] bg-brand-teal mx-auto mt-3 rounded-full"></div>
   </div>
 
   <div class="relative z-10">

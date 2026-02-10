@@ -106,20 +106,19 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
         </svg>
       </div>
       
-      <div class="relative inline-block mb-10">
-          <h1 class="text-7xl md:text-9xl font-intro text-white leading-none tracking-tighter uppercase relative z-10">
-            CAMPUS <br />
-            <span class="text-brand-teal">MANÁ</span>
+      <div class="relative inline-block mb-6">
+          <!-- Summer Loving as title companion: "Campus" in script above "MANÁ" in Intro -->
+          <span class="font-summer text-brand-teal text-5xl md:text-6xl block mb-2 transform -rotate-2">Campus</span>
+          <h1 class="text-8xl md:text-[10rem] font-intro text-white leading-none tracking-tighter uppercase relative z-10">
+            MANÁ
           </h1>
           
-          <!-- Hand-drawn Arrow pointing to Maná -->
-          <svg class="absolute -right-20 bottom-10 w-24 h-24 text-yellow-400 hidden md:block transform rotate-12" viewBox="0 0 100 100">
-              <path d="M10,10 Q50,50 90,90 M80,90 L90,90 L90,80" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" />
-          </svg>
+          <!-- Clean thin arrow (→ style, like reference) -->
+          <span class="absolute -right-12 md:-right-16 bottom-6 text-yellow-400 text-4xl hidden md:block">→</span>
       </div>
 
       <p class="text-xl md:text-2xl text-white/90 font-intro-reg max-w-2xl mx-auto mb-12 leading-relaxed">
-        Levantando una generación <span class="underline-hand font-intro text-white">apasionada</span> <span class="font-summer text-yellow-400 text-3xl mx-2">por</span> Jesús en las universidades.
+        Levantando una generación <span class="underline-hand font-intro text-white">apasionada</span> por Jesús en las universidades.
       </p>
       
       <div class="flex flex-col sm:flex-row gap-8 justify-center items-center">
@@ -163,23 +162,19 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
                 <!-- Sticky Note Quote -->
                 <div class="absolute -bottom-10 -right-4 bg-yellow-400 p-6 shadow-lg max-w-xs transform rotate-2 z-20"
                      style="clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 95% 100%, 0% 100%);">
-                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-4 bg-yellow-600/20 opacity-50 blur-sm"></div> <!-- Tape effect -->
+                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-4 bg-yellow-600/20 opacity-50 blur-sm"></div>
                     <p class="font-intro-reg text-[#001B3A] text-lg leading-tight">
-                        "La universidad es el campo misionero más estratégico <br> 
-                        <span class="font-summer text-[#001B3A] text-2xl block text-right mt-2">- del mundo.</span>"
+                        "La universidad es el campo misionero más estratégico del mundo."
                     </p>
                 </div>
             </div>
             
             <div class="text-[#001B3A]">
-                <div class="mb-4 relative">
-                    <span class="font-summer text-brand-teal text-5xl absolute -top-8 left-0 transform -rotate-12">Nuestra</span>
-                    <h2 class="text-6xl md:text-8xl font-intro uppercase leading-none mt-4 relative inline-block">
+                <div class="mb-8">
+                    <!-- Summer Loving as title companion phrase, bigger, not tiny -->
+                    <span class="font-summer text-brand-teal text-6xl block transform -rotate-3 mb-[-8px] ml-2">Nuestra</span>
+                    <h2 class="text-7xl md:text-8xl font-intro uppercase leading-none relative inline-block">
                         MISIÓN
-                        <!-- Underline scribble -->
-                        <svg class="absolute -bottom-2 left-0 w-full h-4 text-brand-teal" viewBox="0 0 200 10" preserveAspectRatio="none">
-                            <path d="M0,5 Q50,10 100,5 T200,5" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" />
-                        </svg>
                     </h2>
                 </div>
 
@@ -194,17 +189,26 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
                 </h3>
                 
                 <p class="text-lg mb-8 leading-relaxed font-intro-reg">
-                    Es allí donde se forman los líderes <span class="font-summer text-brand-teal text-2xl px-1">del</span> mañana. Queremos impactar su entorno cercano <span class="font-summer text-brand-teal text-2xl px-1">y</span> el mundo a través del discipulado y la comunidad.
+                    Es allí donde se forman los líderes del mañana. Queremos impactar su entorno cercano y el mundo a través del discipulado y la comunidad.
                 </p>
                 
                 <div class="space-y-6">
-                    <div class="flex items-start gap-4">
-                        <div class="mt-1">
-                             <svg class="w-8 h-8 text-brand-teal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                    <div class="flex items-start gap-4 group">
+                        <div class="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal shrink-0 group-hover:bg-brand-teal group-hover:text-white transition-colors">
+                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                         </div>
                         <div>
-                            <h3 class="font-intro text-xl uppercase underline decoration-wavy decoration-brand-teal decoration-2">Discipulado Personal</h3>
+                            <h3 class="font-intro text-xl uppercase">Discipulado Personal</h3>
                             <p class="text-gray-600 font-intro-reg">Acompañamiento uno a uno para crecer en la fe.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4 group">
+                        <div class="w-10 h-10 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal shrink-0 group-hover:bg-brand-teal group-hover:text-white transition-colors">
+                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="font-intro text-xl uppercase">Comunidad</h3>
+                            <p class="text-gray-600 font-intro-reg">Grupos de crecimiento en la universidad.</p>
                         </div>
                     </div>
                 </div>
@@ -220,12 +224,10 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
 
     <div class="container-tight px-4 relative z-10">
       <div class="text-center mb-24">
-        <h2 class="text-5xl md:text-8xl font-intro text-white uppercase relative inline-block">
-          <span class="font-summer text-brand-teal text-5xl absolute -top-8 -left-4 transform -rotate-12">Nuestros</span>
+        <!-- Summer Loving companion: title case, never all-caps -->
+        <span class="font-summer text-brand-teal text-6xl block mb-[-4px] transform -rotate-2">Nuestros</span>
+        <h2 class="text-6xl md:text-8xl font-intro text-white uppercase inline-block">
           EQUIPOS
-          <svg class="absolute -bottom-4 right-0 w-32 h-4 text-brand-teal" viewBox="0 0 100 10" preserveAspectRatio="none">
-             <path d="M0,5 Q50,0 100,5" stroke="currentColor" stroke-width="5" fill="none" stroke-linecap="round"/>
-          </svg>
         </h2>
       </div>
 
@@ -249,12 +251,11 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
                 <div class="p-6 pt-10 flex-1 flex flex-col">
                      <div class="flex justify-between items-start mb-6">
                         <span class="font-intro text-brand-teal text-sm uppercase tracking-widest bg-brand-teal/10 px-3 py-1 rounded-full">{m.rol || "Misionero"}</span>
-                        <!-- Hand-drawn Arrow -->
-                        <svg class="w-10 h-10 text-[#001B3A] transform rotate-90" viewBox="0 0 50 50"><path d="M5,25 Q25,5 45,25 M35,25 L45,25 L45,15" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+                        <span class="text-brand-teal text-2xl">→</span>
                      </div>
 
                     <p class="text-gray-600 mb-8 flex-1 font-intro-reg text-lg leading-relaxed">
-                        "Tu apoyo me permite seguir predicando el evangelio <span class="font-summer text-brand-teal text-xl px-1">en</span> el campus."
+                        "Tu apoyo me permite seguir predicando el evangelio en el campus."
                     </p>
                     
                     <!-- Donation Widget -->
@@ -275,14 +276,14 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   <!-- CTA General -->
   <section class="py-24 bg-brand-teal relative overflow-hidden">
      <div class="container-tight px-4 text-center relative z-10">
+        <!-- Summer Loving as companion: "Te unes" in script above "AL EQUIPO" in Intro -->
+        <span class="font-summer text-white text-6xl md:text-7xl block mb-2 transform -rotate-2">¿Te unes</span>
         <h2 class="text-5xl md:text-7xl font-intro text-[#001B3A] mb-12 uppercase">
-            ¿TE UNES <br> 
-            <span class="font-summer text-white text-6xl lowercase relative top-[-10px] inline-block transform rotate-[-5deg]">al</span> 
-            EQUIPO?
+            AL EQUIPO?
         </h2>
         <a href="https://wa.me/573000000000" target="_blank" class="btn-hand inline-block px-12 py-5 bg-[#001B3A] text-white font-intro text-2xl uppercase hover:bg-white hover:text-[#001B3A] shadow-2xl">
             ESCRÍBENOS
         </a>
      </div>
   </section>
-</BaseLayout></BaseLayout>
+</BaseLayout>
