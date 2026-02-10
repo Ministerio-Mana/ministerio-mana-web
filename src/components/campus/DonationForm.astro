@@ -1,0 +1,66 @@
+---
+interface Props {
+  missionaryName: string;
+  wompiLink?: string;
+  stripePriceId?: string;
+  slug?: string;
+}
+
+const { missionaryName, wompiLink, stripePriceId, slug } = Astro.props;
+---
+
+<div class="donation-widget bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md transition-all hover:bg-white/10 group relative overflow-hidden" data-wompi={wompiLink} data-stripe={stripePriceId} data-slug={slug}>
+  <div class="absolute inset-0 bg-gradient-to-br from-brand-teal/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+  
+  <h3 class="text-lg font-bold text-white mb-4 relative z-10 flex items-center gap-2">
+    <span>Apoyar a {missionaryName}</span>
+  </h3>
+  
+  <!-- Frequency Toggle -->
+  <div class="bg-black/20 p-1 rounded-xl flex mb-6 relative z-10 border border-white/5 frequency-selector">
+    <button type="button" class="freq-btn flex-1 py-2 text-xs font-bold rounded-lg transition-all text-brand-navy bg-brand-teal shadow-brand-teal/20 shadow-lg" data-freq="monthly">Mensual</button>
+    <button type="button" class="freq-btn flex-1 py-2 text-xs font-bold rounded-lg transition-all text-white/40 hover:text-white" data-freq="once">Única vez</button>
+  </div>
+
+  <!-- Currency Selector -->
+  <div class="mb-4 relative z-10">
+      <label class="block text-[10px] font-bold text-brand-teal uppercase tracking-widest mb-2">Moneda</label>
+      <div class="relative">
+        <select class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm appearance-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all cursor-pointer hover:bg-white/5 currency-select">
+            <option value="COP">🇨🇴 Peso Colombiano (COP)</option>
+            <option value="USD">🌎 Dólares (USD)</option>
+        </select>
+        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/60">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </div>
+      </div>
+  </div>
+
+  <!-- Amount Buttons (Dynamic) -->
+  <div class="grid grid-cols-3 gap-2 mb-4 relative z-10 amounts-grid">
+     <!-- Injected via JS -->
+  </div>
+
+  <!-- Custom Amount -->
+  <div class="relative mb-6 z-10">
+     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+       <span class="text-brand-teal font-bold text-lg currency-symbol">$</span>
+     </div>
+     <input type="number" placeholder="Otro valor" class="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/20 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all custom-amount-input text-sm font-bold">
+  </div>
+
+  <!-- CTA Button -->
+  <a href={wompiLink || '#'} target="_blank" class="donate-cta block w-full py-3.5 bg-gradient-to-r from-brand-teal to-cyan-500 hover:brightness-110 text-white font-bold text-center rounded-xl shadow-lg shadow-brand-teal/20 transition-all transform hover:scale-[1.02] relative z-10 flex items-center justify-center gap-2 group-hover:shadow-brand-teal/30">
+    <span class="cta-text">Donar Ahora</span>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+    </svg>
+  </a>
+  
+  <p class="text-[10px] text-white/30 text-center mt-4 relative z-10 flex items-center justify-center gap-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+    Pago seguro procesado por <span class="provider-name font-bold text-white/50">Wompi</span>
+  </p>
+</div>
