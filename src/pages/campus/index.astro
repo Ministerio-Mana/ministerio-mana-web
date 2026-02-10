@@ -9,93 +9,116 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
 ---
 
 <BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
+  <!-- Import Handwritten Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&display=swap" rel="stylesheet">
+
+  <style>
+    .font-hand { font-family: 'Gloria Hallelujah', cursive; }
+    .bg-paper { background-color: #f8f5f2; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415-.828-.828-.828.828-1.415-1.415.828-.828-.828-.828 1.415-1.415.828.828.828-.828 1.415 1.415-.828.828zM22.485 0l.83.828-1.415 1.415-.828-.828-.828.828-1.415-1.415.828-.828-.828-.828 1.415-1.415.828.828.828-.828 1.415 1.415-.828.828zM0 22.485l.828.83-1.415 1.415-.828-.828-.828.828L-3.658 22.485l.828-.828-.828-.828 1.415-1.415.828.828.828-.828 1.415 1.415-.828.828zM0 54.627l.828.83-1.415 1.415-.828-.828-.828.828L-3.658 54.627l.828-.828-.828-.828 1.415-1.415.828.828.828-.828 1.415 1.415-.828.828zM54.627 60l.83.828-1.415 1.415-.828-.828-.828.828-1.415-1.415.828-.828-.828-.828 1.415-1.415.828.828.828-.828 1.415 1.415-.828.828zM22.485 60l.83.828-1.415 1.415-.828-.828-.828.828-1.415-1.415.828-.828-.828-.828 1.415-1.415.828.828.828-.828 1.415 1.415-.828.828z' fill='%23000000' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E"); }
+  </style>
+
   <!-- Scripts -->
   <script src="../../scripts/campus-donation.js"></script>
 
   <!-- Hero Section -->
-  <section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-brand-navy">
-    <!-- Background Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-br from-brand-navy via-brand-navy/90 to-brand-teal/20 opacity-40"></div>
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-teal/10 via-brand-navy/50 to-brand-navy"></div>
+  <section class="relative min-h-[95vh] flex items-center justify-center overflow-hidden bg-[#001B3A]">
+    <!-- Gritty Texture Overlay -->
+    <div class="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>
     
-    <!-- Decorative Elements -->
-    <div class="absolute top-0 right-0 p-20 opacity-20 hidden md:block">
-        <div class="w-96 h-96 bg-brand-teal rounded-full blur-[120px]"></div>
-    </div>
-    <div class="absolute bottom-0 left-0 p-20 opacity-10 hidden md:block">
-        <div class="w-72 h-72 bg-purple-600 rounded-full blur-[100px]"></div>
-    </div>
+    <!-- Abstract Scribbles (CSS Shapes) -->
+    <svg class="absolute top-10 left-10 w-64 h-64 text-brand-teal/20 animate-pulse" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+       <path fill="currentColor" d="M44.7,-76.4C58.9,-69.2,71.8,-59.1,79.6,-46.9C87.4,-34.7,90.1,-20.4,85.8,-6.6C81.5,7.2,70.2,20.4,60.5,31.7C50.8,43,42.7,52.4,32.7,61.8C22.7,71.2,10.8,80.7,-0.4,81.4C-11.6,82.1,-23.9,74,-34.5,65C-45.1,56,-54,46.1,-61.8,34.7C-69.6,23.3,-76.3,10.4,-77.8,-3.3C-79.3,-17,-75.6,-31.5,-66.6,-42.9C-57.6,-54.3,-43.3,-62.6,-29.6,-70.1C-15.9,-77.6,-2.8,-84.3,10.6,-83.8C24,-83.3,44,-83.6,44.7,-76.4Z" transform="translate(100 100)" />
+    </svg>
+    <svg class="absolute bottom-10 right-10 w-96 h-96 text-white/5 animate-spin-slow" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+       <path fill="currentColor" d="M39.9,-65.7C54.1,-60.9,69.5,-55.8,77.9,-45.5C86.3,-35.2,87.7,-19.7,82.8,-6.4C77.9,7,66.7,18.1,58.8,30.3C50.9,42.5,46.3,55.8,37.3,64.7C28.3,73.6,14.9,78.1,-0.3,78.6C-15.5,79.1,-30.3,75.6,-43.3,68.6C-56.3,61.6,-67.5,51.1,-75.1,38.2C-82.7,25.3,-86.7,10,-84.2,-4.3C-81.7,-18.6,-72.7,-31.9,-62.3,-43.2C-51.9,-54.5,-40.1,-63.8,-27.9,-69.5C-15.7,-75.2,-3.1,-77.3,8.7,-75.5C20.5,-73.7,31,-68,39.9,-65.7Z" transform="translate(100 100)" />
+    </svg>
 
     <!-- Content -->
     <div class="container-tight relative z-10 text-center px-4">
-      <span class="inline-block py-1 px-3 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-teal text-xs font-bold uppercase tracking-widest mb-6">
-        Ministerio Maná
-      </span>
-      <h1 class="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
-        CAMPUS <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-cyan-400">MANÁ</span>
+      <div class="relative inline-block mb-4">
+        <span class="font-hand text-brand-teal text-xl md:text-2xl transform -rotate-3 block">Ministerio Maná</span>
+        <!-- Underline Scribble -->
+        <svg class="absolute -bottom-2 w-full h-3 text-white/40" viewBox="0 0 100 10" preserveAspectRatio="none">
+             <path d="M0,5 Q50,10 100,5" stroke="currentColor" stroke-width="2" fill="none" />
+        </svg>
+      </div>
+      
+      <h1 class="text-7xl md:text-9xl font-black text-white mb-2 leading-none tracking-tighter mix-blend-luminosity">
+        CAMPUS
       </h1>
-      <p class="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
-        Socios de la Gran Comisión. Levantando una generación apasionada por Jesús en las universidades de Colombia y el mundo.
+      <h1 class="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-white mb-8 leading-none tracking-tighter relative inline-block">
+        MANÁ
+        <!-- Circle Scribble -->
+        <svg class="absolute -top-4 -right-10 w-[120%] h-[120%] text-brand-teal pointer-events-none" viewBox="0 0 200 100" preserveAspectRatio="none">
+           <path d="M20,50 Q50,5 180,50 T20,50" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="10 5" />
+        </svg>
+      </h1>
+
+      <p class="text-xl md:text-2xl text-white font-hand max-w-3xl mx-auto mb-12 leading-relaxed transform rotate-1">
+        "Levantando una generación <span class="text-brand-teal font-bold border-b-2 border-brand-teal border-dashed transform -skew-x-12 inline-block">apasionada</span> por Jesús en las universidades"
       </p>
       
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="#misioneros" class="px-8 py-4 bg-brand-teal text-brand-navy font-bold rounded-full hover:brightness-110 transition-all shadow-lg shadow-brand-teal/20">
-          Apoyar a un misionero
+      <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+        <a href="#misioneros" class="group relative px-8 py-4 bg-brand-teal text-[#001B3A] font-black text-lg rounded-sm transform hover:-translate-y-1 hover:rotate-1 transition-all shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+          APOYAR AHORA
+          <svg class="absolute -top-6 -right-6 w-12 h-12 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7-7-7" />
+          </svg>
         </a>
-        <a href="#vision" class="px-8 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-full hover:bg-white/10 transition-all backdrop-blur-sm">
-          Conocer la visión
+        <a href="#vision" class="font-hand text-white text-lg underline decoration-wavy decoration-brand-teal hover:text-brand-teal transition-colors">
+          ¿Cuál es la visión?
         </a>
       </div>
-    </div>
-
-    <!-- Scroll Indicator -->
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce text-white/30">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7-7-7" />
-        </svg>
     </div>
   </section>
 
   <!-- Vision Section -->
-  <section id="vision" class="py-24 bg-brand-navy relative border-t border-white/5">
-    <div class="container-tight px-4">
-        <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div class="relative">
-                <div class="aspect-video rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black/50 relative group">
-                     <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-navy to-black">
-                        <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md group-hover:scale-110 transition-transform cursor-pointer shadow-xl border border-white/10">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white ml-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
+  <section id="vision" class="py-24 bg-white relative">
+    <!-- Paper texture -->
+    <div class="absolute inset-0 opacity-50 bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]"></div>
+
+    <div class="container-tight px-4 relative z-10">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div class="relative transform md:-rotate-2">
+                <div class="border-4 border-[#001B3A] p-2 bg-white shadow-[8px_8px_0px_0px_#001B3A]">
+                     <div class="aspect-video bg-gray-200 relative overflow-hidden group">
+                         <!-- Styled Play Button -->
+                         <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
+                            <div class="w-20 h-20 bg-[#001B3A] rounded-full flex items-center justify-center text-white cursor-pointer hover:scale-110 transition-transform border-4 border-white shadow-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                         </div>
+                         <div class="w-full h-full bg-gradient-to-br from-brand-navy to-black object-cover"></div>
                      </div>
                 </div>
-                <!-- Decoration -->
-                <div class="absolute -bottom-6 -right-6 w-full h-full border-2 border-brand-teal/20 rounded-2xl -z-10 hidden md:block"></div>
+                <!-- Handwritten caption -->
+                <div class="absolute -bottom-10 -right-4 font-hand text-[#001B3A] text-lg bg-yellow-200 px-3 py-1 transform rotate-3 shadow-sm">
+                    ¡Mira lo que Dios está haciendo! ->
+                </div>
             </div>
+            
             <div>
-                <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Llevando el Evangelio a la Academia</h2>
-                <p class="text-white/60 mb-6 leading-relaxed">
-                    Creemos que la universidad es uno de los campos misioneros más estratégicos hoy en día. Es allí donde se forman los líderes del mañana, donde se debaten las ideas que moldearán la cultura y donde miles de jóvenes toman decisiones que definirán su futuro.
+                <h2 class="text-5xl md:text-6xl font-black text-[#001B3A] mb-8 leading-none">
+                    LLEVANDO<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-[#001B3A]">EL EVANGELIO</span><br>
+                    A LA ACADEMIA
+                </h2>
+                <p class="text-xl text-gray-700 mb-8 leading-relaxed font-medium">
+                    Creemos que la universidad es <span class="bg-brand-teal/20 px-1 font-bold">tierra fértil</span>. Es allí donde se forman los líderes del mañana y donde miles de jóvenes toman decisiones eternas.
                 </p>
-                <div class="space-y-4">
-                    <div class="flex items-start gap-4">
-                        <div class="p-2 bg-brand-teal/10 rounded-lg text-brand-teal">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-white font-bold text-lg">Discipulado</h3>
-                            <p class="text-white/50 text-sm">Acompañamiento personal y grupos de estudio bíblico.</p>
-                        </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-[#f0f4f8] p-4 rounded-xl border-2 border-dashed border-[#001B3A] transform hover:rotate-1 transition-transform">
+                        <h3 class="font-black text-[#001B3A] text-xl mb-2">#Discipulado</h3>
+                        <p class="text-sm text-gray-600 font-hand">Grupos pequeños, vida a vida.</p>
                     </div>
-                    <div class="flex items-start gap-4">
-                        <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-white font-bold text-lg">Comunidad</h3>
-                            <p class="text-white/50 text-sm">Creando espacios seguros de pertenencia y crecimiento.</p>
-                        </div>
+                    <div class="bg-[#f0f4f8] p-4 rounded-xl border-2 border-dashed border-[#001B3A] transform hover:-rotate-1 transition-transform">
+                        <h3 class="font-black text-[#001B3A] text-xl mb-2">#Comunidad</h3>
+                        <p class="text-sm text-gray-600 font-hand">Amigos que se vuelven familia.</p>
                     </div>
                 </div>
             </div>
@@ -104,37 +127,47 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   </section>
 
   <!-- Missionaries Section -->
-  <section id="misioneros" class="py-24 bg-black/20 border-t border-white/5">
+  <section id="misioneros" class="py-24 bg-[#001B3A] relative border-t-8 border-brand-teal">
+    <!-- Texture -->
+    <div class="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"></div>
+
     <div class="container-tight px-4">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl md:text-5xl font-black text-white mb-4">Nuestros Misioneros</h2>
-        <p class="text-white/60 max-w-2xl mx-auto">
-           Hombres y mujeres que han decidido dedicar sus vidas a tiempo completo para servir a los estudiantes universitarios. Tu apoyo hace posible su labor.
+      <div class="text-center mb-16 relative">
+        <h2 class="text-5xl md:text-7xl font-black text-white mb-6 relative z-10">
+          NUESTROS <span class="text-brand-teal underline decoration-wavy decoration-white">EQUIPOS</span>
+        </h2>
+        <p class="text-white/80 max-w-2xl mx-auto text-xl font-hand transform -rotate-1 bg-white/10 p-2 inline-block rounded-lg backdrop-blur-sm">
+           Hombres y mujeres apasionados por ver a Jesús en cada campus.
         </p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-8 lg:gap-12">
+      <div class="grid md:grid-cols-2 gap-10 lg:gap-16">
         {MISIONEROS.map((m) => (
-          <article class="bg-brand-navy border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col group hover:border-brand-teal/30 transition-all">
+          <article class="bg-white rounded-sm shadow-[8px_8px_0px_0px_#2DD4BF] overflow-hidden flex flex-col group border-4 border-white transform hover:-translate-y-2 transition-transform duration-300">
             <!-- Header / Video -->
-            <div class="relative h-64 bg-black">
+            <div class="relative h-72 bg-gray-900 overflow-hidden">
                  {m.video ? (
-                    <iframe src={m.video} class="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity" title={m.nombre} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <iframe src={m.video} class="w-full h-full opacity-90 group-hover:opacity-100 transition-opacity grayscale group-hover:grayscale-0 duration-500" title={m.nombre} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                  ) : (
-                    <div class="w-full h-full flex items-center justify-center bg-white/5">
-                        <span class="text-white/20 font-bold text-xl uppercase tracking-widest">Video</span>
+                    <div class="w-full h-full flex items-center justify-center bg-[#001B3A]">
+                        <span class="text-white/20 font-black text-4xl uppercase tracking-widest transform -rotate-12">VIDEO</span>
                     </div>
                  )}
-                 <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-brand-navy to-transparent">
-                    <h3 class="text-2xl font-bold text-white">{m.nombre}</h3>
-                    <p class="text-brand-teal font-medium text-sm">{m.rol || "Misionero Campus"}</p>
+                 <!-- Sticker Name -->
+                 <div class="absolute bottom-4 left-4 bg-brand-teal text-[#001B3A] px-4 py-2 font-black text-xl transform -rotate-2 shadow-lg border-2 border-[#001B3A]">
+                    {m.nombre}
                  </div>
             </div>
             
             <!-- Body -->
-            <div class="p-6 md:p-8 flex-1 flex flex-col">
-                <p class="text-white/60 text-sm leading-relaxed mb-8 flex-1">
-                    Apoya el ministerio de {m.nombre.split(' ')[0]} para que pueda continuar compartiendo el evangelio, discipulando estudiantes y formándolos como líderes en su campus universitario.
+            <div class="p-6 md:p-8 flex-1 flex flex-col bg-white">
+                <div class="mb-6 flex items-center gap-3">
+                    <span class="bg-[#001B3A] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">{m.rol || "Misionero"}</span>
+                    <div class="h-px bg-gray-200 flex-1"></div>
+                </div>
+                
+                <p class="text-gray-600 leading-relaxed mb-8 flex-1 font-medium">
+                    Apoya el ministerio de <span class="font-bold text-[#001B3A]">{m.nombre.split(' ')[0]}</span>. Tu donación permite que siga compartiendo el evangelio en la U.
                 </p>
                 
                 <!-- Donation Widget -->
@@ -152,16 +185,14 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   </section>
 
   <!-- CTA General -->
-  <section class="py-20 bg-gradient-to-br from-brand-teal to-cyan-700 relative overflow-hidden">
-     <div class="absolute inset-0 bg-[url('/images/pattern-dots.png')] opacity-20"></div>
+  <section class="py-24 bg-brand-teal relative overflow-hidden">
      <div class="container-tight px-4 text-center relative z-10">
-        <h2 class="text-3xl md:text-4xl font-black text-white mb-6">¿Quieres ser parte del equipo?</h2>
-        <p class="text-white/90 max-w-2xl mx-auto mb-8 text-lg font-medium">
-            Si sientes el llamado a servir en el campus universitario o quieres que visitemos tu universidad, contáctanos.
-        </p>
-        <a href="https://wa.me/573000000000?text=Hola,%20quiero%20saber%20más%20de%20Campus%20Maná" target="_blank" class="inline-flex items-center gap-2 px-8 py-4 bg-white text-brand-teal font-black rounded-full hover:bg-white/90 transition-all shadow-xl">
-            <span>Escríbenos al WhatsApp</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <h2 class="text-4xl md:text-6xl font-black text-[#001B3A] mb-8 uppercase transform scale-y-110">
+            ¿Te unes al equipo?
+        </h2>
+        <a href="https://wa.me/573000000000?text=Hola,%20quiero%20saber%20más%20de%20Campus%20Maná" target="_blank" class="inline-flex items-center gap-3 px-10 py-5 bg-[#001B3A] text-white font-black text-xl rounded-full hover:scale-105 transition-transform shadow-2xl border-4 border-white">
+            <span>ESCRÍBENOS</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" />
             </svg>
         </a>

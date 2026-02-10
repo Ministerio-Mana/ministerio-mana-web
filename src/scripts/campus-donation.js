@@ -52,7 +52,7 @@ class DonationWidget {
             cta: this.el.querySelector('.donate-cta'),
             ctaText: this.el.querySelector('.cta-text'),
             currencySymbol: this.el.querySelector('.currency-symbol'),
-            providerName: this.el.querySelector('.provider-name'),
+            providerName: this.el.querySelectorAll('.provider-name'), // logic change: multiple provider names now?
         };
     }
 
@@ -88,7 +88,7 @@ class DonationWidget {
 
         config.options.forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'py-2 px-1 text-xs font-semibold rounded-xl border border-white/10 hover:border-brand-teal/50 hover:bg-brand-teal/10 text-white transition-all amount-btn';
+            btn.className = 'py-3 px-1 text-sm font-black rounded-sm border-2 border-[#001B3A] bg-white text-[#001B3A] hover:bg-yellow-50 hover:translate-x-[1px] hover:translate-y-[1px] transition-all amount-btn shadow-[2px_2px_0px_0px_transparent]';
             btn.textContent = opt.label;
             btn.type = 'button';
             btn.dataset.value = opt.value;
@@ -108,11 +108,11 @@ class DonationWidget {
         const all = this.dom.amountsGrid.querySelectorAll('.amount-btn');
         all.forEach(btn => {
             if (btn === selectedBtn) {
-                btn.classList.add('bg-brand-teal', 'border-brand-teal', 'text-brand-navy');
-                btn.classList.remove('text-white', 'hover:bg-brand-teal/10', 'bg-transparent');
+                btn.classList.add('bg-brand-teal', 'shadow-[2px_2px_0px_0px_#001B3A]', '-translate-y-[2px]', '-translate-x-[2px]');
+                btn.classList.remove('bg-white', 'hover:bg-yellow-50', 'shadow-[2px_2px_0px_0px_transparent]');
             } else {
-                btn.classList.remove('bg-brand-teal', 'border-brand-teal', 'text-brand-navy');
-                btn.classList.add('text-white', 'hover:bg-brand-teal/10', 'bg-transparent');
+                btn.classList.remove('bg-brand-teal', 'shadow-[2px_2px_0px_0px_#001B3A]', '-translate-y-[2px]', '-translate-x-[2px]');
+                btn.classList.add('bg-white', 'hover:bg-yellow-50', 'shadow-[2px_2px_0px_0px_transparent]');
             }
         });
     }
@@ -122,20 +122,18 @@ class DonationWidget {
         this.dom.freqBtns.forEach(btn => {
             const isSelected = btn.dataset.freq === this.frequency;
             if (isSelected) {
-                btn.classList.add('bg-brand-teal', 'text-brand-navy', 'shadow-brand-teal/20', 'shadow-lg');
-                btn.classList.remove('text-white/40', 'hover:text-white');
+                btn.className = 'freq-btn flex-1 py-3 text-sm font-black uppercase rounded-sm border-2 border-[#001B3A] transition-all text-[#001B3A] bg-brand-teal shadow-[2px_2px_0px_0px_#001B3A] transform -translate-y-[1px]';
             } else {
-                btn.classList.remove('bg-brand-teal', 'text-brand-navy', 'shadow-brand-teal/20', 'shadow-lg');
-                btn.classList.add('text-white/40', 'hover:text-white');
+                btn.className = 'freq-btn flex-1 py-3 text-sm font-black uppercase rounded-sm border-2 border-[#001B3A] transition-all text-gray-500 bg-transparent hover:text-[#001B3A] hover:bg-white';
             }
         });
 
         // Update Provider & Symbol
         if (this.currency === 'COP') {
-            this.dom.providerName.textContent = 'Wompi';
+            this.dom.providerName.forEach(el => el.textContent = 'Wompi');
             if (this.dom.currencySymbol) this.dom.currencySymbol.textContent = '$';
         } else {
-            this.dom.providerName.textContent = 'Stripe';
+            this.dom.providerName.forEach(el => el.textContent = 'Stripe');
             if (this.dom.currencySymbol) this.dom.currencySymbol.textContent = '$';
         }
 

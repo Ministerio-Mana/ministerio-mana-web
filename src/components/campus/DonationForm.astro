@@ -6,61 +6,69 @@ interface Props {
   slug?: string;
 }
 
-const { missionaryName, wompiLink, stripePriceId, slug } = Astro.props;
+const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
 ---
 
-<div class="donation-widget bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md transition-all hover:bg-white/10 group relative overflow-hidden" data-wompi={wompiLink} data-stripe={stripePriceId} data-slug={slug}>
-  <div class="absolute inset-0 bg-gradient-to-br from-brand-teal/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="donation-widget relative bg-[#f0f4f8] border-4 border-[#001B3A] p-6 shadow-[8px_8px_0px_0px_#001B3A] transition-all hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_#001B3A] group overflow-hidden" data-wompi={wompiLink} data-stripe={stripePriceId} data-slug={slug}>
   
-  <h3 class="text-lg font-bold text-white mb-4 relative z-10 flex items-center gap-2">
-    <span>Apoyar a {missionaryName}</span>
-  </h3>
+  <!-- "Sticker" Decoration -->
+  <div class="absolute -top-10 -right-10 bg-yellow-400 w-24 h-24 transform rotate-45 border-b-4 border-l-4 border-[#001B3A] z-0"></div>
   
-  <!-- Frequency Toggle -->
-  <div class="bg-black/20 p-1 rounded-xl flex mb-6 relative z-10 border border-white/5 frequency-selector">
-    <button type="button" class="freq-btn flex-1 py-2 text-xs font-bold rounded-lg transition-all text-brand-navy bg-brand-teal shadow-brand-teal/20 shadow-lg" data-freq="monthly">Mensual</button>
-    <button type="button" class="freq-btn flex-1 py-2 text-xs font-bold rounded-lg transition-all text-white/40 hover:text-white" data-freq="once">Única vez</button>
-  </div>
+  <div class="relative z-10">
+      <h3 class="font-black text-2xl text-[#001B3A] mb-1 uppercase tracking-tight">Tu Apoyo</h3>
+      <p class="text-xs font-bold text-gray-500 mb-6 uppercase tracking-wider border-b-2 border-gray-300 pb-2 border-dashed">Transforma Vidas</p>
 
-  <!-- Currency Selector -->
-  <div class="mb-4 relative z-10">
-      <label class="block text-[10px] font-bold text-brand-teal uppercase tracking-widest mb-2">Moneda</label>
-      <div class="relative">
-        <select class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm appearance-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all cursor-pointer hover:bg-white/5 currency-select">
-            <option value="COP">🇨🇴 Peso Colombiano (COP)</option>
-            <option value="USD">🌎 Dólares (USD)</option>
-        </select>
-        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/60">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
+      <!-- Frequency Selector -->
+      <div class="flex mb-6 gap-2 frequency-selector">
+        <button type="button" class="freq-btn flex-1 py-3 text-sm font-black uppercase rounded-sm border-2 border-[#001B3A] transition-all text-[#001B3A] bg-white hover:bg-yellow-200 shadow-[2px_2px_0px_0px_#001B3A]" data-freq="monthly">Mensual</button>
+        <button type="button" class="freq-btn flex-1 py-3 text-sm font-black uppercase rounded-sm border-2 border-[#001B3A] transition-all text-gray-500 bg-transparent hover:text-[#001B3A] hover:bg-white" data-freq="once">Única vez</button>
+      </div>
+
+      <!-- Currency Selector -->
+      <div class="mb-6">
+        <label class="block text-xs font-black uppercase text-gray-500 mb-2">Moneda</label>
+        <div class="relative">
+            <select class="currency-select w-full appearance-none bg-white border-2 border-[#001B3A] text-[#001B3A] font-bold py-3 px-4 pr-8 rounded-sm focus:outline-none focus:ring-0 focus:bg-yellow-50 cursor-pointer">
+                <option value="COP">🇨🇴 Peso Colombiano (COP)</option>
+                <option value="USD">🇺🇸 Dólar (USD)</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#001B3A]">
+                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
         </div>
       </div>
-  </div>
 
-  <!-- Amount Buttons (Dynamic) -->
-  <div class="grid grid-cols-3 gap-2 mb-4 relative z-10 amounts-grid">
-     <!-- Injected via JS -->
-  </div>
+      <!-- Predefined Amounts -->
+      <div class="amounts-grid grid grid-cols-3 gap-2 mb-4">
+        <!-- JS populates this -->
+      </div>
 
-  <!-- Custom Amount -->
-  <div class="relative mb-6 z-10">
-     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-       <span class="text-brand-teal font-bold text-lg currency-symbol">$</span>
-     </div>
-     <input type="number" placeholder="Otro valor" class="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/20 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all custom-amount-input text-sm font-bold">
-  </div>
+      <!-- Custom Amount -->
+      <div class="relative mb-8 group-input">
+        <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg group-focus-within:text-[#001B3A]">$</span>
+        <input type="number" 
+               class="custom-amount-input w-full bg-white border-b-2 border-gray-300 text-[#001B3A] font-black text-xl py-3 pl-8 pr-4 focus:outline-none focus:border-[#001B3A] transition-colors placeholder-gray-300"
+               placeholder="Otro valor..." min="0">
+      </div>
 
-  <!-- CTA Button -->
-  <a href={wompiLink || '#'} target="_blank" class="donate-cta block w-full py-3.5 bg-gradient-to-r from-brand-teal to-cyan-500 hover:brightness-110 text-white font-bold text-center rounded-xl shadow-lg shadow-brand-teal/20 transition-all transform hover:scale-[1.02] relative z-10 flex items-center justify-center gap-2 group-hover:shadow-brand-teal/30">
-    <span class="cta-text">Donar Ahora</span>
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-    </svg>
-  </a>
-  
-  <p class="text-[10px] text-white/30 text-center mt-4 relative z-10 flex items-center justify-center gap-1">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-    Pago seguro procesado por <span class="provider-name font-bold text-white/50">Wompi</span>
-  </p>
+      <!-- CTA Button -->
+      <a href={wompiLink || '#'} target="_blank" class="donate-cta block w-full py-4 bg-[#001B3A] text-white font-black text-center text-lg uppercase tracking-wider rounded-sm shadow-[4px_4px_0px_0px_#2DD4BF] hover:shadow-[2px_2px_0px_0px_#2DD4BF] hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-2 group-hover:bg-brand-navy/90">
+        <span class="cta-text">Donar Ahora</span>
+        <span class="text-xs bg-brand-teal text-[#001B3A] px-2 py-0.5 rounded-full font-bold provider-name flex items-center">Wompi</span>
+      </a>
+      
+      <p class="text-[10px] text-center text-gray-400 mt-4 font-bold uppercase tracking-widest">
+         Seguro & Encriptado <span class="mx-1">•</span> <span class="provider-name">Wompi</span>
+      </p>
+  </div>
 </div>
+
+<style>
+    .amounts-grid button.selected {
+        background-color: #2DD4BF; /* brand-teal */
+        color: #001B3A;
+        border-color: #001B3A;
+        box-shadow: 2px 2px 0px 0px #001B3A;
+        transform: translate(-2px, -2px);
+    }
+</style>
