@@ -1,5 +1,8 @@
 ---
 import { MISIONEROS } from '@data/misioneros';
+interface Props { country?: string; }
+const { country = 'CO' } = Astro.props;
+const isColombia = country.toUpperCase() === 'CO';
 ---
 
 <section id="multi-donation" class="py-24 bg-brand-teal relative overflow-hidden">
@@ -7,6 +10,7 @@ import { MISIONEROS } from '@data/misioneros';
 
     <div class="container-tight px-4 relative z-10"
          id="multi-donation-flow"
+         data-country={country}
          data-missionaries={JSON.stringify(MISIONEROS.map(m => ({ slug: m.slug, nombre: m.nombre })))}>
 
         <!-- ===== STEP 1: ¿Quieres sembrar en varios? ===== -->
@@ -95,8 +99,13 @@ import { MISIONEROS } from '@data/misioneros';
                     <label class="block text-xs font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Moneda</label>
                     <div class="relative max-w-xs mx-auto">
                         <select id="multi-currency" class="select-organic w-full appearance-none text-[#001B3A] font-intro text-sm py-2.5 px-4 pr-8 focus:outline-none cursor-pointer bg-white">
-                            <option value="COP">🇨🇴 Peso Colombiano (COP)</option>
-                            <option value="USD">🇺🇸 Dólar (USD)</option>
+                            {isColombia ? (
+                                <><option value="COP">🇨🇴 Peso Colombiano (COP)</option>
+                                <option value="USD">🇺🇸 Dólar (USD)</option></>
+                            ) : (
+                                <><option value="USD">🇺🇸 Dólar (USD)</option>
+                                <option value="COP">🇨🇴 Peso Colombiano (COP)</option></>
+                            )}
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#001B3A]">
                             <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>

@@ -7,6 +7,9 @@ import { MISIONEROS } from '@data/misioneros';
 
 const title = "Campus Maná | Socios de la Gran Comisión";
 const description = "Únete a la misión en las universidades. Apoya a nuestros misioneros y se parte de la transformación.";
+
+// Server-side geo detection (Vercel / Cloudflare headers)
+const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
 ---
 
 <BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
@@ -250,7 +253,7 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
   </section>
 
   <!-- ===== MULTI-MISSIONARY DONATION (replaces CTA) ===== -->
-  <MultiDonationFlow />
+  <MultiDonationFlow country={country} />
   <script src="../../scripts/campus-multi-donation.js"></script>
 
   <!-- ===== RoughNotation — bundled by Astro/Vite ===== -->

@@ -28,16 +28,22 @@ class MultiDonationFlow {
     constructor(container) {
         this.el = container;
         this.missionaries = JSON.parse(container.dataset.missionaries || '[]');
+        // Auto-detect currency from server-side geolocation
+        const country = (container.dataset.country || 'CO').toUpperCase();
+        const defaultCurrency = country === 'CO' ? 'COP' : 'USD';
         this.state = {
             step: 1,
             count: 0,
             selected: [],
-            currency: 'COP',
+            currency: defaultCurrency,
             frequency: 'monthly',
             amount: 0,
         };
         this.isSubmitting = false;
         this.init();
+        // Sync the select element with auto-detected currency
+        const currSelect = this.el.querySelector('#multi-currency');
+        if (currSelect) currSelect.value = defaultCurrency;
     }
 
     init() {
