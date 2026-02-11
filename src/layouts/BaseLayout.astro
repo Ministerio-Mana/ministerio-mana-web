@@ -23,6 +23,7 @@ const appModalScript = new URL('../scripts/app-modal.js', import.meta.url);
   <head>
     <SEO {title} {description} {image} {type} {structuredData} {noindex} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com https://*.transparenttextures.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://checkout.wompi.co https://api.stripe.com https://challenges.cloudflare.com;">
     <!-- Turnstile: script global (NO inline) -->
     <script
       src="https://challenges.cloudflare.com/turnstile/v0/api.js"
