@@ -7,7 +7,7 @@ import { MISIONEROS } from '@data/misioneros';
 
     <div class="container-tight px-4 relative z-10"
          id="multi-donation-flow"
-         data-missionaries={JSON.stringify(MISIONEROS.map(m => ({ slug: m.slug, nombre: m.nombre, wompiLink: m.wompiLink, stripePriceId: m.stripePriceId })))}>
+         data-missionaries={JSON.stringify(MISIONEROS.map(m => ({ slug: m.slug, nombre: m.nombre })))}>
 
         <!-- ===== STEP 1: ¿Quieres sembrar en varios? ===== -->
         <div class="flow-step active" data-step="1">
@@ -144,7 +144,7 @@ import { MISIONEROS } from '@data/misioneros';
             </div>
         </div>
 
-        <!-- ===== STEP 4: Confirm & Pay ===== -->
+        <!-- ===== STEP 4: Donor Info & Pay ===== -->
         <div class="flow-step hidden" data-step="4">
             <div class="text-center mb-8">
                 <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.5rem, 7vw, 5.5rem);">Tu siembra</span>
@@ -154,15 +154,44 @@ import { MISIONEROS } from '@data/misioneros';
             </div>
 
             <!-- Summary cards -->
-            <div class="max-w-2xl mx-auto mb-10" id="payment-summary">
+            <div class="max-w-2xl mx-auto mb-8" id="payment-summary">
                 <!-- JS populates with per-missionary cards -->
             </div>
 
-            <div class="text-center mb-6">
-                <p class="text-white/90 font-intro-reg text-sm mb-2">
-                    Serás redirigido al pago de cada misionero por separado
-                </p>
+            <div class="text-center mb-8">
                 <p class="text-[#001B3A] font-intro text-2xl" id="grand-total">Total: $0</p>
+                <p class="text-white/70 font-intro-reg text-xs mt-1" id="freq-label"></p>
+            </div>
+
+            <!-- Donor Info Form -->
+            <div class="max-w-md mx-auto mb-8 space-y-4">
+                <p class="text-center text-white/80 font-intro text-xs uppercase tracking-widest mb-4">Tus datos para el pago</p>
+                
+                <div>
+                    <input type="text" id="donor-name" required
+                           placeholder="Nombre completo *"
+                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                </div>
+                <div>
+                    <input type="email" id="donor-email" required
+                           placeholder="tucorreo@email.com *"
+                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                </div>
+                <div>
+                    <input type="tel" id="donor-phone"
+                           placeholder="Teléfono / WhatsApp"
+                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                </div>
+                <div>
+                    <input type="text" id="donor-city"
+                           placeholder="Ciudad"
+                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                </div>
+            </div>
+
+            <!-- Error message -->
+            <div id="checkout-error" class="hidden text-center mb-4">
+                <p class="text-red-200 font-intro-reg text-sm bg-red-900/30 py-2 px-4 rounded-xl inline-block"></p>
             </div>
 
             <div class="flex justify-center gap-4">
@@ -173,6 +202,11 @@ import { MISIONEROS } from '@data/misioneros';
                     SEMBRAR AHORA
                 </button>
             </div>
+
+            <p class="text-center text-white/50 font-intro-reg text-[10px] mt-4 flex items-center justify-center gap-1">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                Pago seguro procesado por <span id="provider-label" class="font-intro">Wompi / Stripe</span>
+            </p>
         </div>
     </div>
 </section>

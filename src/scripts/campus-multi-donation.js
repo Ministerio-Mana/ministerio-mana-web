@@ -8,7 +8,8 @@ const AMOUNT_CONFIG = {
             { label: '$100.000', value: 100000 },
             { label: '$200.000', value: 200000 },
         ],
-        format: (v) => '$' + v.toLocaleString('es-CO')
+        format: (v) => '$' + v.toLocaleString('es-CO'),
+        provider: 'Wompi'
     },
     USD: {
         symbol: '$',
@@ -18,7 +19,8 @@ const AMOUNT_CONFIG = {
             { label: '$50 USD', value: 50 },
             { label: '$100 USD', value: 100 },
         ],
-        format: (v) => '$' + v + ' USD'
+        format: (v) => '$' + v + ' USD',
+        provider: 'Stripe'
     }
 };
 
@@ -29,11 +31,12 @@ class MultiDonationFlow {
         this.state = {
             step: 1,
             count: 0,
-            selected: [],     // array of slugs
+            selected: [],
             currency: 'COP',
             frequency: 'monthly',
             amount: 0,
         };
+        this.isSubmitting = false;
         this.init();
     }
 
@@ -56,12 +59,9 @@ class MultiDonationFlow {
         const target = this.el.querySelector(`[data-step="${n}"]`);
         if (target) {
             target.classList.remove('hidden');
-            // Trigger animation
             requestAnimationFrame(() => target.classList.add('active'));
         }
         this.state.step = n;
-
-        // Scroll to section
         this.el.closest('section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -80,12 +80,10 @@ class MultiDonationFlow {
                 this.state.selected = [];
 
                 if (this.state.count === this.missionaries.length) {
-                    // "Todos" — select all, skip step 2
                     this.state.selected = this.missionaries.map(m => m.slug);
                     this.goToStep(3);
                     this.renderAmounts();
                 } else {
-                    // Go to selection
                     this.updateStep2UI();
                     this.goToStep(2);
                 }
@@ -96,18 +94,15 @@ class MultiDonationFlow {
     // === STEP 2: Select missionaries ===
 
     bindStep2() {
-        // Chips
         this.el.querySelectorAll('.missionary-chip').forEach(chip => {
             chip.addEventListener('click', () => this.toggleChip(chip));
         });
 
-        // Random
         const randomBtn = this.el.querySelector('#random-btn');
         if (randomBtn) {
             randomBtn.addEventListener('click', () => this.selectRandom());
         }
 
-        // Confirm
         const confirmBtn = this.el.querySelector('#confirm-selection-btn');
         if (confirmBtn) {
             confirmBtn.addEventListener('click', () => {
@@ -124,11 +119,9 @@ class MultiDonationFlow {
         const idx = this.state.selected.indexOf(slug);
 
         if (idx >= 0) {
-            // Deselect
             this.state.selected.splice(idx, 1);
             chip.classList.remove('selected');
         } else if (this.state.selected.length < this.state.count) {
-            // Select
             this.state.selected.push(slug);
             chip.classList.add('selected');
         }
@@ -136,16 +129,13 @@ class MultiDonationFlow {
     }
 
     selectRandom() {
-        // Clear
         this.state.selected = [];
         this.el.querySelectorAll('.missionary-chip').forEach(c => c.classList.remove('selected'));
 
-        // Shuffle and pick N
         const shuffled = [...this.missionaries].sort(() => Math.random() - 0.5);
         const picked = shuffled.slice(0, this.state.count);
         this.state.selected = picked.map(m => m.slug);
 
-        // Update UI
         this.el.querySelectorAll('.missionary-chip').forEach(chip => {
             if (this.state.selected.includes(chip.dataset.slug)) {
                 chip.classList.add('selected');
@@ -155,11 +145,9 @@ class MultiDonationFlow {
     }
 
     updateStep2UI() {
-        // Update count display
         const countDisplay = this.el.querySelector('.selected-count');
         if (countDisplay) countDisplay.textContent = this.state.count;
 
-        // Enable/disable confirm button
         const confirmBtn = this.el.querySelector('#confirm-selection-btn');
         if (confirmBtn) {
             const ready = this.state.selected.length === this.state.count;
@@ -171,7 +159,6 @@ class MultiDonationFlow {
     // === STEP 3: Amount ===
 
     bindStep3() {
-        // Currency
         const currSelect = this.el.querySelector('#multi-currency');
         if (currSelect) {
             currSelect.addEventListener('change', (e) => {
@@ -184,7 +171,6 @@ class MultiDonationFlow {
             });
         }
 
-        // Frequency
         this.el.querySelectorAll('.multi-freq-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.state.frequency = btn.dataset.freq;
@@ -196,7 +182,6 @@ class MultiDonationFlow {
             });
         });
 
-        // Custom input
         const customInput = this.el.querySelector('#multi-custom-amount');
         if (customInput) {
             customInput.addEventListener('input', (e) => {
@@ -207,7 +192,6 @@ class MultiDonationFlow {
             });
         }
 
-        // Confirm
         const confirmBtn = this.el.querySelector('#confirm-amount-btn');
         if (confirmBtn) {
             confirmBtn.addEventListener('click', () => {
@@ -244,7 +228,6 @@ class MultiDonationFlow {
             grid.appendChild(btn);
         });
 
-        // Update symbol
         const sym = this.el.querySelector('.multi-currency-symbol');
         if (sym) sym.textContent = config.symbol;
     }
@@ -289,7 +272,7 @@ class MultiDonationFlow {
         }
     }
 
-    // === STEP 4: Confirm & Pay ===
+    // === STEP 4: Confirm, collect donor info & Pay ===
 
     bindStep4() {
         const payBtn = this.el.querySelector('#pay-btn');
@@ -322,37 +305,114 @@ class MultiDonationFlow {
             `;
         }).join('');
 
-        // Update grand total
+        // Grand total
         const grandTotal = this.el.querySelector('#grand-total');
         if (grandTotal) {
-            const freqLabel = this.state.frequency === 'monthly' ? '/mes' : ' (única vez)';
-            grandTotal.textContent = `Total: ${config.format(total)}${freqLabel}`;
+            grandTotal.textContent = `Total: ${config.format(total)}`;
+        }
+
+        // Frequency label
+        const freqLabel = this.el.querySelector('#freq-label');
+        if (freqLabel) {
+            freqLabel.textContent = this.state.frequency === 'monthly'
+                ? 'Pago mensual recurrente'
+                : 'Pago único';
+        }
+
+        // Provider label
+        const providerLabel = this.el.querySelector('#provider-label');
+        if (providerLabel) {
+            providerLabel.textContent = config.provider;
+        }
+
+        // Hide error
+        this.hideError();
+    }
+
+    showError(message) {
+        const errorEl = this.el.querySelector('#checkout-error');
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+            errorEl.querySelector('p').textContent = message;
         }
     }
 
-    handlePayment() {
-        // Open payment links for each selected missionary
-        const config = AMOUNT_CONFIG[this.state.currency];
-        const amount = this.state.amount;
+    hideError() {
+        const errorEl = this.el.querySelector('#checkout-error');
+        if (errorEl) errorEl.classList.add('hidden');
+    }
 
-        this.state.selected.forEach((slug, i) => {
-            const m = this.missionaries.find(x => x.slug === slug);
-            if (!m) return;
+    async handlePayment() {
+        if (this.isSubmitting) return;
+        this.hideError();
 
-            let url = '#';
-            if (this.state.currency === 'COP') {
-                url = m.wompiLink || '#';
-            } else {
-                url = `/donaciones/stripe?amount=${amount}&currency=${this.state.currency}&freq=${this.state.frequency}&slug=${m.slug}`;
+        // Validate donor info
+        const fullName = this.el.querySelector('#donor-name')?.value?.trim();
+        const email = this.el.querySelector('#donor-email')?.value?.trim();
+        const phone = this.el.querySelector('#donor-phone')?.value?.trim() || '';
+        const city = this.el.querySelector('#donor-city')?.value?.trim() || '';
+
+        if (!fullName) {
+            this.showError('Por favor ingresa tu nombre completo');
+            return;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            this.showError('Por favor ingresa un correo válido');
+            return;
+        }
+
+        // Disable button
+        this.isSubmitting = true;
+        const payBtn = this.el.querySelector('#pay-btn');
+        const originalText = payBtn?.textContent;
+        if (payBtn) {
+            payBtn.textContent = 'PROCESANDO...';
+            payBtn.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        try {
+            const response = await fetch('/api/campus/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    missionaries: this.state.selected,
+                    amount: this.state.amount,
+                    currency: this.state.currency,
+                    frequency: this.state.frequency,
+                    fullName,
+                    email,
+                    phone,
+                    city,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.ok) {
+                this.showError(data.error || 'Error procesando el pago. Intenta de nuevo.');
+                return;
             }
 
-            // Stagger openings to avoid popup blockers
-            setTimeout(() => {
-                if (url !== '#') {
-                    window.open(url, '_blank');
-                }
-            }, i * 500);
-        });
+            // Redirect to checkout
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                this.showError('No se pudo generar el link de pago');
+            }
+
+        } catch (error) {
+            console.error('[multi-donation] checkout error', error);
+            this.showError('Error de conexión. Intenta de nuevo.');
+        } finally {
+            this.isSubmitting = false;
+            if (payBtn) {
+                payBtn.textContent = originalText;
+                payBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
     }
 }
 
