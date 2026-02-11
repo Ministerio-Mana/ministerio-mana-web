@@ -142,6 +142,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   const churchIdFilter = url.searchParams.get('churchId');
   const churchFilter = normalizeText(url.searchParams.get('church'));
   const typeFilter = (url.searchParams.get('type') || '').toString().trim().toUpperCase();
+  const format = normalizeText(url.searchParams.get('format')).toLowerCase();
 
   const baseSelect = 'id, contact_name, contact_email, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, source, status, total_amount, total_paid, currency, created_at';
   const extendedSelect = `${baseSelect}, payment_method`;
@@ -203,6 +204,12 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
   const bookingIds = filteredBookings.map((row: any) => row.id);
   if (!bookingIds.length) {
+    if (format === 'json') {
+      return new Response('[]', {
+        status: 200,
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+      });
+    }
     return new Response('', {
       status: 200,
       headers: { 'content-type': 'text/csv; charset=utf-8' },
@@ -298,7 +305,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'proximos_pagos',
   ];
 
-  const rows: string[][] = [];
+  const records: Array<Record<string, unknown>> = [];
 
   for (const [bookingId, list] of participantsByBooking) {
     const booking = bookingMap.get(bookingId);
@@ -338,37 +345,47 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       const nationality = participant.nationality || booking?.contact_country || '';
       const diet = formatDietLabel(participant.diet_type);
 
-      rows.push([
-        csvEscape(participant.full_name),
-        csvEscape(booking?.contact_name),
-        csvEscape(grupoFamiliar),
-        csvEscape(reservaTipo),
-        csvEscape(responsable),
-        csvEscape(docType),
-        csvEscape(docNumber),
-        csvEscape(birthdate),
-        csvEscape(gender),
-        csvEscape(nationality),
-        csvEscape(booking?.contact_phone),
-        csvEscape(booking?.contact_email),
-        csvEscape(diet),
-        csvEscape(iglesiaFinal),
-        csvEscape(churchName),
-        csvEscape(churchInput),
-        csvEscape(resolveRegistrationType(booking)),
-        csvEscape(totalPaid),
-        csvEscape(perParticipant),
-        csvEscape(lastPayment?.created_at || ''),
-        csvEscape(nextDueDate),
-        csvEscape(nextAmount),
-        csvEscape(nextCurrency),
-        csvEscape(pendingCount),
-        csvEscape(upcomingSummary),
-      ]);
+      records.push({
+        participante_nombre: participant.full_name ?? '',
+        titular_reserva: booking?.contact_name ?? '',
+        grupo_familiar: grupoFamiliar,
+        reserva_tipo: reservaTipo,
+        responsable_grupo: responsable,
+        documento_tipo: docType,
+        documento_numero: docNumber,
+        fecha_nacimiento: birthdate,
+        sexo: gender,
+        pais_origen: nationality,
+        telefono: booking?.contact_phone ?? '',
+        email: booking?.contact_email ?? '',
+        alimentacion: diet,
+        iglesia_final: iglesiaFinal,
+        iglesia_catalogo: churchName,
+        iglesia_escrita: churchInput,
+        tipo_registro: resolveRegistrationType(booking),
+        valor_pagado_total: totalPaid,
+        valor_pagado_prorrateado: perParticipant,
+        fecha_ultimo_pago: lastPayment?.created_at || '',
+        proximo_pago_fecha: nextDueDate,
+        proximo_pago_monto: nextAmount,
+        proximo_pago_moneda: nextCurrency,
+        cuotas_pendientes: pendingCount,
+        proximos_pagos: upcomingSummary,
+      });
     }
   }
 
-  const csv = [headers.join(','), ...rows.map((row: string[]) => row.join(','))].join('\n');
+  if (format === 'json') {
+    return new Response(JSON.stringify(records), {
+      status: 200,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    });
+  }
+
+  const csv = [
+    headers.join(','),
+    ...records.map((record) => headers.map((header) => csvEscape(record[header])).join(',')),
+  ].join('\n');
 
   return new Response(csv, {
     status: 200,
