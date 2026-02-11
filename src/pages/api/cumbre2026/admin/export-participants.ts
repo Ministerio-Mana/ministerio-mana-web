@@ -56,6 +56,15 @@ function formatDietLabel(value: string | null | undefined): string {
   return raw;
 }
 
+function formatLodgingLabel(value: string | null | undefined): string {
+  const raw = normalizeText(value).toLowerCase();
+  if (raw === 'lodging') return 'Con alojamiento';
+  if (raw === 'no_lodging') return 'Sin alojamiento';
+  if (raw === 'child_0_7') return 'Nino 0-4';
+  if (raw === 'child_7_13') return 'Nino 5-10';
+  return normalizeText(value);
+}
+
 function isResponsibleRelationship(value: string | null | undefined): boolean {
   const raw = normalizeName(value);
   return raw.includes('responsable');
@@ -218,7 +227,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
   const { data: participants } = await supabaseAdmin
     .from('cumbre_participants')
-    .select('id, booking_id, full_name, relationship, birthdate, gender, nationality, document_type, document_number, diet_type')
+    .select('id, booking_id, full_name, relationship, birthdate, gender, nationality, document_type, document_number, diet_type, package_type')
     .in('booking_id', bookingIds);
 
   let paymentQuery = supabaseAdmin
@@ -291,6 +300,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'telefono',
     'email',
     'alimentacion',
+    'tipo_alojamiento',
     'iglesia_final',
     'iglesia_catalogo',
     'iglesia_escrita',
@@ -344,6 +354,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       const gender = participant.gender || '';
       const nationality = participant.nationality || booking?.contact_country || '';
       const diet = formatDietLabel(participant.diet_type);
+      const lodging = formatLodgingLabel(participant.package_type);
 
       records.push({
         participante_nombre: participant.full_name ?? '',
@@ -359,6 +370,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         telefono: booking?.contact_phone ?? '',
         email: booking?.contact_email ?? '',
         alimentacion: diet,
+        tipo_alojamiento: lodging,
         iglesia_final: iglesiaFinal,
         iglesia_catalogo: churchName,
         iglesia_escrita: churchInput,
