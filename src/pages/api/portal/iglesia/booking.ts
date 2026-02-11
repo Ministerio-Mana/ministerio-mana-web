@@ -703,17 +703,31 @@ export const PUT: APIRoute = async ({ request }) => {
 
     if (paymentRow?.id) {
       const now = new Date().toISOString();
-      const { data: updated, error: updateError } = await supabaseAdmin
+      let updated = null as Array<{ id: string; reference: string | null }> | null;
+      let updateError = null as any;
+      const updatePayload: Record<string, unknown> = {
+        amount: paymentAmountInput,
+        currency,
+        updated_at: now,
+      };
+
+      ({ data: updated, error: updateError } = await supabaseAdmin
         .from('cumbre_payments')
-        .update({
-          amount: paymentAmountInput,
-          currency,
-          updated_at: now,
-        })
+        .update(updatePayload)
         .eq('id', paymentRow.id)
-        .select('id, reference');
+        .select('id, reference'));
+
+      if (updateError && (updateError.code === 'PGRST204' || /schema cache|updated_at/i.test(updateError.message || ''))) {
+        delete updatePayload.updated_at;
+        ({ data: updated, error: updateError } = await supabaseAdmin
+          .from('cumbre_payments')
+          .update(updatePayload)
+          .eq('id', paymentRow.id)
+          .select('id, reference'));
+      }
 
       if (updateError) {
+        console.error('[portal.iglesia.booking] payment update error', updateError);
         return new Response(JSON.stringify({ ok: false, error: 'No se pudo actualizar el pago' }), { status: 500 });
       }
 
