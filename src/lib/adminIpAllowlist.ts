@@ -15,9 +15,10 @@ function isProduction(): boolean {
   return runtimeEnv === 'production';
 }
 
-function isTruthy(value?: string): boolean {
-  if (!value) return false;
-  return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+function isTruthy(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  const normalized = String(value).trim().toLowerCase();
+  return ['1', 'true', 'yes', 'on'].includes(normalized);
 }
 
 function isAllowlistOptional(): boolean {
