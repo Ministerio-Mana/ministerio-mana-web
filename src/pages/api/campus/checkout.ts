@@ -150,7 +150,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 return json({ ok: false, error: e?.message || 'Monto COP inválido' }, 400);
             }
 
-            const redirect = new URL(`${baseUrl}/donaciones/gracias`);
+            const redirect = new URL(`${baseUrl}/campus/gracias`);
             redirect.searchParams.set('ref', reference);
             redirect.searchParams.set('provider', 'wompi');
             redirect.searchParams.set('type', 'campus');
@@ -185,7 +185,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 return json({ ok: false, error: e?.message || 'Monto USD inválido' }, 400);
             }
 
-            const successUrl = `${baseUrl}/donaciones/gracias?ref=${reference}&provider=stripe`;
+            const successUrl = `${baseUrl}/campus/gracias?ref=${reference}&provider=stripe`;
             const cancelUrl = `${baseUrl}/campus`;
 
             const metadata = {
