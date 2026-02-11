@@ -7,9 +7,9 @@ export class ChurchSelector {
         this.onSelectCallback = null;
 
         this.specialOptions = [
-            { id: 'virtual', name: 'Ministerio Maná Virtual', city: 'Online', country: 'Virtual', isSpecial: true },
-            { id: 'none', name: 'No asisto a ninguna iglesia', city: 'N/A', country: 'N/A', isSpecial: true },
-            { id: 'other', name: 'Otra iglesia', city: 'Por especificar', country: 'N/A', isSpecial: true }
+            { id: 'virtual', name: 'Ministerio Maná Virtual', city: '', country: '', isSpecial: true, isVirtual: true },
+            { id: 'none', name: 'No asisto a ninguna iglesia', city: '', country: '', isSpecial: true },
+            { id: 'other', name: 'Otra iglesia', city: '', country: '', isSpecial: true }
         ];
 
         this.init();
@@ -201,6 +201,8 @@ export class ChurchSelector {
 
     renderChurchItem(church, index) {
         const isSelected = this.selectedChurch && this.selectedChurch.id === church.id;
+        const locationParts = [church.city, church.country].filter(Boolean);
+        const locationLabel = locationParts.length ? locationParts.join(' · ') : 'Ubicación por confirmar';
         return `
       <div class="church-item${isSelected ? ' selected' : ''}" data-church-id="${church.id}" data-church-index="${index}" role="button" tabindex="0">
         <div class="flex items-start justify-between">
@@ -212,7 +214,7 @@ export class ChurchSelector {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                ${church.city}, ${church.country}
+                ${locationLabel}
               </span>
             </p>
             ${church.address ? `<p class="text-xs text-white/40 mt-1">${church.address}</p>` : ''}

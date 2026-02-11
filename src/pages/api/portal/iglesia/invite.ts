@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
 import { resolveBaseUrl } from '@lib/url';
-import { normalizeChurchName, normalizeCityName } from '@lib/normalization';
+import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText } from '@lib/validation';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
@@ -95,8 +95,16 @@ export const POST: APIRoute = async ({ request }) => {
       churchName = existing.name;
     } else {
       const churchRaw = normalizeChurchName(payload.church || '');
+      const churchCountry = normalizeCountryRegion(payload.country || '') || null;
       if (churchRaw) {
-        const { data: existing } = await supabaseAdmin.from('churches').select('id, name').ilike('name', churchRaw).maybeSingle();
+        let query = supabaseAdmin
+          .from('churches')
+          .select('id, name')
+          .ilike('name', churchRaw);
+        if (churchCountry) {
+          query = query.eq('country', churchCountry);
+        }
+        const { data: existing } = await query.maybeSingle();
         if (existing?.id) {
           churchId = existing.id;
           churchName = existing.name;
@@ -104,7 +112,7 @@ export const POST: APIRoute = async ({ request }) => {
           const { data: created } = await supabaseAdmin.from('churches').insert({
             name: churchRaw,
             city: normalizeCityName(payload.city || ''),
-            country: sanitizePlainText(payload.country || '', 40) || null,
+            country: churchCountry,
             created_by: isUuid(user.id) ? user.id : null,
           }).select('id, name').single();
           churchId = created?.id || null;

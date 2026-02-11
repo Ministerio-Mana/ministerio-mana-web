@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { sanitizePlainText } from '@lib/validation';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
 import { getBookingById, getPlanByBookingId, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -26,7 +27,20 @@ function validateAdmin(request: Request, token?: string | null): boolean {
   return Boolean(urlToken && urlToken === secret);
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'cumbre.manual.payment',
+    allowlistKeys: ['CUMBRE_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const form = await request.formData();
   const token = form.get('token')?.toString();
 

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, isAdminRole } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -49,7 +50,20 @@ function isPaidBooking(booking: any): boolean {
   return paid > 0 || booking.status === 'PAID' || booking.status === 'DEPOSIT_OK';
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.cumbre.issues',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
       status: 500,

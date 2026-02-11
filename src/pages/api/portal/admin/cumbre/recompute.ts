@@ -3,6 +3,7 @@ import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, isAdminRole } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { recomputeBookingTotals } from '@lib/cumbreStore';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -24,7 +25,20 @@ async function getAdminContext(request: Request) {
   return { ok: true, role: 'superadmin' };
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.cumbre.recompute',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const ctx = await getAdminContext(request);
   if (!ctx.ok) {
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {

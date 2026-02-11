@@ -1,8 +1,22 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, clientAddress }) => {
+    const ipCheck = await enforceAdminIp({
+        request,
+        clientAddress,
+        identifier: 'portal.admin.users.list',
+        allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+    });
+    if (!ipCheck.ok) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+            status: 403,
+            headers: { 'content-type': 'application/json' }
+        });
+    }
+
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
     const user = await getUserFromRequest(request);

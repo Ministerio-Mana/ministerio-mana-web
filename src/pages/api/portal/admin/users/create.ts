@@ -3,9 +3,23 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
-import { sanitizePlainText } from '@lib/validation';
+import { normalizeCountryRegion } from '@lib/normalization';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+    const ipCheck = await enforceAdminIp({
+        request,
+        clientAddress,
+        identifier: 'portal.admin.users.create',
+        allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+    });
+    if (!ipCheck.ok) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+            status: 403,
+            headers: { 'content-type': 'application/json' }
+        });
+    }
+
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
     const user = await getUserFromRequest(request);
@@ -70,7 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
     }
 
-    const requestedCountry = sanitizePlainText(country || '', 80);
+    const requestedCountry = normalizeCountryRegion(country || '');
     const requestedChurchId = churchId || null;
 
     // Scope Assignment (Church / Country)

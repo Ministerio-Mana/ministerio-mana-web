@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { getPrice, isValidPackageType } from '@lib/cumbre2026';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -124,7 +125,7 @@ function getParticipantPrice(currency: string | null | undefined, packageType: s
   return getPrice(normalizedCurrency, packageType);
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, clientAddress }) => {
   if (!validateExport(request)) {
     void logSecurityEvent({
       type: 'webhook_invalid',
@@ -133,6 +134,19 @@ export const GET: APIRoute = async ({ request }) => {
     });
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
       status: 401,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'cumbre.admin.export',
+    allowlistKeys: ['CUMBRE_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
       headers: { 'content-type': 'application/json' },
     });
   }

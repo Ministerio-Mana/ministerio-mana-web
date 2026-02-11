@@ -284,6 +284,19 @@ function resolveSelectedChurchId() {
   return portalSelectedChurchId;
 }
 
+function ensureAllChurchesSelection() {
+  if (portalIsCustomChurch) return;
+  if (!portalSelectedChurchId && churchSelectorInput?.value === ALL_CHURCHES_VALUE) {
+    portalSelectedChurchId = ALL_CHURCHES_VALUE;
+    return;
+  }
+  if (!portalAllowAllChurches || portalSelectedChurchId) return;
+  portalSelectedChurchId = ALL_CHURCHES_VALUE;
+  if (churchSelectorInput) {
+    churchSelectorInput.value = ALL_CHURCHES_VALUE;
+  }
+}
+
 function requiresScopedChurchSelection() {
   return (portalIsAdmin || portalIsCountryPastor)
     && !resolveSelectedChurchId()
@@ -801,7 +814,11 @@ async function loadDashboardData(authResult) {
     // 6. Background Initialization (Parallelized)
     const backgroundTasks = [];
     if (hasChurchAccess) {
-      backgroundTasks.push(loadChurchSelector(headers));
+      try {
+        await loadChurchSelector(headers);
+      } catch (err) {
+        console.error('Error cargando selector de iglesias:', err);
+      }
       backgroundTasks.push(loadChurchBookings(headers));
       backgroundTasks.push(loadChurchPayments(headers));
       backgroundTasks.push(loadChurchInstallments(headers));
@@ -859,14 +876,19 @@ function buildParticipantRow(data = {}) {
   churchParticipantsCount += 1;
   const row = document.createElement('div');
   row.className = 'rounded-2xl border border-slate-200 bg-white p-4 space-y-3';
+  const fullNameValue = safeAttr(data.fullName || '');
+  const ageValue = safeAttr(data.age || '');
+  const relationshipValue = safeAttr(data.relationship || '');
+  const documentNumberValue = safeAttr(data.documentNumber || '');
+  const birthdateValue = safeAttr(data.birthdate || '');
   row.innerHTML = `
     <div class="flex items-center justify-between">
       <p class="text-xs font-bold text-[#293C74]">Persona ${churchParticipantsCount}</p>
       <button type="button" class="text-xs font-bold text-red-500 hover:underline" data-action="remove">Quitar</button>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <input type="text" data-field="fullName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Nombre completo" value="${data.fullName || ''}">
-      <input type="number" min="0" data-field="age" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Edad" value="${data.age || ''}">
+      <input type="text" data-field="fullName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Nombre completo" value="${fullNameValue}">
+      <input type="number" min="0" data-field="age" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Edad" value="${ageValue}">
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <select data-field="lodging" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
@@ -878,7 +900,7 @@ function buildParticipantRow(data = {}) {
         <option value="TRADICIONAL">Menú tradicional</option>
         <option value="VEGETARIANO">Menú vegetariano</option>
       </select>
-      <input type="text" data-field="relationship" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Relación (ej: Hijo/a)" value="${data.relationship || ''}">
+      <input type="text" data-field="relationship" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Relación (ej: Hijo/a)" value="${relationshipValue}">
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div class="grid grid-cols-[110px_1fr] gap-2">
@@ -888,10 +910,10 @@ function buildParticipantRow(data = {}) {
           <option value="CE">CE</option>
           <option value="PASSPORT">Pasaporte</option>
         </select>
-        <input type="text" data-field="documentNumber" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Documento" value="${data.documentNumber || ''}">
+        <input type="text" data-field="documentNumber" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Documento" value="${documentNumberValue}">
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <input type="date" data-field="birthdate" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" value="${data.birthdate || ''}">
+        <input type="date" data-field="birthdate" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" value="${birthdateValue}">
         <select data-field="gender" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
           <option value="">Género</option>
           <option value="M">Masculino</option>
@@ -966,9 +988,11 @@ async function loadChurchSelector(headers = {}) {
     churches.forEach((church) => {
       const option = document.createElement('option');
       option.value = church.id;
+      const showCountry = Boolean(church?.country && (!church?.city || /virtual/i.test(church?.name || '')));
+      const countryLabel = showCountry ? ` · ${church.country}` : '';
       const label = church?.code
-        ? `${church.code} · ${church.name}${church.city ? ` · ${church.city}` : ''}`
-        : `${church.name}${church.city ? ` · ${church.city}` : ''}`;
+        ? `${church.code} · ${church.name}${church.city ? ` · ${church.city}` : ''}${countryLabel}`
+        : `${church.name}${church.city ? ` · ${church.city}` : ''}${countryLabel}`;
       option.textContent = label;
       churchSelectorInput.appendChild(option);
     });
@@ -978,7 +1002,9 @@ async function loadChurchSelector(headers = {}) {
       churches.forEach((church) => {
         const option = document.createElement('option');
         option.value = church.id;
-        option.textContent = `${church.city || 'Ciudad'} - ${church.name}`;
+        const cityLabel = church.city || church.country || 'Ciudad';
+        const countryLabel = church.country ? ` · ${church.country}` : '';
+        option.textContent = `${cityLabel} - ${church.name}${countryLabel}`;
         inviteChurchInput.appendChild(option);
       });
     }
@@ -1287,7 +1313,8 @@ function renderChurchBookings(list, meta) {
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md transition-shadow';
     const churchName = item.contact_church || (isAllChurchesSelected() ? 'Sin iglesia / virtual' : 'Sin iglesia');
-    const churchLabel = `<p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 truncate">${churchName}</p>`;
+    const safeChurchName = safeText(churchName);
+    const churchLabel = `<p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 truncate">${safeChurchName}</p>`;
 
     // Status Logic
     const isPaidFull = item.is_paid_full || item.status === 'PAID' || Number(item.total_paid || 0) >= Number(item.total_amount || 0);
@@ -1326,6 +1353,8 @@ function renderChurchBookings(list, meta) {
     const nextInstallmentLabel = nextInstallment
       ? `${formatCurrency(nextInstallment.amount, nextInstallment.currency || item.currency)} · ${formatDate(nextInstallment.due_date)}`
       : (pendingAmount > 0 ? `${formatCurrency(pendingAmount, pendingCurrency)} · Sin fecha` : '—');
+    const safeLastPaymentLabel = safeText(lastPaymentLabel);
+    const safeNextInstallmentLabel = safeText(nextInstallmentLabel);
 
     let primaryLabel = 'Pagado';
     let primaryValue = formatCurrency(item.total_paid, item.currency);
@@ -1341,13 +1370,17 @@ function renderChurchBookings(list, meta) {
       secondaryLabel = 'Pagado';
       secondaryValue = formatCurrency(item.total_paid, item.currency);
     }
+    const safePrimaryLabel = safeText(primaryLabel);
+    const safePrimaryValue = safeText(primaryValue);
+    const safeSecondaryLabel = safeText(secondaryLabel);
+    const safeSecondaryValue = safeText(secondaryValue);
 
     const metaParts = [];
     if (lastPayment) {
       metaParts.push(`
         <span class="inline-flex items-center gap-2">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Último abono</span>
-          <span class="text-slate-600">${lastPaymentLabel}</span>
+          <span class="text-slate-600">${safeLastPaymentLabel}</span>
         </span>
       `);
     }
@@ -1355,20 +1388,26 @@ function renderChurchBookings(list, meta) {
       metaParts.push(`
         <span class="inline-flex items-center gap-2">
           <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Próxima cuota</span>
-          <span class="text-slate-600">${nextInstallmentLabel}</span>
+          <span class="text-slate-600">${safeNextInstallmentLabel}</span>
         </span>
       `);
     }
     const metaHtml = metaParts.length ? `<div class="mt-3 flex flex-wrap gap-4 text-xs text-slate-500">${metaParts.join('')}</div>` : '';
+    const referenceLabel = (item.reference || item.id || '').toString().slice(0, 8).toUpperCase();
+    const safeReferenceLabel = safeText(referenceLabel);
+    const contactLabel = item.contact_name || item.contact_email || 'Participante';
+    const safeContactLabel = safeText(contactLabel);
+    const createdLabel = formatDateTime(item.created_at);
+    const safeCreatedLabel = safeText(createdLabel);
 
     card.innerHTML = `
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex-1 min-w-0">
           ${churchLabel}
           <div class="flex items-center gap-2 mb-1">
-             <p class="text-sm font-bold text-[#293C74]">#${(item.reference || item.id)?.slice(0, 8).toUpperCase()}</p>
+             <p class="text-sm font-bold text-[#293C74]">#${safeReferenceLabel}</p>
              <span class="text-xs text-slate-400">•</span>
-             <p class="text-xs font-semibold text-slate-700 truncate">${item.contact_name || item.contact_email || 'Participante'}</p>
+             <p class="text-xs font-semibold text-slate-700 truncate">${safeContactLabel}</p>
           </div>
           <div class="flex items-center gap-2">
             ${statusBadge}
@@ -1378,12 +1417,12 @@ function renderChurchBookings(list, meta) {
         
         <div class="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4 mt-2 md:mt-0">
             <div class="text-right">
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${primaryLabel}</p>
-              <p class="text-sm font-bold text-brand-teal">${primaryValue}</p>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${safePrimaryLabel}</p>
+              <p class="text-sm font-bold text-brand-teal">${safePrimaryValue}</p>
             </div>
             <div class="text-right">
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${secondaryLabel}</p>
-              <p class="text-sm font-bold text-[#293C74]">${secondaryValue}</p>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${safeSecondaryLabel}</p>
+              <p class="text-sm font-bold text-[#293C74]">${safeSecondaryValue}</p>
             </div>
         </div>
       </div>
@@ -1394,7 +1433,7 @@ function renderChurchBookings(list, meta) {
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             ${item.participant_count || 0} inscritos
          </span>
-         <span>${formatDateTime(item.created_at)}</span>
+         <span>${safeCreatedLabel}</span>
       </div>
     `;
     churchBookingsList.appendChild(card);
@@ -1469,26 +1508,33 @@ function renderChurchPayments(list) {
     const statusLabel = payment.status || 'PENDING';
     const methodLabel = payment.method || '—';
     const referenceLabel = (payment.reference || payment.id || '').toString();
+    const safeProviderLabel = safeText(providerLabel);
+    const safeStatusLabel = safeText(statusLabel);
+    const safeMethodLabel = safeText(methodLabel);
+    const safeReferenceLabel = safeText(referenceLabel.slice(0, 10).toUpperCase());
+    const contactLabel = booking.contact_name || booking.contact_email || 'Sin nombre';
+    const safeContactLabel = safeText(contactLabel);
+    const safeContactEmail = booking.contact_email ? safeText(booking.contact_email) : '';
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white px-4 py-4';
     card.innerHTML = `
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pago</p>
-          <p class="text-sm font-bold text-[#293C74]">${formatCurrency(payment.amount, payment.currency)}</p>
-          <p class="text-xs text-slate-500">${providerLabel} · ${statusLabel}</p>
+          <p class="text-sm font-bold text-[#293C74]">${safeText(formatCurrency(payment.amount, payment.currency))}</p>
+          <p class="text-xs text-slate-500">${safeProviderLabel} · ${safeStatusLabel}</p>
         </div>
         <div class="text-right">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referencia</p>
-          <p class="text-xs font-bold text-[#293C74]">#${referenceLabel.slice(0, 10).toUpperCase()}</p>
-          <p class="text-xs text-slate-500">${formatDate(payment.created_at)}</p>
+          <p class="text-xs font-bold text-[#293C74]">#${safeReferenceLabel}</p>
+          <p class="text-xs text-slate-500">${safeText(formatDate(payment.created_at))}</p>
         </div>
       </div>
       <div class="mt-2 text-xs text-slate-500">
-        ${booking.contact_name || booking.contact_email || 'Sin nombre'}
-        ${booking.contact_email ? ` · ${booking.contact_email}` : ''}
+        ${safeContactLabel}
+        ${safeContactEmail ? ` · ${safeContactEmail}` : ''}
       </div>
-      <div class="mt-2 text-[11px] text-slate-400">Método: ${methodLabel}</div>
+      <div class="mt-2 text-[11px] text-slate-400">Método: ${safeMethodLabel}</div>
     `;
     churchPaymentsList.appendChild(card);
   });
@@ -1584,15 +1630,24 @@ function renderChurchInstallments(list) {
       || (plan.provider === 'stripe' && plan.provider_subscription_id);
     const chargeLabel = isAuto ? 'Auto' : 'Manual';
     const chargeClass = isAuto ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+    const safeStatusLabel = safeText(statusLabel);
+    const safeAmountLabel = safeText(amountLabel);
+    const safeDueLabel = safeText(dueLabel);
+    const safeReminderLabel = safeText(reminderLabel);
+    const safeLinkLabel = safeText(linkLabel);
+    const safeChargeLabel = safeText(chargeLabel);
+    const safeContactLabel = safeText(booking.contact_name || booking.contact_email || 'Sin nombre');
+    const safeReference = safeText((item.provider_reference || item.id).toString().slice(0, 12).toUpperCase());
+    const safeInstallmentId = safeAttr(item.id || '');
     const actionsHtml = isBalanceOnly
       ? '<div class="text-xs font-semibold text-slate-500">Sin fecha asignada</div>'
       : (isAuto
         ? '<div class="text-xs font-semibold text-emerald-700">Cobro automático activo</div>'
         : `
-          <button class="church-installment-action px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${item.id}">
+          <button class="church-installment-action px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${safeInstallmentId}">
             Copiar link
           </button>
-          <button class="church-installment-action px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-action="send-reminder" data-installment="${item.id}">
+          <button class="church-installment-action px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-action="send-reminder" data-installment="${safeInstallmentId}">
             Enviar recordatorio
           </button>
         `);
@@ -1603,16 +1658,16 @@ function renderChurchInstallments(list) {
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Cuota</p>
-          <p class="text-sm font-bold text-[#293C74]">${amountLabel}</p>
-          <p class="text-xs text-slate-500">Vence: ${dueLabel}</p>
-          <p class="text-xs text-slate-500">${booking.contact_name || booking.contact_email || 'Sin nombre'}</p>
-          <p class="text-[11px] text-slate-400">Ref: ${(item.provider_reference || item.id).toString().slice(0, 12).toUpperCase()}</p>
+          <p class="text-sm font-bold text-[#293C74]">${safeAmountLabel}</p>
+          <p class="text-xs text-slate-500">Vence: ${safeDueLabel}</p>
+          <p class="text-xs text-slate-500">${safeContactLabel}</p>
+          <p class="text-[11px] text-slate-400">Ref: ${safeReference}</p>
         </div>
         <div class="text-right space-y-2">
-          <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${statusLabel}</span>
-          <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${chargeClass}">Cobro ${chargeLabel}</span>
-          <div class="text-[11px] text-slate-400">Último link: ${linkLabel}</div>
-          <div class="text-[11px] text-slate-400">Último recordatorio: ${reminderLabel}</div>
+          <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${safeStatusLabel}</span>
+          <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${chargeClass}">Cobro ${safeChargeLabel}</span>
+          <div class="text-[11px] text-slate-400">Último link: ${safeLinkLabel}</div>
+          <div class="text-[11px] text-slate-400">Último recordatorio: ${safeReminderLabel}</div>
         </div>
       </div>
       <div class="mt-3 flex flex-wrap gap-2">
@@ -1625,6 +1680,7 @@ function renderChurchInstallments(list) {
 
 async function loadChurchBookings(headers = {}) {
   if (!churchBookingsList || !churchBookingsEmpty) return;
+  ensureAllChurchesSelection();
   if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
     churchBookingsEmpty.textContent = 'Selecciona una iglesia para ver los registros.';
     churchBookingsEmpty.classList.remove('hidden');
@@ -1648,6 +1704,7 @@ async function loadChurchBookings(headers = {}) {
 
 async function loadChurchInstallments(headers = {}) {
   if (!churchInstallmentsList || !churchInstallmentsEmpty) return;
+  ensureAllChurchesSelection();
   if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
     churchInstallmentsEmpty.textContent = 'Selecciona una iglesia para ver las cuotas.';
     churchInstallmentsEmpty.classList.remove('hidden');
@@ -1681,6 +1738,7 @@ async function loadChurchInstallments(headers = {}) {
 
 async function loadChurchPayments(headers = {}) {
   if (!churchPaymentsList || !churchPaymentsEmpty) return;
+  ensureAllChurchesSelection();
   if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
     churchPaymentsEmpty.textContent = 'Selecciona una iglesia para ver los pagos.';
     churchPaymentsEmpty.classList.remove('hidden');
@@ -1730,16 +1788,20 @@ function renderChurchMembers(list) {
   list.forEach((member) => {
     const card = document.createElement('div');
     const profile = member.profile || {};
+    const safeName = safeText(profile.full_name || profile.email || 'Usuario');
+    const safeEmail = safeText(profile.email || '');
+    const safeRole = safeText(member.role || '');
+    const safeStatus = safeText(member.status || '');
     card.className = 'rounded-2xl border border-slate-200 bg-white px-4 py-3';
     card.innerHTML = `
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="text-sm font-bold text-[#293C74]">${profile.full_name || profile.email || 'Usuario'}</p>
-          <p class="text-xs text-slate-500">${profile.email || ''}</p>
+          <p class="text-sm font-bold text-[#293C74]">${safeName}</p>
+          <p class="text-xs text-slate-500">${safeEmail}</p>
         </div>
         <div class="text-right">
-          <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">${member.role}</p>
-          <p class="text-[10px] text-slate-400">${member.status}</p>
+          <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">${safeRole}</p>
+          <p class="text-[10px] text-slate-400">${safeStatus}</p>
         </div>
       </div>
     `;
@@ -1749,6 +1811,7 @@ function renderChurchMembers(list) {
 
 async function loadChurchMembers(headers = {}) {
   if (!churchMembersList || !churchMembersEmpty) return;
+  ensureAllChurchesSelection();
   if (requiresScopedChurchSelection()) {
     churchMembersEmpty.textContent = 'Selecciona una iglesia para ver el equipo.';
     churchMembersEmpty.classList.remove('hidden');
@@ -1859,25 +1922,30 @@ function renderAdminUsers(users) {
     const rolesLabel = (user.memberships || [])
       .map((m) => `${m.role}${m.church?.name ? ` · ${m.church.name}` : ''}`)
       .join(' | ');
+    const safeRolesLabel = safeText(rolesLabel || 'Sin rol de iglesia');
+    const safeName = safeText(user.full_name || user.email || '');
+    const safeEmail = safeText(user.email || '');
+    const safeUserId = safeAttr(user.user_id || '');
+    const safeRole = safeText(user.role || '');
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-3';
     const roleSelect = portalIsSuperadmin
-      ? `<select data-action="role" data-user="${user.user_id}" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
+      ? `<select data-action="role" data-user="${safeUserId}" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
           <option value="user" ${user.role === 'user' ? 'selected' : ''}>Usuario</option>
           <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
           <option value="superadmin" ${user.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
         </select>`
-      : `<span class="text-xs font-bold text-[#293C74]">${user.role}</span>`;
+      : `<span class="text-xs font-bold text-[#293C74]">${safeRole}</span>`;
     card.innerHTML = `
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <p class="text-sm font-bold text-[#293C74]">${user.full_name || user.email}</p>
-          <p class="text-xs text-slate-500">${user.email}</p>
-          <p class="text-[10px] text-slate-400 mt-1">${rolesLabel || 'Sin rol de iglesia'}</p>
+          <p class="text-sm font-bold text-[#293C74]">${safeName}</p>
+          <p class="text-xs text-slate-500">${safeEmail}</p>
+          <p class="text-[10px] text-slate-400 mt-1">${safeRolesLabel}</p>
         </div>
         <div class="flex items-center gap-2">
           ${roleSelect}
-          <button data-action="reset" data-email="${user.email}" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
+          <button data-action="reset" data-email="${safeAttr(user.email || '')}" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
             Reset contraseña
           </button>
         </div>
@@ -1971,7 +2039,7 @@ function renderAdminFollowups(items, counts = {}) {
   }
 
   const churchOptions = (portalChurchesCatalog || [])
-    .map((church) => `<option value="${church.id}">${church.name}</option>`)
+    .map((church) => `<option value="${safeAttr(church.id || '')}">${safeText(church.name || '')}</option>`)
     .join('');
 
   filteredItems.forEach((item) => {
@@ -1992,6 +2060,16 @@ function renderAdminFollowups(items, counts = {}) {
     const whatsappStatusLabel = lastWhatsapp?.sent_at
       ? `WhatsApp enviado${whatsappSender ? ` por ${whatsappSender}` : ''} · ${formatDateTime(lastWhatsapp.sent_at)}`
       : '';
+    const safeBadgeLabel = safeText(badge.label);
+    const safeContactLabel = safeText(contactLabel);
+    const safeContactEmail = safeText(item.contact_email || '-');
+    const safeContactPhone = safeText(item.contact_phone || 'Sin teléfono');
+    const safeCreatedLabel = safeText(createdLabel);
+    const safeAmountLabel = safeText(amountLabel);
+    const safeBookingRef = safeText(bookingRef);
+    const safeWhatsappStatusLabel = safeText(whatsappStatusLabel);
+    const safeItemId = safeAttr(item.id || '');
+    const safeKind = safeAttr(item.type || '');
 
     let detail = '';
     if (item.type === 'registration_incomplete') {
@@ -2020,6 +2098,9 @@ function renderAdminFollowups(items, counts = {}) {
     const whatsappLabel = hasPhone
       ? (lastWhatsapp?.sent_at ? 'Reenviar WhatsApp' : 'WhatsApp')
       : 'Copiar WhatsApp';
+    const safeDetail = safeText(detail || 'Alerta pendiente de revisión.');
+    const safeWhatsappLabel = safeText(whatsappLabel);
+    const safeStatus = safeText(item.status || '-');
 
     const card = document.createElement('div');
     card.className = 'admin-issue-card rounded-2xl border border-slate-200 bg-white p-4 space-y-3';
@@ -2029,23 +2110,23 @@ function renderAdminFollowups(items, counts = {}) {
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
           <div class="flex items-center gap-2 mb-2 flex-wrap">
-            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${badge.className}">${badge.label}</span>
-            <span class="text-[10px] uppercase tracking-widest text-slate-400">#${bookingRef}</span>
+            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${badge.className}">${safeBadgeLabel}</span>
+            <span class="text-[10px] uppercase tracking-widest text-slate-400">#${safeBookingRef}</span>
           </div>
-          <p class="text-sm font-bold text-[#293C74] truncate">${contactLabel}</p>
-          <p class="text-xs text-slate-500 truncate">${item.contact_email || '-'}</p>
-          <p class="text-xs text-slate-400 truncate">${item.contact_phone || 'Sin teléfono'}</p>
+          <p class="text-sm font-bold text-[#293C74] truncate">${safeContactLabel}</p>
+          <p class="text-xs text-slate-500 truncate">${safeContactEmail}</p>
+          <p class="text-xs text-slate-400 truncate">${safeContactPhone}</p>
         </div>
         <div class="text-right">
           <p class="text-[10px] uppercase tracking-widest text-slate-400">Pagado</p>
-          <p class="text-sm font-bold text-brand-teal">${amountLabel}</p>
-          <p class="text-[10px] text-slate-400 mt-2">${createdLabel}</p>
+          <p class="text-sm font-bold text-brand-teal">${safeAmountLabel}</p>
+          <p class="text-[10px] text-slate-400 mt-2">${safeCreatedLabel}</p>
         </div>
       </div>
       <div class="rounded-xl bg-slate-50/70 border border-slate-100 px-3 py-2 text-xs text-slate-600">
-        ${detail || 'Alerta pendiente de revisión.'}
+        ${safeDetail}
       </div>
-      <p class="text-[10px] uppercase tracking-widest text-slate-400" data-field="whatsapp-status">${whatsappStatusLabel}</p>
+      <p class="text-[10px] uppercase tracking-widest text-slate-400" data-field="whatsapp-status">${safeWhatsappStatusLabel}</p>
       ${canAssignChurch ? `
         <div class="flex flex-col md:flex-row md:items-center gap-2">
           <select data-role="assign-church" class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
@@ -2053,26 +2134,26 @@ function renderAdminFollowups(items, counts = {}) {
             <option value="__virtual__">Ministerio Virtual</option>
             ${churchOptions}
           </select>
-          <button data-action="assign-church" data-booking="${item.id}" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
+          <button data-action="assign-church" data-booking="${safeItemId}" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
             Asignar
           </button>
         </div>
       ` : ''}
       <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-        <span class="text-[10px] uppercase tracking-widest text-slate-400">Estado: ${item.status || '-'}</span>
+        <span class="text-[10px] uppercase tracking-widest text-slate-400">Estado: ${safeStatus}</span>
         <div class="flex items-center gap-2">
           ${canRecompute ? `
-            <button data-action="recompute" data-booking="${item.id}" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
+            <button data-action="recompute" data-booking="${safeItemId}" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
               Recalcular
             </button>
           ` : ''}
           ${canEmail ? `
-            <button data-action="notify-email" data-booking="${item.id}" data-kind="${item.type}" class="px-3 py-2 rounded-lg bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">
+            <button data-action="notify-email" data-booking="${safeItemId}" data-kind="${safeKind}" class="px-3 py-2 rounded-lg bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">
               Enviar correo
             </button>
           ` : ''}
-          <button data-action="whatsapp" data-booking="${item.id}" class="px-3 py-2 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
-            ${whatsappLabel}
+          <button data-action="whatsapp" data-booking="${safeItemId}" class="px-3 py-2 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
+            ${safeWhatsappLabel}
           </button>
         </div>
       </div>
@@ -2359,19 +2440,33 @@ function renderBookings(bookings) {
       location: locationLabel,
       details: `Reserva #${bookingRef}`,
     });
+    const safeEventName = safeText(eventName);
+    const safeCreatedLabel = safeText(createdLabel);
+    const safeBookingRef = safeText(bookingRef);
+    const safeLocationLabel = safeText(locationLabel || 'Sin iglesia');
+    const safePendingLabel = safeText(pendingLabel);
+    const safeTotalPaid = safeText(formatCurrency(totalPaid, booking.currency));
+    const safeTotalAmount = safeText(formatCurrency(totalAmount, booking.currency));
+    const safeStatusLabel = safeText(statusInfo.label);
+    const safeCalendarUrl = safeAttr(calendarUrl);
+    const safeCalendarTitle = safeAttr(eventName);
+    const safeCalendarStart = safeAttr(eventStart?.toISOString() || '');
+    const safeCalendarEnd = safeAttr(eventEnd?.toISOString() || '');
+    const safeCalendarLocation = safeAttr(locationLabel);
+    const safeCalendarDetails = safeAttr(`Reserva #${bookingRef}`);
     const calendarLinks = eventStart ? `
       <div class="flex flex-wrap gap-2 pt-1">
-        <a href="${calendarUrl}" target="_blank" rel="noreferrer"
+        <a href="${safeCalendarUrl}" target="_blank" rel="noreferrer"
            class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full border border-slate-200 text-slate-600 hover:border-slate-300">
           Google Calendar
         </a>
         <button type="button"
           class="calendar-download inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
-          data-calendar-title="${eventName}"
-          data-calendar-start="${eventStart?.toISOString()}"
-          data-calendar-end="${eventEnd?.toISOString()}"
-          data-calendar-location="${locationLabel}"
-          data-calendar-details="Reserva #${bookingRef}">
+          data-calendar-title="${safeCalendarTitle}"
+          data-calendar-start="${safeCalendarStart}"
+          data-calendar-end="${safeCalendarEnd}"
+          data-calendar-location="${safeCalendarLocation}"
+          data-calendar-details="${safeCalendarDetails}">
           Descargar .ics
         </button>
       </div>
@@ -2381,24 +2476,24 @@ function renderBookings(bookings) {
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Reserva</p>
-          <h3 class="text-lg font-bold text-[#293C74]">${eventName}</h3>
-          <p class="text-xs text-slate-500 mt-1">#${bookingRef} · ${createdLabel}</p>
+          <h3 class="text-lg font-bold text-[#293C74]">${safeEventName}</h3>
+          <p class="text-xs text-slate-500 mt-1">#${safeBookingRef} · ${safeCreatedLabel}</p>
         </div>
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${statusInfo.label}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${safeStatusLabel}</span>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aportado</p>
-          <p class="text-lg font-bold text-[#293C74] mt-2">${formatCurrency(totalPaid, booking.currency)}</p>
+          <p class="text-lg font-bold text-[#293C74] mt-2">${safeTotalPaid}</p>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pendiente</p>
-          <p class="text-lg font-bold ${balanceBadgeClass} mt-2">${pendingLabel}</p>
+          <p class="text-lg font-bold ${balanceBadgeClass} mt-2">${safePendingLabel}</p>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</p>
-          <p class="text-lg font-bold text-slate-600 mt-2">${formatCurrency(totalAmount, booking.currency)}</p>
+          <p class="text-lg font-bold text-slate-600 mt-2">${safeTotalAmount}</p>
         </div>
       </div>
 
@@ -2418,13 +2513,13 @@ function renderBookings(bookings) {
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 11.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 2c-4.418 0-8 3.582-8 8 0 5.25 8 12 8 12s8-6.75 8-12c0-4.418-3.582-8-8-8z" />
           </svg>
-          ${locationLabel || 'Sin iglesia'}
+          ${safeLocationLabel}
         </span>
         <span class="inline-flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V9m-2 0H7m10 0a2 2 0 110 4h-2a2 2 0 110-4h2z" />
           </svg>
-          ${isPaidFull ? 'Cupo confirmado' : `Saldo por pagar: ${pendingLabel}`}
+          ${isPaidFull ? 'Cupo confirmado' : `Saldo por pagar: ${safePendingLabel}`}
         </span>
       </div>
 
@@ -2452,6 +2547,12 @@ function renderPlans(plans, bookings) {
       : plan.status === 'PAUSED'
         ? 'bg-amber-100 text-amber-700 border border-amber-200'
         : 'bg-slate-100 text-slate-600 border border-slate-200';
+    const safeFrequency = safeText(plan.frequency === 'BIWEEKLY' ? 'Quincenal' : 'Mensual');
+    const safeStatusLabel = safeText(statusLabel);
+    const safeAmountLabel = safeText(formatCurrency(plan.installment_amount, plan.currency));
+    const safeNextDue = safeText(plan.next_due_date ? formatDate(plan.next_due_date) : 'Sin fecha');
+    const safeActionLabel = safeText(actionLabel);
+    const safePlanId = safeAttr(plan.id || '');
 
     card.innerHTML = `
       <div class="flex justify-between items-center">
@@ -2461,21 +2562,21 @@ function renderPlans(plans, bookings) {
            </div>
            <div>
              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recurrencia</p>
-             <p class="text-sm font-bold text-[#293C74]">${plan.frequency === 'BIWEEKLY' ? 'Quincenal' : 'Mensual'}</p>
+             <p class="text-sm font-bold text-[#293C74]">${safeFrequency}</p>
            </div>
         </div>
-        <span class="text-[10px] font-bold px-2 py-1 rounded uppercase ${badgeClass}">${statusLabel}</span>
+        <span class="text-[10px] font-bold px-2 py-1 rounded uppercase ${badgeClass}">${safeStatusLabel}</span>
       </div>
       
       <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
          <p class="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Monto de la Cuota</p>
-         <p class="text-2xl font-display font-bold text-[#293C74]">${formatCurrency(plan.installment_amount, plan.currency)}</p>
+         <p class="text-2xl font-display font-bold text-[#293C74]">${safeAmountLabel}</p>
       </div>
 
       <div class="flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-4">
-         <span>Próximo abono: ${plan.next_due_date ? formatDate(plan.next_due_date) : 'Sin fecha'}</span>
-         <button class="plan-action px-4 py-2 rounded-lg text-xs font-bold transition-all ${actionClass}" data-plan="${plan.id}" data-action="${plan.status === 'PAUSED' ? 'resume' : 'pause'}">
-          ${actionLabel}
+         <span>Próximo abono: ${safeNextDue}</span>
+         <button class="plan-action px-4 py-2 rounded-lg text-xs font-bold transition-all ${actionClass}" data-plan="${safePlanId}" data-action="${plan.status === 'PAUSED' ? 'resume' : 'pause'}">
+          ${safeActionLabel}
          </button>
       </div>
       ${calendarLinks}
@@ -2498,12 +2599,12 @@ function setupAdminFilters(allBookings) {
   // City Select
   const citySelect = document.createElement('select');
   citySelect.className = 'bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 outline-none focus:border-brand-teal';
-  citySelect.innerHTML = '<option value="">Todas las ciudades</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+  citySelect.innerHTML = '<option value="">Todas las ciudades</option>' + cities.map(c => `<option value="${safeAttr(c)}">${safeText(c)}</option>`).join('');
 
   // Church Select
   const churchSelect = document.createElement('select');
   churchSelect.className = 'bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 outline-none focus:border-brand-teal';
-  churchSelect.innerHTML = '<option value="">Todas las iglesias</option>' + churches.map(c => `<option value="${c}">${c}</option>`).join('');
+  churchSelect.innerHTML = '<option value="">Todas las iglesias</option>' + churches.map(c => `<option value="${safeAttr(c)}">${safeText(c)}</option>`).join('');
 
   // Event Listeners
   const applyFilters = () => {
@@ -2551,19 +2652,25 @@ function renderInstallments(installments, plans, bookings) {
     const currency = plan.currency || installment.currency;
     const amountLabel = formatCurrency(installment.amount, currency);
     const dueLabel = installment.due_date ? formatDate(installment.due_date) : 'Sin fecha';
+    const safeInstallmentLabel = safeText(installmentLabel);
+    const safeAmountLabel = safeText(amountLabel);
+    const safeDueLabel = safeText(dueLabel);
+    const safeContactLabel = safeText(booking.contact_name || booking.contact_email || '');
+    const safeStatusLabel = safeText(statusLabel);
+    const safeInstallmentId = safeAttr(installment.id || '');
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between';
     card.innerHTML = `
       <div>
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">${installmentLabel}</p>
-        <p class="text-sm font-bold text-[#293C74]">${amountLabel}</p>
-        <p class="text-xs text-slate-500">Vence: ${dueLabel}</p>
-        <p class="text-[11px] text-slate-400 mt-1">${booking.contact_name || booking.contact_email || ''}</p>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">${safeInstallmentLabel}</p>
+        <p class="text-sm font-bold text-[#293C74]">${safeAmountLabel}</p>
+        <p class="text-xs text-slate-500">Vence: ${safeDueLabel}</p>
+        <p class="text-[11px] text-slate-400 mt-1">${safeContactLabel}</p>
       </div>
       <div class="flex items-center gap-3">
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${statusLabel}</span>
-        <button class="installment-pay px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${installment.id}">
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${safeStatusLabel}</span>
+        <button class="installment-pay px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${safeInstallmentId}">
           Pagar ahora
         </button>
       </div>
@@ -2586,14 +2693,19 @@ function renderPayments(payments) {
       ? 'bg-emerald-100 text-emerald-700'
       : 'bg-amber-100 text-amber-700';
     const detailLabel = payment.detail || `${payment.provider?.toUpperCase() || '-'} · Aporte`;
+    const safeCreatedAt = safeText(formatDate(payment.created_at));
+    const safeReference = safeText(payment.reference || '-');
+    const safeDetailLabel = safeText(detailLabel);
+    const safeAmountLabel = safeText(formatCurrency(payment.amount, payment.currency));
+    const safeStatusLabel = safeText(payment.status || 'PENDING');
     row.innerHTML = `
-      <td class="py-6 px-8 text-slate-600">${formatDate(payment.created_at)}</td>
-      <td class="py-6 px-8 font-mono text-xs text-slate-400">${payment.reference || '-'}</td>
-      <td class="py-6 px-8 text-slate-500">${detailLabel}</td>
-      <td class="py-6 px-8 text-right font-bold text-[#293C74]">${formatCurrency(payment.amount, payment.currency)}</td>
+      <td class="py-6 px-8 text-slate-600">${safeCreatedAt}</td>
+      <td class="py-6 px-8 font-mono text-xs text-slate-400">${safeReference}</td>
+      <td class="py-6 px-8 text-slate-500">${safeDetailLabel}</td>
+      <td class="py-6 px-8 text-right font-bold text-[#293C74]">${safeAmountLabel}</td>
       <td class="py-6 px-8 text-center">
         <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass}">
-          ${payment.status || 'PENDING'}
+          ${safeStatusLabel}
         </span>
       </td>
     `;
@@ -2665,6 +2777,15 @@ function renderSummaryEvents(bookings, plans, installments) {
     const countdown = getCountdownLabel(start, end);
     const locationParts = [booking.contact_church, booking.contact_city].filter(Boolean);
     const location = locationParts.length ? locationParts.join(' · ') : 'Sin iglesia';
+    const safeTitle = safeText(title);
+    const safeLocation = safeText(location);
+    const safeCountdown = safeText(countdown);
+    const safeTotalPaid = safeText(formatCurrency(totalPaid, booking.currency));
+    const safeBalance = safeText(formatCurrency(balance, booking.currency));
+    const safeNextDue = safeText(nextDueLabel);
+    const safeDeadlineNote = deadlineNote ? safeText(deadlineNote) : '';
+    const safeStart = safeText(start ? `Inicio: ${formatDate(start)}` : 'Fecha por confirmar');
+    const safeEnd = safeText(end ? `Fin: ${formatDate(end)}` : '');
 
     const card = document.createElement('div');
     card.className = 'bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm space-y-4';
@@ -2672,31 +2793,31 @@ function renderSummaryEvents(bookings, plans, installments) {
       <div class="flex items-start justify-between gap-4">
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Evento</p>
-          <h3 class="text-lg font-bold text-[#293C74]">${title}</h3>
-          <p class="text-xs text-slate-500 mt-1">${location}</p>
+          <h3 class="text-lg font-bold text-[#293C74]">${safeTitle}</h3>
+          <p class="text-xs text-slate-500 mt-1">${safeLocation}</p>
         </div>
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-slate-100 text-slate-600 border border-slate-200">${countdown}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-slate-100 text-slate-600 border border-slate-200">${safeCountdown}</span>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total aportado</p>
-          <p class="text-lg font-bold text-[#293C74] mt-2">${formatCurrency(totalPaid, booking.currency)}</p>
+          <p class="text-lg font-bold text-[#293C74] mt-2">${safeTotalPaid}</p>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pendiente</p>
-          <p class="text-lg font-bold text-amber-600 mt-2">${formatCurrency(balance, booking.currency)}</p>
+          <p class="text-lg font-bold text-amber-600 mt-2">${safeBalance}</p>
         </div>
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Próximo abono</p>
-          <p class="text-lg font-bold text-[#293C74] mt-2">${nextDueLabel}</p>
-          ${deadlineNote ? `<p class="text-[10px] text-slate-400 mt-1">${deadlineNote}</p>` : ''}
+          <p class="text-lg font-bold text-[#293C74] mt-2">${safeNextDue}</p>
+          ${safeDeadlineNote ? `<p class="text-[10px] text-slate-400 mt-1">${safeDeadlineNote}</p>` : ''}
         </div>
       </div>
 
       <div class="flex flex-wrap items-center justify-between text-xs text-slate-500">
-        <span>${start ? `Inicio: ${formatDate(start)}` : 'Fecha por confirmar'}</span>
-        <span>${end ? `Fin: ${formatDate(end)}` : ''}</span>
+        <span>${safeStart}</span>
+        <span>${safeEnd}</span>
       </div>
     `;
     summaryEventsList.appendChild(card);
@@ -2752,32 +2873,39 @@ function renderGivingSummary(donations, subscriptions) {
     const isPaused = rawStatus === 'PAUSED';
     const primaryAction = isPaused ? 'resume' : 'pause';
     const primaryLabel = isPaused ? 'Reanudar' : 'Pausar';
+    const safeLabel = safeText(label);
+    const safeContext = safeText(context || 'Aporte personalizado');
+    const safeSchedule = safeText(schedule);
+    const safeAmount = safeText(amount);
+    const safeStatusLabel = safeText(statusInfo.label);
+    const safePrimaryLabel = safeText(primaryLabel);
+    const safeSubscriptionId = safeAttr(item.id || '');
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
     card.innerHTML = `
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${label}</p>
-          <p class="text-sm font-bold text-[#293C74] mt-1">${context || 'Aporte personalizado'}</p>
-          <p class="text-xs text-slate-500 mt-1">${schedule}</p>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${safeLabel}</p>
+          <p class="text-sm font-bold text-[#293C74] mt-1">${safeContext}</p>
+          <p class="text-xs text-slate-500 mt-1">${safeSchedule}</p>
         </div>
         <div class="text-right">
-          <p class="text-sm font-bold text-brand-teal">${amount}</p>
-          <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${statusInfo.label}</span>
+          <p class="text-sm font-bold text-brand-teal">${safeAmount}</p>
+          <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${safeStatusLabel}</span>
         </div>
       </div>
       ${canManage ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
             class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
-            data-subscription-id="${item.id}"
+            data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="${primaryAction}">
-            ${primaryLabel}
+            ${safePrimaryLabel}
           </button>
           <button type="button"
             class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
-            data-subscription-id="${item.id}"
+            data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="cancel">
             Cancelar
           </button>
@@ -2829,6 +2957,10 @@ function renderCampusSummary(donations, subscriptions) {
       PENDING: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
     };
     const statusInfo = statusMap[status] || { label: status, className: 'bg-slate-100 text-slate-600' };
+    const safeContext = safeText(context);
+    const safeSchedule = safeText(schedule);
+    const safeAmount = safeText(amount);
+    const safeStatusLabel = safeText(statusInfo.label);
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
@@ -2836,12 +2968,12 @@ function renderCampusSummary(donations, subscriptions) {
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Campus</p>
-          <p class="text-sm font-bold text-[#293C74] mt-1">${context}</p>
-          <p class="text-xs text-slate-500 mt-1">${schedule}</p>
+          <p class="text-sm font-bold text-[#293C74] mt-1">${safeContext}</p>
+          <p class="text-xs text-slate-500 mt-1">${safeSchedule}</p>
         </div>
         <div class="text-right">
-          <p class="text-sm font-bold text-brand-teal">${amount}</p>
-          <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${statusInfo.label}</span>
+          <p class="text-sm font-bold text-brand-teal">${safeAmount}</p>
+          <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${safeStatusLabel}</span>
         </div>
       </div>
     `;
@@ -2874,16 +3006,21 @@ function renderLocalEvents(events) {
       : event.scope === 'NATIONAL'
         ? 'Nacional'
         : 'Local';
+    const safeScopeLabel = safeText(scopeLabel);
+    const safeTitle = safeText(event.title || '');
+    const safeDateLabel = safeText(dateLabel);
+    const safeEndLabel = safeText(end ? formatDate(end) : '');
+    const safeLocation = safeText(location);
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-5 shadow-sm';
     card.innerHTML = `
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${scopeLabel}</p>
-          <h3 class="text-base font-bold text-[#293C74] mt-1">${event.title}</h3>
-          <p class="text-xs text-slate-500 mt-2">${dateLabel}</p>
-          ${end ? `<p class="text-[11px] text-slate-400">Finaliza: ${formatDate(end)}</p>` : ''}
-          <p class="text-xs text-slate-500 mt-2">${location}</p>
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${safeScopeLabel}</p>
+          <h3 class="text-base font-bold text-[#293C74] mt-1">${safeTitle}</h3>
+          <p class="text-xs text-slate-500 mt-2">${safeDateLabel}</p>
+          ${end ? `<p class="text-[11px] text-slate-400">Finaliza: ${safeEndLabel}</p>` : ''}
+          <p class="text-xs text-slate-500 mt-2">${safeLocation}</p>
         </div>
       </div>
     `;
@@ -2997,15 +3134,20 @@ function renderMemberships(memberships) {
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-slate-50/80 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3';
     const statusLabel = membership.status === 'approved' ? 'Aprobado' : membership.status === 'rejected' ? 'Rechazado' : 'Pendiente';
+    const safeRoleLabel = safeText(roleLabel);
+    const safeStatusLabel = safeText(statusLabel);
+    const safeChurchName = safeText(membership.church?.name || 'Iglesia sin nombre');
+    const safeChurchCity = safeText(membership.church?.city || '');
+    const safeChurchCountry = safeText(membership.church?.country || '');
     card.innerHTML = `
       <div>
         <p class="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Sede</p>
-        <p class="text-lg font-bold text-[#293C74]">${membership.church?.name || 'Iglesia sin nombre'}</p>
-        <p class="text-xs text-slate-500">${membership.church?.city || ''} ${membership.church?.country ? `· ${membership.church.country}` : ''}</p>
+        <p class="text-lg font-bold text-[#293C74]">${safeChurchName}</p>
+        <p class="text-xs text-slate-500">${safeChurchCity} ${safeChurchCountry ? `· ${safeChurchCountry}` : ''}</p>
       </div>
       <div class="flex items-center gap-3">
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500">${roleLabel}</span>
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${membership.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'}">${statusLabel}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500">${safeRoleLabel}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${membership.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'}">${safeStatusLabel}</span>
       </div>
     `;
     churchMembershipsList.appendChild(card);
@@ -3785,7 +3927,12 @@ function populateChurchesUI(catalog) {
   // Populate Datalist for Manual Registration
   const dataList = document.getElementById('churches-list');
   if (dataList) {
-    dataList.innerHTML = catalog.map(c => `<option value="${c.name} - ${c.city}">${c.address || ''}</option>`).join('');
+    dataList.innerHTML = catalog.map(c => {
+      const label = `${c.name || ''} - ${c.city || ''}`.trim();
+      const safeLabel = safeAttr(label);
+      const safeAddress = safeText(c.address || '');
+      return `<option value="${safeLabel}">${safeAddress}</option>`;
+    }).join('');
   }
 
   // Populate Admin Selector (if empty or just placeholder)
@@ -3798,7 +3945,9 @@ function populateChurchesUI(catalog) {
     catalog.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
-      opt.textContent = `${c.city} - ${c.name}`;
+      const showCountry = Boolean(c?.country && (!c?.city || /virtual/i.test(c?.name || '')));
+      const countryLabel = showCountry ? ` · ${c.country}` : '';
+      opt.textContent = `${c.city || c.country || 'Ciudad'} - ${c.name}${countryLabel}`;
       churchSelectorInput.appendChild(opt);
     });
   }
@@ -3808,7 +3957,9 @@ function populateChurchesUI(catalog) {
     catalog.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
-      opt.textContent = `${c.city || 'Ciudad'} - ${c.name}`;
+      const cityLabel = c.city || c.country || 'Ciudad';
+      const countryLabel = c.country ? ` · ${c.country}` : '';
+      opt.textContent = `${cityLabel} - ${c.name}${countryLabel}`;
       inviteChurchInput.appendChild(opt);
     });
     const selected = resolveSelectedChurchId();

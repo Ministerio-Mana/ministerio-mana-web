@@ -11,9 +11,12 @@ const eventForm = document.getElementById('event-form');
 const eventIdInput = document.getElementById('event-id');
 const eventModalTitle = eventModal?.querySelector('h2');
 const eventSubmitBtn = eventForm?.querySelector('button[type="submit"]');
+const eventScopeSelect = eventForm?.querySelector('[name="scope"]');
 
 let authHeaders = {};
 let eventsCache = [];
+let currentRole = 'user';
+let currentCountry = '';
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -45,6 +48,8 @@ async function init() {
     }
 
     authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+
+    await loadProfile();
 
     // Load Events
     loadEvents();
@@ -78,6 +83,8 @@ function openEventModal(mode, eventData = null) {
         eventForm.querySelector('[name="banner_url"]').value = eventData.banner_url || '';
     }
 
+    syncScopeOptions();
+
     eventModal.classList.remove('hidden');
     eventModal.classList.add('flex');
 }
@@ -110,6 +117,61 @@ async function loadEvents() {
         eventsEmpty.classList.remove('hidden'); // Fail gracefully
     } finally {
         eventsLoading.classList.add('hidden');
+    }
+}
+
+async function loadProfile() {
+    try {
+        const res = await fetch('/api/portal/session', {
+            headers: authHeaders,
+            credentials: 'include'
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.ok) return;
+        currentRole = data.profile?.role || 'user';
+        currentCountry = data.profile?.country || '';
+        applyRolePermissions();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function applyRolePermissions() {
+    const canCreate = ['admin', 'superadmin', 'pastor'].includes(currentRole)
+        || (currentRole === 'national_pastor' && currentCountry);
+    if (btnNewEvent) {
+        btnNewEvent.style.display = canCreate ? '' : 'none';
+    }
+}
+
+function canEditEvent(event) {
+    if (['admin', 'superadmin'].includes(currentRole)) return true;
+    if (currentRole === 'pastor') return event.scope === 'LOCAL';
+    if (currentRole === 'national_pastor') {
+        if (!currentCountry) return false;
+        return event.scope === 'NATIONAL' && event.country === currentCountry;
+    }
+    return false;
+}
+
+function syncScopeOptions() {
+    if (!eventScopeSelect) return;
+    const allowed = new Set();
+    if (['admin', 'superadmin'].includes(currentRole)) {
+        ['LOCAL', 'NATIONAL', 'GLOBAL'].forEach((s) => allowed.add(s));
+    } else if (currentRole === 'national_pastor' && currentCountry) {
+        allowed.add('NATIONAL');
+    } else if (currentRole === 'pastor') {
+        allowed.add('LOCAL');
+    }
+    const hasRestrictions = allowed.size > 0;
+    eventScopeSelect.querySelectorAll('option').forEach((option) => {
+        option.hidden = hasRestrictions && !allowed.has(option.value);
+    });
+    eventScopeSelect.disabled = !hasRestrictions;
+    if (hasRestrictions && !allowed.has(eventScopeSelect.value)) {
+        eventScopeSelect.value = allowed.values().next().value;
     }
 }
 
@@ -165,9 +227,10 @@ function renderEvents(events) {
                 </div>
 
                 <div class="mt-4 flex items-center justify-between">
+                    ${canEditEvent(event) ? `
                     <button type="button" class="event-edit text-xs font-bold text-[#293C74] hover:underline" data-event-id="${safeEventId}">
                         Editar evento
-                    </button>
+                    </button>` : '<span></span>'}
                     <span class="text-[10px] uppercase tracking-widest text-slate-400">${safeStatus}</span>
                 </div>
             </div>

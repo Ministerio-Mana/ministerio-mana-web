@@ -14,13 +14,16 @@ import {
 } from '@lib/cumbre2026';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { applyManualPaymentToPlan, createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
-import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
+import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
+
+const VIRTUAL_CHURCH_NAME = 'Ministerio Maná Virtual';
+const VIRTUAL_CHURCH_ALIASES = [VIRTUAL_CHURCH_NAME, 'Virtual'];
 
 function normalizeFrequency(raw: string | null | undefined): InstallmentFrequency {
     const value = (raw || '').toString().trim().toUpperCase();
@@ -189,11 +192,13 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Datos inválidos' }), { status: 400 });
     }
 
-    let contactCountry = sanitizePlainText(body.country ?? '', 40);
+    let contactCountry = normalizeCountryRegion(body.country ?? '');
     let contactCity = normalizeCityName(body.city ?? '');
     const manualChurchNameRaw = sanitizePlainText(body.manual_church_name ?? body.manualChurchName ?? '', 120);
     const rawChurchId = body.church_id ?? body.churchId ?? '';
     const rawChurchIdLower = String(rawChurchId || '').toLowerCase();
+    const isVirtualSelection = rawChurchIdLower === 'virtual' || /virtual/i.test(manualChurchNameRaw);
+    const normalizedCountry = contactCountry.trim();
 
     const paymentOption = (body.payment_option ?? body.paymentOption ?? 'FULL').toString().trim().toUpperCase();
     const depositDueDateRaw = (body.deposit_due_date ?? body.depositDueDate ?? '').toString().trim();
@@ -207,12 +212,16 @@ export const POST: APIRoute = async ({ request }) => {
     let skipChurchCreate = false;
 
     if (!resolvedChurchId) {
-        if (rawChurchIdLower === 'virtual') {
-            resolvedChurchName = 'Ministerio Maná Virtual';
+        if (isVirtualSelection) {
+            resolvedChurchName = VIRTUAL_CHURCH_NAME;
         } else if (rawChurchIdLower === 'none') {
             resolvedChurchName = 'No asisto a ninguna iglesia';
             skipChurchCreate = true;
         }
+    }
+
+    if (isVirtualSelection && !normalizedCountry) {
+        return new Response(JSON.stringify({ ok: false, error: 'Escribe el país o región para Maná Virtual' }), { status: 400 });
     }
 
     if (!resolvedChurchName && manualChurchNameRaw) {
@@ -239,12 +248,67 @@ export const POST: APIRoute = async ({ request }) => {
         }
     }
 
+    if (!resolvedChurchId && resolvedChurchName && contactCountry) {
+        let existing: { id?: string; name?: string; city?: string } | null = null;
+        if (isVirtualSelection) {
+            for (const alias of VIRTUAL_CHURCH_ALIASES) {
+                const { data } = await supabaseAdmin
+                    .from('churches')
+                    .select('id, name, city')
+                    .ilike('name', alias)
+                    .eq('country', contactCountry)
+                    .maybeSingle();
+                if (data?.id) {
+                    existing = data;
+                    break;
+                }
+            }
+        } else {
+            const { data } = await supabaseAdmin
+                .from('churches')
+                .select('id, name, city')
+                .ilike('name', resolvedChurchName)
+                .eq('country', contactCountry)
+                .maybeSingle();
+            if (data?.id) existing = data;
+        }
+        if (existing?.id) {
+            resolvedChurchId = existing.id;
+            resolvedChurchName = existing.name || resolvedChurchName;
+            if (!contactCity && existing.city) {
+                contactCity = existing.city;
+            }
+        }
+    }
+
     if (!resolvedChurchId && resolvedChurchName && isAdmin && !skipChurchCreate) {
-        const { data: existing } = await supabaseAdmin
-            .from('churches')
-            .select('id, name')
-            .ilike('name', resolvedChurchName)
-            .maybeSingle();
+        let existing: { id?: string; name?: string } | null = null;
+        if (isVirtualSelection) {
+            for (const alias of VIRTUAL_CHURCH_ALIASES) {
+                let query = supabaseAdmin
+                    .from('churches')
+                    .select('id, name')
+                    .ilike('name', alias);
+                if (contactCountry) {
+                    query = query.eq('country', contactCountry);
+                }
+                const { data } = await query.maybeSingle();
+                if (data?.id) {
+                    existing = data;
+                    break;
+                }
+            }
+        } else {
+            let query = supabaseAdmin
+                .from('churches')
+                .select('id, name')
+                .ilike('name', resolvedChurchName);
+            if (contactCountry) {
+                query = query.eq('country', contactCountry);
+            }
+            const { data } = await query.maybeSingle();
+            if (data?.id) existing = data;
+        }
         if (existing?.id) {
             resolvedChurchId = existing.id;
             resolvedChurchName = existing.name || resolvedChurchName;

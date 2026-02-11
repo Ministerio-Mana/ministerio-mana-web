@@ -140,9 +140,11 @@ function populateScopeOptions() {
         countryFiltered
             .map(c => {
                 const safeId = escapeAttr(c.id || '');
-                const safeCity = escapeHtml(c.city || 'Ciudad');
+                const cityLabel = c.city || c.country || 'Ciudad';
+                const safeCity = escapeHtml(cityLabel);
                 const safeName = escapeHtml(c.name || '');
-                return `<option value="${safeId}">${safeCity} · ${safeName}</option>`;
+                const countryLabel = c.country ? ` · ${escapeHtml(c.country)}` : '';
+                return `<option value="${safeId}">${safeCity} · ${safeName}${countryLabel}</option>`;
             })
             .join('');
 

@@ -5,6 +5,7 @@ import { ensureUserProfile, isAdminRole } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -25,7 +26,20 @@ async function getAdminContext(request: Request) {
   return { ok: true, role: 'superadmin' };
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.reset-password',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
       status: 500,

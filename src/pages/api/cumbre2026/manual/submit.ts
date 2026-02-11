@@ -16,6 +16,7 @@ import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -95,7 +96,20 @@ async function findIdempotentBooking(idempotencyKey: string | null, expectedPart
   return null;
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'cumbre.manual.submit',
+    allowlistKeys: ['CUMBRE_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const form = await request.formData();
   const token = form.get('token')?.toString();
 

@@ -14,7 +14,7 @@ import {
 } from '@lib/cumbre2026';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
-import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
+import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
 import { resolveBaseUrl } from '@lib/url';
@@ -24,6 +24,9 @@ import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
+
+const VIRTUAL_CHURCH_NAME = 'Ministerio Maná Virtual';
+const VIRTUAL_CHURCH_ALIASES = [VIRTUAL_CHURCH_NAME, 'Virtual'];
 
 function normalizeFrequency(raw: string | null | undefined): InstallmentFrequency {
   const value = (raw || '').toString().trim().toUpperCase();
@@ -148,9 +151,11 @@ export const POST: APIRoute = async ({ request }) => {
     const documentType = sanitizePlainText(payload.documentType ?? '', 10).toUpperCase();
     const documentNumber = sanitizePlainText(payload.documentNumber ?? '', 40);
     const countryGroup = normalizeCountryGroup(payload.countryGroup ?? 'CO');
-    const contactCountry = sanitizePlainText(payload.country ?? '', 40);
+    const contactCountry = normalizeCountryRegion(payload.country ?? '');
     const contactCity = normalizeCityName(payload.city ?? '');
-    const contactChurchRaw = normalizeChurchName(payload.church ?? '');
+    const contactChurchInput = sanitizePlainText(payload.church ?? '', 120);
+    const isVirtualSelection = /virtual/i.test(contactChurchInput);
+    const contactChurchRaw = isVirtualSelection ? VIRTUAL_CHURCH_NAME : normalizeChurchName(contactChurchInput);
     const churchIdFromPayload = isUuid(payload.churchId) ? payload.churchId : null;
     const paymentOption = (payload.paymentOption ?? 'FULL').toString().toUpperCase();
     const depositDueDateRaw = (payload.deposit_due_date ?? payload.depositDueDate ?? '').toString().trim();
@@ -178,6 +183,13 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
       selectedChurchFromPayload = church;
+    }
+
+    if (isVirtualSelection && !contactCountry.trim()) {
+      return new Response(JSON.stringify({ ok: false, error: 'Escribe el país o región para Maná Virtual' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
     }
 
     if (!contactName || !email || !phone) {
@@ -328,11 +340,33 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (isAdmin && !resolvedChurchId && contactChurchRaw) {
-      const { data: existing } = await supabaseAdmin
-        .from('churches')
-        .select('id, name')
-        .ilike('name', contactChurchRaw)
-        .maybeSingle();
+      let existing: { id?: string; name?: string } | null = null;
+      if (isVirtualSelection) {
+        for (const alias of VIRTUAL_CHURCH_ALIASES) {
+          let query = supabaseAdmin
+            .from('churches')
+            .select('id, name')
+            .ilike('name', alias);
+          if (contactCountry) {
+            query = query.eq('country', contactCountry);
+          }
+          const { data } = await query.maybeSingle();
+          if (data?.id) {
+            existing = data;
+            break;
+          }
+        }
+      } else {
+        let query = supabaseAdmin
+          .from('churches')
+          .select('id, name')
+          .ilike('name', contactChurchRaw);
+        if (contactCountry) {
+          query = query.eq('country', contactCountry);
+        }
+        const { data } = await query.maybeSingle();
+        if (data?.id) existing = data;
+      }
       if (existing?.id) {
         resolvedChurchId = existing.id;
         resolvedChurchName = existing.name || contactChurchRaw;

@@ -897,6 +897,12 @@ export class RegistrationModal {
             return;
         }
 
+        const isVirtual = this.selectedChurch?.id === 'virtual' || this.selectedChurch?.isVirtual;
+        if (isVirtual && !this.countryInput?.value?.trim()) {
+            this.showAlert('Escribe el país o región para Maná Virtual');
+            return;
+        }
+
         const paymentOption = document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
         if (paymentOption === 'DEPOSIT') {
             const depositError = this.validateDepositSchedule();
@@ -1088,11 +1094,14 @@ export class RegistrationModal {
         this.selectedChurch = church;
         this.selectedChurchDisplay = document.getElementById('selected-church-display');
         this.selectedChurchId = document.getElementById('selected-church-id');
+        const isManual = church.id === 'MANUAL';
+        const isSpecial = Boolean(church.isSpecial) && !isManual;
         if (this.selectedChurchDisplay) {
-            if (church.id === 'MANUAL') {
+            if (isManual) {
                 this.selectedChurchDisplay.textContent = `Manual: ${church.manual_name || church.name}`;
             } else {
-                this.selectedChurchDisplay.textContent = `${church.name} - ${church.city}`;
+                const locationLabel = church.city || church.country || '';
+                this.selectedChurchDisplay.textContent = locationLabel ? `${church.name} - ${locationLabel}` : `${church.name}`;
             }
             this.selectedChurchDisplay.classList.remove('text-slate-400');
             this.selectedChurchDisplay.classList.add('text-[#293C74]', 'font-medium');
@@ -1102,7 +1111,7 @@ export class RegistrationModal {
         }
 
         // Auto-fill city and country
-        if (church.id !== 'MANUAL') {
+        if (!isManual && !isSpecial) {
             if (this.cityInput && church.city) this.cityInput.value = church.city;
             if (this.countryInput && church.country) this.countryInput.value = church.country;
             this.updateCurrencyFromCountry(church.country);

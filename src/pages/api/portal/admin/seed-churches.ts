@@ -3,11 +3,25 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
 import churchesData from '../../../../data/churches.json';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+    const ipCheck = await enforceAdminIp({
+        request,
+        clientAddress,
+        identifier: 'portal.admin.seed-churches',
+        allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+    });
+    if (!ipCheck.ok) {
+        return new Response(JSON.stringify({ error: 'No autorizado' }), {
+            status: 403,
+            headers: { 'content-type': 'application/json' }
+        });
+    }
+
     if (!supabaseUrl || !supabaseKey) {
         return new Response(JSON.stringify({ error: 'Server misconfiguration: Missing DB keys' }), { status: 500 });
     }

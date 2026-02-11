@@ -4,10 +4,11 @@ import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, isAdminRole } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { resolveBaseUrl } from '@lib/url';
-import { normalizeChurchName, normalizeCityName } from '@lib/normalization';
+import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText } from '@lib/validation';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -28,7 +29,20 @@ async function getAdminContext(request: Request) {
   return { ok: true, role: 'superadmin', userId: null };
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.invite',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
       status: 500,
@@ -114,7 +128,7 @@ export const POST: APIRoute = async ({ request }) => {
         .insert({
           name: churchRaw,
           city: normalizeCityName(payload.city || ''),
-          country: sanitizePlainText(payload.country || '', 40) || null,
+          country: normalizeCountryRegion(payload.country || '') || null,
           created_by: ctx.userId,
         })
         .select('id')

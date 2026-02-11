@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -40,7 +41,7 @@ function ilikeValue(value: string | null): string | null {
   return trimmed.includes('%') ? trimmed : `%${trimmed}%`;
 }
 
-export const GET = async ({ request }: APIContext) => {
+export const GET = async ({ request, clientAddress }: APIContext) => {
   if (!validateExport(request)) {
     void logSecurityEvent({
       type: 'webhook_invalid',
@@ -49,6 +50,19 @@ export const GET = async ({ request }: APIContext) => {
     });
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
       status: 401,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'donations.export',
+    allowlistKeys: ['ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
       headers: { 'content-type': 'application/json' },
     });
   }
