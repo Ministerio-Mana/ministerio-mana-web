@@ -673,37 +673,60 @@ export const PUT: APIRoute = async ({ request }) => {
 
   let paymentUpdated = false;
   const paymentId = String(body.payment_id || body.paymentId || '').trim();
+  let paymentRow: { id?: string | null; reference?: string | null } | null = null;
+  if (paymentId) {
+    const { data } = await supabaseAdmin
+      .from('cumbre_payments')
+      .select('id, reference')
+      .eq('id', paymentId)
+      .eq('booking_id', bookingId)
+      .maybeSingle();
+    paymentRow = data ?? null;
+    if (!paymentRow?.id) {
+      return new Response(JSON.stringify({ ok: false, error: 'Pago manual no encontrado' }), { status: 404 });
+    }
+  }
+
   if (paymentAmountInput != null) {
-    if (paymentId) {
-      const { data: paymentRow } = await supabaseAdmin
+    if (!paymentRow?.id) {
+      const { data } = await supabaseAdmin
         .from('cumbre_payments')
-        .select('id, reference, provider')
-        .eq('id', paymentId)
+        .select('id, reference')
         .eq('booking_id', bookingId)
+        .eq('provider', 'manual')
+        .eq('status', 'APPROVED')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
+      paymentRow = data ?? null;
+    }
 
-      if (!paymentRow?.id) {
-        return new Response(JSON.stringify({ ok: false, error: 'Pago manual no encontrado' }), { status: 404 });
-      }
-
-      await supabaseAdmin
+    if (paymentRow?.id) {
+      const now = new Date().toISOString();
+      const { data: updated, error: updateError } = await supabaseAdmin
         .from('cumbre_payments')
         .update({
           amount: paymentAmountInput,
           currency,
-          updated_at: new Date().toISOString(),
+          updated_at: now,
         })
-        .eq('id', paymentRow.id);
+        .eq('id', paymentRow.id)
+        .select('id, reference');
 
-      if (paymentRow.reference) {
+      if (updateError) {
+        return new Response(JSON.stringify({ ok: false, error: 'No se pudo actualizar el pago' }), { status: 500 });
+      }
+
+      const updatedReference = updated?.[0]?.reference || paymentRow.reference;
+      if (updatedReference) {
         await supabaseAdmin
           .from('donations')
           .update({
             amount: paymentAmountInput,
             currency,
-            updated_at: new Date().toISOString(),
+            updated_at: now,
           })
-          .eq('reference', paymentRow.reference)
+          .eq('reference', updatedReference)
           .eq('provider', 'physical');
       }
       paymentUpdated = true;
