@@ -10,8 +10,8 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     <!-- Modal Header -->
     <div class="p-6 md:p-8 border-b border-slate-100 flex items-start justify-between bg-white z-10 rounded-t-[2rem]">
       <div>
-        <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Nueva Inscripción</p>
-        <h2 class="text-2xl font-display font-bold text-[#293C74]">Registrar Participante</h2>
+        <p id="manual-modal-subtitle" class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Nueva Inscripción</p>
+        <h2 id="manual-modal-title" class="text-2xl font-display font-bold text-[#293C74]">Registrar Participante</h2>
       </div>
       <button id="btn-close-manual-modal" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -139,7 +139,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                <button type="button" id="btn-cancel-companion" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                </button>
-               <h4 class="text-xs font-bold text-[#293C74] uppercase tracking-widest mb-2">Nuevo Acompañante</h4>
+               <h4 id="companion-form-title" class="text-xs font-bold text-[#293C74] uppercase tracking-widest mb-2">Nuevo Acompañante</h4>
               
               <!-- Document Info -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -181,6 +181,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               <div class="space-y-2">
                   <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Nombre Completo</label>
                   <input type="text" id="companion-name" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="Nombre del acompañante">
+              </div>
+
+              <div class="space-y-2">
+                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Email <span class="text-slate-400 font-normal normal-case">(Opcional)</span></label>
+                  <input type="email" id="companion-email" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="correo@ejemplo.com">
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -400,7 +405,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
 
             <div class="mt-6 space-y-3">
               <button type="button" id="btn-cancel-manual-reg" class="w-full py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors font-bold">Cancelar</button>
-              <button type="submit" class="w-full bg-gradient-to-r from-brand-teal to-[#4CC9E0] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-transform hover:-translate-y-0.5">
+              <button id="btn-submit-manual-reg" type="submit" class="w-full bg-gradient-to-r from-brand-teal to-[#4CC9E0] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-transform hover:-translate-y-0.5">
                 Registrar Grupo
               </button>
             </div>

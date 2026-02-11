@@ -310,7 +310,7 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
 
   const { data: participants } = await supabaseAdmin
     .from('cumbre_participants')
-    .select('id, booking_id, full_name, relationship, birthdate, gender, nationality, document_type, document_number, diet_type, package_type')
+    .select('id, booking_id, full_name, relationship, birthdate, gender, nationality, document_type, document_number, diet_type, package_type, email')
     .in('booking_id', bookingIds);
 
   let paymentQuery = supabaseAdmin
@@ -451,7 +451,7 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
         sexo: gender,
         pais_origen: nationality,
         telefono: booking?.contact_phone ?? '',
-        email: booking?.contact_email ?? '',
+        email: participant.email ?? booking?.contact_email ?? '',
         alimentacion: diet,
         tipo_alojamiento: lodging,
         iglesia_final: iglesiaFinal,

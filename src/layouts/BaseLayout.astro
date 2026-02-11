@@ -3,6 +3,7 @@ import SEO from '@components/SEO.astro';
 import Header from '@components/Header.astro';
 import Footer from '@components/Footer.astro';
 import '../styles/global.css';
+import appModalScript from '../scripts/app-modal.js?url';
 
 const {
   title,
@@ -16,7 +17,6 @@ const {
   disableSmoothScroll = true,
 } = Astro.props;
 const cspNonce = Astro.locals?.cspNonce;
-const appModalScript = new URL('../scripts/app-modal.js', import.meta.url);
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? import.meta.env.SUPABASE_URL;
 let supabaseConnectSrc = '';
 if (supabaseUrl) {

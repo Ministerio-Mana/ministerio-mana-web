@@ -13,6 +13,13 @@ export class RegistrationModal {
         this.paymentOptionBackup = null;
         this.idempotencyKey = null;
         this.lastSubmissionSignature = null;
+        this.editingCompanionId = null;
+        this.isEditMode = false;
+        this.editBookingId = null;
+        this.editPaymentId = null;
+        this.defaultModalTitle = 'Registrar Participante';
+        this.defaultModalSubtitle = 'Nueva Inscripción';
+        this.defaultSubmitLabel = 'Registrar Grupo';
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -35,6 +42,9 @@ export class RegistrationModal {
 
     init() {
         this.cacheDOM();
+        if (this.modalTitle?.textContent) this.defaultModalTitle = this.modalTitle.textContent;
+        if (this.modalSubtitle?.textContent) this.defaultModalSubtitle = this.modalSubtitle.textContent;
+        if (this.submitBtn?.textContent) this.defaultSubmitLabel = this.submitBtn.textContent;
         this.bindEvents();
         this.updateLeaderParticipant();
         if (this.countryInput) {
@@ -55,6 +65,9 @@ export class RegistrationModal {
         this.form = document.getElementById('manual-registration-form');
         this.closeBtn = document.getElementById('btn-close-manual-modal');
         this.cancelBtn = document.getElementById('btn-cancel-manual-reg');
+        this.modalTitle = document.getElementById('manual-modal-title');
+        this.modalSubtitle = document.getElementById('manual-modal-subtitle');
+        this.submitBtn = document.getElementById('btn-submit-manual-reg');
 
         // Leader fields
         this.leaderName = document.getElementById('reg-leader-name');
@@ -72,12 +85,14 @@ export class RegistrationModal {
         this.companionDocType = document.getElementById('companion-doc-type');
         this.companionDocNumber = document.getElementById('companion-doc-number');
         this.companionName = document.getElementById('companion-name');
+        this.companionEmail = document.getElementById('companion-email');
         this.companionAge = document.getElementById('companion-age');
         this.companionPackage = document.getElementById('companion-package');
         this.companionMenu = document.getElementById('companion-menu');
         this.companionBirthdate = document.getElementById('companion-birthdate');
         this.companionGender = document.getElementById('companion-gender');
         this.companionPackageContainer = document.getElementById('companion-package-container');
+        this.companionFormTitle = document.getElementById('companion-form-title');
 
         this.btnSaveCompanion = document.getElementById('btn-save-companion');
         this.btnCancelCompanion = document.getElementById('btn-cancel-companion');
@@ -197,6 +212,8 @@ export class RegistrationModal {
                 // Prevent default submit behavior
                 e.preventDefault();
                 e.stopPropagation();
+                this.editingCompanionId = null;
+                this.setCompanionFormMode(false);
                 this.showCompanionForm();
             });
         } else {
@@ -296,6 +313,30 @@ export class RegistrationModal {
         this.alertModal?.classList.remove('flex');
     }
 
+    setModalMode(isEditing, bookingRef = '') {
+        this.isEditMode = isEditing;
+        if (this.modalTitle) {
+            this.modalTitle.textContent = isEditing ? 'Editar Participante' : this.defaultModalTitle;
+        }
+        if (this.modalSubtitle) {
+            const refLabel = bookingRef ? `#${bookingRef}` : '';
+            this.modalSubtitle.textContent = isEditing ? `Edición de reserva ${refLabel}`.trim() : this.defaultModalSubtitle;
+        }
+        if (this.submitBtn) {
+            this.submitBtn.textContent = isEditing ? 'Guardar Cambios' : this.defaultSubmitLabel;
+        }
+        if (this.paymentCustomToggle) {
+            if (isEditing) {
+                this.paymentCustomToggle.checked = true;
+                this.paymentCustomToggle.disabled = true;
+                this.paymentAmountTouched = true;
+            } else {
+                this.paymentCustomToggle.disabled = false;
+            }
+        }
+        this.updatePaymentUI();
+    }
+
     // --- Smart Logic ---
     updateMenuOptions(selectElement, age) {
         if (!selectElement) return;
@@ -392,6 +433,7 @@ export class RegistrationModal {
     showCompanionForm() {
         if (this.addCompanionForm) this.addCompanionForm.classList.remove('hidden');
         if (this.btnAddCompanion) this.btnAddCompanion.classList.add('hidden');
+        this.setCompanionFormMode(Boolean(this.editingCompanionId));
 
         // Focus first field
         setTimeout(() => {
@@ -403,10 +445,13 @@ export class RegistrationModal {
         if (this.addCompanionForm) this.addCompanionForm.classList.add('hidden');
         if (this.btnAddCompanion) this.btnAddCompanion.classList.remove('hidden');
         this.clearCompanionForm();
+        this.editingCompanionId = null;
+        this.setCompanionFormMode(false);
     }
 
     clearCompanionForm() {
         if (this.companionName) this.companionName.value = '';
+        if (this.companionEmail) this.companionEmail.value = '';
         if (this.companionAge) this.companionAge.value = '';
 
         if (this.companionDocNumber) this.companionDocNumber.value = '';
@@ -428,6 +473,41 @@ export class RegistrationModal {
         }
     }
 
+    setCompanionFormMode(isEditing) {
+        if (this.companionFormTitle) {
+            this.companionFormTitle.textContent = isEditing ? 'Editar Acompañante' : 'Nuevo Acompañante';
+        }
+        if (this.btnSaveCompanion) {
+            this.btnSaveCompanion.textContent = isEditing ? 'Actualizar Acompañante' : 'Confirmar Acompañante';
+        }
+    }
+
+    startCompanionEdit(participantId) {
+        const participant = this.participants.find(p => p.id === participantId && !p.isLeader);
+        if (!participant) return;
+        this.editingCompanionId = participantId;
+        this.showCompanionForm();
+
+        if (this.companionDocType) this.companionDocType.value = participant.document_type || 'TI';
+        if (this.companionDocNumber) this.companionDocNumber.value = participant.document_number || '';
+        if (this.companionName) this.companionName.value = participant.name || '';
+        if (this.companionEmail) this.companionEmail.value = participant.email || '';
+        if (this.companionAge) this.companionAge.value = participant.age != null ? String(participant.age) : '';
+        if (this.companionBirthdate) this.companionBirthdate.value = participant.birthdate || '';
+        if (this.companionGender) this.companionGender.value = participant.gender || '';
+
+        const age = this.parseAge(this.companionAge?.value);
+        this.updateMenuOptions(this.companionMenu, age);
+        if (this.companionMenu) {
+            this.companionMenu.value = this.normalizeMenuValue(participant.menu) || this.companionMenu.value;
+        }
+
+        if (this.companionPackage) {
+            this.companionPackage.value = participant.packageType === 'no_lodging' ? 'no_lodging' : 'lodging';
+        }
+        this.updateCompanionPackageVisibility();
+    }
+
     updateCompanionPackageVisibility() {
         const age = this.parseAge(this.companionAge?.value);
         const isChild = age !== null && age <= 10;
@@ -444,6 +524,7 @@ export class RegistrationModal {
         const docType = this.companionDocType?.value || 'TI';
         const docNumber = this.companionDocNumber?.value?.trim();
         const name = this.companionName?.value?.trim();
+        const email = this.companionEmail?.value?.trim() || '';
         const age = this.parseAge(this.companionAge?.value);
         const packageChoice = this.companionPackage?.value || 'lodging';
         const menuChoice = this.normalizeMenuValue(this.companionMenu?.value) || 'TRADICIONAL';
@@ -475,20 +556,39 @@ export class RegistrationModal {
             return;
         }
 
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            this.showAlert('El email del acompañante no es válido');
+            return;
+        }
+
         const packageType = this.getPackageTypeFromAge(age, packageChoice);
 
-        this.participants.push({
+        const participantPayload = {
             id: Date.now(),
             document_type: docType,
             document_number: docNumber,
             name,
+            email,
             age,
             packageType,
             menu: menuChoice,
             birthdate,
             gender,
             isLeader: false
-        });
+        };
+
+        if (this.editingCompanionId) {
+            const existing = this.participants.find(p => p.id === this.editingCompanionId && !p.isLeader);
+            if (existing) {
+                Object.assign(existing, participantPayload, { id: this.editingCompanionId });
+            } else {
+                this.participants.push(participantPayload);
+            }
+            this.editingCompanionId = null;
+            this.setCompanionFormMode(false);
+        } else {
+            this.participants.push(participantPayload);
+        }
 
         this.hideCompanionForm();
         this.renderParticipants();
@@ -521,6 +621,13 @@ export class RegistrationModal {
                     this.removeParticipant(id);
                 });
             });
+
+            this.companionsList.querySelectorAll('.btn-edit-participant').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = parseInt(btn.dataset.participantId);
+                    this.startCompanionEdit(id);
+                });
+            });
         }
 
         // Summary list
@@ -548,6 +655,7 @@ export class RegistrationModal {
         </div>
         <div class="flex items-center gap-3">
           <span class="text-sm font-bold text-[#293C74]">${this.formatPrice(price)}</span>
+          <button type="button" class="btn-edit-participant text-brand-teal hover:text-[#293C74] text-xs underline" data-participant-id="${p.id}">Editar</button>
           <button type="button" class="btn-remove-participant text-red-500 hover:text-red-700 text-xs underline" data-participant-id="${p.id}">Eliminar</button>
         </div>
       </div>
@@ -797,16 +905,25 @@ export class RegistrationModal {
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
 
         if (this.paymentOptionsContainer) {
-            this.paymentOptionsContainer.classList.toggle('hidden', customEnabled);
+            if (this.isEditMode) {
+                this.paymentOptionsContainer.classList.add('hidden');
+            } else {
+                this.paymentOptionsContainer.classList.toggle('hidden', customEnabled);
+            }
         }
         const selected = document.querySelector('input[name="payment_option"]:checked');
         const value = selected?.value || 'FULL';
 
-        if (this.installmentDetails) {
-            this.installmentDetails.classList.toggle('hidden', value !== 'INSTALLMENTS');
-        }
-        if (this.depositSchedule) {
-            this.depositSchedule.classList.toggle('hidden', value !== 'DEPOSIT');
+        if (customEnabled || this.isEditMode) {
+            if (this.installmentDetails) this.installmentDetails.classList.add('hidden');
+            if (this.depositSchedule) this.depositSchedule.classList.add('hidden');
+        } else {
+            if (this.installmentDetails) {
+                this.installmentDetails.classList.toggle('hidden', value !== 'INSTALLMENTS');
+            }
+            if (this.depositSchedule) {
+                this.depositSchedule.classList.toggle('hidden', value !== 'DEPOSIT');
+            }
         }
 
         if (value === 'INSTALLMENTS') {
@@ -931,15 +1048,17 @@ export class RegistrationModal {
         }
 
         const formData = this.collectFormData();
-        const submissionSignature = JSON.stringify(formData);
-        if (!this.idempotencyKey || this.lastSubmissionSignature !== submissionSignature) {
-            this.idempotencyKey = this.generateIdempotencyKey();
-            this.lastSubmissionSignature = submissionSignature;
+        if (!this.isEditMode) {
+            const submissionSignature = JSON.stringify(formData);
+            if (!this.idempotencyKey || this.lastSubmissionSignature !== submissionSignature) {
+                this.idempotencyKey = this.generateIdempotencyKey();
+                this.lastSubmissionSignature = submissionSignature;
+            }
+            formData.idempotencyKey = this.idempotencyKey;
         }
-        formData.idempotencyKey = this.idempotencyKey;
 
         if (this.statusMsg) {
-            this.statusMsg.textContent = 'Registrando grupo...';
+            this.statusMsg.textContent = this.isEditMode ? 'Guardando cambios...' : 'Registrando grupo...';
             this.statusMsg.className = 'mt-4 text-sm text-center text-white/60';
         }
 
@@ -948,8 +1067,11 @@ export class RegistrationModal {
                 ? window.portalAuthHeaders
                 : {};
 
-            const response = await fetch('/api/portal/iglesia/register-group', {
-                method: 'POST',
+            const endpoint = this.isEditMode ? '/api/portal/iglesia/booking' : '/api/portal/iglesia/register-group';
+            const method = this.isEditMode ? 'PUT' : 'POST';
+
+            const response = await fetch(endpoint, {
+                method,
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
@@ -964,10 +1086,14 @@ export class RegistrationModal {
                 throw new Error(result.error || 'Error al registrar el grupo');
             }
 
-            this.showAlert('Grupo registrado exitosamente', 'success', '¡Registro Exitoso!');
+            if (this.isEditMode) {
+                this.showAlert('Cambios guardados correctamente', 'success', 'Actualización Exitosa');
+            } else {
+                this.showAlert('Grupo registrado exitosamente', 'success', '¡Registro Exitoso!');
+            }
 
             if (this.statusMsg) {
-                this.statusMsg.textContent = '✓ Grupo registrado exitosamente';
+                this.statusMsg.textContent = this.isEditMode ? '✓ Cambios guardados' : '✓ Grupo registrado exitosamente';
                 this.statusMsg.className = 'mt-4 text-sm text-center text-green-400 font-bold';
             }
 
@@ -978,7 +1104,7 @@ export class RegistrationModal {
 
         } catch (error) {
             console.error('Registration error:', error);
-            this.showAlert(`Error al registrar: ${error.message}`);
+            this.showAlert(`${this.isEditMode ? 'Error al actualizar' : 'Error al registrar'}: ${error.message}`);
             if (this.statusMsg) {
                 this.statusMsg.textContent = `Error: ${error.message}`;
                 this.statusMsg.className = 'mt-4 text-sm text-center text-red-400';
@@ -1007,7 +1133,7 @@ export class RegistrationModal {
             ? (this.selectedChurch.manual_name || this.selectedChurch.name)
             : (isSpecialChurch ? this.selectedChurch?.name : null);
 
-        return {
+        const payload = {
             church_id: churchId,
             manual_church_name: manualChurchName,
             country: this.countryInput?.value || 'Colombia',
@@ -1042,6 +1168,100 @@ export class RegistrationModal {
             currency: this.currency,
             payment_amount: paymentAmount,
         };
+        if (this.isEditMode && this.editBookingId) {
+            payload.booking_id = this.editBookingId;
+        }
+        if (this.isEditMode && this.editPaymentId) {
+            payload.payment_id = this.editPaymentId;
+        }
+        return payload;
+    }
+
+    loadBookingForEdit(payload) {
+        if (!payload?.booking) return;
+        this.reset();
+        this.isEditMode = true;
+        this.editBookingId = payload.booking.id || null;
+        this.editPaymentId = payload.payment?.id || null;
+        const bookingRef = (payload.booking.id || '').slice(0, 8).toUpperCase();
+        this.setModalMode(true, bookingRef);
+
+        const booking = payload.booking;
+        const participantsRaw = Array.isArray(payload.participants) ? payload.participants : [];
+        const participants = participantsRaw.map((item, index) => {
+            const birthdate = item.birthdate || '';
+            const age = item.age != null ? Number(item.age) : this.getAgeFromBirthdate(birthdate);
+            const packageType = item.package_type || item.packageType || (age != null ? this.getPackageTypeFromAge(age, 'lodging') : 'lodging');
+            return {
+                id: item.id || `${Date.now()}-${index}`,
+                name: item.full_name || item.name || '',
+                email: item.email || '',
+                age: age ?? null,
+                packageType,
+                menu: item.diet_type || item.menu || 'TRADICIONAL',
+                birthdate,
+                gender: item.gender || '',
+                document_type: item.document_type || '',
+                document_number: item.document_number || '',
+                isLeader: String(item.relationship || '').toLowerCase() === 'responsable',
+            };
+        });
+
+        if (!participants.some((p) => p.isLeader) && participants.length) {
+            participants[0].isLeader = true;
+        }
+
+        this.participants = participants;
+
+        const leader = participants.find((p) => p.isLeader) || participants[0] || null;
+        if (leader) {
+            if (this.leaderName) this.leaderName.value = booking.contact_name || leader.name || '';
+            const leaderAge = leader.age != null ? leader.age : this.getAgeFromBirthdate(leader.birthdate || '');
+            if (this.leaderAge && leaderAge != null) this.leaderAge.value = String(leaderAge);
+            if (this.leaderBirthdate) this.leaderBirthdate.value = leader.birthdate || '';
+            if (this.leaderGender) this.leaderGender.value = leader.gender || '';
+            if (this.leaderMenu) {
+                const menuValue = this.normalizeMenuValue(leader.menu) || 'TRADICIONAL';
+                this.updateMenuOptions(this.leaderMenu, leader.age);
+                this.leaderMenu.value = menuValue;
+            }
+            if (this.leaderPackage) {
+                this.leaderPackage.value = leader.packageType === 'no_lodging' ? 'no_lodging' : 'lodging';
+            }
+            const docType = booking.contact_document_type || leader.document_type || 'CC';
+            const docNumber = booking.contact_document_number || leader.document_number || '';
+            const email = booking.contact_email || leader.email || '';
+            const phone = booking.contact_phone || '';
+            const docTypeInput = document.getElementById('reg-leader-doc-type');
+            const docNumberInput = document.getElementById('reg-leader-doc-number');
+            const emailInput = document.getElementById('reg-leader-email');
+            const phoneInput = document.getElementById('reg-leader-phone');
+            if (docTypeInput) docTypeInput.value = docType;
+            if (docNumberInput) docNumberInput.value = docNumber;
+            if (emailInput) emailInput.value = email;
+            if (phoneInput) phoneInput.value = phone;
+        }
+
+        const currency = this.normalizeCurrency(booking.currency || this.currency);
+        this.currencyOverride = true;
+        this.currency = currency;
+        if (this.currencySelect) this.currencySelect.value = currency;
+
+        if (payload.church) {
+            this.setChurch(payload.church);
+        }
+
+        if (this.countryInput) this.countryInput.value = booking.contact_country || '';
+        if (this.cityInput) this.cityInput.value = booking.contact_city || '';
+
+        const paidAmount = payload.payment?.amount ?? booking.total_paid ?? null;
+        if (this.paymentAmountInput) {
+            this.paymentAmountInput.value = paidAmount != null ? this.formatInputAmount(Number(paidAmount)) : '';
+        }
+        this.paymentAmountTouched = true;
+
+        this.updateLeaderParticipant();
+        this.open();
     }
 
     // Modal Controls
@@ -1069,6 +1289,10 @@ export class RegistrationModal {
         this.leaderDraft = null;
         this.idempotencyKey = null;
         this.lastSubmissionSignature = null;
+        this.editingCompanionId = null;
+        this.editBookingId = null;
+        this.editPaymentId = null;
+        this.isEditMode = false;
         this.form?.reset();
 
         // Reset menus
@@ -1088,6 +1312,7 @@ export class RegistrationModal {
             this.selectedChurchDisplay.classList.add('text-slate-400');
             this.selectedChurchDisplay.classList.remove('text-[#293C74]', 'font-medium');
         }
+        this.setModalMode(false);
     }
 
     setChurch(church) {

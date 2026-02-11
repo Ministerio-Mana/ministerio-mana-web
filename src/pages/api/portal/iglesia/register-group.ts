@@ -48,6 +48,12 @@ function normalizeCurrency(raw: unknown): 'COP' | 'USD' | null {
     return null;
 }
 
+function normalizeEmail(raw: unknown): string | null {
+    const value = String(raw || '').trim().toLowerCase();
+    if (!value) return null;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : null;
+}
+
 function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number | null {
     if (raw === null || raw === undefined || raw === '') return null;
     if (typeof raw === 'number') {
@@ -171,6 +177,14 @@ export const POST: APIRoute = async ({ request }) => {
     const participantsRaw = Array.isArray(body.participants) ? body.participants : [];
     if (participantsRaw.length === 0) {
         return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos un participante' }), { status: 400 });
+    }
+
+    const invalidEmail = participantsRaw.find((participant: any) => {
+        const rawEmail = participant?.email ?? participant?.email_address ?? participant?.emailAddress;
+        return rawEmail && !normalizeEmail(rawEmail);
+    });
+    if (invalidEmail) {
+        return new Response(JSON.stringify({ ok: false, error: 'Email de participante inválido' }), { status: 400 });
     }
 
     const leader = participantsRaw.find((p: any) => p?.isLeader) || participantsRaw[0];
@@ -533,6 +547,7 @@ export const POST: APIRoute = async ({ request }) => {
             birthdate: participant.extra?.birthdate || null,
             gender: sanitizePlainText(participant.extra?.gender ?? '', 20) || null,
             diet_type: sanitizePlainText(participant.extra?.menu ?? '', 40) || null,
+            email: normalizeEmail(participant.extra?.email) || null,
         }));
 
         const { error: participantError } = await supabaseAdmin

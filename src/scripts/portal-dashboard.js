@@ -705,7 +705,7 @@ async function loadDashboardData(authResult) {
       // but Sidebar is now the primary navigation.
       // adminUsersCard?.classList.remove('hidden'); // Legacy logic?
       syncWrapper?.classList.remove('hidden');
-      loadAdminUsers();
+      loadAdminUsers(portalAuthHeaders);
     }
 
     // Calculations for highlights
@@ -1399,6 +1399,8 @@ function renderChurchBookings(list, meta) {
     const safeContactLabel = safeText(contactLabel);
     const createdLabel = formatDateTime(item.created_at);
     const safeCreatedLabel = safeText(createdLabel);
+    const safeItemId = safeAttr(item.id || '');
+    const canEdit = item.source === 'portal-iglesia';
 
     card.innerHTML = `
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1435,8 +1437,24 @@ function renderChurchBookings(list, meta) {
          </span>
          <span>${safeCreatedLabel}</span>
       </div>
+      ${canEdit ? `
+        <div class="mt-4 flex justify-end">
+          <button type="button" class="btn-edit-booking px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
+            Editar
+          </button>
+        </div>
+      ` : ''}
     `;
     churchBookingsList.appendChild(card);
+  });
+
+  churchBookingsList.querySelectorAll('.btn-edit-booking').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const bookingId = btn.dataset.bookingId;
+      if (bookingId) {
+        openEditBookingModal(bookingId);
+      }
+    });
   });
 
   // Update stats after rendering
@@ -1447,6 +1465,59 @@ function updateChurchBookingsView() {
   const meta = buildChurchBookingsMeta();
   const filtered = filterChurchBookings(churchBookingsData, meta);
   renderChurchBookings(filtered, meta);
+}
+
+function resolveBookingChurchForEdit(booking) {
+  if (!booking) return null;
+  if (booking.church_id) {
+    const match = (portalChurchesCatalog || []).find((church) => church.id === booking.church_id);
+    if (match) return match;
+  }
+  const manualName = (booking.contact_church || '').toString().trim();
+  if (!manualName) {
+    return { id: 'none', name: 'No asisto a ninguna iglesia', city: '', country: '', isSpecial: true };
+  }
+  if (/virtual/i.test(manualName)) {
+    return {
+      id: 'virtual',
+      name: 'Ministerio Maná Virtual',
+      city: '',
+      country: booking.contact_country || '',
+      isSpecial: true,
+      isVirtual: true,
+    };
+  }
+  return {
+    id: 'MANUAL',
+    name: manualName,
+    manual_name: manualName,
+    city: 'Manual',
+    country: 'Manual',
+    isSpecial: true,
+    isManual: true,
+  };
+}
+
+async function openEditBookingModal(bookingId) {
+  if (!advancedRegistrationModal) {
+    showPortalAlert('El formulario de edición aún no está listo. Intenta nuevamente.', { title: 'Atención' });
+    return;
+  }
+  try {
+    const res = await fetch(`/api/portal/iglesia/booking?bookingId=${encodeURIComponent(bookingId)}`, {
+      headers: portalAuthHeaders,
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || 'No se pudo cargar el registro.');
+    }
+    const church = resolveBookingChurchForEdit(data.booking);
+    advancedRegistrationModal.loadBookingForEdit({ ...data, church });
+  } catch (err) {
+    console.error(err);
+    showPortalAlert(err.message || 'No se pudo abrir la edición.');
+  }
 }
 
 function parseDateInput(value) {
