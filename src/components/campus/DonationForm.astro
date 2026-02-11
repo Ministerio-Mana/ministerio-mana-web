@@ -1,15 +1,19 @@
 ---
 interface Props {
   missionaryName: string;
-  wompiLink?: string;
-  stripePriceId?: string;
-  slug?: string;
+  slug: string;
+  country?: string;
 }
 
-const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
+const { slug, missionaryName, country = 'CO' } = Astro.props;
+const isColombia = country.toUpperCase() === 'CO';
+const defaultCurrency = isColombia ? 'COP' : 'USD';
 ---
 
-<div class="donation-widget relative p-6 transition-all group overflow-visible" data-wompi={wompiLink} data-stripe={stripePriceId} data-slug={slug}>
+<div class="donation-widget relative p-6 transition-all group overflow-visible"
+     data-slug={slug}
+     data-missionary-name={missionaryName}
+     data-country={country}>
   
   <!-- Title -->
   <div class="mb-6 text-center">
@@ -32,8 +36,13 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
           <label class="block text-[10px] font-intro uppercase text-gray-400 mb-2 tracking-widest">Moneda</label>
         <div class="relative">
             <select class="currency-select select-organic w-full appearance-none text-[#001B3A] font-intro text-sm py-2.5 px-4 pr-8 focus:outline-none cursor-pointer">
-                <option value="COP">🇨🇴 Peso Colombiano (COP)</option>
-                <option value="USD">🇺🇸 Dólar (USD)</option>
+                {isColombia ? (
+                    <><option value="COP">🇨🇴 Peso Colombiano (COP)</option>
+                    <option value="USD">🇺🇸 Dólar (USD)</option></>
+                ) : (
+                    <><option value="USD">🇺🇸 Dólar (USD)</option>
+                    <option value="COP">🇨🇴 Peso Colombiano (COP)</option></>
+                )}
             </select>
             <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#001B3A]">
                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
@@ -47,18 +56,31 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
       </div>
 
       <!-- Custom Amount — organic border -->
-      <div class="relative mb-8 group-input select-organic p-2">
+      <div class="relative mb-6 group-input select-organic p-2">
         <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
         <input type="number" 
                class="custom-amount-input w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-6 pr-4 focus:outline-none text-center placeholder-gray-300"
                placeholder="Otro..." min="0">
       </div>
 
+      <!-- Donor Info (inline, shown in same form) -->
+      <div class="donor-info-section hidden mb-6 space-y-3">
+        <p class="text-center text-[10px] font-intro uppercase text-gray-400 tracking-widest mb-2">Tus datos para el pago</p>
+        <input type="text" class="donor-name-input donor-input-single w-full" placeholder="Nombre completo *">
+        <input type="email" class="donor-email-input donor-input-single w-full" placeholder="tucorreo@email.com *">
+        <input type="tel" class="donor-phone-input donor-input-single w-full" placeholder="Teléfono / WhatsApp">
+      </div>
+
+      <!-- Error message -->
+      <div class="donation-error hidden text-center mb-3">
+        <p class="text-red-600 text-xs font-intro-reg bg-red-50 py-2 px-3 rounded-lg inline-block"></p>
+      </div>
+
       <!-- CTA Button — scribble style -->
-      <a href={wompiLink || '#'} target="_blank" class="donate-cta btn-scribble block w-full py-4 bg-[#001B3A] text-white font-intro text-center text-sm uppercase tracking-widest flex items-center justify-center gap-2">
+      <button type="button" class="donate-cta btn-scribble block w-full py-4 bg-[#001B3A] text-white font-intro text-center text-sm uppercase tracking-widest flex items-center justify-center gap-2 opacity-50 pointer-events-none">
         <span class="cta-text">Donar Ahora</span>
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-      </a>
+      </button>
       
       <p class="text-[10px] text-center text-gray-400 mt-4 font-intro-reg tracking-wide flex items-center justify-center gap-2">
          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -108,5 +130,26 @@ const { wompiLink, stripePriceId, slug, missionaryName } = Astro.props;
     .group-input:focus-within {
         border-color: #2DD4BF;
         box-shadow: 0 4px 12px rgba(45, 212, 191, 0.2);
+    }
+
+    /* Single donation form inputs */
+    .donor-input-single {
+        background: #ffffff;
+        color: #001B3A;
+        font-family: 'Intro', sans-serif;
+        font-weight: 400;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+        border: 2px solid #001B3A;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        outline: none;
+    }
+    .donor-input-single::placeholder {
+        color: rgba(0, 27, 58, 0.35);
+    }
+    .donor-input-single:focus {
+        border-color: #2DD4BF;
+        box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15);
     }
 </style>

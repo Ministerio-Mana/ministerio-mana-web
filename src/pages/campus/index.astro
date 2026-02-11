@@ -240,9 +240,8 @@ const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
                     
                     <DonationForm 
                         missionaryName={m.nombre.split(' ')[0]}
-                        wompiLink={m.wompiLink}
-                        stripePriceId={m.stripePriceId}
                         slug={m.slug}
+                        country={country}
                     />
                 </div>
             </div>
