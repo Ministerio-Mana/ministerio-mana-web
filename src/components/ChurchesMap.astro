@@ -2,20 +2,99 @@
 const id = 'churches-map';
 ---
 
-<div
-  id={id}
-  class="w-full h-[420px] md:h-[480px] rounded-3xl bg-slate-50 border border-slate-200 overflow-hidden"
->
+<div class="relative w-full aspect-[16/9] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none">
+  
+  <!-- Map Container -->
+  <div id="map-container" class="absolute inset-0 w-full h-full transition-transform duration-700 ease-out will-change-transform origin-center">
+    <svg 
+      id="world-svg"
+      viewBox="0 0 1008 651" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+      class="w-full h-full"
+    >
+      <defs>
+        <!-- Dot Pattern -->
+        <pattern id="dot-pattern" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1.5" fill="#3F58A1" class="text-brand-medium group-hover:text-brand-teal transition-colors duration-500" fill-opacity="0.6" />
+        </pattern>
+        
+        <!-- Mask to apply dot pattern only to landmasses -->
+        <mask id="world-mask">
+           <!-- Simplified World Map Path (Miller Projection approx) -->
+           <path d="M259.6,180.7l-4.2,14.6l-5.8,1.2l0.4,12.7l13.1,19.2l12.7,6.9l22.7,5.4l11.5-6.9l8.8-13.5l1.5-12.7l-4.6-13.8l-12.3-10l-20.4-3.5L259.6,180.7L259.6,180.7z
+           M424,198l-7.3,16.2l3.1,12.3l10.8,3.8l10.8-3.1l6.2-11.2l-3.5-13.1l-10.4-6.5L424,198L424,198z
+           M630.9,132.3l-8.5,4.6l-4.6,12.3l6.2,14.6l15.4,6.2l14.6-6.2l5.4-13.8l-5.4-13.1l-13.1-5.4L630.9,132.3L630.9,132.3z
+           M767.1,146.9l-13.1,8.5l-3.8,12.3l7.7,13.8l16.2,2.3l12.3-8.5l2.3-13.8l-8.5-12.3l-13.1-2.3H767.1L767.1,146.9z
+           M167.3,109.2l-5.4,12.3l1.5,10.8l10.8,9.2L185,137l6.9-8.5l-0.8-10.8L180,105L167.3,109.2L167.3,109.2z
+           M953.1,438.5l-12.3,10l-1.5,12.3l10,14.6l16.9,5.4l15.4-6.9l4.6-13.8l-6.9-15.4l-14.6-6.2L953.1,438.5L953.1,438.5z
+           M828.6,449.2l-14.6,3.8l-5.4,13.8l6.9,16.2l16.2,6.9l16.9-5.4l5.4-15.4l-6.9-14.6l-16.2-5.4H828.6L828.6,449.2z
+           M888.6,370l-8.5,12.3l1.5,13.8l12.3,9.2l15.4-0.8l10-10l0-13.8l-10.8-10.8l-14.6-1.5L888.6,370L888.6,370z
+           M255,273L255,273L255,273c-6.2-7.8-16.7-16-25.8-21.5c-6.8-4.1-34.9-19-48.4-23.3c-28.7-9.1-84-25.3-95.2-13
+           c-6.4,7-1.5,23.3,4.4,47.8c1.3,5.4,2.9,10.9,4.8,16.5c8.3,24,24.1,64.4,23.9,65.3c-0.1,0.6-0.3,1.3-0.5,2.1
+           c-3,11-13.6,50.1-13.2,56.7c0.2,3.1,2.8,4.7,6.3,6.8c15.2,9.1,42.5,25.4,59.3,28.8c5,1,22.2,2.7,28.3-0.7
+           c5.2-2.9,9.4-20.7,11.3-33.8l0.4-2.4c3.2-22.1,3.4-30.8,14.1-57.9c4.2-10.7,8.6-21.6,18.4-46.3c1.7-4.3,3.7-9.4,5.9-15.1
+           C253.9,271.9,255.9,274.2,255,273z
+           M297.7,288.5c1.1,0,2.1,0.1,3.2,0.2l0.9,0.1c11.3,1.6,23.7,18.6,33.1,35.2c19.1,33.8,30.3,57,30.3,57.1
+           c5.5,11.3,6.2,16.7,2.3,19.3c-2.3,1.5-6.5,1.2-15.2-0.8c-10.3-2.3-31.5-7.1-43-2.8c-12,4.5-8.4,23.9-6.3,35.4l0.1,0.6
+           c2.8,15.2,5.2,28.7,0.3,35.1c-1.8,2.3-5.3,3.4-9.8,2.7c-9.1-1.3-21.9-9.5-27.1-14.9c-8.9-9.4-7.5-34.9-6.4-53.5l0.1-1.2
+           c1-17,1.8-31.4-8.6-32.9c-11.8-1.7-27.4,19.2-37.4,32.6l-1.3,1.7c-7.9,10.6-13.4,17.9-18.7,15.1c-3.2-1.7-4.1-6.1-4.7-11.6
+           c-0.2-1.9-0.4-4-0.6-6.4c-1.3-15.4-3.5-40-0.6-58.4c1.6-9.9,4.4-17.7,8.3-23.2C218.4,286,268.4,288.5,297.7,288.5z
+           M559,207.6c-18.8,11.8-49.3,30.2-61.9,50c-7.5,11.7-9.2,30.4-11.7,58.7l-0.2,2.6c-2.5,27.8-3.9,43.3,7.5,63.1
+           c10.4,18.1,34.4,23.4,59.3,28.8c42.8,9.4,59.8,25.4,61.9,35.9c0.9,4.4-0.6,10.1-2.9,19c-1.5,5.6-3.2,12.3-4.2,19.3
+           c-1.8,12.2,1.3,24.1,8.6,32.6c11.7,13.5,33.1,17.2,46.3,19.5l2.6,0.4c9.9,1.7,17.7,3.1,23.2-1.3c8-6.4,6.4-38.3,5.4-58.2
+           l-0.1-1.2c-1.7-34.6-2.5-50.6,18.9-63c22.8-13.2,50.6,10.1,68.4,25.1l1.7,1.4c14.6,12.3,23.9,20.1,31.7,13.8
+           c3-2.4,3.7-6.8,4.2-12.7c0.2-1.7,0.3-3.6,0.5-5.6c1.6-20.4,4.2-53.1-6.5-77.5c-11.9-27.1-39.2-44.5-66.5-50.4
+           c-30.8-6.7-52.9-22.3-64-41.5c-8.9-15.4-9.3-32-9.6-42.9C662.6,220.6,609.1,176.1,559,207.6z
+           M842.1,83.8c-14.7,6.4-32.9,21.5-44.5,41.6c-4.9,8.5-4.4,23.3-3.9,38.2l0.1,1.8c0.8,26.5,1.2,41-10.3,55.8
+           c-11.1,14.3-31.5,17-51.9,19.6l-3.3,0.4c-35.3,4.5-47.7,20.3-49.4,30.3c-0.8,4.5,0.7,10.2,3.1,19.2c1.6,5.8,3.5,12.8,4.4,20
+           c1.7,13.6-2.1,26.7-10.4,36.1c-12,13.5-33.1,10.6-46.3,8.8l-2.6-0.4c-9.9-1.4-17.7-2.5-23.2,2.2c-8,6.8-5.3,38.7-3.6,58.7
+           l0.1,1.2c2.8,32.7,4.5,52.8-17.6,65.6c-21.5,12.4-50.6-10.3-68.4-25.3l-1.7-1.4c-14.6-12.3-23.9-20.1-31.7-13.8
+           c-3.3,2.7-4,7.5-4.5,13.8c-0.2,1.9-0.3,3.8-0.5,5.9c-1.5,19.1-3.7,49.6,7.5,72.4c12.5,25.4,41.3,41.2,70.1,46.2
+           c32.7,5.7,56.2,20.3,67.9,38.2c9.4,14.3,9.8,29.8,10.1,40C774,677,882.3,663.7,929,598c25.8-36.3,26.4-86.8,1.4-118.9
+           c-16.3-20.9-42.5-27-68.8-33.1c-46.3-10.8-63.5-27.8-65.7-38.6c-0.9-4.5,0.9-10.4,3.5-19.6c1.7-6,3.6-13.1,4.7-20.5
+           c2-14.1-1.6-27.8-9.9-37.6C782,316.3,803.1,319,816.3,320.7l2.6,0.3c9.9,1.3,17.7,2.3,23.2-2.3c6.9-5.8,5.1-37.9,4-57.8
+           l-0.1-1.2C843.4,228.8,842.1,213.6,864,200.9c22.8-13.2,50.6,10.1,68.4,25.1l1.7,1.4c14.6,12.3,23.9,20.1,31.7,13.8
+           c2.8-2.3,3.5-6.6,4-12.2c0.1-1.6,0.2-3.4,0.4-5.2c1.5-19.1,4.1-49.6-6.6-72.4C950.4,124.6,898.3,95.5,842.1,83.8z" 
+           fill="white" />
+        </mask>
+      </defs>
+      
+      <!-- Rectangle filled with dot pattern, masked by world map -->
+      <rect width="100%" height="100%" fill="url(#dot-pattern)" mask="url(#world-mask)" />
+
+    </svg>
+    
+    <!-- Pins Container -->
+    <div id="pins-layer" class="absolute inset-0 pointer-events-none">
+      <!-- Pins will be injected here by JS -->
+    </div>
+  </div>
+
+  <!-- Zoom Controls -->
+  <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
+    <button id="zoom-in" class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-teal/50">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    </button>
+    <button id="zoom-out" class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-teal/50">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+    </button>
+  </div>
+
+  <!-- Legend -->
+  <div class="absolute top-6 left-6 pointer-events-none opacity-0 animate-fade-in" style="animation-delay: 0.5s; animation-fill-mode: forwards;">
+    <div class="bg-brand-navy/90 backdrop-blur px-5 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
+      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-1">Ubicaciones</p>
+      <p class="text-xs text-white/80 font-intro-reg">Iglesias Maná Global</p>
+    </div>
+  </div>
+
 </div>
 
-<noscript>
-  <p class="mt-2 text-xs text-slate-500">
-    El mapa requiere JavaScript. Actívalo para ver las ubicaciones de las iglesias.
-  </p>
-</noscript>
-
-<!-- Script bundlado por Vite: inicializa Leaflet -->
 <script>
   import '@scripts/churches-map.js';
 </script>
 
+<style>
+  @keyframes fade-in { to { opacity: 1; } }
+</style>
