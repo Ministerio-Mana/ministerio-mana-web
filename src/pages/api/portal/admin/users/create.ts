@@ -5,21 +5,9 @@ import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
 import { normalizeCountryRegion } from '@lib/normalization';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { listUserMemberships, isAdminRole } from '@lib/portalAuth';
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-    const ipCheck = await enforceAdminIp({
-        request,
-        clientAddress,
-        identifier: 'portal.admin.users.create',
-        allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
-    });
-    if (!ipCheck.ok) {
-        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-            status: 403,
-            headers: { 'content-type': 'application/json' }
-        });
-    }
-
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
     const user = await getUserFromRequest(request);
@@ -38,9 +26,37 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const { role: creatorRole } = creatorProfile;
 
+    if (isAdminRole(creatorRole)) {
+        const ipCheck = await enforceAdminIp({
+            request,
+            clientAddress,
+            identifier: 'portal.admin.users.create',
+            allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+        });
+        if (!ipCheck.ok) {
+            return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+                status: 403,
+                headers: { 'content-type': 'application/json' }
+            });
+        }
+    }
+
+    const memberships = await listUserMemberships(user.id);
+    const activeMembership = memberships.find((m: any) =>
+        ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
+    );
+
     // Roles allowed to create users
     const allowedCreators = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'];
+    let effectiveRole = creatorRole;
     if (!allowedCreators.includes(creatorRole)) {
+        if (activeMembership?.role === 'church_admin') {
+            effectiveRole = 'pastor';
+        } else if (activeMembership?.role === 'church_member') {
+            effectiveRole = 'local_collaborator';
+        }
+    }
+    if (!allowedCreators.includes(effectiveRole)) {
         return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para crear usuarios' }), { status: 403 });
     }
 
@@ -68,15 +84,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const targetRole = role || 'user';
     let allowedTargetRoles: string[] = [];
 
-    if (creatorRole === 'superadmin') {
+    if (effectiveRole === 'superadmin') {
         allowedTargetRoles = ['superadmin', 'admin', 'national_pastor', 'campus_missionary', 'pastor', 'local_collaborator', 'user'];
-    } else if (creatorRole === 'admin') {
+    } else if (effectiveRole === 'admin') {
         allowedTargetRoles = ['national_pastor', 'campus_missionary', 'pastor', 'local_collaborator', 'user'];
-    } else if (creatorRole === 'national_pastor') {
+    } else if (effectiveRole === 'national_pastor') {
         allowedTargetRoles = ['campus_missionary', 'pastor', 'local_collaborator', 'user'];
-    } else if (creatorRole === 'pastor') {
+    } else if (effectiveRole === 'pastor') {
         allowedTargetRoles = ['local_collaborator', 'user'];
-    } else if (creatorRole === 'local_collaborator') {
+    } else if (effectiveRole === 'local_collaborator') {
         allowedTargetRoles = ['user'];
     }
 
@@ -110,7 +126,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     if (needsCountry) {
-        if (creatorRole === 'national_pastor') {
+        if (effectiveRole === 'national_pastor') {
             targetCountry = creatorProfile.country || null;
             if (!targetCountry) {
                 return new Response(JSON.stringify({ ok: false, error: 'Tu usuario no tiene país asignado.' }), { status: 400 });
@@ -124,12 +140,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     if (needsChurch) {
-        if (creatorRole === 'pastor' || creatorRole === 'local_collaborator') {
-            targetChurchId = creatorProfile.church_id;
+        if (effectiveRole === 'pastor' || effectiveRole === 'local_collaborator') {
+            targetChurchId = creatorProfile.church_id || activeMembership?.church?.id || null;
             if (!targetChurchId) {
                 return new Response(JSON.stringify({ ok: false, error: 'Error: Tu usuario no tiene una iglesia asignada.' }), { status: 400 });
             }
-        } else if (creatorRole === 'national_pastor') {
+        } else if (effectiveRole === 'national_pastor') {
             if (!requestedChurchId || !churchInfo?.id) {
                 return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia válida.' }), { status: 400 });
             }

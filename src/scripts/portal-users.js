@@ -26,11 +26,16 @@ const scopeCountryInput = document.getElementById('user-country-input');
 const scopeCountryList = document.getElementById('user-country-list');
 const scopeChurchWrapper = document.getElementById('user-scope-church');
 const scopeChurchSelect = document.getElementById('user-church-select');
+const navLinkEvents = document.getElementById('nav-link-events');
+const navLinkUsers = document.getElementById('nav-link-users');
+const navLinkCampus = document.getElementById('nav-link-campus');
+const navLinkFinances = document.getElementById('nav-link-finances');
 
 let currentUserRole = 'user';
 let currentUserCountry = '';
 let currentUserChurchId = '';
 let currentToken = '';
+let currentMemberships = [];
 let allUsers = [];
 let churchesCatalog = [];
 let scopeListenerAttached = false;
@@ -70,6 +75,29 @@ function escapeAttr(value) {
     return escapeHtml(value).replace(/`/g, '&#96;');
 }
 
+function applySidebarPermissions(role, memberships = []) {
+    const membershipRoles = (memberships || []).map((m) => m?.role).filter(Boolean);
+    let effectiveRole = role || 'user';
+    if (effectiveRole === 'user') {
+        if (membershipRoles.includes('church_admin')) {
+            effectiveRole = 'pastor';
+        } else if (membershipRoles.includes('church_member')) {
+            effectiveRole = 'local_collaborator';
+        }
+    }
+
+    const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'pastor'];
+    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'];
+    const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
+    const financeRoles = ['superadmin', 'admin'];
+
+    if (navLinkEvents) navLinkEvents.style.display = eventManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkUsers) navLinkUsers.style.display = userManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkCampus) navLinkCampus.style.display = campusRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkFinances) navLinkFinances.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
+    return effectiveRole;
+}
+
 // Password Toggle
 togglePasswordBtn?.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password';
@@ -88,20 +116,29 @@ async function init() {
 
     // 1. Get My Profile to set UI permissions
     try {
-        const res = await fetch('/api/portal/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/api/portal/session', { headers: { 'Authorization': `Bearer ${token}` } });
         if (res.ok) {
-            const profile = await res.json();
-            currentUserRole = profile.role || 'user';
-            currentUserCountry = profile.country || '';
-            currentUserChurchId = profile.church_id || '';
+            const payload = await res.json();
+            if (payload?.ok) {
+                const profile = payload.profile || {};
+                const memberships = payload.memberships || [];
+                currentMemberships = memberships;
+                currentUserRole = profile.role || 'user';
+                currentUserCountry = profile.country || '';
+                currentUserChurchId = profile.church_id
+                    || memberships.find((m) => m?.church?.id)?.church?.id
+                    || '';
 
-            // Hide Create Button for Roles that cannot create users
-            if (currentUserRole === 'campus_missionary' || currentUserRole === 'user') {
-                if (btnOpen) btnOpen.style.display = 'none';
-            }
+                currentUserRole = applySidebarPermissions(currentUserRole, memberships);
 
-            if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                // Hide Create Button for Roles that cannot create users
+                if (currentUserRole === 'campus_missionary' || currentUserRole === 'user') {
+                    if (btnOpen) btnOpen.style.display = 'none';
+                }
+
+                if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+                    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                }
             }
         }
     } catch (e) { console.error(e); }
