@@ -170,22 +170,22 @@ import { MISIONEROS } from '@data/misioneros';
                 <div>
                     <input type="text" id="donor-name" required
                            placeholder="Nombre completo *"
-                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                           class="donor-input">
                 </div>
                 <div>
                     <input type="email" id="donor-email" required
                            placeholder="tucorreo@email.com *"
-                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                           class="donor-input">
                 </div>
                 <div>
                     <input type="tel" id="donor-phone"
                            placeholder="Teléfono / WhatsApp"
-                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                           class="donor-input">
                 </div>
                 <div>
                     <input type="text" id="donor-city"
                            placeholder="Ciudad"
-                           class="w-full select-organic bg-white text-[#001B3A] font-intro-reg text-sm py-2.5 px-4 focus:outline-none placeholder-gray-400">
+                           class="donor-input">
                 </div>
             </div>
 
@@ -283,5 +283,27 @@ import { MISIONEROS } from '@data/misioneros';
     }
     .select-organic:focus, .select-organic:hover {
         border-color: #001B3A;
+    }
+
+    /* Donor info inputs — solid white with visible placeholders */
+    .donor-input {
+        width: 100%;
+        background: #ffffff;
+        color: #001B3A;
+        font-family: 'Intro', sans-serif;
+        font-weight: 400;
+        font-size: 0.875rem;
+        padding: 0.625rem 1rem;
+        border: 2px solid #001B3A;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        outline: none;
+    }
+    .donor-input::placeholder {
+        color: rgba(0, 27, 58, 0.40);
+    }
+    .donor-input:focus {
+        border-color: #001B3A;
+        box-shadow: 0 0 0 3px rgba(0, 27, 58, 0.15);
     }
 </style>
