@@ -17,6 +17,7 @@
     "@studio-freight/lenis": "^1.0.42",
     "@supabase/supabase-js": "^2.45.0",
     "astro": "^5.15.3",
+    "exceljs": "^4.4.0",
     "flatpickr": "^4.6.13",
     "gsap": "^3.12.5",
     "leaflet": "^1.9.4",

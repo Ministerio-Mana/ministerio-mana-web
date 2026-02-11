@@ -1840,24 +1840,25 @@ async function exportChurchBookings() {
     churchExportStatus.textContent = 'Selecciona una iglesia antes de exportar.';
     return;
   }
-  churchExportStatus.textContent = 'Preparando export...';
+  churchExportStatus.textContent = 'Generando Excel...';
   try {
-    const url = new URL('/api/portal/iglesia/export', window.location.origin);
+    const url = new URL('/api/portal/iglesia/export-participants', window.location.origin);
     url.searchParams.set('churchId', resolvedId);
+    url.searchParams.set('format', 'xlsx');
     const res = await fetch(url.toString(), { headers: portalAuthHeaders });
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
       throw new Error(payload?.error || 'No se pudo exportar');
     }
     const blob = await res.blob();
-    const filename = res.headers.get('content-disposition')?.split('filename=')?.[1]?.replace(/"/g, '') || 'portal-iglesia.csv';
+    const filename = res.headers.get('content-disposition')?.split('filename=')?.[1]?.replace(/"/g, '') || 'cumbre-participantes.xlsx';
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
-    churchExportStatus.textContent = 'Export listo.';
+    churchExportStatus.textContent = 'Excel listo.';
   } catch (err) {
     console.error(err);
     churchExportStatus.textContent = err?.message || 'No se pudo exportar.';
