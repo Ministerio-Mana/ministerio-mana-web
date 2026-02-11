@@ -1063,9 +1063,11 @@ export class RegistrationModal {
         }
 
         try {
-            const authHeaders = (window.portalAuthHeaders && Object.keys(window.portalAuthHeaders).length)
-                ? window.portalAuthHeaders
-                : {};
+            const authHeaders = (typeof window.getPortalAuthHeaders === 'function')
+                ? await window.getPortalAuthHeaders()
+                : ((window.portalAuthHeaders && Object.keys(window.portalAuthHeaders).length)
+                    ? window.portalAuthHeaders
+                    : {});
 
             const endpoint = this.isEditMode ? '/api/portal/iglesia/booking' : '/api/portal/iglesia/register-group';
             const method = this.isEditMode ? 'PUT' : 'POST';

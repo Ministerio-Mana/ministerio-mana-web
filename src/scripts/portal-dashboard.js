@@ -275,6 +275,24 @@ const ALL_CHURCHES_VALUE = '__all__';
 const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
 
+async function getPortalAuthHeaders() {
+  try {
+    const auth = await ensureAuthenticated();
+    if (auth?.isAuthenticated && auth.token) {
+      portalAuthHeaders = { Authorization: `Bearer ${auth.token}` };
+    } else {
+      portalAuthHeaders = {};
+    }
+  } catch (err) {
+    console.warn('[portal] refresh auth headers failed', err);
+    portalAuthHeaders = portalAuthHeaders || {};
+  }
+  window.portalAuthHeaders = portalAuthHeaders;
+  return portalAuthHeaders;
+}
+
+window.getPortalAuthHeaders = getPortalAuthHeaders;
+
 function isAllChurchesSelected() {
   return portalSelectedChurchId === ALL_CHURCHES_VALUE;
 }
@@ -1504,8 +1522,11 @@ async function openEditBookingModal(bookingId) {
     return;
   }
   try {
+    const headers = typeof window.getPortalAuthHeaders === 'function'
+      ? await window.getPortalAuthHeaders()
+      : portalAuthHeaders;
     const res = await fetch(`/api/portal/iglesia/booking?bookingId=${encodeURIComponent(bookingId)}`, {
-      headers: portalAuthHeaders,
+      headers,
       credentials: 'include',
     });
     const data = await res.json();
