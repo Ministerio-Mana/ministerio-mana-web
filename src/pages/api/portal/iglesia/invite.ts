@@ -154,14 +154,15 @@ export const POST: APIRoute = async ({ request }) => {
   const existingUser = await findAuthUserByEmail(email);
   let targetUserId = existingUser?.id || null;
 
+  const baseUrl = resolveBaseUrl(request);
+  const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
+  const linkKind = targetUserId ? 'recovery' : 'invite';
+  const result = await sendAuthLink({ kind: linkKind, email, redirectTo });
+  if (!result.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'Error enviando invitación' }), { status: 500 });
+  }
   if (!targetUserId) {
-    const baseUrl = resolveBaseUrl(request);
-    const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
-    const result = await sendAuthLink({ kind: 'invite', email, redirectTo });
-    if (!result.ok) {
-      return new Response(JSON.stringify({ ok: false, error: 'Error enviando invitación' }), { status: 500 });
-    }
-    targetUserId = result.userId;
+    targetUserId = result.userId || null;
   }
 
   if (!targetUserId) return new Response(JSON.stringify({ ok: false, error: 'Error usuario destino' }), { status: 500 });

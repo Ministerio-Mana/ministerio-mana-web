@@ -84,15 +84,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const existingUser = await findAuthUserByEmail(email);
   let userId = existingUser?.id || null;
+  const linkKind = userId ? 'recovery' : 'invite';
+  const result = await sendAuthLink({ kind: linkKind, email, redirectTo });
+  if (!result.ok) {
+    console.error('[portal.admin.invite] invite error', result.error);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo enviar invitación' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
   if (!userId) {
-    const result = await sendAuthLink({ kind: 'invite', email, redirectTo });
-    if (!result.ok) {
-      console.error('[portal.admin.invite] invite error', result.error);
-      return new Response(JSON.stringify({ ok: false, error: 'No se pudo enviar invitación' }), {
-        status: 500,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
     userId = result.userId || null;
   }
 

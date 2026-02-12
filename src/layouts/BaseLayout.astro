@@ -29,13 +29,14 @@ if (supabaseUrl) {
   }
 }
 const cspConnectSrc = `'self' https://checkout.wompi.co https://api.stripe.com https://challenges.cloudflare.com${supabaseConnectSrc}`;
+const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.stripe.com https://checkout.wompi.co https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com";
 ---
 <!doctype html>
 <html lang="es" class="scroll-smooth">
   <head>
     <SEO {title} {description} {image} {type} {structuredData} {noindex} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta http-equiv="Content-Security-Policy" content={`default-src 'self'; img-src 'self' data: https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com https://*.transparenttextures.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; connect-src ${cspConnectSrc};`}>
+    <meta http-equiv="Content-Security-Policy" content={`default-src 'self'; img-src 'self' data: https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com https://*.transparenttextures.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; connect-src ${cspConnectSrc}; frame-src ${cspFrameSrc};`}>
     <!-- Turnstile: script global (NO inline) -->
     <script
       src="https://challenges.cloudflare.com/turnstile/v0/api.js"

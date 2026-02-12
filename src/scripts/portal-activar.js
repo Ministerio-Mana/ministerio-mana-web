@@ -129,9 +129,10 @@ function getTokenParams() {
   const refreshToken = hashParams.get('refresh_token') || hashParams.get('/refresh_token') || searchParams.get('refresh_token');
   const type = hashParams.get('type') || hashParams.get('/type') || searchParams.get('type');
   const error = hashParams.get('error') || hashParams.get('/error') || searchParams.get('error');
+  const errorCode = hashParams.get('error_code') || hashParams.get('/error_code') || searchParams.get('error_code');
   const errorDescription =
     hashParams.get('error_description') || hashParams.get('/error_description') || searchParams.get('error_description');
-  return { accessToken, refreshToken, type, error, errorDescription };
+  return { accessToken, refreshToken, type, error, errorCode, errorDescription };
 }
 
 function normalizeHash() {
@@ -196,8 +197,13 @@ async function validateRecoveryLink() {
     return true;
   }
 
-  const { error, errorDescription } = getTokenParams();
-  if (error === 'access_denied') {
+  const { error, errorCode, errorDescription } = getTokenParams();
+  const normalizedDescription = (errorDescription || '').toLowerCase();
+  if (error === 'access_denied' && (errorCode === 'otp_expired' || normalizedDescription.includes('expired'))) {
+    setGuardMessage('El enlace expiró o ya fue usado. Solicita uno nuevo desde el portal.');
+  } else if (error === 'access_denied' && normalizedDescription.includes('invalid')) {
+    setGuardMessage('El enlace ya no es válido. Solicita uno nuevo desde el portal.');
+  } else if (error === 'access_denied') {
     setGuardMessage('El enlace no pertenece a este dominio. Abre el link desde el dominio correcto.');
   } else if (errorDescription) {
     setGuardMessage(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
