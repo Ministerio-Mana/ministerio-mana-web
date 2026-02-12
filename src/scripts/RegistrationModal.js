@@ -483,9 +483,10 @@ export class RegistrationModal {
     }
 
     startCompanionEdit(participantId) {
-        const participant = this.participants.find(p => p.id === participantId && !p.isLeader);
+        const targetId = String(participantId);
+        const participant = this.participants.find(p => String(p.id) === targetId && !p.isLeader);
         if (!participant) return;
-        this.editingCompanionId = participantId;
+        this.editingCompanionId = targetId;
         this.showCompanionForm();
 
         if (this.companionDocType) this.companionDocType.value = participant.document_type || 'TI';
@@ -564,7 +565,7 @@ export class RegistrationModal {
         const packageType = this.getPackageTypeFromAge(age, packageChoice);
 
         const participantPayload = {
-            id: Date.now(),
+            id: this.editingCompanionId || this.generateIdempotencyKey(),
             document_type: docType,
             document_number: docNumber,
             name,
@@ -578,9 +579,10 @@ export class RegistrationModal {
         };
 
         if (this.editingCompanionId) {
-            const existing = this.participants.find(p => p.id === this.editingCompanionId && !p.isLeader);
+            const targetId = String(this.editingCompanionId);
+            const existing = this.participants.find(p => String(p.id) === targetId && !p.isLeader);
             if (existing) {
-                Object.assign(existing, participantPayload, { id: this.editingCompanionId });
+                Object.assign(existing, participantPayload, { id: targetId });
             } else {
                 this.participants.push(participantPayload);
             }
@@ -596,7 +598,8 @@ export class RegistrationModal {
     }
 
     removeParticipant(id) {
-        this.participants = this.participants.filter(p => p.id !== id);
+        const targetId = String(id);
+        this.participants = this.participants.filter(p => String(p.id) !== targetId);
         this.renderParticipants();
         this.updateSummary();
     }
@@ -617,14 +620,16 @@ export class RegistrationModal {
             // Bind remove buttons
             this.companionsList.querySelectorAll('.btn-remove-participant').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = parseInt(btn.dataset.participantId);
+                    const id = btn.dataset.participantId;
+                    if (!id) return;
                     this.removeParticipant(id);
                 });
             });
 
             this.companionsList.querySelectorAll('.btn-edit-participant').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const id = parseInt(btn.dataset.participantId);
+                    const id = btn.dataset.participantId;
+                    if (!id) return;
                     this.startCompanionEdit(id);
                 });
             });
