@@ -8,6 +8,15 @@ import { enforceAdminIp } from '@lib/adminIpAllowlist';
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+function normalizeCodePart(value: string): string {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
     const ipCheck = await enforceAdminIp({
         request,
@@ -57,25 +66,41 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     let updated = 0;
     let errors = [];
 
-    for (const church of churchesData) {
+    for (const church of churchesData as any[]) {
+        const country = church.country || 'Colombia';
+        const city = church.city || null;
+        const code = normalizeCodePart(`${country}-${city || 'sin-ciudad'}-${church.name}`);
         const payload = {
+            code,
             name: church.name,
-            city: church.city,
-            country: 'Colombia', // Default per JSON context
+            city,
+            country,
             address: church.address,
-            lat: church.lat,
-            lng: church.lng,
-            contact_name: church.contact?.name,
-            contact_email: church.contact?.email,
-            contact_phone: church.contact?.phone || church.whatsapp,
+            maps_url: church.maps_url || null,
+            lat: typeof church.lat === 'number' ? church.lat : null,
+            lng: typeof church.lng === 'number' ? church.lng : null,
+            contact_name: church.contact?.name || null,
+            contact_email: church.contact?.email || null,
+            contact_phone: church.contact?.phone || church.whatsapp || null,
         };
 
-        // Try to find existing by name to update, or insert new
-        const { data: existing } = await sb
+        // Try to find existing by deterministic code; fallback by name+country+city
+        const { data: existingByCode } = await sb
             .from('churches')
             .select('id')
-            .eq('name', church.name)
-            .single();
+            .eq('code', code)
+            .maybeSingle();
+        let existing = existingByCode;
+        if (!existing) {
+            let query = sb
+                .from('churches')
+                .select('id')
+                .eq('name', church.name)
+                .eq('country', country);
+            query = city ? query.eq('city', city) : query.is('city', null);
+            const { data: existingByName } = await query.maybeSingle();
+            existing = existingByName;
+        }
 
         if (existing) {
             const { error } = await sb

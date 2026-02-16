@@ -14,6 +14,27 @@
 
 ## Entradas
 
+### 2026-02-16 (Directorio Iglesias global: datos + UX mapa)
+- Responsable: Delta
+- Cambios:
+  - Se amplió `src/data/churches.json` con nuevas sedes: Pereira, Ecuador (Cuenca/Quito/Guayaquil Sur/Guayaquil Norte), México (Tantoyuca), Francia (París) y contacto regional Europa.
+  - Se rediseñó `/iglesias` para escalar por continentes y países:
+    - chips por continente y por país con contador,
+    - búsqueda por texto sobre ciudad/iglesia/dirección/notas/servicio,
+    - enlace “Cómo llegar” en cada tarjeta.
+  - Se refactorizó `ChurchesMap.astro`:
+    - foco por país (chips dentro del mapa),
+    - popups con acciones `Cómo llegar` + `WhatsApp`,
+    - sincronización mapa/listado vía evento `mana:church-country-focus`.
+  - Se ajustó `seed-churches` para usar país real del JSON (ya no fuerza Colombia), generar `code` determinístico y hacer upsert más estable.
+  - Se creó documentación operativa `docs/iglesias-mapas.md` y seed SQL incremental `docs/sql/churches_global_seed.sql`.
+  - Se actualizó `docs/portal-iglesias.md` con flujo de sincronización y roles de equipo (pastor/colaborador).
+- Pruebas:
+  - Build local con `npm run build`.
+- Pendientes:
+  - Confirmar coordenadas exactas de Ecuador/México en producción (si se quiere precisión calle por calle).
+  - Cargar próximas iglesias de México cuando llegue el consolidado final.
+
 ### 2026-02-03 (Seguridad Supabase: vista Cumbre)
 - Responsable: Delta
 - Cambios:

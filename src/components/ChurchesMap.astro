@@ -1,158 +1,371 @@
 ---
-const id = 'churches-map';
+import churchesData from '@data/churches.json';
+
+const countries = Array.from(new Set((churchesData as any[]).map((church) => church.country || 'Colombia'))).sort((a, b) =>
+  String(a).localeCompare(String(b), 'es'),
+);
 ---
 
-<div class="relative w-full h-[600px] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none z-0">
-  
-  <!-- Map Container -->
-  <div id="map" class="absolute inset-0 w-full h-full z-0"></div>
+<div class="relative w-full h-[620px] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none z-0">
+  <div id="churches-map-canvas" class="absolute inset-0 w-full h-full z-0"></div>
 
-  <!-- Legend -->
-  <div class="absolute top-6 left-6 pointer-events-none opacity-0 animate-fade-in z-[1000]" style="animation-delay: 0.5s; animation-fill-mode: forwards;">
-    <div class="bg-brand-navy/90 backdrop-blur px-5 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
-      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-1">Ubicaciones</p>
-      <p class="text-xs text-white/80 font-intro-reg">Iglesias Maná Global</p>
+  <div class="absolute top-5 left-5 pointer-events-none z-[1000]">
+    <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50 max-w-[260px]">
+      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-1">Mapa global</p>
+      <p class="text-xs text-white/80 font-intro-reg">Visualiza sedes por país y abre ubicación exacta en Google Maps.</p>
     </div>
   </div>
 
+  <div class="absolute top-5 right-5 z-[1000] w-[min(460px,calc(100%-2.5rem))]">
+    <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
+      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-2">Enfocar país</p>
+      <div id="map-country-controls" class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
+        <button
+          type="button"
+          data-map-country="all"
+          class="map-country-chip px-3 py-1.5 rounded-full border border-brand-teal bg-brand-teal text-white text-[11px] font-intro tracking-wide whitespace-nowrap"
+        >
+          Global
+        </button>
+        {countries.map((country) => (
+          <button
+            type="button"
+            data-map-country={country}
+            class="map-country-chip px-3 py-1.5 rounded-full border border-white/20 bg-white/5 text-white/75 hover:text-white hover:border-brand-teal/70 hover:bg-brand-teal/15 text-[11px] font-intro tracking-wide whitespace-nowrap transition-colors"
+          >
+            {country}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute bottom-5 left-5 z-[1000] pointer-events-none">
+    <div class="bg-brand-navy/80 backdrop-blur px-3 py-2 rounded-xl border border-white/10 shadow-lg shadow-brand-void/40">
+      <p class="text-[10px] text-white/70 font-intro tracking-wide">Tip: toca una sede para ver WhatsApp y “Cómo llegar”.</p>
+    </div>
+  </div>
 </div>
 
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
 
 <script>
   import CHURCHES from '../data/churches.json';
 
-  // Wait for Leaflet to load
+  const MAP_ID = 'churches-map-canvas';
+
+  const sanitize = (value) =>
+    String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const normalizeCountry = (church) => church.country || 'Colombia';
+
+  const mapsHrefForChurch = (church) => {
+    if (typeof church.maps_url === 'string' && church.maps_url.trim()) {
+      return church.maps_url.trim();
+    }
+
+    if (typeof church.lat === 'number' && typeof church.lng === 'number') {
+      return `https://www.google.com/maps?q=${church.lat},${church.lng}`;
+    }
+
+    const query = [church.address, church.city, normalizeCountry(church)].filter(Boolean).join(', ');
+    return query
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+      : 'https://maps.google.com';
+  };
+
+  const countryChipButtons = () => Array.from(document.querySelectorAll('#map-country-controls [data-map-country]'));
+
+  const setActiveCountryChip = (country = 'all') => {
+    countryChipButtons().forEach((btn) => {
+      const isActive = btn.dataset.mapCountry === country;
+      btn.classList.toggle('bg-brand-teal', isActive);
+      btn.classList.toggle('border-brand-teal', isActive);
+      btn.classList.toggle('text-white', isActive);
+      btn.classList.toggle('bg-white/5', !isActive);
+      btn.classList.toggle('border-white/20', !isActive);
+      btn.classList.toggle('text-white/75', !isActive);
+    });
+  };
+
   function initMap() {
+    const mapNode = document.getElementById(MAP_ID);
+    if (!mapNode) return;
+
     if (typeof L === 'undefined') {
-      setTimeout(initMap, 100);
+      setTimeout(initMap, 120);
       return;
     }
 
-    const map = L.map('map', {
-      center: [20, 0],
+    if (mapNode.dataset.ready === '1') return;
+    mapNode.dataset.ready = '1';
+
+    const map = L.map(MAP_ID, {
+      center: [15, -10],
       zoom: 2,
       minZoom: 2,
-      maxZoom: 18, // Allow deeper zoom
+      maxZoom: 18,
       zoomControl: false,
-      attributionControl: false
+      attributionControl: false,
     });
 
-    // Standard OSM Tiles (Reliable fallback with Dark Mode Filter via CSS)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      className: 'dark-mode-tiles' 
+      attribution: '&copy; OpenStreetMap contributors',
+      className: 'dark-mode-tiles',
     }).addTo(map);
 
-    L.control.zoom({
-      position: 'bottomright'
-    }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Custom Icon for Pins
-    const manaIcon = L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div class="w-4 h-4 bg-brand-teal rounded-full shadow-[0_0_10px_#2DD4BF] border-2 border-white relative cursor-pointer hover:scale-125 transition-transform">
-              <div class="absolute inset-0 rounded-full animate-ping bg-brand-teal opacity-75"></div>
-             </div>`,
+    const markerIcon = L.divIcon({
+      className: 'mana-map-pin',
+      html: `<div class="mana-pin-wrap"><div class="mana-pin-pulse"></div><div class="mana-pin-core"></div></div>`,
       iconSize: [20, 20],
       iconAnchor: [10, 10],
-      popupAnchor: [0, -10]
+      popupAnchor: [0, -8],
     });
 
-    // Add Markers
-    CHURCHES.forEach(church => {
-        if (church.lat && church.lng) {
-            L.marker([church.lat, church.lng], { icon: manaIcon })
-             .addTo(map)
-             .bindPopup(`
-                <div class="font-intro text-brand-navy min-w-[200px]">
-                    <h3 class="font-bold text-sm mb-1">${church.name}</h3>
-                    <p class="text-xs font-intro-reg text-gray-600 mb-2">${church.city}, ${church.country || 'Colombia'}</p>
-                    <a href="https://www.google.com/maps?q=${church.lat},${church.lng}" target="_blank" class="inline-block px-3 py-1.5 bg-brand-teal text-white text-[10px] font-bold rounded-lg hover:bg-brand-medium transition-colors">
-                      Cómo llegar &rarr;
-                    </a>
-                </div>
-             `, {
-                className: 'mana-popup',
-                closeButton: false
-             });
+    const markerLayer = L.layerGroup().addTo(map);
+    const countryBounds = new Map();
+    const allCoords = [];
+
+    CHURCHES.forEach((church) => {
+      if (typeof church.lat !== 'number' || typeof church.lng !== 'number') return;
+
+      const country = normalizeCountry(church);
+      const latLng = L.latLng(church.lat, church.lng);
+      allCoords.push(latLng);
+
+      const existingBounds = countryBounds.get(country);
+      if (existingBounds) {
+        existingBounds.extend(latLng);
+      } else {
+        countryBounds.set(country, L.latLngBounds([latLng]));
+      }
+
+      const mapsHref = mapsHrefForChurch(church);
+      const whatsappHref = church.whatsapp
+        ? `https://wa.me/${String(church.whatsapp).replace(/[^0-9]/g, '')}`
+        : '';
+
+      const popupHtml = `
+        <div class="mana-popup-card">
+          <p class="mana-popup-city">${sanitize(church.city)} · ${sanitize(country)}</p>
+          <h3 class="mana-popup-name">${sanitize(church.name)}</h3>
+          ${church.service ? `<p class="mana-popup-service">${sanitize(church.service)}</p>` : ''}
+          ${church.contact?.name ? `<p class="mana-popup-contact">Contacto: ${sanitize(church.contact.name)}</p>` : ''}
+          <div class="mana-popup-actions">
+            <a class="mana-popup-btn mana-popup-btn-map" href="${mapsHref}" target="_blank" rel="noopener noreferrer">Cómo llegar</a>
+            ${whatsappHref ? `<a class="mana-popup-btn mana-popup-btn-wa" href="${whatsappHref}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+          </div>
+        </div>
+      `;
+
+      L.marker(latLng, { icon: markerIcon }).addTo(markerLayer).bindPopup(popupHtml, {
+        className: 'mana-popup-wrapper',
+      });
+    });
+
+    const globalBounds = allCoords.length ? L.latLngBounds(allCoords) : null;
+
+    const focusCountry = (country) => {
+      if (!country || country === 'all') {
+        if (globalBounds?.isValid()) {
+          map.fitBounds(globalBounds, { padding: [56, 56], maxZoom: 4 });
         }
+        setActiveCountryChip('all');
+        return;
+      }
+
+      const bounds = countryBounds.get(country);
+      if (!bounds?.isValid()) return;
+
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 9 });
+      setActiveCountryChip(country);
+    };
+
+    countryChipButtons().forEach((btn) => {
+      btn.addEventListener('click', () => {
+        focusCountry(btn.dataset.mapCountry || 'all');
+      });
     });
 
-    // Initial view adjustment
-    if (window.innerWidth < 768) {
-       map.setZoom(1);
-    }
-    
-    // Force a resize event to ensure Leaflet calculates dimensions correctly
-    setTimeout(() => { map.invalidateSize(); }, 500);
+    window.addEventListener('mana:church-country-focus', (event) => {
+      const country = event?.detail?.country;
+      focusCountry(country || 'all');
+    });
+
+    focusCountry('all');
+
+    setTimeout(() => map.invalidateSize(), 400);
   }
 
-  // Start initialization
-  // We use a small timeout to ensure DOM is ready even with View Transitions
-  setTimeout(initMap, 300);
-
+  setTimeout(initMap, 240);
 </script>
 
 <style is:global>
-  /* Custom Popup Styles - Glassmorphism */
-  .leaflet-popup-content-wrapper {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255,255,255,0.2);
-    padding: 0;
-    overflow: hidden;
-  }
-  .leaflet-popup-content {
-    margin: 12px 16px;
-    line-height: 1.4;
-  }
-  .leaflet-popup-tip {
-    background: rgba(255, 255, 255, 0.95);
-  }
-  
-  /* Map Container Background */
   .leaflet-container {
-    background: #0D1626; /* Match brand-void */
+    background: #0d1626;
     font-family: 'Intro', sans-serif;
   }
 
-  /* Zoom Controls Customization */
+  .dark-mode-tiles {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  }
+
+  .leaflet-bar {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
   .leaflet-bar a {
     background-color: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: white !important;
-    border-radius: 999px !important; /* Circle */
+    border-radius: 999px !important;
     width: 40px !important;
     height: 40px !important;
     line-height: 40px !important;
     margin-bottom: 8px !important;
     transition: all 0.2s ease;
   }
+
   .leaflet-bar a:hover {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    transform: scale(1.1);
-  }
-  .leaflet-bar {
-    border: none !important;
-    box-shadow: none !important;
-  }
-  .leaflet-control-zoom-in, .leaflet-control-zoom-out {
-    font-size: 18px !important;
-    font-weight: 300 !important;
+    background-color: rgba(45, 212, 191, 0.25) !important;
+    border-color: rgba(45, 212, 191, 0.65) !important;
   }
 
-  @keyframes fade-in { to { opacity: 1; } }
+  .mana-pin-wrap {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+  }
+
+  .mana-pin-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: rgba(45, 212, 191, 0.35);
+    animation: mana-pin-pulse 1.9s ease-out infinite;
+  }
+
+  .mana-pin-core {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    background: #2dd4bf;
+    box-shadow: 0 0 12px rgba(45, 212, 191, 0.7);
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes mana-pin-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+
+    100% {
+      transform: scale(2.35);
+      opacity: 0;
+    }
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: rgba(13, 22, 38, 0.96) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 16px 35px rgba(4, 8, 20, 0.45);
+  }
+
+  .leaflet-popup-content {
+    margin: 12px 14px !important;
+    min-width: 210px;
+  }
+
+  .leaflet-popup-tip {
+    background: rgba(13, 22, 38, 0.96) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .mana-popup-card {
+    display: grid;
+    gap: 8px;
+    color: #fff;
+  }
+
+  .mana-popup-city {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(45, 212, 191, 0.9);
+  }
+
+  .mana-popup-name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .mana-popup-service,
+  .mana-popup-contact {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(241, 245, 249, 0.85);
+  }
+
+  .mana-popup-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .mana-popup-btn {
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  }
+
+  .mana-popup-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .mana-popup-btn-map {
+    background: rgba(45, 212, 191, 0.2);
+    border-color: rgba(45, 212, 191, 0.5);
+    color: #ccfbf1;
+  }
+
+  .mana-popup-btn-wa {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #dcfce7;
+  }
 </style>

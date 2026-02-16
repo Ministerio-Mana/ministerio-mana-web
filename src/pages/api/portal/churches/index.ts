@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
 
     const { data, error } = await sb
         .from('churches')
-        .select('id, name, city, country, address, lat, lng')
+        .select('id, name, city, country, address, maps_url, lat, lng')
         .order('city', { ascending: true });
 
     if (error) {
