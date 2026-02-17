@@ -732,6 +732,7 @@ function runSafe(label, fn) {
 // Core Dashboard Logic - Reactive Auth
 async function loadDashboardData(authResult) {
   dlog('[DEBUG] loadDashboardData called with mode:', authResult.mode);
+  let sessionValidated = false;
 
   try {
     const token = authResult.token;
@@ -816,6 +817,7 @@ async function loadDashboardData(authResult) {
     });
     dlog('[DEBUG] sessionPayload:', sessionPayload);
     if (!sessionRes.ok || !sessionPayload.ok) throw new Error(sessionPayload.error || 'No se pudo cargar el perfil');
+    sessionValidated = true;
 
     let payload = { ok: true, user: {}, bookings: [], plans: [], payments: [] };
     if (resumenRes?.ok) {
@@ -937,7 +939,7 @@ async function loadDashboardData(authResult) {
       churchNameInput.classList.add('bg-slate-100', 'cursor-not-allowed');
     }
 
-    const user = userData?.user;
+    const user = userData;
 
     const bookings = Array.isArray(payload.bookings) ? payload.bookings.filter(Boolean) : [];
     const plans = Array.isArray(payload.plans) ? payload.plans.filter(Boolean) : [];
@@ -1105,9 +1107,14 @@ async function loadDashboardData(authResult) {
     }
   } catch (err) {
     console.error(err);
-    if (!loadingEl.classList.contains('hidden')) {
+    if (loadingEl && !loadingEl.classList.contains('hidden')) {
       loadingEl.classList.add('hidden');
-      errorEl.classList.remove('hidden');
+      if (sessionValidated) {
+        contentEl?.classList.remove('hidden');
+        errorEl?.classList.add('hidden');
+      } else {
+        errorEl?.classList.remove('hidden');
+      }
     }
   }
 }
