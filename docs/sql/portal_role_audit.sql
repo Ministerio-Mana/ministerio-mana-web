@@ -404,3 +404,179 @@ where se.created_at >= now() - interval '48 hours'
   and (se.identifier ilike 'portal.%' or se.identifier ilike 'auth.%')
 group by se.type, se.identifier
 order by hits desc, last_seen desc;
+
+-- =========================================================
+-- Q9) Eventos de seguridad NO-maintenance (ultimas 72 horas)
+-- Sirve para ver errores reales de captcha/rate-limit/auth.
+-- =========================================================
+select
+  se.created_at,
+  se.type,
+  se.identifier,
+  se.detail,
+  se.ip,
+  se.meta
+from public.security_events se
+where se.created_at >= now() - interval '72 hours'
+  and (se.identifier ilike 'portal.%' or se.identifier ilike 'auth.%')
+  and se.type <> 'maintenance'
+order by se.created_at desc
+limit 500;
+
+-- =========================================================
+-- Q10) Diagnostico base por usuario (rol + datos minimos requeridos)
+-- Útil para detectar por qué /portal puede caer en "Algo salió mal".
+-- =========================================================
+with membership_flags as (
+  select
+    cm.user_id,
+    count(*) filter (where cm.status <> 'pending') as memberships_ok,
+    bool_or(cm.role = 'church_admin' and cm.status <> 'pending') as has_church_admin,
+    bool_or(cm.role = 'church_member' and cm.status <> 'pending') as has_church_member
+  from public.church_memberships cm
+  group by cm.user_id
+),
+booking_flags as (
+  select
+    lower(b.contact_email) as email,
+    count(*) as bookings
+  from public.cumbre_bookings b
+  where b.contact_email is not null
+  group by lower(b.contact_email)
+)
+select
+  p.user_id,
+  lower(p.email) as email,
+  p.role,
+  p.country,
+  p.church_id,
+  p.portal_church_id,
+  p.full_name,
+  coalesce(mf.memberships_ok, 0) as memberships_ok,
+  coalesce(mf.has_church_admin, false) as has_church_admin,
+  coalesce(mf.has_church_member, false) as has_church_member,
+  coalesce(bf.bookings, 0) as bookings,
+  case
+    when p.role = 'national_pastor' and coalesce(p.country, '') = '' then 'ERROR_NATIONAL_SIN_COUNTRY'
+    when p.role in ('pastor', 'local_collaborator', 'leader')
+      and coalesce(p.church_id, p.portal_church_id) is null
+      and coalesce(mf.memberships_ok, 0) = 0 then 'ERROR_LOCAL_SIN_IGLESIA'
+    when p.role not in ('user', 'admin', 'superadmin', 'national_pastor', 'pastor', 'local_collaborator', 'campus_missionary', 'leader') then 'ERROR_ROL_NO_RECONOCIDO'
+    when coalesce(p.email, '') = '' then 'ERROR_EMAIL_VACIO'
+    else 'OK_DATOS_BASE'
+  end as diagnostico_base
+from public.user_profiles p
+left join membership_flags mf
+  on mf.user_id = p.user_id
+left join booking_flags bf
+  on bf.email = lower(p.email)
+order by
+  case
+    when
+      case
+        when p.role = 'national_pastor' and coalesce(p.country, '') = '' then 'ERROR_NATIONAL_SIN_COUNTRY'
+        when p.role in ('pastor', 'local_collaborator', 'leader')
+          and coalesce(p.church_id, p.portal_church_id) is null
+          and coalesce(mf.memberships_ok, 0) = 0 then 'ERROR_LOCAL_SIN_IGLESIA'
+        when p.role not in ('user', 'admin', 'superadmin', 'national_pastor', 'pastor', 'local_collaborator', 'campus_missionary', 'leader') then 'ERROR_ROL_NO_RECONOCIDO'
+        when coalesce(p.email, '') = '' then 'ERROR_EMAIL_VACIO'
+        else 'OK_DATOS_BASE'
+      end like 'ERROR_%'
+    then 0 else 1 end,
+  p.role,
+  lower(p.email)
+limit 2000;
+
+-- =========================================================
+-- Q11) Diagnostico dirigido para usuarios reportados
+-- Agrega/cambia correos en VALUES.
+-- =========================================================
+with targets(email) as (
+  values
+    ('luis2_8@hotmail.com'),
+    ('monicapalacio@ministeriomana.org')
+),
+membership_flags as (
+  select
+    cm.user_id,
+    count(*) filter (where cm.status <> 'pending') as memberships_ok,
+    bool_or(cm.role = 'church_admin' and cm.status <> 'pending') as has_church_admin,
+    bool_or(cm.role = 'church_member' and cm.status <> 'pending') as has_church_member
+  from public.church_memberships cm
+  group by cm.user_id
+),
+booking_flags as (
+  select
+    lower(b.contact_email) as email,
+    count(*) as bookings
+  from public.cumbre_bookings b
+  where b.contact_email is not null
+  group by lower(b.contact_email)
+)
+select
+  p.user_id,
+  lower(p.email) as email,
+  p.role,
+  p.country,
+  p.church_id,
+  p.portal_church_id,
+  p.full_name,
+  u.email_confirmed_at,
+  u.last_sign_in_at,
+  coalesce(mf.memberships_ok, 0) as memberships_ok,
+  coalesce(mf.has_church_admin, false) as has_church_admin,
+  coalesce(mf.has_church_member, false) as has_church_member,
+  coalesce(bf.bookings, 0) as bookings,
+  case
+    when p.role = 'national_pastor' and coalesce(p.country, '') = '' then 'ERROR_NATIONAL_SIN_COUNTRY'
+    when p.role in ('pastor', 'local_collaborator', 'leader')
+      and coalesce(p.church_id, p.portal_church_id) is null
+      and coalesce(mf.memberships_ok, 0) = 0 then 'ERROR_LOCAL_SIN_IGLESIA'
+    when p.role not in ('user', 'admin', 'superadmin', 'national_pastor', 'pastor', 'local_collaborator', 'campus_missionary', 'leader') then 'ERROR_ROL_NO_RECONOCIDO'
+    when coalesce(p.email, '') = '' then 'ERROR_EMAIL_VACIO'
+    else 'OK_DATOS_BASE'
+  end as diagnostico_base
+from targets t
+left join public.user_profiles p
+  on lower(p.email) = lower(t.email)
+left join auth.users u
+  on u.id = p.user_id
+left join membership_flags mf
+  on mf.user_id = p.user_id
+left join booking_flags bf
+  on bf.email = lower(p.email)
+order by lower(t.email);
+
+-- =========================================================
+-- Q12) Resumen de hallazgos por rol (conteo de errores)
+-- =========================================================
+with membership_flags as (
+  select
+    cm.user_id,
+    count(*) filter (where cm.status <> 'pending') as memberships_ok
+  from public.church_memberships cm
+  group by cm.user_id
+),
+diag as (
+  select
+    p.role,
+    case
+      when p.role = 'national_pastor' and coalesce(p.country, '') = '' then 'ERROR_NATIONAL_SIN_COUNTRY'
+      when p.role in ('pastor', 'local_collaborator', 'leader')
+        and coalesce(p.church_id, p.portal_church_id) is null
+        and coalesce(mf.memberships_ok, 0) = 0 then 'ERROR_LOCAL_SIN_IGLESIA'
+      when p.role not in ('user', 'admin', 'superadmin', 'national_pastor', 'pastor', 'local_collaborator', 'campus_missionary', 'leader') then 'ERROR_ROL_NO_RECONOCIDO'
+      when coalesce(p.email, '') = '' then 'ERROR_EMAIL_VACIO'
+      else 'OK_DATOS_BASE'
+    end as diagnostico_base
+  from public.user_profiles p
+  left join membership_flags mf
+    on mf.user_id = p.user_id
+)
+select
+  role,
+  diagnostico_base,
+  count(*) as users_count
+from diag
+group by role, diagnostico_base
+order by role, users_count desc;

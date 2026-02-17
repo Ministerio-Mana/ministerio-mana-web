@@ -49,6 +49,14 @@ function getTurnstileToken() {
   return window.turnstile?.getResponse?.() || '';
 }
 
+function buildSupabasePasswordPayload(email, password, captchaToken = '') {
+  const payload = { email, password };
+  if (captchaToken) {
+    payload.options = { captchaToken };
+  }
+  return payload;
+}
+
 submitBtn?.addEventListener('click', () => {
   lastAction = 'otp';
 });
@@ -80,7 +88,9 @@ form?.addEventListener('submit', async (event) => {
     if (password && action === 'password') {
       statusEl.textContent = 'Validando acceso...';
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const captchaToken = getTurnstileToken();
+      const supabasePayload = buildSupabasePasswordPayload(email, password, captchaToken);
+      const { error } = await supabase.auth.signInWithPassword(supabasePayload);
       if (error) throw error;
       statusIcon.classList.replace('bg-brand-teal', 'bg-green-400');
       statusIcon.classList.remove('animate-ping');

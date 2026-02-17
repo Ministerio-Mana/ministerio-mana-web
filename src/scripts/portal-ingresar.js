@@ -131,10 +131,45 @@ function resolveLoginErrorMessage(err) {
   if (!raw) return 'No se pudo iniciar sesión. Intenta de nuevo.';
   if (/invalid login credentials/i.test(raw)) return 'Contraseña incorrecta o usuario no encontrado.';
   if (/email not confirmed/i.test(raw)) return 'Debes confirmar tu correo para ingresar.';
-  if (/captcha requerido|captcha invalido/i.test(raw)) {
+  if (/captcha requerido|captcha invalido|captcha token|captcha verification/i.test(raw)) {
     return 'No se pudo validar el captcha. Recarga la página y vuelve a intentarlo.';
   }
   return raw;
+}
+
+function getLoginErrorMessage(err) {
+  if (!err) return 'Unknown login error';
+  if (typeof err === 'string') return err;
+  if (err instanceof Error) return err.message || err.name || 'Unknown login error';
+  return String(err);
+}
+
+async function reportPortalLoginError(identifier, err, meta = {}) {
+  try {
+    await fetch('/api/portal/client-error', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        identifier,
+        message: getLoginErrorMessage(err),
+        meta: {
+          route: window.location.pathname,
+          ...meta,
+        },
+      }),
+    });
+  } catch {
+    // no-op
+  }
+}
+
+function buildSupabasePasswordPayload(email, password, captcha = {}) {
+  const payload = { email, password };
+  if (captcha?.token && !captcha?.bypass) {
+    payload.options = { captchaToken: captcha.token };
+  }
+  return payload;
 }
 
 async function startOAuth(provider, label, btn) {
@@ -174,6 +209,7 @@ async function startOAuth(provider, label, btn) {
     }
   } catch (err) {
     console.error('[oauth] error', err);
+    void reportPortalLoginError('portal.ingresar.oauth', err, { provider });
     showStatus('No se pudo iniciar la autenticación. Intenta de nuevo.', 'error');
     resetTurnstile();
     if (btn) {
@@ -257,6 +293,7 @@ magicForm?.addEventListener('submit', async (e) => {
     showStatus('¡Enlace enviado! Revisa tu correo para restablecer.', 'success');
     magicEmailInput.value = '';
   } catch (err) {
+    void reportPortalLoginError('portal.ingresar.recovery-link', err, { hasCaptcha: Boolean(captcha?.token) });
     showStatus(err?.message || 'Error al enviar enlace.', 'error');
     resetTurnstile();
     if (btn) {
@@ -294,7 +331,8 @@ passwordForm?.addEventListener('submit', async (e) => {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const supabasePayload = buildSupabasePasswordPayload(email, password, captcha);
+    const { error } = await supabase.auth.signInWithPassword(supabasePayload);
 
     if (error) {
       console.warn('Supabase login failed, trying API fallback...', error.message);
@@ -316,6 +354,7 @@ passwordForm?.addEventListener('submit', async (e) => {
     window.location.href = '/portal';
   } catch (err) {
     console.error(err);
+    void reportPortalLoginError('portal.ingresar.password', err, { hasCaptcha: Boolean(captcha?.token) });
     showStatus(resolveLoginErrorMessage(err), 'error');
     resetTurnstile();
     if (btn) {
@@ -372,6 +411,7 @@ passkeyBtn?.addEventListener('click', async () => {
     if (data?.url) window.location.href = data.url;
     else throw new Error('Debes configurar Passkeys en tu cuenta primero.');
   } catch (err) {
+    void reportPortalLoginError('portal.ingresar.passkey', err);
     showStatus(err?.message || 'Función Beta: Contacta soporte para activar.', 'error');
     setTimeout(() => {
       if (statusContainer) statusContainer.classList.add('hidden');

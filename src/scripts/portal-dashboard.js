@@ -720,11 +720,40 @@ function switchTab(tabId) {
   });
 }
 
+function getErrorMessage(err) {
+  if (!err) return 'Unknown client error';
+  if (typeof err === 'string') return err;
+  if (err instanceof Error) return err.message || err.name || 'Unknown error';
+  return String(err);
+}
+
+async function reportPortalClientError(identifier, err, meta = {}) {
+  try {
+    const payload = {
+      identifier,
+      message: getErrorMessage(err),
+      meta: {
+        route: window.location.pathname,
+        ...meta,
+      },
+    };
+    await fetch('/api/portal/client-error', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // no-op: observability must never block UX
+  }
+}
+
 function runSafe(label, fn) {
   try {
     return fn();
   } catch (err) {
     console.error(`[portal.dashboard] ${label} failed`, err);
+    void reportPortalClientError('portal.dashboard.run-safe', err, { label });
     return null;
   }
 }
@@ -1107,6 +1136,11 @@ async function loadDashboardData(authResult) {
     }
   } catch (err) {
     console.error(err);
+    void reportPortalClientError('portal.dashboard.load', err, {
+      sessionValidated,
+      authMode,
+      role: portalRole || null,
+    });
     if (loadingEl && !loadingEl.classList.contains('hidden')) {
       loadingEl.classList.add('hidden');
       if (sessionValidated) {

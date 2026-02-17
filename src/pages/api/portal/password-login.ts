@@ -23,6 +23,14 @@ function parseEmails(raw?: string | null): Set<string> {
   );
 }
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return email.slice(0, 2);
+  if (!local) return `***@${domain}`;
+  if (local.length <= 2) return `${local[0] || '*'}***@${domain}`;
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   const userAgent = request.headers.get('user-agent') || '';
   let payload: any = {};
@@ -48,6 +56,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const hasSecret = Boolean(env('TURNSTILE_SECRET_KEY'));
   if (isProduction() && hasSecret) {
     if (!captchaToken) {
+      void logSecurityEvent({
+        type: 'captcha_failed',
+        identifier: 'portal.password-login',
+        ip: clientAddress,
+        userAgent,
+        detail: 'Captcha token ausente',
+        meta: { email: maskEmail(email) },
+      });
       return new Response(JSON.stringify({ ok: false, error: 'Captcha requerido' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
@@ -95,6 +111,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   if (!allowed || password !== expected) {
+    void logSecurityEvent({
+      type: 'maintenance',
+      identifier: 'portal.password-login.invalid-credentials',
+      ip: clientAddress,
+      userAgent,
+      detail: 'Intento con credenciales inválidas',
+      meta: { email: maskEmail(email), allowedEmail: allowed },
+    });
     return new Response(JSON.stringify({ ok: false, error: 'Credenciales invalidas' }), {
       status: 401,
       headers: { 'content-type': 'application/json' },
