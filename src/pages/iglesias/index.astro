@@ -49,6 +49,29 @@ const countryStats = countries.map((country) => ({
   continent: churches.find((church) => church.country === country)?.continent || 'América',
 }));
 
+const cityStats = Array.from(
+  churches.reduce((acc, church) => {
+    const city = String(church.city || '').trim();
+    if (!city) return acc;
+    const country = String(church.country || 'Colombia');
+    const continent = String(church.continent || 'América');
+    const key = `${continent}||${country}||${city}`;
+    const current = acc.get(key);
+    if (current) {
+      current.count += 1;
+      return acc;
+    }
+    acc.set(key, { city, country, continent, count: 1 });
+    return acc;
+  }, new Map<string, { city: string; country: string; continent: string; count: number }>()).values(),
+).sort((a, b) => {
+  const continentCompare = a.continent.localeCompare(b.continent, 'es');
+  if (continentCompare !== 0) return continentCompare;
+  const countryCompare = a.country.localeCompare(b.country, 'es');
+  if (countryCompare !== 0) return countryCompare;
+  return a.city.localeCompare(b.city, 'es');
+});
+
 const cspNonce = Astro.locals?.cspNonce;
 const title = 'Iglesias Maná Global';
 const description = 'Encuentra la sede de Ministerio Maná más cercana y contacta fácilmente por WhatsApp o Google Maps.';
@@ -124,6 +147,28 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
                   aria-pressed="false"
                 >
                   {entry.country}
+                  <span class="chip-count">{entry.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p class="text-[11px] font-intro uppercase tracking-widest text-white/50 mb-2">Ciudad</p>
+            <div id="city-chips" class="flex flex-wrap gap-2">
+              <button type="button" data-city="" data-country="" data-continent="" class="filter-chip filter-chip-active" aria-pressed="true">
+                Todas
+              </button>
+              {cityStats.map((entry) => (
+                <button
+                  type="button"
+                  data-city={entry.city}
+                  data-country={entry.country}
+                  data-continent={entry.continent}
+                  class="filter-chip"
+                  aria-pressed="false"
+                >
+                  {entry.city}
                   <span class="chip-count">{entry.count}</span>
                 </button>
               ))}
@@ -278,9 +323,11 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
 
       const continentButtons = Array.from(document.querySelectorAll('#continent-chips [data-continent]'));
       const countryButtons = Array.from(document.querySelectorAll('#country-chips [data-country]'));
+      const cityButtons = Array.from(document.querySelectorAll('#city-chips [data-city]'));
 
       let selectedContinent = '';
       let selectedCountry = '';
+      let selectedCity = '';
 
       const setButtonState = (buttons, key, value) => {
         buttons.forEach((button) => {
@@ -302,10 +349,32 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
         });
       };
 
+      const syncCityChipVisibility = () => {
+        cityButtons.forEach((button) => {
+          const buttonCity = button.dataset.city || '';
+          if (!buttonCity) {
+            button.classList.remove('hidden');
+            return;
+          }
+
+          const buttonContinent = button.dataset.continent || '';
+          const buttonCountry = button.dataset.country || '';
+          const matchesContinent = !selectedContinent || buttonContinent === selectedContinent;
+          const matchesCountry = !selectedCountry || buttonCountry === selectedCountry;
+          const shouldShow = matchesContinent && matchesCountry;
+
+          button.classList.toggle('hidden', !shouldShow);
+
+          if (!shouldShow && buttonCity === selectedCity) {
+            selectedCity = '';
+          }
+        });
+      };
+
       const dispatchMapFocus = () => {
         window.dispatchEvent(
           new CustomEvent('mana:church-country-focus', {
-            detail: { country: selectedCountry || '' },
+            detail: { country: selectedCountry || '', city: selectedCity || '' },
           }),
         );
       };
@@ -326,8 +395,9 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
           const matchesText = !term || city.includes(term) || name.includes(term) || address.includes(term) || notes.includes(term) || service.includes(term);
           const matchesContinent = !selectedContinent || continent === selectedContinent;
           const matchesCountry = !selectedCountry || country === selectedCountry;
+          const matchesCity = !selectedCity || normalize(card.dataset.city || '') === normalize(selectedCity);
 
-          const show = matchesText && matchesContinent && matchesCountry;
+          const show = matchesText && matchesContinent && matchesCountry && matchesCity;
           card.classList.toggle('hidden', !show);
           if (show) visible += 1;
         });
@@ -341,7 +411,9 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
           selectedContinent = button.dataset.continent || '';
           setButtonState(continentButtons, 'continent', selectedContinent);
           syncCountryChipVisibility();
+          syncCityChipVisibility();
           setButtonState(countryButtons, 'country', selectedCountry);
+          setButtonState(cityButtons, 'city', selectedCity);
           filter();
           dispatchMapFocus();
         });
@@ -351,6 +423,17 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
         button.addEventListener('click', () => {
           selectedCountry = button.dataset.country || '';
           setButtonState(countryButtons, 'country', selectedCountry);
+          syncCityChipVisibility();
+          setButtonState(cityButtons, 'city', selectedCity);
+          filter();
+          dispatchMapFocus();
+        });
+      });
+
+      cityButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          selectedCity = button.dataset.city || '';
+          setButtonState(cityButtons, 'city', selectedCity);
           filter();
           dispatchMapFocus();
         });
@@ -361,8 +444,10 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       }
 
       syncCountryChipVisibility();
+      syncCityChipVisibility();
       setButtonState(continentButtons, 'continent', selectedContinent);
       setButtonState(countryButtons, 'country', selectedCountry);
+      setButtonState(cityButtons, 'city', selectedCity);
       filter();
       dispatchMapFocus();
     })();

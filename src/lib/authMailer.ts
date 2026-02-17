@@ -28,6 +28,67 @@ const CTA_LABELS: Record<AuthEmailKind, string> = {
   recovery: 'Cambiar contraseña',
 };
 
+function getPublicBaseUrl(): string | null {
+  const raw =
+    env('PUBLIC_SITE_URL') ||
+    env('SITE_URL') ||
+    env('VERCEL_PROJECT_PRODUCTION_URL') ||
+    env('VERCEL_URL');
+  if (!raw) return null;
+  const normalized = raw.startsWith('http') ? raw : `https://${raw}`;
+  try {
+    const url = new URL(normalized);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeVerificationType(type?: string | null): string {
+  if (type === 'email_change_current' || type === 'email_change_new') {
+    return 'email_change';
+  }
+  return String(type || '');
+}
+
+function buildPortalActivationUrl(params: {
+  redirectTo?: string;
+  email: string;
+  verificationType?: string | null;
+  hashedToken?: string | null;
+  fallbackActionLink?: string | null;
+}): string {
+  const { redirectTo, email, verificationType, hashedToken, fallbackActionLink } = params;
+
+  const base = getPublicBaseUrl() || 'https://ministeriomana.org';
+  let activationUrl: URL;
+
+  try {
+    activationUrl = new URL(redirectTo || `${base}/portal/activar`, base);
+  } catch {
+    activationUrl = new URL('/portal/activar', base);
+  }
+
+  if (!activationUrl.pathname.startsWith('/portal/activar')) {
+    return fallbackActionLink || activationUrl.toString();
+  }
+
+  if (hashedToken) {
+    activationUrl.searchParams.set('token_hash', hashedToken);
+  }
+  const normalizedType = normalizeVerificationType(verificationType);
+  if (normalizedType) {
+    activationUrl.searchParams.set('type', normalizedType);
+  }
+  activationUrl.searchParams.set('email', email);
+
+  // Mantiene compatibilidad con enlaces directos a verify cuando no llega hash.
+  if (!hashedToken && fallbackActionLink) {
+    return fallbackActionLink;
+  }
+  return activationUrl.toString();
+}
+
 function buildAuthHtml(kind: AuthEmailKind, actionUrl: string): string {
   const title = SUBJECTS[kind];
   const cta = CTA_LABELS[kind];
@@ -156,10 +217,18 @@ export async function sendAuthLink(params: {
     return { ok: false, method: 'sendgrid', error: errorMsg };
   }
 
+  const actionUrl = buildPortalActivationUrl({
+    redirectTo,
+    email: params.email,
+    verificationType: data?.properties?.verification_type,
+    hashedToken: data?.properties?.hashed_token,
+    fallbackActionLink: data?.properties?.action_link,
+  });
+
   const sent = await sendAuthEmail({
     kind: params.kind,
     email: params.email,
-    actionUrl: data.properties.action_link,
+    actionUrl,
   });
 
   if (!sent) {

@@ -79,11 +79,65 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     }
     // Superadmin sees everything (no scope applied)
 
-    const { data: users, error } = await query.limit(100);
+    const { data: users, error } = await query.limit(200);
 
     if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500 });
     }
 
-    return new Response(JSON.stringify({ ok: true, users }), { status: 200 });
+    const authUsersByEmail = new Map<string, any>();
+    let page = 1;
+    const perPage = 200;
+    while (page <= 10) {
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+        if (authError) {
+            console.error('[portal.admin.users.list] auth list error', authError);
+            break;
+        }
+        const authUsers = authData?.users || [];
+        authUsers.forEach((authUser: any) => {
+            const email = String(authUser?.email || '').toLowerCase();
+            if (!email) return;
+            authUsersByEmail.set(email, authUser);
+        });
+        if (authUsers.length < perPage) break;
+        page += 1;
+    }
+
+    const now = Date.now();
+    const enrichedUsers = (users || []).map((profile: any) => {
+        const email = String(profile?.email || '').toLowerCase();
+        const authUser = authUsersByEmail.get(email);
+        const invitedAt = authUser?.invited_at || null;
+        const emailConfirmedAt = authUser?.email_confirmed_at || null;
+        const lastSignInAt = authUser?.last_sign_in_at || null;
+        const bannedUntil = authUser?.banned_until || null;
+        const isBlocked = bannedUntil ? new Date(bannedUntil).getTime() > now : false;
+
+        let accessStatus = 'pending';
+        if (isBlocked) {
+            accessStatus = 'blocked';
+        } else if (!authUser) {
+            accessStatus = 'unknown';
+        } else if (!emailConfirmedAt && invitedAt) {
+            accessStatus = 'invited';
+        } else if (!emailConfirmedAt) {
+            accessStatus = 'pending';
+        } else if (lastSignInAt) {
+            accessStatus = 'active';
+        } else {
+            accessStatus = 'confirmed';
+        }
+
+        return {
+            ...profile,
+            access_status: accessStatus,
+            invited_at: invitedAt,
+            email_confirmed_at: emailConfirmedAt,
+            last_sign_in_at: lastSignInAt,
+            is_blocked: isBlocked,
+        };
+    });
+
+    return new Response(JSON.stringify({ ok: true, users: enrichedUsers }), { status: 200 });
 };

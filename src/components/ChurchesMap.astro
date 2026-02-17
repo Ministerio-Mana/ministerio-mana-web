@@ -143,6 +143,7 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
 
     const markerLayer = L.layerGroup().addTo(map);
     const countryBounds = new Map();
+    const cityBounds = new Map();
     const allCoords = [];
 
     CHURCHES.forEach((church) => {
@@ -157,6 +158,14 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
         existingBounds.extend(latLng);
       } else {
         countryBounds.set(country, L.latLngBounds([latLng]));
+      }
+
+      const cityKey = `${country}::${String(church.city || '').trim().toLowerCase()}`;
+      const existingCityBounds = cityBounds.get(cityKey);
+      if (existingCityBounds) {
+        existingCityBounds.extend(latLng);
+      } else {
+        cityBounds.set(cityKey, L.latLngBounds([latLng]));
       }
 
       const mapsHref = mapsHrefForChurch(church);
@@ -184,12 +193,20 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
 
     const globalBounds = allCoords.length ? L.latLngBounds(allCoords) : null;
 
-    const focusCountry = (country) => {
+    const focusCountry = (country, city = '') => {
       if (!country || country === 'all') {
         if (globalBounds?.isValid()) {
           map.fitBounds(globalBounds, { padding: [56, 56], maxZoom: 4 });
         }
         setActiveCountryChip('all');
+        return;
+      }
+
+      const cityKey = `${country}::${String(city || '').trim().toLowerCase()}`;
+      const selectedCityBounds = city ? cityBounds.get(cityKey) : null;
+      if (selectedCityBounds?.isValid()) {
+        map.fitBounds(selectedCityBounds, { padding: [60, 60], maxZoom: 12 });
+        setActiveCountryChip(country);
         return;
       }
 
@@ -208,7 +225,8 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
 
     window.addEventListener('mana:church-country-focus', (event) => {
       const country = event?.detail?.country;
-      focusCountry(country || 'all');
+      const city = event?.detail?.city;
+      focusCountry(country || 'all', city || '');
     });
 
     focusCountry('all');

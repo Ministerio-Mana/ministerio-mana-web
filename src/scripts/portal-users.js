@@ -10,6 +10,7 @@ const loadingEl = document.getElementById('users-loading');
 const emptyEl = document.getElementById('users-empty');
 const searchInput = document.getElementById('users-search');
 const roleFilter = document.getElementById('users-role-filter');
+const statusFilter = document.getElementById('users-status-filter');
 const countEl = document.getElementById('users-count');
 
 // Modal Elements
@@ -61,6 +62,15 @@ const roleOrder = [
     'leader',
     'user',
 ];
+
+const accessStatusTranslations = {
+    active: 'Activo',
+    invited: 'Invitado',
+    confirmed: 'Confirmado',
+    pending: 'Pendiente',
+    blocked: 'Bloqueado',
+    unknown: 'Sin diagnóstico',
+};
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -153,6 +163,7 @@ async function init() {
 
     searchInput?.addEventListener('input', () => applyFilters());
     roleFilter?.addEventListener('change', () => applyFilters());
+    statusFilter?.addEventListener('change', () => applyFilters());
 }
 
 async function loadChurches() {
@@ -248,11 +259,13 @@ async function loadUsers(token) {
 function applyFilters() {
     const query = searchInput?.value?.trim().toLowerCase() || '';
     const roleValue = roleFilter?.value || '';
+    const statusValue = statusFilter?.value || '';
     const filtered = (allUsers || []).filter((user) => {
         const name = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
         const searchable = `${name} ${user.email || ''}`.toLowerCase();
         if (query && !searchable.includes(query)) return false;
         if (roleValue && user.role !== roleValue) return false;
+        if (statusValue && user.access_status !== statusValue) return false;
         return true;
     });
     renderTable(filtered);
@@ -263,6 +276,29 @@ function roleBadgeClass(role) {
     if (role === 'pastor' || role === 'national_pastor') return 'bg-blue-100 text-blue-700';
     if (role === 'local_collaborator') return 'bg-teal-100 text-teal-700';
     return 'bg-slate-100 text-slate-600';
+}
+
+function statusBadgeClass(status) {
+    if (status === 'active') return 'bg-emerald-100 text-emerald-700';
+    if (status === 'invited') return 'bg-amber-100 text-amber-700';
+    if (status === 'confirmed') return 'bg-cyan-100 text-cyan-700';
+    if (status === 'blocked') return 'bg-rose-100 text-rose-700';
+    return 'bg-slate-100 text-slate-600';
+}
+
+function formatDateTime(value) {
+    if (!value) return '—';
+    try {
+        return new Date(value).toLocaleString('es-CO', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    } catch {
+        return '—';
+    }
 }
 
 function renderRoleCell(user) {
@@ -294,7 +330,7 @@ function renderTable(users) {
     if (countEl) {
         const total = allUsers.length;
         const count = users.length;
-        const hasFilters = Boolean(searchInput?.value || roleFilter?.value);
+        const hasFilters = Boolean(searchInput?.value || roleFilter?.value || statusFilter?.value);
         countEl.textContent = hasFilters ? `${count} de ${total} usuarios` : `${total} usuarios`;
     }
     if (users.length === 0) {
@@ -312,10 +348,15 @@ function renderTable(users) {
             const safeFullName = escapeHtml(fullName);
             const safeEmail = escapeHtml(u.email || '');
             const safeEmailAttr = escapeAttr(u.email || '');
-            const updatedLabel = new Date(u.updated_at || u.created_at).toLocaleDateString();
-            const safeUpdatedLabel = escapeHtml(updatedLabel);
-            const resetButton = (currentUserRole === 'admin' || currentUserRole === 'superadmin')
-                ? `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">Reset contraseña</button>`
+            const accessStatus = u.access_status || 'unknown';
+            const safeStatusLabel = escapeHtml(accessStatusTranslations[accessStatus] || accessStatus);
+            const accessStatusClass = statusBadgeClass(accessStatus);
+            const lastSignInLabel = formatDateTime(u.last_sign_in_at);
+            const safeLastSignIn = escapeHtml(lastSignInLabel);
+            const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
+            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
+            const resetButton = canSendAccessLink
+                ? `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`
                 : '';
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
@@ -324,7 +365,12 @@ function renderTable(users) {
                     <td class="py-3">
                         ${renderRoleCell(u)}
                     </td>
-                    <td class="py-3 text-slate-400 text-xs">${safeUpdatedLabel}</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${accessStatusClass}">
+                            ${safeStatusLabel}
+                        </span>
+                    </td>
+                    <td class="py-3 text-slate-400 text-xs">${safeLastSignIn}</td>
                     <td class="py-3 text-right pr-2">
                         ${resetButton || '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>'}
                     </td>

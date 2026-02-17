@@ -125,14 +125,16 @@ function getUrlParams() {
 
 function getTokenParams() {
   const { searchParams, hashParams } = getUrlParams();
+  const tokenHash = searchParams.get('token_hash') || searchParams.get('token') || hashParams.get('token_hash') || hashParams.get('token');
   const accessToken = hashParams.get('access_token') || hashParams.get('/access_token') || searchParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token') || hashParams.get('/refresh_token') || searchParams.get('refresh_token');
-  const type = hashParams.get('type') || hashParams.get('/type') || searchParams.get('type');
+  const type = hashParams.get('type') || hashParams.get('/type') || searchParams.get('type') || searchParams.get('verification_type');
+  const email = searchParams.get('email') || hashParams.get('email') || '';
   const error = hashParams.get('error') || hashParams.get('/error') || searchParams.get('error');
   const errorCode = hashParams.get('error_code') || hashParams.get('/error_code') || searchParams.get('error_code');
   const errorDescription =
     hashParams.get('error_description') || hashParams.get('/error_description') || searchParams.get('error_description');
-  return { accessToken, refreshToken, type, error, errorCode, errorDescription };
+  return { tokenHash, accessToken, refreshToken, type, email, error, errorCode, errorDescription };
 }
 
 function normalizeHash() {
@@ -150,6 +152,18 @@ async function resolveSessionFromUrl() {
   const { url } = getUrlParams();
   const authCode = url.searchParams.get('code');
   const tokens = getTokenParams();
+  const otpType = tokens?.type === 'email_change_current' || tokens?.type === 'email_change_new' ? 'email_change' : tokens?.type;
+
+  if (tokens?.tokenHash && otpType) {
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      token_hash: tokens.tokenHash,
+      type: otpType,
+    });
+    if (otpData?.session) return true;
+    if (otpError) {
+      console.warn('[Activar] verifyOtp failed', otpError.message || otpError);
+    }
+  }
 
   if (authCode) {
     const { data: codeData, error } = await supabase.auth.exchangeCodeForSession(authCode);
@@ -191,9 +205,9 @@ async function validateRecoveryLink() {
     showRetry(false);
     statusContainer?.classList.add('hidden');
     const url = new URL(window.location.href);
-    if (url.hash) {
-      history.replaceState({}, document.title, `${url.pathname}${url.search}`);
-    }
+    const next = url.searchParams.get('next');
+    const cleanUrl = `${url.pathname}${next ? `?next=${encodeURIComponent(next)}` : ''}`;
+    history.replaceState({}, document.title, cleanUrl);
     return true;
   }
 
@@ -264,9 +278,9 @@ toggleConfirmBtn?.addEventListener('click', () => {
 
 async function guardSession() {
   const { searchParams } = getUrlParams();
-  const { accessToken, refreshToken, type, error } = getTokenParams();
+  const { tokenHash, accessToken, refreshToken, type, error } = getTokenParams();
   const hasRecoveryType = type === 'recovery';
-  const hasToken = Boolean(accessToken || refreshToken || error);
+  const hasToken = Boolean(tokenHash || accessToken || refreshToken || error);
   const hasCode = searchParams.has('code');
   hasRecoveryContext = hasRecoveryType || hasToken || hasCode;
 

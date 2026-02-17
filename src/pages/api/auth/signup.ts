@@ -79,7 +79,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         const userExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
 
         if (userExists) {
-            return new Response(JSON.stringify({ ok: false, error: 'Este correo ya está registrado' }), { status: 400 });
+            const redirectTo = `${new URL(request.url).origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+            const linkResult = await sendAuthLink({
+                kind: 'recovery',
+                email,
+                redirectTo,
+            });
+            if (!linkResult.ok) {
+                return new Response(JSON.stringify({ ok: false, error: 'Este correo ya está registrado' }), { status: 400 });
+            }
+            return new Response(JSON.stringify({
+                ok: true,
+                alreadyExists: true,
+                message: 'El correo ya existe. Te enviamos un nuevo enlace para activar o recuperar acceso.',
+            }), { status: 200 });
         }
 
         // Create user with auto-confirmed email
