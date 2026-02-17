@@ -112,6 +112,62 @@ function buildUpcomingSummary(list: any[]): string {
     .join(' | ');
 }
 
+function normalizePaymentProviderLabel(value: string | null | undefined): string {
+  const raw = normalizeText(value).toLowerCase();
+  if (!raw) return '';
+  if (raw === 'wompi') return 'WOMPI';
+  if (raw === 'stripe') return 'STRIPE';
+  if (raw === 'manual' || raw === 'physical' || raw === 'fisico') return 'MANUAL/FISICO';
+  return raw.toUpperCase();
+}
+
+function resolvePaymentMeta(booking: any, payment: any, plan: any): { medio: string; pasarela: string; metodo: string } {
+  const rawEvent = payment?.raw_event && typeof payment.raw_event === 'object' ? payment.raw_event : {};
+  const provider = normalizePaymentProviderLabel(payment?.provider) || normalizePaymentProviderLabel(plan?.provider);
+  const method = normalizeText(
+    rawEvent?.payment_method
+      || rawEvent?.payment_method_type
+      || rawEvent?.method
+      || rawEvent?.payment_method_types?.[0]
+      || booking?.payment_method,
+  );
+
+  if (provider) {
+    const normalizedMethod = method || (provider === 'MANUAL/FISICO' ? 'manual' : 'online');
+    return {
+      medio: provider,
+      pasarela: provider,
+      metodo: normalizedMethod,
+    };
+  }
+
+  const bookingMethod = normalizeText(booking?.payment_method).toLowerCase();
+  const registrationType = resolveRegistrationType(booking);
+  if (bookingMethod === 'cash' || bookingMethod === 'manual' || registrationType === 'LOCAL') {
+    return {
+      medio: 'MANUAL/FISICO',
+      pasarela: '',
+      metodo: method || bookingMethod || 'manual',
+    };
+  }
+
+  if (registrationType === 'ONLINE') {
+    const currency = normalizeText(booking?.currency).toUpperCase();
+    const inferredGateway = currency === 'COP' ? 'WOMPI' : currency === 'USD' ? 'STRIPE' : 'ONLINE';
+    return {
+      medio: inferredGateway,
+      pasarela: inferredGateway,
+      metodo: method || 'online',
+    };
+  }
+
+  return {
+    medio: method ? 'ONLINE' : 'SIN_PAGO',
+    pasarela: '',
+    metodo: method,
+  };
+}
+
 export const GET: APIRoute = async ({ request, clientAddress }) => {
   if (!validateExport(request)) {
     void logSecurityEvent({
@@ -232,7 +288,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
   let paymentQuery = supabaseAdmin
     .from('cumbre_payments')
-    .select('id, booking_id, amount, currency, status, created_at')
+    .select('id, booking_id, provider, amount, currency, status, raw_event, created_at')
     .in('booking_id', bookingIds)
     .eq('status', 'APPROVED')
     .order('created_at', { ascending: false });
@@ -249,7 +305,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
   const { data: plans } = await supabaseAdmin
     .from('cumbre_payment_plans')
-    .select('id, booking_id, next_due_date, installment_amount, currency')
+    .select('id, booking_id, provider, next_due_date, installment_amount, currency')
     .in('booking_id', bookingIds)
     .order('created_at', { ascending: false });
 
@@ -305,6 +361,9 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'iglesia_catalogo',
     'iglesia_escrita',
     'tipo_registro',
+    'medio_pago',
+    'pasarela_pago',
+    'metodo_pago',
     'valor_pagado_total',
     'valor_pagado_prorrateado',
     'fecha_ultimo_pago',
@@ -333,10 +392,11 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
     const paymentRows = paymentsByBooking.get(bookingId) ?? [];
     const lastPayment = paymentRows.length ? paymentRows[0] : null;
+    const plan = plansByBooking.get(bookingId);
+    const paymentMeta = resolvePaymentMeta(booking, lastPayment, plan);
 
     const pendingInstallments = installmentsByBooking.get(bookingId) ?? [];
     const nextInstallment = pendingInstallments.find((item) => item.due_date) || pendingInstallments[0];
-    const plan = plansByBooking.get(bookingId);
     const nextDueDate = nextInstallment?.due_date || plan?.next_due_date || '';
     const nextAmount = nextInstallment?.amount ?? plan?.installment_amount ?? '';
     const nextCurrency = nextInstallment?.currency ?? plan?.currency ?? booking?.currency ?? '';
@@ -375,6 +435,9 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         iglesia_catalogo: churchName,
         iglesia_escrita: churchInput,
         tipo_registro: resolveRegistrationType(booking),
+        medio_pago: paymentMeta.medio,
+        pasarela_pago: paymentMeta.pasarela,
+        metodo_pago: paymentMeta.metodo,
         valor_pagado_total: totalPaid,
         valor_pagado_prorrateado: perParticipant,
         fecha_ultimo_pago: lastPayment?.created_at || '',
