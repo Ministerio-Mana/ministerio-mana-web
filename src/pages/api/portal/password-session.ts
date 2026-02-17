@@ -18,11 +18,19 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
+  const profile = {
+    user_id: 'password-session',
+    email: session.email,
+    full_name: session.email.split('@')[0],
+    role: session.role,
+  };
+
   return new Response(JSON.stringify({
     ok: true,
     mode: 'password',
     email: session.email,
     role: session.role,
+    profile,
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },

@@ -117,6 +117,17 @@ function showStatus(msg, type = 'loading') {
   gsap.from(statusContainer, { scale: 0.9, duration: 0.4, ease: 'back.out' });
 }
 
+function resolveLoginErrorMessage(err) {
+  const raw = String(err?.message || '').trim();
+  if (!raw) return 'No se pudo iniciar sesión. Intenta de nuevo.';
+  if (/invalid login credentials/i.test(raw)) return 'Contraseña incorrecta o usuario no encontrado.';
+  if (/email not confirmed/i.test(raw)) return 'Debes confirmar tu correo para ingresar.';
+  if (/captcha requerido|captcha invalido/i.test(raw)) {
+    return 'No se pudo validar el captcha. Recarga la página y vuelve a intentarlo.';
+  }
+  return raw;
+}
+
 async function startOAuth(provider, label, btn) {
   if (!supabase) {
     showStatus('El portal no está configurado. Escríbenos por WhatsApp.', 'error');
@@ -306,7 +317,7 @@ passwordForm?.addEventListener('submit', async (e) => {
     window.location.href = '/portal';
   } catch (err) {
     console.error(err);
-    showStatus('Contraseña incorrecta o usuario no encontrado.', 'error');
+    showStatus(resolveLoginErrorMessage(err), 'error');
     resetTurnstile();
     if (btn) {
       btn.disabled = false;
@@ -318,6 +329,7 @@ passwordForm?.addEventListener('submit', async (e) => {
 async function tryApiLogin(email, password, token) {
   const res = await fetch('/api/portal/password-login', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, turnstileToken: token || '' })
   });

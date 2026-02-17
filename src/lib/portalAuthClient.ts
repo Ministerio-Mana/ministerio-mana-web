@@ -119,13 +119,29 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
                     localStorage.removeItem(key);
                 }
             } else {
-                dlog('Authenticated via LocalStorage Fallback');
-                return {
-                    isAuthenticated: true,
-                    token: sessionObj.access_token,
-                    mode: 'supabase',
-                    user: sessionObj.user || { email: 'recovered@session', role: 'authenticated' }
-                };
+                if (supabase) {
+                    const { data: userData, error: userError } = await supabase.auth.getUser(sessionObj.access_token);
+                    if (!userError && userData?.user) {
+                        dlog('Authenticated via LocalStorage Fallback (validated)');
+                        return {
+                            isAuthenticated: true,
+                            token: sessionObj.access_token,
+                            mode: 'supabase',
+                            user: userData.user,
+                        };
+                    }
+                    if (key) {
+                        localStorage.removeItem(key);
+                    }
+                } else {
+                    dlog('Authenticated via LocalStorage Fallback');
+                    return {
+                        isAuthenticated: true,
+                        token: sessionObj.access_token,
+                        mode: 'supabase',
+                        user: sessionObj.user || { email: 'recovered@session', role: 'authenticated' },
+                    };
+                }
             }
         }
     } catch (err) {
@@ -137,13 +153,24 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
         const res = await fetch('/api/portal/password-session', { credentials: 'include' });
         if (res.ok) {
             const data = await res.json();
-            if (data.ok && data.profile) {
+            if (data?.ok) {
+                const legacyUser = data.profile ?? (
+                    data.email
+                        ? { email: data.email, role: data.role || 'superadmin' }
+                        : null
+                );
+                if (!legacyUser) return {
+                    isAuthenticated: false,
+                    token: null,
+                    mode: null,
+                    user: null
+                };
                 dlog('Authenticated via Password Session Cookie');
                 return {
                     isAuthenticated: true,
                     token: null, // No bearer token needed, cookie handles it
                     mode: 'password',
-                    user: data.profile
+                    user: legacyUser
                 };
             }
         }

@@ -775,6 +775,10 @@ async function loadDashboardData(authResult) {
       console.error('[DEBUG] /api/portal/session failed:', sessionRes.status, sessionRes.statusText);
       const text = await sessionRes.text();
       console.error('[DEBUG] /api/portal/session body:', text);
+      if (sessionRes.status === 401 || sessionRes.status === 403) {
+        redirectToLogin();
+        return;
+      }
       throw new Error(`Session API error: ${sessionRes.status}`);
     }
 
