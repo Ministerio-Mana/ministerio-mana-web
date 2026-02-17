@@ -373,7 +373,12 @@ select
   pay.booking_id,
   pay.status,
   pay.provider,
-  pay.method,
+  coalesce(
+    pay.raw_event ->> 'payment_method',
+    pay.raw_event ->> 'payment_method_type',
+    pay.raw_event ->> 'method',
+    pay.raw_event -> 'payment_method_types' ->> 0
+  ) as payment_method,
   pay.amount,
   pay.currency,
   pay.reference,
@@ -399,4 +404,3 @@ where se.created_at >= now() - interval '48 hours'
   and (se.identifier ilike 'portal.%' or se.identifier ilike 'auth.%')
 group by se.type, se.identifier
 order by hits desc, last_seen desc;
-
