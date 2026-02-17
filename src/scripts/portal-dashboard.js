@@ -720,6 +720,15 @@ function switchTab(tabId) {
   });
 }
 
+function runSafe(label, fn) {
+  try {
+    return fn();
+  } catch (err) {
+    console.error(`[portal.dashboard] ${label} failed`, err);
+    return null;
+  }
+}
+
 // Core Dashboard Logic - Reactive Auth
 async function loadDashboardData(authResult) {
   dlog('[DEBUG] loadDashboardData called with mode:', authResult.mode);
@@ -759,12 +768,16 @@ async function loadDashboardData(authResult) {
 
     // Handle Church Catalog
     if (churchesRes.ok) {
-      portalChurchesCatalog = enrichChurchCatalog(await churchesRes.json());
-      populateChurchesUI(portalChurchesCatalog);
+      const churchesPayload = await churchesRes.json().catch((err) => {
+        console.error('[portal.dashboard] churches payload parse error', err);
+        return [];
+      });
+      portalChurchesCatalog = enrichChurchCatalog(Array.isArray(churchesPayload) ? churchesPayload : []);
+      runSafe('populateChurchesUI', () => populateChurchesUI(portalChurchesCatalog));
 
       // Update advanced church selector if it exists
       if (window.advancedChurchSelector && portalChurchesCatalog.length > 0) {
-        window.advancedChurchSelector.setChurches(portalChurchesCatalog);
+        runSafe('advancedChurchSelector.setChurches', () => window.advancedChurchSelector.setChurches(portalChurchesCatalog));
       }
     }
 
@@ -782,12 +795,18 @@ async function loadDashboardData(authResult) {
       throw new Error(`Session API error: ${sessionRes.status}`);
     }
 
-    const sessionPayload = await sessionRes.json();
+    const sessionPayload = await sessionRes.json().catch((err) => {
+      console.error('[portal.dashboard] session payload parse error', err);
+      return { ok: false, error: 'Respuesta inválida de sesión' };
+    });
     dlog('[DEBUG] sessionPayload:', sessionPayload);
     if (!sessionRes.ok || !sessionPayload.ok) throw new Error(sessionPayload.error || 'No se pudo cargar el perfil');
 
     let payload = { ok: true, user: {}, bookings: [], plans: [], payments: [] };
-    const resData = await resumenRes.json();
+    const resData = await resumenRes.json().catch((err) => {
+      console.error('[portal.dashboard] resumen payload parse error', err);
+      return { ok: false, error: 'Respuesta inválida de resumen' };
+    });
     dlog('[DEBUG] resData (resumen):', resData);
     if (!resumenRes.ok || !resData.ok) {
       // Optional: Log error but continue with minimal profile?
@@ -1003,25 +1022,25 @@ async function loadDashboardData(authResult) {
       if (highlightContext) highlightContext.textContent = concept;
     }
 
-    renderBookings(bookings);
-    renderPlans(plans, bookings);
-    renderInstallments(installments, plans, bookings);
+    runSafe('renderBookings', () => renderBookings(bookings));
+    runSafe('renderPlans', () => renderPlans(plans, bookings));
+    runSafe('renderInstallments', () => renderInstallments(installments, plans, bookings));
     const paymentsForTable = buildPaymentsTableData(payload);
-    renderPayments(paymentsForTable);
-    renderSummaryEvents(bookings, plans, installments);
-    renderGivingSummary(donations, donationSubscriptions);
-    renderCampusSummary(donations, donationSubscriptions);
-    renderLocalEvents(events);
-    renderMemberships(portalMemberships);
-    setupInviteAccess();
-    initAdminInvite();
+    runSafe('renderPayments', () => renderPayments(paymentsForTable));
+    runSafe('renderSummaryEvents', () => renderSummaryEvents(bookings, plans, installments));
+    runSafe('renderGivingSummary', () => renderGivingSummary(donations, donationSubscriptions));
+    runSafe('renderCampusSummary', () => renderCampusSummary(donations, donationSubscriptions));
+    runSafe('renderLocalEvents', () => renderLocalEvents(events));
+    runSafe('renderMemberships', () => renderMemberships(portalMemberships));
+    runSafe('setupInviteAccess', () => setupInviteAccess());
+    runSafe('initAdminInvite', () => initAdminInvite());
     // 5. Reveal Dashboard (Eager Loading)
     loadingEl.classList.add('hidden');
     contentEl.classList.remove('hidden');
 
     // Inject Admin Filters if applicable
     if (portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin') {
-      setupAdminFilters(bookings);
+      runSafe('setupAdminFilters', () => setupAdminFilters(bookings));
     }
 
     // Role-based filtering for initial view
@@ -1036,7 +1055,7 @@ async function loadDashboardData(authResult) {
     // Initial Render with (potentially) filtered data
     // Note: renderBookings will reuse portalGlobalBookings if we don't pass filtered, so let's update calling convention
     // But renderPlans/etc might also need filtering. For now, focus on Bookings list.
-    renderBookings(displayedBookings);
+    runSafe('renderBookings(filtered)', () => renderBookings(displayedBookings));
 
     gsap.from(contentEl, { opacity: 0, y: 30, duration: 1, ease: 'expo.out' });
 
@@ -2906,7 +2925,6 @@ function renderPlans(plans, bookings) {
           ${safeActionLabel}
          </button>
       </div>
-      ${calendarLinks}
     `;
     plansList.appendChild(card);
   });
