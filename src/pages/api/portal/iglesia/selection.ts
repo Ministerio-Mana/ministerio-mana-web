@@ -81,13 +81,23 @@ export const GET: APIRoute = async ({ request }) => {
 
   let churches: any[] = [];
   if (ctx.scope === 'global') {
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('churches')
       .select('id, code, name, city, country, continent')
       .order('continent', { ascending: true, nullsFirst: false })
       .order('country', { ascending: true, nullsFirst: false })
       .order('city', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
+    if (error?.code === '42703' && /continent/i.test(error?.message || '')) {
+      const legacy = await supabaseAdmin
+        .from('churches')
+        .select('id, code, name, city, country')
+        .order('country', { ascending: true, nullsFirst: false })
+        .order('city', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true });
+      data = legacy.data;
+      error = legacy.error;
+    }
     if (error) {
       console.error('[portal.iglesia.selection] churches error', error);
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo cargar iglesias' }), {
@@ -104,12 +114,22 @@ export const GET: APIRoute = async ({ request }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('churches')
       .select('id, code, name, city, country, continent')
       .eq('country', country)
       .order('city', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
+    if (error?.code === '42703' && /continent/i.test(error?.message || '')) {
+      const legacy = await supabaseAdmin
+        .from('churches')
+        .select('id, code, name, city, country')
+        .eq('country', country)
+        .order('city', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true });
+      data = legacy.data;
+      error = legacy.error;
+    }
     if (error) {
       console.error('[portal.iglesia.selection] churches error', error);
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo cargar iglesias' }), {
@@ -123,11 +143,19 @@ export const GET: APIRoute = async ({ request }) => {
     if (!churches.length) {
       const profileChurchId = (ctx.profile as any)?.church_id;
       if (profileChurchId) {
-        const { data } = await supabaseAdmin
+        let { data, error } = await supabaseAdmin
           .from('churches')
           .select('id, code, name, city, country, continent')
           .eq('id', profileChurchId)
           .maybeSingle();
+        if (error?.code === '42703' && /continent/i.test(error?.message || '')) {
+          const legacy = await supabaseAdmin
+            .from('churches')
+            .select('id, code, name, city, country')
+            .eq('id', profileChurchId)
+            .maybeSingle();
+          data = legacy.data;
+        }
         if (data) churches = [data];
       }
     }

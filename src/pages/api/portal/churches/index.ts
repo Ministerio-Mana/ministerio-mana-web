@@ -13,13 +13,25 @@ export const GET: APIRoute = async () => {
 
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    const { data, error } = await sb
+    let { data, error } = await sb
         .from('churches')
         .select('id, name, city, country, continent, address, maps_url, lat, lng')
         .order('continent', { ascending: true, nullsFirst: false })
         .order('country', { ascending: true, nullsFirst: false })
         .order('city', { ascending: true, nullsFirst: false })
         .order('name', { ascending: true });
+
+    // Backward compatibility for environments where "continent" migration is not applied yet.
+    if (error?.code === '42703' && /continent/i.test(error?.message || '')) {
+        const legacyResult = await sb
+            .from('churches')
+            .select('id, name, city, country, address, maps_url, lat, lng')
+            .order('country', { ascending: true, nullsFirst: false })
+            .order('city', { ascending: true, nullsFirst: false })
+            .order('name', { ascending: true });
+        data = legacyResult.data;
+        error = legacyResult.error;
+    }
 
     if (error) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });
