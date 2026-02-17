@@ -750,24 +750,39 @@ async function loadDashboardData(authResult) {
 
     dlog('[DEBUG] Starting Promise.all for API requests...');
 
-    const promises = [
+    const [sessionResult, churchesResult, resumenResult, userResult] = await Promise.allSettled([
       fetch('/api/portal/session', { headers, credentials: 'include' }),
-      fetch('/api/portal/churches', { headers, credentials: 'include' }), // Fetch Catalog
+      fetch('/api/portal/churches', { headers, credentials: 'include' }),
+      fetch('/api/cuenta/resumen', { headers, credentials: 'include' }),
+      token && supabase
+        ? supabase.auth.getUser()
+        : Promise.resolve({ data: { user: null } }),
+    ]);
 
-      fetch('/api/cuenta/resumen', { headers, credentials: 'include' })
-    ];
-
-    if (token && supabase) {
-      promises.push(supabase.auth.getUser());
-    } else {
-      promises.push(Promise.resolve({ data: { user: null } })); // Mock for no-token
+    if (sessionResult.status !== 'fulfilled') {
+      throw new Error('No se pudo validar la sesión');
     }
 
-    const [sessionRes, churchesRes, resumenRes, { data: userData }] = await Promise.all(promises);
+    if (churchesResult.status === 'rejected') {
+      console.error('[portal.dashboard] churches request failed', churchesResult.reason);
+    }
+    if (resumenResult.status === 'rejected') {
+      console.error('[portal.dashboard] resumen request failed', resumenResult.reason);
+    }
+    if (userResult.status === 'rejected') {
+      console.error('[portal.dashboard] user request failed', userResult.reason);
+    }
+
+    const sessionRes = sessionResult.value;
+    const churchesRes = churchesResult.status === 'fulfilled' ? churchesResult.value : null;
+    const resumenRes = resumenResult.status === 'fulfilled' ? resumenResult.value : null;
+    const userData = userResult.status === 'fulfilled'
+      ? userResult.value?.data?.user || null
+      : null;
     dlog('[DEBUG] Promise.all completed.');
 
     // Handle Church Catalog
-    if (churchesRes.ok) {
+    if (churchesRes?.ok) {
       const churchesPayload = await churchesRes.json().catch((err) => {
         console.error('[portal.dashboard] churches payload parse error', err);
         return [];
@@ -803,16 +818,21 @@ async function loadDashboardData(authResult) {
     if (!sessionRes.ok || !sessionPayload.ok) throw new Error(sessionPayload.error || 'No se pudo cargar el perfil');
 
     let payload = { ok: true, user: {}, bookings: [], plans: [], payments: [] };
-    const resData = await resumenRes.json().catch((err) => {
-      console.error('[portal.dashboard] resumen payload parse error', err);
-      return { ok: false, error: 'Respuesta inválida de resumen' };
-    });
-    dlog('[DEBUG] resData (resumen):', resData);
-    if (!resumenRes.ok || !resData.ok) {
-      // Optional: Log error but continue with minimal profile?
-      dwarn('Could not load resumen:', resData.error);
+    if (resumenRes?.ok) {
+      const resData = await resumenRes.json().catch((err) => {
+        console.error('[portal.dashboard] resumen payload parse error', err);
+        return { ok: false, error: 'Respuesta inválida de resumen' };
+      });
+      dlog('[DEBUG] resData (resumen):', resData);
+      if (!resData.ok) {
+        dwarn('Could not load resumen:', resData.error);
+      } else {
+        payload = resData;
+      }
+    } else if (resumenRes) {
+      dwarn('Could not load resumen:', `status ${resumenRes.status}`);
     } else {
-      payload = resData;
+      dwarn('Could not load resumen:', 'request failed');
     }
     portalAccountPayload = payload;
 
