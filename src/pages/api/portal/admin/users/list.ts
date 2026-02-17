@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
     let query = supabaseAdmin
         .from('user_profiles')
-        .select('user_id, first_name, last_name, full_name, email, role, church_id, church_name, city, country, created_at, updated_at, church:churches(id, name, city, country)')
+        .select('user_id, first_name, last_name, full_name, email, role, church_id, portal_church_id, church_name, city, country, created_at, updated_at')
         .order('updated_at', { ascending: false });
 
     // Scoping Logic
@@ -75,7 +75,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         if (!effectiveChurchId) {
             return new Response(JSON.stringify({ ok: true, users: [] }), { status: 200 });
         }
-        query = query.eq('church_id', effectiveChurchId);
+        query = query.or(`church_id.eq.${effectiveChurchId},portal_church_id.eq.${effectiveChurchId}`);
     }
     // Superadmin sees everything (no scope applied)
 
@@ -83,6 +83,25 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
     if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500 });
+    }
+
+    const churchIds = Array.from(new Set((users || [])
+        .map((profile: any) => profile?.church_id || profile?.portal_church_id || null)
+        .filter(Boolean)));
+    const churchMap = new Map<string, any>();
+    if (churchIds.length) {
+        const { data: churches, error: churchesError } = await supabaseAdmin
+            .from('churches')
+            .select('id, name, city, country')
+            .in('id', churchIds);
+        if (churchesError) {
+            console.error('[portal.admin.users.list] churches error', churchesError);
+        } else {
+            (churches || []).forEach((church: any) => {
+                if (!church?.id) return;
+                churchMap.set(church.id, church);
+            });
+        }
     }
 
     const authUsersByEmail = new Map<string, any>();
@@ -129,8 +148,10 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
             accessStatus = 'confirmed';
         }
 
+        const resolvedChurchId = profile?.church_id || profile?.portal_church_id || null;
         return {
             ...profile,
+            church: resolvedChurchId ? (churchMap.get(resolvedChurchId) || null) : null,
             full_name: profile?.full_name
                 || authUser?.user_metadata?.full_name
                 || [authUser?.user_metadata?.first_name, authUser?.user_metadata?.last_name].filter(Boolean).join(' ')

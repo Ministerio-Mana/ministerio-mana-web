@@ -133,6 +133,7 @@ const churchMembersRole = document.getElementById('church-members-role');
 const churchSelector = document.getElementById('church-selector');
 const churchSelectorContinent = document.getElementById('church-selector-continent');
 const churchSelectorCountry = document.getElementById('church-selector-country');
+const churchSelectorSearch = document.getElementById('church-selector-search');
 const churchSelectorInput = document.getElementById('church-selector-input');
 const churchSelectorStatus = document.getElementById('church-selector-status');
 const adminUsersCard = document.getElementById('admin-users-card');
@@ -269,6 +270,7 @@ let portalChurchesCatalog = [];
 let portalIsCustomChurch = false;
 let selectorContinentFilter = '';
 let selectorCountryFilter = '';
+let selectorSearchFilter = '';
 let churchBookingsData = [];
 let churchMembersData = [];
 let churchPaymentsData = [];
@@ -363,6 +365,16 @@ function getFilteredChurchesForSelector() {
     .filter((church) => {
       if (selectorContinentFilter && church.continent !== selectorContinentFilter) return false;
       if (selectorCountryFilter && church.country !== selectorCountryFilter) return false;
+      if (selectorSearchFilter) {
+        const haystack = [
+          church.name,
+          church.city,
+          church.country,
+          church.continent,
+          church.code,
+        ].filter(Boolean).join(' ');
+        if (!normalizeGeoToken(haystack).includes(selectorSearchFilter)) return false;
+      }
       return true;
     })
     .sort((a, b) => {
@@ -417,11 +429,15 @@ function ensureDefaultSelectorFilters() {
 }
 
 function buildChurchSelectorLabel(church) {
-  const location = [church.city, church.country].filter(Boolean).join(' · ');
-  if (church.code) {
-    return `${church.code} · ${church.name}${location ? ` · ${location}` : ''}`;
-  }
-  return `${church.name}${location ? ` · ${location}` : ''}`;
+  const baseName = String(church?.name || '').trim();
+  const city = String(church?.city || '').trim();
+  const country = String(church?.country || '').trim();
+  const normalizedName = normalizeGeoToken(baseName);
+  const parts = [];
+  if (baseName) parts.push(baseName);
+  if (city && !normalizedName.includes(normalizeGeoToken(city))) parts.push(city);
+  if (country && !normalizedName.includes(normalizeGeoToken(country))) parts.push(country);
+  return parts.filter(Boolean).join(' · ');
 }
 
 function renderChurchSelectorOptions({ allowAll = false, allowCustom = false, scope = 'church' } = {}) {
@@ -1281,6 +1297,17 @@ if (churchSelectorContinent) {
 if (churchSelectorCountry) {
   churchSelectorCountry.addEventListener('change', () => {
     selectorCountryFilter = churchSelectorCountry.value || '';
+    renderChurchSelectorOptions({
+      allowAll: portalAllowAllChurches,
+      allowCustom: portalAllowCustomChurch,
+      scope: portalScope,
+    });
+  });
+}
+
+if (churchSelectorSearch) {
+  churchSelectorSearch.addEventListener('input', () => {
+    selectorSearchFilter = normalizeGeoToken(churchSelectorSearch.value || '');
     renderChurchSelectorOptions({
       allowAll: portalAllowAllChurches,
       allowCustom: portalAllowCustomChurch,

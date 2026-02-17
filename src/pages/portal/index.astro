@@ -369,6 +369,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
                    <!-- Church Selector (For Admin) -->
                    <div id="church-selector" class="hidden relative z-20 w-full lg:w-auto">
                      <div class="grid grid-cols-1 lg:grid-cols-[180px_180px_minmax(240px,1fr)] gap-2 w-full">
+                       <div class="relative lg:col-span-3">
+                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                         </div>
+                         <input id="church-selector-search" type="search" placeholder="Buscar iglesia, ciudad o país..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all shadow-sm hover:shadow-md" autocomplete="off" />
+                       </div>
                        <div class="relative">
                          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12l-9-9-9 9 9 9 9-9z" /></svg>
