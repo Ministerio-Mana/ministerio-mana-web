@@ -837,8 +837,8 @@ async function loadDashboardData(authResult) {
     portalAccountPayload = payload;
 
     authMode = sessionPayload.mode || 'supabase';
-    portalProfile = sessionPayload.profile || {};
-    portalMemberships = sessionPayload.memberships || [];
+    portalProfile = (sessionPayload.profile && typeof sessionPayload.profile === 'object') ? sessionPayload.profile : {};
+    portalMemberships = Array.isArray(sessionPayload.memberships) ? sessionPayload.memberships : [];
     portalRole = portalProfile?.role || 'user';
     portalIsAdmin = portalRole === 'admin' || portalRole === 'superadmin';
     portalIsSuperadmin = portalRole === 'superadmin';
@@ -860,7 +860,7 @@ async function loadDashboardData(authResult) {
     if (navLinkCampus) navLinkCampus.style.display = 'none';
 
     const myRole = portalProfile?.role || 'user';
-    const membershipRoles = (portalMemberships || []).map((m) => m?.role).filter(Boolean);
+    const membershipRoles = portalMemberships.map((m) => m?.role).filter(Boolean);
     const hasChurchMembership = membershipRoles.some((role) => ['church_admin', 'church_member'].includes(role));
     const allowedDashboardRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
 
@@ -920,7 +920,7 @@ async function loadDashboardData(authResult) {
 
     // -------------------------------------
 
-    const hasChurchRole = (portalMemberships || []).some(
+    const hasChurchRole = portalMemberships.some(
       (membership) => ['church_admin', 'church_member'].includes(membership?.role) && membership?.status !== 'pending',
     );
     const hasChurchAccess = portalIsAdmin
@@ -939,12 +939,12 @@ async function loadDashboardData(authResult) {
 
     const user = userData?.user;
 
-    const bookings = Array.isArray(payload.bookings) ? payload.bookings : [];
-    const plans = Array.isArray(payload.plans) ? payload.plans : [];
-    const installments = Array.isArray(payload.installments) ? payload.installments : [];
-    const donations = Array.isArray(payload.donations) ? payload.donations : [];
-    const donationSubscriptions = Array.isArray(payload.donationSubscriptions) ? payload.donationSubscriptions : [];
-    const events = Array.isArray(payload.events) ? payload.events : [];
+    const bookings = Array.isArray(payload.bookings) ? payload.bookings.filter(Boolean) : [];
+    const plans = Array.isArray(payload.plans) ? payload.plans.filter(Boolean) : [];
+    const installments = Array.isArray(payload.installments) ? payload.installments.filter(Boolean) : [];
+    const donations = Array.isArray(payload.donations) ? payload.donations.filter(Boolean) : [];
+    const donationSubscriptions = Array.isArray(payload.donationSubscriptions) ? payload.donationSubscriptions.filter(Boolean) : [];
+    const events = Array.isArray(payload.events) ? payload.events.filter(Boolean) : [];
 
     const activeUser = payload.user || {};
     const rawName = activeUser.fullName || user?.user_metadata?.full_name || 'Usuario';
@@ -976,71 +976,67 @@ async function loadDashboardData(authResult) {
       loadAdminUsers(portalAuthHeaders);
     }
 
-    // Calculations for highlights
-    const totalPaidByCurrency = {};
-    bookings.forEach((booking) => {
-      const currency = (booking.currency || 'COP').toString().toUpperCase();
-      totalPaidByCurrency[currency] = (totalPaidByCurrency[currency] || 0) + (booking.total_paid || 0);
-    });
-    if (statTotalPaid) {
-      statTotalPaid.innerHTML = formatCurrencyBreakdown(totalPaidByCurrency);
-    }
-
-    const activePlans = plans.filter((plan) => plan.status === 'ACTIVE');
-    const nextPlanDate = activePlans
-      .map((plan) => toDate(plan.next_due_date))
-      .filter(Boolean)
-      .sort((a, b) => a.getTime() - b.getTime())[0] || null;
-    const nextInstallmentDate = installments
-      .filter((item) => ['PENDING', 'FAILED'].includes(item.status))
-      .map((item) => toDate(item.due_date))
-      .filter(Boolean)
-      .sort((a, b) => a.getTime() - b.getTime())[0] || null;
-
-    const hasPendingBalance = bookings.some((b) => Number(b.total_amount || 0) > Number(b.total_paid || 0));
-    const deadlineHintDate = activePlans
-      .map((plan) => toDate(plan.end_date))
-      .filter(Boolean)
-      .sort((a, b) => a.getTime() - b.getTime())[0] || (hasPendingBalance ? CUMBRE_ABONO_DEADLINE : null);
-
-    const nextDueDate = nextPlanDate || nextInstallmentDate;
-    if (nextDueDate) {
-      statNextDue.textContent = formatDate(nextDueDate);
-      if (statNextNote) statNextNote.textContent = 'Plan de cuotas activo';
-    } else if (hasPendingBalance) {
-      statNextDue.textContent = 'Sin fecha';
-      if (statNextNote) statNextNote.textContent = deadlineHintDate ? `Antes de ${formatLongDate(deadlineHintDate)}` : 'Plan de cuotas activo';
-    } else {
-      statNextDue.textContent = '-';
-      if (statNextNote) statNextNote.textContent = 'Sin cuotas pendientes';
-    }
-
-    const activePlan = activePlans[0];
-    if (activePlan && planHighlight && highlightAmount && highlightDate) {
-      const nextDueLabel = activePlan.next_due_date ? formatDate(activePlan.next_due_date) : 'Sin fecha';
-      const nextDueHint = activePlan.end_date ? `Antes de ${formatLongDate(activePlan.end_date)}` : '';
-      planHighlight.classList.remove('hidden');
-      highlightAmount.textContent = formatCurrency(activePlan.installment_amount, activePlan.currency);
-      highlightDate.textContent = nextDueHint || nextDueLabel;
-
-      // Dynamic Context
-      const highlightHeader = document.getElementById('highlight-header');
-      const highlightContext = document.getElementById('highlight-context');
-
-      const relatedBooking = bookings.find(b => b.id === activePlan.booking_id);
-      // Default concept
-      let concept = relatedBooking?.event_name || 'Cumbre Mundial 2026';
-
-      // Override if specific metadata exists
-      if (relatedBooking?.event_type === 'campus') {
-        concept = 'Campus Maná';
+    runSafe('renderHeaderStats', () => {
+      const totalPaidByCurrency = {};
+      bookings.forEach((booking) => {
+        const currency = (booking?.currency || 'COP').toString().toUpperCase();
+        totalPaidByCurrency[currency] = (totalPaidByCurrency[currency] || 0) + (booking?.total_paid || 0);
+      });
+      if (statTotalPaid) {
+        statTotalPaid.innerHTML = formatCurrencyBreakdown(totalPaidByCurrency);
       }
 
-      let type = 'Abono auto.';
+      const activePlans = plans.filter((plan) => plan?.status === 'ACTIVE');
+      const nextPlanDate = activePlans
+        .map((plan) => toDate(plan?.next_due_date))
+        .filter(Boolean)
+        .sort((a, b) => a.getTime() - b.getTime())[0] || null;
+      const nextInstallmentDate = installments
+        .filter((item) => ['PENDING', 'FAILED'].includes(item?.status))
+        .map((item) => toDate(item?.due_date))
+        .filter(Boolean)
+        .sort((a, b) => a.getTime() - b.getTime())[0] || null;
 
-      if (highlightHeader) highlightHeader.textContent = `${type} - ${concept}`;
-      if (highlightContext) highlightContext.textContent = concept;
-    }
+      const hasPendingBalance = bookings.some((b) => Number(b?.total_amount || 0) > Number(b?.total_paid || 0));
+      const deadlineHintDate = activePlans
+        .map((plan) => toDate(plan?.end_date))
+        .filter(Boolean)
+        .sort((a, b) => a.getTime() - b.getTime())[0] || (hasPendingBalance ? CUMBRE_ABONO_DEADLINE : null);
+
+      const nextDueDate = nextPlanDate || nextInstallmentDate;
+      if (statNextDue) {
+        if (nextDueDate) {
+          statNextDue.textContent = formatDate(nextDueDate);
+          if (statNextNote) statNextNote.textContent = 'Plan de cuotas activo';
+        } else if (hasPendingBalance) {
+          statNextDue.textContent = 'Sin fecha';
+          if (statNextNote) statNextNote.textContent = deadlineHintDate ? `Antes de ${formatLongDate(deadlineHintDate)}` : 'Plan de cuotas activo';
+        } else {
+          statNextDue.textContent = '-';
+          if (statNextNote) statNextNote.textContent = 'Sin cuotas pendientes';
+        }
+      }
+
+      const activePlan = activePlans[0];
+      if (activePlan && planHighlight && highlightAmount && highlightDate) {
+        const nextDueLabel = activePlan.next_due_date ? formatDate(activePlan.next_due_date) : 'Sin fecha';
+        const nextDueHint = activePlan.end_date ? `Antes de ${formatLongDate(activePlan.end_date)}` : '';
+        planHighlight.classList.remove('hidden');
+        highlightAmount.textContent = formatCurrency(activePlan.installment_amount, activePlan.currency);
+        highlightDate.textContent = nextDueHint || nextDueLabel;
+
+        const highlightHeader = document.getElementById('highlight-header');
+        const highlightContext = document.getElementById('highlight-context');
+        const relatedBooking = bookings.find((b) => b?.id === activePlan.booking_id);
+        let concept = relatedBooking?.event_name || 'Cumbre Mundial 2026';
+        if (relatedBooking?.event_type === 'campus') {
+          concept = 'Campus Maná';
+        }
+        const type = 'Abono auto.';
+        if (highlightHeader) highlightHeader.textContent = `${type} - ${concept}`;
+        if (highlightContext) highlightContext.textContent = concept;
+      }
+    });
 
     runSafe('renderBookings', () => renderBookings(bookings));
     runSafe('renderPlans', () => renderPlans(plans, bookings));
