@@ -15,6 +15,18 @@ function isProduction(): boolean {
     return runtimeEnv === 'production';
 }
 
+function isAlreadyRegisteredError(error: any): boolean {
+    const message = String(error?.message || '').toLowerCase();
+    const code = String(error?.code || '').toLowerCase();
+    return (
+        message.includes('already registered')
+        || message.includes('already been registered')
+        || message.includes('duplicate')
+        || code === 'email_exists'
+        || code === 'user_already_exists'
+    );
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!supabaseAdmin) {
         return new Response(JSON.stringify({ ok: false, error: 'Server configuration error' }), { status: 500 });
@@ -74,27 +86,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             console.warn('[signup] HIBP check failed:', leaked.error);
         }
 
-        // Check if user already exists
-        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-        const userExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
-
-        if (userExists) {
-            const redirectTo = `${new URL(request.url).origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
-            const linkResult = await sendAuthLink({
-                kind: 'recovery',
-                email,
-                redirectTo,
-            });
-            if (!linkResult.ok) {
-                return new Response(JSON.stringify({ ok: false, error: 'Este correo ya está registrado' }), { status: 400 });
-            }
-            return new Response(JSON.stringify({
-                ok: true,
-                alreadyExists: true,
-                message: 'El correo ya existe. Te enviamos un nuevo enlace para activar o recuperar acceso.',
-            }), { status: 200 });
-        }
-
         // Create user with auto-confirmed email
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
@@ -107,9 +98,31 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             }
         });
 
-        if (authError || !authData.user) {
+        if (authError) {
+            if (isAlreadyRegisteredError(authError)) {
+                const redirectTo = `${new URL(request.url).origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+                const linkResult = await sendAuthLink({
+                    kind: 'recovery',
+                    email,
+                    redirectTo,
+                });
+                const linkSent = Boolean(linkResult.ok);
+                return new Response(JSON.stringify({
+                    ok: true,
+                    alreadyExists: true,
+                    linkSent,
+                    message: linkSent
+                        ? 'El correo ya existe. Te enviamos un nuevo enlace para activar o recuperar acceso.'
+                        : 'El correo ya existe. Ingresa en /portal/ingresar y usa "Olvidé mi contraseña".',
+                }), { status: 200 });
+            }
             console.error('Signup error:', authError);
-            return new Response(JSON.stringify({ ok: false, error: authError?.message || 'Error al crear cuenta' }), { status: 400 });
+            return new Response(JSON.stringify({ ok: false, error: authError.message || 'Error al crear cuenta' }), { status: 400 });
+        }
+
+        if (!authData.user) {
+            console.error('Signup error:', authError);
+            return new Response(JSON.stringify({ ok: false, error: 'Error al crear cuenta' }), { status: 400 });
         }
 
         // Create profile

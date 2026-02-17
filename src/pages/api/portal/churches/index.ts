@@ -15,8 +15,11 @@ export const GET: APIRoute = async () => {
 
     const { data, error } = await sb
         .from('churches')
-        .select('id, name, city, country, address, maps_url, lat, lng')
-        .order('city', { ascending: true });
+        .select('id, name, city, country, continent, address, maps_url, lat, lng')
+        .order('continent', { ascending: true, nullsFirst: false })
+        .order('country', { ascending: true, nullsFirst: false })
+        .order('city', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true });
 
     if (error) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 });

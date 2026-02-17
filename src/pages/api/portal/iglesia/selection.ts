@@ -83,7 +83,10 @@ export const GET: APIRoute = async ({ request }) => {
   if (ctx.scope === 'global') {
     const { data, error } = await supabaseAdmin
       .from('churches')
-      .select('id, code, name, city, country')
+      .select('id, code, name, city, country, continent')
+      .order('continent', { ascending: true, nullsFirst: false })
+      .order('country', { ascending: true, nullsFirst: false })
+      .order('city', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
     if (error) {
       console.error('[portal.iglesia.selection] churches error', error);
@@ -103,8 +106,9 @@ export const GET: APIRoute = async ({ request }) => {
     }
     const { data, error } = await supabaseAdmin
       .from('churches')
-      .select('id, code, name, city, country')
+      .select('id, code, name, city, country, continent')
       .eq('country', country)
+      .order('city', { ascending: true, nullsFirst: false })
       .order('name', { ascending: true });
     if (error) {
       console.error('[portal.iglesia.selection] churches error', error);
@@ -121,7 +125,7 @@ export const GET: APIRoute = async ({ request }) => {
       if (profileChurchId) {
         const { data } = await supabaseAdmin
           .from('churches')
-          .select('id, code, name, city, country')
+          .select('id, code, name, city, country, continent')
           .eq('id', profileChurchId)
           .maybeSingle();
         if (data) churches = [data];

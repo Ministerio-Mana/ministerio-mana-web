@@ -57,7 +57,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
     let query = supabaseAdmin
         .from('user_profiles')
-        .select('user_id, first_name, last_name, full_name, email, role, church_id, updated_at, country')
+        .select('user_id, first_name, last_name, full_name, email, role, church_id, church_name, city, country, created_at, updated_at, church:churches(id, name, city, country)')
         .order('updated_at', { ascending: false });
 
     // Scoping Logic
@@ -131,6 +131,10 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
         return {
             ...profile,
+            full_name: profile?.full_name
+                || authUser?.user_metadata?.full_name
+                || [authUser?.user_metadata?.first_name, authUser?.user_metadata?.last_name].filter(Boolean).join(' ')
+                || null,
             access_status: accessStatus,
             invited_at: invitedAt,
             email_confirmed_at: emailConfirmedAt,

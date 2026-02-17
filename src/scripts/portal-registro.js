@@ -90,14 +90,22 @@ form?.addEventListener('submit', async (e) => {
         }
 
         // Success
-        statusEl.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'text-red-800');
-        statusEl.classList.add('bg-green-50', 'text-green-600');
+        statusEl.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'text-red-800', 'bg-amber-50', 'text-amber-700');
         form.reset();
 
-        statusEl.innerHTML = `
-            <strong>¡Cuenta creada!</strong><br>
-            <span class="text-sm">Revisa tu correo <strong>${email}</strong> para activar tu cuenta y establecer tu acceso.</span>
-        `;
+        if (data.alreadyExists) {
+            statusEl.classList.add('bg-amber-50', 'text-amber-700');
+            statusEl.innerHTML = `
+                <strong>Cuenta ya registrada</strong><br>
+                <span class="text-sm">${data.message || 'Tu correo ya existe. Usa "Olvidé mi contraseña" para recuperar acceso.'}</span>
+            `;
+        } else {
+            statusEl.classList.add('bg-green-50', 'text-green-600');
+            statusEl.innerHTML = `
+                <strong>¡Cuenta creada!</strong><br>
+                <span class="text-sm">Revisa tu correo <strong>${email}</strong> para activar tu cuenta y establecer tu acceso.</span>
+            `;
+        }
         btnSubmit.textContent = 'Ir a Login';
         btnSubmit.disabled = false;
         btnSubmit.onclick = () => window.location.href = '/portal/ingresar';

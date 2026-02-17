@@ -68,6 +68,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     for (const church of churchesData as any[]) {
         const country = church.country || 'Colombia';
+        const continent = church.continent || null;
         const city = church.city || null;
         const code = normalizeCodePart(`${country}-${city || 'sin-ciudad'}-${church.name}`);
         const payload = {
@@ -75,6 +76,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             name: church.name,
             city,
             country,
+            continent,
             address: church.address,
             maps_url: church.maps_url || null,
             lat: typeof church.lat === 'number' ? church.lat : null,

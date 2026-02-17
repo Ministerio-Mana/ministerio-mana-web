@@ -40,6 +40,7 @@ let currentMemberships = [];
 let allUsers = [];
 let churchesCatalog = [];
 let scopeListenerAttached = false;
+const pendingRoleChanges = new Map();
 
 const roleTranslations = {
     'superadmin': 'Super Admin',
@@ -248,6 +249,7 @@ async function loadUsers(token) {
         if (!data.ok) throw new Error(data.error);
 
         allUsers = data.users || [];
+        pendingRoleChanges.clear();
         applyFilters();
 
     } catch (err) {
@@ -301,27 +303,77 @@ function formatDateTime(value) {
     }
 }
 
+function getScopeLabel(user) {
+    const role = user?.role || 'user';
+    const church = user?.church || null;
+    const churchName = church?.name || user?.church_name || '';
+    const cityName = church?.city || user?.city || '';
+    const countryName = church?.country || user?.country || '';
+
+    if (role === 'national_pastor') {
+        return countryName ? `País: ${countryName}` : 'País no asignado';
+    }
+
+    if (role === 'pastor' || role === 'local_collaborator') {
+        if (!churchName) return 'Iglesia no asignada';
+        const parts = [churchName];
+        if (cityName) parts.push(cityName);
+        if (countryName) parts.push(countryName);
+        return parts.join(' · ');
+    }
+
+    if (role === 'campus_missionary') {
+        return countryName ? `Campus · ${countryName}` : 'Campus';
+    }
+
+    return countryName || 'Global';
+}
+
 function renderRoleCell(user) {
+    const pendingRole = pendingRoleChanges.get(user.user_id);
+    const selectedRole = pendingRole?.nextRole || user.role;
     if (currentUserRole === 'superadmin') {
         const options = roleOrder.map((role) => {
             const label = escapeHtml(roleTranslations[role] || role);
             const safeRole = escapeAttr(role);
-            const selected = user.role === role ? 'selected' : '';
+            const selected = selectedRole === role ? 'selected' : '';
             return `<option value="${safeRole}" ${selected}>${label}</option>`;
         }).join('');
         return `
-            <select data-action="role" data-user-id="${escapeAttr(user.user_id || '')}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
-                ${options}
-            </select>
+            <div class="space-y-1">
+                <select data-action="role" data-user-id="${escapeAttr(user.user_id || '')}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
+                    ${options}
+                </select>
+                ${pendingRole ? '<p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Cambio pendiente</p>' : ''}
+            </div>
         `;
     }
 
-    const label = escapeHtml(roleTranslations[user.role] || user.role || 'Usuario');
-    const badgeClass = roleBadgeClass(user.role);
+    const label = escapeHtml(roleTranslations[selectedRole] || selectedRole || 'Usuario');
+    const badgeClass = roleBadgeClass(selectedRole);
     return `
         <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}">
             ${label}
         </span>
+    `;
+}
+
+function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
+    const pendingRole = pendingRoleChanges.get(user.user_id);
+    const resetButton = canSendAccessLink
+        ? `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`
+        : '';
+
+    if (!pendingRole) {
+        return resetButton || '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
+    }
+
+    return `
+        <div class="flex items-center justify-end gap-2 flex-wrap">
+            <button data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
+            ${resetButton}
+        </div>
     `;
 }
 
@@ -353,11 +405,10 @@ function renderTable(users) {
             const accessStatusClass = statusBadgeClass(accessStatus);
             const lastSignInLabel = formatDateTime(u.last_sign_in_at);
             const safeLastSignIn = escapeHtml(lastSignInLabel);
+            const scopeLabel = getScopeLabel(u);
+            const safeScope = escapeHtml(scopeLabel);
             const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
             const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
-            const resetButton = canSendAccessLink
-                ? `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`
-                : '';
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
                     <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
@@ -365,6 +416,7 @@ function renderTable(users) {
                     <td class="py-3">
                         ${renderRoleCell(u)}
                     </td>
+                    <td class="py-3 text-slate-500 text-xs font-semibold">${safeScope}</td>
                     <td class="py-3">
                         <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${accessStatusClass}">
                             ${safeStatusLabel}
@@ -372,7 +424,7 @@ function renderTable(users) {
                     </td>
                     <td class="py-3 text-slate-400 text-xs">${safeLastSignIn}</td>
                     <td class="py-3 text-right pr-2">
-                        ${resetButton || '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>'}
+                        ${renderActionsCell(u, canSendAccessLink, safeEmailAttr, resetLabel)}
                     </td>
                 </tr>
             `;
@@ -385,31 +437,72 @@ tbody?.addEventListener('change', async (event) => {
     if (!(target instanceof HTMLSelectElement)) return;
     if (target.dataset.action !== 'role') return;
     const userId = target.dataset.userId;
-    const role = target.value;
     if (!userId || !currentToken) return;
+    const role = target.value;
+    const user = allUsers.find((item) => item.user_id === userId);
+    if (!user) return;
 
-    try {
-        const res = await fetch('/api/portal/admin/role', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
-            body: JSON.stringify({ userId, role })
+    if (user.role === role) {
+        pendingRoleChanges.delete(userId);
+    } else {
+        pendingRoleChanges.set(userId, {
+            previousRole: user.role,
+            nextRole: role,
         });
-        const data = await res.json();
-        if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el rol');
-        const idx = allUsers.findIndex((user) => user.user_id === userId);
-        if (idx !== -1) {
-            allUsers[idx].role = role;
-            applyFilters();
-        }
-    } catch (err) {
-        console.error(err);
-        alert(err.message || 'No se pudo actualizar el rol.');
     }
+    applyFilters();
 });
 
 tbody?.addEventListener('click', async (event) => {
-    const target = event.target.closest('[data-action="reset"]');
+    const target = event.target.closest('[data-action]');
     if (!target || !currentToken) return;
+    const action = target.dataset.action;
+
+    if (action === 'save-role') {
+        const userId = target.dataset.userId;
+        const pending = userId ? pendingRoleChanges.get(userId) : null;
+        if (!userId || !pending) return;
+        const user = allUsers.find((item) => item.user_id === userId);
+        if (!user) return;
+        const roleLabel = roleTranslations[pending.nextRole] || pending.nextRole;
+        const confirmed = window.confirm(`¿Guardar cambio de rol para ${user.email}?\nNuevo rol: ${roleLabel}`);
+        if (!confirmed) return;
+
+        const originalText = target.textContent;
+        target.textContent = 'Guardando...';
+        target.setAttribute('disabled', 'disabled');
+        try {
+            const res = await fetch('/api/portal/admin/role', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                body: JSON.stringify({ userId, role: pending.nextRole })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el rol');
+            const idx = allUsers.findIndex((item) => item.user_id === userId);
+            if (idx !== -1) {
+                allUsers[idx].role = pending.nextRole;
+            }
+            pendingRoleChanges.delete(userId);
+            applyFilters();
+        } catch (err) {
+            console.error(err);
+            target.textContent = originalText;
+            target.removeAttribute('disabled');
+            alert(err.message || 'No se pudo actualizar el rol.');
+        }
+        return;
+    }
+
+    if (action === 'cancel-role') {
+        const userId = target.dataset.userId;
+        if (!userId) return;
+        pendingRoleChanges.delete(userId);
+        applyFilters();
+        return;
+    }
+
+    if (action !== 'reset') return;
     const email = target.dataset.email;
     if (!email) return;
     const originalText = target.textContent;

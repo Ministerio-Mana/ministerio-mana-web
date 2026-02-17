@@ -1,9 +1,4 @@
 ---
-import churchesData from '@data/churches.json';
-
-const countries = Array.from(new Set((churchesData as any[]).map((church) => church.country || 'Colombia'))).sort((a, b) =>
-  String(a).localeCompare(String(b), 'es'),
-);
 ---
 
 <div class="relative w-full h-[620px] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none z-0">
@@ -16,26 +11,37 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
     </div>
   </div>
 
-  <div class="absolute top-5 right-5 z-[1000] w-[min(460px,calc(100%-2.5rem))]">
+  <div class="absolute top-5 right-5 z-[1000] w-[min(560px,calc(100%-2.5rem))]">
     <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
-      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-2">Enfocar país</p>
-      <div id="map-country-controls" class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20">
-        <button
-          type="button"
-          data-map-country="all"
-          class="map-country-chip px-3 py-1.5 rounded-full border border-brand-teal bg-brand-teal text-white text-[11px] font-intro tracking-wide whitespace-nowrap"
-        >
-          Global
-        </button>
-        {countries.map((country) => (
-          <button
-            type="button"
-            data-map-country={country}
-            class="map-country-chip px-3 py-1.5 rounded-full border border-white/20 bg-white/5 text-white/75 hover:text-white hover:border-brand-teal/70 hover:bg-brand-teal/15 text-[11px] font-intro tracking-wide whitespace-nowrap transition-colors"
+      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-2">Enfocar mapa</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <label class="space-y-1">
+          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Continente</span>
+          <select
+            id="map-continent-control"
+            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
           >
-            {country}
-          </button>
-        ))}
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">País</span>
+          <select
+            id="map-country-control"
+            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+          >
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Ciudad</span>
+          <select
+            id="map-city-control"
+            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+          >
+            <option value="">Todas</option>
+          </select>
+        </label>
       </div>
     </div>
   </div>
@@ -62,6 +68,7 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
 
 <script>
   import CHURCHES from '../data/churches.json';
+  import { buildChurchGeoTree, normalizeChurchCountry } from '@lib/churchGeo';
 
   const MAP_ID = 'churches-map-canvas';
 
@@ -73,8 +80,6 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  const normalizeCountry = (church) => church.country || 'Colombia';
-
   const mapsHrefForChurch = (church) => {
     if (typeof church.maps_url === 'string' && church.maps_url.trim()) {
       return church.maps_url.trim();
@@ -84,24 +89,26 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
       return `https://www.google.com/maps?q=${church.lat},${church.lng}`;
     }
 
-    const query = [church.address, church.city, normalizeCountry(church)].filter(Boolean).join(', ');
+    const query = [church.address, church.city, normalizeChurchCountry(church)].filter(Boolean).join(', ');
     return query
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
       : 'https://maps.google.com';
   };
 
-  const countryChipButtons = () => Array.from(document.querySelectorAll('#map-country-controls [data-map-country]'));
+  const normalizeToken = (value) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
-  const setActiveCountryChip = (country = 'all') => {
-    countryChipButtons().forEach((btn) => {
-      const isActive = btn.dataset.mapCountry === country;
-      btn.classList.toggle('bg-brand-teal', isActive);
-      btn.classList.toggle('border-brand-teal', isActive);
-      btn.classList.toggle('text-white', isActive);
-      btn.classList.toggle('bg-white/5', !isActive);
-      btn.classList.toggle('border-white/20', !isActive);
-      btn.classList.toggle('text-white/75', !isActive);
-    });
+  const setSelectOptions = (node, options, allLabel, selectedValue = '') => {
+    if (!node) return;
+    const currentValue = selectedValue || '';
+    node.innerHTML = `<option value="">${allLabel}</option>${options
+      .map((entry) => `<option value="${entry.value}">${entry.label}</option>`)
+      .join('')}`;
+    node.value = currentValue;
   };
 
   function initMap() {
@@ -141,17 +148,33 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
       popupAnchor: [0, -8],
     });
 
+    const mapContinentControl = document.getElementById('map-continent-control');
+    const mapCountryControl = document.getElementById('map-country-control');
+    const mapCityControl = document.getElementById('map-city-control');
+    const geoTree = buildChurchGeoTree(CHURCHES);
+    const normalizedChurches = geoTree.churches || [];
+
     const markerLayer = L.layerGroup().addTo(map);
+    const continentBounds = new Map();
     const countryBounds = new Map();
     const cityBounds = new Map();
     const allCoords = [];
 
-    CHURCHES.forEach((church) => {
+    normalizedChurches.forEach((church) => {
       if (typeof church.lat !== 'number' || typeof church.lng !== 'number') return;
 
-      const country = normalizeCountry(church);
+      const continent = church.continent || 'América';
+      const country = normalizeChurchCountry(church);
+      const city = String(church.city || '').trim();
       const latLng = L.latLng(church.lat, church.lng);
       allCoords.push(latLng);
+
+      const existingContinentBounds = continentBounds.get(continent);
+      if (existingContinentBounds) {
+        existingContinentBounds.extend(latLng);
+      } else {
+        continentBounds.set(continent, L.latLngBounds([latLng]));
+      }
 
       const existingBounds = countryBounds.get(country);
       if (existingBounds) {
@@ -160,7 +183,7 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
         countryBounds.set(country, L.latLngBounds([latLng]));
       }
 
-      const cityKey = `${country}::${String(church.city || '').trim().toLowerCase()}`;
+      const cityKey = `${country}::${normalizeToken(city)}`;
       const existingCityBounds = cityBounds.get(cityKey);
       if (existingCityBounds) {
         existingCityBounds.extend(latLng);
@@ -175,7 +198,7 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
 
       const popupHtml = `
         <div class="mana-popup-card">
-          <p class="mana-popup-city">${sanitize(church.city)} · ${sanitize(country)}</p>
+          <p class="mana-popup-city">${sanitize(city)} · ${sanitize(country)}</p>
           <h3 class="mana-popup-name">${sanitize(church.name)}</h3>
           ${church.service ? `<p class="mana-popup-service">${sanitize(church.service)}</p>` : ''}
           ${church.contact?.name ? `<p class="mana-popup-contact">Contacto: ${sanitize(church.contact.name)}</p>` : ''}
@@ -192,44 +215,139 @@ const countries = Array.from(new Set((churchesData as any[]).map((church) => chu
     });
 
     const globalBounds = allCoords.length ? L.latLngBounds(allCoords) : null;
+    let selectedContinent = '';
+    let selectedCountry = '';
+    let selectedCity = '';
+    let isSyncingFromNav = false;
 
-    const focusCountry = (country, city = '') => {
-      if (!country || country === 'all') {
-        if (globalBounds?.isValid()) {
-          map.fitBounds(globalBounds, { padding: [56, 56], maxZoom: 4 });
-        }
-        setActiveCountryChip('all');
-        return;
-      }
+    const getCountriesForContinent = (continent = '') =>
+      (geoTree.countriesByContinent?.[continent] || geoTree.countryStats || []).filter((entry) =>
+        !continent || entry.continent === continent,
+      );
 
-      const cityKey = `${country}::${String(city || '').trim().toLowerCase()}`;
-      const selectedCityBounds = city ? cityBounds.get(cityKey) : null;
-      if (selectedCityBounds?.isValid()) {
-        map.fitBounds(selectedCityBounds, { padding: [60, 60], maxZoom: 12 });
-        setActiveCountryChip(country);
-        return;
-      }
-
-      const bounds = countryBounds.get(country);
-      if (!bounds?.isValid()) return;
-
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 9 });
-      setActiveCountryChip(country);
+    const getCitiesForCountry = (continent = '', country = '') => {
+      if (!country) return [];
+      const key = `${continent || geoTree.continentByCountry?.[country] || ''}||${country}`;
+      return (geoTree.citiesByCountry?.[key] || []).filter((entry) => entry.country === country);
     };
 
-    countryChipButtons().forEach((btn) => {
-      btn.addEventListener('click', () => {
-        focusCountry(btn.dataset.mapCountry || 'all');
-      });
+    const refreshMapControls = () => {
+      const continentOptions = (geoTree.continentStats || []).map((entry) => ({
+        value: entry.continent,
+        label: `${entry.continent} (${entry.count})`,
+      }));
+      setSelectOptions(mapContinentControl, continentOptions, 'Todos', selectedContinent);
+
+      const visibleCountries = getCountriesForContinent(selectedContinent);
+      const countryOptions = visibleCountries.map((entry) => ({
+        value: entry.country,
+        label: `${entry.country} (${entry.count})`,
+      }));
+      if (selectedCountry && !countryOptions.some((entry) => entry.value === selectedCountry)) {
+        selectedCountry = '';
+      }
+      setSelectOptions(mapCountryControl, countryOptions, 'Todos', selectedCountry);
+
+      const visibleCities = getCitiesForCountry(selectedContinent, selectedCountry);
+      const cityOptions = visibleCities.map((entry) => ({
+        value: entry.city,
+        label: `${entry.city} (${entry.count})`,
+      }));
+      if (selectedCity && !cityOptions.some((entry) => entry.value === selectedCity)) {
+        selectedCity = '';
+      }
+      setSelectOptions(mapCityControl, cityOptions, 'Todas', selectedCity);
+    };
+
+    const emitMapFocus = () => {
+      if (isSyncingFromNav) return;
+      window.dispatchEvent(
+        new CustomEvent('mana:church-map-focus-change', {
+          detail: {
+            source: 'map',
+            continent: selectedContinent || '',
+            country: selectedCountry || '',
+            city: selectedCity || '',
+          },
+        }),
+      );
+    };
+
+    const focusSelection = ({ emit = true } = {}) => {
+      if (selectedCountry && selectedCity) {
+        const cityKey = `${selectedCountry}::${normalizeToken(selectedCity)}`;
+        const selectedCityBounds = cityBounds.get(cityKey);
+        if (selectedCityBounds?.isValid()) {
+          map.fitBounds(selectedCityBounds, { padding: [60, 60], maxZoom: 12 });
+          if (emit) emitMapFocus();
+          return;
+        }
+      }
+
+      if (selectedCountry) {
+        const selectedCountryBounds = countryBounds.get(selectedCountry);
+        if (selectedCountryBounds?.isValid()) {
+          map.fitBounds(selectedCountryBounds, { padding: [60, 60], maxZoom: 9 });
+          if (emit) emitMapFocus();
+          return;
+        }
+      }
+
+      if (selectedContinent) {
+        const selectedContinentBounds = continentBounds.get(selectedContinent);
+        if (selectedContinentBounds?.isValid()) {
+          map.fitBounds(selectedContinentBounds, { padding: [58, 58], maxZoom: 5 });
+          if (emit) emitMapFocus();
+          return;
+        }
+      }
+
+      if (globalBounds?.isValid()) {
+        map.fitBounds(globalBounds, { padding: [56, 56], maxZoom: 4 });
+      }
+      if (emit) emitMapFocus();
+    };
+
+    mapContinentControl?.addEventListener('change', () => {
+      selectedContinent = mapContinentControl.value || '';
+      selectedCountry = '';
+      selectedCity = '';
+      refreshMapControls();
+      focusSelection();
+    });
+
+    mapCountryControl?.addEventListener('change', () => {
+      selectedCountry = mapCountryControl.value || '';
+      if (selectedCountry) {
+        selectedContinent = geoTree.continentByCountry?.[selectedCountry] || selectedContinent;
+      }
+      selectedCity = '';
+      refreshMapControls();
+      focusSelection();
+    });
+
+    mapCityControl?.addEventListener('change', () => {
+      selectedCity = mapCityControl.value || '';
+      focusSelection();
     });
 
     window.addEventListener('mana:church-country-focus', (event) => {
-      const country = event?.detail?.country;
-      const city = event?.detail?.city;
-      focusCountry(country || 'all', city || '');
+      const source = event?.detail?.source;
+      if (source === 'map') return;
+      isSyncingFromNav = true;
+      selectedContinent = event?.detail?.continent || '';
+      selectedCountry = event?.detail?.country || '';
+      selectedCity = event?.detail?.city || '';
+      if (selectedCountry) {
+        selectedContinent = geoTree.continentByCountry?.[selectedCountry] || selectedContinent;
+      }
+      refreshMapControls();
+      focusSelection({ emit: false });
+      isSyncingFromNav = false;
     });
 
-    focusCountry('all');
+    refreshMapControls();
+    focusSelection({ emit: false });
 
     setTimeout(() => map.invalidateSize(), 400);
   }

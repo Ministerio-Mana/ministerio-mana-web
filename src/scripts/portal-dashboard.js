@@ -1,5 +1,6 @@
 import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { compareSpanishLabels, normalizeChurchContinent, normalizeChurchCountry } from '@lib/churchGeo';
 import { gsap } from 'gsap';
 
 const DEBUG = import.meta.env?.DEV === true;
@@ -130,6 +131,8 @@ const churchMembersList = document.getElementById('church-members-list');
 const churchMembersSearch = document.getElementById('church-members-search');
 const churchMembersRole = document.getElementById('church-members-role');
 const churchSelector = document.getElementById('church-selector');
+const churchSelectorContinent = document.getElementById('church-selector-continent');
+const churchSelectorCountry = document.getElementById('church-selector-country');
 const churchSelectorInput = document.getElementById('church-selector-input');
 const churchSelectorStatus = document.getElementById('church-selector-status');
 const adminUsersCard = document.getElementById('admin-users-card');
@@ -264,6 +267,8 @@ let portalAllowCustomChurch = false;
 let portalSelectedChurchId = null;
 let portalChurchesCatalog = [];
 let portalIsCustomChurch = false;
+let selectorContinentFilter = '';
+let selectorCountryFilter = '';
 let churchBookingsData = [];
 let churchMembersData = [];
 let churchPaymentsData = [];
@@ -274,6 +279,14 @@ let adminIssuesCounts = {};
 const ALL_CHURCHES_VALUE = '__all__';
 const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
+const MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY = 28;
+
+const normalizeGeoToken = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
 async function getPortalAuthHeaders() {
   try {
@@ -319,6 +332,176 @@ function requiresScopedChurchSelection() {
   return (portalIsAdmin || portalIsCountryPastor)
     && !resolveSelectedChurchId()
     && !portalIsCustomChurch;
+}
+
+function enrichChurchCatalog(churches = []) {
+  return (churches || []).map((church) => {
+    const country = normalizeChurchCountry(church);
+    const continent = normalizeChurchContinent(church, country);
+    const city = String(church?.city || '').trim();
+    return {
+      ...church,
+      country,
+      continent,
+      city,
+    };
+  });
+}
+
+function getCountriesForSelector(continent = '') {
+  const countries = new Set();
+  (portalChurchesCatalog || []).forEach((church) => {
+    if (!church?.country) return;
+    if (continent && church.continent !== continent) return;
+    countries.add(church.country);
+  });
+  return Array.from(countries).sort(compareSpanishLabels);
+}
+
+function getFilteredChurchesForSelector() {
+  return (portalChurchesCatalog || [])
+    .filter((church) => {
+      if (selectorContinentFilter && church.continent !== selectorContinentFilter) return false;
+      if (selectorCountryFilter && church.country !== selectorCountryFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const continentCompare = compareSpanishLabels(a.continent, b.continent);
+      if (continentCompare !== 0) return continentCompare;
+      const countryCompare = compareSpanishLabels(a.country, b.country);
+      if (countryCompare !== 0) return countryCompare;
+      const cityCompare = compareSpanishLabels(a.city, b.city);
+      if (cityCompare !== 0) return cityCompare;
+      return compareSpanishLabels(a.name, b.name);
+    });
+}
+
+function setSelectorOptions(selectNode, options, defaultLabel, selectedValue = '') {
+  if (!selectNode) return;
+  selectNode.innerHTML = `<option value=\"\">${defaultLabel}</option>${options
+    .map((option) => `<option value=\"${safeAttr(option.value)}\">${safeText(option.label)}</option>`)
+    .join('')}`;
+  selectNode.value = selectedValue || '';
+}
+
+function syncSelectorFiltersToCurrentSelection() {
+  const selectedId = resolveSelectedChurchId();
+  if (!selectedId) return;
+  const selectedChurch = (portalChurchesCatalog || []).find((church) => church.id === selectedId);
+  if (!selectedChurch) return;
+  selectorContinentFilter = selectedChurch.continent || selectorContinentFilter;
+  selectorCountryFilter = selectedChurch.country || selectorCountryFilter;
+}
+
+function ensureDefaultSelectorFilters() {
+  if (selectorCountryFilter || selectorContinentFilter) return;
+  const catalog = portalChurchesCatalog || [];
+  if (!catalog.length) return;
+
+  const profileCountryRaw = portalProfile?.country;
+  if (profileCountryRaw) {
+    const profileCountryKey = normalizeGeoToken(profileCountryRaw);
+    const matchingCountry = catalog.find((church) => normalizeGeoToken(church.country) === profileCountryKey);
+    if (matchingCountry) {
+      selectorCountryFilter = matchingCountry.country;
+      selectorContinentFilter = matchingCountry.continent || '';
+      return;
+    }
+  }
+
+  if (portalScope === 'country') {
+    const first = catalog[0];
+    selectorCountryFilter = first?.country || '';
+    selectorContinentFilter = first?.continent || '';
+  }
+}
+
+function buildChurchSelectorLabel(church) {
+  const location = [church.city, church.country].filter(Boolean).join(' · ');
+  if (church.code) {
+    return `${church.code} · ${church.name}${location ? ` · ${location}` : ''}`;
+  }
+  return `${church.name}${location ? ` · ${location}` : ''}`;
+}
+
+function renderChurchSelectorOptions({ allowAll = false, allowCustom = false, scope = 'church' } = {}) {
+  if (!churchSelectorInput) return;
+
+  const continents = Array.from(new Set((portalChurchesCatalog || []).map((church) => church.continent).filter(Boolean)))
+    .sort(compareSpanishLabels);
+  const continentOptions = continents.map((continent) => ({
+    value: continent,
+    label: continent,
+  }));
+  setSelectorOptions(churchSelectorContinent, continentOptions, 'Continente: todos', selectorContinentFilter);
+
+  const countries = getCountriesForSelector(selectorContinentFilter);
+  if (selectorCountryFilter && !countries.includes(selectorCountryFilter)) {
+    selectorCountryFilter = '';
+  }
+  const countryOptions = countries.map((country) => ({
+    value: country,
+    label: country,
+  }));
+  setSelectorOptions(churchSelectorCountry, countryOptions, 'País: todos', selectorCountryFilter);
+
+  const filtered = getFilteredChurchesForSelector();
+  const hasCountryFilter = Boolean(selectorCountryFilter);
+  const requiresCountryFirst = !hasCountryFilter && filtered.length > MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY;
+  const selectedId = resolveSelectedChurchId();
+  const selectedChurch = selectedId
+    ? (portalChurchesCatalog || []).find((church) => church.id === selectedId)
+    : null;
+  if (selectedChurch && !filtered.some((church) => church.id === selectedChurch.id)) {
+    filtered.unshift(selectedChurch);
+  }
+
+  churchSelectorInput.innerHTML = '';
+  if (allowAll) {
+    const allOption = document.createElement('option');
+    allOption.value = ALL_CHURCHES_VALUE;
+    allOption.textContent = scope === 'country' ? 'Todos (pais)' : 'Todos';
+    churchSelectorInput.appendChild(allOption);
+  } else {
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = requiresCountryFirst
+      ? 'Primero selecciona un pais'
+      : 'Selecciona una iglesia';
+    churchSelectorInput.appendChild(placeholder);
+  }
+
+  const visibleChurches = requiresCountryFirst
+    ? (selectedChurch ? [selectedChurch] : [])
+    : filtered;
+  visibleChurches.forEach((church) => {
+    const option = document.createElement('option');
+    option.value = church.id;
+    option.textContent = buildChurchSelectorLabel(church);
+    churchSelectorInput.appendChild(option);
+  });
+
+  if (allowCustom) {
+    const customOption = document.createElement('option');
+    customOption.value = CUSTOM_CHURCH_VALUE;
+    customOption.textContent = 'Otra iglesia (manual)';
+    churchSelectorInput.appendChild(customOption);
+  }
+
+  const currentValue = portalIsCustomChurch
+    ? CUSTOM_CHURCH_VALUE
+    : (portalSelectedChurchId || (allowAll ? ALL_CHURCHES_VALUE : ''));
+  const hasCurrentValue = Array.from(churchSelectorInput.options).some((option) => option.value === currentValue);
+  if (hasCurrentValue) {
+    churchSelectorInput.value = currentValue;
+  } else if (allowAll) {
+    churchSelectorInput.value = ALL_CHURCHES_VALUE;
+  }
+
+  const showFilterHint = requiresCountryFirst && !selectedChurch;
+  churchSelectorInput.classList.toggle('ring-2', showFilterHint);
+  churchSelectorInput.classList.toggle('ring-amber-300', showFilterHint);
+  churchSelectorInput.classList.toggle('ring-offset-0', showFilterHint);
 }
 
 function formatCurrency(value, currency) {
@@ -560,7 +743,7 @@ async function loadDashboardData(authResult) {
 
     // Handle Church Catalog
     if (churchesRes.ok) {
-      portalChurchesCatalog = await churchesRes.json();
+      portalChurchesCatalog = enrichChurchCatalog(await churchesRes.json());
       populateChurchesUI(portalChurchesCatalog);
 
       // Update advanced church selector if it exists
@@ -697,20 +880,28 @@ async function loadDashboardData(authResult) {
 
     const user = userData?.user;
 
+    const bookings = Array.isArray(payload.bookings) ? payload.bookings : [];
+    const plans = Array.isArray(payload.plans) ? payload.plans : [];
+    const installments = Array.isArray(payload.installments) ? payload.installments : [];
+    const donations = Array.isArray(payload.donations) ? payload.donations : [];
+    const donationSubscriptions = Array.isArray(payload.donationSubscriptions) ? payload.donationSubscriptions : [];
+    const events = Array.isArray(payload.events) ? payload.events : [];
+
     const activeUser = payload.user || {};
-    const name = activeUser.fullName || user?.user_metadata?.full_name || 'Usuario';
-    profileName.value = name;
-    welcomeName.textContent = name.split(' ')[0];
-    profileEmail.value = activeUser.email || user?.email || '';
+    const rawName = activeUser.fullName || user?.user_metadata?.full_name || 'Usuario';
+    const name = String(rawName || 'Usuario').trim() || 'Usuario';
+    if (profileName) profileName.value = name;
+    if (welcomeName) welcomeName.textContent = name.split(' ')[0] || 'Usuario';
+    if (profileEmail) profileEmail.value = activeUser.email || user?.email || '';
     if (profileRole) profileRole.value = portalProfile?.role || 'user';
-    profilePhone.value = portalProfile.phone || '';
-    profileCity.value = portalProfile.city || '';
-    profileCountry.value = portalProfile.country || '';
+    if (profilePhone) profilePhone.value = portalProfile.phone || '';
+    if (profileCity) profileCity.value = portalProfile.city || '';
+    if (profileCountry) profileCountry.value = portalProfile.country || '';
     if (profileDocumentType) profileDocumentType.value = portalProfile.document_type || '';
     if (profileDocumentNumber) profileDocumentNumber.value = portalProfile.document_number || '';
-    profileAffiliation.value = portalProfile.affiliation_type || '';
-    profileChurchName.value = portalProfile.church_name || '';
-    toggleChurchField(profileAffiliation.value);
+    if (profileAffiliation) profileAffiliation.value = portalProfile.affiliation_type || '';
+    if (profileChurchName) profileChurchName.value = portalProfile.church_name || '';
+    if (profileAffiliation) toggleChurchField(profileAffiliation.value);
 
     // Update Label for Superadmins if needed, though replaced by new static logic
     if (portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin') {
@@ -728,7 +919,7 @@ async function loadDashboardData(authResult) {
 
     // Calculations for highlights
     const totalPaidByCurrency = {};
-    payload.bookings?.forEach((booking) => {
+    bookings.forEach((booking) => {
       const currency = (booking.currency || 'COP').toString().toUpperCase();
       totalPaidByCurrency[currency] = (totalPaidByCurrency[currency] || 0) + (booking.total_paid || 0);
     });
@@ -736,18 +927,18 @@ async function loadDashboardData(authResult) {
       statTotalPaid.innerHTML = formatCurrencyBreakdown(totalPaidByCurrency);
     }
 
-    const activePlans = (payload.plans || []).filter((plan) => plan.status === 'ACTIVE');
+    const activePlans = plans.filter((plan) => plan.status === 'ACTIVE');
     const nextPlanDate = activePlans
       .map((plan) => toDate(plan.next_due_date))
       .filter(Boolean)
       .sort((a, b) => a.getTime() - b.getTime())[0] || null;
-    const nextInstallmentDate = (payload.installments || [])
+    const nextInstallmentDate = installments
       .filter((item) => ['PENDING', 'FAILED'].includes(item.status))
       .map((item) => toDate(item.due_date))
       .filter(Boolean)
       .sort((a, b) => a.getTime() - b.getTime())[0] || null;
 
-    const hasPendingBalance = (payload.bookings || []).some((b) => Number(b.total_amount || 0) > Number(b.total_paid || 0));
+    const hasPendingBalance = bookings.some((b) => Number(b.total_amount || 0) > Number(b.total_paid || 0));
     const deadlineHintDate = activePlans
       .map((plan) => toDate(plan.end_date))
       .filter(Boolean)
@@ -766,7 +957,7 @@ async function loadDashboardData(authResult) {
     }
 
     const activePlan = activePlans[0];
-    if (activePlan) {
+    if (activePlan && planHighlight && highlightAmount && highlightDate) {
       const nextDueLabel = activePlan.next_due_date ? formatDate(activePlan.next_due_date) : 'Sin fecha';
       const nextDueHint = activePlan.end_date ? `Antes de ${formatLongDate(activePlan.end_date)}` : '';
       planHighlight.classList.remove('hidden');
@@ -777,7 +968,7 @@ async function loadDashboardData(authResult) {
       const highlightHeader = document.getElementById('highlight-header');
       const highlightContext = document.getElementById('highlight-context');
 
-      const relatedBooking = payload.bookings?.find(b => b.id === activePlan.booking_id);
+      const relatedBooking = bookings.find(b => b.id === activePlan.booking_id);
       // Default concept
       let concept = relatedBooking?.event_name || 'Cumbre Mundial 2026';
 
@@ -792,15 +983,15 @@ async function loadDashboardData(authResult) {
       if (highlightContext) highlightContext.textContent = concept;
     }
 
-    renderBookings(payload.bookings || []);
-    renderPlans(payload.plans || [], payload.bookings || []);
-    renderInstallments(payload.installments || [], payload.plans || [], payload.bookings || []);
+    renderBookings(bookings);
+    renderPlans(plans, bookings);
+    renderInstallments(installments, plans, bookings);
     const paymentsForTable = buildPaymentsTableData(payload);
     renderPayments(paymentsForTable);
-    renderSummaryEvents(payload.bookings || [], payload.plans || [], payload.installments || []);
-    renderGivingSummary(payload.donations || [], payload.donationSubscriptions || []);
-    renderCampusSummary(payload.donations || [], payload.donationSubscriptions || []);
-    renderLocalEvents(payload.events || []);
+    renderSummaryEvents(bookings, plans, installments);
+    renderGivingSummary(donations, donationSubscriptions);
+    renderCampusSummary(donations, donationSubscriptions);
+    renderLocalEvents(events);
     renderMemberships(portalMemberships);
     setupInviteAccess();
     initAdminInvite();
@@ -810,11 +1001,11 @@ async function loadDashboardData(authResult) {
 
     // Inject Admin Filters if applicable
     if (portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin') {
-      setupAdminFilters(payload.bookings || []);
+      setupAdminFilters(bookings);
     }
 
     // Role-based filtering for initial view
-    let displayedBookings = payload.bookings || [];
+    let displayedBookings = bookings;
     if (portalProfile?.role === 'pastor' || portalProfile?.role === 'leader') {
       const myChurch = portalProfile.church_name;
       if (myChurch) {
@@ -977,11 +1168,11 @@ async function loadChurchSelector(headers = {}) {
     if (!res.ok || !payload.ok) throw new Error(payload.error || 'No se pudo cargar iglesias');
 
     const churches = payload.churches || [];
-    portalChurchesCatalog = churches;
+    portalChurchesCatalog = enrichChurchCatalog(churches);
 
     // Update advanced church selector if it exists
-    if (window.advancedChurchSelector && churches.length > 0) {
-      window.advancedChurchSelector.setChurches(churches);
+    if (window.advancedChurchSelector && portalChurchesCatalog.length > 0) {
+      window.advancedChurchSelector.setChurches(portalChurchesCatalog);
     }
     const canSelect = Boolean(payload.canSelect);
     const allowAll = Boolean(payload.allowAll);
@@ -991,61 +1182,31 @@ async function loadChurchSelector(headers = {}) {
     portalCanSelectChurch = canSelect;
     portalAllowAllChurches = allowAll;
     portalAllowCustomChurch = allowCustom;
-    churchSelectorInput.innerHTML = '';
-    if (allowAll) {
-      const allOption = document.createElement('option');
-      allOption.value = ALL_CHURCHES_VALUE;
-      allOption.textContent = scope === 'country' ? 'Todos (País)' : 'Todos';
-      churchSelectorInput.appendChild(allOption);
-    } else {
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'Selecciona una iglesia';
-      churchSelectorInput.appendChild(placeholder);
-    }
-    churches.forEach((church) => {
-      const option = document.createElement('option');
-      option.value = church.id;
-      const showCountry = Boolean(church?.country && (!church?.city || /virtual/i.test(church?.name || '')));
-      const countryLabel = showCountry ? ` · ${church.country}` : '';
-      const label = church?.code
-        ? `${church.code} · ${church.name}${church.city ? ` · ${church.city}` : ''}${countryLabel}`
-        : `${church.name}${church.city ? ` · ${church.city}` : ''}${countryLabel}`;
-      option.textContent = label;
-      churchSelectorInput.appendChild(option);
-    });
-
-    if (inviteChurchInput) {
-      inviteChurchInput.innerHTML = '<option value="">Selecciona una iglesia</option>';
-      churches.forEach((church) => {
-        const option = document.createElement('option');
-        option.value = church.id;
-        const cityLabel = church.city || church.country || 'Ciudad';
-        const countryLabel = church.country ? ` · ${church.country}` : '';
-        option.textContent = `${cityLabel} - ${church.name}${countryLabel}`;
-        inviteChurchInput.appendChild(option);
-      });
-    }
-
-    if (allowCustom) {
-      const customOption = document.createElement('option');
-      customOption.value = CUSTOM_CHURCH_VALUE;
-      customOption.textContent = 'Otra iglesia (manual)';
-      churchSelectorInput.appendChild(customOption);
-    }
-
     portalSelectedChurchId = payload.selectedChurchId || '';
     portalIsCustomChurch = false;
     if (allowAll && !portalSelectedChurchId) {
       portalSelectedChurchId = ALL_CHURCHES_VALUE;
     }
+    syncSelectorFiltersToCurrentSelection();
+    ensureDefaultSelectorFilters();
+    renderChurchSelectorOptions({ allowAll, allowCustom, scope });
+
+    if (inviteChurchInput) {
+      inviteChurchInput.innerHTML = '<option value="">Selecciona una iglesia</option>';
+      portalChurchesCatalog.forEach((church) => {
+        const option = document.createElement('option');
+        option.value = church.id;
+        option.textContent = buildChurchSelectorLabel(church);
+        inviteChurchInput.appendChild(option);
+      });
+    }
+
     if (portalSelectedChurchId) {
-      churchSelectorInput.value = portalSelectedChurchId;
       if (inviteChurchInput && resolveSelectedChurchId()) {
         inviteChurchInput.value = resolveSelectedChurchId();
       }
-    } else if (churches.length === 1) {
-      portalSelectedChurchId = churches[0].id;
+    } else if (portalChurchesCatalog.length === 1) {
+      portalSelectedChurchId = portalChurchesCatalog[0].id;
       churchSelectorInput.value = portalSelectedChurchId;
       if (inviteChurchInput) inviteChurchInput.value = portalSelectedChurchId;
       await saveChurchSelection(portalSelectedChurchId, headers);
@@ -1087,6 +1248,9 @@ async function loadChurchSelector(headers = {}) {
       churchSelectorStatus.textContent = scope === 'country'
         ? 'Mostrando todas las iglesias de tu país.'
         : 'Mostrando todos los registros (incluye sin iglesia / virtual).';
+      if (!selectorCountryFilter && getFilteredChurchesForSelector().length > MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY) {
+        churchSelectorStatus.textContent += ' Filtra por país para navegar más rápido.';
+      }
     } else {
       churchSelectorStatus.textContent = churches.length ? 'Selecciona una iglesia para ver los registros.' : 'No hay iglesias disponibles.';
     }
@@ -1097,6 +1261,34 @@ async function loadChurchSelector(headers = {}) {
 }
 
 // Church Selector: Change Event Listener
+if (churchSelectorContinent) {
+  churchSelectorContinent.addEventListener('change', () => {
+    selectorContinentFilter = churchSelectorContinent.value || '';
+    if (selectorCountryFilter) {
+      const validCountries = getCountriesForSelector(selectorContinentFilter);
+      if (!validCountries.includes(selectorCountryFilter)) {
+        selectorCountryFilter = '';
+      }
+    }
+    renderChurchSelectorOptions({
+      allowAll: portalAllowAllChurches,
+      allowCustom: portalAllowCustomChurch,
+      scope: portalScope,
+    });
+  });
+}
+
+if (churchSelectorCountry) {
+  churchSelectorCountry.addEventListener('change', () => {
+    selectorCountryFilter = churchSelectorCountry.value || '';
+    renderChurchSelectorOptions({
+      allowAll: portalAllowAllChurches,
+      allowCustom: portalAllowCustomChurch,
+      scope: portalScope,
+    });
+  });
+}
+
 if (churchSelectorInput) {
   churchSelectorInput.addEventListener('change', async () => {
     const selectedChurchId = churchSelectorInput.value;
@@ -1122,6 +1314,11 @@ if (churchSelectorInput) {
       await saveChurchSelection(null, portalAuthHeaders);
     } else if (selectedChurchId) {
       portalSelectedChurchId = selectedChurchId;
+      const selected = portalChurchesCatalog.find((item) => item.id === selectedChurchId);
+      if (selected) {
+        selectorContinentFilter = selected.continent || selectorContinentFilter;
+        selectorCountryFilter = selected.country || selectorCountryFilter;
+      }
       await saveChurchSelection(selectedChurchId, portalAuthHeaders);
     } else {
       portalSelectedChurchId = null;
@@ -1130,6 +1327,12 @@ if (churchSelectorInput) {
     if (inviteChurchInput) {
       inviteChurchInput.value = resolveSelectedChurchId();
     }
+
+    renderChurchSelectorOptions({
+      allowAll: portalAllowAllChurches,
+      allowCustom: portalAllowCustomChurch,
+      scope: portalScope,
+    });
 
     const emptyEl = document.getElementById('church-dashboard-empty');
     const contentEl = document.getElementById('church-dashboard-content');
@@ -4026,23 +4229,6 @@ function populateChurchesUI(catalog) {
       const safeAddress = safeText(c.address || '');
       return `<option value="${safeLabel}">${safeAddress}</option>`;
     }).join('');
-  }
-
-  // Populate Admin Selector (if empty or just placeholder)
-  if (churchSelectorInput) {
-    // Keep the first option if it's a placeholder
-    const placeholder = churchSelectorInput.firstElementChild;
-    churchSelectorInput.innerHTML = '';
-    if (placeholder) churchSelectorInput.appendChild(placeholder);
-
-    catalog.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      const showCountry = Boolean(c?.country && (!c?.city || /virtual/i.test(c?.name || '')));
-      const countryLabel = showCountry ? ` · ${c.country}` : '';
-      opt.textContent = `${c.city || c.country || 'Ciudad'} - ${c.name}${countryLabel}`;
-      churchSelectorInput.appendChild(opt);
-    });
   }
 
   if (inviteChurchInput) {

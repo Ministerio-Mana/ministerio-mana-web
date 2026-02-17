@@ -3,6 +3,7 @@
 
 alter table public.churches
   add column if not exists code text,
+  add column if not exists continent text,
   add column if not exists address text,
   add column if not exists maps_url text,
   add column if not exists lat numeric,
@@ -17,6 +18,7 @@ create unique index if not exists churches_code_unique
 insert into public.churches (
   code,
   name,
+  continent,
   city,
   country,
   address,
@@ -31,6 +33,7 @@ values
   (
     'colombia-pereira-iglesia-mana-pereira',
     'Iglesia Maná Pereira',
+    'América',
     'Pereira',
     'Colombia',
     'Calle 22 #5-45',
@@ -44,6 +47,7 @@ values
   (
     'ecuador-cuenca-mana-ecuador-cuenca',
     'Maná Ecuador · Cuenca',
+    'América',
     'Cuenca',
     'Ecuador',
     'Calle Benigno Vasquez y Av 25 de Marzo, al costado de los bomberos, Ricaurte (Iglesia Pueblo Especial)',
@@ -57,6 +61,7 @@ values
   (
     'ecuador-quito-mana-ecuador-quito',
     'Maná Ecuador · Quito',
+    'América',
     'Quito',
     'Ecuador',
     'Luxemburgo N34-150 y Holanda, Edificio Piacevole',
@@ -70,6 +75,7 @@ values
   (
     'ecuador-guayaquil-sur-mana-ecuador-guayaquil-sur',
     'Maná Ecuador · Guayaquil Sur',
+    'América',
     'Guayaquil (Sur)',
     'Ecuador',
     'Av. La Saiba y Bogotá (esquina), Cdla. La Saiba',
@@ -83,6 +89,7 @@ values
   (
     'ecuador-guayaquil-norte-mana-ecuador-guayaquil-norte',
     'Maná Ecuador · Guayaquil Norte',
+    'América',
     'Guayaquil (Norte)',
     'Ecuador',
     'Circunvalación Sur 725 y Guayacanes (esquina), Sector Urdesa Central',
@@ -96,6 +103,7 @@ values
   (
     'mexico-tantoyuca-veracruz-mana-mexico-emanuel-cielos-abiertos',
     'Maná México · Emanuel Cielos Abiertos',
+    'América',
     'Tantoyuca, Veracruz',
     'México',
     'Naucalpan esq. con Acolman S/N, Colonia Guadalupe Victoria, Tantoyuca, Veracruz',
@@ -109,6 +117,7 @@ values
   (
     'francia-paris-mana-francia-paris',
     'Maná Francia · París',
+    'Europa',
     'París',
     'Francia',
     '3 rue de la Pierre L''evée, 75011 Paris',
@@ -122,6 +131,7 @@ values
   (
     'europa-europa-virtual-mana-europa-contacto-regional',
     'Maná Europa · Contacto Regional',
+    'Europa',
     'Europa (Virtual)',
     'Europa',
     'Conexión virtual coordinada desde París',
@@ -135,6 +145,7 @@ values
 on conflict (code)
 do update set
   name = excluded.name,
+  continent = excluded.continent,
   city = excluded.city,
   country = excluded.country,
   address = excluded.address,

@@ -3,6 +3,7 @@ export const prerender = false;
 import BaseLayout from '@layouts/BaseLayout.astro';
 import ChurchesMap from '@components/ChurchesMap.astro';
 import churchesData from '@data/churches.json';
+import { buildChurchGeoTree } from '@lib/churchGeo';
 
 const toMapsHref = (church: any) => {
   if (typeof church.maps_url === 'string' && church.maps_url.trim()) return church.maps_url.trim();
@@ -18,8 +19,6 @@ const toMapsHref = (church: any) => {
 
 const churchesRaw = (churchesData as any[]).map((church, index) => ({
   ...church,
-  country: church.country ?? 'Colombia',
-  continent: church.continent ?? 'América',
   mapsHref: toMapsHref(church),
   id: `${church.country ?? 'Colombia'}-${church.city ?? 'sin-ciudad'}-${church.name ?? index}`
     .toLowerCase()
@@ -27,50 +26,12 @@ const churchesRaw = (churchesData as any[]).map((church, index) => ({
     .replace(/(^-|-$)/g, ''),
 }));
 
-const churches = churchesRaw.sort((a, b) => {
-  const countryCompare = (a.country || '').localeCompare(b.country || '', 'es');
-  if (countryCompare !== 0) return countryCompare;
-  const cityCompare = (a.city || '').localeCompare(b.city || '', 'es');
-  if (cityCompare !== 0) return cityCompare;
-  return (a.name || '').localeCompare(b.name || '', 'es');
-});
-
-const continents = Array.from(new Set(churches.map((church) => church.continent))).sort((a, b) =>
-  String(a).localeCompare(String(b), 'es'),
-);
-
-const countries = Array.from(new Set(churches.map((church) => church.country))).sort((a, b) =>
-  String(a).localeCompare(String(b), 'es'),
-);
-
-const countryStats = countries.map((country) => ({
-  country,
-  count: churches.filter((church) => church.country === country).length,
-  continent: churches.find((church) => church.country === country)?.continent || 'América',
-}));
-
-const cityStats = Array.from(
-  churches.reduce((acc, church) => {
-    const city = String(church.city || '').trim();
-    if (!city) return acc;
-    const country = String(church.country || 'Colombia');
-    const continent = String(church.continent || 'América');
-    const key = `${continent}||${country}||${city}`;
-    const current = acc.get(key);
-    if (current) {
-      current.count += 1;
-      return acc;
-    }
-    acc.set(key, { city, country, continent, count: 1 });
-    return acc;
-  }, new Map<string, { city: string; country: string; continent: string; count: number }>()).values(),
-).sort((a, b) => {
-  const continentCompare = a.continent.localeCompare(b.continent, 'es');
-  if (continentCompare !== 0) return continentCompare;
-  const countryCompare = a.country.localeCompare(b.country, 'es');
-  if (countryCompare !== 0) return countryCompare;
-  return a.city.localeCompare(b.city, 'es');
-});
+const geoTree = buildChurchGeoTree(churchesRaw);
+const churches = geoTree.churches;
+const continents = geoTree.continents;
+const countryStats = geoTree.countryStats;
+const cityStats = geoTree.cityStats;
+const countries = countryStats.map((entry) => entry.country);
 
 const cspNonce = Astro.locals?.cspNonce;
 const title = 'Iglesias Maná Global';
@@ -328,6 +289,23 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       let selectedContinent = '';
       let selectedCountry = '';
       let selectedCity = '';
+      let isSyncingFromMap = false;
+
+      const getCountryButton = (country) =>
+        countryButtons.find((button) => (button.dataset.country || '') === (country || ''));
+
+      const getCityButton = (city, country = '') =>
+        cityButtons.find((button) => {
+          if ((button.dataset.city || '') !== (city || '')) return false;
+          if (!country) return true;
+          return (button.dataset.country || '') === country;
+        });
+
+      const normalizeSelectionValue = (value) => {
+        const raw = String(value || '').trim();
+        if (!raw || raw.toLowerCase() === 'all') return '';
+        return raw;
+      };
 
       const setButtonState = (buttons, key, value) => {
         buttons.forEach((button) => {
@@ -337,14 +315,41 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
         });
       };
 
+      const ensureHierarchy = () => {
+        if (selectedCountry) {
+          const countryButton = getCountryButton(selectedCountry);
+          const countryContinent = countryButton?.dataset.continent || '';
+          if (countryContinent && selectedContinent && countryContinent !== selectedContinent) {
+            selectedCountry = '';
+            selectedCity = '';
+          } else if (countryContinent && !selectedContinent) {
+            selectedContinent = countryContinent;
+          }
+        }
+
+        if (selectedCity) {
+          const cityButton = getCityButton(selectedCity, selectedCountry);
+          if (!cityButton) {
+            selectedCity = '';
+            return;
+          }
+          const cityCountry = cityButton.dataset.country || '';
+          const cityContinent = cityButton.dataset.continent || '';
+          if (cityCountry) selectedCountry = cityCountry;
+          if (cityContinent) selectedContinent = cityContinent;
+        }
+      };
+
       const syncCountryChipVisibility = () => {
         countryButtons.forEach((button) => {
           const buttonContinent = button.dataset.continent || '';
-          const shouldShow = !selectedContinent || !buttonContinent || buttonContinent === selectedContinent;
+          const isAllOption = !(button.dataset.country || '');
+          const shouldShow = isAllOption || !selectedContinent || !buttonContinent || buttonContinent === selectedContinent;
           button.classList.toggle('hidden', !shouldShow);
 
           if (!shouldShow && (button.dataset.country || '') === selectedCountry) {
             selectedCountry = '';
+            selectedCity = '';
           }
         });
       };
@@ -372,9 +377,15 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       };
 
       const dispatchMapFocus = () => {
+        if (isSyncingFromMap) return;
         window.dispatchEvent(
           new CustomEvent('mana:church-country-focus', {
-            detail: { country: selectedCountry || '', city: selectedCity || '' },
+            detail: {
+              source: 'nav',
+              continent: selectedContinent || '',
+              country: selectedCountry || '',
+              city: selectedCity || '',
+            },
           }),
         );
       };
@@ -409,6 +420,9 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       continentButtons.forEach((button) => {
         button.addEventListener('click', () => {
           selectedContinent = button.dataset.continent || '';
+          selectedCountry = '';
+          selectedCity = '';
+          ensureHierarchy();
           setButtonState(continentButtons, 'continent', selectedContinent);
           syncCountryChipVisibility();
           syncCityChipVisibility();
@@ -422,6 +436,12 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       countryButtons.forEach((button) => {
         button.addEventListener('click', () => {
           selectedCountry = button.dataset.country || '';
+          selectedCity = '';
+          if (selectedCountry) {
+            selectedContinent = button.dataset.continent || selectedContinent;
+          }
+          ensureHierarchy();
+          setButtonState(continentButtons, 'continent', selectedContinent);
           setButtonState(countryButtons, 'country', selectedCountry);
           syncCityChipVisibility();
           setButtonState(cityButtons, 'city', selectedCity);
@@ -433,10 +453,35 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       cityButtons.forEach((button) => {
         button.addEventListener('click', () => {
           selectedCity = button.dataset.city || '';
+          if (selectedCity) {
+            selectedCountry = button.dataset.country || selectedCountry;
+            selectedContinent = button.dataset.continent || selectedContinent;
+          }
+          ensureHierarchy();
+          setButtonState(continentButtons, 'continent', selectedContinent);
+          setButtonState(countryButtons, 'country', selectedCountry);
           setButtonState(cityButtons, 'city', selectedCity);
           filter();
           dispatchMapFocus();
         });
+      });
+
+      window.addEventListener('mana:church-map-focus-change', (event) => {
+        const detail = event?.detail || {};
+        if (detail.source === 'nav') return;
+
+        isSyncingFromMap = true;
+        selectedContinent = normalizeSelectionValue(detail.continent);
+        selectedCountry = normalizeSelectionValue(detail.country);
+        selectedCity = normalizeSelectionValue(detail.city);
+        ensureHierarchy();
+        syncCountryChipVisibility();
+        syncCityChipVisibility();
+        setButtonState(continentButtons, 'continent', selectedContinent);
+        setButtonState(countryButtons, 'country', selectedCountry);
+        setButtonState(cityButtons, 'city', selectedCity);
+        filter();
+        isSyncingFromMap = false;
       });
 
       if (searchInput) {
