@@ -90,6 +90,15 @@ async function verifyTurnstileToken(token) {
   }
 }
 
+async function verifyTurnstileTokenSoft(token, context = 'generic') {
+  if (!token) return false;
+  const result = await verifyTurnstileToken(token);
+  if (!result.ok) {
+    console.warn(`[Turnstile] Soft verify failed (${context}):`, result.error);
+  }
+  return result.ok;
+}
+
 function showStatus(msg, type = 'loading') {
   if (!statusContainer || !statusEl || !statusIcon || !statusWrapper) return;
   statusContainer.classList.remove('hidden');
@@ -141,12 +150,7 @@ async function startOAuth(provider, label, btn) {
     return;
   }
   if (captcha.token && !captcha.bypass) {
-    const captchaCheck = await verifyTurnstileToken(captcha.token);
-    if (!captchaCheck.ok) {
-      showStatus(captchaCheck.error || 'Captcha inválido.', 'error');
-      resetTurnstile();
-      return;
-    }
+    await verifyTurnstileTokenSoft(captcha.token, `oauth:${provider}`);
   }
 
   if (btn) {
@@ -294,23 +298,18 @@ passwordForm?.addEventListener('submit', async (e) => {
 
     if (error) {
       console.warn('Supabase login failed, trying API fallback...', error.message);
-      await tryApiLogin(email, password, captcha.token);
-      return;
+      try {
+        await tryApiLogin(email, password, captcha.token);
+        return;
+      } catch (fallbackErr) {
+        console.warn('API fallback failed, keeping Supabase error as source of truth:', fallbackErr?.message || fallbackErr);
+        throw error;
+      }
     }
 
     // Only verify Turnstile token if we actually have one (widget rendered)
     if (captcha.token && !captcha.bypass) {
-      const captchaCheck = await verifyTurnstileToken(captcha.token);
-      if (!captchaCheck.ok) {
-        await supabase.auth.signOut({ scope: 'local' });
-        showStatus(captchaCheck.error || 'Captcha inválido.', 'error');
-        resetTurnstile();
-        if (btn) {
-          btn.disabled = false;
-          btn.classList.remove('opacity-50');
-        }
-        return;
-      }
+      await verifyTurnstileTokenSoft(captcha.token, 'password-login-post-supabase');
     }
 
     showStatus('Acceso correcto. Entrando...', 'success');
@@ -353,11 +352,8 @@ passkeyBtn?.addEventListener('click', async () => {
       resetTurnstile();
       return;
     }
-    const captchaCheck = await verifyTurnstileToken(captcha.token);
-    if (!captchaCheck.ok) {
-      showStatus(captchaCheck.error || 'Captcha inválido.', 'error');
-      resetTurnstile();
-      return;
+    if (captcha.token && !captcha.bypass) {
+      await verifyTurnstileTokenSoft(captcha.token, 'passkey');
     }
     if (!supabase) {
       throw new Error('El portal no está configurado.');
