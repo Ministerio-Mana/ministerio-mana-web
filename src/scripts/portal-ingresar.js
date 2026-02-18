@@ -50,16 +50,16 @@ function getTurnstileTokenIfRequired() {
   // In this case, bypass the check instead of blocking the user
   const siteKey = widget.getAttribute('data-sitekey');
   if (!siteKey) {
-    console.warn('[Turnstile] Widget rendered without site key. Bypassing validation.');
-    return { ok: true, bypass: true, token: '' };
+    console.warn('[Turnstile] Widget rendered without site key.');
+    return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.' };
   }
 
-  // If widget has a key but Cloudflare failed to render it (401 error, wrong domain, etc.)
-  // The iframe won't be created. Bypass instead of blocking.
+  // If widget has key but did not render, do NOT bypass.
+  // Backend requires captcha in production, so sending empty token causes hard failure.
   const iframe = widget.querySelector('iframe');
-  if (!iframe) {
-    console.warn('[Turnstile] Widget has site key but failed to render. Cloudflare error (401?). Bypassing validation.');
-    return { ok: true, bypass: true, token: '' };
+  if (!window.turnstile || !iframe) {
+    console.warn('[Turnstile] Widget has site key but failed to render.');
+    return { ok: false, error: 'No cargó el captcha. Desactiva bloqueadores, recarga e intenta de nuevo.' };
   }
 
   // Widget is configured AND rendered, so validation is required

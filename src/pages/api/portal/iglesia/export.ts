@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, isAdminRole, listUserMemberships } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 
 export const prerender = false;
 
@@ -10,38 +9,6 @@ function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '""';
   const str = String(value).replace(/"/g, '""');
   return `"${str}"`;
-}
-
-async function getAccessContext(request: Request) {
-  const user = await getUserFromRequest(request);
-  if (user?.email) {
-    const profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasChurchRole = Boolean(activeMembership);
-    const role = profile?.role || 'user';
-    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-    if (!allowedRoles.includes(role) && !hasChurchRole) {
-      return { ok: false };
-    }
-    const isAdmin = Boolean(profile && isAdminRole(role));
-    const isNational = role === 'national_pastor';
-    return {
-      ok: Boolean(profile && (isAdmin || isNational || hasChurchRole || role === 'pastor' || role === 'local_collaborator')),
-      isAdmin,
-      isNational,
-      memberships,
-      profile,
-      country: profile?.country || null,
-    };
-  }
-
-  const passwordSession = readPasswordSession(request);
-  if (!passwordSession?.email) return { ok: false };
-
-  return { ok: true, isAdmin: true, isNational: false, memberships: [], profile: null, country: null };
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -52,33 +19,29 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const ctx = await getAccessContext(request);
-  if (!ctx.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'Acceso denegado a exportación');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   const url = new URL(request.url);
   const requestedChurch = url.searchParams.get('churchId');
-  const membershipChurch = ctx.memberships?.find((m: any) => m?.church?.id)?.church?.id || null;
-  const profileChurch = (ctx.profile as any)?.portal_church_id || (ctx.profile as any)?.church_id || null;
-  let targetChurch = ctx.isAdmin ? (requestedChurch || profileChurch) : (membershipChurch || profileChurch);
-
-  if (ctx.isNational) {
+  const profileChurch = access.profile?.portal_church_id || access.profile?.church_id || null;
+  let targetChurch = access.isAdmin ? (requestedChurch || profileChurch) : access.allowedChurchId;
+  const requiresScopedChurchSelection = !access.isAdmin && !access.allowedChurchId;
+  if (requiresScopedChurchSelection) {
     if (!requestedChurch) {
       return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
-    const { data: church } = await supabaseAdmin
-      .from('churches')
-      .select('id, country')
-      .eq('id', requestedChurch)
-      .maybeSingle();
-    if (!church?.id || (ctx.country && church.country !== ctx.country)) {
+    const isAllowedChurch = await isChurchAllowedForAccess(requestedChurch, access);
+    if (!isAllowedChurch) {
       return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
         status: 403,
         headers: { 'content-type': 'application/json' },

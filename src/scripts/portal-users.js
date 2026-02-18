@@ -25,20 +25,25 @@ const togglePasswordBtn = document.getElementById('toggle-password-user');
 const scopeCountryWrapper = document.getElementById('user-scope-country');
 const scopeCountryInput = document.getElementById('user-country-input');
 const scopeCountryList = document.getElementById('user-country-list');
+const scopeRegionWrapper = document.getElementById('user-scope-region');
+const scopeRegionSelect = document.getElementById('user-region-select');
 const scopeChurchWrapper = document.getElementById('user-scope-church');
 const scopeChurchSelect = document.getElementById('user-church-select');
 const navLinkEvents = document.getElementById('nav-link-events');
 const navLinkUsers = document.getElementById('nav-link-users');
 const navLinkCampus = document.getElementById('nav-link-campus');
 const navLinkFinances = document.getElementById('nav-link-finances');
+const navLinkRegions = document.getElementById('nav-link-regions');
 
 let currentUserRole = 'user';
 let currentUserCountry = '';
+let currentUserRegionId = '';
 let currentUserChurchId = '';
 let currentToken = '';
 let currentMemberships = [];
 let allUsers = [];
 let churchesCatalog = [];
+let regionsCatalog = [];
 let scopeListenerAttached = false;
 const pendingRoleChanges = new Map();
 
@@ -46,6 +51,9 @@ const roleTranslations = {
     'superadmin': 'Super Admin',
     'admin': 'Admin',
     'national_pastor': 'Pastor Nacional',
+    'national_collaborator': 'Colaborador Nacional',
+    'regional_pastor': 'Pastor Regional',
+    'regional_collaborator': 'Colaborador Regional',
     'campus_missionary': 'Misionero Campus',
     'pastor': 'Pastor Local',
     'local_collaborator': 'Colaborador Local',
@@ -57,6 +65,9 @@ const roleOrder = [
     'superadmin',
     'admin',
     'national_pastor',
+    'national_collaborator',
+    'regional_pastor',
+    'regional_collaborator',
     'campus_missionary',
     'pastor',
     'local_collaborator',
@@ -97,15 +108,17 @@ function applySidebarPermissions(role, memberships = []) {
         }
     }
 
-    const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'pastor'];
-    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'];
+    const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor'];
+    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator'];
     const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
     const financeRoles = ['superadmin', 'admin'];
+    const regionsRoles = ['superadmin', 'admin'];
 
     if (navLinkEvents) navLinkEvents.style.display = eventManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkUsers) navLinkUsers.style.display = userManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkCampus) navLinkCampus.style.display = campusRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkFinances) navLinkFinances.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkRegions) navLinkRegions.style.display = regionsRoles.includes(effectiveRole) ? 'flex' : 'none';
     return effectiveRole;
 }
 
@@ -136,6 +149,7 @@ async function init() {
                 currentMemberships = memberships;
                 currentUserRole = profile.role || 'user';
                 currentUserCountry = profile.country || '';
+                currentUserRegionId = profile.region_id || '';
                 currentUserChurchId = profile.church_id
                     || memberships.find((m) => m?.church?.id)?.church?.id
                     || '';
@@ -155,6 +169,7 @@ async function init() {
     } catch (e) { console.error(e); }
 
     await loadChurches();
+    await loadRegions(token);
 
     // 2. Load Users
     loadUsers(token);
@@ -180,13 +195,38 @@ async function loadChurches() {
     }
 }
 
+async function loadRegions(token) {
+    if (!scopeRegionSelect || !token) return;
+    try {
+        const res = await fetch('/api/portal/admin/regions', {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) {
+            regionsCatalog = [];
+            populateRegionOptions();
+            return;
+        }
+        const payload = await res.json();
+        regionsCatalog = Array.isArray(payload?.regions) ? payload.regions : [];
+        populateRegionOptions();
+    } catch (err) {
+        console.error(err);
+        regionsCatalog = [];
+        populateRegionOptions();
+    }
+}
+
 function populateScopeOptions() {
     if (!scopeChurchSelect || !scopeCountryList) return;
-    const countryFiltered = (currentUserRole === 'national_pastor' && currentUserCountry)
-        ? churchesCatalog.filter(c => c.country === currentUserCountry)
-        : churchesCatalog;
+    let scoped = churchesCatalog;
+    if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
+        scoped = scoped.filter(c => (c.country || '').toLowerCase() === currentUserCountry.toLowerCase());
+    }
+    if ((currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') && currentUserRegionId) {
+        scoped = scoped.filter(c => c.region_id === currentUserRegionId);
+    }
     scopeChurchSelect.innerHTML = '<option value="">Selecciona una iglesia</option>' +
-        countryFiltered
+        scoped
             .map(c => {
                 const safeId = escapeAttr(c.id || '');
                 const cityLabel = c.city || c.country || 'Ciudad';
@@ -201,17 +241,45 @@ function populateScopeOptions() {
     scopeCountryList.innerHTML = countries.map(c => `<option value="${escapeAttr(c)}"></option>`).join('');
 }
 
+function populateRegionOptions() {
+    if (!scopeRegionSelect) return;
+    const scopedRegions = (currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry
+        ? regionsCatalog.filter(r => (r.country || '').toLowerCase() === currentUserCountry.toLowerCase())
+        : regionsCatalog;
+
+    scopeRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' +
+        scopedRegions
+            .filter(r => r?.is_active !== false)
+            .map((region) => {
+                const label = `${region.code || 'REG'} · ${region.name || 'Región'}${region.country ? ` (${region.country})` : ''}`;
+                return `<option value="${escapeAttr(region.id || '')}">${escapeHtml(label)}</option>`;
+            })
+            .join('');
+}
+
 function updateScopeFields(role) {
-    const needsCountry = role === 'national_pastor';
-    const needsChurch = role === 'pastor' || role === 'local_collaborator';
+    const needsCountry = role === 'national_pastor' || role === 'national_collaborator';
+    const needsRegion = role === 'regional_pastor' || role === 'regional_collaborator';
+    const needsChurch = role === 'pastor' || role === 'local_collaborator' || role === 'leader';
 
     if (scopeCountryWrapper && scopeCountryInput) {
         scopeCountryWrapper.classList.toggle('hidden', !needsCountry);
-        scopeCountryInput.disabled = !needsCountry || (needsCountry && currentUserRole === 'national_pastor');
+        scopeCountryInput.disabled = !needsCountry || (needsCountry && (currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator'));
         if (!needsCountry) {
             scopeCountryInput.value = '';
-        } else if (currentUserRole === 'national_pastor' && currentUserCountry) {
+        } else if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
             scopeCountryInput.value = currentUserCountry;
+        }
+    }
+
+    if (scopeRegionWrapper && scopeRegionSelect) {
+        scopeRegionWrapper.classList.toggle('hidden', !needsRegion);
+        scopeRegionSelect.disabled = !needsRegion;
+        if (!needsRegion) {
+            scopeRegionSelect.value = '';
+        } else if ((currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') && currentUserRegionId) {
+            scopeRegionSelect.value = currentUserRegionId;
+            scopeRegionSelect.disabled = true;
         }
     }
 
@@ -275,8 +343,8 @@ function applyFilters() {
 
 function roleBadgeClass(role) {
     if (role === 'admin' || role === 'superadmin') return 'bg-purple-100 text-purple-700';
-    if (role === 'pastor' || role === 'national_pastor') return 'bg-blue-100 text-blue-700';
-    if (role === 'local_collaborator') return 'bg-teal-100 text-teal-700';
+    if (role === 'pastor' || role === 'national_pastor' || role === 'regional_pastor') return 'bg-blue-100 text-blue-700';
+    if (role === 'local_collaborator' || role === 'national_collaborator' || role === 'regional_collaborator') return 'bg-teal-100 text-teal-700';
     return 'bg-slate-100 text-slate-600';
 }
 
@@ -306,15 +374,26 @@ function formatDateTime(value) {
 function getScopeLabel(user) {
     const role = user?.role || 'user';
     const church = user?.church || null;
+    const region = user?.region || null;
     const churchName = church?.name || user?.church_name || '';
     const cityName = church?.city || user?.city || '';
     const countryName = church?.country || user?.country || '';
+    const regionName = region?.name || '';
+    const regionCode = region?.code || '';
 
-    if (role === 'national_pastor') {
+    if (role === 'national_pastor' || role === 'national_collaborator') {
         return countryName ? `País: ${countryName}` : 'País no asignado';
     }
 
-    if (role === 'pastor' || role === 'local_collaborator') {
+    if (role === 'regional_pastor' || role === 'regional_collaborator') {
+        if (regionName || regionCode) {
+            const regionLabel = regionCode && regionName ? `${regionCode} · ${regionName}` : (regionCode || regionName);
+            return countryName ? `Región: ${regionLabel} · ${countryName}` : `Región: ${regionLabel}`;
+        }
+        return user?.region_id ? 'Región asignada' : 'Región no asignada';
+    }
+
+    if (role === 'pastor' || role === 'local_collaborator' || role === 'leader') {
         if (!churchName) return 'Iglesia no asignada';
         const parts = [churchName];
         if (cityName) parts.push(cityName);
@@ -408,7 +487,7 @@ function renderTable(users) {
             const scopeLabel = getScopeLabel(u);
             const safeScope = escapeHtml(scopeLabel);
             const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
-            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
+            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator'].includes(currentUserRole);
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
                     <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
@@ -541,14 +620,16 @@ function setupModal(token) {
             let allowedRoles = [];
 
             if (currentUserRole === 'superadmin') {
-                allowedRoles = ['admin', 'national_pastor', 'campus_missionary', 'pastor', 'local_collaborator', 'user'];
+                allowedRoles = ['admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'campus_missionary', 'pastor', 'local_collaborator', 'leader', 'user'];
             } else if (currentUserRole === 'admin') {
-                allowedRoles = ['national_pastor', 'campus_missionary', 'pastor', 'local_collaborator', 'user'];
+                allowedRoles = ['national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'campus_missionary', 'pastor', 'local_collaborator', 'leader', 'user'];
             } else if (currentUserRole === 'national_pastor') {
-                allowedRoles = ['campus_missionary', 'pastor', 'local_collaborator', 'user'];
+                allowedRoles = ['national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'leader', 'user'];
+            } else if (currentUserRole === 'regional_pastor') {
+                allowedRoles = ['regional_collaborator', 'pastor', 'local_collaborator', 'leader', 'user'];
             } else if (currentUserRole === 'pastor') { // Local Pastor
-                allowedRoles = ['local_collaborator', 'user'];
-            } else if (currentUserRole === 'local_collaborator') {
+                allowedRoles = ['local_collaborator', 'leader', 'user'];
+            } else if (currentUserRole === 'local_collaborator' || currentUserRole === 'regional_collaborator' || currentUserRole === 'national_collaborator') {
                 allowedRoles = ['user'];
             }
 
@@ -562,6 +643,7 @@ function setupModal(token) {
             });
             attachScopeListener();
             populateScopeOptions();
+            populateRegionOptions();
             updateScopeFields(roleSelect.value);
         }
     });

@@ -1,0 +1,110 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Regiones | Portal Maná" description="Gestión de regiones y liderazgo regional." hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC]">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <Sidebar />
+
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+        <div class="max-w-6xl mx-auto space-y-8">
+          <div>
+            <h1 class="text-3xl font-display font-bold text-[#293C74]">Regiones</h1>
+            <p class="text-slate-600">Administra regiones, ciudades y asignaciones de liderazgo regional.</p>
+          </div>
+
+          <div id="regions-error" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
+
+          <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 space-y-4">
+            <h2 class="text-xl font-bold text-[#293C74]">1) Crear o Actualizar Región</h2>
+            <form id="region-form" class="grid md:grid-cols-4 gap-3">
+              <input name="country" placeholder="País (ej: Colombia)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
+              <input name="code" placeholder="Código (ej: CO-PAC)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
+              <input name="name" placeholder="Nombre (ej: Pacífico)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
+              <button type="submit" class="bg-[#293C74] text-white rounded-xl font-bold text-sm px-4 py-3">Guardar Región</button>
+            </form>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-400 border-b border-slate-100">
+                    <th class="py-2">País</th>
+                    <th class="py-2">Código</th>
+                    <th class="py-2">Nombre</th>
+                    <th class="py-2">Iglesias</th>
+                    <th class="py-2">Líderes</th>
+                    <th class="py-2">Estado</th>
+                    <th class="py-2 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="regions-table-body" class="divide-y divide-slate-50 text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 space-y-4">
+            <h2 class="text-xl font-bold text-[#293C74]">2) Asignar Ciudades a Región</h2>
+            <form id="city-form" class="grid md:grid-cols-4 gap-3">
+              <input name="country" placeholder="País" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
+              <input name="cities" placeholder="Ciudad o ciudades (coma separadas)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm md:col-span-2" required />
+              <select name="regionId" id="city-region-select" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required>
+                <option value="">Selecciona una región</option>
+              </select>
+              <div class="md:col-span-4 flex gap-3">
+                <button type="submit" class="bg-[#293C74] text-white rounded-xl font-bold text-sm px-4 py-3">Asignar Ciudad(es)</button>
+                <button type="button" id="btn-clear-city-region" class="bg-slate-100 text-slate-700 rounded-xl font-bold text-sm px-4 py-3">Quitar Región</button>
+              </div>
+            </form>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-400 border-b border-slate-100">
+                    <th class="py-2">País</th>
+                    <th class="py-2">Ciudad</th>
+                    <th class="py-2">Iglesias</th>
+                    <th class="py-2">Región</th>
+                    <th class="py-2">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="cities-table-body" class="divide-y divide-slate-50 text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 space-y-4">
+            <h2 class="text-xl font-bold text-[#293C74]">3) Asignar Pastores/Colaboradores Regionales</h2>
+            <form id="assignment-form" class="grid md:grid-cols-4 gap-3">
+              <input name="email" placeholder="Email del usuario" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm md:col-span-2" required />
+              <select name="role" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required>
+                <option value="regional_pastor">Pastor Regional</option>
+                <option value="regional_collaborator">Colaborador Regional</option>
+              </select>
+              <select name="regionId" id="assignment-region-select" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required>
+                <option value="">Selecciona una región</option>
+              </select>
+              <button type="submit" class="md:col-span-4 bg-[#293C74] text-white rounded-xl font-bold text-sm px-4 py-3">Asignar Liderazgo Regional</button>
+            </form>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-400 border-b border-slate-100">
+                    <th class="py-2">Usuario</th>
+                    <th class="py-2">Rol</th>
+                    <th class="py-2">Región</th>
+                    <th class="py-2">Estado</th>
+                    <th class="py-2 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="assignments-table-body" class="divide-y divide-slate-50 text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    import '@scripts/portal-regions.js';
+  </script>
+</BaseLayout>

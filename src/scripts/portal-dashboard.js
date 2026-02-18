@@ -882,6 +882,7 @@ async function loadDashboardData(authResult) {
     const navLinkFinances = document.getElementById('nav-link-finances'); // Finanzas
     const navLinkUsers = document.getElementById('nav-link-users'); // Usuarios
     const navLinkCampus = document.getElementById('nav-link-campus'); // Campus
+    const navLinkRegions = document.getElementById('nav-link-regions'); // Regiones
     const tabIglesia = document.getElementById('tab-iglesia'); // The actual tab content
 
     // Default: Hide ALL restricted links (regular users see none of these)
@@ -889,11 +890,12 @@ async function loadDashboardData(authResult) {
     if (navLinkFinances) navLinkFinances.style.display = 'none';
     if (navLinkUsers) navLinkUsers.style.display = 'none';
     if (navLinkCampus) navLinkCampus.style.display = 'none';
+    if (navLinkRegions) navLinkRegions.style.display = 'none';
 
     const myRole = portalProfile?.role || 'user';
     const membershipRoles = portalMemberships.map((m) => m?.role).filter(Boolean);
     const hasChurchMembership = membershipRoles.some((role) => ['church_admin', 'church_member'].includes(role));
-    const allowedDashboardRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
+    const allowedDashboardRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'church_admin'];
 
     // Tab Iglesia (Eventos) - Show to ALL users, but content varies by role
     const isManagementRole = allowedDashboardRoles.includes(myRole) || hasChurchMembership;
@@ -920,16 +922,17 @@ async function loadDashboardData(authResult) {
     }
 
     // Gestión de Eventos: Only Pastors and Admins (can create local/national events)
-    const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'pastor'];
+    const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor'];
 
     // Usuarios: Only Pastors and Admins
-    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'];
+    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator'];
 
     // Campus: Campus Missionaries + Admins (donor management)
     const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
 
     // Finanzas: ONLY Superadmin and Admin
     const financeRoles = ['superadmin', 'admin'];
+    const regionsRoles = ['superadmin', 'admin'];
 
     if (myRole) {
       if (eventManagementRoles.includes(myRole) && navLinkEventManagement) {
@@ -946,6 +949,10 @@ async function loadDashboardData(authResult) {
 
       if (financeRoles.includes(myRole) && navLinkFinances) {
         navLinkFinances.style.display = 'flex';
+      }
+
+      if (regionsRoles.includes(myRole) && navLinkRegions) {
+        navLinkRegions.style.display = 'flex';
       }
     }
 

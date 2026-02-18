@@ -1,22 +1,22 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 import {
   normalizeCountryGroup,
   currencyForGroup,
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  buildPaymentReference,
   generateAccessToken,
   type PackageType,
 } from '@lib/cumbre2026';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
-import { createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { createDonation } from '@lib/donationsStore';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
@@ -86,61 +86,23 @@ export const POST: APIRoute = async ({ request }) => {
   let userId: string | null = null;
   let churchId: string | null = null;
   let churchNameFromRole: string | null = null;
-  let isAllowed = false;
   let isAdmin = false;
-  let isNational = false;
-  let allowedCountry: string | null = null;
-
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 401,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    userId = user.id;
-    const profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasChurchRole = Boolean(activeMembership);
-    const role = profile?.role || 'user';
-    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-    if (!allowedRoles.includes(role) && !hasChurchRole) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 403,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    isAdmin = Boolean(profile && isAdminRole(role));
-    if (role === 'national_pastor') {
-      isNational = true;
-      allowedCountry = profile?.country || null;
-      if (!allowedCountry) {
-        return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), {
-          status: 403,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-    }
-    isAllowed = Boolean(profile && (isAdmin || isNational || hasChurchRole || role === 'pastor' || role === 'local_collaborator'));
-    const membership = memberships.find((m: any) => m?.church?.id);
-    churchId = membership?.church?.id || profile?.church_id || null;
-    churchNameFromRole = membership?.church?.name || profile?.church_name || null;
-  }
-
-  if (!isAllowed) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  let requiresScopedChurchSelection = false;
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'No tienes permisos para registrar participantes');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
+  userId = access.userId;
+  churchId = access.allowedChurchId;
+  churchNameFromRole = access.memberships.find((m: any) => m?.church?.id)?.church?.name
+    || access.profile?.church_name
+    || null;
+  isAdmin = access.isAdmin;
+  requiresScopedChurchSelection = !access.isAdmin && !access.allowedChurchId;
 
   let createdBookingId: string | null = null;
   let selectedChurchFromPayload: any = null;
@@ -164,7 +126,7 @@ export const POST: APIRoute = async ({ request }) => {
     const paymentAmount = Number.isFinite(rawPaymentAmount) ? rawPaymentAmount : 0;
     const frequency = normalizeFrequency(payload.frequency);
 
-    if (isNational) {
+    if (requiresScopedChurchSelection) {
       if (!churchIdFromPayload) {
         return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
           status: 400,
@@ -176,7 +138,8 @@ export const POST: APIRoute = async ({ request }) => {
         .select('id, name, city, country')
         .eq('id', churchIdFromPayload)
         .maybeSingle();
-      if (!church?.id || (allowedCountry && church.country !== allowedCountry)) {
+      const isAllowedChurch = await isChurchAllowedForAccess(churchIdFromPayload, access);
+      if (!church?.id || !isAllowedChurch) {
         return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta iglesia' }), {
           status: 403,
           headers: { 'content-type': 'application/json' },
@@ -322,7 +285,7 @@ export const POST: APIRoute = async ({ request }) => {
     let resolvedChurchId = churchId;
     let resolvedChurchName = churchNameFromRole || contactChurchRaw;
 
-    if (isNational && selectedChurchFromPayload?.id) {
+    if (requiresScopedChurchSelection && selectedChurchFromPayload?.id) {
       resolvedChurchId = selectedChurchFromPayload.id;
       resolvedChurchName = selectedChurchFromPayload.name || resolvedChurchName;
     }
@@ -517,7 +480,8 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (paymentAmount > 0) {
-      const reference = buildDonationReference();
+      const paymentIndex = (await countPayments(booking.id)) + 1;
+      const reference = buildPaymentReference(booking.id, paymentIndex);
       await recordPayment({
         bookingId: booking.id,
         provider: 'manual',

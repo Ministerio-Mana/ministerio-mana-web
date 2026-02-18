@@ -7,13 +7,14 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  buildPaymentReference,
   generateAccessToken,
   type PackageType,
 } from '@lib/cumbre2026';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
-import { createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { createDonation } from '@lib/donationsStore';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
@@ -415,7 +416,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     if (paymentAmount > 0) {
-      const reference = buildDonationReference();
+      const paymentIndex = (await countPayments(booking.id)) + 1;
+      const reference = buildPaymentReference(booking.id, paymentIndex);
       await recordPayment({
         bookingId: booking.id,
         provider: 'manual',

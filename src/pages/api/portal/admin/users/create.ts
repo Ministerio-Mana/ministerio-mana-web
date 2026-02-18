@@ -5,7 +5,16 @@ import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
 import { normalizeCountryRegion } from '@lib/normalization';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
-import { listUserMemberships, isAdminRole } from '@lib/portalAuth';
+import { listUserMemberships, isAdminRole, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
+import {
+    canCreateRole,
+    getCreatableRoles,
+    isCountryScopedRole,
+    isNationalScopedRole,
+    isRegionalScopedRole,
+    needsChurchForRole,
+    needsCountryForRole,
+} from '@lib/portalRbac';
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
@@ -16,7 +25,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // Get Creator Profile to check Role + Church + Country
     const { data: creatorProfile } = await supabaseAdmin
         .from('user_profiles')
-        .select('church_id, role, country')
+        .select('church_id, portal_church_id, region_id, role, country')
         .eq('user_id', user.id)
         .single();
 
@@ -42,26 +51,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-        ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
 
-    // Roles allowed to create users
-    const allowedCreators = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'];
-    let effectiveRole = creatorRole;
-    if (!allowedCreators.includes(creatorRole)) {
-        if (activeMembership?.role === 'church_admin') {
-            effectiveRole = 'pastor';
-        } else if (activeMembership?.role === 'church_member') {
-            effectiveRole = 'local_collaborator';
-        }
-    }
-    if (!allowedCreators.includes(effectiveRole)) {
+    const effectiveRole = resolveEffectivePortalRole(creatorRole, memberships);
+    const creatableRoles = getCreatableRoles(effectiveRole);
+    if (!creatableRoles.length) {
         return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para crear usuarios' }), { status: 403 });
     }
 
     const body = await request.json();
-    const { email, password, firstName, lastName, role, churchId, country } = body;
+    const { email, password, firstName, lastName, role, churchId, country, regionId } = body;
 
     if (!email || !password || !firstName || !lastName) {
         return new Response(JSON.stringify({ ok: false, error: 'Faltan campos requeridos' }), { status: 400 });
@@ -81,42 +79,44 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     // Role Hierarchy Validation
-    const targetRole = role || 'user';
-    let allowedTargetRoles: string[] = [];
-
-    if (effectiveRole === 'superadmin') {
-        allowedTargetRoles = ['superadmin', 'admin', 'national_pastor', 'campus_missionary', 'pastor', 'local_collaborator', 'user'];
-    } else if (effectiveRole === 'admin') {
-        allowedTargetRoles = ['national_pastor', 'campus_missionary', 'pastor', 'local_collaborator', 'user'];
-    } else if (effectiveRole === 'national_pastor') {
-        allowedTargetRoles = ['campus_missionary', 'pastor', 'local_collaborator', 'user'];
-    } else if (effectiveRole === 'pastor') {
-        allowedTargetRoles = ['local_collaborator', 'user'];
-    } else if (effectiveRole === 'local_collaborator') {
-        allowedTargetRoles = ['user'];
-    }
-
-    if (!allowedTargetRoles.includes(targetRole)) {
+    const targetRole = String(role || 'user');
+    if (!canCreateRole(effectiveRole, targetRole)) {
         return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
     }
 
     const requestedCountry = normalizeCountryRegion(country || '');
     const requestedChurchId = churchId || null;
+    const requestedRegionId = String(regionId || '').trim() || null;
 
     // Scope Assignment (Church / Country)
     let targetChurchId: string | null = null;
     let targetCountry: string | null = null;
+    let targetRegionId: string | null = null;
     let targetChurchName: string | null = null;
     let targetCity: string | null = null;
 
-    const needsChurch = ['pastor', 'local_collaborator'].includes(targetRole);
-    const needsCountry = targetRole === 'national_pastor';
+    const needsChurch = needsChurchForRole(targetRole);
+    const needsCountry = needsCountryForRole(targetRole);
 
     let churchInfo: any = null;
+    let regionInfo: any = null;
+
+    if (requestedRegionId) {
+        const { data: region } = await supabaseAdmin
+            .from('regions')
+            .select('id, country, code, name')
+            .eq('id', requestedRegionId)
+            .maybeSingle();
+        if (!region?.id) {
+            return new Response(JSON.stringify({ ok: false, error: 'Región no encontrada' }), { status: 404 });
+        }
+        regionInfo = region;
+    }
+
     if (requestedChurchId) {
         const { data: church } = await supabaseAdmin
             .from('churches')
-            .select('id, name, city, country')
+            .select('id, name, city, country, region_id')
             .eq('id', requestedChurchId)
             .maybeSingle();
         if (!church?.id) {
@@ -126,26 +126,50 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     if (needsCountry) {
-        if (effectiveRole === 'national_pastor') {
+        if (isRegionalScopedRole(effectiveRole)) {
+            targetCountry = creatorProfile.country || churchInfo?.country || null;
+            if (!targetCountry) {
+                return new Response(JSON.stringify({ ok: false, error: 'Tu usuario no tiene país asignado.' }), { status: 400 });
+            }
+        } else if (isCountryScopedRole(effectiveRole)) {
             targetCountry = creatorProfile.country || null;
             if (!targetCountry) {
                 return new Response(JSON.stringify({ ok: false, error: 'Tu usuario no tiene país asignado.' }), { status: 400 });
             }
         } else {
-            if (!requestedCountry) {
-                return new Response(JSON.stringify({ ok: false, error: 'Selecciona un país para el pastor nacional.' }), { status: 400 });
+            // Admin/superadmin: permite deducir país desde región para roles regionales.
+            if (isRegionalScopedRole(targetRole) && regionInfo?.country) {
+                targetCountry = regionInfo.country;
+            } else {
+                if (!requestedCountry) {
+                    return new Response(JSON.stringify({ ok: false, error: 'Selecciona un país para este rol.' }), { status: 400 });
+                }
+                targetCountry = requestedCountry;
             }
-            targetCountry = requestedCountry;
         }
     }
 
     if (needsChurch) {
         if (effectiveRole === 'pastor' || effectiveRole === 'local_collaborator') {
-            targetChurchId = creatorProfile.church_id || activeMembership?.church?.id || null;
+            targetChurchId = resolveEffectiveChurchId(
+                creatorProfile.church_id || creatorProfile.portal_church_id || null,
+                memberships,
+            );
             if (!targetChurchId) {
                 return new Response(JSON.stringify({ ok: false, error: 'Error: Tu usuario no tiene una iglesia asignada.' }), { status: 400 });
             }
-        } else if (effectiveRole === 'national_pastor') {
+        } else if (isRegionalScopedRole(effectiveRole)) {
+            if (!requestedChurchId || !churchInfo?.id) {
+                return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia válida.' }), { status: 400 });
+            }
+            if (!creatorProfile.region_id) {
+                return new Response(JSON.stringify({ ok: false, error: 'Tu usuario no tiene región asignada.' }), { status: 400 });
+            }
+            if (!churchInfo.region_id || churchInfo.region_id !== creatorProfile.region_id) {
+                return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta iglesia.' }), { status: 403 });
+            }
+            targetChurchId = churchInfo.id;
+        } else if (isCountryScopedRole(effectiveRole) || isNationalScopedRole(effectiveRole)) {
             if (!requestedChurchId || !churchInfo?.id) {
                 return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia válida.' }), { status: 400 });
             }
@@ -159,6 +183,29 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             }
             targetChurchId = churchInfo.id;
         }
+    }
+
+    if (isRegionalScopedRole(targetRole)) {
+        targetRegionId = requestedRegionId || churchInfo?.region_id || creatorProfile.region_id || null;
+        if (!targetRegionId) {
+            return new Response(JSON.stringify({ ok: false, error: 'Selecciona una región para este rol.' }), { status: 400 });
+        }
+        if (!regionInfo && targetRegionId) {
+            const { data: region } = await supabaseAdmin
+                .from('regions')
+                .select('id, country, code, name')
+                .eq('id', targetRegionId)
+                .maybeSingle();
+            regionInfo = region || null;
+        }
+        if (regionInfo?.country) {
+            if (targetCountry && normalizeCountryRegion(targetCountry) !== normalizeCountryRegion(regionInfo.country)) {
+                return new Response(JSON.stringify({ ok: false, error: 'La región no coincide con el país seleccionado.' }), { status: 400 });
+            }
+            targetCountry = regionInfo.country;
+        }
+    } else if (churchInfo?.region_id) {
+        targetRegionId = churchInfo.region_id;
     }
 
     if (churchInfo?.id) {
@@ -204,6 +251,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             church_name: targetChurchName,
             city: targetCity,
             country: targetCountry, // Assign country if applicable
+            region_id: targetRegionId,
             updated_at: new Date().toISOString()
         });
 

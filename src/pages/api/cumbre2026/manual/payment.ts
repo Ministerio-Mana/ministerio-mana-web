@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { sanitizePlainText } from '@lib/validation';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
-import { getBookingById, getPlanByBookingId, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { createDonation } from '@lib/donationsStore';
+import { buildPaymentReference } from '@lib/cumbre2026';
+import { countPayments, getBookingById, getPlanByBookingId, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
@@ -71,7 +72,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const currency = booking.currency || 'COP';
-  const reference = buildDonationReference();
+  const paymentIndex = (await countPayments(bookingId)) + 1;
+  const reference = buildPaymentReference(bookingId, paymentIndex);
 
   await recordPayment({
     bookingId,

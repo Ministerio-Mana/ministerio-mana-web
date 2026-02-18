@@ -1,14 +1,14 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 import {
   normalizeCountryGroup,
   currencyForGroup,
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  buildPaymentReference,
   type PackageType,
 } from '@lib/cumbre2026';
 import {
@@ -18,6 +18,7 @@ import {
   roundCurrency,
 } from '@lib/cumbreInstallments';
 import {
+  countPayments,
   getPlanByBookingId,
   updatePaymentPlan,
   updateInstallment,
@@ -25,7 +26,7 @@ import {
 } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { createDonation } from '@lib/donationsStore';
 
 export const prerender = false;
 
@@ -90,80 +91,32 @@ function isUuid(value: string | null | undefined): boolean {
 }
 
 async function getAccessContext(request: Request) {
-  let isAllowed = false;
-  let isAdmin = false;
-  let allowedChurchId: string | null = null;
-  let allowedCountry: string | null = null;
-  let profile: any = null;
-  let userId: string | null = null;
-
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return { ok: false, isAdmin, allowedChurchId, allowedCountry, profile, userId };
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    userId = user.id;
-    profile = await ensureUserProfile(user);
-    if (!profile) {
-      return { ok: false, isAdmin, allowedChurchId, allowedCountry, profile, userId };
-    }
-
-    const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasChurchRole = Boolean(activeMembership);
-
-    const role = profile.role || 'user';
-    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-    if (!allowedRoles.includes(role) && !hasChurchRole) {
-      return { ok: false, isAdmin, allowedChurchId, allowedCountry, profile, userId };
-    }
-
-    if (role === 'superadmin' || role === 'admin') {
-      isAdmin = true;
-      isAllowed = true;
-    } else if (role === 'national_pastor') {
-      isAllowed = true;
-      allowedCountry = profile.country || null;
-      if (!allowedCountry) {
-        return { ok: false, isAdmin, allowedChurchId, allowedCountry, profile, userId };
-      }
-    } else {
-      isAllowed = true;
-      allowedChurchId = profile.church_id || activeMembership?.church?.id || null;
-      if (!allowedChurchId) {
-        return { ok: false, isAdmin, allowedChurchId, allowedCountry, profile, userId };
-      }
-    }
-  }
-
-  return { ok: isAllowed, isAdmin, allowedChurchId, allowedCountry, profile, userId };
+  const access = await getPortalChurchAccessContext(request);
+  return {
+    ok: access.ok,
+    reason: access.reason,
+    isAdmin: access.isAdmin,
+    allowedChurchId: access.allowedChurchId,
+    allowedCountry: access.allowedCountry,
+    isNational: access.isNational,
+    isRegional: access.isRegional,
+    allowedRegionIds: access.allowedRegionIds,
+    profile: access.profile,
+    userId: access.userId,
+  };
 }
 
 async function isBookingAllowed(booking: any, ctx: Awaited<ReturnType<typeof getAccessContext>>) {
   if (!ctx.ok) return false;
-  if (ctx.isAdmin) return true;
-  if (ctx.allowedChurchId) {
-    return booking.church_id === ctx.allowedChurchId;
+  if (booking.church_id) {
+    return isChurchAllowedForAccess(booking.church_id, ctx as any);
   }
+  if (ctx.isAdmin) return true;
+  if (ctx.allowedChurchId) return false;
   if (ctx.allowedCountry) {
-    const normalizedAllowed = normalizeCountryRegion(ctx.allowedCountry || '').toLowerCase();
-    if (booking.church_id) {
-      const { data: church } = await supabaseAdmin
-        .from('churches')
-        .select('country')
-        .eq('id', booking.church_id)
-        .maybeSingle();
-      const churchCountry = normalizeCountryRegion(church?.country || '').toLowerCase();
-      return Boolean(churchCountry && churchCountry === normalizedAllowed);
-    }
     const bookingCountry = normalizeCountryRegion(booking.contact_country || '').toLowerCase();
-    return Boolean(bookingCountry && bookingCountry === normalizedAllowed);
+    const allowedCountry = normalizeCountryRegion(ctx.allowedCountry || '').toLowerCase();
+    return Boolean(bookingCountry && bookingCountry === allowedCountry);
   }
   return false;
 }
@@ -278,8 +231,9 @@ export const GET: APIRoute = async ({ request }) => {
 
   const ctx = await getAccessContext(request);
   if (!ctx.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+    const denied = mapPortalAccessError(ctx.reason);
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
@@ -358,7 +312,8 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const ctx = await getAccessContext(request);
   if (!ctx.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
+    const denied = mapPortalAccessError(ctx.reason);
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), { status: denied.status });
   }
 
   const { data: booking, error: bookingError } = await supabaseAdmin
@@ -550,18 +505,10 @@ export const PUT: APIRoute = async ({ request }) => {
       if (!resolvedChurchId || resolvedChurchId !== ctx.allowedChurchId) {
         return new Response(JSON.stringify({ ok: false, error: 'Solo puedes editar registros de tu iglesia asignada' }), { status: 403 });
       }
-    } else if (ctx.allowedCountry) {
-      if (!resolvedChurchId) {
-        return new Response(JSON.stringify({ ok: false, error: 'Solo puedes editar registros de iglesias de tu país' }), { status: 403 });
-      }
-      const { data: church, error: churchError } = await supabaseAdmin
-        .from('churches')
-        .select('country')
-        .eq('id', resolvedChurchId)
-        .single();
-
-      if (churchError || !church || normalizeCountryRegion(church.country || '').toLowerCase() !== normalizeCountryRegion(ctx.allowedCountry || '').toLowerCase()) {
-        return new Response(JSON.stringify({ ok: false, error: 'Solo puedes editar registros de iglesias de tu país' }), { status: 403 });
+    } else {
+      const isAllowedChurch = await isChurchAllowedForAccess(resolvedChurchId, ctx as any);
+      if (!isAllowedChurch) {
+        return new Response(JSON.stringify({ ok: false, error: 'Solo puedes editar registros de iglesias de tu alcance' }), { status: 403 });
       }
     }
   }
@@ -745,7 +692,8 @@ export const PUT: APIRoute = async ({ request }) => {
       }
       paymentUpdated = true;
     } else if (paymentAmountInput > 0) {
-      const reference = buildDonationReference();
+      const paymentIndex = (await countPayments(bookingId)) + 1;
+      const reference = buildPaymentReference(bookingId, paymentIndex);
       await supabaseAdmin
         .from('cumbre_payments')
         .insert({

@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
 
     let { data, error } = await sb
         .from('churches')
-        .select('id, name, city, country, continent, address, maps_url, lat, lng')
+        .select('id, name, city, country, region_id, continent, address, maps_url, lat, lng')
         .order('continent', { ascending: true, nullsFirst: false })
         .order('country', { ascending: true, nullsFirst: false })
         .order('city', { ascending: true, nullsFirst: false })
@@ -25,12 +25,24 @@ export const GET: APIRoute = async () => {
     if (error?.code === '42703' && /continent/i.test(error?.message || '')) {
         const legacyResult = await sb
             .from('churches')
-            .select('id, name, city, country, address, maps_url, lat, lng')
+            .select('id, name, city, country, region_id, address, maps_url, lat, lng')
             .order('country', { ascending: true, nullsFirst: false })
             .order('city', { ascending: true, nullsFirst: false })
             .order('name', { ascending: true });
         data = legacyResult.data;
         error = legacyResult.error;
+    }
+
+    // Backward compatibility for environments where "region_id" migration is not applied yet.
+    if (error?.code === '42703' && /region_id/i.test(error?.message || '')) {
+        const legacyNoRegion = await sb
+            .from('churches')
+            .select('id, name, city, country, address, maps_url, lat, lng')
+            .order('country', { ascending: true, nullsFirst: false })
+            .order('city', { ascending: true, nullsFirst: false })
+            .order('name', { ascending: true });
+        data = legacyNoRegion.data;
+        error = legacyNoRegion.error;
     }
 
     if (error) {

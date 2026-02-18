@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
+import { getPortalChurchAccessContext } from '@lib/portalAccess';
+import { getRoleCapabilities, isCountryScopedRole } from '@lib/portalRbac';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { resolveBaseUrl } from '@lib/url';
 import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
-import { sanitizePlainText } from '@lib/validation';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
 
@@ -20,6 +20,9 @@ const ROLE_PRIORITY = [
   'leader',
   'local_collaborator',
   'pastor',
+  'regional_collaborator',
+  'regional_pastor',
+  'national_collaborator',
   'campus_missionary',
   'national_pastor',
   'admin',
@@ -41,24 +44,14 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
   }
 
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
+  // Allow portal password session for admin/superadmin flows.
+  const access = await getPortalChurchAccessContext(request, { allowPasswordSession: true });
+  if (!access.ok || !access.role || (!access.userId && !access.isPasswordSession)) {
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
   }
 
-  const profile = await ensureUserProfile(user);
-  if (!profile) return new Response(JSON.stringify({ ok: false, error: 'Perfil no encontrado' }), { status: 403 });
-
-  // Roles Authorization
-  const myRole = profile.role || 'user';
-  const memberships = await listUserMemberships(user.id);
-  const hasChurchAdmin = memberships.some((m: any) => m?.role === 'church_admin');
-
-  // Can Invite?
-  // admins, national_pastor, pastor (implicit church leader), church_admin (explicit membership)
-  const canInvite = ['superadmin', 'admin', 'national_pastor', 'pastor'].includes(myRole) || hasChurchAdmin;
-
-  if (!canInvite) {
+  const capabilities = getRoleCapabilities(access.role);
+  if (!capabilities.can_create_users) {
     return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para invitar' }), { status: 403 });
   }
 
@@ -68,13 +61,18 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const email = String(payload.email).trim().toLowerCase();
-  const desiredRole = String(payload.role || 'church_member');
+  const desiredRoleRaw = String(payload.role || 'church_member');
+  const desiredRole = desiredRoleRaw === 'church_admin' ? 'church_admin' : 'church_member';
   const requestedChurchId = isUuid(payload.churchId) ? payload.churchId : null;
 
-  // Only Admins can execute creating NEW churches on the fly or inviting global roles
-  // Pastors invting collaborators -> usually 'church_member' or 'local_collaborator'
+  const isAdmin = access.isAdmin;
+  const isCountryScoped = isCountryScopedRole(access.role);
+  const profile = access.profile;
+  const memberships = access.memberships || [];
 
-  const isAdmin = ['superadmin', 'admin'].includes(myRole);
+  if (desiredRole === 'church_admin' && !['pastor', 'regional_pastor', 'national_pastor', 'admin', 'superadmin'].includes(access.role)) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado para asignar este rol' }), { status: 403 });
+  }
 
   let churchId: string | null = null;
   let churchName: string | null = null;
@@ -113,22 +111,19 @@ export const POST: APIRoute = async ({ request }) => {
             name: churchRaw,
             city: normalizeCityName(payload.city || ''),
             country: churchCountry,
-            created_by: isUuid(user.id) ? user.id : null,
+            created_by: isUuid(access.userId) ? access.userId : null,
           }).select('id, name').single();
           churchId = created?.id || null;
           churchName = created?.name || churchRaw;
         }
       }
     }
-  } else if (myRole === 'national_pastor') {
-    // National Pastor -> Can select church in country
-    const myCountry = profile.country;
-    if (!myCountry) return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), { status: 403 });
-
-    // Verify church is in country
+  } else if (isCountryScoped) {
+    // Country/Region scoped roles must select a church in their authorized scope.
     if (requestedChurchId) {
       const { data: church } = await supabaseAdmin.from('churches').select('id, name, country').eq('id', requestedChurchId).single();
-      if (church && church.country === myCountry) {
+      const isAllowedChurch = await isChurchAllowedForAccess(requestedChurchId, access);
+      if (church?.id && isAllowedChurch) {
         churchId = church.id;
         churchName = church.name;
       } else {
@@ -142,8 +137,8 @@ export const POST: APIRoute = async ({ request }) => {
     // Prefer membership church first
     const membership = memberships.find((m: any) => m?.church?.id);
     // Or profile church
-    churchId = membership?.church?.id || profile.church_id || profile.portal_church_id;
-    churchName = membership?.church?.name || profile.church_name;
+    churchId = membership?.church?.id || access.allowedChurchId || profile?.church_id || profile?.portal_church_id;
+    churchName = membership?.church?.name || profile?.church_name;
   }
 
   if (!churchId) {
@@ -189,7 +184,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const currentRole = existingProfile?.role || 'user';
     const shouldUpdateRole = shouldPromoteRole(currentRole, portalRole);
-    const blockChurchUpdate = ['admin', 'superadmin', 'national_pastor'].includes(currentRole);
+    const blockChurchUpdate = ['admin', 'superadmin'].includes(currentRole) || isCountryScopedRole(currentRole);
 
     const { data: churchInfo } = await supabaseAdmin
       .from('churches')

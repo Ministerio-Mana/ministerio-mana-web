@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 
 export const prerender = false;
 
@@ -14,78 +13,28 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  let isAllowed = false;
-  let isAdmin = false;
-  let isNational = false;
-  let churchId: string | null = null;
-  let country: string | null = null;
-  let profile: any = null;
-
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 401,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasChurchRole = Boolean(activeMembership);
-    const role = profile?.role || 'user';
-    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-    if (!allowedRoles.includes(role) && !hasChurchRole) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 403,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    isAdmin = Boolean(profile && isAdminRole(role));
-    if (role === 'national_pastor') {
-      isNational = true;
-      country = profile?.country || null;
-      if (!country) {
-        return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), {
-          status: 403,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-    }
-    isAllowed = Boolean(profile && (isAdmin || isNational || hasChurchRole || role === 'pastor' || role === 'local_collaborator'));
-    churchId = profile?.church_id || activeMembership?.church?.id || null;
-  }
-
-  if (!isAllowed) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  const ctx = await getPortalChurchAccessContext(request);
+  if (!ctx.ok) {
+    const denied = mapPortalAccessError(ctx.reason);
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   const url = new URL(request.url);
   const requestedChurch = url.searchParams.get('churchId');
-  let targetChurch = isAdmin ? (requestedChurch || churchId) : churchId;
-
-  if (isNational) {
+  let targetChurch = ctx.isAdmin ? (requestedChurch || ctx.allowedChurchId) : ctx.allowedChurchId;
+  const requiresScopedChurchSelection = !ctx.isAdmin && !ctx.allowedChurchId;
+  if (requiresScopedChurchSelection) {
     if (!requestedChurch) {
       return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
-    const { data: church } = await supabaseAdmin
-      .from('churches')
-      .select('id, country')
-      .eq('id', requestedChurch)
-      .maybeSingle();
-    if (!church?.id || church.country !== country) {
+    const isAllowedChurch = await isChurchAllowedForAccess(requestedChurch, ctx);
+    if (!isAllowedChurch) {
       return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
         status: 403,
         headers: { 'content-type': 'application/json' },
@@ -95,7 +44,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   if (!targetChurch) {
-    if (isAdmin) {
+    if (ctx.isAdmin) {
       return new Response(JSON.stringify({ ok: true, members: [] }), {
         status: 200,
         headers: { 'content-type': 'application/json' },

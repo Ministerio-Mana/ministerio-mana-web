@@ -103,7 +103,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         );
 
         const baseUrl = resolveBaseUrl(request);
-        const reference = buildDonationReference();
+        const reference = buildDonationReference({ domain: 'CAMPUS' });
 
         // Store donation record
         await createDonation({

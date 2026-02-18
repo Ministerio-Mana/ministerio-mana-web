@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { listAccessibleChurchIds } from '@lib/portalScope';
 
 export const prerender = false;
 
@@ -11,63 +10,30 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
   }
 
-  let isAllowed = false;
-  let isAdmin = false;
-  let churchId: string | null = null;
-  let profile: any = null;
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'Acceso denegado a datos operativos');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), { status: denied.status });
+  }
 
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    // Check Profile & Roles with strict 403 for regular users
-    profile = await ensureUserProfile(user);
-    if (!profile) return new Response(JSON.stringify({ ok: false, error: 'Perfil no encontrado' }), { status: 403 });
+  const isAdmin = access.isAdmin;
+  let churchId: string | null = access.allowedChurchId;
+  let scopedChurchIds: string[] = churchId ? [churchId] : [];
+  const url = new URL(request.url);
+  const requestedChurch = url.searchParams.get('churchId');
 
-    const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasChurchRole = Boolean(activeMembership);
-
-    const role = profile.role || 'user';
-    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-
-    if (!allowedRoles.includes(role) && !hasChurchRole) {
-      return new Response(JSON.stringify({ ok: false, error: 'Acceso denegado a datos operativos' }), { status: 403 });
-    }
-
-    if (role === 'superadmin' || role === 'admin') {
-      isAdmin = true;
-      isAllowed = true;
-    } else if (role === 'national_pastor') {
-      isAllowed = true;
-      const country = profile.country;
-      if (!country) return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), { status: 403 });
-
-      const { data: churches } = await supabaseAdmin.from('churches').select('id').eq('country', country);
-      const countryChurchIds = (churches || []).map(c => c.id);
-
-      const requestedChurch = new URL(request.url).searchParams.get('churchId');
-      if (requestedChurch) {
-        if (!countryChurchIds.includes(requestedChurch)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 403 });
-        churchId = requestedChurch;
-      } else {
-        churchId = `IN:${countryChurchIds.join(',')}`;
+  if (!isAdmin && !churchId) {
+    scopedChurchIds = await listAccessibleChurchIds(access);
+    if (requestedChurch) {
+      if (!scopedChurchIds.includes(requestedChurch)) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta sede' }), { status: 403 });
       }
+      churchId = requestedChurch;
     } else {
-      isAllowed = true;
-      churchId = profile.church_id || activeMembership?.church?.id || null;
+      churchId = `IN:${scopedChurchIds.join(',')}`;
     }
   }
 
-  const url = new URL(request.url);
-  const requestedChurch = url.searchParams.get('churchId');
   const includeAllSources = isAdmin && !requestedChurch;
 
   // Build Query
@@ -84,7 +50,7 @@ export const GET: APIRoute = async ({ request }) => {
   if (isAdmin) {
     if (requestedChurch) bookingQuery = bookingQuery.eq('church_id', requestedChurch);
   } else if (churchId && churchId.startsWith('IN:')) {
-    const ids = churchId.substring(3).split(',');
+    const ids = scopedChurchIds.length ? scopedChurchIds : churchId.substring(3).split(',');
     if (ids.length === 0) return new Response(JSON.stringify({ ok: true, installments: [] }), { status: 200 });
     bookingQuery = bookingQuery.in('church_id', ids);
   } else if (churchId) {

@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships } from '@lib/portalAuth';
+import { ensureUserProfile, listUserMemberships, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
@@ -25,18 +25,7 @@ async function getResetContext(request: Request): Promise<ResetContext> {
     }
 
     const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-
-    let effectiveRole = profile.role || 'user';
-    if (!['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(effectiveRole)) {
-      if (activeMembership?.role === 'church_admin') {
-        effectiveRole = 'pastor';
-      } else if (activeMembership?.role === 'church_member') {
-        effectiveRole = 'local_collaborator';
-      }
-    }
+    const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
 
     if (!['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(effectiveRole)) {
       return { ok: false, role: null, country: null, churchId: null };
@@ -46,7 +35,7 @@ async function getResetContext(request: Request): Promise<ResetContext> {
       ok: true,
       role: effectiveRole,
       country: profile.country || null,
-      churchId: profile.church_id || activeMembership?.church?.id || null,
+      churchId: resolveEffectiveChurchId(profile.church_id, memberships),
     };
   }
 

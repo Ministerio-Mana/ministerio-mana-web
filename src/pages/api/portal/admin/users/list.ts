@@ -1,8 +1,15 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
+import {
+    ensureUserProfile,
+    listUserMemberships,
+    isAdminRole,
+    resolveEffectivePortalRole,
+    resolveEffectiveChurchId,
+} from '@lib/portalAuth';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { getRoleCapabilities, isCountryScopedRole, isNationalScopedRole, isRegionalScopedRole } from '@lib/portalRbac';
 
 export const GET: APIRoute = async ({ request, clientAddress }) => {
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
@@ -16,7 +23,13 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
     }
 
-    const { role: creatorRole, church_id: creatorChurchId, country: creatorCountry } = creatorProfile;
+    const {
+        role: creatorRole,
+        church_id: creatorChurchId,
+        portal_church_id: creatorPortalChurchId,
+        country: creatorCountry,
+        region_id: creatorRegionId,
+    } = creatorProfile as any;
 
     if (isAdminRole(creatorRole)) {
         const ipCheck = await enforceAdminIp({
@@ -34,38 +47,31 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-        ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasAdminMembership = activeMembership?.role === 'church_admin';
-    const hasMemberMembership = activeMembership?.role === 'church_member';
-    let effectiveRole = creatorRole;
-    if (!['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(creatorRole)) {
-        if (hasAdminMembership) {
-            effectiveRole = 'pastor';
-        } else if (hasMemberMembership) {
-            effectiveRole = 'local_collaborator';
-        }
-    }
-    const effectiveChurchId = creatorChurchId || activeMembership?.church?.id || null;
+    const effectiveRole = resolveEffectivePortalRole(creatorRole, memberships);
+    const effectiveChurchId = resolveEffectiveChurchId(creatorChurchId || creatorPortalChurchId || null, memberships);
+    const capabilities = getRoleCapabilities(effectiveRole);
 
-    // Allowed roles to view list
-    const allowedViewers = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'];
-    if (!allowedViewers.includes(effectiveRole)) {
+    if (!capabilities.can_manage_users) {
         return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
     }
 
     let query = supabaseAdmin
         .from('user_profiles')
-        .select('user_id, first_name, last_name, full_name, email, role, church_id, portal_church_id, church_name, city, country, created_at, updated_at')
+        .select('user_id, first_name, last_name, full_name, email, role, church_id, portal_church_id, region_id, church_name, city, country, created_at, updated_at')
         .order('updated_at', { ascending: false });
 
     // Scoping Logic
     if (effectiveRole === 'admin') {
         // Admins cannot see Superadmins
         query = query.neq('role', 'superadmin');
-    } else if (effectiveRole === 'national_pastor') {
-        // Scope by Country
+    } else if (isRegionalScopedRole(effectiveRole)) {
+        // Regional scoped roles
+        if (!creatorRegionId) {
+            return new Response(JSON.stringify({ ok: true, users: [] }), { status: 200 });
+        }
+        query = query.eq('region_id', creatorRegionId);
+    } else if (isNationalScopedRole(effectiveRole) || isCountryScopedRole(effectiveRole)) {
+        // National scoped roles
         if (!creatorCountry) {
             return new Response(JSON.stringify({ ok: true, users: [] }), { status: 200 });
         }
@@ -88,7 +94,11 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     const churchIds = Array.from(new Set((users || [])
         .map((profile: any) => profile?.church_id || profile?.portal_church_id || null)
         .filter(Boolean)));
+    const regionIds = Array.from(new Set((users || [])
+        .map((profile: any) => profile?.region_id || null)
+        .filter(Boolean)));
     const churchMap = new Map<string, any>();
+    const regionMap = new Map<string, any>();
     if (churchIds.length) {
         const { data: churches, error: churchesError } = await supabaseAdmin
             .from('churches')
@@ -100,6 +110,22 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
             (churches || []).forEach((church: any) => {
                 if (!church?.id) return;
                 churchMap.set(church.id, church);
+            });
+        }
+    }
+    if (regionIds.length) {
+        const { data: regions, error: regionsError } = await supabaseAdmin
+            .from('regions')
+            .select('id, country, code, name, is_active')
+            .in('id', regionIds);
+        if (regionsError) {
+            if (regionsError.code !== '42P01') {
+                console.error('[portal.admin.users.list] regions error', regionsError);
+            }
+        } else {
+            (regions || []).forEach((region: any) => {
+                if (!region?.id) return;
+                regionMap.set(region.id, region);
             });
         }
     }
@@ -152,6 +178,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         return {
             ...profile,
             church: resolvedChurchId ? (churchMap.get(resolvedChurchId) || null) : null,
+            region: profile?.region_id ? (regionMap.get(profile.region_id) || null) : null,
             full_name: profile?.full_name
                 || authUser?.user_metadata?.full_name
                 || [authUser?.user_metadata?.first_name, authUser?.user_metadata?.last_name].filter(Boolean).join(' ')

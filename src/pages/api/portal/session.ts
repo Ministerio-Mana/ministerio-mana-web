@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships } from '@lib/portalAuth';
+import { ensureUserProfile, listUserMemberships, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getRoleCapabilities, getRoleScope } from '@lib/portalRbac';
 
 export const prerender = false;
 
@@ -36,8 +37,12 @@ export const GET: APIRoute = async ({ request }) => {
         email: passwordSession.email,
         full_name: passwordSession.email.split('@')[0],
         role: 'superadmin',
+        effective_role: 'superadmin',
+        effective_church_id: null,
       },
       memberships: [],
+      scope: 'global',
+      permissions: getRoleCapabilities('superadmin'),
     }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -53,11 +58,21 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   const memberships = await listUserMemberships(user.id);
+  const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
+  const effectiveChurchId = resolveEffectiveChurchId(profile.church_id || profile.portal_church_id || null, memberships);
+  const scope = getRoleScope(effectiveRole);
+  const permissions = getRoleCapabilities(effectiveRole);
 
   return new Response(JSON.stringify({
     ok: true,
-    profile,
+    profile: {
+      ...profile,
+      effective_role: effectiveRole,
+      effective_church_id: effectiveChurchId,
+    },
     memberships,
+    scope,
+    permissions,
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },

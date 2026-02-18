@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { listAccessibleChurchIds } from '@lib/portalScope';
 
 export const prerender = false;
 
@@ -14,75 +13,30 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  let isAllowed = false;
-  let isAdmin = false;
-  let churchId: string | null = null;
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'Acceso denegado a datos operativos');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), { status: denied.status });
+  }
 
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    // Standard User - Check Profile & Roles
-    const profile = await ensureUserProfile(user);
-    if (!profile) return new Response(JSON.stringify({ ok: false, error: 'Perfil no encontrado' }), { status: 403 });
+  const isAdmin = access.isAdmin;
+  let churchId: string | null = access.allowedChurchId;
+  let scopedChurchIds: string[] = churchId ? [churchId] : [];
+  const url = new URL(request.url);
+  const requestedChurch = url.searchParams.get('churchId');
 
-    const memberships = await listUserMemberships(user.id);
-    const activeMembership = memberships.find((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const hasChurchRole = Boolean(activeMembership);
-
-    const role = profile.role || 'user';
-
-    // 1. Roles allowed to view dashboard data
-    const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-    if (!allowedRoles.includes(role) && !hasChurchRole) {
-      // Regular users cannot see this data
-      return new Response(JSON.stringify({ ok: false, error: 'Acceso denegado a datos operativos' }), { status: 403 });
-    }
-
-    // 2. Determine Scope
-    if (role === 'superadmin' || role === 'admin') {
-      // Global Scope
-      isAdmin = true;
-      isAllowed = true;
-      // Logic handled below (churchId param)
-    } else if (role === 'national_pastor') {
-      // Country Scope
-      isAllowed = true;
-      const country = profile.country;
-      if (!country) return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), { status: 403 });
-
-      // Find all churches in this country
-      const { data: churches } = await supabaseAdmin.from('churches').select('id').eq('country', country);
-      const countryChurchIds = (churches || []).map(c => c.id);
-
-      const requestedChurch = new URL(request.url).searchParams.get('churchId');
-      if (requestedChurch) {
-        // Verify requested church is in country
-        if (!countryChurchIds.includes(requestedChurch)) {
-          return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta sede' }), { status: 403 });
-        }
-        churchId = requestedChurch; // Validated
-      } else {
-        // No specific church requested, return query for ALL in country
-        // Special flag to handle "IN" query below
-        churchId = `IN:${countryChurchIds.join(',')}`;
+  if (!isAdmin && !churchId) {
+    scopedChurchIds = await listAccessibleChurchIds(access);
+    if (requestedChurch) {
+      if (!scopedChurchIds.includes(requestedChurch)) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta sede' }), { status: 403 });
       }
+      churchId = requestedChurch;
     } else {
-      // Local Scope (Pastor / Collaborator)
-      isAllowed = true;
-      churchId = profile.church_id || activeMembership?.church?.id || null; // Forced to assigned church
+      churchId = `IN:${scopedChurchIds.join(',')}`;
     }
   }
 
-  const url = new URL(request.url);
-  const requestedChurch = url.searchParams.get('churchId');
   const includeAllSources = isAdmin && !requestedChurch;
 
   const baseSelect = 'id, contact_name, contact_email, total_amount, total_paid, currency, status, created_at, church_id, contact_church, source';
@@ -101,7 +55,7 @@ export const GET: APIRoute = async ({ request }) => {
     if (isAdmin) {
       if (requestedChurch) query = query.eq('church_id', requestedChurch);
     } else if (churchId && churchId.startsWith('IN:')) {
-      const ids = churchId.substring(3).split(',');
+      const ids = scopedChurchIds.length ? scopedChurchIds : churchId.substring(3).split(',');
       if (ids.length === 0) return null;
       query = query.in('church_id', ids);
     } else if (churchId) {

@@ -2,6 +2,8 @@
 const cspNonce = Astro.locals?.cspNonce;
 const siteKey =
   Astro.locals?.turnstile?.siteKey ??
+  import.meta.env?.PUBLIC_TURNSTILE_SITE_KEY ??
+  process.env?.PUBLIC_TURNSTILE_SITE_KEY ??
   import.meta.env?.TURNSTILE_SITE_KEY ??
   process.env?.TURNSTILE_SITE_KEY ?? '';
 ---

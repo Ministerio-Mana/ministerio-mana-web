@@ -1,22 +1,22 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 import {
     normalizeCountryGroup,
     currencyForGroup,
     sanitizeParticipant,
     calculateTotals,
     depositThreshold,
+    buildPaymentReference,
     generateAccessToken,
     type PackageType,
 } from '@lib/cumbre2026';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
-import { applyManualPaymentToPlan, createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
+import { applyManualPaymentToPlan, countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { createDonation } from '@lib/donationsStore';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 
@@ -113,60 +113,15 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
     }
 
-    // RBAC Authorization (Same as bookings.ts)
-    let isAllowed = false;
-    let isAdmin = false;
-    let allowedChurchId: string | null = null;
-    let allowedCountry: string | null = null;
-    let profile: any = null;
-
-    const user = await getUserFromRequest(request);
-    if (!user?.email) {
-        const passwordSession = readPasswordSession(request);
-        if (!passwordSession?.email) {
-            return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
-        }
-        isAllowed = true;
-        isAdmin = true;
-    } else {
-        profile = await ensureUserProfile(user);
-        if (!profile) {
-            return new Response(JSON.stringify({ ok: false, error: 'Perfil no encontrado' }), { status: 403 });
-        }
-
-        const memberships = await listUserMemberships(user.id);
-        const activeMembership = memberships.find((m: any) =>
-            ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-        );
-        const hasChurchRole = Boolean(activeMembership);
-
-        const role = profile.role || 'user';
-        const allowedRoles = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator', 'church_admin'];
-
-        // STRICT: Block regular users
-        if (!allowedRoles.includes(role) && !hasChurchRole) {
-            return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para registrar participantes' }), { status: 403 });
-        }
-
-        if (role === 'superadmin' || role === 'admin') {
-            isAdmin = true;
-            isAllowed = true;
-        } else if (role === 'national_pastor') {
-            // National Pastor: Can register in ANY church in their country
-            isAllowed = true;
-            allowedCountry = profile.country;
-            if (!allowedCountry) {
-                return new Response(JSON.stringify({ ok: false, error: 'Sin país asignado' }), { status: 403 });
-            }
-        } else {
-            // Local Pastor / Collaborator: ONLY their assigned church
-            isAllowed = true;
-            allowedChurchId = profile.church_id || activeMembership?.church?.id || null;
-            if (!allowedChurchId) {
-                return new Response(JSON.stringify({ ok: false, error: 'Sin iglesia asignada' }), { status: 403 });
-            }
-        }
+    const access = await getPortalChurchAccessContext(request);
+    if (!access.ok) {
+        const denied = mapPortalAccessError(access.reason, 'No tienes permisos para registrar participantes');
+        return new Response(JSON.stringify({ ok: false, error: denied.error }), { status: denied.status });
     }
+    const isAdmin = access.isAdmin;
+    const allowedChurchId = access.allowedChurchId;
+    const profile = access.profile;
+    const actorUserId = access.userId;
 
     // Parse request body
     const body = await request.json().catch(() => null);
@@ -333,7 +288,7 @@ export const POST: APIRoute = async ({ request }) => {
                     name: resolvedChurchName,
                     city: contactCity || null,
                     country: contactCountry || null,
-                    created_by: user?.id || null,
+                    created_by: actorUserId || null,
                 })
                 .select('id, name')
                 .single();
@@ -349,18 +304,10 @@ export const POST: APIRoute = async ({ request }) => {
             if (!resolvedChurchId || resolvedChurchId !== allowedChurchId) {
                 return new Response(JSON.stringify({ ok: false, error: 'Solo puedes registrar en tu iglesia asignada' }), { status: 403 });
             }
-        } else if (allowedCountry) {
-            if (!resolvedChurchId) {
-                return new Response(JSON.stringify({ ok: false, error: 'Solo puedes registrar en iglesias de tu país' }), { status: 403 });
-            }
-            const { data: church, error: churchError } = await supabaseAdmin
-                .from('churches')
-                .select('country')
-                .eq('id', resolvedChurchId)
-                .single();
-
-            if (churchError || !church || church.country !== allowedCountry) {
-                return new Response(JSON.stringify({ ok: false, error: 'Solo puedes registrar en iglesias de tu país' }), { status: 403 });
+        } else {
+            const isAllowedChurch = await isChurchAllowedForAccess(resolvedChurchId, access);
+            if (!isAllowedChurch) {
+                return new Response(JSON.stringify({ ok: false, error: 'Solo puedes registrar en iglesias de tu alcance' }), { status: 403 });
             }
         }
     }
@@ -512,7 +459,7 @@ export const POST: APIRoute = async ({ request }) => {
             idempotency_key: idempotencyKey,
             source: 'portal-iglesia',
             church_id: resolvedChurchId || null,
-            created_by: user?.id || profile?.user_id || null,
+            created_by: actorUserId || profile?.user_id || null,
         })
         .select('id')
         .single();
@@ -605,7 +552,8 @@ export const POST: APIRoute = async ({ request }) => {
         }
 
         if (paymentAmount > 0) {
-            const reference = buildDonationReference();
+            const paymentIndex = (await countPayments(booking.id)) + 1;
+            const reference = buildPaymentReference(booking.id, paymentIndex);
             await recordPayment({
                 bookingId: booking.id,
                 provider: 'manual',

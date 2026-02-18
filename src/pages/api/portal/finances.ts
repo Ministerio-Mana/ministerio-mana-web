@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ request }) => {
             .single()
         : { data: { role: 'superadmin', church_id: null } };
 
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin' && profile.role !== 'pastor' && profile.role !== 'leader')) {
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin')) {
         return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
     }
 
@@ -80,12 +80,6 @@ export const GET: APIRoute = async ({ request }) => {
             .select(fields)
             .order('created_at', { ascending: false });
 
-        if (profile.role === 'pastor' || profile.role === 'leader') {
-            if (!profile.church_id) {
-                return null;
-            }
-            query = query.eq('church_id', profile.church_id);
-        }
         return query;
     };
 
