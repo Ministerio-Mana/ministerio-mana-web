@@ -65,6 +65,11 @@ function formatLodgingLabel(value: string | null | undefined): string {
   return normalizeText(value);
 }
 
+function hasLodgingSlot(value: string | null | undefined): boolean {
+  const raw = normalizeText(value);
+  return raw === 'Con alojamiento' || raw === 'Nino 0-4' || raw === 'Nino 5-10';
+}
+
 function isResponsibleRelationship(value: string | null | undefined): boolean {
   const raw = normalizeName(value);
   return raw.includes('responsable');
@@ -225,13 +230,13 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   let { data: bookings, error: bookingsError } = await supabaseAdmin
     .from('cumbre_bookings')
     .select(`${extendedSelect}, church:churches(id, name)`)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (bookingsError && bookingsError.code === '42703') {
     const fallback = await supabaseAdmin
       .from('cumbre_bookings')
       .select(`${baseSelect}, church:churches(id, name)`)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
     bookings = fallback.data;
     bookingsError = fallback.error;
   }
@@ -283,8 +288,9 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
   const { data: participants } = await supabaseAdmin
     .from('cumbre_participants')
-    .select('id, booking_id, full_name, relationship, birthdate, gender, nationality, document_type, document_number, diet_type, package_type, email')
-    .in('booking_id', bookingIds);
+    .select('id, booking_id, full_name, relationship, birthdate, gender, nationality, document_type, document_number, diet_type, package_type, email, created_at')
+    .in('booking_id', bookingIds)
+    .order('created_at', { ascending: true });
 
   let paymentQuery = supabaseAdmin
     .from('cumbre_payments')
@@ -343,11 +349,17 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const headers = [
+    'numero_inscripcion',
+    'numero_tipo_alojamiento',
+    'numero_cupo_alojamiento',
+    'booking_id',
+    'fecha_inscripcion',
     'participante_nombre',
     'titular_reserva',
     'grupo_familiar',
     'reserva_tipo',
     'responsable_grupo',
+    'es_responsable_pago',
     'documento_tipo',
     'documento_numero',
     'fecha_nacimiento',
@@ -365,6 +377,9 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'pasarela_pago',
     'metodo_pago',
     'valor_pagado_total',
+    'valor_real_banco_manual',
+    'diferencia_banco_vs_pagado',
+    'nota_contable',
     'valor_pagado_prorrateado',
     'fecha_ultimo_pago',
     'proximo_pago_fecha',
@@ -374,7 +389,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'proximos_pagos',
   ];
 
-  const records: Array<Record<string, unknown>> = [];
+  const records: Array<Record<string, unknown> & { __bookingCreatedAt: string; __groupKey: string; __participantName: string }> = [];
 
   for (const [bookingId, list] of participantsByBooking) {
     const booking = bookingMap.get(bookingId);
@@ -415,13 +430,17 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       const nationality = participant.nationality || booking?.contact_country || '';
       const diet = formatDietLabel(participant.diet_type);
       const lodging = formatLodgingLabel(participant.package_type);
+      const isPaymentOwner = Boolean(primaryId && participant?.id === primaryId);
 
       records.push({
+        booking_id: bookingId,
+        fecha_inscripcion: booking?.created_at || '',
         participante_nombre: participant.full_name ?? '',
         titular_reserva: booking?.contact_name ?? '',
         grupo_familiar: grupoFamiliar,
         reserva_tipo: reservaTipo,
         responsable_grupo: responsable,
+        es_responsable_pago: isPaymentOwner ? 'SI' : 'NO',
         documento_tipo: docType,
         documento_numero: docNumber,
         fecha_nacimiento: birthdate,
@@ -435,23 +454,56 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         iglesia_catalogo: churchName,
         iglesia_escrita: churchInput,
         tipo_registro: resolveRegistrationType(booking),
-        medio_pago: paymentMeta.medio,
-        pasarela_pago: paymentMeta.pasarela,
-        metodo_pago: paymentMeta.metodo,
-        valor_pagado_total: totalPaid,
-        valor_pagado_prorrateado: perParticipant,
-        fecha_ultimo_pago: lastPayment?.created_at || '',
-        proximo_pago_fecha: nextDueDate,
-        proximo_pago_monto: nextAmount,
-        proximo_pago_moneda: nextCurrency,
-        cuotas_pendientes: pendingCount,
-        proximos_pagos: upcomingSummary,
+        medio_pago: isPaymentOwner ? paymentMeta.medio : '',
+        pasarela_pago: isPaymentOwner ? paymentMeta.pasarela : '',
+        metodo_pago: isPaymentOwner ? paymentMeta.metodo : '',
+        valor_pagado_total: isPaymentOwner ? totalPaid : '',
+        valor_real_banco_manual: '',
+        diferencia_banco_vs_pagado: '',
+        nota_contable: '',
+        valor_pagado_prorrateado: isPaymentOwner ? perParticipant : '',
+        fecha_ultimo_pago: isPaymentOwner ? (lastPayment?.created_at || '') : '',
+        proximo_pago_fecha: isPaymentOwner ? nextDueDate : '',
+        proximo_pago_monto: isPaymentOwner ? nextAmount : '',
+        proximo_pago_moneda: isPaymentOwner ? nextCurrency : '',
+        cuotas_pendientes: isPaymentOwner ? pendingCount : '',
+        proximos_pagos: isPaymentOwner ? upcomingSummary : '',
+        __bookingCreatedAt: booking?.created_at || '',
+        __groupKey: grupoFamiliar,
+        __participantName: participant.full_name ?? '',
       });
     }
   }
 
+  records.sort((a, b) => {
+    const ta = Date.parse(String(a.__bookingCreatedAt || ''));
+    const tb = Date.parse(String(b.__bookingCreatedAt || ''));
+    if (Number.isFinite(ta) && Number.isFinite(tb) && ta !== tb) return ta - tb;
+
+    const groupCompare = String(a.__groupKey || '').localeCompare(String(b.__groupKey || ''));
+    if (groupCompare !== 0) return groupCompare;
+
+    return String(a.__participantName || '').localeCompare(String(b.__participantName || ''));
+  });
+
+  const byLodgingType = new Map<string, number>();
+  let globalIndex = 0;
+  let lodgingSlotIndex = 0;
+
+  for (const row of records) {
+    globalIndex += 1;
+    const lodgingType = normalizeText(row.tipo_alojamiento as string);
+    const lodgingTypeIndex = (byLodgingType.get(lodgingType) ?? 0) + 1;
+    byLodgingType.set(lodgingType, lodgingTypeIndex);
+
+    row.numero_inscripcion = globalIndex;
+    row.numero_tipo_alojamiento = lodgingTypeIndex;
+    row.numero_cupo_alojamiento = hasLodgingSlot(lodgingType) ? ++lodgingSlotIndex : '';
+  }
+
   if (format === 'json') {
-    return new Response(JSON.stringify(records), {
+    const jsonRecords = records.map(({ __bookingCreatedAt, __groupKey, __participantName, ...row }) => row);
+    return new Response(JSON.stringify(jsonRecords), {
       status: 200,
       headers: { 'content-type': 'application/json; charset=utf-8' },
     });
