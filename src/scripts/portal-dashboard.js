@@ -561,6 +561,12 @@ function toDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function isValidDateOnlyInput(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 const CUMBRE_EVENT_START = new Date('2026-06-06T09:00:00-05:00');
 const CUMBRE_EVENT_END = new Date('2026-06-08T18:00:00-05:00');
 const CUMBRE_ABONO_DEADLINE = new Date('2026-05-15T23:59:59-05:00');
@@ -3062,6 +3068,7 @@ function renderInstallments(installments, plans, bookings) {
     const safeContactLabel = safeText(booking.contact_name || booking.contact_email || '');
     const safeStatusLabel = safeText(statusLabel);
     const safeInstallmentId = safeAttr(installment.id || '');
+    const safeDueDateRaw = safeAttr((installment.due_date || '').toString());
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white px-5 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between';
@@ -3074,6 +3081,9 @@ function renderInstallments(installments, plans, bookings) {
       </div>
       <div class="flex items-center gap-3">
         <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${safeStatusLabel}</span>
+        <button class="installment-reschedule px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition" data-installment="${safeInstallmentId}" data-due-date="${safeDueDateRaw}">
+          Cambiar fecha
+        </button>
         <button class="installment-pay px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${safeInstallmentId}">
           Pagar ahora
         </button>
@@ -3284,6 +3294,7 @@ function renderGivingSummary(donations, subscriptions) {
     const safeStatusLabel = safeText(statusInfo.label);
     const safePrimaryLabel = safeText(primaryLabel);
     const safeSubscriptionId = safeAttr(item.id || '');
+    const safeNextReminderDate = safeAttr((item.next_reminder_date || '').toString());
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
@@ -3306,6 +3317,13 @@ function renderGivingSummary(donations, subscriptions) {
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="${primaryAction}">
             ${safePrimaryLabel}
+          </button>
+          <button type="button"
+            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            data-subscription-id="${safeSubscriptionId}"
+            data-subscription-action="reschedule"
+            data-subscription-next-date="${safeNextReminderDate}">
+            Cambiar fecha
           </button>
           <button type="button"
             class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
@@ -3361,10 +3379,17 @@ function renderCampusSummary(donations, subscriptions) {
       PENDING: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
     };
     const statusInfo = statusMap[status] || { label: status, className: 'bg-slate-100 text-slate-600' };
+    const canManage = item._type === 'recurring' && item.id;
+    const isPaused = status === 'PAUSED';
+    const primaryAction = isPaused ? 'resume' : 'pause';
+    const primaryLabel = isPaused ? 'Reanudar' : 'Pausar';
     const safeContext = safeText(context);
     const safeSchedule = safeText(schedule);
     const safeAmount = safeText(amount);
     const safeStatusLabel = safeText(statusInfo.label);
+    const safePrimaryLabel = safeText(primaryLabel);
+    const safeSubscriptionId = safeAttr(item.id || '');
+    const safeNextReminderDate = safeAttr((item.next_reminder_date || '').toString());
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
@@ -3380,6 +3405,29 @@ function renderCampusSummary(donations, subscriptions) {
           <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${safeStatusLabel}</span>
         </div>
       </div>
+      ${canManage ? `
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button type="button"
+            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            data-subscription-id="${safeSubscriptionId}"
+            data-subscription-action="${primaryAction}">
+            ${safePrimaryLabel}
+          </button>
+          <button type="button"
+            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            data-subscription-id="${safeSubscriptionId}"
+            data-subscription-action="reschedule"
+            data-subscription-next-date="${safeNextReminderDate}">
+            Cambiar fecha
+          </button>
+          <button type="button"
+            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            data-subscription-id="${safeSubscriptionId}"
+            data-subscription-action="cancel">
+            Cancelar
+          </button>
+        </div>
+      ` : ''}
     `;
     campusGivingList.appendChild(card);
   });
@@ -3436,6 +3484,7 @@ async function handleDonationSubscriptionAction(button) {
   const subscriptionId = button.getAttribute('data-subscription-id');
   const action = button.getAttribute('data-subscription-action');
   if (!subscriptionId || !action) return;
+  let nextReminderDate = '';
 
   if (action === 'cancel') {
     const confirmed = await showPortalConfirm('¿Deseas cancelar este aporte recurrente? Puedes volver a activarlo más adelante desde el portal.', {
@@ -3444,6 +3493,17 @@ async function handleDonationSubscriptionAction(button) {
       tone: 'danger',
     });
     if (!confirmed) return;
+  }
+
+  if (action === 'reschedule') {
+    const currentDate = (button.getAttribute('data-subscription-next-date') || '').trim();
+    const requestedDate = window.prompt('Nueva fecha de cobro (YYYY-MM-DD)', currentDate || '');
+    if (requestedDate === null) return;
+    nextReminderDate = requestedDate.trim();
+    if (!isValidDateOnlyInput(nextReminderDate)) {
+      showPortalAlert('Usa el formato YYYY-MM-DD.');
+      return;
+    }
   }
 
   const originalText = button.textContent;
@@ -3455,7 +3515,11 @@ async function handleDonationSubscriptionAction(button) {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...portalAuthHeaders },
       credentials: 'include',
-      body: JSON.stringify({ id: subscriptionId, action }),
+      body: JSON.stringify({
+        id: subscriptionId,
+        action,
+        ...(nextReminderDate ? { nextReminderDate } : {}),
+      }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar');
@@ -3472,10 +3536,12 @@ async function handleDonationSubscriptionAction(button) {
     }
 
     renderGivingSummary(portalAccountPayload?.donations || [], portalAccountPayload?.donationSubscriptions || []);
+    renderCampusSummary(portalAccountPayload?.donations || [], portalAccountPayload?.donationSubscriptions || []);
     const successMessages = {
       pause: 'Tu aporte quedó pausado.',
       resume: 'Tu aporte quedó reactivado.',
       cancel: 'Tu aporte fue cancelado.',
+      reschedule: 'Fecha de cobro actualizada.',
     };
     showPortalAlert(successMessages[action] || 'Actualizado correctamente.', { title: 'Listo' });
   } catch (err) {
@@ -3660,6 +3726,44 @@ async function handleInstallmentPay(event) {
       target.disabled = false;
       target.textContent = originalText;
     }, 2500);
+  }
+}
+
+async function handleInstallmentReschedule(event) {
+  const target = event.target.closest('.installment-reschedule');
+  if (!target) return;
+  const installmentId = target.dataset.installment;
+  if (!installmentId) return;
+
+  const currentDate = (target.dataset.dueDate || '').trim();
+  const requestedDate = window.prompt('Nueva fecha de cuota (YYYY-MM-DD)', currentDate || '');
+  if (requestedDate === null) return;
+
+  const dueDate = requestedDate.trim();
+  if (!isValidDateOnlyInput(dueDate)) {
+    showPortalAlert('Usa el formato YYYY-MM-DD.');
+    return;
+  }
+
+  const originalText = target.textContent;
+  target.textContent = 'Actualizando...';
+  target.disabled = true;
+
+  try {
+    const res = await fetch('/api/cuenta/installments/reschedule', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+      body: JSON.stringify({ installmentId, dueDate }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar la fecha');
+    await loadAccount();
+    showPortalAlert('Fecha de cuota actualizada.');
+  } catch (err) {
+    console.error(err);
+    showPortalAlert(err.message || 'No se pudo actualizar la fecha.');
+    target.textContent = originalText;
+    target.disabled = false;
   }
 }
 
@@ -4075,6 +4179,7 @@ inviteToggleBtn?.addEventListener('click', () => {
 
 installmentsList?.addEventListener('click', (event) => {
   void handleInstallmentPay(event);
+  void handleInstallmentReschedule(event);
 });
 
 document.addEventListener('click', (event) => {
