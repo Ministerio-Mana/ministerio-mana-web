@@ -39,6 +39,7 @@ let currentUserRole = 'user';
 let currentUserCountry = '';
 let currentUserRegionId = '';
 let currentUserChurchId = '';
+let currentAllowedRegionIds = [];
 let currentCreatableRoles = [];
 let currentToken = '';
 let currentMemberships = [];
@@ -110,7 +111,7 @@ function applySidebarPermissions(role, memberships = []) {
     }
 
     const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor'];
-    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator'];
+    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'leader'];
     const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
     const financeRoles = ['superadmin', 'admin'];
     const regionsRoles = ['superadmin', 'admin'];
@@ -147,11 +148,18 @@ async function init() {
             if (payload?.ok) {
                 const profile = payload.profile || {};
                 const memberships = payload.memberships || [];
+                const scopeContext = payload.scope_context || {};
+                const allowedRegionIds = Array.isArray(scopeContext.allowed_region_ids)
+                    ? scopeContext.allowed_region_ids.filter(Boolean)
+                    : [];
                 currentMemberships = memberships;
                 currentUserRole = profile.role || 'user';
-                currentUserCountry = profile.country || '';
-                currentUserRegionId = profile.region_id || '';
-                currentUserChurchId = profile.church_id
+                currentUserCountry = scopeContext.allowed_country || profile.country || '';
+                currentAllowedRegionIds = allowedRegionIds;
+                currentUserRegionId = allowedRegionIds[0] || profile.region_id || '';
+                currentUserChurchId = scopeContext.allowed_church_id
+                    || profile.church_id
+                    || profile.portal_church_id
                     || memberships.find((m) => m?.church?.id)?.church?.id
                     || '';
                 currentCreatableRoles = Array.isArray(payload.creatable_roles) ? payload.creatable_roles : [];
@@ -222,8 +230,13 @@ function populateScopeOptions() {
     if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
         scoped = scoped.filter(c => (c.country || '').toLowerCase() === currentUserCountry.toLowerCase());
     }
-    if ((currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') && currentUserRegionId) {
-        scoped = scoped.filter(c => c.region_id === currentUserRegionId);
+    if (currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') {
+        const allowedRegionIds = currentAllowedRegionIds.length
+            ? currentAllowedRegionIds
+            : (currentUserRegionId ? [currentUserRegionId] : []);
+        if (allowedRegionIds.length) {
+            scoped = scoped.filter(c => allowedRegionIds.includes(c.region_id));
+        }
     }
     scopeChurchSelect.innerHTML = '<option value="">Selecciona una iglesia</option>' +
         scoped
@@ -243,9 +256,20 @@ function populateScopeOptions() {
 
 function populateRegionOptions() {
     if (!scopeRegionSelect) return;
-    const scopedRegions = (currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry
-        ? regionsCatalog.filter(r => (r.country || '').toLowerCase() === currentUserCountry.toLowerCase())
-        : regionsCatalog;
+    let scopedRegions = regionsCatalog;
+
+    if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
+        scopedRegions = scopedRegions.filter(r => (r.country || '').toLowerCase() === currentUserCountry.toLowerCase());
+    }
+
+    if (currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') {
+        const allowedRegionIds = currentAllowedRegionIds.length
+            ? currentAllowedRegionIds
+            : (currentUserRegionId ? [currentUserRegionId] : []);
+        if (allowedRegionIds.length) {
+            scopedRegions = scopedRegions.filter(r => allowedRegionIds.includes(r.id));
+        }
+    }
 
     scopeRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' +
         scopedRegions
@@ -261,36 +285,51 @@ function updateScopeFields(role) {
     const needsCountry = role === 'national_pastor' || role === 'national_collaborator';
     const needsRegion = role === 'regional_pastor' || role === 'regional_collaborator';
     const needsChurch = role === 'pastor' || role === 'local_collaborator' || role === 'leader';
+    const isNationalCreator = currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator';
+    const isRegionalCreator = currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator';
+    const isLocalCreator = currentUserRole === 'pastor' || currentUserRole === 'local_collaborator' || currentUserRole === 'leader';
+    const allowedRegionIds = currentAllowedRegionIds.length
+        ? currentAllowedRegionIds
+        : (currentUserRegionId ? [currentUserRegionId] : []);
 
     if (scopeCountryWrapper && scopeCountryInput) {
         scopeCountryWrapper.classList.toggle('hidden', !needsCountry);
-        scopeCountryInput.disabled = !needsCountry || (needsCountry && (currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator'));
+        scopeCountryInput.disabled = !needsCountry || (needsCountry && isNationalCreator);
         if (!needsCountry) {
             scopeCountryInput.value = '';
-        } else if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
+        } else if (isNationalCreator && currentUserCountry) {
             scopeCountryInput.value = currentUserCountry;
         }
     }
 
     if (scopeRegionWrapper && scopeRegionSelect) {
         scopeRegionWrapper.classList.toggle('hidden', !needsRegion);
-        scopeRegionSelect.disabled = !needsRegion;
         if (!needsRegion) {
-            scopeRegionSelect.value = '';
-        } else if ((currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') && currentUserRegionId) {
-            scopeRegionSelect.value = currentUserRegionId;
             scopeRegionSelect.disabled = true;
+            scopeRegionSelect.value = '';
+        } else {
+            scopeRegionSelect.disabled = false;
+            if (isRegionalCreator && allowedRegionIds.length === 1) {
+                scopeRegionSelect.value = allowedRegionIds[0];
+                scopeRegionSelect.disabled = true;
+            } else if (isRegionalCreator && allowedRegionIds.length > 1) {
+                if (!allowedRegionIds.includes(scopeRegionSelect.value)) {
+                    scopeRegionSelect.value = '';
+                }
+            }
         }
     }
 
     if (scopeChurchWrapper && scopeChurchSelect) {
         scopeChurchWrapper.classList.toggle('hidden', !needsChurch);
-        scopeChurchSelect.disabled = !needsChurch;
         if (!needsChurch) {
+            scopeChurchSelect.disabled = true;
             scopeChurchSelect.value = '';
-        } else if ((currentUserRole === 'pastor' || currentUserRole === 'local_collaborator') && currentUserChurchId) {
+        } else if (isLocalCreator && currentUserChurchId) {
             scopeChurchSelect.value = currentUserChurchId;
             scopeChurchSelect.disabled = true;
+        } else {
+            scopeChurchSelect.disabled = false;
         }
     }
 }
@@ -487,7 +526,7 @@ function renderTable(users) {
             const scopeLabel = getScopeLabel(u);
             const safeScope = escapeHtml(scopeLabel);
             const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
-            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator'].includes(currentUserRole);
+            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
                     <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
@@ -630,6 +669,7 @@ function setupModal(token) {
                 modal?.classList.add('hidden');
                 return;
             }
+            roleSelect.value = allowedRoles[0];
             attachScopeListener();
             populateScopeOptions();
             populateRegionOptions();
