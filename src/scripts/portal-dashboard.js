@@ -2276,7 +2276,7 @@ async function exportChurchBookings() {
 
 async function loadAdminUsers(headers = {}) {
   if (!adminUsersCard) return;
-  if (!portalIsAdmin) {
+  if (!portalIsSuperadmin) {
     adminUsersCard.classList.add('hidden');
     return;
   }
@@ -2574,12 +2574,7 @@ function renderAdminFollowups(items, counts = {}) {
 
 function initAdminInvite() {
   if (!adminInviteBtn || !adminInviteEmail || !adminInviteRole) return;
-  if (!portalIsAdmin) return;
-
-  if (!portalIsSuperadmin && adminInviteRole) {
-    adminInviteRole.querySelector('option[value="admin"]')?.setAttribute('disabled', 'disabled');
-    adminInviteRole.querySelector('option[value="superadmin"]')?.setAttribute('disabled', 'disabled');
-  }
+  if (!portalIsSuperadmin) return;
 
   adminInviteBtn.addEventListener('click', async () => {
     if (!adminInviteStatus) return;

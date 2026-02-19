@@ -58,6 +58,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
+  if (ctx.role !== 'superadmin') {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado para crear administradores' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const payload = await request.json().catch(() => null);
   if (!payload?.email) {
     return new Response(JSON.stringify({ ok: false, error: 'Email requerido' }), {
@@ -68,13 +75,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const email = String(payload.email).trim().toLowerCase();
   const fullName = sanitizePlainText(payload.fullName || '', 120) || null;
-  const desiredRole = String(payload.role || 'user');
+  const desiredRole = String(payload.role || 'admin');
   const churchRole = String(payload.churchRole || '');
   const churchRaw = normalizeChurchName(payload.church || '');
 
-  if (ctx.role !== 'superadmin' && desiredRole !== 'user') {
-    return new Response(JSON.stringify({ ok: false, error: 'No puedes asignar ese rol' }), {
-      status: 403,
+  const ALLOWED_ADMIN_PANEL_ROLES = new Set(['admin', 'superadmin']);
+  if (!ALLOWED_ADMIN_PANEL_ROLES.has(desiredRole)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Rol no permitido en este flujo' }), {
+      status: 400,
       headers: { 'content-type': 'application/json' },
     });
   }

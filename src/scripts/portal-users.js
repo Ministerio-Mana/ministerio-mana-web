@@ -39,6 +39,7 @@ let currentUserRole = 'user';
 let currentUserCountry = '';
 let currentUserRegionId = '';
 let currentUserChurchId = '';
+let currentCreatableRoles = [];
 let currentToken = '';
 let currentMemberships = [];
 let allUsers = [];
@@ -153,13 +154,12 @@ async function init() {
                 currentUserChurchId = profile.church_id
                     || memberships.find((m) => m?.church?.id)?.church?.id
                     || '';
+                currentCreatableRoles = Array.isArray(payload.creatable_roles) ? payload.creatable_roles : [];
 
                 currentUserRole = applySidebarPermissions(currentUserRole, memberships);
 
                 // Hide Create Button for Roles that cannot create users
-                if (currentUserRole === 'campus_missionary' || currentUserRole === 'user') {
-                    if (btnOpen) btnOpen.style.display = 'none';
-                }
+                if (btnOpen) btnOpen.style.display = currentCreatableRoles.length ? '' : 'none';
 
                 if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
                     document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
@@ -606,8 +606,7 @@ tbody?.addEventListener('click', async (event) => {
 
 function setupModal(token) {
     btnOpen?.addEventListener('click', () => {
-        // Validation: Campus Missionaries cannot create
-        if (currentUserRole === 'campus_missionary' || currentUserRole === 'user') {
+        if (!currentCreatableRoles.length) {
             alert('No tienes permisos para crear usuarios.');
             return;
         }
@@ -617,30 +616,20 @@ function setupModal(token) {
         // Populate Roles dynamically
         if (roleSelect) {
             roleSelect.innerHTML = '';
-            let allowedRoles = [];
+            const allowedRoles = roleOrder.filter((role) => currentCreatableRoles.includes(role));
 
-            if (currentUserRole === 'superadmin') {
-                allowedRoles = ['admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'campus_missionary', 'pastor', 'local_collaborator', 'leader', 'user'];
-            } else if (currentUserRole === 'admin') {
-                allowedRoles = ['national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'campus_missionary', 'pastor', 'local_collaborator', 'leader', 'user'];
-            } else if (currentUserRole === 'national_pastor') {
-                allowedRoles = ['national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'leader', 'user'];
-            } else if (currentUserRole === 'regional_pastor') {
-                allowedRoles = ['regional_collaborator', 'pastor', 'local_collaborator', 'leader', 'user'];
-            } else if (currentUserRole === 'pastor') { // Local Pastor
-                allowedRoles = ['local_collaborator', 'leader', 'user'];
-            } else if (currentUserRole === 'local_collaborator' || currentUserRole === 'regional_collaborator' || currentUserRole === 'national_collaborator') {
-                allowedRoles = ['user'];
-            }
-
-            // Always allow creating 'user' as fallback if list is empty? No, logic above covers it.
-
-            allowedRoles.forEach(role => {
+            allowedRoles.forEach((role) => {
                 const opt = document.createElement('option');
                 opt.value = role;
                 opt.textContent = roleTranslations[role] || role;
                 roleSelect.appendChild(opt);
             });
+
+            if (!allowedRoles.length) {
+                alert('No tienes permisos para crear usuarios.');
+                modal?.classList.add('hidden');
+                return;
+            }
             attachScopeListener();
             populateScopeOptions();
             populateRegionOptions();

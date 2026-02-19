@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, listUserMemberships, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
-import { getRoleCapabilities, getRoleScope } from '@lib/portalRbac';
+import { getCreatableRoles, getRoleCapabilities, getRoleScope } from '@lib/portalRbac';
 
 export const prerender = false;
 
@@ -43,6 +43,7 @@ export const GET: APIRoute = async ({ request }) => {
       memberships: [],
       scope: 'global',
       permissions: getRoleCapabilities('superadmin'),
+      creatable_roles: getCreatableRoles('superadmin'),
     }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -73,6 +74,7 @@ export const GET: APIRoute = async ({ request }) => {
     memberships,
     scope,
     permissions,
+    creatable_roles: getCreatableRoles(effectiveRole),
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },

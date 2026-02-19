@@ -54,6 +54,13 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
+  if (ctx.role !== 'superadmin') {
+    return new Response(JSON.stringify({ ok: false, error: 'Solo superadmin puede acceder a este panel' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const { data: profiles, error } = await supabaseAdmin
     .from('user_profiles')
     .select('user_id, email, full_name, role, phone, city, country, church_name, created_at')
