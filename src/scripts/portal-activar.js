@@ -125,7 +125,8 @@ function getUrlParams() {
 
 function getTokenParams() {
   const { searchParams, hashParams } = getUrlParams();
-  const tokenHash = searchParams.get('token_hash') || searchParams.get('token') || hashParams.get('token_hash') || hashParams.get('token');
+  const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+  const token = searchParams.get('token') || hashParams.get('token');
   const accessToken = hashParams.get('access_token') || hashParams.get('/access_token') || searchParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token') || hashParams.get('/refresh_token') || searchParams.get('refresh_token');
   const type = hashParams.get('type') || hashParams.get('/type') || searchParams.get('type') || searchParams.get('verification_type');
@@ -134,7 +135,24 @@ function getTokenParams() {
   const errorCode = hashParams.get('error_code') || hashParams.get('/error_code') || searchParams.get('error_code');
   const errorDescription =
     hashParams.get('error_description') || hashParams.get('/error_description') || searchParams.get('error_description');
-  return { tokenHash, accessToken, refreshToken, type, email, error, errorCode, errorDescription };
+  return { tokenHash, token, accessToken, refreshToken, type, email, error, errorCode, errorDescription };
+}
+
+async function reportActivationIssue(message, meta = {}) {
+  try {
+    await fetch('/api/portal/client-error', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        identifier: 'portal.activar.token',
+        message,
+        meta,
+      }),
+      keepalive: true,
+    });
+  } catch (_err) {
+    // No interrumpir UX por errores de auditoria.
+  }
 }
 
 function normalizeHash() {
@@ -153,6 +171,7 @@ async function resolveSessionFromUrl() {
   const authCode = url.searchParams.get('code');
   const tokens = getTokenParams();
   const otpType = tokens?.type === 'email_change_current' || tokens?.type === 'email_change_new' ? 'email_change' : tokens?.type;
+  const normalizedEmail = String(tokens?.email || '').trim().toLowerCase();
 
   if (tokens?.tokenHash && otpType) {
     const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
@@ -162,12 +181,46 @@ async function resolveSessionFromUrl() {
     if (otpData?.session) return true;
     if (otpError) {
       console.warn('[Activar] verifyOtp failed', otpError.message || otpError);
+      void reportActivationIssue('verifyOtp(token_hash) failed', {
+        otp_type: otpType,
+        has_token_hash: true,
+        has_token: Boolean(tokens?.token),
+        has_email: Boolean(normalizedEmail),
+        error: otpError.message || String(otpError),
+      });
+    }
+  }
+
+  if (tokens?.token && otpType && normalizedEmail) {
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: tokens.token,
+      type: otpType,
+    });
+    if (otpData?.session) return true;
+    if (otpError) {
+      console.warn('[Activar] verifyOtp(email,token) failed', otpError.message || otpError);
+      void reportActivationIssue('verifyOtp(email,token) failed', {
+        otp_type: otpType,
+        has_token_hash: false,
+        has_token: true,
+        has_email: true,
+        error: otpError.message || String(otpError),
+      });
     }
   }
 
   if (authCode) {
     const { data: codeData, error } = await supabase.auth.exchangeCodeForSession(authCode);
     if (codeData?.session) return true;
+    if (error) {
+      void reportActivationIssue('exchangeCodeForSession failed', {
+        has_code: true,
+        has_access_token: Boolean(tokens?.accessToken),
+        has_refresh_token: Boolean(tokens?.refreshToken),
+        error: error.message || String(error),
+      });
+    }
     if (error && tokens?.accessToken && tokens?.refreshToken) {
       const { data: tokenData } = await supabase.auth.setSession({
         access_token: tokens.accessToken,
@@ -213,6 +266,11 @@ async function validateRecoveryLink() {
 
   const { error, errorCode, errorDescription } = getTokenParams();
   const normalizedDescription = (errorDescription || '').toLowerCase();
+  void reportActivationIssue('activation link invalid', {
+    error: error || null,
+    error_code: errorCode || null,
+    error_description: errorDescription || null,
+  });
   if (error === 'access_denied' && (errorCode === 'otp_expired' || normalizedDescription.includes('expired'))) {
     setGuardMessage('El enlace expiró o ya fue usado. Solicita uno nuevo desde el portal.');
   } else if (error === 'access_denied' && normalizedDescription.includes('invalid')) {
@@ -278,14 +336,37 @@ toggleConfirmBtn?.addEventListener('click', () => {
 
 async function guardSession() {
   const { searchParams } = getUrlParams();
-  const { tokenHash, accessToken, refreshToken, type, error } = getTokenParams();
+  const { tokenHash, token, accessToken, refreshToken, type, error, errorCode, errorDescription } = getTokenParams();
   const hasRecoveryType = type === 'recovery';
-  const hasToken = Boolean(tokenHash || accessToken || refreshToken || error);
+  const hasToken = Boolean(tokenHash || token || accessToken || refreshToken || error);
   const hasCode = searchParams.has('code');
   hasRecoveryContext = hasRecoveryType || hasToken || hasCode;
 
   if (hasRecoveryContext) {
-    await validateRecoveryLink();
+    // No validamos de forma automática para evitar consumo temprano del token
+    // por prefetchers/escáneres de correo. La validación sucede al submit o
+    // cuando el usuario pulsa "Reintentar validación".
+    if (error) {
+      const normalizedDescription = (errorDescription || '').toLowerCase();
+      if (error === 'access_denied' && (errorCode === 'otp_expired' || normalizedDescription.includes('expired'))) {
+        setGuardMessage('El enlace expiró o ya fue usado. Solicita uno nuevo desde el portal.');
+      } else if (error === 'access_denied' && normalizedDescription.includes('invalid')) {
+        setGuardMessage('El enlace ya no es válido. Solicita uno nuevo desde el portal.');
+      } else if (error === 'access_denied') {
+        setGuardMessage('El enlace no pertenece a este dominio. Abre el link desde el dominio correcto.');
+      } else if (errorDescription) {
+        setGuardMessage(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+      } else {
+        setGuardMessage('El enlace no es válido. Solicita uno nuevo desde el portal.');
+      }
+      setFormDisabled(true);
+      showRetry(true);
+      return;
+    }
+    guard?.classList.add('hidden');
+    statusContainer?.classList.add('hidden');
+    setFormDisabled(false);
+    showRetry(false);
     return;
   }
 
@@ -347,7 +428,8 @@ form?.addEventListener('submit', async (event) => {
     console.log('[Activar] Session check:', sessionCheck);
 
     if (!sessionCheck.ok) {
-      showStatus('Sesión no válida. Reintenta la validación del enlace.', 'error');
+      await validateRecoveryLink();
+      showStatus('Sesión no válida. Solicita un enlace nuevo si el problema persiste.', 'error');
       showRetry(true);
       setFormDisabled(false);
       return;
