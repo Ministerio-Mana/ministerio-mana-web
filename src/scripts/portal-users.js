@@ -206,7 +206,7 @@ async function loadChurches() {
 async function loadRegions(token) {
     if (!scopeRegionSelect || !token) return;
     try {
-        const res = await fetch('/api/portal/admin/regions', {
+        const res = await fetch('/api/portal/regions', {
             headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!res.ok) {
@@ -526,7 +526,7 @@ function renderTable(users) {
             const scopeLabel = getScopeLabel(u);
             const safeScope = escapeHtml(scopeLabel);
             const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
-            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
+            const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
                     <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>

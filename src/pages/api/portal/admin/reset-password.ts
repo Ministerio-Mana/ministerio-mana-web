@@ -1,49 +1,29 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import {
+  getPortalChurchAccessContext,
+  mapPortalAccessError,
+  type PortalChurchRole,
+} from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
+import { normalizeCountryRegion } from '@lib/normalization';
 
 export const prerender = false;
 
-type ResetContext = {
-  ok: boolean;
-  role: string | null;
-  country: string | null;
-  churchId: string | null;
-};
+const RESET_ALLOWED_ROLES: PortalChurchRole[] = [
+  'superadmin',
+  'admin',
+  'national_pastor',
+  'regional_pastor',
+  'pastor',
+  'local_collaborator',
+];
 
-async function getResetContext(request: Request): Promise<ResetContext> {
-  const user = await getUserFromRequest(request);
-  if (user?.email) {
-    const profile = await ensureUserProfile(user);
-    if (!profile) {
-      return { ok: false, role: null, country: null, churchId: null };
-    }
-
-    const memberships = await listUserMemberships(user.id);
-    const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
-
-    if (!['superadmin', 'admin', 'national_pastor', 'pastor', 'local_collaborator'].includes(effectiveRole)) {
-      return { ok: false, role: null, country: null, churchId: null };
-    }
-
-    return {
-      ok: true,
-      role: effectiveRole,
-      country: profile.country || null,
-      churchId: resolveEffectiveChurchId(profile.church_id, memberships),
-    };
-  }
-
-  const passwordSession = readPasswordSession(request);
-  if (!passwordSession?.email) {
-    return { ok: false, role: null, country: null, churchId: null };
-  }
-  return { ok: true, role: 'superadmin', country: null, churchId: null };
+function sameCountry(left?: string | null, right?: string | null): boolean {
+  return normalizeCountryRegion(left || '') === normalizeCountryRegion(right || '');
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -54,15 +34,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  const ctx = await getResetContext(request);
-  if (!ctx.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  const access = await getPortalChurchAccessContext(request, {
+    allowedRoles: RESET_ALLOWED_ROLES,
+    allowPasswordSession: true,
+  });
+
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'No autorizado');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
 
-  if (ctx.role === 'superadmin' || ctx.role === 'admin') {
+  if (access.isAdmin) {
     const ipCheck = await enforceAdminIp({
       request,
       clientAddress,
@@ -88,7 +73,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const email = String(payload.email).trim().toLowerCase();
   const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
     .from('user_profiles')
-    .select('user_id, email, role, church_id, country')
+    .select('user_id, email, role, country, region_id, church_id, portal_church_id')
     .eq('email', email)
     .maybeSingle();
 
@@ -107,24 +92,49 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  if (ctx.role === 'admin' && targetProfile.role === 'superadmin') {
+  const actorRole = String(access.role || 'user');
+  const targetRole = String(targetProfile.role || 'user');
+  const targetChurchId = String(targetProfile.church_id || targetProfile.portal_church_id || '').trim() || null;
+
+  if (actorRole !== 'superadmin' && targetRole === 'superadmin') {
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado para ese usuario' }), {
       status: 403,
       headers: { 'content-type': 'application/json' },
     });
   }
 
-  if (ctx.role === 'national_pastor') {
-    if (!ctx.country || !targetProfile.country || targetProfile.country !== ctx.country) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado para ese usuario' }), {
-        status: 403,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
+  if (!access.isAdmin && (targetRole === 'admin' || targetRole === 'superadmin')) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado para ese usuario' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
-  if (ctx.role === 'pastor' || ctx.role === 'local_collaborator') {
-    if (!ctx.churchId || !targetProfile.church_id || targetProfile.church_id !== ctx.churchId) {
+  if (!access.isAdmin) {
+    let allowed = false;
+
+    if (access.allowedChurchId) {
+      allowed = Boolean(targetChurchId && targetChurchId === access.allowedChurchId);
+    } else if (access.isRegional) {
+      if (targetProfile.region_id && access.allowedRegionIds.includes(targetProfile.region_id)) {
+        allowed = true;
+      }
+      if (!allowed && targetChurchId) {
+        allowed = await isChurchAllowedForAccess(targetChurchId, access);
+      }
+      if (!allowed && access.allowedCountry && targetProfile.country) {
+        allowed = sameCountry(targetProfile.country, access.allowedCountry);
+      }
+    } else if (access.isNational) {
+      if (targetChurchId) {
+        allowed = await isChurchAllowedForAccess(targetChurchId, access);
+      }
+      if (!allowed && access.allowedCountry && targetProfile.country) {
+        allowed = sameCountry(targetProfile.country, access.allowedCountry);
+      }
+    }
+
+    if (!allowed) {
       return new Response(JSON.stringify({ ok: false, error: 'No autorizado para ese usuario' }), {
         status: 403,
         headers: { 'content-type': 'application/json' },
