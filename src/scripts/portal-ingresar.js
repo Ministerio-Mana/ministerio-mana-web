@@ -34,13 +34,39 @@ const statusEl = document.getElementById('login-status');
 const statusIcon = document.getElementById('login-status-icon');
 const statusWrapper = document.getElementById('login-status-wrapper');
 
+const TURNSTILE_RENDER_WAIT_MS = 3000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function maskEmailHint(value) {
+  const email = String(value || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) return null;
+  const [local, domain] = email.split('@');
+  if (!domain) return null;
+  if (!local) return `***@${domain}`;
+  if (local.length <= 2) return `${local[0] || '*'}***@${domain}`;
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
+async function waitForTurnstileReady(widget, timeoutMs = TURNSTILE_RENDER_WAIT_MS) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt <= timeoutMs) {
+    const iframe = widget?.querySelector?.('iframe');
+    if (window.turnstile && iframe) return true;
+    await sleep(120);
+  }
+  return false;
+}
+
 function resetTurnstile() {
   if (window.turnstile && typeof window.turnstile.reset === 'function') {
     window.turnstile.reset();
   }
 }
 
-function getTurnstileTokenIfRequired() {
+async function getTurnstileTokenIfRequired() {
   const widget = document.querySelector('.cf-turnstile');
 
   // If no widget in HTML, it's not enabled
@@ -56,10 +82,21 @@ function getTurnstileTokenIfRequired() {
 
   // If widget has key but did not render, do NOT bypass.
   // Backend requires captcha in production, so sending empty token causes hard failure.
-  const iframe = widget.querySelector('iframe');
+  let iframe = widget.querySelector('iframe');
+  if (!window.turnstile || !iframe) {
+    const ready = await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
+    if (ready) {
+      iframe = widget.querySelector('iframe');
+    }
+  }
+
   if (!window.turnstile || !iframe) {
     console.warn('[Turnstile] Widget has site key but failed to render.');
-    return { ok: false, error: 'No cargó el captcha. Desactiva bloqueadores, recarga e intenta de nuevo.', reason: 'widget_not_rendered' };
+    return {
+      ok: false,
+      error: 'No cargó el captcha (Cloudflare). Desactiva bloqueadores/Brave Shields, recarga e intenta de nuevo.',
+      reason: 'widget_not_rendered',
+    };
   }
 
   // Widget is configured AND rendered, so validation is required
@@ -164,7 +201,7 @@ async function reportPortalLoginError(identifier, err, meta = {}) {
   }
 }
 
-function reportCaptchaGuardBlock(context, captcha = {}) {
+function reportCaptchaGuardBlock(context, captcha = {}, extraMeta = {}) {
   void reportPortalLoginError(
     'portal.ingresar.captcha.blocked',
     new Error(captcha?.error || 'Captcha guard blocked request'),
@@ -173,6 +210,7 @@ function reportCaptchaGuardBlock(context, captcha = {}) {
       reason: captcha?.reason || 'unknown',
       hasBypass: Boolean(captcha?.bypass),
       hasToken: Boolean(captcha?.token),
+      ...extraMeta,
     },
   );
 }
@@ -191,7 +229,7 @@ async function startOAuth(provider, label, btn) {
     return;
   }
 
-  const captcha = getTurnstileTokenIfRequired();
+  const captcha = await getTurnstileTokenIfRequired();
   if (!captcha.ok) {
     reportCaptchaGuardBlock(`oauth:${provider}`, captcha);
     showStatus(captcha.error || 'Captcha inválido.', 'error');
@@ -280,9 +318,9 @@ magicForm?.addEventListener('submit', async (e) => {
   const email = magicEmailInput?.value?.trim();
   if (!email) return;
 
-  const captcha = getTurnstileTokenIfRequired();
+  const captcha = await getTurnstileTokenIfRequired();
   if (!captcha.ok) {
-    reportCaptchaGuardBlock('recovery-link', captcha);
+    reportCaptchaGuardBlock('recovery-link', captcha, { emailHint: maskEmailHint(email) });
     showStatus(captcha.error || 'Captcha inválido.', 'error');
     resetTurnstile();
     return;
@@ -324,9 +362,9 @@ passwordForm?.addEventListener('submit', async (e) => {
   const password = passwordInput?.value?.trim();
   if (!email || !password) return;
 
-  const captcha = getTurnstileTokenIfRequired();
+  const captcha = await getTurnstileTokenIfRequired();
   if (!captcha.ok) {
-    reportCaptchaGuardBlock('password-login', captcha);
+    reportCaptchaGuardBlock('password-login', captcha, { emailHint: maskEmailHint(email) });
     showStatus(captcha.error || 'Captcha inválido.', 'error');
     resetTurnstile();
     return;
@@ -401,7 +439,7 @@ async function tryApiLogin(email, password, token) {
 passkeyBtn?.addEventListener('click', async () => {
   showStatus('Verificando soporte de Passkeys...', 'loading');
   try {
-    const captcha = getTurnstileTokenIfRequired();
+    const captcha = await getTurnstileTokenIfRequired();
     if (!captcha.ok) {
       reportCaptchaGuardBlock('passkey-login', captcha);
       showStatus(captcha.error || 'Captcha inválido.', 'error');

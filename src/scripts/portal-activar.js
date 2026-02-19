@@ -24,6 +24,21 @@ const eyeOffConfirm = document.getElementById('eye-off-icon-confirm');
 const guard = document.getElementById('activate-guard');
 const retryBtn = document.getElementById('activate-retry');
 let hasRecoveryContext = false;
+const TURNSTILE_RENDER_WAIT_MS = 3000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForTurnstileReady(widget, timeoutMs = TURNSTILE_RENDER_WAIT_MS) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt <= timeoutMs) {
+    const iframe = widget?.querySelector?.('iframe');
+    if (window.turnstile && iframe) return true;
+    await sleep(120);
+  }
+  return false;
+}
 
 function resetTurnstile() {
   if (window.turnstile && typeof window.turnstile.reset === 'function') {
@@ -40,9 +55,20 @@ async function verifyTurnstileIfPresent() {
     return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.', reason: 'sitekey_missing' };
   }
 
-  const iframe = widget.querySelector('iframe');
+  let iframe = widget.querySelector('iframe');
   if (!window.turnstile || !iframe) {
-    return { ok: false, error: 'No cargó el captcha. Desactiva bloqueadores, recarga e intenta de nuevo.', reason: 'widget_not_rendered' };
+    const ready = await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
+    if (ready) {
+      iframe = widget.querySelector('iframe');
+    }
+  }
+
+  if (!window.turnstile || !iframe) {
+    return {
+      ok: false,
+      error: 'No cargó el captcha (Cloudflare). Desactiva bloqueadores/Brave Shields, recarga e intenta de nuevo.',
+      reason: 'widget_not_rendered',
+    };
   }
 
   const token = window.turnstile?.getResponse?.() || '';
