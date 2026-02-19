@@ -7,6 +7,7 @@ import { normalizeCountryRegion } from '@lib/normalization';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
 import { listUserMemberships, isAdminRole, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
 import {
+    getRoleCapabilities,
     canCreateRole,
     getCreatableRoles,
     isCountryScopedRole,
@@ -53,6 +54,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const memberships = await listUserMemberships(user.id);
 
     const effectiveRole = resolveEffectivePortalRole(creatorRole, memberships);
+    const capabilities = getRoleCapabilities(effectiveRole);
+    if (!capabilities.can_create_users) {
+        return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para crear usuarios' }), { status: 403 });
+    }
     const creatableRoles = getCreatableRoles(effectiveRole);
     if (!creatableRoles.length) {
         return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para crear usuarios' }), { status: 403 });

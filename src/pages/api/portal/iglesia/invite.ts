@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext } from '@lib/portalAccess';
-import { getRoleCapabilities, isCountryScopedRole } from '@lib/portalRbac';
+import { canInviteChurchPeople, isCountryScopedRole } from '@lib/portalRbac';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { resolveBaseUrl } from '@lib/url';
 import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
@@ -50,8 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
   }
 
-  const capabilities = getRoleCapabilities(access.role);
-  if (!capabilities.can_create_users) {
+  if (!canInviteChurchPeople(access.role)) {
     return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para invitar' }), { status: 403 });
   }
 

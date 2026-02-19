@@ -46,7 +46,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
   local_collaborator: {
     ...BASE_USER_CAPABILITIES,
     can_manage_users: true,
-    can_create_users: true,
+    can_create_users: false,
     can_register_people: true,
   },
   pastor: {
@@ -59,7 +59,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
   regional_collaborator: {
     ...BASE_USER_CAPABILITIES,
     can_manage_users: true,
-    can_create_users: true,
+    can_create_users: false,
     can_register_people: true,
   },
   regional_pastor: {
@@ -73,7 +73,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
   national_collaborator: {
     ...BASE_USER_CAPABILITIES,
     can_manage_users: true,
-    can_create_users: true,
+    can_create_users: false,
     can_register_people: true,
   },
   national_pastor: {
@@ -92,7 +92,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
   leader: {
     ...BASE_USER_CAPABILITIES,
     can_manage_users: true,
-    can_create_users: true,
+    can_create_users: false,
     can_register_people: true,
   },
   admin: {
@@ -167,12 +167,8 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
     'leader',
     'user',
   ],
-  national_collaborator: ['user'],
   regional_pastor: ['regional_collaborator', 'pastor', 'local_collaborator', 'leader', 'user'],
-  regional_collaborator: ['user'],
   pastor: ['local_collaborator', 'leader', 'user'],
-  local_collaborator: ['user'],
-  leader: ['user'],
 };
 
 export function normalizePortalRole(role?: string | null): string {
@@ -206,6 +202,11 @@ export function canManageEventScope(role?: string | null, scope?: string | null)
   return false;
 }
 
+export function canInviteChurchPeople(role?: string | null): boolean {
+  const caps = getRoleCapabilities(role);
+  return caps.can_register_people;
+}
+
 export function isCountryScopedRole(role?: string | null): boolean {
   const normalized = normalizePortalRole(role);
   return ['national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator'].includes(normalized);
@@ -228,4 +229,8 @@ export function needsCountryForRole(role?: string | null): boolean {
 export function needsChurchForRole(role?: string | null): boolean {
   const normalized = normalizePortalRole(role);
   return ['pastor', 'local_collaborator', 'leader'].includes(normalized);
+}
+
+export function needsRegionForRole(role?: string | null): boolean {
+  return isRegionalScopedRole(role);
 }
