@@ -43,6 +43,12 @@ function parseUpdatedAt(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function isFutureTimestamp(value: unknown, now: number): boolean {
+  if (!value) return false;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) && parsed > now;
+}
+
 function dedupeProfiles(rows: ProfileRow[]): ProfileRow[] {
   const byUserId = new Map<string, ProfileRow>();
   for (const row of rows) {
@@ -262,14 +268,21 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   const enrichedUsers = (users || []).map((profile: any) => {
     const email = String(profile?.email || '').toLowerCase();
     const authUser = authUsersByEmail.get(email);
+    const metadata = authUser?.user_metadata || {};
     const invitedAt = authUser?.invited_at || null;
     const emailConfirmedAt = authUser?.email_confirmed_at || null;
     const lastSignInAt = authUser?.last_sign_in_at || null;
     const bannedUntil = authUser?.banned_until || null;
-    const isBlocked = bannedUntil ? new Date(bannedUntil).getTime() > now : false;
+    const isBlocked = isFutureTimestamp(bannedUntil, now);
+    const accountDeletedAt = metadata?.account_deleted_at || null;
+    const accountDeletedBy = metadata?.account_deleted_by || null;
+    const accountDeleteReason = metadata?.account_delete_reason || null;
+    const isAccountDeleted = Boolean(accountDeletedAt && accountDeletedBy === 'self_service');
 
     let accessStatus = 'pending';
-    if (isBlocked) {
+    if (isAccountDeleted) {
+      accessStatus = 'deleted';
+    } else if (isBlocked) {
       accessStatus = 'blocked';
     } else if (!authUser) {
       accessStatus = 'unknown';
@@ -300,6 +313,10 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       email_confirmed_at: emailConfirmedAt,
       last_sign_in_at: lastSignInAt,
       is_blocked: isBlocked,
+      is_account_deleted: isAccountDeleted,
+      account_deleted_at: accountDeletedAt,
+      account_deleted_by: accountDeletedBy,
+      account_delete_reason: accountDeleteReason,
     };
   });
 

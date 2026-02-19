@@ -1,7 +1,7 @@
 # Portal RBAC Contract Matrix
 
 Fecha: 2026-02-19  
-Estado: Activo (fase 1 endurecida en backend)
+Estado: Activo (fases 1-7 aplicadas en backend + auditoria SQL)
 
 ## Objetivo
 
@@ -70,8 +70,16 @@ Este contrato se implementa principalmente en `src/lib/portalRbac.ts`.
    - `src/pages/api/portal/admin/users/create.ts`
    - `src/pages/api/portal/iglesia/invite.ts`
 
+## Cambios aplicados en fase 7 (eliminacion de cuenta)
+
+1. Endpoint de autoservicio: `src/pages/api/cuenta/eliminar.ts`.
+2. Sesiones bloqueadas para usuarios baneados en `getUserFromRequest`.
+3. Estado diferenciado `deleted` en listado de usuarios para distinguirlo de `blocked`.
+4. Guardrail: no reenviar recovery automático a cuentas eliminadas por autoservicio.
+5. Auditoria operativa: `docs/sql/portal_account_deletion_audit.sql`.
+
 ## Siguientes fases
 
 1. Unificar todos los endpoints de usuarios/eventos con este contrato.
 2. Exponer validaciones de scope en UI de admin antes de enviar.
-3. Agregar auditoria SQL automatica para drift de RBAC vs datos reales.
+3. Automatizar ejecucion periodica de auditorias SQL (RBAC y eliminación).

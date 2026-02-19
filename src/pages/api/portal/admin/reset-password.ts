@@ -26,6 +26,12 @@ function sameCountry(left?: string | null, right?: string | null): boolean {
   return normalizeCountryRegion(left || '') === normalizeCountryRegion(right || '');
 }
 
+function isFutureTimestamp(value: unknown): boolean {
+  if (!value) return false;
+  const parsed = Date.parse(String(value));
+  return Number.isFinite(parsed) && parsed > Date.now();
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
@@ -88,6 +94,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!targetProfile?.user_id) {
     return new Response(JSON.stringify({ ok: false, error: 'Usuario no encontrado' }), {
       status: 404,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const { data: authTargetData, error: authTargetError } = await supabaseAdmin.auth.admin.getUserById(targetProfile.user_id);
+  if (authTargetError) {
+    console.error('[portal.admin.reset] auth user error', authTargetError);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar usuario de acceso' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const authTarget = authTargetData?.user;
+  const targetBanned = isFutureTimestamp(authTarget?.banned_until);
+  const deletedAt = authTarget?.user_metadata?.account_deleted_at;
+  const deletedBy = authTarget?.user_metadata?.account_deleted_by;
+  const isSelfServiceDeleted = Boolean(targetBanned && deletedAt && deletedBy === 'self_service');
+  if (isSelfServiceDeleted) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Esta cuenta fue eliminada por el usuario y no puede recibir reactivación automática.',
+    }), {
+      status: 409,
       headers: { 'content-type': 'application/json' },
     });
   }

@@ -83,6 +83,7 @@ const accessStatusTranslations = {
     confirmed: 'Confirmado',
     pending: 'Pendiente',
     blocked: 'Bloqueado',
+    deleted: 'Eliminado',
     unknown: 'Sin diagnóstico',
 };
 
@@ -392,6 +393,7 @@ function statusBadgeClass(status) {
     if (status === 'invited') return 'bg-amber-100 text-amber-700';
     if (status === 'confirmed') return 'bg-cyan-100 text-cyan-700';
     if (status === 'blocked') return 'bg-rose-100 text-rose-700';
+    if (status === 'deleted') return 'bg-slate-200 text-slate-700';
     return 'bg-slate-100 text-slate-600';
 }
 
@@ -478,8 +480,11 @@ function renderRoleCell(user) {
 
 function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
     const pendingRole = pendingRoleChanges.get(user.user_id);
+    const isDeleted = user?.access_status === 'deleted' || user?.is_account_deleted === true;
     const resetButton = canSendAccessLink
-        ? `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`
+        ? (isDeleted
+            ? '<span class="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cuenta eliminada</span>'
+            : `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`)
         : '';
 
     if (!pendingRole) {
