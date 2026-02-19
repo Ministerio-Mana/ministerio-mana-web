@@ -349,6 +349,47 @@ import Sidebar from '@components/portal/Sidebar.astro';
                      </div>
                      <p id="passkey-status" class="text-xs text-center mt-2 font-medium"></p>
                   </div>
+
+                  <div id="delete-account-card" class="pt-6 border-t border-red-100 mt-2 space-y-4">
+                    <div>
+                      <h4 class="font-bold text-red-700 text-sm">Zona de peligro</h4>
+                      <p class="text-xs text-slate-600 mt-1">
+                        Esta acción desactiva tu acceso al portal y limpia tu perfil. Tus pagos y registros contables se conservan por auditoría.
+                      </p>
+                    </div>
+
+                    <div class="space-y-2">
+                      <label class="block text-[10px] font-bold text-red-700 uppercase tracking-widest ml-1">Motivo (opcional)</label>
+                      <input
+                        type="text"
+                        id="delete-account-reason"
+                        maxlength="300"
+                        class="w-full bg-red-50/40 border border-red-100 rounded-2xl px-5 py-4 text-[#293C74] focus:border-red-300 focus:ring-1 focus:ring-red-300 outline-none transition-all placeholder-slate-400"
+                        placeholder="Cuéntanos por qué quieres eliminar la cuenta"
+                      >
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="space-y-2">
+                        <label class="block text-[10px] font-bold text-red-700 uppercase tracking-widest ml-1">Escribe ELIMINAR para confirmar</label>
+                        <input
+                          type="text"
+                          id="delete-account-confirm"
+                          class="w-full bg-red-50/40 border border-red-100 rounded-2xl px-5 py-4 text-[#293C74] focus:border-red-300 focus:ring-1 focus:ring-red-300 outline-none transition-all placeholder-slate-400 uppercase"
+                          placeholder="ELIMINAR"
+                        >
+                      </div>
+                      <div class="space-y-2">
+                        <button
+                          id="btn-delete-account"
+                          class="w-full h-full mt-6 md:mt-0 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl font-bold hover:bg-red-600 hover:text-white transition-all text-sm"
+                        >
+                          Eliminar mi cuenta
+                        </button>
+                      </div>
+                    </div>
+                    <p id="delete-account-status" class="text-sm font-medium text-slate-500 min-h-[1.25rem]"></p>
+                  </div>
                </div>
             </div>
 

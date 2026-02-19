@@ -53,6 +53,11 @@ const profileAffiliation = document.getElementById('profile-affiliation');
 const profileChurchWrapper = document.getElementById('profile-church-wrapper');
 const profileChurchName = document.getElementById('profile-church-name');
 const profileStatus = document.getElementById('profile-status');
+const deleteAccountCard = document.getElementById('delete-account-card');
+const deleteAccountReasonInput = document.getElementById('delete-account-reason');
+const deleteAccountConfirmInput = document.getElementById('delete-account-confirm');
+const deleteAccountBtn = document.getElementById('btn-delete-account');
+const deleteAccountStatus = document.getElementById('delete-account-status');
 const welcomeName = document.getElementById('welcome-name');
 
 // Stats
@@ -241,6 +246,57 @@ portalConfirmOk?.addEventListener('click', () => hidePortalConfirm(true));
 portalConfirmModal?.addEventListener('click', (event) => {
   if (event.target === portalConfirmModal) hidePortalConfirm(false);
 });
+
+function setDeleteAccountState(message = '', tone = 'neutral') {
+  if (!deleteAccountStatus) return;
+  deleteAccountStatus.textContent = message;
+  deleteAccountStatus.classList.remove('text-slate-500', 'text-red-600', 'text-green-600');
+  if (tone === 'error') {
+    deleteAccountStatus.classList.add('text-red-600');
+    return;
+  }
+  if (tone === 'success') {
+    deleteAccountStatus.classList.add('text-green-600');
+    return;
+  }
+  deleteAccountStatus.classList.add('text-slate-500');
+}
+
+function syncDeleteAccountAccess() {
+  const role = String(portalProfile?.role || '').toLowerCase();
+  const isPasswordMode = authMode === 'password';
+  const isAdminRole = ['admin', 'superadmin'].includes(role);
+
+  if (deleteAccountCard) {
+    deleteAccountCard.classList.toggle('hidden', isPasswordMode);
+  }
+
+  if (!deleteAccountBtn || !deleteAccountConfirmInput || !deleteAccountReasonInput) return;
+
+  if (isPasswordMode) {
+    deleteAccountBtn.disabled = true;
+    deleteAccountBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    deleteAccountConfirmInput.disabled = true;
+    deleteAccountReasonInput.disabled = true;
+    setDeleteAccountState('No disponible en modo de sesión operativa.', 'neutral');
+    return;
+  }
+
+  if (isAdminRole) {
+    deleteAccountBtn.disabled = true;
+    deleteAccountBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    deleteAccountConfirmInput.disabled = true;
+    deleteAccountReasonInput.disabled = true;
+    setDeleteAccountState('Las cuentas administrativas se gestionan por soporte interno.', 'neutral');
+    return;
+  }
+
+  deleteAccountBtn.disabled = false;
+  deleteAccountBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  deleteAccountConfirmInput.disabled = false;
+  deleteAccountReasonInput.disabled = false;
+  setDeleteAccountState('', 'neutral');
+}
 
 let supabase = null;
 let supabaseInitError = null;
@@ -1137,6 +1193,8 @@ async function loadDashboardData(authResult) {
     backgroundTasks.push(loadChurchDraft());
 
     await Promise.all(backgroundTasks);
+
+    syncDeleteAccountAccess();
 
     if (authMode === 'password') {
       if (onboardingModal) onboardingModal.classList.add('hidden');
@@ -4337,6 +4395,65 @@ updatePasswordBtn?.addEventListener('click', async () => {
         securityStatus.textContent = '';
       }
     }, 3000);
+  }
+});
+
+deleteAccountBtn?.addEventListener('click', async () => {
+  if (!deleteAccountConfirmInput) return;
+  if (authMode === 'password') {
+    setDeleteAccountState('No disponible en modo de sesión operativa.', 'error');
+    return;
+  }
+
+  const confirmText = (deleteAccountConfirmInput.value || '').trim().toUpperCase();
+  if (confirmText !== 'ELIMINAR') {
+    setDeleteAccountState('Debes escribir ELIMINAR para continuar.', 'error');
+    return;
+  }
+
+  const confirmed = await showPortalConfirm(
+    'Esta acción desactivará tu acceso al portal y cerrará tu sesión. No se puede deshacer desde la app.',
+    {
+      title: 'Eliminar cuenta',
+      confirmLabel: 'Sí, eliminar',
+      tone: 'danger',
+    },
+  );
+  if (!confirmed) return;
+
+  const originalText = deleteAccountBtn.textContent;
+  deleteAccountBtn.textContent = 'Eliminando...';
+  deleteAccountBtn.disabled = true;
+  setDeleteAccountState('Procesando solicitud...', 'neutral');
+
+  try {
+    const reason = (deleteAccountReasonInput?.value || '').trim();
+    const res = await fetch('/api/cuenta/eliminar', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+      credentials: 'include',
+      body: JSON.stringify({ confirmText, reason }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo eliminar la cuenta');
+
+    setDeleteAccountState('Cuenta eliminada. Cerrando sesión...', 'success');
+
+    try {
+      if (supabase) {
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+      await fetch('/api/portal/password-logout', { method: 'POST', credentials: 'include' });
+    } catch (cleanupErr) {
+      console.error('[delete.account] cleanup error', cleanupErr);
+    }
+
+    window.location.href = '/portal/ingresar?account_deleted=1';
+  } catch (err) {
+    console.error(err);
+    setDeleteAccountState(err.message || 'No se pudo eliminar la cuenta.', 'error');
+    deleteAccountBtn.textContent = originalText;
+    deleteAccountBtn.disabled = false;
   }
 });
 
