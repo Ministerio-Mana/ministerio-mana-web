@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const identifier = clampText(body?.identifier || 'portal.client.error', 120) || 'portal.client.error';
   const meta = sanitizeMeta(body?.meta);
 
-  void logSecurityEvent({
+  await logSecurityEvent({
     type: 'maintenance',
     identifier,
     ip: clientAddress,

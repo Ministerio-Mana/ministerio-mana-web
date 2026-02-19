@@ -33,11 +33,21 @@ function resetTurnstile() {
 
 async function verifyTurnstileIfPresent() {
   const widget = document.querySelector('.cf-turnstile');
-  if (!widget) return { ok: true, bypass: true, token: '' };
+  if (!widget) return { ok: true, bypass: true, token: '', reason: 'widget_absent' };
+
+  const siteKey = widget.getAttribute('data-sitekey');
+  if (!siteKey) {
+    return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.', reason: 'sitekey_missing' };
+  }
+
+  const iframe = widget.querySelector('iframe');
+  if (!window.turnstile || !iframe) {
+    return { ok: false, error: 'No cargó el captcha. Desactiva bloqueadores, recarga e intenta de nuevo.', reason: 'widget_not_rendered' };
+  }
 
   const token = window.turnstile?.getResponse?.() || '';
   if (!token) {
-    return { ok: false, error: 'Completa la verificación antes de continuar.' };
+    return { ok: false, error: 'Completa la verificación antes de continuar.', reason: 'token_missing' };
   }
 
   try {
@@ -50,10 +60,10 @@ async function verifyTurnstileIfPresent() {
     if (!res.ok || !data?.ok) {
       return { ok: false, error: data?.error || 'Captcha inválido. Intenta de nuevo.' };
     }
-    return { ok: true, token };
+    return { ok: true, token, reason: 'ok' };
   } catch (err) {
     console.error(err);
-    return { ok: false, error: 'No pudimos validar el captcha. Intenta de nuevo.' };
+    return { ok: false, error: 'No pudimos validar el captcha. Intenta de nuevo.', reason: 'verify_failed' };
   }
 }
 
@@ -413,6 +423,11 @@ form?.addEventListener('submit', async (event) => {
 
   const captcha = await verifyTurnstileIfPresent();
   if (!captcha.ok) {
+    void reportActivationIssue('activation captcha blocked', {
+      stage: 'submit',
+      reason: captcha?.reason || 'unknown',
+      error: captcha?.error || null,
+    });
     showStatus(captcha.error || 'Captcha inválido.', 'error');
     resetTurnstile();
     return;

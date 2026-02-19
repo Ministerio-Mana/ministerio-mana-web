@@ -44,14 +44,14 @@ function getTurnstileTokenIfRequired() {
   const widget = document.querySelector('.cf-turnstile');
 
   // If no widget in HTML, it's not enabled
-  if (!widget) return { ok: true, bypass: true, token: '' };
+  if (!widget) return { ok: true, bypass: true, token: '', reason: 'widget_absent' };
 
   // If widget exists but has no data-sitekey, it wasn't configured properly (env var missing)
   // In this case, bypass the check instead of blocking the user
   const siteKey = widget.getAttribute('data-sitekey');
   if (!siteKey) {
     console.warn('[Turnstile] Widget rendered without site key.');
-    return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.' };
+    return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.', reason: 'sitekey_missing' };
   }
 
   // If widget has key but did not render, do NOT bypass.
@@ -59,16 +59,16 @@ function getTurnstileTokenIfRequired() {
   const iframe = widget.querySelector('iframe');
   if (!window.turnstile || !iframe) {
     console.warn('[Turnstile] Widget has site key but failed to render.');
-    return { ok: false, error: 'No cargó el captcha. Desactiva bloqueadores, recarga e intenta de nuevo.' };
+    return { ok: false, error: 'No cargó el captcha. Desactiva bloqueadores, recarga e intenta de nuevo.', reason: 'widget_not_rendered' };
   }
 
   // Widget is configured AND rendered, so validation is required
   const token = window.turnstile?.getResponse?.() || '';
   if (!token) {
-    return { ok: false, error: 'Completa la verificación antes de continuar.' };
+    return { ok: false, error: 'Completa la verificación antes de continuar.', reason: 'token_missing' };
   }
 
-  return { ok: true, token };
+  return { ok: true, token, reason: 'ok' };
 }
 
 async function verifyTurnstileToken(token) {
@@ -164,6 +164,19 @@ async function reportPortalLoginError(identifier, err, meta = {}) {
   }
 }
 
+function reportCaptchaGuardBlock(context, captcha = {}) {
+  void reportPortalLoginError(
+    'portal.ingresar.captcha.blocked',
+    new Error(captcha?.error || 'Captcha guard blocked request'),
+    {
+      context,
+      reason: captcha?.reason || 'unknown',
+      hasBypass: Boolean(captcha?.bypass),
+      hasToken: Boolean(captcha?.token),
+    },
+  );
+}
+
 function buildSupabasePasswordPayload(email, password, captcha = {}) {
   const payload = { email, password };
   if (captcha?.token && !captcha?.bypass) {
@@ -180,6 +193,7 @@ async function startOAuth(provider, label, btn) {
 
   const captcha = getTurnstileTokenIfRequired();
   if (!captcha.ok) {
+    reportCaptchaGuardBlock(`oauth:${provider}`, captcha);
     showStatus(captcha.error || 'Captcha inválido.', 'error');
     resetTurnstile();
     return;
@@ -268,6 +282,7 @@ magicForm?.addEventListener('submit', async (e) => {
 
   const captcha = getTurnstileTokenIfRequired();
   if (!captcha.ok) {
+    reportCaptchaGuardBlock('recovery-link', captcha);
     showStatus(captcha.error || 'Captcha inválido.', 'error');
     resetTurnstile();
     return;
@@ -311,6 +326,7 @@ passwordForm?.addEventListener('submit', async (e) => {
 
   const captcha = getTurnstileTokenIfRequired();
   if (!captcha.ok) {
+    reportCaptchaGuardBlock('password-login', captcha);
     showStatus(captcha.error || 'Captcha inválido.', 'error');
     resetTurnstile();
     return;
@@ -387,6 +403,7 @@ passkeyBtn?.addEventListener('click', async () => {
   try {
     const captcha = getTurnstileTokenIfRequired();
     if (!captcha.ok) {
+      reportCaptchaGuardBlock('passkey-login', captcha);
       showStatus(captcha.error || 'Captcha inválido.', 'error');
       resetTurnstile();
       return;
