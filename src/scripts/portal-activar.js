@@ -473,11 +473,14 @@ form?.addEventListener('submit', async (event) => {
     console.log('[Activar] Session check:', sessionCheck);
 
     if (!sessionCheck.ok) {
-      await validateRecoveryLink();
-      showStatus('Sesión no válida. Solicita un enlace nuevo si el problema persiste.', 'error');
-      showRetry(true);
-      setFormDisabled(false);
-      return;
+      const recovered = await validateRecoveryLink();
+      if (!recovered) {
+        showStatus('Sesión no válida. Solicita un enlace nuevo si el problema persiste.', 'error');
+        showRetry(true);
+        setFormDisabled(false);
+        resetTurnstile();
+        return;
+      }
     }
 
     console.log('[Activar] Calling updateUser...');
