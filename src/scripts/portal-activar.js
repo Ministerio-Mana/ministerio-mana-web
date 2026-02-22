@@ -33,11 +33,19 @@ function sleep(ms) {
 async function waitForTurnstileReady(widget, timeoutMs = TURNSTILE_RENDER_WAIT_MS) {
   const startedAt = Date.now();
   while (Date.now() - startedAt <= timeoutMs) {
-    const iframe = widget?.querySelector?.('iframe');
-    if (window.turnstile && iframe) return true;
+    if (window.turnstile || readTurnstileTokenField(widget)) return true;
     await sleep(120);
   }
   return false;
+}
+
+function readTurnstileTokenField(widget) {
+  const selectors = 'input[name="cf-turnstile-response"], textarea[name="cf-turnstile-response"]';
+  const inWidget = widget?.querySelector?.(selectors);
+  if (inWidget?.value) return String(inWidget.value).trim();
+  const inDocument = document.querySelector(selectors);
+  if (inDocument?.value) return String(inDocument.value).trim();
+  return '';
 }
 
 function resetTurnstile() {
@@ -55,15 +63,11 @@ async function verifyTurnstileIfPresent() {
     return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.', reason: 'sitekey_missing' };
   }
 
-  let iframe = widget.querySelector('iframe');
-  if (!window.turnstile || !iframe) {
-    const ready = await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
-    if (ready) {
-      iframe = widget.querySelector('iframe');
-    }
+  if (!window.turnstile && !readTurnstileTokenField(widget)) {
+    await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
   }
 
-  if (!window.turnstile || !iframe) {
+  if (!window.turnstile && !readTurnstileTokenField(widget)) {
     return {
       ok: false,
       error: 'No cargó el captcha (Cloudflare). Desactiva bloqueadores/Brave Shields, recarga e intenta de nuevo.',
@@ -71,7 +75,7 @@ async function verifyTurnstileIfPresent() {
     };
   }
 
-  const token = window.turnstile?.getResponse?.() || '';
+  const token = (window.turnstile?.getResponse?.() || readTurnstileTokenField(widget) || '').trim();
   if (!token) {
     return { ok: false, error: 'Completa la verificación antes de continuar.', reason: 'token_missing' };
   }
