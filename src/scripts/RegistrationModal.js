@@ -18,6 +18,9 @@ export class RegistrationModal {
         this.editBookingId = null;
         this.editPaymentId = null;
         this.canEditPayment = true;
+        this.canDeleteBooking = false;
+        this.paymentSummary = null;
+        this.manualPayments = [];
         this.defaultModalTitle = 'Registrar Participante';
         this.defaultModalSubtitle = 'Nueva Inscripción';
         this.defaultSubmitLabel = 'Registrar Grupo';
@@ -120,10 +123,18 @@ export class RegistrationModal {
         this.depositDeadlineLabel = document.getElementById('deposit-deadline-label');
         this.currencySelect = document.getElementById('reg-currency');
         this.paymentAmountField = document.getElementById('manual-payment-amount-field');
+        this.paymentAmountLabel = document.getElementById('manual-payment-amount-label');
         this.paymentAmountInput = document.getElementById('manual-payment-amount');
         this.paymentAmountHint = document.getElementById('manual-payment-hint');
         this.paymentCustomToggle = document.getElementById('manual-payment-custom-toggle');
         this.paymentLockedHint = document.getElementById('manual-payment-locked-hint');
+        this.paymentSummaryBox = document.getElementById('manual-payment-summary');
+        this.summaryTotalAmount = document.getElementById('manual-summary-total-amount');
+        this.summaryTotalPaid = document.getElementById('manual-summary-total-paid');
+        this.summaryRemaining = document.getElementById('manual-summary-remaining');
+        this.manualPaymentsHistorySection = document.getElementById('manual-payments-history-section');
+        this.manualPaymentsHistoryList = document.getElementById('manual-payments-history-list');
+        this.manualPaymentsHistoryEmpty = document.getElementById('manual-payments-history-empty');
 
         // Church selector
         this.btnOpenChurchSelector = document.getElementById('btn-open-church-selector');
@@ -134,6 +145,8 @@ export class RegistrationModal {
 
         // Status
         this.statusMsg = document.getElementById('manual-reg-status');
+        this.deleteBookingBtn = document.getElementById('btn-delete-manual-booking');
+        this.deleteBookingHint = document.getElementById('manual-delete-hint');
 
         // Alert Modal
         this.alertModal = document.getElementById('custom-alert-modal');
@@ -282,6 +295,7 @@ export class RegistrationModal {
 
         // Form submission
         this.form?.addEventListener('submit', (e) => this.handleSubmit(e));
+        this.deleteBookingBtn?.addEventListener('click', () => this.handleDeleteBooking());
     }
 
     // --- Alert System ---
@@ -328,11 +342,14 @@ export class RegistrationModal {
         if (this.submitBtn) {
             this.submitBtn.textContent = isEditing ? 'Guardar Cambios' : this.defaultSubmitLabel;
         }
+        if (this.paymentAmountLabel) {
+            this.paymentAmountLabel.textContent = isEditing ? 'Abono recibido hoy (opcional)' : 'Valor pagado hoy';
+        }
         if (this.paymentCustomToggle) {
             if (isEditing) {
                 this.paymentCustomToggle.checked = true;
                 this.paymentCustomToggle.disabled = true;
-                this.paymentAmountTouched = true;
+                this.paymentAmountTouched = false;
             } else {
                 this.paymentCustomToggle.disabled = false;
             }
@@ -853,6 +870,12 @@ export class RegistrationModal {
             this.paymentAmountHint.textContent = 'Pago online: gestionado automáticamente';
             return;
         }
+        if (this.isEditMode && this.canEditPayment) {
+            const paid = Number(this.paymentSummary?.total_paid || 0);
+            const remaining = Math.max(this.getTotal() - paid, 0);
+            this.paymentAmountHint.textContent = `Ingresa solo el nuevo abono. Pendiente: ${this.formatPrice(remaining)}`;
+            return;
+        }
         const suggested = this.getDefaultPaymentAmount();
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
         const label = customEnabled ? 'Sugerido' : 'Automático';
@@ -879,7 +902,7 @@ export class RegistrationModal {
             const defaultAmount = this.getDefaultPaymentAmount();
             this.paymentAmountInput.value = defaultAmount ? this.formatInputAmount(defaultAmount) : '';
             if (force) this.paymentAmountTouched = false;
-        } else if (customEnabled && force && !this.paymentAmountInput.value) {
+        } else if (!this.isEditMode && customEnabled && force && !this.paymentAmountInput.value) {
             const defaultAmount = this.getDefaultPaymentAmount();
             this.paymentAmountInput.value = defaultAmount ? this.formatInputAmount(defaultAmount) : '';
         }
@@ -916,6 +939,81 @@ export class RegistrationModal {
 
         this.updateInstallmentPreview();
         this.syncPaymentAmount();
+        this.updatePaymentSummaryUI();
+    }
+
+    formatDateTime(value) {
+        if (!value) return 'Sin fecha';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Sin fecha';
+        return date.toLocaleString('es-CO', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    }
+
+    updatePaymentSummaryUI() {
+        if (!this.paymentSummaryBox) return;
+        const hasSummary = Boolean(this.isEditMode && this.paymentSummary);
+        this.paymentSummaryBox.classList.toggle('hidden', !hasSummary);
+        if (!hasSummary) return;
+
+        const totalAmount = this.isEditMode
+            ? this.getTotal()
+            : Number(this.paymentSummary?.total_amount || 0);
+        const totalPaid = Number(this.paymentSummary?.total_paid || 0);
+        const remaining = Math.max(totalAmount - totalPaid, 0);
+
+        this.paymentSummary.total_amount = totalAmount;
+        this.paymentSummary.remaining_amount = remaining;
+
+        if (this.summaryTotalAmount) this.summaryTotalAmount.textContent = this.formatPrice(totalAmount);
+        if (this.summaryTotalPaid) this.summaryTotalPaid.textContent = this.formatPrice(totalPaid);
+        if (this.summaryRemaining) this.summaryRemaining.textContent = this.formatPrice(remaining);
+    }
+
+    renderManualPaymentsHistory() {
+        if (!this.manualPaymentsHistorySection || !this.manualPaymentsHistoryList || !this.manualPaymentsHistoryEmpty) return;
+        const hasEditMode = Boolean(this.isEditMode);
+        this.manualPaymentsHistorySection.classList.toggle('hidden', !hasEditMode);
+        if (!hasEditMode) return;
+
+        const payments = Array.isArray(this.manualPayments) ? this.manualPayments : [];
+        if (!payments.length) {
+            this.manualPaymentsHistoryList.innerHTML = '';
+            this.manualPaymentsHistoryEmpty.classList.remove('hidden');
+            return;
+        }
+
+        this.manualPaymentsHistoryEmpty.classList.add('hidden');
+        this.manualPaymentsHistoryList.innerHTML = payments.map((payment) => {
+            const amount = Number(payment.amount || 0);
+            const reference = (payment.reference || '').toString().trim() || 'sin referencia';
+            const createdAt = this.formatDateTime(payment.created_at);
+            return `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-xs font-bold text-[#293C74] truncate">${reference}</p>
+                    <p class="text-[11px] text-slate-500">${createdAt}</p>
+                  </div>
+                  <p class="text-sm font-bold text-emerald-700 whitespace-nowrap">${this.formatPrice(amount)}</p>
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateDeleteBookingUI() {
+        const canShowDelete = Boolean(this.isEditMode && this.canDeleteBooking && this.editBookingId);
+        if (this.deleteBookingBtn) {
+            this.deleteBookingBtn.classList.toggle('hidden', !canShowDelete);
+        }
+        if (this.deleteBookingHint) {
+            const showHint = Boolean(this.isEditMode && !this.canDeleteBooking);
+            this.deleteBookingHint.classList.toggle('hidden', !showHint);
+        }
     }
 
     // Payment UI
@@ -924,6 +1022,10 @@ export class RegistrationModal {
         const previousScroll = scrollContainer ? scrollContainer.scrollTop : 0;
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
         const lockPaymentEdition = this.isEditMode && !this.canEditPayment;
+
+        this.updatePaymentSummaryUI();
+        this.renderManualPaymentsHistory();
+        this.updateDeleteBookingUI();
 
         if (this.paymentOptionsContainer) {
             if (this.isEditMode || lockPaymentEdition) {
@@ -1070,7 +1172,7 @@ export class RegistrationModal {
         const totalAmount = this.getTotal();
         const paymentAmount = this.parsePaymentAmount();
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
-        if (customEnabled && paymentAmount == null) {
+        if (customEnabled && paymentAmount == null && !this.isEditMode) {
             this.showAlert('Ingresa el valor pagado hoy para el aporte libre');
             return;
         }
@@ -1079,8 +1181,12 @@ export class RegistrationModal {
                 this.showAlert('El monto pagado no puede ser negativo');
                 return;
             }
-            if (paymentAmount > totalAmount) {
-                this.showAlert('El monto pagado no puede superar el total');
+            const paidFromSummary = Number(this.paymentSummary?.total_paid || 0);
+            const maxPayable = this.isEditMode
+                ? Math.max(totalAmount - paidFromSummary, 0)
+                : totalAmount;
+            if (paymentAmount > maxPayable) {
+                this.showAlert(`El monto pagado no puede superar ${this.formatPrice(maxPayable)}`);
                 return;
             }
         }
@@ -1145,6 +1251,71 @@ export class RegistrationModal {
         } catch (error) {
             console.error('Registration error:', error);
             this.showAlert(`${this.isEditMode ? 'Error al actualizar' : 'Error al registrar'}: ${error.message}`);
+            if (this.statusMsg) {
+                this.statusMsg.textContent = `Error: ${error.message}`;
+                this.statusMsg.className = 'mt-4 text-sm text-center text-red-400';
+            }
+        }
+    }
+
+    async handleDeleteBooking() {
+        if (!this.isEditMode || !this.editBookingId) {
+            this.showAlert('No hay una reserva seleccionada para eliminar');
+            return;
+        }
+        if (!this.canDeleteBooking) {
+            this.showAlert('Este registro no se puede eliminar desde aquí. Si tiene pagos online, requiere revisión y devolución.');
+            return;
+        }
+
+        const bookingCode = String(this.editBookingId).slice(0, 8).toUpperCase();
+        const firstConfirm = window.confirm('Esta acción eliminará el registro manual y sus participantes. ¿Deseas continuar?');
+        if (!firstConfirm) return;
+
+        const typedCode = window.prompt(`Para confirmar, escribe el código ${bookingCode}`);
+        if ((typedCode || '').trim().toUpperCase() !== bookingCode) {
+            this.showAlert('Confirmación cancelada. El código no coincide.');
+            return;
+        }
+
+        if (this.statusMsg) {
+            this.statusMsg.textContent = 'Eliminando registro manual...';
+            this.statusMsg.className = 'mt-4 text-sm text-center text-amber-200 font-semibold';
+        }
+
+        try {
+            const authHeaders = (typeof window.getPortalAuthHeaders === 'function')
+                ? await window.getPortalAuthHeaders()
+                : ((window.portalAuthHeaders && Object.keys(window.portalAuthHeaders).length)
+                    ? window.portalAuthHeaders
+                    : {});
+
+            const response = await fetch('/api/portal/iglesia/booking', {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...authHeaders,
+                },
+                body: JSON.stringify({ booking_id: this.editBookingId }),
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result?.ok) {
+                throw new Error(result?.error || 'No se pudo eliminar la reserva');
+            }
+
+            this.showAlert('Registro manual eliminado correctamente', 'success', 'Eliminación Exitosa');
+            if (this.statusMsg) {
+                this.statusMsg.textContent = '✓ Registro manual eliminado';
+                this.statusMsg.className = 'mt-4 text-sm text-center text-green-400 font-bold';
+            }
+            setTimeout(() => {
+                this.close();
+                window.location.reload();
+            }, 1500);
+        } catch (error) {
+            this.showAlert(`Error al eliminar: ${error.message}`);
             if (this.statusMsg) {
                 this.statusMsg.textContent = `Error: ${error.message}`;
                 this.statusMsg.className = 'mt-4 text-sm text-center text-red-400';
@@ -1224,6 +1395,9 @@ export class RegistrationModal {
         this.editBookingId = payload.booking.id || null;
         this.editPaymentId = payload.payment?.id || null;
         this.canEditPayment = payload?.permissions?.can_edit_payment !== false;
+        this.canDeleteBooking = payload?.permissions?.can_delete_booking === true;
+        this.paymentSummary = payload?.payment_summary || null;
+        this.manualPayments = Array.isArray(payload?.manual_payments) ? payload.manual_payments : [];
         const bookingRef = (payload.booking.id || '').slice(0, 8).toUpperCase();
         this.setModalMode(true, bookingRef);
 
@@ -1295,13 +1469,20 @@ export class RegistrationModal {
         if (this.countryInput) this.countryInput.value = booking.contact_country || '';
         if (this.cityInput) this.cityInput.value = booking.contact_city || '';
 
-        const paidAmount = payload.payment?.amount ?? booking.total_paid ?? null;
         if (this.paymentAmountInput) {
-            this.paymentAmountInput.value = paidAmount != null ? this.formatInputAmount(Number(paidAmount)) : '';
+            if (this.canEditPayment) {
+                this.paymentAmountInput.value = '';
+                this.paymentAmountInput.placeholder = 'Nuevo abono';
+            } else {
+                const paidAmount = payload?.payment_summary?.total_paid ?? payload.payment?.amount ?? booking.total_paid ?? null;
+                this.paymentAmountInput.value = paidAmount != null ? this.formatInputAmount(Number(paidAmount)) : '';
+                this.paymentAmountInput.placeholder = 'Pago gestionado por pasarela';
+            }
         }
-        this.paymentAmountTouched = true;
+        this.paymentAmountTouched = false;
 
         this.updateLeaderParticipant();
+        this.updatePaymentUI();
         this.open();
     }
 
@@ -1335,6 +1516,9 @@ export class RegistrationModal {
         this.editPaymentId = null;
         this.isEditMode = false;
         this.canEditPayment = true;
+        this.canDeleteBooking = false;
+        this.paymentSummary = null;
+        this.manualPayments = [];
         this.form?.reset();
 
         // Reset menus
@@ -1349,6 +1533,9 @@ export class RegistrationModal {
         this.renderParticipants();
         this.updateSummary();
         if (this.statusMsg) this.statusMsg.textContent = '';
+        if (this.paymentAmountInput) {
+            this.paymentAmountInput.placeholder = '0';
+        }
         if (this.selectedChurchDisplay) {
             this.selectedChurchDisplay.textContent = 'Seleccionar iglesia...';
             this.selectedChurchDisplay.classList.add('text-slate-400');

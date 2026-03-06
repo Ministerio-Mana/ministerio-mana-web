@@ -100,6 +100,53 @@ function canEditManualPayment(booking: any): boolean {
     || paymentMethod === 'cash';
 }
 
+function isManualProvider(rawProvider: unknown): boolean {
+  const provider = String(rawProvider || '').trim().toLowerCase();
+  return provider === 'manual' || provider === 'cash' || provider === 'physical';
+}
+
+async function hasOnlinePaymentSignals(bookingId: string): Promise<boolean> {
+  if (!supabaseAdmin) return true;
+
+  const { data: payments, error: paymentsError } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('id, provider')
+    .eq('booking_id', bookingId)
+    .limit(200);
+  if (paymentsError) {
+    console.error('[portal.iglesia.booking] online-check payments error', paymentsError);
+    return true;
+  }
+
+  const hasNonManualPayments = (payments || []).some((payment) => !isManualProvider(payment.provider));
+  if (hasNonManualPayments) return true;
+
+  const { data: plans, error: plansError } = await supabaseAdmin
+    .from('cumbre_payment_plans')
+    .select('id, provider')
+    .eq('booking_id', bookingId)
+    .limit(50);
+  if (plansError) {
+    console.error('[portal.iglesia.booking] online-check plans error', plansError);
+    return true;
+  }
+
+  const hasNonManualPlans = (plans || []).some((plan) => !isManualProvider(plan.provider));
+  if (hasNonManualPlans) return true;
+
+  const { data: donations, error: donationsError } = await supabaseAdmin
+    .from('donations')
+    .select('id, provider')
+    .eq('cumbre_booking_id', bookingId)
+    .limit(200);
+  if (donationsError) {
+    console.error('[portal.iglesia.booking] online-check donations error', donationsError);
+    return true;
+  }
+
+  return (donations || []).some((donation) => !isManualProvider(donation.provider));
+}
+
 async function getAccessContext(request: Request) {
   const access = await getPortalChurchAccessContext(request);
   return {
@@ -274,6 +321,12 @@ export const GET: APIRoute = async ({ request }) => {
     .select('id, full_name, package_type, relationship, document_type, document_number, birthdate, gender, diet_type, email')
     .eq('booking_id', bookingId);
 
+  const { data: approvedPayments } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('amount')
+    .eq('booking_id', bookingId)
+    .eq('status', 'APPROVED');
+
   const { data: payment } = await supabaseAdmin
     .from('cumbre_payments')
     .select('id, amount, currency, reference, created_at')
@@ -284,14 +337,35 @@ export const GET: APIRoute = async ({ request }) => {
     .limit(1)
     .maybeSingle();
 
+  const { data: manualPayments } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('id, amount, currency, reference, created_at')
+    .eq('booking_id', bookingId)
+    .eq('provider', 'manual')
+    .eq('status', 'APPROVED')
+    .order('created_at', { ascending: false })
+    .limit(12);
+
+  const totalPaid = (approvedPayments || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalAmount = Number(booking.total_amount || 0);
+  const remainingAmount = Math.max(totalAmount - totalPaid, 0);
+  const hasOnlineSignals = await hasOnlinePaymentSignals(bookingId);
+
   return new Response(JSON.stringify({
     ok: true,
     booking,
     participants: participants || [],
     payment: payment || null,
+    manual_payments: manualPayments || [],
+    payment_summary: {
+      total_amount: totalAmount,
+      total_paid: totalPaid,
+      remaining_amount: remainingAmount,
+    },
     permissions: {
       can_edit_profile: true,
       can_edit_payment: canEditManualPayment(booking),
+      can_delete_booking: canEditManualPayment(booking) && !hasOnlineSignals,
     },
   }), {
     status: 200,
@@ -562,13 +636,20 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const totalAmount = calculateTotals(currency, participants.map((p) => p.safe));
   const threshold = depositThreshold(totalAmount);
+  const { data: approvedPaymentsBefore } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('amount')
+    .eq('booking_id', bookingId)
+    .eq('status', 'APPROVED');
+  const alreadyPaidAmount = (approvedPaymentsBefore || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const remainingBeforePayment = Math.max(totalAmount - alreadyPaidAmount, 0);
 
   if (paymentAmountInput != null) {
     if (paymentAmountInput < 0) {
       return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede ser negativo' }), { status: 400 });
     }
-    if (paymentAmountInput > totalAmount) {
-      return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede superar el total' }), { status: 400 });
+    if (paymentAmountInput > remainingBeforePayment) {
+      return new Response(JSON.stringify({ ok: false, error: 'El abono supera el saldo pendiente actual' }), { status: 400 });
     }
   }
 
@@ -627,82 +708,12 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   let paymentUpdated = false;
-  const paymentId = String(body.payment_id || body.paymentId || '').trim();
-  let paymentRow: { id?: string | null; reference?: string | null } | null = null;
-  if (paymentId) {
-    const { data } = await supabaseAdmin
-      .from('cumbre_payments')
-      .select('id, reference')
-      .eq('id', paymentId)
-      .eq('booking_id', bookingId)
-      .maybeSingle();
-    paymentRow = data ?? null;
-    if (!paymentRow?.id) {
-      return new Response(JSON.stringify({ ok: false, error: 'Pago manual no encontrado' }), { status: 404 });
-    }
-  }
 
   if (paymentAmountInput != null && canEditPayment) {
-    if (!paymentRow?.id) {
-      const { data } = await supabaseAdmin
-        .from('cumbre_payments')
-        .select('id, reference')
-        .eq('booking_id', bookingId)
-        .eq('provider', 'manual')
-        .eq('status', 'APPROVED')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      paymentRow = data ?? null;
-    }
-
-    if (paymentRow?.id) {
-      const now = new Date().toISOString();
-      let updated = null as Array<{ id: string; reference: string | null }> | null;
-      let updateError = null as any;
-      const updatePayload: Record<string, unknown> = {
-        amount: paymentAmountInput,
-        currency,
-        updated_at: now,
-      };
-
-      ({ data: updated, error: updateError } = await supabaseAdmin
-        .from('cumbre_payments')
-        .update(updatePayload)
-        .eq('id', paymentRow.id)
-        .select('id, reference'));
-
-      if (updateError && (updateError.code === 'PGRST204' || /schema cache|updated_at/i.test(updateError.message || ''))) {
-        delete updatePayload.updated_at;
-        ({ data: updated, error: updateError } = await supabaseAdmin
-          .from('cumbre_payments')
-          .update(updatePayload)
-          .eq('id', paymentRow.id)
-          .select('id, reference'));
-      }
-
-      if (updateError) {
-        console.error('[portal.iglesia.booking] payment update error', updateError);
-        return new Response(JSON.stringify({ ok: false, error: 'No se pudo actualizar el pago' }), { status: 500 });
-      }
-
-      const updatedReference = updated?.[0]?.reference || paymentRow.reference;
-      if (updatedReference) {
-        await supabaseAdmin
-          .from('donations')
-          .update({
-            amount: paymentAmountInput,
-            currency,
-            updated_at: now,
-          })
-          .eq('reference', updatedReference)
-          .eq('provider', 'physical');
-      }
-      paymentUpdated = true;
-    } else if (paymentAmountInput > 0) {
+    if (paymentAmountInput > 0) {
       const paymentIndex = (await countPayments(bookingId)) + 1;
       const reference = buildPaymentReference(bookingId, paymentIndex);
-      await supabaseAdmin
+      const { error: paymentInsertError } = await supabaseAdmin
         .from('cumbre_payments')
         .insert({
           booking_id: bookingId,
@@ -714,6 +725,10 @@ export const PUT: APIRoute = async ({ request }) => {
           status: 'APPROVED',
           raw_event: { source: 'portal-iglesia-edit', method: 'manual' },
         });
+      if (paymentInsertError) {
+        console.error('[portal.iglesia.booking] payment insert error', paymentInsertError);
+        return new Response(JSON.stringify({ ok: false, error: 'No se pudo registrar el abono manual' }), { status: 500 });
+      }
 
       await createDonation({
         provider: 'physical',
@@ -766,6 +781,105 @@ export const PUT: APIRoute = async ({ request }) => {
   await recomputeBookingTotals(bookingId);
 
   return new Response(JSON.stringify({ ok: true, payment_updated: paymentUpdated }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
+};
+
+export const DELETE: APIRoute = async ({ request }) => {
+  if (!supabaseAdmin) {
+    return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const url = new URL(request.url);
+  const body = await request.json().catch(() => null);
+  const bookingId = String(body?.booking_id || body?.bookingId || url.searchParams.get('bookingId') || '').trim();
+  if (!bookingId) {
+    return new Response(JSON.stringify({ ok: false, error: 'bookingId requerido' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const ctx = await getAccessContext(request);
+  if (!ctx.ok) {
+    const denied = mapPortalAccessError(ctx.reason);
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const { data: booking, error: bookingError } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .select('id, church_id, contact_country, source, payment_method')
+    .eq('id', bookingId)
+    .maybeSingle();
+
+  if (bookingError || !booking) {
+    return new Response(JSON.stringify({ ok: false, error: 'Reserva no encontrada' }), {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const allowed = await isBookingAllowed(booking, ctx);
+  if (!allowed) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  if (!canEditManualPayment(booking)) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Solo se pueden eliminar registros manuales. Los pagos online requieren revisión y devolución.',
+    }), {
+      status: 409,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const hasOnlineSignals = await hasOnlinePaymentSignals(bookingId);
+  if (hasOnlineSignals) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Este registro tiene trazas de pago online. Gestiona revisión/reembolso antes de eliminar.',
+    }), {
+      status: 409,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const { error: donationsDeleteError } = await supabaseAdmin
+    .from('donations')
+    .delete()
+    .eq('cumbre_booking_id', bookingId);
+  if (donationsDeleteError) {
+    console.error('[portal.iglesia.booking] delete donations error', donationsDeleteError);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo limpiar donaciones de la reserva' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const { error: bookingDeleteError } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .delete()
+    .eq('id', bookingId);
+  if (bookingDeleteError) {
+    console.error('[portal.iglesia.booking] delete booking error', bookingDeleteError);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo eliminar la reserva manual' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  return new Response(JSON.stringify({ ok: true, deleted: true }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   });
