@@ -11,6 +11,11 @@ const emptyEl = document.getElementById('users-empty');
 const searchInput = document.getElementById('users-search');
 const roleFilter = document.getElementById('users-role-filter');
 const statusFilter = document.getElementById('users-status-filter');
+const countryFilter = document.getElementById('users-country-filter');
+const cityFilter = document.getElementById('users-city-filter');
+const scopeFilter = document.getElementById('users-scope-filter');
+const clearFiltersBtn = document.getElementById('users-clear-filters');
+const usersSummaryEl = document.getElementById('users-summary');
 const countEl = document.getElementById('users-count');
 
 // Modal Elements
@@ -36,6 +41,7 @@ const navLinkFinances = document.getElementById('nav-link-finances');
 const navLinkRegions = document.getElementById('nav-link-regions');
 
 let currentUserRole = 'user';
+let currentUserId = '';
 let currentUserCountry = '';
 let currentUserRegionId = '';
 let currentUserChurchId = '';
@@ -87,6 +93,17 @@ const accessStatusTranslations = {
     unknown: 'Sin diagnóstico',
 };
 
+const summaryStatusOrder = ['all', 'active', 'invited', 'pending', 'blocked', 'deleted'];
+
+const scopeCategoryLabels = {
+    global: 'Global',
+    national: 'Nacional',
+    regional: 'Regional',
+    church: 'Iglesia',
+    campus: 'Campus',
+    assistant: 'Asistente',
+};
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -98,6 +115,62 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
     return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function normalizeSearchText(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+}
+
+function getUserCountry(user) {
+    return String(user?.church?.country || user?.country || '').trim();
+}
+
+function getUserCity(user) {
+    return String(user?.church?.city || user?.city || '').trim();
+}
+
+function getScopeCategory(user) {
+    const role = String(user?.role || 'user');
+    if (role === 'superadmin' || role === 'admin') return 'global';
+    if (role === 'national_pastor' || role === 'national_collaborator') return 'national';
+    if (role === 'regional_pastor' || role === 'regional_collaborator') return 'regional';
+    if (role === 'pastor' || role === 'local_collaborator' || role === 'leader') return 'church';
+    if (role === 'campus_missionary') return 'campus';
+    return 'assistant';
+}
+
+function getSearchableUserText(user) {
+    const role = String(user?.role || '');
+    const roleLabel = roleTranslations[role] || role;
+    const country = getUserCountry(user);
+    const city = getUserCity(user);
+    const churchName = String(user?.church?.name || user?.church_name || '');
+    const regionName = String(user?.region?.name || '');
+    const regionCode = String(user?.region?.code || '');
+    const status = String(user?.access_status || '');
+    const statusLabel = accessStatusTranslations[status] || status;
+    const scopeLabel = getScopeLabel(user);
+    const scopeCategory = scopeCategoryLabels[getScopeCategory(user)] || '';
+    const name = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    return normalizeSearchText([
+        name,
+        user?.email || '',
+        role,
+        roleLabel,
+        country,
+        city,
+        churchName,
+        regionName,
+        regionCode,
+        status,
+        statusLabel,
+        scopeLabel,
+        scopeCategory,
+    ].join(' '));
 }
 
 function applySidebarPermissions(role, memberships = []) {
@@ -155,6 +228,7 @@ async function init() {
                     : [];
                 currentMemberships = memberships;
                 currentUserRole = profile.role || 'user';
+                currentUserId = profile.user_id || '';
                 currentUserCountry = scopeContext.allowed_country || profile.country || '';
                 currentAllowedRegionIds = allowedRegionIds;
                 currentUserRegionId = allowedRegionIds[0] || profile.region_id || '';
@@ -189,6 +263,31 @@ async function init() {
     searchInput?.addEventListener('input', () => applyFilters());
     roleFilter?.addEventListener('change', () => applyFilters());
     statusFilter?.addEventListener('change', () => applyFilters());
+    countryFilter?.addEventListener('change', () => {
+        populateLocationFilters();
+        applyFilters();
+    });
+    cityFilter?.addEventListener('change', () => applyFilters());
+    scopeFilter?.addEventListener('change', () => applyFilters());
+
+    usersSummaryEl?.addEventListener('click', (event) => {
+        const source = event.target;
+        const target = source instanceof Element ? source.closest('[data-summary-status]') : null;
+        if (!target || !statusFilter) return;
+        statusFilter.value = target.dataset.summaryStatus || '';
+        applyFilters();
+    });
+
+    clearFiltersBtn?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (roleFilter) roleFilter.value = '';
+        if (statusFilter) statusFilter.value = '';
+        if (countryFilter) countryFilter.value = '';
+        if (scopeFilter) scopeFilter.value = '';
+        populateLocationFilters();
+        if (cityFilter) cityFilter.value = '';
+        applyFilters();
+    });
 }
 
 async function loadChurches() {
@@ -358,6 +457,8 @@ async function loadUsers(token) {
 
         allUsers = data.users || [];
         pendingRoleChanges.clear();
+        populateLocationFilters();
+        renderSummaryCards();
         applyFilters();
 
     } catch (err) {
@@ -366,16 +467,99 @@ async function loadUsers(token) {
     }
 }
 
+function populateLocationFilters() {
+    if (!countryFilter && !cityFilter) return;
+
+    const selectedCountry = countryFilter?.value || '';
+    const selectedCity = cityFilter?.value || '';
+
+    const countries = Array.from(new Set(
+        (allUsers || [])
+            .map((user) => getUserCountry(user))
+            .filter(Boolean),
+    )).sort((a, b) => a.localeCompare(b, 'es'));
+
+    if (countryFilter) {
+        countryFilter.innerHTML = '<option value="">Todos los países</option>'
+            + countries.map((country) => `<option value="${escapeAttr(country)}">${escapeHtml(country)}</option>`).join('');
+        if (countries.includes(selectedCountry)) {
+            countryFilter.value = selectedCountry;
+        } else {
+            countryFilter.value = '';
+        }
+    }
+
+    const countryScope = countryFilter?.value || '';
+    const cities = Array.from(new Set(
+        (allUsers || [])
+            .filter((user) => {
+                if (!countryScope) return true;
+                return getUserCountry(user) === countryScope;
+            })
+            .map((user) => getUserCity(user))
+            .filter(Boolean),
+    )).sort((a, b) => a.localeCompare(b, 'es'));
+
+    if (cityFilter) {
+        cityFilter.innerHTML = '<option value="">Todas las ciudades</option>'
+            + cities.map((city) => `<option value="${escapeAttr(city)}">${escapeHtml(city)}</option>`).join('');
+        if (cities.includes(selectedCity)) {
+            cityFilter.value = selectedCity;
+        } else {
+            cityFilter.value = '';
+        }
+    }
+}
+
+function renderSummaryCards() {
+    if (!usersSummaryEl) return;
+    const selectedStatus = statusFilter?.value || '';
+    const counts = (allUsers || []).reduce((acc, user) => {
+        const status = String(user?.access_status || 'unknown');
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {});
+
+    usersSummaryEl.innerHTML = summaryStatusOrder.map((statusKey) => {
+        const isAll = statusKey === 'all';
+        const count = isAll ? allUsers.length : (counts[statusKey] || 0);
+        const isActive = (isAll && !selectedStatus) || selectedStatus === statusKey;
+        const title = isAll ? 'Todos' : (accessStatusTranslations[statusKey] || statusKey);
+        const style = isActive
+            ? 'border-[#293C74] bg-[#EEF2FF] text-[#293C74]'
+            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50';
+        return `
+            <button
+                type="button"
+                data-summary-status="${escapeAttr(isAll ? '' : statusKey)}"
+                class="text-left rounded-xl border px-3 py-2 transition-colors ${style}"
+            >
+                <p class="text-[10px] uppercase tracking-widest font-bold">${escapeHtml(title)}</p>
+                <p class="text-lg font-black leading-tight">${escapeHtml(count)}</p>
+            </button>
+        `;
+    }).join('');
+}
+
 function applyFilters() {
-    const query = searchInput?.value?.trim().toLowerCase() || '';
+    const query = normalizeSearchText(searchInput?.value || '');
     const roleValue = roleFilter?.value || '';
     const statusValue = statusFilter?.value || '';
+    const countryValue = countryFilter?.value || '';
+    const cityValue = cityFilter?.value || '';
+    const scopeValue = scopeFilter?.value || '';
+    const queryTokens = query ? query.split(/\s+/).filter(Boolean) : [];
+
+    renderSummaryCards();
+
     const filtered = (allUsers || []).filter((user) => {
-        const name = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
-        const searchable = `${name} ${user.email || ''}`.toLowerCase();
-        if (query && !searchable.includes(query)) return false;
+        const searchable = getSearchableUserText(user);
+        if (queryTokens.length && queryTokens.some((token) => !searchable.includes(token))) return false;
         if (roleValue && user.role !== roleValue) return false;
         if (statusValue && user.access_status !== statusValue) return false;
+        if (countryValue && getUserCountry(user) !== countryValue) return false;
+        if (cityValue && getUserCity(user) !== cityValue) return false;
+        if (scopeValue && getScopeCategory(user) !== scopeValue) return false;
         return true;
     });
     renderTable(filtered);
@@ -481,20 +665,42 @@ function renderRoleCell(user) {
 function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
     const pendingRole = pendingRoleChanges.get(user.user_id);
     const isDeleted = user?.access_status === 'deleted' || user?.is_account_deleted === true;
+    const isBlocked = user?.access_status === 'blocked' || user?.is_blocked === true;
+    const isActorSuperadmin = currentUserRole === 'superadmin';
+    const isTargetSuperadmin = String(user?.role || '') === 'superadmin';
+    const isSelf = Boolean(currentUserId && user?.user_id === currentUserId);
     const resetButton = canSendAccessLink
         ? (isDeleted
             ? '<span class="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cuenta eliminada</span>'
             : `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`)
         : '';
+    let lifecycleButtons = '';
+    if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
+        if (isDeleted) {
+            lifecycleButtons = `<button data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100">Restaurar</button>`;
+        } else {
+            const blockLabel = isBlocked ? 'Desbloquear' : 'Bloquear';
+            const blockAction = isBlocked ? 'unblock-user' : 'block-user';
+            lifecycleButtons = `
+                <button data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-700 hover:bg-amber-100">${blockLabel}</button>
+                <button data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar</button>
+            `;
+        }
+    }
 
     if (!pendingRole) {
-        return resetButton || '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
+        const combined = [lifecycleButtons, resetButton].filter(Boolean).join('');
+        if (!combined) {
+            return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
+        }
+        return `<div class="flex items-center justify-end gap-2 flex-wrap">${combined}</div>`;
     }
 
     return `
         <div class="flex items-center justify-end gap-2 flex-wrap">
             <button data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
+            ${lifecycleButtons}
             ${resetButton}
         </div>
     `;
@@ -622,6 +828,65 @@ tbody?.addEventListener('click', async (event) => {
         if (!userId) return;
         pendingRoleChanges.delete(userId);
         applyFilters();
+        return;
+    }
+
+    if (action === 'block-user' || action === 'unblock-user' || action === 'delete-user' || action === 'restore-user') {
+        const userId = target.dataset.userId;
+        if (!userId) return;
+        const user = allUsers.find((item) => item.user_id === userId);
+        if (!user) return;
+
+        const lifecycleActionMap = {
+            'block-user': 'block',
+            'unblock-user': 'unblock',
+            'delete-user': 'delete',
+            'restore-user': 'restore',
+        };
+        const apiAction = lifecycleActionMap[action];
+        if (!apiAction) return;
+
+        const fullName = user.full_name || user.email || 'este usuario';
+        let confirmationMessage = '';
+        if (apiAction === 'block') {
+            confirmationMessage = `¿Bloquear acceso de ${fullName}?`;
+        } else if (apiAction === 'unblock') {
+            confirmationMessage = `¿Desbloquear acceso de ${fullName}?`;
+        } else if (apiAction === 'delete') {
+            confirmationMessage = `¿Eliminar (soft-delete) la cuenta de ${fullName}?`;
+        } else {
+            confirmationMessage = `¿Restaurar cuenta de ${fullName}?`;
+        }
+
+        const confirmed = window.confirm(confirmationMessage);
+        if (!confirmed) return;
+
+        let reason = '';
+        if (apiAction === 'delete') {
+            const promptValue = window.prompt('Motivo (opcional):', '');
+            if (promptValue === null) return;
+            reason = String(promptValue || '').trim();
+        }
+
+        const originalText = target.textContent;
+        target.textContent = 'Procesando...';
+        target.setAttribute('disabled', 'disabled');
+        try {
+            const res = await fetch('/api/portal/admin/users/lifecycle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                body: JSON.stringify({ userId, action: apiAction, reason }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar');
+            await loadUsers(currentToken);
+            applyFilters();
+        } catch (err) {
+            console.error(err);
+            target.textContent = originalText;
+            target.removeAttribute('disabled');
+            alert(err.message || 'No se pudo actualizar.');
+        }
         return;
     }
 

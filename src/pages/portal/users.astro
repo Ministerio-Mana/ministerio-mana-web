@@ -23,38 +23,65 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <!-- Users List -->
             <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <div class="relative">
-                            <input id="users-search" type="search" class="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20 w-64" placeholder="Buscar por nombre o email">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <div class="mb-5">
+                    <div id="users-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div class="relative">
+                                <input id="users-search" type="search" class="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20 w-72" placeholder="Buscar nombre, email, iglesia, región, ciudad...">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            </div>
+                            <select id="users-role-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
+                                <option value="">Todos los roles</option>
+                                <option value="superadmin">Superadmin</option>
+                                <option value="admin">Admin</option>
+                                <option value="national_pastor">Pastor Nacional</option>
+                                <option value="national_collaborator">Colaborador Nacional</option>
+                                <option value="regional_pastor">Pastor Regional</option>
+                                <option value="regional_collaborator">Colaborador Regional</option>
+                                <option value="campus_missionary">Misionero Campus</option>
+                                <option value="pastor">Pastor Local</option>
+                                <option value="local_collaborator">Colaborador Local</option>
+                                <option value="leader">Líder</option>
+                                <option value="user">Usuario (Asistente)</option>
+                            </select>
+                            <select id="users-status-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activo</option>
+                                <option value="invited">Invitado</option>
+                                <option value="confirmed">Confirmado sin ingreso</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="blocked">Bloqueado</option>
+                                <option value="deleted">Eliminado</option>
+                                <option value="unknown">Sin diagnóstico</option>
+                            </select>
                         </div>
-                        <select id="users-role-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
-                            <option value="">Todos los roles</option>
-                            <option value="superadmin">Superadmin</option>
-                            <option value="admin">Admin</option>
-                            <option value="national_pastor">Pastor Nacional</option>
-                            <option value="national_collaborator">Colaborador Nacional</option>
-                            <option value="regional_pastor">Pastor Regional</option>
-                            <option value="regional_collaborator">Colaborador Regional</option>
-                            <option value="campus_missionary">Misionero Campus</option>
-                            <option value="pastor">Pastor Local</option>
-                            <option value="local_collaborator">Colaborador Local</option>
-                            <option value="leader">Líder</option>
-                            <option value="user">Usuario (Asistente)</option>
-                        </select>
-                        <select id="users-status-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
-                            <option value="">Todos los estados</option>
-                            <option value="active">Activo</option>
-                            <option value="invited">Invitado</option>
-                            <option value="confirmed">Confirmado sin ingreso</option>
-                            <option value="pending">Pendiente</option>
-                            <option value="blocked">Bloqueado</option>
-                            <option value="deleted">Eliminado</option>
-                            <option value="unknown">Sin diagnóstico</option>
-                        </select>
+                        <div id="users-count" class="text-xs text-slate-400 font-bold uppercase tracking-widest">0 usuarios</div>
                     </div>
-                    <div id="users-count" class="text-xs text-slate-400 font-bold uppercase tracking-widest">0 usuarios</div>
+
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                        <select id="users-country-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[200px]">
+                            <option value="">Todos los países</option>
+                        </select>
+                        <select id="users-city-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[200px]">
+                            <option value="">Todas las ciudades</option>
+                        </select>
+                        <select id="users-scope-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[210px]">
+                            <option value="">Todas las categorías</option>
+                            <option value="global">Global (Admin/Superadmin)</option>
+                            <option value="national">Nacional</option>
+                            <option value="regional">Regional</option>
+                            <option value="church">Iglesia local</option>
+                            <option value="campus">Campus</option>
+                            <option value="assistant">Asistente/usuario base</option>
+                        </select>
+                        <button id="users-clear-filters" type="button" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50">
+                            Limpiar filtros
+                        </button>
+                    </div>
                 </div>
                 <div id="users-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando usuarios...</div>
                 
