@@ -105,6 +105,10 @@ const churchBookingsEmpty = document.getElementById('church-bookings-empty');
 const churchBookingsList = document.getElementById('church-bookings-list');
 const churchBookingsSearch = document.getElementById('church-bookings-search');
 const churchBookingsStatus = document.getElementById('church-bookings-status');
+const churchBookingsSort = document.getElementById('church-bookings-sort');
+const churchBookingsPageSize = document.getElementById('church-bookings-page-size');
+const churchBookingsCount = document.getElementById('church-bookings-count');
+const churchBookingsPagination = document.getElementById('church-bookings-pagination');
 const churchPaymentsEmpty = document.getElementById('church-payments-empty');
 const churchPaymentsList = document.getElementById('church-payments-list');
 const churchPaymentsSearch = document.getElementById('church-payments-search');
@@ -328,6 +332,7 @@ let selectorContinentFilter = '';
 let selectorCountryFilter = '';
 let selectorSearchFilter = '';
 let churchBookingsData = [];
+let churchBookingsPage = 1;
 let churchMembersData = [];
 let churchPaymentsData = [];
 let churchInstallmentsData = [];
@@ -338,6 +343,7 @@ const ALL_CHURCHES_VALUE = '__all__';
 const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
 const MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY = 28;
+const DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE = 20;
 
 const normalizeGeoToken = (value) =>
   String(value || '')
@@ -1678,35 +1684,128 @@ function filterChurchBookings(list, meta) {
   });
 }
 
-function sortChurchBookings(list, meta, status) {
-  const normalized = status || 'all';
+function getChurchBookingsSortOption(activeStatus = 'all') {
+  const selected = churchBookingsSort?.value || '';
+  if (selected) return selected;
+  if (activeStatus === 'pending') return 'next_due_asc';
+  if (activeStatus === 'paid') return 'recent_desc';
+  return 'recent_desc';
+}
+
+function getChurchBookingsPageSize() {
+  const raw = Number(churchBookingsPageSize?.value || DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE);
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE;
+  return raw;
+}
+
+function sortChurchBookings(list, meta, status, sortOption) {
+  const normalizedStatus = status || 'all';
+  const normalizedSort = sortOption || getChurchBookingsSortOption(normalizedStatus);
   const items = [...(list || [])];
   items.sort((a, b) => {
     const lastPaymentA = meta?.lastPaymentByBooking?.get(a.id)?._createdAt || null;
     const lastPaymentB = meta?.lastPaymentByBooking?.get(b.id)?._createdAt || null;
     const nextDueA = meta?.nextInstallmentByBooking?.get(a.id)?._dueDate || null;
     const nextDueB = meta?.nextInstallmentByBooking?.get(b.id)?._dueDate || null;
+    const createdA = toDate(a.created_at)?.getTime() || 0;
+    const createdB = toDate(b.created_at)?.getTime() || 0;
+    const totalPaidA = Number(a.total_paid || 0);
+    const totalPaidB = Number(b.total_paid || 0);
+    const totalAmountA = Number(a.total_amount || 0);
+    const totalAmountB = Number(b.total_amount || 0);
+    const pendingA = Math.max(0, totalAmountA - totalPaidA);
+    const pendingB = Math.max(0, totalAmountB - totalPaidB);
+    const nextDueTimeA = nextDueA ? nextDueA.getTime() : Number.POSITIVE_INFINITY;
+    const nextDueTimeB = nextDueB ? nextDueB.getTime() : Number.POSITIVE_INFINITY;
+    const lastPaymentTimeA = lastPaymentA ? lastPaymentA.getTime() : 0;
+    const lastPaymentTimeB = lastPaymentB ? lastPaymentB.getTime() : 0;
 
-    if (normalized === 'pending') {
-      const aKey = nextDueA ? nextDueA.getTime() : Number.POSITIVE_INFINITY;
-      const bKey = nextDueB ? nextDueB.getTime() : Number.POSITIVE_INFINITY;
-      return aKey - bKey;
+    if (normalizedSort === 'recent_asc') return createdA - createdB;
+    if (normalizedSort === 'paid_desc') return totalPaidB - totalPaidA;
+    if (normalizedSort === 'total_desc') return totalAmountB - totalAmountA;
+    if (normalizedSort === 'pending_desc') return pendingB - pendingA;
+    if (normalizedSort === 'next_due_asc') return nextDueTimeA - nextDueTimeB;
+    if (normalizedSort === 'recent_desc') return createdB - createdA;
+
+    if (normalizedStatus === 'pending') {
+      return nextDueTimeA - nextDueTimeB;
     }
-    if (normalized === 'paid') {
-      const aKey = lastPaymentA ? lastPaymentA.getTime() : 0;
-      const bKey = lastPaymentB ? lastPaymentB.getTime() : 0;
-      return bKey - aKey;
+    if (normalizedStatus === 'paid') {
+      return lastPaymentTimeB - lastPaymentTimeA;
     }
-    const aKey = Math.max(lastPaymentA ? lastPaymentA.getTime() : 0, nextDueA ? nextDueA.getTime() : 0);
-    const bKey = Math.max(lastPaymentB ? lastPaymentB.getTime() : 0, nextDueB ? nextDueB.getTime() : 0);
-    return bKey - aKey;
+    const activityA = Math.max(lastPaymentTimeA, nextDueA ? nextDueA.getTime() : 0, createdA);
+    const activityB = Math.max(lastPaymentTimeB, nextDueB ? nextDueB.getTime() : 0, createdB);
+    return activityB - activityA;
   });
   return items;
+}
+
+function paginateChurchBookings(list) {
+  const safeList = list || [];
+  const pageSize = getChurchBookingsPageSize();
+  const total = safeList.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (churchBookingsPage > totalPages) churchBookingsPage = totalPages;
+  if (churchBookingsPage < 1) churchBookingsPage = 1;
+  const start = (churchBookingsPage - 1) * pageSize;
+  const end = Math.min(start + pageSize, total);
+  return {
+    items: safeList.slice(start, end),
+    total,
+    pageSize,
+    totalPages,
+    page: churchBookingsPage,
+    start,
+    end,
+  };
+}
+
+function renderChurchBookingsPagination(meta) {
+  if (!churchBookingsPagination) return;
+  if (!meta || meta.total <= 0) {
+    churchBookingsPagination.innerHTML = '';
+    churchBookingsPagination.classList.add('hidden');
+    return;
+  }
+
+  const canPrev = meta.page > 1;
+  const canNext = meta.page < meta.totalPages;
+  const safeStart = meta.start + 1;
+  const safeEnd = meta.end;
+  churchBookingsPagination.innerHTML = `
+    <span class="font-medium text-slate-500">Mostrando ${safeStart}-${safeEnd} de ${meta.total}</span>
+    <div class="flex items-center gap-2">
+      <button type="button" class="church-bookings-page-btn px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+        Anterior
+      </button>
+      <span class="text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
+      <button type="button" class="church-bookings-page-btn px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+        Siguiente
+      </button>
+    </div>
+  `;
+  churchBookingsPagination.classList.remove('hidden');
+
+  churchBookingsPagination.querySelectorAll('.church-bookings-page-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = Number(btn.dataset.page || 0);
+      if (!Number.isFinite(next) || next < 1 || next > meta.totalPages) return;
+      churchBookingsPage = next;
+      updateChurchBookingsView();
+    });
+  });
 }
 
 function renderChurchBookings(list, meta) {
   if (!churchBookingsList || !churchBookingsEmpty) return;
   churchBookingsList.innerHTML = '';
+  if (churchBookingsCount) {
+    churchBookingsCount.textContent = '0 resultados';
+  }
+  if (churchBookingsPagination) {
+    churchBookingsPagination.innerHTML = '';
+    churchBookingsPagination.classList.add('hidden');
+  }
   if (!list.length) {
     churchBookingsEmpty.classList.remove('hidden');
     churchBookingsList.classList.add('hidden');
@@ -1715,8 +1814,14 @@ function renderChurchBookings(list, meta) {
   churchBookingsEmpty.classList.add('hidden');
   churchBookingsList.classList.remove('hidden');
   const activeFilter = churchBookingsStatus?.value || 'all';
-  const sortedList = sortChurchBookings(list, meta, activeFilter);
-  sortedList.forEach((item) => {
+  const sortOption = getChurchBookingsSortOption(activeFilter);
+  const sortedList = sortChurchBookings(list, meta, activeFilter, sortOption);
+  const paginated = paginateChurchBookings(sortedList);
+  if (churchBookingsCount) {
+    churchBookingsCount.textContent = `${paginated.total} resultado${paginated.total === 1 ? '' : 's'}`;
+  }
+
+  paginated.items.forEach((item) => {
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white p-5 hover:shadow-md transition-shadow';
     const churchName = item.contact_church || (isAllChurchesSelected() ? 'Sin iglesia / virtual' : 'Sin iglesia');
@@ -1807,7 +1912,7 @@ function renderChurchBookings(list, meta) {
     const createdLabel = formatDateTime(item.created_at);
     const safeCreatedLabel = safeText(createdLabel);
     const safeItemId = safeAttr(item.id || '');
-    const canEdit = item.source === 'portal-iglesia';
+    const canEdit = Boolean(item.id);
 
     card.innerHTML = `
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1847,7 +1952,7 @@ function renderChurchBookings(list, meta) {
       ${canEdit ? `
         <div class="mt-4 flex justify-end">
           <button type="button" class="btn-edit-booking px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
-            Editar
+            Editar perfil
           </button>
         </div>
       ` : ''}
@@ -1864,11 +1969,17 @@ function renderChurchBookings(list, meta) {
     });
   });
 
+  renderChurchBookingsPagination(paginated);
+
   // Update stats after rendering
   updateChurchStats();
 }
 
-function updateChurchBookingsView() {
+function updateChurchBookingsView(options = {}) {
+  const resetPage = Boolean(options.resetPage);
+  if (resetPage) {
+    churchBookingsPage = 1;
+  }
   const meta = buildChurchBookingsMeta();
   const filtered = filterChurchBookings(churchBookingsData, meta);
   renderChurchBookings(filtered, meta);
@@ -4134,7 +4245,7 @@ churchInstallmentsList?.addEventListener('click', async (event) => {
 });
 
 churchBookingsSearch?.addEventListener('input', () => {
-  updateChurchBookingsView();
+  updateChurchBookingsView({ resetPage: true });
 });
 document.getElementById('church-bookings-filters')?.addEventListener('click', (event) => {
   const target = event.target.closest('.church-bookings-filter');
@@ -4149,10 +4260,16 @@ document.getElementById('church-bookings-filters')?.addEventListener('click', (e
   });
   target.classList.remove('bg-white', 'text-slate-500', 'border', 'border-slate-100');
   target.classList.add('bg-[#293C74]', 'text-white', 'shadow-sm');
-  updateChurchBookingsView();
+  updateChurchBookingsView({ resetPage: true });
 });
 churchBookingsStatus?.addEventListener('change', () => {
-  updateChurchBookingsView();
+  updateChurchBookingsView({ resetPage: true });
+});
+churchBookingsSort?.addEventListener('change', () => {
+  updateChurchBookingsView({ resetPage: true });
+});
+churchBookingsPageSize?.addEventListener('change', () => {
+  updateChurchBookingsView({ resetPage: true });
 });
 churchPaymentsSearch?.addEventListener('input', () => {
   renderChurchPayments(filterChurchPayments(churchPaymentsData));

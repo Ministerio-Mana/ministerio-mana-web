@@ -90,6 +90,16 @@ function isUuid(value: string | null | undefined): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+function canEditManualPayment(booking: any): boolean {
+  const source = String(booking?.source || '').trim().toLowerCase();
+  const paymentMethod = String(booking?.payment_method || '').trim().toLowerCase();
+  return source === 'portal-iglesia'
+    || source === 'cumbre-manual'
+    || source === 'portal-iglesia-edit'
+    || paymentMethod === 'manual'
+    || paymentMethod === 'cash';
+}
+
 async function getAccessContext(request: Request) {
   const access = await getPortalChurchAccessContext(request);
   return {
@@ -251,13 +261,6 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  if (String(booking.source || '') !== 'portal-iglesia') {
-    return new Response(JSON.stringify({ ok: false, error: 'Solo puedes editar registros manuales' }), {
-      status: 403,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
-
   const allowed = await isBookingAllowed(booking, ctx);
   if (!allowed) {
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
@@ -286,6 +289,10 @@ export const GET: APIRoute = async ({ request }) => {
     booking,
     participants: participants || [],
     payment: payment || null,
+    permissions: {
+      can_edit_profile: true,
+      can_edit_payment: canEditManualPayment(booking),
+    },
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
@@ -318,7 +325,7 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from('cumbre_bookings')
-    .select('id, contact_email, contact_name, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, currency, source')
+    .select('id, contact_email, contact_name, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, currency, source, payment_method')
     .eq('id', bookingId)
     .maybeSingle();
 
@@ -326,14 +333,12 @@ export const PUT: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Reserva no encontrada' }), { status: 404 });
   }
 
-  if (String(booking.source || '') !== 'portal-iglesia') {
-    return new Response(JSON.stringify({ ok: false, error: 'Solo puedes editar registros manuales' }), { status: 403 });
-  }
-
   const allowed = await isBookingAllowed(booking, ctx);
   if (!allowed) {
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 403 });
   }
+
+  const canEditPayment = canEditManualPayment(booking);
 
   const participantsRaw = Array.isArray(body.participants) ? body.participants : [];
   if (participantsRaw.length === 0) {
@@ -550,7 +555,10 @@ export const PUT: APIRoute = async ({ request }) => {
   }
   const currency = currencyOverride ?? currencyForGroup(countryGroup);
 
-  const paymentAmountInput = parseAmountForCurrency(body.payment_amount ?? body.paymentAmount, currency);
+  let paymentAmountInput = parseAmountForCurrency(body.payment_amount ?? body.paymentAmount, currency);
+  if (!canEditPayment) {
+    paymentAmountInput = null;
+  }
 
   const totalAmount = calculateTotals(currency, participants.map((p) => p.safe));
   const threshold = depositThreshold(totalAmount);
@@ -634,7 +642,7 @@ export const PUT: APIRoute = async ({ request }) => {
     }
   }
 
-  if (paymentAmountInput != null) {
+  if (paymentAmountInput != null && canEditPayment) {
     if (!paymentRow?.id) {
       const { data } = await supabaseAdmin
         .from('cumbre_payments')

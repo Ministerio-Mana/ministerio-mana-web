@@ -17,6 +17,7 @@ export class RegistrationModal {
         this.isEditMode = false;
         this.editBookingId = null;
         this.editPaymentId = null;
+        this.canEditPayment = true;
         this.defaultModalTitle = 'Registrar Participante';
         this.defaultModalSubtitle = 'Nueva Inscripción';
         this.defaultSubmitLabel = 'Registrar Grupo';
@@ -118,9 +119,11 @@ export class RegistrationModal {
         this.depositDueDate = document.getElementById('deposit-due-date');
         this.depositDeadlineLabel = document.getElementById('deposit-deadline-label');
         this.currencySelect = document.getElementById('reg-currency');
+        this.paymentAmountField = document.getElementById('manual-payment-amount-field');
         this.paymentAmountInput = document.getElementById('manual-payment-amount');
         this.paymentAmountHint = document.getElementById('manual-payment-hint');
         this.paymentCustomToggle = document.getElementById('manual-payment-custom-toggle');
+        this.paymentLockedHint = document.getElementById('manual-payment-locked-hint');
 
         // Church selector
         this.btnOpenChurchSelector = document.getElementById('btn-open-church-selector');
@@ -846,6 +849,10 @@ export class RegistrationModal {
 
     updatePaymentHint() {
         if (!this.paymentAmountHint) return;
+        if (this.isEditMode && !this.canEditPayment) {
+            this.paymentAmountHint.textContent = 'Pago online: gestionado automáticamente';
+            return;
+        }
         const suggested = this.getDefaultPaymentAmount();
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
         const label = customEnabled ? 'Sugerido' : 'Automático';
@@ -854,8 +861,16 @@ export class RegistrationModal {
 
     syncPaymentAmount(force = false) {
         if (!this.paymentAmountInput) return;
+        if (this.isEditMode && !this.canEditPayment) {
+            this.paymentAmountInput.readOnly = true;
+            this.paymentAmountInput.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
+            this.paymentAmountInput.classList.remove('bg-white', 'bg-slate-50');
+            this.updatePaymentHint();
+            return;
+        }
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
         this.paymentAmountInput.readOnly = !customEnabled;
+        this.paymentAmountInput.classList.remove('cursor-not-allowed', 'text-slate-500');
         this.paymentAmountInput.classList.toggle('bg-white', customEnabled);
         this.paymentAmountInput.classList.toggle('bg-slate-50', !customEnabled);
 
@@ -908,14 +923,32 @@ export class RegistrationModal {
         const scrollContainer = document.getElementById('modal-scroll-container');
         const previousScroll = scrollContainer ? scrollContainer.scrollTop : 0;
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        const lockPaymentEdition = this.isEditMode && !this.canEditPayment;
 
         if (this.paymentOptionsContainer) {
-            if (this.isEditMode) {
+            if (this.isEditMode || lockPaymentEdition) {
                 this.paymentOptionsContainer.classList.add('hidden');
             } else {
                 this.paymentOptionsContainer.classList.toggle('hidden', customEnabled);
             }
         }
+
+        if (this.paymentLockedHint) {
+            this.paymentLockedHint.classList.toggle('hidden', !lockPaymentEdition);
+        }
+
+        if (lockPaymentEdition) {
+            if (this.installmentDetails) this.installmentDetails.classList.add('hidden');
+            if (this.depositSchedule) this.depositSchedule.classList.add('hidden');
+            this.syncPaymentAmount(true);
+            if (scrollContainer) {
+                requestAnimationFrame(() => {
+                    scrollContainer.scrollTop = previousScroll;
+                });
+            }
+            return;
+        }
+
         const selected = document.querySelector('input[name="payment_option"]:checked');
         const value = selected?.value || 'FULL';
 
@@ -1173,7 +1206,7 @@ export class RegistrationModal {
             deposit_due_date: paymentOption === 'DEPOSIT' ? depositDueDate : null,
             total_amount: this.getTotal(),
             currency: this.currency,
-            payment_amount: paymentAmount,
+            payment_amount: (this.isEditMode && !this.canEditPayment) ? null : paymentAmount,
         };
         if (this.isEditMode && this.editBookingId) {
             payload.booking_id = this.editBookingId;
@@ -1190,6 +1223,7 @@ export class RegistrationModal {
         this.isEditMode = true;
         this.editBookingId = payload.booking.id || null;
         this.editPaymentId = payload.payment?.id || null;
+        this.canEditPayment = payload?.permissions?.can_edit_payment !== false;
         const bookingRef = (payload.booking.id || '').slice(0, 8).toUpperCase();
         this.setModalMode(true, bookingRef);
 
@@ -1300,6 +1334,7 @@ export class RegistrationModal {
         this.editBookingId = null;
         this.editPaymentId = null;
         this.isEditMode = false;
+        this.canEditPayment = true;
         this.form?.reset();
 
         // Reset menus
