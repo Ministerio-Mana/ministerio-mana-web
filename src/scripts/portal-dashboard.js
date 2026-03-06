@@ -1774,12 +1774,12 @@ function renderChurchBookingsPagination(meta) {
   const safeEnd = meta.end;
   churchBookingsPagination.innerHTML = `
     <span class="font-medium text-slate-500">Mostrando ${safeStart}-${safeEnd} de ${meta.total}</span>
-    <div class="flex items-center gap-2">
-      <button type="button" class="church-bookings-page-btn px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+      <button type="button" class="church-bookings-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
         Anterior
       </button>
-      <span class="text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
-      <button type="button" class="church-bookings-page-btn px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+      <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
+      <button type="button" class="church-bookings-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
         Siguiente
       </button>
     </div>
@@ -1923,13 +1923,13 @@ function renderChurchBookings(list, meta) {
              <span class="text-xs text-slate-400">•</span>
              <p class="text-xs font-semibold text-slate-700 truncate">${safeContactLabel}</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             ${statusBadge}
             ${methodBadge}
           </div>
         </div>
         
-        <div class="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4 mt-2 md:mt-0">
+        <div class="flex items-center gap-4 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4 mt-2 md:mt-0 flex-wrap md:flex-nowrap">
             <div class="text-right">
               <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">${safePrimaryLabel}</p>
               <p class="text-sm font-bold text-brand-teal">${safePrimaryValue}</p>
@@ -1942,7 +1942,7 @@ function renderChurchBookings(list, meta) {
       </div>
       ${metaHtml}
       
-      <div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs text-slate-400">
+      <div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-400">
          <span class="flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             ${item.participant_count || 0} inscritos
@@ -1951,7 +1951,7 @@ function renderChurchBookings(list, meta) {
       </div>
       ${canEdit ? `
         <div class="mt-4 flex justify-end">
-          <button type="button" class="btn-edit-booking px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
+          <button type="button" class="btn-edit-booking w-full sm:w-auto px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
             Editar perfil
           </button>
         </div>
@@ -2536,9 +2536,9 @@ function renderAdminUsers(users) {
           <p class="text-xs text-slate-500">${safeEmail}</p>
           <p class="text-[10px] text-slate-400 mt-1">${safeRolesLabel}</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           ${roleSelect}
-          <button data-action="reset" data-email="${safeAttr(user.email || '')}" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
+          <button data-action="reset" data-email="${safeAttr(user.email || '')}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
             Reset contraseña
           </button>
         </div>
@@ -2732,20 +2732,20 @@ function renderAdminFollowups(items, counts = {}) {
           </button>
         </div>
       ` : ''}
-      <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 pt-3">
         <span class="text-[10px] uppercase tracking-widest text-slate-400">Estado: ${safeStatus}</span>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           ${canRecompute ? `
-            <button data-action="recompute" data-booking="${safeItemId}" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
+            <button data-action="recompute" data-booking="${safeItemId}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
               Recalcular
             </button>
           ` : ''}
           ${canEmail ? `
-            <button data-action="notify-email" data-booking="${safeItemId}" data-kind="${safeKind}" class="px-3 py-2 rounded-lg bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">
+            <button data-action="notify-email" data-booking="${safeItemId}" data-kind="${safeKind}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">
               Enviar correo
             </button>
           ` : ''}
-          <button data-action="whatsapp" data-booking="${safeItemId}" class="px-3 py-2 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
+          <button data-action="whatsapp" data-booking="${safeItemId}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
             ${safeWhatsappLabel}
           </button>
         </div>
@@ -3260,12 +3260,12 @@ function renderInstallments(installments, plans, bookings) {
         <p class="text-xs text-slate-500">Vence: ${safeDueLabel}</p>
         <p class="text-[11px] text-slate-400 mt-1">${safeContactLabel}</p>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${safeStatusLabel}</span>
-        <button class="installment-reschedule px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition" data-installment="${safeInstallmentId}" data-due-date="${safeDueDateRaw}">
+      <div class="flex items-center gap-2 flex-wrap md:justify-end">
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass} whitespace-nowrap">${safeStatusLabel}</span>
+        <button class="installment-reschedule whitespace-nowrap px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition" data-installment="${safeInstallmentId}" data-due-date="${safeDueDateRaw}">
           Cambiar fecha
         </button>
-        <button class="installment-pay px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${safeInstallmentId}">
+        <button class="installment-pay whitespace-nowrap px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${safeInstallmentId}">
           Pagar ahora
         </button>
       </div>
@@ -3796,9 +3796,9 @@ function renderMemberships(memberships) {
         <p class="text-lg font-bold text-[#293C74]">${safeChurchName}</p>
         <p class="text-xs text-slate-500">${safeChurchCity} ${safeChurchCountry ? `· ${safeChurchCountry}` : ''}</p>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500">${safeRoleLabel}</span>
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${membership.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'}">${safeStatusLabel}</span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 whitespace-nowrap">${safeRoleLabel}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${membership.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'} whitespace-nowrap">${safeStatusLabel}</span>
       </div>
     `;
     churchMembershipsList.appendChild(card);
