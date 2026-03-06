@@ -578,8 +578,38 @@ import Sidebar from '@components/portal/Sidebar.astro';
                             <h3 class="text-sm font-bold text-[#293C74]">Cuotas Pendientes</h3>
                             <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
                           </div>
+                          <div class="space-y-3 mb-4">
+                            <div class="relative">
+                              <input id="church-installments-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar nombre, correo o referencia..." />
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                              <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                Estado
+                                <select id="church-installments-status" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                  <option value="">Todos</option>
+                                  <option value="PENDING">Pendientes</option>
+                                  <option value="FAILED">Fallidas</option>
+                                  <option value="PAID">Pagadas</option>
+                                </select>
+                              </label>
+                              <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                Ver
+                                <select id="church-installments-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                  <option value="5">5</option>
+                                  <option value="10" selected>10</option>
+                                  <option value="20">20</option>
+                                </select>
+                              </label>
+                              <span id="church-installments-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 resultados</span>
+                            </div>
+                            <p id="church-installments-status-msg" class="text-[11px] text-slate-500 min-h-[1rem]"></p>
+                          </div>
                           <div id="church-installments-empty" class="text-center py-8 text-xs text-slate-500">Todo al día.</div>
                           <div id="church-installments-list" class="hidden space-y-3"></div>
+                          <div id="church-installments-pagination" class="hidden mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
                        </div>
                        
                        <!-- Payments History -->
@@ -588,8 +618,53 @@ import Sidebar from '@components/portal/Sidebar.astro';
                             <h3 class="text-sm font-bold text-[#293C74]">Últimos Pagos</h3>
                             <button class="text-xs font-bold text-slate-400 hover:text-[#293C74]">Ver todos</button>
                           </div>
+                          <div class="space-y-3 mb-4">
+                            <div class="relative">
+                              <input id="church-payments-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar por nombre, correo o referencia..." />
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <select id="church-payments-status" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
+                                <option value="">Todos los estados</option>
+                                <option value="APPROVED">Aprobados</option>
+                                <option value="PENDING">Pendientes</option>
+                                <option value="DECLINED">Rechazados</option>
+                                <option value="FAILED">Fallidos</option>
+                              </select>
+                              <select id="church-payments-provider" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
+                                <option value="">Todos los proveedores</option>
+                                <option value="wompi">Wompi</option>
+                                <option value="stripe">Stripe</option>
+                                <option value="manual">Manual</option>
+                              </select>
+                              <input id="church-payments-from" type="date" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]" />
+                              <input id="church-payments-to" type="date" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]" />
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                              <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                Orden
+                                <select id="church-payments-sort" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                  <option value="recent_desc">Más recientes</option>
+                                  <option value="recent_asc">Más antiguos</option>
+                                  <option value="amount_desc">Mayor monto</option>
+                                </select>
+                              </label>
+                              <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                Ver
+                                <select id="church-payments-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                  <option value="5">5</option>
+                                  <option value="10" selected>10</option>
+                                  <option value="20">20</option>
+                                </select>
+                              </label>
+                              <span id="church-payments-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 resultados</span>
+                            </div>
+                          </div>
                           <div id="church-payments-empty" class="text-center text-xs text-slate-500 py-4">No hay pagos recientes.</div>
                           <div id="church-payments-list" class="hidden space-y-2"></div>
+                          <div id="church-payments-pagination" class="hidden mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
                        </div>
                    </div>
                 </div>
@@ -672,30 +747,60 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         <span id="admin-followups-count" class="text-[10px] font-bold uppercase tracking-widest text-slate-400">0</span>
                       </div>
 
-                      <div id="admin-followups-filters" class="flex items-center gap-2 overflow-x-auto pb-1">
-                        <button data-filter="all" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-[#293C74] text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
-                          Todos <span data-count class="ml-1 text-[10px] opacity-80">0</span>
-                        </button>
-                        <button data-filter="registration_incomplete" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
-                          Registro <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
-                        </button>
-                        <button data-filter="payment_pending" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
-                          Pago pendiente <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
-                        </button>
-                        <button data-filter="payment_mismatch" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
-                          Descuadre <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
-                        </button>
-                        <button data-filter="overpaid" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
-                          Duplicados <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
-                        </button>
-                        <button data-filter="no_church" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
-                          Sin iglesia <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
-                        </button>
+                      <div class="space-y-3">
+                        <div id="admin-followups-filters" class="flex items-center gap-2 overflow-x-auto pb-1">
+                          <button data-filter="all" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-[#293C74] text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
+                            Todos <span data-count class="ml-1 text-[10px] opacity-80">0</span>
+                          </button>
+                          <button data-filter="registration_incomplete" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                            Registro <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
+                          </button>
+                          <button data-filter="payment_pending" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                            Pago pendiente <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
+                          </button>
+                          <button data-filter="payment_mismatch" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                            Descuadre <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
+                          </button>
+                          <button data-filter="overpaid" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                            Duplicados <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
+                          </button>
+                          <button data-filter="no_church" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                            Sin iglesia <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
+                          </button>
+                        </div>
+                        <div class="flex flex-col md:flex-row md:items-center gap-2">
+                          <div class="relative flex-1 min-w-0">
+                            <input id="admin-followups-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar por nombre, correo o ref..." />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          </div>
+                          <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                            <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              Orden
+                              <select id="admin-followups-sort" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <option value="recent_desc">Más recientes</option>
+                                <option value="recent_asc">Más antiguos</option>
+                                <option value="amount_desc">Mayor monto</option>
+                              </select>
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                              Ver
+                              <select id="admin-followups-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <option value="6">6</option>
+                                <option value="12" selected>12</option>
+                                <option value="24">24</option>
+                              </select>
+                            </label>
+                            <span id="admin-followups-visible-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 visibles</span>
+                          </div>
+                        </div>
                       </div>
 
                       <p id="admin-followups-status" class="text-xs text-slate-500"></p>
                       <div id="admin-followups-empty" class="text-xs text-slate-400 text-center py-6 bg-slate-50/50 rounded-xl border border-dashed border-slate-100">No hay alertas pendientes.</div>
                       <div id="admin-followups-list" class="hidden space-y-3"></div>
+                      <div id="admin-followups-pagination" class="hidden pt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
                   </div>
 
                   <!-- Superadmin User Management (Admin Only) -->
