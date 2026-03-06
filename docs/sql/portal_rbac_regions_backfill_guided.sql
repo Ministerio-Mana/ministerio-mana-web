@@ -9,36 +9,6 @@
 -- 3) Ejecuta seccion F (smoke test) por cada regional_pastor.
 
 -- =========================================================
--- P0) Preflight de columnas (idempotente, no destructivo)
--- =========================================================
-alter table public.churches
-  add column if not exists region_id uuid;
-
-alter table public.user_profiles
-  add column if not exists region_id uuid;
-
-alter table public.events
-  add column if not exists region_id uuid;
-
--- Enum compat: agrega REGIONAL si events.scope usa event_scope enum
-do $$
-begin
-  if exists (
-    select 1
-    from pg_type t
-    join pg_namespace n on n.oid = t.typnamespace
-    where t.typname = 'event_scope'
-      and n.nspname = 'public'
-  ) then
-    begin
-      alter type public.event_scope add value if not exists 'REGIONAL';
-    exception
-      when duplicate_object then null;
-    end;
-  end if;
-end $$;
-
--- =========================================================
 -- A) Semilla de regiones por pais (EDITA estos VALUES)
 -- =========================================================
 with seed(country, code, name) as (
@@ -81,35 +51,15 @@ order by country, code;
 -- B1) Regla por ciudad
 with city_map(country, city, region_code) as (
   values
-    -- Colombia (ajusta si algun caso pertenece a otra region en tu operacion)
+    -- Colombia (ejemplos, ajusta a tu realidad)
     ('Colombia', 'Cali', 'CO-PAC'),
-    ('Colombia', 'Bogotá', 'CO-CEN'),
     ('Colombia', 'Bogota', 'CO-CEN'),
-    ('Colombia', 'Armenia', 'CO-CEN'),
-    ('Colombia', 'Bucaramanga', 'CO-OR'),
-    ('Colombia', 'Buenaventura', 'CO-PAC'),
-    ('Colombia', 'Cartago', 'CO-PAC'),
-    ('Colombia', 'Ibagué', 'CO-CEN'),
-    ('Colombia', 'Ibague', 'CO-CEN'),
-    ('Colombia', 'La Unión (Valle)', 'CO-PAC'),
-    ('Colombia', 'La Union (Valle)', 'CO-PAC'),
-    ('Colombia', 'Manizales', 'CO-CEN'),
-    ('Colombia', 'Marinilla', 'CO-ANT'),
-    ('Colombia', 'Medellín', 'CO-ANT'),
     ('Colombia', 'Medellin', 'CO-ANT'),
-    ('Colombia', 'Medellín / Itagüí', 'CO-ANT'),
-    ('Colombia', 'Medellin / Itagui', 'CO-ANT'),
-    ('Colombia', 'Pasto', 'CO-PAC'),
-    ('Colombia', 'Pereira', 'CO-CEN'),
-    ('Colombia', 'Tuluá', 'CO-PAC'),
-    ('Colombia', 'Tulua', 'CO-PAC'),
     ('Colombia', 'Barranquilla', 'CO-CAR'),
     ('Colombia', 'Cartagena', 'CO-CAR'),
-    -- Ecuador
+    -- Ecuador (ejemplos, ajusta a tu realidad)
     ('Ecuador', 'Quito', 'EC-SIE'),
     ('Ecuador', 'Guayaquil', 'EC-COS'),
-    ('Ecuador', 'Guayaquil (Norte)', 'EC-COS'),
-    ('Ecuador', 'Guayaquil (Sur)', 'EC-COS'),
     ('Ecuador', 'Cuenca', 'EC-SIE')
 ),
 resolved as (
@@ -228,8 +178,8 @@ on conflict (user_id, region_id, role, status) do nothing;
 -- D2) Manual por email (EDITA y descomenta filas)
 with manual(email, region_code, role) as (
   values
-    -- ('julian@example.com', 'CO-PAC', 'regional_pastor'),
-    -- ('colaborador@example.com', 'CO-PAC', 'regional_collaborator')
+    -- ('cali@ministeriomana.org', 'CO-PAC', 'regional_pastor'),
+    -- ('santiquilva+colaboradorcali@gmail.com', 'CO-PAC', 'regional_collaborator')
     (null::text, null::text, null::text)
 ),
 resolved as (
@@ -253,7 +203,7 @@ on conflict (user_id, region_id, role, status) do nothing;
 with one_region as (
   select
     rla.user_id,
-    min(rla.region_id::text)::uuid as region_id
+    min(rla.region_id) as region_id
   from public.region_leadership_assignments rla
   where rla.status = 'active'
     and rla.role in ('regional_pastor', 'regional_collaborator')
@@ -301,10 +251,6 @@ order by email, rla.role, r.code;
 -- E) Backfill eventos -> region_id (recomendado)
 -- =========================================================
 
--- E0) Garantiza columna regional en events (idempotente)
-alter table public.events
-  add column if not exists region_id uuid;
-
 -- E1) Eventos LOCAL heredan region de su church_id
 update public.events e
 set
@@ -327,10 +273,11 @@ with creator_region as (
 update public.events e
 set
   region_id = cr.region_id,
-  country = coalesce(nullif(e.country, ''), p.country)
+  country = coalesce(nullif(e.country, ''), p.country),
+  updated_at = now()
 from creator_region cr
 join public.user_profiles p on p.user_id = cr.user_id
-where e.scope::text = 'REGIONAL'
+where e.scope = 'REGIONAL'
   and e.created_by = cr.user_id
   and e.region_id is null;
 
@@ -338,8 +285,8 @@ where e.scope::text = 'REGIONAL'
 select
   e.scope,
   count(*) as total_events,
-  count(*) filter (where e.scope::text = 'REGIONAL' and e.region_id is null) as regional_without_region,
-  count(*) filter (where e.scope::text = 'LOCAL' and e.church_id is not null and e.region_id is null) as local_without_region
+  count(*) filter (where e.scope = 'REGIONAL' and e.region_id is null) as regional_without_region,
+  count(*) filter (where e.scope = 'LOCAL' and e.church_id is not null and e.region_id is null) as local_without_region
 from public.events e
 group by e.scope
 order by e.scope;
@@ -347,10 +294,9 @@ order by e.scope;
 -- =========================================================
 -- F) Smoke test para regional_pastor (EDITA email objetivo)
 -- =========================================================
--- IMPORTANTE: usa el mismo email en F1 y F2.
 
 with target as (
-  select lower('julian@example.com') as email
+  select lower('cali@ministeriomana.org') as email
 ),
 actor as (
   select
