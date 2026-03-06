@@ -364,6 +364,14 @@ async function getPortalAuthHeaders() {
 
 window.getPortalAuthHeaders = getPortalAuthHeaders;
 
+async function getActionAuthHeaders() {
+  const headers = await getPortalAuthHeaders();
+  if (!Object.keys(headers || {}).length && authMode !== 'password') {
+    throw new Error('Sesion vencida. Recarga la pagina e inicia sesion de nuevo.');
+  }
+  return headers;
+}
+
 function isAllChurchesSelected() {
   return portalSelectedChurchId === ALL_CHURCHES_VALUE;
 }
@@ -2644,6 +2652,7 @@ function initAdminInvite() {
     if (!adminInviteStatus) return;
     adminInviteStatus.textContent = 'Enviando...';
     try {
+      const actionHeaders = await getActionAuthHeaders();
       const payload = {
         email: adminInviteEmail.value.trim(),
         fullName: adminInviteName?.value?.trim() || '',
@@ -2653,7 +2662,8 @@ function initAdminInvite() {
       };
       const res = await fetch('/api/portal/admin/invite', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+        headers: { 'content-type': 'application/json', ...actionHeaders },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -2840,6 +2850,7 @@ function initInviteForm() {
     if (!inviteStatus) return;
     inviteStatus.textContent = 'Enviando invitación...';
     try {
+      const actionHeaders = await getActionAuthHeaders();
       const selectedChurchId = inviteChurchInput?.value || resolveSelectedChurchId();
       if ((portalIsAdmin || portalIsCountryPastor) && !selectedChurchId) {
         inviteStatus.textContent = 'Selecciona una iglesia antes de invitar.';
@@ -2857,7 +2868,8 @@ function initInviteForm() {
       };
       const res = await fetch('/api/portal/iglesia/invite', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+        headers: { 'content-type': 'application/json', ...actionHeaders },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       const data = await res.json();
