@@ -6,7 +6,13 @@ import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { buildPaymentReference } from '@lib/cumbre2026';
-import { countPayments, getBookingById, recordPayment } from '@lib/cumbreStore';
+import {
+  countPayments,
+  getApprovedPaymentsTotal,
+  getBookingById,
+  listActivePendingPayments,
+  recordPayment,
+} from '@lib/cumbreStore';
 
 export const prerender = false;
 
@@ -120,11 +126,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const totalAmount = Number(booking.total_amount || 0);
-    const totalPaid = Number(booking.total_paid || 0);
+    const totalPaid = await getApprovedPaymentsTotal(bookingId);
     const remaining = Math.max(totalAmount - totalPaid, 0);
     if (remaining <= 0) {
       return new Response(JSON.stringify({ ok: false, error: 'Reserva ya pagada' }), {
         status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const pendingPayments = await listActivePendingPayments({ bookingId });
+    if (pendingPayments.length > 0) {
+      const pendingAmount = pendingPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Ya tienes un pago en verificación. Espera confirmación antes de intentar de nuevo.',
+        pendingCount: pendingPayments.length,
+        pendingAmount,
+      }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }

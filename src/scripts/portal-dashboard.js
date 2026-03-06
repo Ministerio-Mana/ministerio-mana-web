@@ -2741,7 +2741,7 @@ function getIssueBadge(type) {
     registration_incomplete: { label: 'Registro incompleto', className: 'bg-amber-50 text-amber-700 border-amber-100' },
     payment_pending: { label: 'Pago pendiente', className: 'bg-sky-50 text-sky-700 border-sky-100' },
     payment_mismatch: { label: 'Descuadre pago', className: 'bg-rose-50 text-rose-700 border-rose-100' },
-    overpaid: { label: 'Pago duplicado', className: 'bg-pink-50 text-pink-700 border-pink-100' },
+    overpaid: { label: 'Sobrepago detectado', className: 'bg-pink-50 text-pink-700 border-pink-100' },
     no_church: { label: 'Sin iglesia', className: 'bg-slate-100 text-slate-600 border-slate-200' },
   };
   return map[type] || { label: 'Alerta', className: 'bg-slate-100 text-slate-600 border-slate-200' };

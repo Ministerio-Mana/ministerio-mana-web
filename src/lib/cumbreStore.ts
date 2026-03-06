@@ -51,6 +51,20 @@ export type PaymentPlanRecord = {
   last_attempt_at: string | null;
 };
 
+export type PaymentRecord = {
+  id: string;
+  booking_id: string;
+  provider: string;
+  provider_tx_id: string | null;
+  reference: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  plan_id?: string | null;
+  installment_id?: string | null;
+  created_at: string;
+};
+
 export type InstallmentRecord = {
   id: string;
   plan_id: string;
@@ -86,6 +100,13 @@ export type InstallmentLinkRecord = {
   created_at: string;
 };
 
+export const ACTIVE_PENDING_PAYMENT_STATUSES = [
+  'PENDING',
+  'PROCESSING',
+  'REQUIRES_ACTION',
+  'APPROVAL_PENDING',
+] as const;
+
 export async function getBookingById(id: string): Promise<BookingRecord | null> {
   const supabase = ensureSupabase();
   const { data, error } = await supabase
@@ -111,6 +132,70 @@ export async function countPayments(bookingId: string): Promise<number> {
     return 0;
   }
   return count ?? 0;
+}
+
+export async function getApprovedPaymentsTotal(bookingId: string): Promise<number> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_payments')
+    .select('amount')
+    .eq('booking_id', bookingId)
+    .eq('status', 'APPROVED');
+  if (error) {
+    console.error('[cumbre.payments] approved sum error', error);
+    return 0;
+  }
+  return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+}
+
+export async function listActivePendingPayments(params: {
+  bookingId: string;
+  installmentId?: string | null;
+  reference?: string | null;
+}): Promise<PaymentRecord[]> {
+  const supabase = ensureSupabase();
+  let query = supabase
+    .from('cumbre_payments')
+    .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, plan_id, installment_id, created_at')
+    .eq('booking_id', params.bookingId)
+    .in('status', [...ACTIVE_PENDING_PAYMENT_STATUSES])
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (params.installmentId) {
+    query = query.eq('installment_id', params.installmentId);
+  }
+
+  if (params.reference) {
+    query = query.eq('reference', params.reference);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[cumbre.payments] pending list error', error);
+    return [];
+  }
+  return (data || []) as PaymentRecord[];
+}
+
+export async function hasApprovedPaymentByReference(params: {
+  provider: string;
+  reference: string;
+}): Promise<boolean> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_payments')
+    .select('id')
+    .eq('provider', params.provider)
+    .eq('reference', params.reference)
+    .eq('status', 'APPROVED')
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error('[cumbre.payments] approved by reference error', error);
+    return false;
+  }
+  return Boolean(data?.id);
 }
 
 export async function recordPayment(params: {

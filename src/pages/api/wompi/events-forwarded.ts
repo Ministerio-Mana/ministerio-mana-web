@@ -33,6 +33,8 @@ function hasWhatsappProvider(): boolean {
   return Boolean(env('WHATSAPP_WEBHOOK_URL'));
 }
 
+const WOMPI_FAILED_STATUSES = new Set(['DECLINED', 'VOIDED', 'ERROR', 'FAILED']);
+
 function validInternalSignature(payload: string, signature: string | null): boolean {
   const secret = env('INTERNAL_WEBHOOK_SECRET');
   if (!secret || !signature) return false;
@@ -148,7 +150,12 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const normalizedStatus = transaction?.status ?? 'PENDING';
+    const wompiStatus = String(transaction?.status ?? 'PENDING').toUpperCase();
+    const normalizedStatus = wompiStatus === 'APPROVED'
+      ? 'APPROVED'
+      : WOMPI_FAILED_STATUSES.has(wompiStatus)
+        ? 'FAILED'
+        : 'PENDING';
     const amount = amountInCents ? Number(amountInCents) / 100 : 0;
     const normalizedCurrency = transaction?.currency || 'COP';
     const providerTxId = txId ? String(txId) : null;
@@ -161,18 +168,23 @@ export const POST: APIRoute = async ({ request }) => {
       const installmentByRef = reference ? await getInstallmentByReference(reference) : null;
       const installment = installmentByRef || await getNextPendingInstallment(planId);
       if (installment) {
+        const isApproved = normalizedStatus === 'APPROVED';
+        const isFailed = normalizedStatus === 'FAILED';
+        const wasPaid = installment.status === 'PAID';
+        const nextInstallmentStatus = isApproved ? 'PAID' : isFailed ? 'FAILED' : 'PROCESSING';
+
         installmentId = installment.id;
         await updateInstallment(installment.id, {
-          status: normalizedStatus === 'APPROVED' ? 'PAID' : 'FAILED',
+          status: nextInstallmentStatus,
           provider_tx_id: providerTxId,
           provider_reference: reference,
-          paid_at: normalizedStatus === 'APPROVED' ? new Date().toISOString() : null,
-          attempt_count: normalizedStatus === 'APPROVED'
-            ? installment.attempt_count
-            : Number(installment.attempt_count || 0) + 1,
-          last_error: normalizedStatus === 'APPROVED' ? null : 'Wompi payment failed',
+          paid_at: isApproved ? new Date().toISOString() : null,
+          attempt_count: isFailed
+            ? Number(installment.attempt_count || 0) + 1
+            : installment.attempt_count,
+          last_error: isFailed ? 'Wompi payment failed' : null,
         });
-        if (normalizedStatus === 'APPROVED') {
+        if (isApproved && !wasPaid) {
           await addPlanPayment(planId, amount);
           await refreshPlanNextDueDate(planId);
           if (installmentId) {
