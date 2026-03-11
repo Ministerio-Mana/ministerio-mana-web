@@ -1170,8 +1170,9 @@ export class RegistrationModal {
         }
 
         const totalAmount = this.getTotal();
-        const paymentAmount = this.parsePaymentAmount();
-        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        const lockPaymentEdition = this.isEditMode && !this.canEditPayment;
+        const paymentAmount = lockPaymentEdition ? null : this.parsePaymentAmount();
+        const customEnabled = lockPaymentEdition ? false : Boolean(this.paymentCustomToggle?.checked);
         if (customEnabled && paymentAmount == null && !this.isEditMode) {
             this.showAlert('Ingresa el valor pagado hoy para el aporte libre');
             return;
