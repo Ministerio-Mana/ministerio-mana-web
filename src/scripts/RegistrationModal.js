@@ -332,6 +332,9 @@ export class RegistrationModal {
 
     setModalMode(isEditing, bookingRef = '') {
         this.isEditMode = isEditing;
+        if (!isEditing) {
+            this.paymentOptionBackup = null;
+        }
         if (this.modalTitle) {
             this.modalTitle.textContent = isEditing ? 'Editar Participante' : this.defaultModalTitle;
         }
@@ -1082,6 +1085,26 @@ export class RegistrationModal {
     }
 
     handleCustomPaymentToggle() {
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        if (!this.isEditMode) {
+            const fullOption = document.querySelector('input[name="payment_option"][value="FULL"]');
+            if (customEnabled) {
+                const selected = document.querySelector('input[name="payment_option"]:checked');
+                const selectedValue = selected?.value || null;
+                if (selectedValue && selectedValue !== 'FULL') {
+                    this.paymentOptionBackup = selectedValue;
+                }
+                if (fullOption) {
+                    fullOption.checked = true;
+                }
+            } else if (this.paymentOptionBackup) {
+                const previous = document.querySelector(`input[name="payment_option"][value="${this.paymentOptionBackup}"]`);
+                if (previous) {
+                    previous.checked = true;
+                }
+                this.paymentOptionBackup = null;
+            }
+        }
         this.updatePaymentUI();
     }
 
@@ -1161,7 +1184,9 @@ export class RegistrationModal {
         }
 
         const paymentOption = document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
-        if (paymentOption === 'DEPOSIT') {
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        const effectivePaymentOption = (!this.isEditMode && customEnabled) ? 'FULL' : paymentOption;
+        if (effectivePaymentOption === 'DEPOSIT') {
             const depositError = this.validateDepositSchedule();
             if (depositError) {
                 this.showAlert(depositError);
@@ -1172,8 +1197,8 @@ export class RegistrationModal {
         const totalAmount = this.getTotal();
         const lockPaymentEdition = this.isEditMode && !this.canEditPayment;
         const paymentAmount = lockPaymentEdition ? null : this.parsePaymentAmount();
-        const customEnabled = lockPaymentEdition ? false : Boolean(this.paymentCustomToggle?.checked);
-        if (customEnabled && paymentAmount == null && !this.isEditMode) {
+        const customEnabledForValidation = lockPaymentEdition ? false : customEnabled;
+        if (customEnabledForValidation && paymentAmount == null && !this.isEditMode) {
             this.showAlert('Ingresa el valor pagado hoy para el aporte libre');
             return;
         }
@@ -1325,7 +1350,10 @@ export class RegistrationModal {
     }
 
     collectFormData() {
-        const paymentOption = document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
+        let paymentOption = document.querySelector('input[name="payment_option"]:checked')?.value || 'FULL';
+        if (!this.isEditMode && Boolean(this.paymentCustomToggle?.checked)) {
+            paymentOption = 'FULL';
+        }
         const installmentFrequency = document.querySelector('input[name="installment_frequency"]:checked')?.value || 'MONTHLY';
         const depositDueDate = this.depositDueDate?.value || '';
         const paymentAmount = this.parsePaymentAmount();
@@ -1509,6 +1537,7 @@ export class RegistrationModal {
         this.selectedChurch = null;
         this.currencyOverride = false;
         this.paymentAmountTouched = false;
+        this.paymentOptionBackup = null;
         this.leaderDraft = null;
         this.idempotencyKey = null;
         this.lastSubmissionSignature = null;
