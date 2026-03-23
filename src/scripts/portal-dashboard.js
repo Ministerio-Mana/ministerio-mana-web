@@ -126,6 +126,7 @@ const churchInstallmentsEmpty = document.getElementById('church-installments-emp
 const churchInstallmentsList = document.getElementById('church-installments-list');
 const churchInstallmentsSearch = document.getElementById('church-installments-search');
 const churchInstallmentsStatusFilter = document.getElementById('church-installments-status');
+const churchInstallmentsChargeFilter = document.getElementById('church-installments-charge');
 const churchInstallmentsPageSize = document.getElementById('church-installments-page-size');
 const churchInstallmentsCount = document.getElementById('church-installments-count');
 const churchInstallmentsPagination = document.getElementById('church-installments-pagination');
@@ -2020,10 +2021,34 @@ function updateChurchInstallmentsView(options = {}) {
   renderChurchInstallments(buildChurchInstallmentsView());
 }
 
-function isInstallmentAutoCharge(item) {
+function resolveInstallmentChargeMode(item) {
   const plan = item?.plan || {};
-  return (plan.provider === 'wompi' && plan.provider_payment_method_id)
-    || (plan.provider === 'stripe' && plan.provider_subscription_id);
+  const provider = (plan.provider || '').toString().trim().toLowerCase();
+  const hasWompiPaymentMethod = Boolean(plan.provider_payment_method_id);
+  const hasStripeSubscription = Boolean(plan.provider_subscription_id);
+
+  if (item?.is_balance_only) return 'OTHER';
+  if (provider === 'wompi') return hasWompiPaymentMethod ? 'WOMPI_AUTO' : 'WOMPI_MANUAL';
+  if (provider === 'stripe') return hasStripeSubscription ? 'STRIPE_AUTO' : 'STRIPE_MANUAL';
+  if (provider === 'manual' || provider === 'cash' || provider === 'physical') return 'MANUAL_CASH';
+  return 'OTHER';
+}
+
+function getInstallmentChargeMeta(mode) {
+  const map = {
+    WOMPI_AUTO: { label: 'Wompi automático', className: 'bg-emerald-100 text-emerald-700' },
+    WOMPI_MANUAL: { label: 'Wompi manual', className: 'bg-amber-100 text-amber-700' },
+    STRIPE_AUTO: { label: 'Stripe automático', className: 'bg-emerald-100 text-emerald-700' },
+    STRIPE_MANUAL: { label: 'Stripe manual', className: 'bg-amber-100 text-amber-700' },
+    MANUAL_CASH: { label: 'Manual / efectivo', className: 'bg-slate-100 text-slate-700' },
+    OTHER: { label: 'Otro', className: 'bg-slate-100 text-slate-700' },
+  };
+  return map[mode] || map.OTHER;
+}
+
+function isInstallmentAutoCharge(item) {
+  const mode = resolveInstallmentChargeMode(item);
+  return mode === 'WOMPI_AUTO' || mode === 'STRIPE_AUTO';
 }
 
 function isInstallmentRemindable(item) {
@@ -2296,6 +2321,7 @@ function renderChurchPayments(list) {
 function filterChurchInstallments(list) {
   const query = churchInstallmentsSearch?.value?.trim().toLowerCase() || '';
   const status = churchInstallmentsStatusFilter?.value || '';
+  const charge = churchInstallmentsChargeFilter?.value || '';
   return (list || []).filter((item) => {
     const booking = item.booking || {};
     const searchable = [
@@ -2316,6 +2342,8 @@ function filterChurchInstallments(list) {
     } else if (status && item.status !== status) {
       return false;
     }
+    const chargeMode = resolveInstallmentChargeMode(item);
+    if (charge && chargeMode !== charge) return false;
     return true;
   });
 }
@@ -2440,33 +2468,32 @@ function renderChurchInstallments(list) {
   paginated.items.forEach((item) => {
     const booking = item.booking || {};
     const plan = item.plan || {};
+    const chargeMode = resolveInstallmentChargeMode(item);
+    const chargeMeta = getInstallmentChargeMeta(chargeMode);
     const statusLabel = item.status || 'PENDING';
     const statusClass = statusLabel === 'PAID'
       ? 'bg-green-100 text-green-700'
       : statusLabel === 'FAILED'
         ? 'bg-red-100 text-red-700'
         : 'bg-yellow-100 text-yellow-700';
-    const amountLabel = formatCurrency(item.amount, item.currency || plan.currency);
+    const amountLabel = formatCurrency(item.amount, item.currency || plan.currency || booking.currency);
     const dueLabel = item.due_date ? formatDate(item.due_date) : 'Sin fecha';
     const reminderLabel = item.last_reminder?.sent_at ? formatDateTime(item.last_reminder.sent_at) : '—';
     const linkLabel = item.last_link?.created_at ? formatDateTime(item.last_link.created_at) : '—';
     const isBalanceOnly = Boolean(item.is_balance_only);
-    const isAuto = (plan.provider === 'wompi' && plan.provider_payment_method_id)
-      || (plan.provider === 'stripe' && plan.provider_subscription_id);
-    const chargeLabel = isAuto ? 'Auto' : 'Manual';
-    const chargeClass = isAuto ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+    const isAutoCharge = isInstallmentAutoCharge(item);
     const safeStatusLabel = safeText(statusLabel);
     const safeAmountLabel = safeText(amountLabel);
     const safeDueLabel = safeText(dueLabel);
     const safeReminderLabel = safeText(reminderLabel);
     const safeLinkLabel = safeText(linkLabel);
-    const safeChargeLabel = safeText(chargeLabel);
+    const safeChargeLabel = safeText(chargeMeta.label);
     const safeContactLabel = safeText(booking.contact_name || booking.contact_email || 'Sin nombre');
     const safeReference = safeText((item.provider_reference || item.id).toString().slice(0, 12).toUpperCase());
     const safeInstallmentId = safeAttr(item.id || '');
     const actionsHtml = isBalanceOnly
       ? '<div class="text-xs font-semibold text-slate-500">Sin fecha asignada</div>'
-      : (isAuto
+      : (isAutoCharge
         ? '<div class="text-xs font-semibold text-emerald-700">Cobro automático activo</div>'
         : `
           <button class="church-installment-action px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${safeInstallmentId}">
@@ -2490,7 +2517,7 @@ function renderChurchInstallments(list) {
         </div>
         <div class="text-right space-y-2">
           <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass}">${safeStatusLabel}</span>
-          <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${chargeClass}">Cobro ${safeChargeLabel}</span>
+          <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${chargeMeta.className}">${safeChargeLabel}</span>
           <div class="text-[11px] text-slate-400">Último link: ${safeLinkLabel}</div>
           <div class="text-[11px] text-slate-400">Último recordatorio: ${safeReminderLabel}</div>
         </div>
@@ -4719,6 +4746,9 @@ churchInstallmentsSearch?.addEventListener('input', () => {
   updateChurchInstallmentsView({ resetPage: true });
 });
 churchInstallmentsStatusFilter?.addEventListener('change', () => {
+  updateChurchInstallmentsView({ resetPage: true });
+});
+churchInstallmentsChargeFilter?.addEventListener('change', () => {
   updateChurchInstallmentsView({ resetPage: true });
 });
 churchInstallmentsPageSize?.addEventListener('change', () => {
