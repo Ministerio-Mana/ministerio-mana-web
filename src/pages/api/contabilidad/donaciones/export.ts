@@ -96,6 +96,7 @@ export const GET = async ({ request, clientAddress }: APIContext) => {
   const city = ilikeValue(url.searchParams.get('city'));
   const church = ilikeValue(url.searchParams.get('church'));
   const campus = ilikeValue(url.searchParams.get('campus'));
+  const missionary = ilikeValue(url.searchParams.get('missionary'));
   const email = ilikeValue(url.searchParams.get('email'));
   const name = ilikeValue(url.searchParams.get('name'));
   const currency = (url.searchParams.get('currency') ?? '').toUpperCase();
@@ -116,6 +117,7 @@ export const GET = async ({ request, clientAddress }: APIContext) => {
   if (city) query = query.ilike('donor_city', city);
   if (church) query = query.ilike('church', church);
   if (campus) query = query.ilike('campus', campus);
+  if (missionary) query = query.ilike('missionary_name', missionary);
   if (email) query = query.ilike('donor_email', email);
   if (name) query = query.ilike('donor_name', name);
   if (currency) query = query.eq('currency', currency);
@@ -149,6 +151,8 @@ export const GET = async ({ request, clientAddress }: APIContext) => {
     'project_name',
     'event_name',
     'campus',
+    'missionary_id',
+    'missionary_name',
     'church',
     'church_city',
     'donor_name',
@@ -182,6 +186,8 @@ export const GET = async ({ request, clientAddress }: APIContext) => {
     csvEscape(row.project_name),
     csvEscape(row.event_name),
     csvEscape(row.campus),
+    csvEscape(row.missionary_id),
+    csvEscape(row.missionary_name),
     csvEscape(row.church),
     csvEscape(row.church_city),
     csvEscape(row.donor_name),
