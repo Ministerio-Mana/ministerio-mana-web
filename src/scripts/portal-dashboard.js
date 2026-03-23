@@ -1740,25 +1740,17 @@ function sortChurchBookings(list, meta, status, sortOption) {
     const nextDueTimeB = nextDueB ? nextDueB.getTime() : Number.POSITIVE_INFINITY;
     const lastPaymentTimeA = lastPaymentA ? lastPaymentA.getTime() : 0;
     const lastPaymentTimeB = lastPaymentB ? lastPaymentB.getTime() : 0;
-    const activityA = Math.max(lastPaymentTimeA, nextDueA ? nextDueA.getTime() : 0, createdA);
-    const activityB = Math.max(lastPaymentTimeB, nextDueB ? nextDueB.getTime() : 0, createdB);
-    const statusRecentA = normalizedStatus === 'paid'
-      ? (lastPaymentTimeA || createdA)
-      : normalizedStatus === 'pending'
-        ? (nextDueA ? nextDueA.getTime() : createdA)
-        : activityA;
-    const statusRecentB = normalizedStatus === 'paid'
-      ? (lastPaymentTimeB || createdB)
-      : normalizedStatus === 'pending'
-        ? (nextDueB ? nextDueB.getTime() : createdB)
-        : activityB;
+    const recencyA = lastPaymentTimeA || createdA;
+    const recencyB = lastPaymentTimeB || createdB;
+    const activityA = Math.max(recencyA, nextDueA ? nextDueA.getTime() : 0);
+    const activityB = Math.max(recencyB, nextDueB ? nextDueB.getTime() : 0);
 
-    if (normalizedSort === 'recent_asc') return statusRecentA - statusRecentB;
+    if (normalizedSort === 'recent_asc') return recencyA - recencyB;
     if (normalizedSort === 'paid_desc') return totalPaidB - totalPaidA;
     if (normalizedSort === 'total_desc') return totalAmountB - totalAmountA;
     if (normalizedSort === 'pending_desc') return pendingB - pendingA;
     if (normalizedSort === 'next_due_asc') return nextDueTimeA - nextDueTimeB;
-    if (normalizedSort === 'recent_desc') return statusRecentB - statusRecentA;
+    if (normalizedSort === 'recent_desc') return recencyB - recencyA;
 
     if (normalizedStatus === 'pending') {
       return nextDueTimeA - nextDueTimeB;
