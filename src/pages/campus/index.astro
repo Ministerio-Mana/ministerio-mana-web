@@ -10,6 +10,7 @@ const description = "Únete a la misión en las universidades. Apoya a nuestros 
 
 // Server-side geo detection (Vercel / Cloudflare headers)
 const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
+const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_ID_'));
 ---
 
 <BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
@@ -213,7 +214,9 @@ const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
 
       <!-- Flex grid: 3 cards first row, 2 centered on second row -->
       <div class="missionaries-grid flex flex-wrap justify-center gap-8 lg:gap-12">
-        {MISIONEROS.map((m) => (
+        {MISIONEROS.map((m) => {
+          const showVideo = hasPlayableVideo(m.video);
+          return (
           <article class="relative group missionary-card w-full md:w-[calc(33.333%-2rem)] min-w-[280px]">
             <!-- Card Background with GLOW -->
             <div class="absolute inset-0 bg-[#F3F0E6] transform rotate-1 group-hover:rotate-0 transition-transform duration-300 rounded-3xl" style="box-shadow: 10px 10px 0px #2DD4BF;"></div>
@@ -221,7 +224,27 @@ const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
             <div class="relative z-10 bg-white overflow-hidden p-2 h-full flex flex-col glow-hover border-organic border-2 border-[#001B3A]">
                 <!-- Video/Image Header -->
                 <div class="relative h-56 bg-[#001B3A] overflow-hidden border-organic">
-                    <iframe src={m.video} class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"></iframe>
+                    {showVideo ? (
+                      <iframe
+                        src={m.video}
+                        class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                        title={m.nombre}
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      ></iframe>
+                    ) : m.foto ? (
+                      <img
+                        src={m.foto}
+                        alt={m.nombre}
+                        class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="w-full h-full bg-[#001B3A] flex items-center justify-center">
+                        <span class="font-intro text-white/30 text-lg uppercase">Campus Maná</span>
+                      </div>
+                    )}
                     
                     <!-- Name Tag (organic border) -->
                     <div class="absolute -bottom-4 -left-2 bg-yellow-400 px-5 py-2 transform -rotate-2 shadow-md z-20 border-organic border-2 border-[#001B3A]">
@@ -246,7 +269,8 @@ const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
                 </div>
             </div>
           </article>
-        ))}
+        );
+        })}
       </div>
     </div>
   </section>

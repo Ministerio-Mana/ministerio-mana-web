@@ -97,6 +97,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
         const totalAmount = amount * selectedSlugs.length;
         const isRecurring = frequency === 'monthly';
+        const missionaryName = selectedNames.length === 1
+            ? selectedNames[0]
+            : selectedNames.join(', ');
         const description = sanitizeDescription(
             `Campus Maná - ${selectedNames.join(', ')}`,
             'Donación Campus Maná',
@@ -132,6 +135,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             need_certificate: false,
             source: 'campus-multi-donation',
             cumbre_booking_id: null,
+            missionary_id: null,
+            missionary_name: missionaryName,
             raw_event: JSON.stringify({
                 missionaries: selectedSlugs,
                 amountPerMissionary: amount,

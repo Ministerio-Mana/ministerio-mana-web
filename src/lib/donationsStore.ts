@@ -36,6 +36,8 @@ export type DonationRecord = {
   payment_domain?: DonationDomain | string | null;
   church_id?: string | null;
   user_id?: string | null;
+  missionary_id?: string | null;
+  missionary_name?: string | null;
   raw_event?: unknown;
 };
 
@@ -182,6 +184,8 @@ export async function createDonation(payload: Omit<DonationRecord, 'id'>): Promi
     payment_domain: payload.payment_domain ?? classification.paymentDomain,
     church_id: payload.church_id ?? null,
     user_id: payload.user_id ?? null,
+    missionary_id: payload.missionary_id ?? null,
+    missionary_name: payload.missionary_name ?? null,
   };
 
   let { data, error } = await supabase

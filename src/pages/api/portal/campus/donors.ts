@@ -16,11 +16,11 @@ export const GET: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
     }
 
-    let userProfile: { user_id?: string; role?: string } | null = null;
+    let userProfile: { user_id?: string; role?: string; full_name?: string | null } | null = null;
     if (user) {
         const { data: profile } = await supabaseAdmin
             .from('user_profiles')
-            .select('user_id, role')
+            .select('user_id, role, full_name')
             .eq('user_id', user.id)
             .single();
         userProfile = profile ?? null;
@@ -41,20 +41,58 @@ export const GET: APIRoute = async ({ request }) => {
     const isAdmin = role === 'admin' || role === 'superadmin';
     const isCampusMissionary = role === 'campus_missionary';
 
-    // Build query
-    let query = supabaseAdmin
-        .from('donations')
-        .select('id, donor_name, donor_email, donor_phone, amount, currency, created_at, missionary_id, missionary_name, campus, status')
-        .eq('status', 'APPROVED')
-        .order('created_at', { ascending: false });
+    const donationSelect = 'id, donor_name, donor_email, donor_phone, amount, currency, created_at, missionary_id, missionary_name, campus, status';
 
-    // Scoping: Campus missionaries only see THEIR donors
+    let donations: any[] = [];
+    let error: any = null;
+
     if (isCampusMissionary && user?.id) {
-        query = query.eq('missionary_id', user.id);
-    }
-    // Admins see all donations (no filter)
+        // Primary scope: strict ownership by missionary_id.
+        const byId = await supabaseAdmin
+            .from('donations')
+            .select(donationSelect)
+            .eq('status', 'APPROVED')
+            .eq('missionary_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(200);
+        if (byId.error) {
+            error = byId.error;
+        } else {
+            donations = byId.data || [];
+        }
 
-    const { data: donations, error } = await query.limit(200);
+        // Fallback scope: legacy rows where only missionary_name was saved.
+        const fullName = String(userProfile?.full_name || '').trim();
+        if (!error && fullName) {
+            const byName = await supabaseAdmin
+                .from('donations')
+                .select(donationSelect)
+                .eq('status', 'APPROVED')
+                .ilike('missionary_name', `%${fullName}%`)
+                .order('created_at', { ascending: false })
+                .limit(200);
+            if (byName.error) {
+                error = byName.error;
+            } else {
+                const dedupe = new Set(donations.map((d) => d.id));
+                (byName.data || []).forEach((row: any) => {
+                    if (!dedupe.has(row.id)) donations.push(row);
+                });
+                donations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                donations = donations.slice(0, 200);
+            }
+        }
+    } else {
+        // Admins/Superadmins: global view.
+        const globalRows = await supabaseAdmin
+            .from('donations')
+            .select(donationSelect)
+            .eq('status', 'APPROVED')
+            .order('created_at', { ascending: false })
+            .limit(200);
+        error = globalRows.error;
+        donations = globalRows.data || [];
+    }
 
     if (error) {
         console.error('[campus.donors] Error:', error);
@@ -64,7 +102,7 @@ export const GET: APIRoute = async ({ request }) => {
     // Group donations by donor
     const donorMap = new Map();
 
-    (donations || []).forEach((donation) => {
+    donations.forEach((donation) => {
         const donorKey = donation.donor_email || donation.donor_name || 'unknown';
 
         if (!donorMap.has(donorKey)) {
@@ -106,14 +144,14 @@ export const GET: APIRoute = async ({ request }) => {
 
         // Count unique missionaries
         const uniqueMissionaries = new Set();
-        donations?.forEach(d => {
+        donations.forEach(d => {
             if (d.missionary_id) uniqueMissionaries.add(d.missionary_id);
         });
 
         stats = {
             totalDonors,
             totalAmount,
-            currency: donations?.[0]?.currency || 'USD',
+            currency: donations[0]?.currency || 'USD',
             activeMissionaries: uniqueMissionaries.size
         };
     }

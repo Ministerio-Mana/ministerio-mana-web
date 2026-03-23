@@ -3,6 +3,7 @@ import { MISIONEROS } from '@data/misioneros';
 interface Props { country?: string; }
 const { country = 'CO' } = Astro.props;
 const isColombia = country.toUpperCase() === 'CO';
+const totalMissionaries = MISIONEROS.length;
 ---
 
 <section id="multi-donation" class="py-24 bg-brand-teal relative overflow-hidden">
@@ -36,8 +37,8 @@ const isColombia = country.toUpperCase() === 'CO';
                 <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count="4">
                     4 misioneros
                 </button>
-                <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count="5">
-                    Todos (5)
+                <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count={totalMissionaries}>
+                    Todos ({totalMissionaries})
                 </button>
             </div>
         </div>
