@@ -6,9 +6,19 @@ import { createStripeDonationSession, createStripeInstallmentSession } from '@li
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { MISIONEROS } from '@data/misioneros';
 
 export const prerender = false;
+
+function normalizeMissionaryName(value: string): string {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
 
 /**
  * POST /api/campus/checkout
@@ -97,9 +107,38 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
         const totalAmount = amount * selectedSlugs.length;
         const isRecurring = frequency === 'monthly';
-        const missionaryName = selectedNames.length === 1
-            ? selectedNames[0]
-            : selectedNames.join(', ');
+
+        const selectedMissionaries = selectedSlugs.map((slug, index) => ({
+            slug,
+            name: selectedNames[index],
+            userId: null as string | null,
+        }));
+
+        if (supabaseAdmin) {
+            const { data: campusProfiles } = await supabaseAdmin
+                .from('user_profiles')
+                .select('user_id, full_name, role')
+                .eq('role', 'campus_missionary');
+
+            const byName = new Map<string, string>();
+            (campusProfiles || []).forEach((profile: any) => {
+                const normalized = normalizeMissionaryName(profile?.full_name || '');
+                if (!normalized || byName.has(normalized)) return;
+                if (profile?.user_id) byName.set(normalized, String(profile.user_id));
+            });
+
+            selectedMissionaries.forEach((missionary) => {
+                const normalized = normalizeMissionaryName(missionary.name);
+                missionary.userId = byName.get(normalized) || null;
+            });
+        }
+
+        const missionaryName = selectedMissionaries.length === 1
+            ? selectedMissionaries[0].name
+            : selectedMissionaries.map((m) => m.name).join(', ');
+        const missionaryId = selectedMissionaries.length === 1
+            ? selectedMissionaries[0].userId
+            : null;
         const description = sanitizeDescription(
             `Campus Maná - ${selectedNames.join(', ')}`,
             'Donación Campus Maná',
@@ -135,14 +174,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             need_certificate: false,
             source: 'campus-multi-donation',
             cumbre_booking_id: null,
-            missionary_id: null,
+            missionary_id: missionaryId,
             missionary_name: missionaryName,
-            raw_event: JSON.stringify({
+            raw_event: {
                 missionaries: selectedSlugs,
+                missionaryMatches: selectedMissionaries.map((m) => ({
+                    slug: m.slug,
+                    name: m.name,
+                    userId: m.userId,
+                })),
                 amountPerMissionary: amount,
                 totalAmount,
                 frequency,
-            }),
+            },
         });
 
         let checkoutUrl: string;

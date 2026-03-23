@@ -2,8 +2,18 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { MISIONEROS } from '@data/misioneros';
 
 export const prerender = false;
+
+function normalizeMissionaryName(value: string): string {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
 
 export const GET: APIRoute = async ({ request }) => {
     if (!supabaseAdmin) {
@@ -41,7 +51,7 @@ export const GET: APIRoute = async ({ request }) => {
     const isAdmin = role === 'admin' || role === 'superadmin';
     const isCampusMissionary = role === 'campus_missionary';
 
-    const donationSelect = 'id, donor_name, donor_email, donor_phone, amount, currency, created_at, missionary_id, missionary_name, campus, status';
+    const donationSelect = 'id, donor_name, donor_email, donor_phone, amount, currency, created_at, missionary_id, missionary_name, campus, status, raw_event';
 
     let donations: any[] = [];
     let error: any = null;
@@ -76,6 +86,29 @@ export const GET: APIRoute = async ({ request }) => {
             } else {
                 const dedupe = new Set(donations.map((d) => d.id));
                 (byName.data || []).forEach((row: any) => {
+                    if (!dedupe.has(row.id)) donations.push(row);
+                });
+                donations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                donations = donations.slice(0, 200);
+            }
+        }
+
+        const missionarySlug = MISIONEROS.find((m) => (
+            normalizeMissionaryName(m.nombre) === normalizeMissionaryName(fullName)
+        ))?.slug;
+        if (!error && missionarySlug) {
+            const byRawEvent = await supabaseAdmin
+                .from('donations')
+                .select(donationSelect)
+                .eq('status', 'APPROVED')
+                .contains('raw_event', { missionaries: [missionarySlug] })
+                .order('created_at', { ascending: false })
+                .limit(200);
+            if (byRawEvent.error) {
+                error = byRawEvent.error;
+            } else {
+                const dedupe = new Set(donations.map((d) => d.id));
+                (byRawEvent.data || []).forEach((row: any) => {
                     if (!dedupe.has(row.id)) donations.push(row);
                 });
                 donations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
