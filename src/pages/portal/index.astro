@@ -574,9 +574,18 @@ import Sidebar from '@components/portal/Sidebar.astro';
                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <!-- Installments -->
                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-lg shadow-slate-200/50">
-                          <div class="flex items-center justify-between mb-6">
+                          <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
                             <h3 class="text-sm font-bold text-[#293C74]">Cuotas Pendientes</h3>
-                            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                            <div class="flex items-center gap-2">
+                              <button
+                                id="church-installments-remind-visible"
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-[#293C74] hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                type="button"
+                              >
+                                Recordar visibles
+                              </button>
+                              <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                            </div>
                           </div>
                           <div class="space-y-3 mb-4">
                             <div class="relative">
@@ -590,6 +599,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                                 Estado
                                 <select id="church-installments-status" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
                                   <option value="">Todos</option>
+                                  <option value="OVERDUE">Vencidas</option>
                                   <option value="PENDING">Pendientes</option>
                                   <option value="FAILED">Fallidas</option>
                                   <option value="PAID">Pagadas</option>

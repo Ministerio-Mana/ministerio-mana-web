@@ -130,6 +130,7 @@ const churchInstallmentsPageSize = document.getElementById('church-installments-
 const churchInstallmentsCount = document.getElementById('church-installments-count');
 const churchInstallmentsPagination = document.getElementById('church-installments-pagination');
 const churchInstallmentsStatusMsg = document.getElementById('church-installments-status-msg');
+const churchInstallmentsRemindVisibleBtn = document.getElementById('church-installments-remind-visible');
 const participantsList = document.getElementById('participants-list');
 const addParticipantBtn = document.getElementById('btn-add-participant');
 const inviteCard = document.getElementById('church-invite-card');
@@ -362,6 +363,7 @@ const DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE = 20;
 const DEFAULT_CHURCH_PAYMENTS_PAGE_SIZE = 10;
 const DEFAULT_CHURCH_INSTALLMENTS_PAGE_SIZE = 10;
 const DEFAULT_ADMIN_FOLLOWUPS_PAGE_SIZE = 12;
+const MAX_BULK_INSTALLMENT_REMINDERS = 80;
 
 const normalizeGeoToken = (value) =>
   String(value || '')
@@ -2018,6 +2020,44 @@ function updateChurchInstallmentsView(options = {}) {
   renderChurchInstallments(buildChurchInstallmentsView());
 }
 
+function isInstallmentAutoCharge(item) {
+  const plan = item?.plan || {};
+  return (plan.provider === 'wompi' && plan.provider_payment_method_id)
+    || (plan.provider === 'stripe' && plan.provider_subscription_id);
+}
+
+function isInstallmentRemindable(item) {
+  if (!item?.id) return false;
+  if (item.is_balance_only) return false;
+  if (isInstallmentAutoCharge(item)) return false;
+  return ['PENDING', 'FAILED'].includes((item.status || '').toUpperCase());
+}
+
+function isInstallmentOverdue(item) {
+  if (!isInstallmentRemindable(item)) return false;
+  if (!item?.due_date) return false;
+  const dueDate = toDate(item.due_date);
+  if (!dueDate) return false;
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return due.getTime() < today.getTime();
+}
+
+function updateChurchInstallmentsBulkReminderButton(list = []) {
+  if (!churchInstallmentsRemindVisibleBtn) return;
+  const remindableCount = (list || []).filter((item) => isInstallmentRemindable(item)).length;
+  churchInstallmentsRemindVisibleBtn.textContent = remindableCount > 0
+    ? `Recordar visibles (${remindableCount})`
+    : 'Recordar visibles';
+  if (remindableCount > 0) {
+    churchInstallmentsRemindVisibleBtn.removeAttribute('disabled');
+  } else {
+    churchInstallmentsRemindVisibleBtn.setAttribute('disabled', 'disabled');
+  }
+}
+
 function resolveBookingChurchForEdit(booking) {
   if (!booking) return null;
   if (booking.church_id) {
@@ -2271,7 +2311,11 @@ function filterChurchInstallments(list) {
       .join(' ')
       .toLowerCase();
     if (query && !searchable.includes(query)) return false;
-    if (status && item.status !== status) return false;
+    if (status === 'OVERDUE') {
+      if (!isInstallmentOverdue(item)) return false;
+    } else if (status && item.status !== status) {
+      return false;
+    }
     return true;
   });
 }
@@ -2383,6 +2427,7 @@ function renderChurchInstallments(list) {
   if (!list.length) {
     churchInstallmentsEmpty.classList.remove('hidden');
     churchInstallmentsList.classList.add('hidden');
+    updateChurchInstallmentsBulkReminderButton(list);
     return;
   }
   churchInstallmentsEmpty.classList.add('hidden');
@@ -2457,6 +2502,22 @@ function renderChurchInstallments(list) {
     churchInstallmentsList.appendChild(card);
   });
   renderChurchInstallmentsPagination(paginated);
+  updateChurchInstallmentsBulkReminderButton(list);
+}
+
+async function sendChurchInstallmentReminder(installmentId) {
+  const headers = await getActionAuthHeaders();
+  const res = await fetch('/api/portal/iglesia/installments/remind', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json', ...headers },
+    body: JSON.stringify({ installmentId }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.error || 'No se pudo enviar');
+  }
+  return data;
 }
 
 async function loadChurchBookings(headers = {}) {
@@ -2490,6 +2551,7 @@ async function loadChurchInstallments(headers = {}) {
     churchInstallmentsEmpty.textContent = 'Selecciona una iglesia para ver las cuotas.';
     churchInstallmentsEmpty.classList.remove('hidden');
     churchInstallmentsList.classList.add('hidden');
+    updateChurchInstallmentsBulkReminderButton([]);
     return;
   }
   try {
@@ -2514,6 +2576,7 @@ async function loadChurchInstallments(headers = {}) {
     if (churchInstallmentsStatusMsg) {
       churchInstallmentsStatusMsg.textContent = err?.message || 'No se pudo cargar.';
     }
+    updateChurchInstallmentsBulkReminderButton([]);
   }
 }
 
@@ -4506,9 +4569,11 @@ churchInstallmentsList?.addEventListener('click', async (event) => {
 
   try {
     if (action === 'copy-link') {
+      const headers = await getActionAuthHeaders();
       const res = await fetch('/api/portal/iglesia/installments/link', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+        credentials: 'include',
+        headers: { 'content-type': 'application/json', ...headers },
         body: JSON.stringify({ installmentId }),
       });
       const data = await res.json();
@@ -4522,13 +4587,7 @@ churchInstallmentsList?.addEventListener('click', async (event) => {
       }
       target.textContent = 'Link copiado';
     } else if (action === 'send-reminder') {
-      const res = await fetch('/api/portal/iglesia/installments/remind', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...portalAuthHeaders },
-        body: JSON.stringify({ installmentId }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo enviar');
+      await sendChurchInstallmentReminder(installmentId);
       target.textContent = 'Recordatorio enviado';
       await loadChurchInstallments(portalAuthHeaders);
     }
@@ -4541,6 +4600,70 @@ churchInstallmentsList?.addEventListener('click', async (event) => {
       target.removeAttribute('disabled');
       target.textContent = original;
     }, 2500);
+  }
+});
+
+churchInstallmentsRemindVisibleBtn?.addEventListener('click', async () => {
+  const remindable = buildChurchInstallmentsView().filter((item) => isInstallmentRemindable(item));
+  if (!remindable.length) {
+    showPortalAlert('No hay cuotas visibles disponibles para recordar.');
+    return;
+  }
+
+  const queue = remindable.slice(0, MAX_BULK_INSTALLMENT_REMINDERS);
+  const omitted = Math.max(remindable.length - queue.length, 0);
+  const overdueCount = queue.filter((item) => isInstallmentOverdue(item)).length;
+
+  const confirmed = await showPortalConfirm(
+    `Se enviarán ${queue.length} recordatorio${queue.length === 1 ? '' : 's'}`
+      + `${overdueCount ? ` (${overdueCount} vencida${overdueCount === 1 ? '' : 's'})` : ''}.`
+      + `${omitted ? ` Quedan ${omitted} fuera de este lote.` : ''}`,
+    {
+      title: 'Enviar recordatorios',
+      confirmLabel: 'Enviar',
+      tone: 'primary',
+    },
+  );
+  if (!confirmed) return;
+
+  const originalText = churchInstallmentsRemindVisibleBtn.textContent;
+  churchInstallmentsRemindVisibleBtn.setAttribute('disabled', 'disabled');
+
+  let sent = 0;
+  let failed = 0;
+
+  try {
+    for (let index = 0; index < queue.length; index += 1) {
+      const current = queue[index];
+      if (churchInstallmentsStatusMsg) {
+        churchInstallmentsStatusMsg.textContent = `Enviando recordatorios ${index + 1}/${queue.length}...`;
+      }
+      try {
+        await sendChurchInstallmentReminder(current.id);
+        sent += 1;
+      } catch (err) {
+        failed += 1;
+        console.error('[portal.installments.bulk-reminder]', current.id, err);
+      }
+    }
+
+    if (churchInstallmentsStatusMsg) {
+      churchInstallmentsStatusMsg.textContent = failed
+        ? `Listo: ${sent} enviado(s), ${failed} con error.`
+        : `Listo: ${sent} recordatorio(s) enviado(s).`;
+    }
+
+    showPortalAlert(
+      failed
+        ? `Se enviaron ${sent} recordatorios y ${failed} fallaron.`
+        : `Se enviaron ${sent} recordatorios correctamente.`,
+      { title: failed ? 'Proceso completado con alertas' : 'Proceso completado' },
+    );
+
+    await loadChurchInstallments(portalAuthHeaders);
+  } finally {
+    churchInstallmentsRemindVisibleBtn.textContent = originalText;
+    updateChurchInstallmentsBulkReminderButton(buildChurchInstallmentsView());
   }
 });
 
