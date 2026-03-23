@@ -1740,13 +1740,25 @@ function sortChurchBookings(list, meta, status, sortOption) {
     const nextDueTimeB = nextDueB ? nextDueB.getTime() : Number.POSITIVE_INFINITY;
     const lastPaymentTimeA = lastPaymentA ? lastPaymentA.getTime() : 0;
     const lastPaymentTimeB = lastPaymentB ? lastPaymentB.getTime() : 0;
+    const activityA = Math.max(lastPaymentTimeA, nextDueA ? nextDueA.getTime() : 0, createdA);
+    const activityB = Math.max(lastPaymentTimeB, nextDueB ? nextDueB.getTime() : 0, createdB);
+    const statusRecentA = normalizedStatus === 'paid'
+      ? (lastPaymentTimeA || createdA)
+      : normalizedStatus === 'pending'
+        ? (nextDueA ? nextDueA.getTime() : createdA)
+        : activityA;
+    const statusRecentB = normalizedStatus === 'paid'
+      ? (lastPaymentTimeB || createdB)
+      : normalizedStatus === 'pending'
+        ? (nextDueB ? nextDueB.getTime() : createdB)
+        : activityB;
 
-    if (normalizedSort === 'recent_asc') return createdA - createdB;
+    if (normalizedSort === 'recent_asc') return statusRecentA - statusRecentB;
     if (normalizedSort === 'paid_desc') return totalPaidB - totalPaidA;
     if (normalizedSort === 'total_desc') return totalAmountB - totalAmountA;
     if (normalizedSort === 'pending_desc') return pendingB - pendingA;
     if (normalizedSort === 'next_due_asc') return nextDueTimeA - nextDueTimeB;
-    if (normalizedSort === 'recent_desc') return createdB - createdA;
+    if (normalizedSort === 'recent_desc') return statusRecentB - statusRecentA;
 
     if (normalizedStatus === 'pending') {
       return nextDueTimeA - nextDueTimeB;
@@ -1754,8 +1766,6 @@ function sortChurchBookings(list, meta, status, sortOption) {
     if (normalizedStatus === 'paid') {
       return lastPaymentTimeB - lastPaymentTimeA;
     }
-    const activityA = Math.max(lastPaymentTimeA, nextDueA ? nextDueA.getTime() : 0, createdA);
-    const activityB = Math.max(lastPaymentTimeB, nextDueB ? nextDueB.getTime() : 0, createdB);
     return activityB - activityA;
   });
   return items;
@@ -1968,7 +1978,7 @@ function renderChurchBookings(list, meta) {
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             ${item.participant_count || 0} inscritos
          </span>
-         <span>${safeCreatedLabel}</span>
+         <span>Registro: ${safeCreatedLabel}</span>
       </div>
       ${canEdit ? `
         <div class="mt-4 flex justify-end">
