@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
@@ -24,6 +25,7 @@ import {
   updateInstallment,
   recomputeBookingTotals,
 } from '@lib/cumbreStore';
+import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createDonation } from '@lib/donationsStore';
@@ -103,6 +105,15 @@ function canEditManualPayment(booking: any): boolean {
 function isManualProvider(rawProvider: unknown): boolean {
   const provider = String(rawProvider || '').trim().toLowerCase();
   return provider === 'manual' || provider === 'cash' || provider === 'physical';
+}
+
+function buildManualEditProviderTxId(bookingId: string, idempotencyKey: string): string {
+  const digest = crypto
+    .createHash('sha256')
+    .update(`portal-iglesia-edit:${bookingId}:${idempotencyKey}`)
+    .digest('hex')
+    .slice(0, 32);
+  return `portal-iglesia-edit-${digest}`;
 }
 
 async function hasOnlinePaymentSignals(bookingId: string): Promise<boolean> {
@@ -390,6 +401,10 @@ export const PUT: APIRoute = async ({ request }) => {
   if (!bookingId) {
     return new Response(JSON.stringify({ ok: false, error: 'bookingId requerido' }), { status: 400 });
   }
+  const idempotencyKey = buildIdempotencyKey({
+    request,
+    rawKey: body.idempotencyKey ?? body.idempotency_key,
+  });
 
   const ctx = await getAccessContext(request);
   if (!ctx.ok) {
@@ -712,52 +727,94 @@ export const PUT: APIRoute = async ({ request }) => {
   if (paymentAmountInput != null && canEditPayment) {
     if (paymentAmountInput > 0) {
       const paymentIndex = (await countPayments(bookingId)) + 1;
-      const reference = buildPaymentReference(bookingId, paymentIndex);
+      let reference = buildPaymentReference(bookingId, paymentIndex);
+      const providerTxId = idempotencyKey ? buildManualEditProviderTxId(bookingId, idempotencyKey) : null;
       const { error: paymentInsertError } = await supabaseAdmin
         .from('cumbre_payments')
         .insert({
           booking_id: bookingId,
           provider: 'manual',
-          provider_tx_id: null,
+          provider_tx_id: providerTxId,
           reference,
           amount: paymentAmountInput,
           currency,
           status: 'APPROVED',
-          raw_event: { source: 'portal-iglesia-edit', method: 'manual' },
+          raw_event: {
+            source: 'portal-iglesia-edit',
+            method: 'manual',
+            idempotency_key: idempotencyKey || null,
+          },
         });
       if (paymentInsertError) {
-        console.error('[portal.iglesia.booking] payment insert error', paymentInsertError);
-        return new Response(JSON.stringify({ ok: false, error: 'No se pudo registrar el abono manual' }), { status: 500 });
+        const isDuplicateRequest = paymentInsertError.code === '23505' && Boolean(providerTxId);
+        if (!isDuplicateRequest) {
+          console.error('[portal.iglesia.booking] payment insert error', paymentInsertError);
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo registrar el abono manual' }), { status: 500 });
+        }
+
+        const { data: existingPayment, error: existingPaymentError } = await supabaseAdmin
+          .from('cumbre_payments')
+          .select('id, reference')
+          .eq('booking_id', bookingId)
+          .eq('provider', 'manual')
+          .eq('provider_tx_id', providerTxId!)
+          .maybeSingle();
+
+        if (existingPaymentError || !existingPayment?.id) {
+          console.error('[portal.iglesia.booking] idempotent replay lookup error', existingPaymentError);
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo confirmar el abono manual' }), { status: 500 });
+        }
+
+        reference = existingPayment.reference || reference;
       }
 
-      await createDonation({
-        provider: 'physical',
-        status: 'APPROVED',
-        amount: paymentAmountInput,
-        currency,
-        reference,
-        provider_tx_id: null,
-        payment_method: 'manual',
-        donation_type: 'evento',
-        project_name: 'Cumbre Mundial 2026',
-        event_name: 'Cumbre Mundial 2026',
-        campus: resolvedChurchName || null,
-        church: resolvedChurchName || null,
-        church_city: contactCity || null,
-        donor_name: contactName,
-        donor_email: contactEmail || null,
-        donor_phone: contactPhone || null,
-        donor_document_type: contactDocType || null,
-        donor_document_number: contactDocNumber || null,
-        is_recurring: false,
-        donor_country: contactCountry || null,
-        donor_city: contactCity || null,
-        donation_description: null,
-        need_certificate: false,
-        source: 'portal-iglesia-edit',
-        cumbre_booking_id: bookingId,
-        raw_event: null,
-      });
+      let donationExists = false;
+      if (reference) {
+        const { data: existingDonation, error: existingDonationError } = await supabaseAdmin
+          .from('donations')
+          .select('id')
+          .eq('cumbre_booking_id', bookingId)
+          .eq('reference', reference)
+          .eq('status', 'APPROVED')
+          .limit(1)
+          .maybeSingle();
+        if (existingDonationError) {
+          console.error('[portal.iglesia.booking] donation lookup error', existingDonationError);
+        } else {
+          donationExists = Boolean(existingDonation?.id);
+        }
+      }
+
+      if (!donationExists) {
+        await createDonation({
+          provider: 'physical',
+          status: 'APPROVED',
+          amount: paymentAmountInput,
+          currency,
+          reference,
+          provider_tx_id: null,
+          payment_method: 'manual',
+          donation_type: 'evento',
+          project_name: 'Cumbre Mundial 2026',
+          event_name: 'Cumbre Mundial 2026',
+          campus: resolvedChurchName || null,
+          church: resolvedChurchName || null,
+          church_city: contactCity || null,
+          donor_name: contactName,
+          donor_email: contactEmail || null,
+          donor_phone: contactPhone || null,
+          donor_document_type: contactDocType || null,
+          donor_document_number: contactDocNumber || null,
+          is_recurring: false,
+          donor_country: contactCountry || null,
+          donor_city: contactCity || null,
+          donation_description: null,
+          need_certificate: false,
+          source: 'portal-iglesia-edit',
+          cumbre_booking_id: bookingId,
+          raw_event: idempotencyKey ? { idempotency_key: idempotencyKey } : null,
+        });
+      }
       paymentUpdated = true;
     }
   }

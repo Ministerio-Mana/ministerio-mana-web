@@ -24,6 +24,7 @@ export class RegistrationModal {
         this.defaultModalTitle = 'Registrar Participante';
         this.defaultModalSubtitle = 'Nueva Inscripción';
         this.defaultSubmitLabel = 'Registrar Grupo';
+        this.isSubmitting = false;
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -1161,6 +1162,8 @@ export class RegistrationModal {
     async handleSubmit(e) {
         e.preventDefault();
 
+        if (this.isSubmitting) return;
+
         if (this.participants.length === 0) {
             this.showAlert('Debes agregar al menos un participante (el responsable)');
             return;
@@ -1218,20 +1221,25 @@ export class RegistrationModal {
         }
 
         const formData = this.collectFormData();
-        if (!this.isEditMode) {
-            const submissionSignature = JSON.stringify(formData);
-            if (!this.idempotencyKey || this.lastSubmissionSignature !== submissionSignature) {
-                this.idempotencyKey = this.generateIdempotencyKey();
-                this.lastSubmissionSignature = submissionSignature;
-            }
-            formData.idempotencyKey = this.idempotencyKey;
+        const submissionSignature = JSON.stringify(formData);
+        if (!this.idempotencyKey || this.lastSubmissionSignature !== submissionSignature) {
+            this.idempotencyKey = this.generateIdempotencyKey();
+            this.lastSubmissionSignature = submissionSignature;
         }
+        formData.idempotencyKey = this.idempotencyKey;
 
         if (this.statusMsg) {
             this.statusMsg.textContent = this.isEditMode ? 'Guardando cambios...' : 'Registrando grupo...';
             this.statusMsg.className = 'mt-4 text-sm text-center text-white/60';
         }
 
+        this.isSubmitting = true;
+        if (this.submitBtn) {
+            this.submitBtn.disabled = true;
+            this.submitBtn.textContent = this.isEditMode ? 'Guardando...' : 'Registrando...';
+        }
+
+        let keepSubmitDisabled = false;
         try {
             const authHeaders = (typeof window.getPortalAuthHeaders === 'function')
                 ? await window.getPortalAuthHeaders()
@@ -1247,6 +1255,7 @@ export class RegistrationModal {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
+                    'x-idempotency-key': this.idempotencyKey,
                     ...authHeaders,
                 },
                 body: JSON.stringify(formData),
@@ -1269,6 +1278,7 @@ export class RegistrationModal {
                 this.statusMsg.className = 'mt-4 text-sm text-center text-green-400 font-bold';
             }
 
+            keepSubmitDisabled = true;
             setTimeout(() => {
                 this.close();
                 window.location.reload(); // Refresh to show new registrations
@@ -1280,6 +1290,14 @@ export class RegistrationModal {
             if (this.statusMsg) {
                 this.statusMsg.textContent = `Error: ${error.message}`;
                 this.statusMsg.className = 'mt-4 text-sm text-center text-red-400';
+            }
+        } finally {
+            if (!keepSubmitDisabled) {
+                this.isSubmitting = false;
+                if (this.submitBtn) {
+                    this.submitBtn.disabled = false;
+                    this.submitBtn.textContent = this.isEditMode ? 'Guardar Cambios' : this.defaultSubmitLabel;
+                }
             }
         }
     }
@@ -1549,6 +1567,7 @@ export class RegistrationModal {
         this.canDeleteBooking = false;
         this.paymentSummary = null;
         this.manualPayments = [];
+        this.isSubmitting = false;
         this.form?.reset();
 
         // Reset menus
@@ -1563,6 +1582,10 @@ export class RegistrationModal {
         this.renderParticipants();
         this.updateSummary();
         if (this.statusMsg) this.statusMsg.textContent = '';
+        if (this.submitBtn) {
+            this.submitBtn.disabled = false;
+            this.submitBtn.textContent = this.defaultSubmitLabel;
+        }
         if (this.paymentAmountInput) {
             this.paymentAmountInput.placeholder = '0';
         }
