@@ -103,13 +103,9 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
         Levantando una generación <span id="rn-apasionada" class="font-intro text-white relative z-10">apasionada</span> por Jesús en las universidades.
       </p>
       
-      <div class="flex flex-col sm:flex-row gap-8 justify-center items-center">
-        <!-- Both buttons use EXACT same scribble style as ESCRÍBENOS -->
+      <div class="flex justify-center items-center">
         <a href="#misioneros" class="btn-scribble px-10 py-4 bg-[#001B3A] text-white font-intro text-xl uppercase tracking-wider">
           APOYAR AHORA
-        </a>
-        <a href="#vision" class="btn-scribble px-8 py-3 bg-transparent text-white font-intro text-lg uppercase tracking-wide border-none">
-          VER VIDEO
         </a>
       </div>
     </div>
@@ -118,80 +114,57 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
   <!-- ===== VISION SECTION (Cream) ===== -->
   <section id="vision" class="py-24 bg-[#F3F0E6] relative overflow-hidden">
     <div class="container-tight px-4 relative z-10">
-        <div class="grid md:grid-cols-2 gap-16 items-center">
-            <div class="relative group">
-                <!-- Video Container with GLOW on hover -->
-                <div class="aspect-video relative z-10 overflow-hidden glow-hover" 
-                     style="border-radius: 2% 98% 2% 98% / 98% 2% 98% 2%; box-shadow: 15px 15px 0px #001B3A;">
-                     <div class="absolute inset-0 bg-gradient-to-tr from-[#001B3A]/40 to-transparent z-10"></div>
-                     <div class="w-full h-full bg-[#001B3A] flex items-center justify-center">
-                         <span class="font-intro text-white/20 text-6xl">VIDEO</span>
-                     </div>
-                     
-                     <!-- Organic Play Button -->
-                     <div class="absolute inset-0 flex items-center justify-center cursor-pointer z-20">
-                        <div class="w-20 h-20 border-4 border-white flex items-center justify-center transition-transform group-hover:scale-110" style="border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;">
-                            <svg class="w-8 h-8 text-white ml-2 fill-current" viewBox="0 0 20 20"><path d="M6 4l10 6-10 6V4z"/></svg>
-                        </div>
-                     </div>
-                </div>
-
-                <!-- Quote: organic scribble border (like the donation form containers, NOT blob) -->
-                <div class="absolute -bottom-6 -right-4 bg-yellow-400 p-5 shadow-lg max-w-[280px] transform rotate-2 z-20 border-organic border-2 border-[#001B3A]">
-                    <p class="font-intro-reg text-[#001B3A] text-base leading-snug">
-                        "La universidad es el campo misionero más <span id="rn-estrategico" class="font-intro">estratégico</span> del mundo."
-                    </p>
-                </div>
+        <div class="max-w-5xl mx-auto text-[#001B3A]">
+            <div class="mb-10 text-center md:text-left">
+                <span class="font-summer text-brand-teal block transform -rotate-3 mb-[-10px] md:ml-2" style="font-size: clamp(6rem, 12vw, 10rem);">Nuestra</span>
+                <h2 class="font-intro uppercase leading-none relative inline-block" style="font-size: clamp(5rem, 10vw, 8rem);">
+                    MISIÓN
+                </h2>
             </div>
-            
-            <div class="text-[#001B3A]">
-                <div class="mb-10">
-                    <!-- "Nuestra" MUCH BIGGER, well separated from "MISIÓN" -->
-                    <span class="font-summer text-brand-teal block transform -rotate-3 mb-[-10px] ml-2" style="font-size: clamp(6rem, 12vw, 10rem);">Nuestra</span>
-                    <h2 class="font-intro uppercase leading-none relative inline-block" style="font-size: clamp(5rem, 10vw, 8rem);">
-                        MISIÓN
-                    </h2>
-                </div>
 
-                <h3 class="text-3xl font-intro mb-6 leading-tight">
-                    LLEVANDO EL EVANGELIO <br>
-                    <span class="relative inline-block mt-2">
-                        A LA ACADEMIA
-                        <svg class="absolute -inset-2 w-[110%] h-[120%] -z-10 text-yellow-400/50" viewBox="0 0 100 100" preserveAspectRatio="none">
-                             <path d="M0,20 Q50,0 100,20 L100,80 Q50,100 0,80 Z" fill="currentColor" />
-                        </svg>
-                    </span>
-                </h3>
-                
-                <p class="text-lg mb-8 leading-relaxed font-intro-reg">
-                    Es allí donde se forman los <span id="rn-lideres" class="font-intro">líderes</span> del mañana. Queremos impactar su entorno cercano y el <span id="rn-mundo" class="font-intro">mundo</span> a través del discipulado y la comunidad.
+            <div class="mb-10 bg-yellow-400 p-5 md:p-6 shadow-lg border-organic border-2 border-[#001B3A]">
+                <p class="font-intro-reg text-[#001B3A] text-lg leading-snug">
+                    "La universidad es el campo misionero más <span id="rn-estrategico" class="font-intro">estratégico</span> del mundo."
                 </p>
-                
-                <div class="space-y-6">
-                    <div class="flex items-start gap-4 group">
-                        <!-- Scribble circle icon (imperfect SVG) -->
-                        <div class="w-12 h-12 flex items-center justify-center text-brand-teal shrink-0 relative">
-                             <svg class="absolute inset-0 w-full h-full" viewBox="0 0 50 50" fill="none">
-                                 <path d="M25,3 C35,2 47,10 48,22 C49,34 40,47 28,48 C16,49 3,40 2,27 C1,14 12,4 25,3Z" stroke="currentColor" stroke-width="2" fill="none" class="transition-all group-hover:stroke-[3px]"/>
-                             </svg>
-                             <svg class="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        </div>
-                        <div>
-                            <h3 class="font-intro text-xl uppercase">Discipulado Personal</h3>
-                            <p class="text-gray-600 font-intro-reg">Acompañamiento uno a uno para crecer en la fe.</p>
-                        </div>
+            </div>
+
+            <h3 class="text-3xl md:text-4xl font-intro mb-6 leading-tight">
+                LLEVANDO EL EVANGELIO <br>
+                <span class="relative inline-block mt-2">
+                    A LA ACADEMIA
+                    <svg class="absolute -inset-2 w-[110%] h-[120%] -z-10 text-yellow-400/50" viewBox="0 0 100 100" preserveAspectRatio="none">
+                         <path d="M0,20 Q50,0 100,20 L100,80 Q50,100 0,80 Z" fill="currentColor" />
+                    </svg>
+                </span>
+            </h3>
+            
+            <p class="text-lg mb-10 leading-relaxed font-intro-reg max-w-4xl">
+                Es allí donde se forman los <span id="rn-lideres" class="font-intro">líderes</span> del mañana. Queremos impactar su entorno cercano y el <span id="rn-mundo" class="font-intro">mundo</span> a través del discipulado y la comunidad.
+            </p>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="flex items-start gap-4 group">
+                    <div class="w-12 h-12 flex items-center justify-center text-brand-teal shrink-0 relative">
+                         <svg class="absolute inset-0 w-full h-full" viewBox="0 0 50 50" fill="none">
+                             <path d="M25,3 C35,2 47,10 48,22 C49,34 40,47 28,48 C16,49 3,40 2,27 C1,14 12,4 25,3Z" stroke="currentColor" stroke-width="2" fill="none" class="transition-all group-hover:stroke-[3px]"/>
+                         </svg>
+                         <svg class="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     </div>
-                    <div class="flex items-start gap-4 group">
-                        <div class="w-12 h-12 flex items-center justify-center text-brand-teal shrink-0 relative">
-                             <svg class="absolute inset-0 w-full h-full" viewBox="0 0 50 50" fill="none">
-                                 <path d="M24,2 C36,1 48,12 49,25 C50,38 38,49 26,48 C14,47 2,37 3,24 C4,11 13,3 24,2Z" stroke="currentColor" stroke-width="2" fill="none" class="transition-all group-hover:stroke-[3px]"/>
-                             </svg>
-                             <svg class="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                        </div>
-                        <div>
-                            <h3 class="font-intro text-xl uppercase">Comunidad</h3>
-                            <p class="text-gray-600 font-intro-reg">Grupos de crecimiento en la universidad.</p>
-                        </div>
+                    <div>
+                        <h3 class="font-intro text-xl uppercase">Discipulado Personal</h3>
+                        <p class="text-gray-600 font-intro-reg">Acompañamiento uno a uno para crecer en la fe.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4 group">
+                    <div class="w-12 h-12 flex items-center justify-center text-brand-teal shrink-0 relative">
+                         <svg class="absolute inset-0 w-full h-full" viewBox="0 0 50 50" fill="none">
+                             <path d="M24,2 C36,1 48,12 49,25 C50,38 38,49 26,48 C14,47 2,37 3,24 C4,11 13,3 24,2Z" stroke="currentColor" stroke-width="2" fill="none" class="transition-all group-hover:stroke-[3px]"/>
+                         </svg>
+                         <svg class="w-5 h-5 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-intro text-xl uppercase">Comunidad</h3>
+                        <p class="text-gray-600 font-intro-reg">Grupos de crecimiento en la universidad.</p>
                     </div>
                 </div>
             </div>
