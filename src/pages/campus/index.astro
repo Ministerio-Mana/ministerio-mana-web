@@ -7,13 +7,14 @@ import { MISIONEROS } from '@data/misioneros';
 
 const title = "Campus Maná | Socios de la Gran Comisión";
 const description = "Únete a la misión en las universidades. Apoya a nuestros misioneros y se parte de la transformación.";
+const image = "/images/campus/misioneros/GRUPO-COMPLETO.jpg";
 
 // Server-side geo detection (Vercel / Cloudflare headers)
 const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO';
 const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_ID_'));
 ---
 
-<BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
+<BaseLayout {title} {description} {image} hideHeader={false} hideFooter={false}>
   <!-- Local Maná Identity Fonts -->
   <style is:global>
     @font-face {

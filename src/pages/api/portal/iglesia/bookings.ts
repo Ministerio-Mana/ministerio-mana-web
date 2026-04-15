@@ -46,8 +46,7 @@ export const GET: APIRoute = async ({ request }) => {
     let query = supabaseAdmin
       .from('cumbre_bookings')
       .select(select)
-      .order('created_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false });
     if (!includeAllSources) {
       query = query.eq('source', 'portal-iglesia');
     }
