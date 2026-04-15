@@ -949,6 +949,34 @@ import Sidebar from '@components/portal/Sidebar.astro';
       </div>
     </div>
 
+    <div id="booking-inspector-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div class="w-full max-w-6xl max-h-[92vh] overflow-hidden bg-white rounded-[2rem] shadow-2xl border border-slate-100 flex flex-col">
+        <div class="px-6 md:px-8 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Reserva Cumbre</p>
+            <h3 id="booking-inspector-title" class="text-xl md:text-2xl font-display font-bold text-[#293C74] truncate">Detalle de reserva</h3>
+            <p id="booking-inspector-subtitle" class="text-xs text-slate-500 mt-1">Cargando...</p>
+          </div>
+          <button id="booking-inspector-close" class="w-9 h-9 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold shrink-0">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+
+        <div class="px-6 md:px-8 py-4 border-b border-slate-100 bg-slate-50/60">
+          <div class="relative max-w-xl">
+            <input id="booking-inspector-search" type="search" class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar en esta reserva: participante, correo, documento o referencia..." />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <div id="booking-inspector-body" class="flex-1 overflow-auto p-6 md:p-8">
+          <p class="text-sm text-slate-500">Cargando detalle...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Church Selector Modal -->
     <ChurchSelector />
 

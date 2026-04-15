@@ -202,7 +202,15 @@ const portalConfirmMessage = document.getElementById('portal-confirm-message');
 const portalConfirmClose = document.getElementById('portal-confirm-close');
 const portalConfirmCancel = document.getElementById('portal-confirm-cancel');
 const portalConfirmOk = document.getElementById('portal-confirm-ok');
+const bookingInspectorModal = document.getElementById('booking-inspector-modal');
+const bookingInspectorTitle = document.getElementById('booking-inspector-title');
+const bookingInspectorSubtitle = document.getElementById('booking-inspector-subtitle');
+const bookingInspectorClose = document.getElementById('booking-inspector-close');
+const bookingInspectorSearch = document.getElementById('booking-inspector-search');
+const bookingInspectorBody = document.getElementById('booking-inspector-body');
 let portalConfirmResolver = null;
+let bookingInspectorPayload = null;
+let bookingInspectorQuery = '';
 
 function hidePortalAlert() {
   if (!portalAlertModal) return;
@@ -263,6 +271,350 @@ portalConfirmCancel?.addEventListener('click', () => hidePortalConfirm(false));
 portalConfirmOk?.addEventListener('click', () => hidePortalConfirm(true));
 portalConfirmModal?.addEventListener('click', (event) => {
   if (event.target === portalConfirmModal) hidePortalConfirm(false);
+});
+
+function hideBookingInspector() {
+  if (!bookingInspectorModal) return;
+  bookingInspectorModal.classList.add('hidden');
+  bookingInspectorModal.classList.remove('flex');
+}
+
+function showBookingInspectorLoading(bookingId) {
+  if (!bookingInspectorModal || !bookingInspectorBody) return;
+  bookingInspectorPayload = null;
+  bookingInspectorQuery = '';
+  if (bookingInspectorSearch) bookingInspectorSearch.value = '';
+  if (bookingInspectorTitle) bookingInspectorTitle.textContent = `Detalle de reserva #${String(bookingId || '').slice(0, 8).toUpperCase()}`;
+  if (bookingInspectorSubtitle) bookingInspectorSubtitle.textContent = 'Cargando información...';
+  bookingInspectorBody.innerHTML = `
+    <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-slate-500 text-sm">
+      Cargando detalle de reserva...
+    </div>
+  `;
+  bookingInspectorModal.classList.remove('hidden');
+  bookingInspectorModal.classList.add('flex');
+}
+
+function resolveBookingTypeLabel(booking, plan) {
+  const source = String(booking?.source || '').toLowerCase();
+  const method = String(booking?.payment_method || '').toLowerCase();
+  const provider = String(plan?.provider || '').toLowerCase();
+  const isManual = source === 'portal-iglesia'
+    || source === 'cumbre-manual'
+    || method === 'manual'
+    || method === 'cash'
+    || provider === 'manual'
+    || provider === 'cash'
+    || provider === 'physical';
+  return isManual ? 'Manual / Físico' : 'Online';
+}
+
+function resolveChargeFlowLabel(plan) {
+  const provider = String(plan?.provider || '').toLowerCase();
+  if (!provider) return 'Sin plan';
+  if (provider === 'wompi') {
+    return plan?.provider_payment_method_id ? 'Wompi automático' : 'Wompi manual';
+  }
+  if (provider === 'stripe') {
+    return plan?.provider_subscription_id ? 'Stripe automático' : 'Stripe manual';
+  }
+  if (provider === 'manual' || provider === 'cash' || provider === 'physical') {
+    return 'Manual / efectivo';
+  }
+  return provider.toUpperCase();
+}
+
+function formatCompactDateTime(value) {
+  if (!value) return '—';
+  const date = toDate(value);
+  if (!date) return '—';
+  return date.toLocaleString('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function buildStatusPill(status, kind = 'generic') {
+  const value = String(status || '').toUpperCase();
+  const genericMap = {
+    PAID: 'bg-emerald-100 text-emerald-700',
+    APPROVED: 'bg-emerald-100 text-emerald-700',
+    DEPOSIT_OK: 'bg-emerald-100 text-emerald-700',
+    PENDING: 'bg-amber-100 text-amber-700',
+    FAILED: 'bg-rose-100 text-rose-700',
+    DECLINED: 'bg-rose-100 text-rose-700',
+    CANCELLED: 'bg-slate-100 text-slate-700',
+  };
+  const installmentMap = {
+    ...genericMap,
+    OVERDUE: 'bg-rose-100 text-rose-700',
+  };
+  const classes = (kind === 'installment' ? installmentMap : genericMap)[value] || 'bg-slate-100 text-slate-700';
+  return `<span class="inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest ${classes}">${safeText(value || 'N/A')}</span>`;
+}
+
+function matchesInspectorQuery(values = [], query = '') {
+  if (!query) return true;
+  const searchable = values
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .join(' ');
+  return searchable.includes(query);
+}
+
+function renderBookingInspector() {
+  if (!bookingInspectorBody) return;
+  const payload = bookingInspectorPayload;
+  if (!payload?.booking) {
+    bookingInspectorBody.innerHTML = `
+      <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-10 text-center text-slate-500 text-sm">
+        No hay datos para esta reserva.
+      </div>
+    `;
+    return;
+  }
+
+  const booking = payload.booking || {};
+  const plan = payload.plan || null;
+  const participants = Array.isArray(payload.participants) ? payload.participants : [];
+  const payments = Array.isArray(payload.payments) ? payload.payments : [];
+  const installments = Array.isArray(payload.installments) ? payload.installments : [];
+  const summary = payload.payment_summary || {};
+  const query = (bookingInspectorQuery || '').trim().toLowerCase();
+
+  const filteredParticipants = participants.filter((item) => matchesInspectorQuery([
+    item.full_name,
+    item.email,
+    item.document_type,
+    item.document_number,
+    item.relationship,
+    item.package_type,
+    item.diet_type,
+  ], query));
+
+  const filteredPayments = payments.filter((item) => matchesInspectorQuery([
+    item.reference,
+    item.provider,
+    item.status,
+    item.provider_tx_id,
+    item.amount,
+    item.currency,
+    item.installment_id,
+  ], query));
+
+  const pendingInstallments = installments
+    .filter((item) => ['PENDING', 'FAILED'].includes(String(item.status || '').toUpperCase()))
+    .sort((a, b) => {
+      const aDate = toDate(a.due_date)?.getTime() || Number.POSITIVE_INFINITY;
+      const bDate = toDate(b.due_date)?.getTime() || Number.POSITIVE_INFINITY;
+      return aDate - bDate;
+    });
+  const nextInstallment = pendingInstallments[0] || null;
+  const approvedPayments = payments.filter((item) => String(item.status || '').toUpperCase() === 'APPROVED');
+  const lastApproved = approvedPayments[0] || null;
+  const bookingType = resolveBookingTypeLabel(booking, plan);
+  const chargeFlow = resolveChargeFlowLabel(plan);
+  const bookingRef = String(booking.id || '').slice(0, 8).toUpperCase();
+  const reservationType = participants.length > 1 ? 'Grupo' : 'Individual';
+  const churchLabel = booking.contact_church || 'Sin iglesia / virtual';
+  const totalAmount = Number(summary.total_amount ?? booking.total_amount ?? 0);
+  const totalPaid = Number(summary.total_paid ?? booking.total_paid ?? 0);
+  const remaining = Math.max(0, Number(summary.remaining_amount ?? (totalAmount - totalPaid)));
+
+  if (bookingInspectorTitle) bookingInspectorTitle.textContent = `Detalle de reserva #${bookingRef}`;
+  if (bookingInspectorSubtitle) {
+    bookingInspectorSubtitle.textContent = `${safeText(booking.contact_name || booking.contact_email || 'Sin titular')} · ${safeText(churchLabel)}`;
+  }
+
+  const participantsRows = filteredParticipants.length
+    ? filteredParticipants.map((participant) => `
+        <tr class="border-b border-slate-100 last:border-b-0">
+          <td class="py-2 pr-3 text-sm font-semibold text-[#293C74]">${safeText(participant.full_name || '-')}</td>
+          <td class="py-2 pr-3 text-xs text-slate-600">${safeText(participant.relationship || '-')}</td>
+          <td class="py-2 pr-3 text-xs text-slate-600">${safeText(participant.email || booking.contact_email || '-')}</td>
+          <td class="py-2 pr-3 text-xs text-slate-500">${safeText([participant.document_type, participant.document_number].filter(Boolean).join(' ') || '-')}</td>
+          <td class="py-2 text-xs text-slate-500">${safeText(participant.package_type || '-')}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="5" class="py-3 text-xs text-slate-500">No hay participantes para el filtro actual.</td></tr>`;
+
+  const paymentsRows = filteredPayments.length
+    ? filteredPayments.map((payment) => `
+        <tr class="border-b border-slate-100 last:border-b-0">
+          <td class="py-2 pr-3 text-xs text-slate-500">${safeText(formatCompactDateTime(payment.created_at))}</td>
+          <td class="py-2 pr-3 text-xs text-slate-600">${safeText(payment.provider || '-')}</td>
+          <td class="py-2 pr-3 text-xs font-semibold text-[#293C74]">${safeText(formatCurrency(payment.amount, payment.currency || booking.currency))}</td>
+          <td class="py-2 pr-3">${buildStatusPill(payment.status, 'payment')}</td>
+          <td class="py-2 text-xs text-slate-500">${safeText(payment.reference || '-')}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="5" class="py-3 text-xs text-slate-500">No hay pagos para el filtro actual.</td></tr>`;
+
+  const installmentsRows = installments.length
+    ? installments.map((installment) => `
+        <tr class="border-b border-slate-100 last:border-b-0">
+          <td class="py-2 pr-3 text-xs font-semibold text-[#293C74]">Cuota ${safeText(installment.installment_index ?? '-')}</td>
+          <td class="py-2 pr-3 text-xs text-slate-500">${safeText(formatDate(installment.due_date))}</td>
+          <td class="py-2 pr-3 text-xs font-semibold text-[#293C74]">${safeText(formatCurrency(installment.amount, installment.currency || booking.currency))}</td>
+          <td class="py-2">${buildStatusPill(installment.status, 'installment')}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="4" class="py-3 text-xs text-slate-500">No hay cuotas registradas.</td></tr>`;
+
+  bookingInspectorBody.innerHTML = `
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <section class="xl:col-span-8 space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <article class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tipo booking</p>
+            <p class="text-sm font-bold text-[#293C74] mt-1">${safeText(bookingType)}</p>
+          </article>
+          <article class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Flujo de cobro</p>
+            <p class="text-sm font-bold text-[#293C74] mt-1">${safeText(chargeFlow)}</p>
+          </article>
+          <article class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tipo reserva</p>
+            <p class="text-sm font-bold text-[#293C74] mt-1">${safeText(reservationType)} (${participants.length})</p>
+          </article>
+          <article class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado</p>
+            <div class="mt-1">${buildStatusPill(booking.status)}</div>
+          </article>
+        </div>
+
+        <article class="rounded-2xl border border-slate-100 bg-white p-4">
+          <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Datos de reserva</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <p class="text-slate-600"><span class="font-semibold text-[#293C74]">Titular:</span> ${safeText(booking.contact_name || '-')}</p>
+            <p class="text-slate-600"><span class="font-semibold text-[#293C74]">Correo:</span> ${safeText(booking.contact_email || '-')}</p>
+            <p class="text-slate-600"><span class="font-semibold text-[#293C74]">Teléfono:</span> ${safeText(booking.contact_phone || '-')}</p>
+            <p class="text-slate-600"><span class="font-semibold text-[#293C74]">Documento:</span> ${safeText([booking.contact_document_type, booking.contact_document_number].filter(Boolean).join(' ') || '-')}</p>
+            <p class="text-slate-600"><span class="font-semibold text-[#293C74]">Iglesia:</span> ${safeText(churchLabel)}</p>
+            <p class="text-slate-600"><span class="font-semibold text-[#293C74]">Ciudad / País:</span> ${safeText([booking.contact_city, booking.contact_country].filter(Boolean).join(' · ') || '-')}</p>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-slate-100 bg-white p-4">
+          <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Participantes (${filteredParticipants.length}/${participants.length})</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[720px]">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Nombre</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Relación</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Documento</th>
+                  <th class="py-2 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Alojamiento</th>
+                </tr>
+              </thead>
+              <tbody>${participantsRows}</tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <aside class="xl:col-span-4 space-y-6">
+        <article class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+          <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Resumen financiero</h4>
+          <div class="space-y-2 text-sm">
+            <p class="flex items-center justify-between text-slate-600"><span>Total</span><span class="font-bold text-[#293C74]">${safeText(formatCurrency(totalAmount, booking.currency))}</span></p>
+            <p class="flex items-center justify-between text-slate-600"><span>Pagado</span><span class="font-bold text-emerald-600">${safeText(formatCurrency(totalPaid, booking.currency))}</span></p>
+            <p class="flex items-center justify-between text-slate-600"><span>Pendiente</span><span class="font-bold text-amber-600">${safeText(formatCurrency(remaining, booking.currency))}</span></p>
+            <p class="flex items-center justify-between text-slate-600"><span>Último pago</span><span>${safeText(lastApproved ? formatCompactDateTime(lastApproved.created_at) : '—')}</span></p>
+            <p class="flex items-center justify-between text-slate-600"><span>Próxima cuota</span><span>${safeText(nextInstallment ? formatDate(nextInstallment.due_date) : '—')}</span></p>
+            <p class="flex items-center justify-between text-slate-600"><span>Cuotas pendientes</span><span>${safeText(pendingInstallments.length)}</span></p>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-slate-100 bg-white p-4">
+          <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Pagos (${filteredPayments.length}/${payments.length})</h4>
+          <div class="overflow-x-auto max-h-[250px]">
+            <table class="w-full min-w-[640px]">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Fecha</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Proveedor</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Monto</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado</th>
+                  <th class="py-2 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Referencia</th>
+                </tr>
+              </thead>
+              <tbody>${paymentsRows}</tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-slate-100 bg-white p-4">
+          <h4 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Plan de cuotas (${installments.length})</h4>
+          <div class="overflow-x-auto max-h-[250px]">
+            <table class="w-full min-w-[480px]">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Cuota</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Fecha</th>
+                  <th class="py-2 pr-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Monto</th>
+                  <th class="py-2 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado</th>
+                </tr>
+              </thead>
+              <tbody>${installmentsRows}</tbody>
+            </table>
+          </div>
+        </article>
+      </aside>
+    </div>
+  `;
+}
+
+async function openBookingInspectorModal(bookingId) {
+  if (!bookingInspectorModal) return;
+  showBookingInspectorLoading(bookingId);
+  try {
+    const headers = typeof window.getPortalAuthHeaders === 'function'
+      ? await window.getPortalAuthHeaders()
+      : portalAuthHeaders;
+    const res = await fetch(`/api/portal/iglesia/booking?bookingId=${encodeURIComponent(bookingId)}`, {
+      headers,
+      credentials: 'include',
+    });
+    const payload = await res.json().catch(() => null);
+    if (!res.ok || !payload?.ok) {
+      throw new Error(payload?.error || 'No se pudo cargar la reserva.');
+    }
+    bookingInspectorPayload = payload;
+    bookingInspectorQuery = '';
+    if (bookingInspectorSearch) bookingInspectorSearch.value = '';
+    renderBookingInspector();
+  } catch (err) {
+    console.error(err);
+    if (bookingInspectorBody) {
+      bookingInspectorBody.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-rose-200 bg-rose-50/70 p-8 text-center text-rose-700 text-sm">
+          ${safeText(err?.message || 'No se pudo cargar el detalle de la reserva.')}
+        </div>
+      `;
+    }
+    if (bookingInspectorSubtitle) {
+      bookingInspectorSubtitle.textContent = 'Error cargando detalle';
+    }
+  }
+}
+
+bookingInspectorClose?.addEventListener('click', hideBookingInspector);
+bookingInspectorModal?.addEventListener('click', (event) => {
+  if (event.target === bookingInspectorModal) hideBookingInspector();
+});
+bookingInspectorSearch?.addEventListener('input', () => {
+  bookingInspectorQuery = bookingInspectorSearch.value || '';
+  renderBookingInspector();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    hideBookingInspector();
+  }
 });
 
 function setDeleteAccountState(message = '', tone = 'neutral') {
@@ -1973,7 +2325,10 @@ function renderChurchBookings(list, meta) {
          <span>Registro: ${safeCreatedLabel}</span>
       </div>
       ${canEdit ? `
-        <div class="mt-4 flex justify-end">
+        <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+          <button type="button" class="btn-view-booking w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50" data-booking-id="${safeItemId}">
+            Ver detalle
+          </button>
           <button type="button" class="btn-edit-booking w-full sm:w-auto px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
             Editar perfil
           </button>
@@ -1981,6 +2336,15 @@ function renderChurchBookings(list, meta) {
       ` : ''}
     `;
     churchBookingsList.appendChild(card);
+  });
+
+  churchBookingsList.querySelectorAll('.btn-view-booking').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const bookingId = btn.dataset.bookingId;
+      if (bookingId) {
+        openBookingInspectorModal(bookingId);
+      }
+    });
   });
 
   churchBookingsList.querySelectorAll('.btn-edit-booking').forEach((btn) => {

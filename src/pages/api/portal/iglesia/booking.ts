@@ -332,6 +332,27 @@ export const GET: APIRoute = async ({ request }) => {
     .select('id, full_name, package_type, relationship, document_type, document_number, birthdate, gender, diet_type, email')
     .eq('booking_id', bookingId);
 
+  const { data: payments } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('id, provider, provider_tx_id, reference, amount, currency, status, created_at, installment_id')
+    .eq('booking_id', bookingId)
+    .order('created_at', { ascending: false })
+    .limit(120);
+
+  const { data: installments } = await supabaseAdmin
+    .from('cumbre_installments')
+    .select('id, installment_index, due_date, amount, currency, status, provider_reference, provider_tx_id, paid_at, created_at, booking_id')
+    .eq('booking_id', bookingId)
+    .order('installment_index', { ascending: true });
+
+  const { data: plan } = await supabaseAdmin
+    .from('cumbre_payment_plans')
+    .select('id, status, provider, currency, installment_count, installment_amount, frequency, next_due_date, provider_payment_method_id, provider_subscription_id, amount_paid')
+    .eq('booking_id', bookingId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: approvedPayments } = await supabaseAdmin
     .from('cumbre_payments')
     .select('amount')
@@ -366,6 +387,9 @@ export const GET: APIRoute = async ({ request }) => {
     ok: true,
     booking,
     participants: participants || [],
+    payments: payments || [],
+    installments: installments || [],
+    plan: plan || null,
     payment: payment || null,
     manual_payments: manualPayments || [],
     payment_summary: {
