@@ -83,16 +83,24 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
+    const recurringFlag = String(data.get('isRecurring') || '').toLowerCase();
+    const isRecurring = ['true', '1', 'on', 'yes'].includes(recurringFlag);
+    const certificateFlag = String(data.get('needCertificate') || '').toLowerCase();
+    const needCertificate = ['true', '1', 'on', 'yes'].includes(certificateFlag);
 
     const baseUrl = resolveBaseUrl(request);
-    const redirectUrl = `${baseUrl}/donaciones/gracias`;
-
     const reference = buildDonationReference();
+    const redirect = new URL(`${baseUrl}/donaciones/gracias`);
+    redirect.searchParams.set('ref', reference);
+    redirect.searchParams.set('provider', 'wompi');
+    redirect.searchParams.set('recurring', isRecurring ? '1' : '0');
+    redirect.searchParams.set('type', donorInfo.donationType);
+    redirect.searchParams.set('amount', String(amountCop));
     const { url } = buildWompiCheckoutUrl({
       amountInCents: amountCop * 100,
       currency: 'COP',
       description,
-      redirectUrl,
+      redirectUrl: redirect.toString(),
       reference,
       email: donorInfo.email,
       customerData: {
@@ -124,8 +132,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       donor_phone: donorInfo.phone,
       donor_document_type: donorInfo.documentType,
       donor_document_number: donorInfo.documentNumber,
+      is_recurring: isRecurring,
       donor_country: donorInfo.country,
       donor_city: donorInfo.city,
+      donation_description: description,
+      need_certificate: needCertificate,
       source: 'donaciones-wompi',
       cumbre_booking_id: null,
       raw_event: null,

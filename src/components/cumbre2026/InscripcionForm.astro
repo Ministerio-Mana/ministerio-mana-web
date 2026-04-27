@@ -79,7 +79,12 @@ const formatTestAmount = (value, currency) =>
 
           <button type="button" class="step-btn opacity-50 relative" data-step="3">
              <span class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center font-bold border border-white/20">3</span>
-             <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-bold text-white/60 whitespace-nowrap">Confirmar</span>
+             <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-bold text-white/60 whitespace-nowrap">Datos</span>
+          </button>
+
+          <button type="button" class="step-btn opacity-50 relative" data-step="4">
+             <span class="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center font-bold border border-white/20">4</span>
+             <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-bold text-white/60 whitespace-nowrap">Pago</span>
           </button>
        </div>
     </div>
@@ -161,17 +166,57 @@ const formatTestAmount = (value, currency) =>
                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-brand-dark placeholder:text-slate-400 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition-all">
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
-               <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                     <p class="text-[10px] font-bold text-brand-navy uppercase tracking-widest">Cuenta del responsable</p>
-                     <p class="text-xs text-slate-500">Crea tu acceso antes del pago para gestionar tu reserva.</p>
-                  </div>
-                  <button type="button" id="leader-auth-btn" class="px-4 py-2 rounded-full bg-brand-navy text-white text-xs font-bold hover:brightness-110 transition-all">
-                     Enviar enlace de acceso
-                  </button>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+               <div id="leader-auth-logged" class="hidden">
+                  <p class="text-xs font-bold text-brand-teal uppercase tracking-widest">Cuenta del responsable</p>
+                  <p class="text-sm text-white/70 mt-2">Sesión activa. Usaremos tus datos guardados para completar el formulario.</p>
                </div>
-               <p id="leader-auth-status" class="text-xs text-slate-500 mt-3"></p>
+               <div id="leader-auth-guest" class="space-y-5">
+                  <div class="flex items-center justify-between">
+                     <div>
+                        <p class="text-sm font-bold text-white uppercase tracking-wider">Cuenta del responsable</p>
+                        <p class="text-xs text-white/60 mt-1">Crea tu acceso antes del pago para gestionar tu reserva</p>
+                     </div>
+                     <button type="button" id="leader-signup-btn" class="px-5 py-2.5 rounded-full bg-brand-teal hover:bg-brand-teal/90 text-white text-sm font-bold transition-all shadow-lg">
+                        Crear cuenta
+                     </button>
+                  </div>
+                  <div class="grid md:grid-cols-2 gap-4">
+                     <div>
+                        <label class="block text-xs font-bold text-white/80 uppercase tracking-wider mb-2">Contraseña</label>
+                        <div class="relative">
+                           <input type="password" id="leader-password" minlength="6"
+                              class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white pr-12 placeholder:text-white/40 focus:border-brand-teal focus:bg-white/15 outline-none transition-all"
+                              placeholder="Mínimo 6 caracteres">
+                           <button type="button" id="leader-password-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-brand-teal transition-colors focus:outline-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                           </button>
+                        </div>
+                     </div>
+                     <div>
+                        <label class="block text-xs font-bold text-white/80 uppercase tracking-wider mb-2">Confirmar contraseña</label>
+                        <div class="relative">
+                           <input type="password" id="leader-password-confirm" minlength="6"
+                              class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white pr-12 placeholder:text-white/40 focus:border-brand-teal focus:bg-white/15 outline-none transition-all"
+                              placeholder="Repite la contraseña">
+                           <button type="button" id="leader-password-confirm-toggle" class="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-brand-teal transition-colors focus:outline-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="bg-brand-teal/10 border border-brand-teal/20 rounded-xl p-3 flex items-start gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brand-teal flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                     </svg>
+                     <p class="text-xs text-white/70 leading-relaxed">Tu cuenta se activará automáticamente al completar el pago</p>
+                  </div>
+               </div>
+               <p id="leader-auth-status" class="text-xs text-white/60 mt-3"></p>
+               <p id="leader-auth-note" class="text-xs text-white/50 mt-2"></p>
+               <div class="mt-4 flex justify-center">
+                  <TurnstileWidget id="leader-turnstile" appearance="always" theme="auto" />
+               </div>
             </div>
              
              <div class="space-y-1">
@@ -278,8 +323,93 @@ const formatTestAmount = (value, currency) =>
       </div>
 
 
-      <!-- STEP 3: Payment & Confirm -->
+      <!-- STEP 3: Participant Details -->
       <div id="step-3" class="step-content hidden space-y-8">
+         <h2 class="text-2xl font-bold text-white">Datos de asistentes</h2>
+         <p class="text-sm text-white/60">
+            Completa documento, fecha de nacimiento, género y menú. Estos datos son necesarios para tu inscripción.
+         </p>
+
+         <div id="participants-details" class="space-y-4"></div>
+
+         <template id="participant-details-template">
+            <div class="participant-card rounded-2xl border border-white/10 bg-black/20 p-6 space-y-4">
+               <div class="flex items-start justify-between gap-3">
+                  <div>
+                     <p class="text-xs uppercase tracking-widest text-white/40">Asistente</p>
+                     <p class="text-lg font-bold text-white participant-name"></p>
+                     <p class="text-xs text-white/50 participant-type"></p>
+                  </div>
+                  <span class="participant-badge hidden rounded-full bg-brand-teal/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-teal">Responsable</span>
+               </div>
+
+               <div class="grid md:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                     <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Tipo de documento</label>
+                     <select class="participant-doc-type w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" data-field="documentType">
+                        <option value="" class="text-black">Seleccionar</option>
+                        <option value="CC" class="text-black">CC</option>
+                        <option value="TI" class="text-black">TI</option>
+                        <option value="CE" class="text-black">CE</option>
+                        <option value="RC" class="text-black">RC</option>
+                        <option value="PASSPORT" class="text-black">Pasaporte</option>
+                        <option value="NATIONAL_ID" class="text-black">ID nacional</option>
+                        <option value="OTHER" class="text-black">Otro</option>
+                     </select>
+                  </div>
+                  <div class="space-y-1">
+                     <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Número de documento</label>
+                     <input type="text" class="participant-doc-number w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all" placeholder="Documento" data-field="documentNumber">
+                  </div>
+               </div>
+
+               <div class="participant-doc-other hidden space-y-1">
+                  <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Otro documento (especifica)</label>
+                  <input type="text" class="participant-doc-other-input w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all" placeholder="Ej: ID nacional, licencia..." data-field="documentOtherType">
+               </div>
+
+               <div class="grid md:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                     <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Fecha de nacimiento</label>
+                     <input type="date" class="participant-birthdate w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all" data-field="birthdate">
+                  </div>
+                  <div class="space-y-1">
+                     <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Género</label>
+                     <select class="participant-gender w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" data-field="gender">
+                        <option value="" class="text-black">Seleccionar</option>
+                        <option value="M" class="text-black">Masculino</option>
+                        <option value="F" class="text-black">Femenino</option>
+                     </select>
+                  </div>
+               </div>
+
+               <div class="grid md:grid-cols-2 gap-4 items-center">
+                  <div class="space-y-1">
+                     <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Menú</label>
+                     <select class="participant-menu w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" data-field="menuType">
+                        <option value="" class="text-black">Seleccionar</option>
+                        <option value="TRADICIONAL" class="text-black">Menú tradicional</option>
+                        <option value="VEGETARIANO" class="text-black">Menú vegetariano</option>
+                     </select>
+                  </div>
+                  <p class="participant-menu-note text-xs text-white/50"></p>
+               </div>
+            </div>
+         </template>
+
+         <div class="pt-8 flex justify-between border-t border-white/10">
+            <button type="button" class="px-6 py-2 text-white/50 hover:text-white transition-colors btn-prev">
+               &larr; Atrás
+            </button>
+            <button type="button" class="px-8 py-3 bg-brand-teal text-white font-bold rounded-full hover:bg-brand-medium transition-colors btn-next shadow-[0_0_20px_rgba(45,212,191,0.3)]">
+               Continuar a pago &rarr;
+            </button>
+         </div>
+      </div>
+
+
+      <!-- STEP 4: Payment & Confirm -->
+      <div id="step-4" class="step-content hidden space-y-8">
          <h2 class="text-2xl font-bold text-white">Confirma tu Reserva</h2>
          
          <div class="space-y-4">
@@ -320,7 +450,7 @@ const formatTestAmount = (value, currency) =>
                           Plan de Cuotas{isColombia ? '' : ' (USD)'}
                         </span>
                         <span class="block text-xs text-white/60">
-                          {isColombia ? 'Paga mes a mes hasta Mayo 2026.' : 'Paga mes a mes con cobro automático en Stripe.'}
+                          {isColombia ? 'Paga mes a mes hasta el 15 de mayo de 2026.' : 'Paga mes a mes hasta el 15 de mayo de 2026.'}
                         </span>
                      </div>
                   </div>
@@ -372,6 +502,33 @@ const formatTestAmount = (value, currency) =>
                </div>
                <div class="text-xs text-center text-white/40 italic">
                   <p>El cobro inicia al confirmar tu inscripción.</p>
+               </div>
+            </div>
+
+            <!-- Deposit Schedule -->
+            <div id="deposit-schedule" class="hidden mt-4 p-4 bg-white/5 rounded-xl space-y-4 border border-white/5">
+               <h4 class="font-bold text-white text-sm">Agenda tu segundo pago</h4>
+               <p class="text-xs text-white/60">
+                  Elige una fecha hasta
+                  <span id="deposit-deadline-label" class="font-semibold text-white">15 de mayo de 2026</span>
+                  (incluido).
+               </p>
+               <div class="grid md:grid-cols-[1fr_auto] gap-4 items-end">
+                  <div>
+                     <label class="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">Fecha de segundo pago</label>
+                     <div class="relative">
+                        <input type="date" id="deposit-due-date" name="deposit_due_date" max={installmentDeadline}
+                           class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal outline-none transition-all">
+                        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
+                           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                           </svg>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="text-xs text-white/50">
+                     Te enviaremos el recordatorio con tu link de pago.
+                  </div>
                </div>
             </div>
             
@@ -433,17 +590,49 @@ const formatTestAmount = (value, currency) =>
           </div>
       </div>
       
-      <!-- Help Box -->
-      <a href="https://wa.me/573148297534" target="_blank" class="block bg-[#25D366] text-white rounded-2xl p-4 shadow-lg shadow-green-500/20 hover:scale-[1.02] transition-transform text-center font-bold flex items-center justify-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-        ¿Necesitas ayuda?
-      </a>
    </div>
 
 </div>
 
+<!-- Validation Modal -->
+<div id="validation-modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+   <div id="validation-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+   <div class="relative z-10 w-[92%] max-w-lg rounded-2xl border border-white/10 bg-brand-navy/95 p-6 shadow-2xl">
+      <button id="validation-close" type="button" class="absolute right-4 top-4 text-white/60 hover:text-white text-xl leading-none">×</button>
+      <h3 class="text-xl font-bold text-white mb-2">Faltan datos por completar</h3>
+      <p class="text-sm text-white/60 mb-4">Revisa los campos marcados en rojo:</p>
+      <ul id="validation-list" class="space-y-2 text-sm text-white/80 list-disc pl-5"></ul>
+   </div>
+</div>
+
 <script type="module" nonce={cspNonce}>
   // Simple Vanilla JS Logic
+  function getTurnstileTokenFor(selector) {
+    const widget = document.querySelector(selector);
+    if (!widget) return { ok: true, token: '' };
+    const widgetId = widget.getAttribute('data-widget-id');
+    const token = widgetId
+      ? (window.turnstile?.getResponse?.(widgetId) || '')
+      : (window.turnstile?.getResponse?.() || '');
+    if (!token) return { ok: false, error: 'Captcha requerido. Completa la verificacion.' };
+    return { ok: true, token, widgetId };
+  }
+
+  function resetTurnstileFor(selector, widgetId) {
+    if (!window.turnstile || typeof window.turnstile.reset !== 'function') return;
+    if (widgetId) {
+      window.turnstile.reset(widgetId);
+      return;
+    }
+    const widget = document.querySelector(selector);
+    const resolvedId = widget?.getAttribute('data-widget-id');
+    if (resolvedId) {
+      window.turnstile.reset(resolvedId);
+      return;
+    }
+    window.turnstile.reset();
+  }
+
   const APP = {
     step: 1,
     participants: [],
@@ -453,6 +642,8 @@ const formatTestAmount = (value, currency) =>
     leaderOptOut: false,
     isSolo: false,
     installmentPreview: null,
+    idempotencyKey: null,
+    lastBookingSignature: null,
     prices: {
        CO: {
           lodging: 850000,
@@ -490,8 +681,11 @@ const formatTestAmount = (value, currency) =>
           btnsPrev: document.querySelectorAll('.btn-prev'),
           indicators: document.querySelectorAll('.step-btn'),
           countryInput: document.getElementById('country-group'),
+          leaderDocType: document.querySelector('select[name="leader_document_type"]'),
+          leaderDocNumber: document.querySelector('input[name="leader_id"]'),
           leaderName: document.querySelector('input[name="leader_name"]'),
           leaderEmail: document.querySelector('input[name="leader_email"]'),
+          leaderPhone: document.querySelector('input[name="leader_phone"]'),
           leaderAuthBtn: document.getElementById('leader-auth-btn'),
           leaderAuthStatus: document.getElementById('leader-auth-status'),
           leaderPackage: document.getElementById('leader-package'),
@@ -502,6 +696,8 @@ const formatTestAmount = (value, currency) =>
           inputAge: document.getElementById('input-age'),
           inputLodging: document.getElementById('input-lodging'),
           list: document.getElementById('participants-list'),
+          detailsContainer: document.getElementById('participants-details'),
+          detailsTemplate: document.getElementById('participant-details-template'),
           sidebarList: document.getElementById('sidebar-list'),
           emptyMsg: document.getElementById('empty-msg'),
           totalDisplay: document.getElementById('summary-total'),
@@ -514,11 +710,18 @@ const formatTestAmount = (value, currency) =>
           installmentCount: document.getElementById('installment-count'),
           installmentAmount: document.getElementById('installment-amount'),
           installmentEnd: document.getElementById('installment-end'),
+          depositSchedule: document.getElementById('deposit-schedule'),
+          depositDueDate: document.getElementById('deposit-due-date'),
           depositAmount: document.getElementById('deposit-amount'),
+          depositDeadlineLabel: document.getElementById('deposit-deadline-label'),
           form: document.getElementById('booking-form'),
           errorMsg: document.getElementById('error-msg'),
           sideSubtotal: document.getElementById('side-subtotal'),
-          sideTotal: document.getElementById('side-total')
+          sideTotal: document.getElementById('side-total'),
+          validationModal: document.getElementById('validation-modal'),
+          validationList: document.getElementById('validation-list'),
+          validationClose: document.getElementById('validation-close'),
+          validationOverlay: document.getElementById('validation-overlay')
        };
     },
 
@@ -535,6 +738,14 @@ const formatTestAmount = (value, currency) =>
 
        if (this.dom.leaderName) {
           this.dom.leaderName.addEventListener('input', () => this.updateLeaderName());
+       }
+
+       if (this.dom.leaderDocType) {
+          this.dom.leaderDocType.addEventListener('change', () => this.updateLeaderDocs());
+       }
+
+       if (this.dom.leaderDocNumber) {
+          this.dom.leaderDocNumber.addEventListener('input', () => this.updateLeaderDocs());
        }
 
        if (this.dom.leaderPackage) {
@@ -569,6 +780,29 @@ const formatTestAmount = (value, currency) =>
              input.addEventListener('change', () => this.updateInstallmentPreview());
           });
        }
+
+       if (this.dom.depositDueDate) {
+          const clampDepositDate = () => this.syncDepositSchedule();
+          this.dom.depositDueDate.addEventListener('change', clampDepositDate);
+          this.dom.depositDueDate.addEventListener('blur', clampDepositDate);
+       }
+
+       if (this.dom.detailsContainer) {
+          this.dom.detailsContainer.addEventListener('input', (event) => this.handleDetailsInput(event));
+          this.dom.detailsContainer.addEventListener('change', (event) => this.handleDetailsInput(event));
+       }
+
+       if (this.dom.form) {
+          this.dom.form.addEventListener('input', (event) => this.clearFieldError(event?.target));
+          this.dom.form.addEventListener('change', (event) => this.clearFieldError(event?.target));
+       }
+
+       if (this.dom.validationClose) {
+          this.dom.validationClose.addEventListener('click', () => this.hideValidationModal());
+       }
+       if (this.dom.validationOverlay) {
+          this.dom.validationOverlay.addEventListener('click', () => this.hideValidationModal());
+       }
     },
 
     async sendLeaderAuthLink() {
@@ -577,6 +811,12 @@ const formatTestAmount = (value, currency) =>
        const email = this.dom.leaderEmail?.value?.trim();
        if (!email) {
          if (status) status.textContent = 'Ingresa tu correo para enviar el enlace.';
+         return;
+       }
+       const captcha = getTurnstileTokenFor('#leader-turnstile');
+       if (!captcha.ok) {
+         if (status) status.textContent = captcha.error || 'Captcha requerido.';
+         resetTurnstileFor('#leader-turnstile', captcha.widgetId);
          return;
        }
        if (btn) {
@@ -589,7 +829,7 @@ const formatTestAmount = (value, currency) =>
          const res = await fetch('/api/auth/send-link', {
            method: 'POST',
            headers: { 'content-type': 'application/json' },
-           body: JSON.stringify({ email, kind: 'magiclink', redirectTo }),
+           body: JSON.stringify({ email, kind: 'magiclink', redirectTo, turnstileToken: captcha.token }),
          });
          const payload = await res.json();
          if (!res.ok || !payload?.ok) {
@@ -599,6 +839,7 @@ const formatTestAmount = (value, currency) =>
        } catch (err) {
          console.error(err);
          if (status) status.textContent = err?.message || 'No se pudo enviar el enlace.';
+         resetTurnstileFor('#leader-turnstile', captcha.widgetId);
        } finally {
          if (btn) {
            btn.disabled = false;
@@ -615,7 +856,14 @@ const formatTestAmount = (value, currency) =>
           this.updateTotals();
        }
        if(this.step === 2 && this.participants.length === 0) {
-          alert('Debes agregar al menos un participante');
+          this.clearValidationErrors();
+          this.markElementError(this.dom.inputName);
+          this.markElementError(this.dom.inputAge);
+          this.markElementError(this.dom.addPersonBox);
+          this.showValidationModal(['Debes agregar al menos un participante.']);
+          return;
+       }
+       if(this.step === 3 && !this.validateStep3()) {
           return;
        }
        this.step++;
@@ -631,8 +879,34 @@ const formatTestAmount = (value, currency) =>
 
     validateStep1() {
        const fd = new FormData(this.dom.form);
-       if(!fd.get('leader_document_type') || !fd.get('leader_id') || !fd.get('leader_name') || !fd.get('leader_email') || !fd.get('leader_phone') || !fd.get('leader_package')) {
-          alert('Por favor completa los datos del responsable');
+       this.clearValidationErrors();
+       const missing = [];
+       if(!fd.get('leader_document_type')) {
+          missing.push('tipo de documento');
+          this.markElementError(this.dom.leaderDocType);
+       }
+       if(!fd.get('leader_id')) {
+          missing.push('documento');
+          this.markElementError(this.dom.leaderDocNumber);
+       }
+       if(!fd.get('leader_name')) {
+          missing.push('nombre');
+          this.markElementError(this.dom.leaderName);
+       }
+       if(!fd.get('leader_email')) {
+          missing.push('email');
+          this.markElementError(this.dom.leaderEmail);
+       }
+       if(!fd.get('leader_phone')) {
+          missing.push('teléfono');
+          this.markElementError(this.dom.leaderPhone);
+       }
+       if(!fd.get('leader_package')) {
+          missing.push('paquete');
+          this.markElementError(this.dom.leaderPackage);
+       }
+       if (missing.length) {
+          this.showValidationModal([`Responsable: falta ${missing.join(', ')}.`]);
           return false;
        }
        return true;
@@ -651,16 +925,27 @@ const formatTestAmount = (value, currency) =>
        if (this.leaderOptOut) return;
        const name = this.getLeaderName();
        if (!name) return;
+       const docType = this.dom.leaderDocType?.value || '';
+       const docNumber = this.dom.leaderDocNumber?.value?.trim() || '';
 
        const existing = this.participants.find(p => p.isLeader);
        if (existing) {
           existing.name = name;
           existing.packageType = this.getLeaderPackageType();
+          existing.documentType = docType;
+          existing.documentNumber = docNumber;
           return;
        }
 
        const packageType = this.getLeaderPackageType();
-       this.participants.unshift({ name, packageType, id: this.leaderId, isLeader: true });
+       this.participants.unshift({
+          name,
+          packageType,
+          id: this.leaderId,
+          isLeader: true,
+          documentType: docType,
+          documentNumber: docNumber,
+       });
     },
 
     updateLeaderName() {
@@ -673,12 +958,324 @@ const formatTestAmount = (value, currency) =>
        this.updateTotals();
     },
 
+    updateLeaderDocs() {
+       const leader = this.participants.find(p => p.isLeader);
+       if (!leader) return;
+       const docType = this.dom.leaderDocType?.value || '';
+       const docNumber = this.dom.leaderDocNumber?.value?.trim() || '';
+       leader.documentType = docType;
+       leader.documentNumber = docNumber;
+       if (this.step === 3) {
+          this.renderDetails();
+       }
+    },
+
     updateLeaderPackage() {
        const leader = this.participants.find(p => p.isLeader);
        if (!leader) return;
        leader.packageType = this.getLeaderPackageType();
        this.renderList();
        this.updateTotals();
+    },
+
+    getParticipantById(id) {
+       return this.participants.find(p => String(p.id) === String(id));
+    },
+
+    getMenuConfig(participant) {
+       if (participant.packageType === 'child_0_7') {
+          return {
+             value: 'SIN ALIMENTACION',
+             label: 'Sin alimentación (0-4)',
+             locked: true,
+             note: 'Este paquete no incluye alimentación.',
+          };
+       }
+       if (participant.packageType === 'child_7_13') {
+          return {
+             value: 'INFANTIL',
+             label: 'Menú infantil (5-10)',
+             locked: true,
+             note: 'Menú infantil asignado automáticamente.',
+          };
+       }
+       return {
+          value: participant.menuType || 'TRADICIONAL',
+          label: '',
+          locked: false,
+          note: 'Selecciona tradicional o vegetariano según necesidad.',
+       };
+    },
+
+    parseDocType(value) {
+       if (!value) return { type: '', other: '' };
+       const raw = value.toString().trim();
+       const upper = raw.toUpperCase();
+       if (upper.startsWith('OTRO:')) {
+          return { type: 'OTHER', other: raw.slice(raw.indexOf(':') + 1).trim() };
+       }
+       return { type: raw, other: '' };
+    },
+
+    isMinorParticipant(participant) {
+       if (participant.packageType === 'child_0_7' || participant.packageType === 'child_7_13') return true;
+       if (typeof participant.age === 'number') return participant.age <= 17;
+       return false;
+    },
+
+    getDocOptions(participant) {
+       const group = this.countryGroup || 'CO';
+       const isMinor = this.isMinorParticipant(participant);
+       if (group === 'CO') {
+          if (isMinor) {
+             return [
+                { value: 'RC', label: 'RC - Registro civil' },
+                { value: 'TI', label: 'TI - Tarjeta de identidad' },
+             ];
+          }
+          return [
+             { value: 'CC', label: 'CC - Cédula de ciudadanía' },
+             { value: 'CE', label: 'CE - Cédula de extranjería' },
+             { value: 'PASSPORT', label: 'Pasaporte' },
+          ];
+       }
+       return [
+          { value: 'PASSPORT', label: 'Pasaporte' },
+          { value: 'NATIONAL_ID', label: 'ID nacional' },
+          { value: 'OTHER', label: 'Otro documento' },
+       ];
+    },
+
+    getDocDefault(participant) {
+       const group = this.countryGroup || 'CO';
+       if (group !== 'CO') return 'PASSPORT';
+       if (typeof participant.age === 'number') {
+          if (participant.age <= 6) return 'RC';
+          if (participant.age <= 17) return 'TI';
+       }
+       if (participant.packageType === 'child_0_7') return 'RC';
+       if (participant.packageType === 'child_7_13') return 'TI';
+       if (this.isMinorParticipant(participant)) return 'TI';
+       return 'CC';
+    },
+
+    applyParticipantDefaults(participant) {
+       if (participant.documentType) {
+          const parsed = this.parseDocType(participant.documentType);
+          if (parsed.type === 'OTHER') {
+             participant.documentType = 'OTHER';
+             if (!participant.documentOtherType && parsed.other) {
+                participant.documentOtherType = parsed.other;
+             }
+          } else {
+             participant.documentType = parsed.type;
+          }
+       }
+
+       const docOptions = this.getDocOptions(participant);
+       const optionValues = docOptions.map((opt) => opt.value);
+       if (!participant.documentType || !optionValues.includes(participant.documentType)) {
+          const leaderDoc = this.dom.leaderDocType?.value;
+          if (participant.isLeader && leaderDoc && optionValues.includes(leaderDoc)) {
+             participant.documentType = leaderDoc;
+          } else {
+             participant.documentType = this.getDocDefault(participant);
+          }
+       }
+
+       if (!participant.documentNumber && participant.isLeader && this.dom.leaderDocNumber?.value) {
+          participant.documentNumber = this.dom.leaderDocNumber.value.trim();
+       }
+
+       const menuInfo = this.getMenuConfig(participant);
+       if (!participant.menuType || menuInfo.locked) {
+          participant.menuType = menuInfo.value;
+       }
+       return menuInfo;
+    },
+
+    renderDetails() {
+       if (!this.dom.detailsContainer || !this.dom.detailsTemplate) return;
+       this.dom.detailsContainer.innerHTML = '';
+
+       if (!this.participants.length) {
+          this.dom.detailsContainer.innerHTML = '<p class="text-white/50 text-sm">No hay participantes para completar.</p>';
+          return;
+       }
+
+       this.participants.forEach((participant, index) => {
+          const node = this.dom.detailsTemplate.content.cloneNode(true);
+          const nameEl = node.querySelector('.participant-name');
+          const typeEl = node.querySelector('.participant-type');
+          const badgeEl = node.querySelector('.participant-badge');
+          const docTypeEl = node.querySelector('.participant-doc-type');
+          const docNumberEl = node.querySelector('.participant-doc-number');
+          const docOtherWrap = node.querySelector('.participant-doc-other');
+          const docOtherInput = node.querySelector('.participant-doc-other-input');
+          const birthdateEl = node.querySelector('.participant-birthdate');
+          const genderEl = node.querySelector('.participant-gender');
+          const menuEl = node.querySelector('.participant-menu');
+          const menuNoteEl = node.querySelector('.participant-menu-note');
+
+          if (nameEl) nameEl.textContent = participant.name || `Participante ${index + 1}`;
+          if (typeEl) typeEl.textContent = this.getTypeLabel(participant.packageType);
+          if (badgeEl && participant.isLeader) badgeEl.classList.remove('hidden');
+
+          const menuInfo = this.applyParticipantDefaults(participant);
+          const docOptions = this.getDocOptions(participant);
+          const idValue = String(participant.id);
+
+          if (docTypeEl) {
+             docTypeEl.dataset.id = idValue;
+             docTypeEl.innerHTML = docOptions
+                .map((opt) => `<option value="${opt.value}">${opt.label}</option>`)
+                .join('');
+             docTypeEl.value = participant.documentType || docOptions[0]?.value || '';
+          }
+          if (docNumberEl) {
+             docNumberEl.dataset.id = idValue;
+             docNumberEl.value = participant.documentNumber || '';
+          }
+          if (docOtherInput) {
+             docOtherInput.dataset.id = idValue;
+             docOtherInput.value = participant.documentOtherType || '';
+          }
+          if (docOtherWrap) {
+             docOtherWrap.classList.toggle('hidden', participant.documentType !== 'OTHER');
+          }
+          if (birthdateEl) {
+             birthdateEl.dataset.id = idValue;
+             birthdateEl.value = participant.birthdate || '';
+          }
+          if (genderEl) {
+             genderEl.dataset.id = idValue;
+             genderEl.value = participant.gender || '';
+          }
+          if (menuEl) {
+             menuEl.dataset.id = idValue;
+             if (menuInfo.locked) {
+                menuEl.innerHTML = `<option value="${menuInfo.value}">${menuInfo.label}</option>`;
+                menuEl.value = menuInfo.value;
+                menuEl.disabled = true;
+             } else {
+                menuEl.disabled = false;
+                menuEl.value = participant.menuType || menuInfo.value || '';
+             }
+          }
+          if (menuNoteEl) {
+             menuNoteEl.textContent = menuInfo.note || '';
+          }
+
+          this.dom.detailsContainer.appendChild(node);
+       });
+    },
+
+    handleDetailsInput(event) {
+       const target = event?.target;
+       if (!target || !target.dataset) return;
+       this.clearFieldError(target);
+       const field = target.dataset.field;
+       const id = target.dataset.id;
+       if (!field || !id) return;
+       const participant = this.getParticipantById(id);
+       if (!participant) return;
+       if (field === 'documentType') {
+          participant.documentType = target.value;
+          if (participant.documentType !== 'OTHER') {
+             participant.documentOtherType = '';
+          }
+          const card = target.closest('.participant-card');
+          const otherWrap = card?.querySelector('.participant-doc-other');
+          const otherInput = card?.querySelector('.participant-doc-other-input');
+          if (otherWrap) {
+             otherWrap.classList.toggle('hidden', participant.documentType !== 'OTHER');
+          }
+          if (participant.documentType !== 'OTHER' && otherInput) {
+             otherInput.value = '';
+             this.clearFieldError(otherInput);
+          }
+          return;
+       }
+       if (field === 'documentOtherType') {
+          participant.documentOtherType = target.value.trim();
+          return;
+       }
+       const value = field === 'documentNumber' ? target.value.trim() : target.value;
+       participant[field] = value;
+    },
+
+    clearValidationErrors() {
+       if (!this.dom.form) return;
+       this.dom.form.querySelectorAll('.input-error').forEach((el) => {
+          el.classList.remove('input-error');
+       });
+    },
+
+    clearFieldError(el) {
+       if (el?.classList?.contains('input-error')) {
+          el.classList.remove('input-error');
+       }
+    },
+
+    markFieldError(participantId, field) {
+       if (!this.dom.detailsContainer) return;
+       const selector = `[data-field="${field}"][data-id="${participantId}"]`;
+       const fieldEl = this.dom.detailsContainer.querySelector(selector);
+       if (fieldEl) {
+          fieldEl.classList.add('input-error');
+       }
+    },
+
+    markElementError(el) {
+       if (el?.classList) {
+          el.classList.add('input-error');
+       }
+    },
+
+    showValidationModal(messages) {
+       if (!this.dom.validationModal || !this.dom.validationList) return;
+       this.dom.validationList.innerHTML = messages.map((msg) => `<li>${msg}</li>`).join('');
+       this.dom.validationModal.classList.remove('hidden');
+       this.dom.validationModal.classList.add('flex');
+    },
+
+    hideValidationModal() {
+       if (!this.dom.validationModal) return;
+       this.dom.validationModal.classList.add('hidden');
+       this.dom.validationModal.classList.remove('flex');
+    },
+
+    validateStep3() {
+       this.clearValidationErrors();
+       const messages = [];
+       for (const participant of this.participants) {
+          const missing = [];
+          if (!participant.documentType) missing.push('tipo de documento');
+          if (participant.documentType === 'OTHER' && !participant.documentOtherType) {
+             missing.push('otro documento');
+          }
+          if (!participant.documentNumber) missing.push('documento');
+          if (!participant.birthdate) missing.push('fecha de nacimiento');
+          if (!participant.gender) missing.push('género');
+          const needsMenu = participant.packageType === 'lodging' || participant.packageType === 'no_lodging';
+          if (needsMenu && !participant.menuType) missing.push('menú');
+          if (missing.length) {
+             const label = participant.name || 'el participante';
+             messages.push(`${label}: falta ${missing.join(', ')}.`);
+             const participantId = String(participant.id);
+             if (!participant.documentType) this.markFieldError(participantId, 'documentType');
+             if (participant.documentType === 'OTHER' && !participant.documentOtherType) this.markFieldError(participantId, 'documentOtherType');
+             if (!participant.documentNumber) this.markFieldError(participantId, 'documentNumber');
+             if (!participant.birthdate) this.markFieldError(participantId, 'birthdate');
+             if (!participant.gender) this.markFieldError(participantId, 'gender');
+             if (needsMenu && !participant.menuType) this.markFieldError(participantId, 'menuType');
+          }
+       }
+       if (messages.length) {
+          this.showValidationModal(messages);
+          return false;
+       }
+       return true;
     },
 
     parseAge(value) {
@@ -740,17 +1337,28 @@ const formatTestAmount = (value, currency) =>
        const lodgingChoice = this.dom.inputLodging?.value || 'lodging';
        
        if(!name) {
-          alert('Ingresa el nombre del participante');
+          this.clearValidationErrors();
+          this.markElementError(this.dom.inputName);
+          this.showValidationModal(['Nombre del participante: requerido.']);
           return;
        }
 
        if(age == null || age < 0 || age > 120) {
-          alert('Ingresa una edad válida');
+          this.clearValidationErrors();
+          this.markElementError(this.dom.inputAge);
+          this.showValidationModal(['Edad: ingresa un valor válido.']);
           return;
        }
 
        const packageType = this.getPackageTypeFromAge(age, lodgingChoice);
-       this.participants.push({ name, age, packageType, id: Date.now() });
+       const docType = this.getDocDefault({ age, packageType });
+       this.participants.push({
+          name,
+          age,
+          packageType,
+          id: Date.now(),
+          documentType: docType,
+       });
        this.dom.inputName.value = '';
        if (this.dom.inputAge) this.dom.inputAge.value = '';
        this.renderList();
@@ -852,11 +1460,62 @@ const formatTestAmount = (value, currency) =>
        return this.dom.app?.dataset.installmentDeadline || '2026-05-15';
     },
 
+    formatInputDate(date) {
+       const year = date.getFullYear();
+       const month = String(date.getMonth() + 1).padStart(2, '0');
+       const day = String(date.getDate()).padStart(2, '0');
+       return `${year}-${month}-${day}`;
+    },
+
+    getDepositMinDate() {
+       const base = new Date();
+       base.setDate(base.getDate() + 1);
+       return this.formatInputDate(base);
+    },
+
+    syncDepositSchedule() {
+       if (!this.dom.depositDueDate) return;
+       const deadline = this.getInstallmentDeadline();
+       const minDate = this.getDepositMinDate();
+       this.dom.depositDueDate.min = minDate;
+       this.dom.depositDueDate.max = deadline;
+       if (this.dom.depositDeadlineLabel) {
+          this.dom.depositDeadlineLabel.textContent = this.formatLongDateWithYear(deadline);
+       }
+       const current = this.dom.depositDueDate.value;
+       if (!current || current < minDate || current > deadline) {
+          const next = deadline >= minDate ? deadline : minDate;
+          this.dom.depositDueDate.value = next;
+       }
+    },
+
+    validateDepositSchedule() {
+       if (!this.dom.depositDueDate) return '';
+       const value = this.dom.depositDueDate.value;
+       const deadline = this.getInstallmentDeadline();
+       const minDate = this.getDepositMinDate();
+       const deadlineLabel = this.formatLongDateWithYear(deadline);
+       if (!value) return 'Selecciona la fecha del segundo pago.';
+       if (value < minDate) return 'La fecha del segundo pago debe ser desde mañana.';
+       if (value > deadline) return `La fecha del segundo pago debe ser hasta el ${deadlineLabel} (incluido).`;
+       return '';
+    },
+
     formatLongDate(value) {
        try {
           const [year, month, day] = value.split('-').map(Number);
-          const date = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
+          const date = new Date(year, (month || 1) - 1, day || 1);
           return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+       } catch {
+          return value;
+       }
+    },
+
+    formatLongDateWithYear(value) {
+       try {
+          const [year, month, day] = value.split('-').map(Number);
+          const date = new Date(year, (month || 1) - 1, day || 1);
+          return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
        } catch {
           return value;
        }
@@ -882,6 +1541,13 @@ const formatTestAmount = (value, currency) =>
     roundCurrency(amount) {
        if (this.currency === 'COP') return Math.round(amount);
        return Math.round(amount * 100) / 100;
+    },
+
+    generateIdempotencyKey() {
+       if (window.crypto?.randomUUID) {
+          return window.crypto.randomUUID();
+       }
+       return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     },
 
     updateInstallmentPreview() {
@@ -950,8 +1616,14 @@ const formatTestAmount = (value, currency) =>
        if (this.dom.installmentBox) {
           this.dom.installmentBox.classList.toggle('hidden', option !== 'INSTALLMENTS');
        }
+       if (this.dom.depositSchedule) {
+          this.dom.depositSchedule.classList.toggle('hidden', option !== 'DEPOSIT');
+       }
        if (option === 'INSTALLMENTS') {
           this.updateInstallmentPreview();
+       }
+       if (option === 'DEPOSIT') {
+          this.syncDepositSchedule();
        }
        const total = this.getEffectiveTotal();
        this.updatePayLabel(total);
@@ -985,11 +1657,18 @@ const formatTestAmount = (value, currency) =>
         this.currency = group === 'CO' ? 'COP' : 'USD';
         this.updateTotals();
         this.renderList();
+        if (this.step === 3) {
+           this.renderDetails();
+        }
     },
 
     render() {
        this.dom.steps.forEach(el => el.classList.add('hidden'));
        document.getElementById(`step-${this.step}`).classList.remove('hidden');
+
+       if (this.step === 3) {
+          this.renderDetails();
+       }
        
        this.dom.indicators.forEach((el, idx) => {
           if(idx + 1 === this.step) {
@@ -1009,26 +1688,58 @@ const formatTestAmount = (value, currency) =>
 
     async handleSubmit(e) {
        e.preventDefault();
+       if (!this.validateStep3()) {
+          this.step = 3;
+          this.render();
+          return;
+       }
+       const paymentOption = this.getSelectedPaymentOption();
+       if (paymentOption === 'DEPOSIT') {
+          const depositError = this.validateDepositSchedule();
+          if (depositError) {
+             this.clearValidationErrors();
+             this.markElementError(this.dom.depositDueDate);
+             this.showValidationModal([depositError]);
+             return;
+          }
+       }
        const fd = new FormData(this.dom.form);
        const leaderDocType = fd.get('leader_document_type');
        const leaderDocNumber = fd.get('leader_id');
-       const participantsPayload = this.participants.map((participant) => ({
-          fullName: participant.name,
-          packageType: participant.packageType,
-          ...(participant.isLeader
-             ? { documentType: leaderDocType, documentNumber: leaderDocNumber }
-             : {}),
-       }));
+       const participantsPayload = this.participants.map((participant) => {
+          let documentType = participant.documentType || (participant.isLeader ? leaderDocType : '');
+          if (documentType === 'OTHER') {
+             const other = (participant.documentOtherType || '').trim();
+             documentType = other ? `OTRO:${other}` : 'OTRO:';
+          }
+          return {
+             fullName: participant.name,
+             packageType: participant.packageType,
+             documentType,
+             documentNumber: participant.documentNumber || (participant.isLeader ? leaderDocNumber : ''),
+             birthdate: participant.birthdate || '',
+             gender: participant.gender || '',
+             menuType: participant.menuType || '',
+          };
+       });
        const testMode = this.testModeEnabled && this.testMode;
        const data = {
           contactName: fd.get('leader_name'),
           email: fd.get('leader_email'),
           phone: fd.get('leader_phone'),
+          contactDocumentType: leaderDocType,
+          contactDocumentNumber: leaderDocNumber,
           countryGroup: fd.get('countryGroup') || this.countryGroup,
           participants: participantsPayload,
           turnstile: fd.get('cf-turnstile-response'),
           testMode,
        };
+       const signature = JSON.stringify(data);
+       if (!this.idempotencyKey || this.lastBookingSignature !== signature) {
+          this.idempotencyKey = this.generateIdempotencyKey();
+          this.lastBookingSignature = signature;
+       }
+       data.idempotencyKey = this.idempotencyKey;
 
        this.dom.errorMsg.classList.add('hidden');
        const btn = this.dom.payBtn;
@@ -1059,6 +1770,8 @@ const formatTestAmount = (value, currency) =>
           if (bookingData?.bookingId && bookingToken) {
              try {
                 localStorage.setItem(`cumbre-token:${bookingData.bookingId}`, bookingToken);
+                localStorage.setItem('cumbre-last-booking', bookingData.bookingId);
+                localStorage.setItem('cumbre-last-token', bookingToken);
              } catch (e) {
                 console.warn('No se pudo guardar token en localStorage');
              }
@@ -1085,6 +1798,26 @@ const formatTestAmount = (value, currency) =>
              }
              window.location.href = planData.url;
              return;
+          }
+
+          if (paymentOption === 'DEPOSIT') {
+             const depositDate = this.dom.depositDueDate?.value || '';
+             const planRes = await fetch('/api/cumbre2026/installments/deposit', {
+                method: 'POST',
+                headers: {
+                   'content-type': 'application/json',
+                   accept: 'application/json',
+                },
+                body: JSON.stringify({
+                   bookingId: bookingData.bookingId,
+                   dueDate: depositDate,
+                   token: bookingToken,
+                }),
+             });
+             const planData = await planRes.json();
+             if (!planRes.ok || !planData?.ok) {
+                throw new Error(planData?.error || 'No se pudo agendar el segundo pago');
+             }
           }
 
           const paymentKind = paymentOption === 'FULL' ? 'full' : 'custom';
@@ -1131,4 +1864,34 @@ const formatTestAmount = (value, currency) =>
   // Init
   window.addEventListener('DOMContentLoaded', () => APP.init());
 
+</script>
+<script nonce={cspNonce}>
+  // Password toggle functionality
+  const initPasswordToggles = () => {
+    const pwdToggle = document.getElementById('leader-password-toggle');
+    const pwdInput = document.getElementById('leader-password');
+    
+    if (pwdToggle && pwdInput) {
+      pwdToggle.addEventListener('click', () => {
+        const isPassword = pwdInput.type === 'password';
+        pwdInput.type = isPassword ? 'text' : 'password';
+      });
+    }
+    
+    const pwdConfirmToggle = document.getElementById('leader-password-confirm-toggle');
+    const pwdConfirmInput = document.getElementById('leader-password-confirm');
+    
+    if (pwdConfirmToggle && pwdConfirmInput) {
+      pwdConfirmToggle.addEventListener('click', () => {
+        const isPassword = pwdConfirmInput.type === 'password';
+        pwdConfirmInput.type = isPassword ? 'text' : 'password';
+      });
+    }
+  };
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPasswordToggles);
+  } else {
+    initPasswordToggles();
+  }
 </script>

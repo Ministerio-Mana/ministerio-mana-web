@@ -10,12 +10,15 @@ import {
   calculateTotals,
   depositThreshold,
   generateAccessToken,
+  hashToken,
 } from '@lib/cumbre2026';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
+import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
+import { buildIdempotencyKey, isSafeTokenCandidate } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
 
@@ -38,15 +41,53 @@ function getTestAmount(currency: string): number {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function normalizeDate(value: unknown): string | null {
+  const raw = (value ?? '').toString().trim();
+  if (!raw) return null;
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
+}
+
+function normalizeGender(value: unknown): string | null {
+  const raw = sanitizePlainText((value ?? '').toString(), 20).toUpperCase();
+  if (raw === 'M' || raw === 'F') return raw;
+  return null;
+}
+
+function normalizeMenuType(value: unknown): string | null {
+  const raw = sanitizePlainText((value ?? '').toString(), 40).toUpperCase();
+  return raw || null;
+}
+
 function parseParticipants(raw: unknown) {
   if (!Array.isArray(raw)) return [];
   return raw;
+}
+
+async function findIdempotentBooking(idempotencyKey: string | null) {
+  if (!supabaseAdmin || !idempotencyKey) return null;
+  const { data: booking, error } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .select('id, total_amount, deposit_threshold, currency')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (error || !booking?.id) return null;
+  const { data: participants, error: participantsError } = await supabaseAdmin
+    .from('cumbre_participants')
+    .select('id, full_name, package_type')
+    .eq('booking_id', booking.id);
+  if (participantsError) return null;
+  if (!participants || participants.length === 0) {
+    await cleanupCumbreBooking(booking.id);
+    return null;
+  }
+  return { booking, participants };
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   const contentType = request.headers.get('content-type') || '';
   let payload: any = {};
 
+  let createdBookingId: string | null = null;
   try {
     if (contentType.includes('application/json')) {
       payload = await request.json();
@@ -56,6 +97,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         contactName: form.get('contactName'),
         email: form.get('email'),
         phone: form.get('phone'),
+        contactDocumentType: form.get('contactDocumentType'),
+        contactDocumentNumber: form.get('contactDocumentNumber'),
         countryGroup: form.get('countryGroup'),
         participants: form.get('participants'),
         turnstile: form.get('cf-turnstile-response'),
@@ -112,6 +155,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const contactName = sanitizePlainText(payload.contactName, 120);
     const email = (payload.email || '').toString().trim().toLowerCase();
     const phone = sanitizePlainText(payload.phone, 30);
+    const contactDocumentType = sanitizePlainText(payload.contactDocumentType, 40);
+    const contactDocumentNumber = sanitizePlainText(payload.contactDocumentNumber, 40);
 
     if (containsBlockedSequence(contactName) || containsBlockedSequence(email) || containsBlockedSequence(phone)) {
       return new Response(JSON.stringify({ ok: false, error: 'Datos invalidos' }), {
@@ -142,28 +187,62 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const participantsInput = parseParticipants(participantsRaw);
     const participants = participantsInput
-      .map((entry: any) => sanitizeParticipant({
-        fullName: entry?.fullName ?? entry?.name ?? '',
-        packageType: entry?.packageType ?? entry?.type,
-        relationship: entry?.relationship ?? '',
-        documentType: entry?.documentType ?? entry?.document_type ?? entry?.docType ?? '',
-        documentNumber: entry?.documentNumber ?? entry?.document_number ?? entry?.docNumber ?? '',
-      }))
-      .filter(Boolean) as ReturnType<typeof sanitizeParticipant>[];
+      .map((entry: any) => {
+        const safe = sanitizeParticipant({
+          fullName: entry?.fullName ?? entry?.name ?? '',
+          packageType: entry?.packageType ?? entry?.type,
+          relationship: entry?.relationship ?? '',
+          documentType: entry?.documentType ?? entry?.document_type ?? entry?.docType ?? '',
+          documentNumber: entry?.documentNumber ?? entry?.document_number ?? entry?.docNumber ?? '',
+        });
+        if (!safe) return null;
+        return { safe, raw: entry ?? {} };
+      })
+      .filter(Boolean) as Array<{ safe: NonNullable<ReturnType<typeof sanitizeParticipant>>; raw: any }>;
 
-    if (!participants.length) {
+    const safeParticipants = participants.map((item) => item.safe);
+    if (!safeParticipants.length) {
       return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
 
-    let totalAmount = calculateTotals(currency, participants);
+    let totalAmount = calculateTotals(currency, safeParticipants);
     if (testMode) {
       totalAmount = getTestAmount(currency);
     }
     const threshold = depositThreshold(totalAmount);
-    const token = generateAccessToken();
+    const rawIdempotencyKey = buildIdempotencyKey({
+      request,
+      rawKey: payload.idempotencyKey ?? payload.idempotency_key,
+    });
+    const idempotencyKey = rawIdempotencyKey && isSafeTokenCandidate(rawIdempotencyKey)
+      ? rawIdempotencyKey
+      : null;
+
+    if (idempotencyKey) {
+      const existing = await findIdempotentBooking(idempotencyKey);
+      if (existing) {
+        return new Response(JSON.stringify({
+          ok: true,
+          bookingId: existing.booking.id,
+          token: idempotencyKey,
+          currency: existing.booking.currency,
+          totalAmount: existing.booking.total_amount,
+          depositThreshold: existing.booking.deposit_threshold,
+          participants: existing.participants,
+          idempotent: true,
+        }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+
+    const token = idempotencyKey
+      ? { token: idempotencyKey, hash: hashToken(idempotencyKey) }
+      : generateAccessToken();
 
     if (!supabaseAdmin) {
       return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
@@ -178,6 +257,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         contact_name: contactName || null,
         contact_email: email || null,
         contact_phone: phone || null,
+        contact_document_type: contactDocumentType || null,
+        contact_document_number: contactDocumentNumber || null,
         country_group: countryGroup,
         currency,
         total_amount: totalAmount,
@@ -185,11 +266,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         status: 'PENDING',
         deposit_threshold: threshold,
         token_hash: token.hash,
+        idempotency_key: idempotencyKey,
       })
       .select('id')
       .single();
 
     if (bookingError || !booking) {
+      if (idempotencyKey) {
+        const existing = await findIdempotentBooking(idempotencyKey);
+        if (existing) {
+          return new Response(JSON.stringify({
+            ok: true,
+            bookingId: existing.booking.id,
+            token: idempotencyKey,
+            currency: existing.booking.currency,
+            totalAmount: existing.booking.total_amount,
+            depositThreshold: existing.booking.deposit_threshold,
+            participants: existing.participants,
+            idempotent: true,
+          }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+      }
       void logSecurityEvent({
         type: 'payment_error',
         identifier: 'cumbre.booking',
@@ -202,13 +302,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
-    const participantRows = participants.map((participant) => ({
+    createdBookingId = booking.id;
+
+    const participantRows = participants.map(({ safe, raw }) => ({
       booking_id: booking.id,
-      full_name: participant.fullName,
-      package_type: participant.packageType,
-      relationship: participant.relationship,
-      document_type: participant.documentType,
-      document_number: participant.documentNumber,
+      full_name: safe.fullName,
+      package_type: safe.packageType,
+      relationship: safe.relationship,
+      document_type: safe.documentType,
+      document_number: safe.documentNumber,
+      birthdate: normalizeDate(raw?.birthdate),
+      gender: normalizeGender(raw?.gender),
+      diet_type: normalizeMenuType(raw?.dietType ?? raw?.menuType),
     }));
 
     const { data: participantData, error: participantsError } = await supabaseAdmin
@@ -223,20 +328,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         ip: clientAddress,
         detail: participantsError.message,
       });
+      await cleanupCumbreBooking(booking.id);
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), {
         status: 500,
         headers: { 'content-type': 'application/json' },
       });
     }
 
-    await sendCumbreEmail('booking_received', {
-      to: email,
-      fullName: contactName || undefined,
-      bookingId: booking.id,
-      totalAmount,
-      totalPaid: 0,
-      currency,
-    });
+    try {
+      await sendCumbreEmail('booking_received', {
+        to: email,
+        fullName: contactName || undefined,
+        bookingId: booking.id,
+        totalAmount,
+        totalPaid: 0,
+        currency,
+      });
+    } catch (mailError) {
+      console.error('[cumbre.booking] email error', mailError);
+    }
 
     try {
       const baseUrl = resolveBaseUrl(request);
@@ -266,6 +376,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       headers: { 'content-type': 'application/json' },
     });
   } catch (error: any) {
+    if (createdBookingId) {
+      await cleanupCumbreBooking(createdBookingId);
+    }
     console.error('[cumbre.booking] error', error);
     void logSecurityEvent({
       type: 'payment_error',

@@ -4,10 +4,11 @@ import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, isAdminRole } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { resolveBaseUrl } from '@lib/url';
-import { normalizeChurchName, normalizeCityName } from '@lib/normalization';
+import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText } from '@lib/validation';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -28,7 +29,20 @@ async function getAdminContext(request: Request) {
   return { ok: true, role: 'superadmin', userId: null };
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.invite',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
       status: 500,
@@ -44,6 +58,13 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
+  if (ctx.role !== 'superadmin') {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado para crear administradores' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const payload = await request.json().catch(() => null);
   if (!payload?.email) {
     return new Response(JSON.stringify({ ok: false, error: 'Email requerido' }), {
@@ -54,13 +75,14 @@ export const POST: APIRoute = async ({ request }) => {
 
   const email = String(payload.email).trim().toLowerCase();
   const fullName = sanitizePlainText(payload.fullName || '', 120) || null;
-  const desiredRole = String(payload.role || 'user');
+  const desiredRole = String(payload.role || 'admin');
   const churchRole = String(payload.churchRole || '');
   const churchRaw = normalizeChurchName(payload.church || '');
 
-  if (ctx.role !== 'superadmin' && desiredRole !== 'user') {
-    return new Response(JSON.stringify({ ok: false, error: 'No puedes asignar ese rol' }), {
-      status: 403,
+  const ALLOWED_ADMIN_PANEL_ROLES = new Set(['admin', 'superadmin']);
+  if (!ALLOWED_ADMIN_PANEL_ROLES.has(desiredRole)) {
+    return new Response(JSON.stringify({ ok: false, error: 'Rol no permitido en este flujo' }), {
+      status: 400,
       headers: { 'content-type': 'application/json' },
     });
   }
@@ -70,15 +92,16 @@ export const POST: APIRoute = async ({ request }) => {
 
   const existingUser = await findAuthUserByEmail(email);
   let userId = existingUser?.id || null;
+  const linkKind = userId ? 'recovery' : 'invite';
+  const result = await sendAuthLink({ kind: linkKind, email, redirectTo });
+  if (!result.ok) {
+    console.error('[portal.admin.invite] invite error', result.error);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo enviar invitación' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
   if (!userId) {
-    const result = await sendAuthLink({ kind: 'invite', email, redirectTo });
-    if (!result.ok) {
-      console.error('[portal.admin.invite] invite error', result.error);
-      return new Response(JSON.stringify({ ok: false, error: 'No se pudo enviar invitación' }), {
-        status: 500,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
     userId = result.userId || null;
   }
 
@@ -114,7 +137,7 @@ export const POST: APIRoute = async ({ request }) => {
         .insert({
           name: churchRaw,
           city: normalizeCityName(payload.city || ''),
-          country: sanitizePlainText(payload.country || '', 40) || null,
+          country: normalizeCountryRegion(payload.country || '') || null,
           created_by: ctx.userId,
         })
         .select('id')

@@ -13,7 +13,11 @@ export function getInstallmentDeadline(): string {
   return raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : DEFAULT_DEADLINE;
 }
 
-function parseDateOnly(value: string): Date {
+export function isValidDateOnly(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+export function parseDateOnly(value: string): Date {
   const [year, month, day] = value.split('-').map((part) => Number(part));
   return new Date(Date.UTC(year, (month || 1) - 1, day || 1));
 }
@@ -65,6 +69,31 @@ export type InstallmentSchedule = {
   installmentAmount: number;
   installments: InstallmentScheduleItem[];
 };
+
+export function buildDepositSchedule(params: {
+  totalAmount: number;
+  currency: Currency;
+  dueDate: string;
+  startDate?: Date;
+}): InstallmentSchedule {
+  const totalAmount = Number(params.totalAmount || 0);
+  const start = toDateOnly(params.startDate ?? new Date());
+  const due = parseDateOnly(params.dueDate);
+  const end = due < start ? start : due;
+  const amount = roundCurrency(totalAmount, params.currency);
+
+  return {
+    startDate: formatDateOnly(start),
+    endDate: formatDateOnly(end),
+    installmentCount: 1,
+    installmentAmount: amount,
+    installments: [{
+      installmentIndex: 1,
+      dueDate: formatDateOnly(end),
+      amount,
+    }],
+  };
+}
 
 export function buildInstallmentSchedule(params: {
   totalAmount: number;

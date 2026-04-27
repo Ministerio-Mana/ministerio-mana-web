@@ -1,0 +1,4 @@
+⛪ Cumbre Mundial 2026
+Hola {{1}}, gracias por tu inscripcion a la Cumbre Mundial 2026.
+Para completar tu registro necesitamos tu iglesia/sede y ciudad.
+Responde con esos datos. Booking: {{2}}.

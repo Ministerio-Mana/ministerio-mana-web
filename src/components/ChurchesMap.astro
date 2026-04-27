@@ -1,20 +1,507 @@
 ---
-const id = 'churches-map';
-const cspNonce = Astro.locals?.cspNonce;
-const churchesMapScript = Astro.resolve('../scripts/churches-map.js');
 ---
 
-<div
-  id={id}
-  class="w-full h-[420px] md:h-[480px] rounded-3xl bg-slate-50 border border-slate-200 overflow-hidden"
->
+<div class="relative w-full h-[620px] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none z-0">
+  <div id="churches-map-canvas" class="absolute inset-0 w-full h-full z-0"></div>
+
+  <div class="absolute top-5 left-5 pointer-events-none z-[1000]">
+    <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50 max-w-[260px]">
+      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-1">Mapa global</p>
+      <p class="text-xs text-white/80 font-intro-reg">Visualiza sedes por país y abre ubicación exacta en Google Maps.</p>
+    </div>
+  </div>
+
+  <div class="absolute top-5 right-5 z-[1000] w-[min(560px,calc(100%-2.5rem))]">
+    <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
+      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-2">Enfocar mapa</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <label class="space-y-1">
+          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Continente</span>
+          <select
+            id="map-continent-control"
+            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+          >
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">País</span>
+          <select
+            id="map-country-control"
+            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+          >
+            <option value="">Todos</option>
+          </select>
+        </label>
+        <label class="space-y-1">
+          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Ciudad</span>
+          <select
+            id="map-city-control"
+            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+          >
+            <option value="">Todas</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute bottom-5 left-5 z-[1000] pointer-events-none">
+    <div class="bg-brand-navy/80 backdrop-blur px-3 py-2 rounded-xl border border-white/10 shadow-lg shadow-brand-void/40">
+      <p class="text-[10px] text-white/70 font-intro tracking-wide">Tip: toca una sede para ver WhatsApp y “Cómo llegar”.</p>
+    </div>
+  </div>
 </div>
 
-<noscript>
-  <p class="mt-2 text-xs text-slate-500">
-    El mapa requiere JavaScript. Actívalo para ver las ubicaciones de las iglesias.
-  </p>
-</noscript>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
 
-<!-- Script bundlado por Vite: inicializa Leaflet -->
-<script type="module" src={churchesMapScript} nonce={cspNonce}></script>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+<script>
+  import CHURCHES from '../data/churches.json';
+  import { buildChurchGeoTree, normalizeChurchCountry } from '@lib/churchGeo';
+
+  const MAP_ID = 'churches-map-canvas';
+
+  const sanitize = (value) =>
+    String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+  const mapsHrefForChurch = (church) => {
+    if (typeof church.maps_url === 'string' && church.maps_url.trim()) {
+      return church.maps_url.trim();
+    }
+
+    if (typeof church.lat === 'number' && typeof church.lng === 'number') {
+      return `https://www.google.com/maps?q=${church.lat},${church.lng}`;
+    }
+
+    const query = [church.address, church.city, normalizeChurchCountry(church)].filter(Boolean).join(', ');
+    return query
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+      : 'https://maps.google.com';
+  };
+
+  const normalizeToken = (value) =>
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const setSelectOptions = (node, options, allLabel, selectedValue = '') => {
+    if (!node) return;
+    const currentValue = selectedValue || '';
+    node.innerHTML = `<option value="">${allLabel}</option>${options
+      .map((entry) => `<option value="${entry.value}">${entry.label}</option>`)
+      .join('')}`;
+    node.value = currentValue;
+  };
+
+  function initMap() {
+    const mapNode = document.getElementById(MAP_ID);
+    if (!mapNode) return;
+
+    if (typeof L === 'undefined') {
+      setTimeout(initMap, 120);
+      return;
+    }
+
+    if (mapNode.dataset.ready === '1') return;
+    mapNode.dataset.ready = '1';
+
+    const map = L.map(MAP_ID, {
+      center: [15, -10],
+      zoom: 2,
+      minZoom: 2,
+      maxZoom: 18,
+      zoomControl: false,
+      attributionControl: false,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors',
+      className: 'dark-mode-tiles',
+    }).addTo(map);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const markerIcon = L.divIcon({
+      className: 'mana-map-pin',
+      html: `<div class="mana-pin-wrap"><div class="mana-pin-pulse"></div><div class="mana-pin-core"></div></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -8],
+    });
+
+    const mapContinentControl = document.getElementById('map-continent-control');
+    const mapCountryControl = document.getElementById('map-country-control');
+    const mapCityControl = document.getElementById('map-city-control');
+    const geoTree = buildChurchGeoTree(CHURCHES);
+    const normalizedChurches = geoTree.churches || [];
+
+    const markerLayer = L.layerGroup().addTo(map);
+    const continentBounds = new Map();
+    const countryBounds = new Map();
+    const cityBounds = new Map();
+    const allCoords = [];
+
+    normalizedChurches.forEach((church) => {
+      if (typeof church.lat !== 'number' || typeof church.lng !== 'number') return;
+
+      const continent = church.continent || 'América';
+      const country = normalizeChurchCountry(church);
+      const city = String(church.city || '').trim();
+      const latLng = L.latLng(church.lat, church.lng);
+      allCoords.push(latLng);
+
+      const existingContinentBounds = continentBounds.get(continent);
+      if (existingContinentBounds) {
+        existingContinentBounds.extend(latLng);
+      } else {
+        continentBounds.set(continent, L.latLngBounds([latLng]));
+      }
+
+      const existingBounds = countryBounds.get(country);
+      if (existingBounds) {
+        existingBounds.extend(latLng);
+      } else {
+        countryBounds.set(country, L.latLngBounds([latLng]));
+      }
+
+      const cityKey = `${country}::${normalizeToken(city)}`;
+      const existingCityBounds = cityBounds.get(cityKey);
+      if (existingCityBounds) {
+        existingCityBounds.extend(latLng);
+      } else {
+        cityBounds.set(cityKey, L.latLngBounds([latLng]));
+      }
+
+      const mapsHref = mapsHrefForChurch(church);
+      const whatsappHref = church.whatsapp
+        ? `https://wa.me/${String(church.whatsapp).replace(/[^0-9]/g, '')}`
+        : '';
+
+      const popupHtml = `
+        <div class="mana-popup-card">
+          <p class="mana-popup-city">${sanitize(city)} · ${sanitize(country)}</p>
+          <h3 class="mana-popup-name">${sanitize(church.name)}</h3>
+          ${church.service ? `<p class="mana-popup-service">${sanitize(church.service)}</p>` : ''}
+          ${church.contact?.name ? `<p class="mana-popup-contact">Contacto: ${sanitize(church.contact.name)}</p>` : ''}
+          <div class="mana-popup-actions">
+            <a class="mana-popup-btn mana-popup-btn-map" href="${mapsHref}" target="_blank" rel="noopener noreferrer">Cómo llegar</a>
+            ${whatsappHref ? `<a class="mana-popup-btn mana-popup-btn-wa" href="${whatsappHref}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
+          </div>
+        </div>
+      `;
+
+      L.marker(latLng, { icon: markerIcon }).addTo(markerLayer).bindPopup(popupHtml, {
+        className: 'mana-popup-wrapper',
+      });
+    });
+
+    const globalBounds = allCoords.length ? L.latLngBounds(allCoords) : null;
+    let selectedContinent = '';
+    let selectedCountry = '';
+    let selectedCity = '';
+    let isSyncingFromNav = false;
+
+    const getCountriesForContinent = (continent = '') =>
+      (geoTree.countriesByContinent?.[continent] || geoTree.countryStats || []).filter((entry) =>
+        !continent || entry.continent === continent,
+      );
+
+    const getCitiesForCountry = (continent = '', country = '') => {
+      if (!country) return [];
+      const key = `${continent || geoTree.continentByCountry?.[country] || ''}||${country}`;
+      return (geoTree.citiesByCountry?.[key] || []).filter((entry) => entry.country === country);
+    };
+
+    const refreshMapControls = () => {
+      const continentOptions = (geoTree.continentStats || []).map((entry) => ({
+        value: entry.continent,
+        label: `${entry.continent} (${entry.count})`,
+      }));
+      setSelectOptions(mapContinentControl, continentOptions, 'Todos', selectedContinent);
+
+      const visibleCountries = getCountriesForContinent(selectedContinent);
+      const countryOptions = visibleCountries.map((entry) => ({
+        value: entry.country,
+        label: `${entry.country} (${entry.count})`,
+      }));
+      if (selectedCountry && !countryOptions.some((entry) => entry.value === selectedCountry)) {
+        selectedCountry = '';
+      }
+      setSelectOptions(mapCountryControl, countryOptions, 'Todos', selectedCountry);
+
+      const visibleCities = getCitiesForCountry(selectedContinent, selectedCountry);
+      const cityOptions = visibleCities.map((entry) => ({
+        value: entry.city,
+        label: `${entry.city} (${entry.count})`,
+      }));
+      if (selectedCity && !cityOptions.some((entry) => entry.value === selectedCity)) {
+        selectedCity = '';
+      }
+      setSelectOptions(mapCityControl, cityOptions, 'Todas', selectedCity);
+    };
+
+    const emitMapFocus = () => {
+      if (isSyncingFromNav) return;
+      window.dispatchEvent(
+        new CustomEvent('mana:church-map-focus-change', {
+          detail: {
+            source: 'map',
+            continent: selectedContinent || '',
+            country: selectedCountry || '',
+            city: selectedCity || '',
+          },
+        }),
+      );
+    };
+
+    const focusSelection = ({ emit = true } = {}) => {
+      if (selectedCountry && selectedCity) {
+        const cityKey = `${selectedCountry}::${normalizeToken(selectedCity)}`;
+        const selectedCityBounds = cityBounds.get(cityKey);
+        if (selectedCityBounds?.isValid()) {
+          map.fitBounds(selectedCityBounds, { padding: [60, 60], maxZoom: 12 });
+          if (emit) emitMapFocus();
+          return;
+        }
+      }
+
+      if (selectedCountry) {
+        const selectedCountryBounds = countryBounds.get(selectedCountry);
+        if (selectedCountryBounds?.isValid()) {
+          map.fitBounds(selectedCountryBounds, { padding: [60, 60], maxZoom: 9 });
+          if (emit) emitMapFocus();
+          return;
+        }
+      }
+
+      if (selectedContinent) {
+        const selectedContinentBounds = continentBounds.get(selectedContinent);
+        if (selectedContinentBounds?.isValid()) {
+          map.fitBounds(selectedContinentBounds, { padding: [58, 58], maxZoom: 5 });
+          if (emit) emitMapFocus();
+          return;
+        }
+      }
+
+      if (globalBounds?.isValid()) {
+        map.fitBounds(globalBounds, { padding: [56, 56], maxZoom: 4 });
+      }
+      if (emit) emitMapFocus();
+    };
+
+    mapContinentControl?.addEventListener('change', () => {
+      selectedContinent = mapContinentControl.value || '';
+      selectedCountry = '';
+      selectedCity = '';
+      refreshMapControls();
+      focusSelection();
+    });
+
+    mapCountryControl?.addEventListener('change', () => {
+      selectedCountry = mapCountryControl.value || '';
+      if (selectedCountry) {
+        selectedContinent = geoTree.continentByCountry?.[selectedCountry] || selectedContinent;
+      }
+      selectedCity = '';
+      refreshMapControls();
+      focusSelection();
+    });
+
+    mapCityControl?.addEventListener('change', () => {
+      selectedCity = mapCityControl.value || '';
+      focusSelection();
+    });
+
+    window.addEventListener('mana:church-country-focus', (event) => {
+      const source = event?.detail?.source;
+      if (source === 'map') return;
+      isSyncingFromNav = true;
+      selectedContinent = event?.detail?.continent || '';
+      selectedCountry = event?.detail?.country || '';
+      selectedCity = event?.detail?.city || '';
+      if (selectedCountry) {
+        selectedContinent = geoTree.continentByCountry?.[selectedCountry] || selectedContinent;
+      }
+      refreshMapControls();
+      focusSelection({ emit: false });
+      isSyncingFromNav = false;
+    });
+
+    refreshMapControls();
+    focusSelection({ emit: false });
+
+    setTimeout(() => map.invalidateSize(), 400);
+  }
+
+  setTimeout(initMap, 240);
+</script>
+
+<style is:global>
+  .leaflet-container {
+    background: #0d1626;
+    font-family: 'Intro', sans-serif;
+  }
+
+  .dark-mode-tiles {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  }
+
+  .leaflet-bar {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .leaflet-bar a {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border-radius: 999px !important;
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    margin-bottom: 8px !important;
+    transition: all 0.2s ease;
+  }
+
+  .leaflet-bar a:hover {
+    background-color: rgba(45, 212, 191, 0.25) !important;
+    border-color: rgba(45, 212, 191, 0.65) !important;
+  }
+
+  .mana-pin-wrap {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+  }
+
+  .mana-pin-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: rgba(45, 212, 191, 0.35);
+    animation: mana-pin-pulse 1.9s ease-out infinite;
+  }
+
+  .mana-pin-core {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    background: #2dd4bf;
+    box-shadow: 0 0 12px rgba(45, 212, 191, 0.7);
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes mana-pin-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+
+    100% {
+      transform: scale(2.35);
+      opacity: 0;
+    }
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: rgba(13, 22, 38, 0.96) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 16px 35px rgba(4, 8, 20, 0.45);
+  }
+
+  .leaflet-popup-content {
+    margin: 12px 14px !important;
+    min-width: 210px;
+  }
+
+  .leaflet-popup-tip {
+    background: rgba(13, 22, 38, 0.96) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .mana-popup-card {
+    display: grid;
+    gap: 8px;
+    color: #fff;
+  }
+
+  .mana-popup-city {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(45, 212, 191, 0.9);
+  }
+
+  .mana-popup-name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .mana-popup-service,
+  .mana-popup-contact {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(241, 245, 249, 0.85);
+  }
+
+  .mana-popup-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .mana-popup-btn {
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  }
+
+  .mana-popup-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .mana-popup-btn-map {
+    background: rgba(45, 212, 191, 0.2);
+    border-color: rgba(45, 212, 191, 0.5);
+    color: #ccfbf1;
+  }
+
+  .mana-popup-btn-wa {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.45);
+    color: #dcfce7;
+  }
+</style>

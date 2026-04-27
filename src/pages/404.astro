@@ -1,0 +1,105 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="404 · Página no encontrada · Ministerio Maná"
+  description="La página que buscas no existe. Vuelve al inicio."
+  noindex={true}
+>
+  <section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-brand-void">
+    
+    <!-- Desert night sky background -->
+    <div class="absolute inset-0">
+      <!-- Stars -->
+      <div id="stars" class="absolute inset-0"></div>
+      <!-- Gradient overlay -->
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-brand-void/50 to-brand-void"></div>
+      <!-- Desert floor horizon -->
+      <div class="absolute bottom-0 left-0 right-0 h-32">
+        <svg viewBox="0 0 1440 120" class="w-full h-full" preserveAspectRatio="none">
+          <path d="M0,120 L0,80 Q120,40 240,65 Q360,90 480,55 Q600,20 720,50 Q840,80 960,45 Q1080,10 1200,60 Q1320,90 1440,70 L1440,120 Z" fill="#1A1A2E" opacity="0.6"/>
+          <path d="M0,120 L0,90 Q180,60 360,80 Q540,100 720,70 Q900,40 1080,75 Q1260,95 1440,85 L1440,120 Z" fill="#1A1A2E" opacity="0.3"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="relative z-10 text-center px-4 max-w-2xl mx-auto">
+      
+      <!-- 404 Number -->
+      <div class="mb-6 relative">
+        <span class="text-[10rem] md:text-[14rem] font-display font-black leading-none text-transparent bg-clip-text bg-mana-gradient select-none opacity-90">
+          404
+        </span>
+        <!-- Glowing orb behind number -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-brand-teal/10 rounded-full blur-3xl pointer-events-none"></div>
+      </div>
+
+      <!-- Message -->
+      <h1 class="text-2xl md:text-3xl font-display font-black text-white mb-3 tracking-tight">
+        Te perdiste en el desierto
+      </h1>
+      <p class="text-slate-400 text-base md:text-lg leading-relaxed mb-8 max-w-lg mx-auto">
+        La página que buscas no existe o fue movida. Pero no te preocupes, 
+        <span class="text-brand-teal">siempre hay camino de regreso</span>.
+      </p>
+
+      <!-- Bible verse -->
+      <div class="mb-10 max-w-md mx-auto">
+        <blockquote class="text-sm text-slate-500 italic">
+          "Yo soy el camino, la verdad y la vida."
+        </blockquote>
+        <cite class="text-xs text-slate-600 not-italic font-display uppercase tracking-widest">
+          — Juan 14:6
+        </cite>
+      </div>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/" class="group relative inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-display font-bold text-white bg-mana-gradient shadow-brand hover:shadow-brandHover transition-all duration-300 hover:-translate-y-0.5">
+          <svg class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          Volver al Inicio
+        </a>
+        <a href="/campus" class="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-display font-bold text-white/60 hover:text-white border border-white/10 hover:border-white/25 transition-all duration-300">
+          Campus Maná
+        </a>
+        <a href="/primicias" class="inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-display font-bold text-white/60 hover:text-white border border-white/10 hover:border-white/25 transition-all duration-300">
+          Primicias
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  // Animated stars
+  const container = document.getElementById('stars');
+  if (container) {
+    for (let i = 0; i < 80; i++) {
+      const star = document.createElement('div');
+      const size = Math.random() * 2.5 + 0.5;
+      const opacity = Math.random() * 0.6 + 0.2;
+      const delay = Math.random() * 4;
+      star.style.cssText = `
+        position: absolute;
+        width: ${size}px;
+        height: ${size}px;
+        background: white;
+        border-radius: 50%;
+        left: ${Math.random() * 100}%;
+        top: ${Math.random() * 70}%;
+        opacity: ${opacity};
+        animation: twinkle ${Math.random() * 3 + 2}s ease-in-out ${delay}s infinite alternate;
+      `;
+      container.appendChild(star);
+    }
+  }
+</script>
+
+<style>
+  @keyframes twinkle {
+    0% { opacity: 0.2; transform: scale(1); }
+    100% { opacity: 0.8; transform: scale(1.3); }
+  }
+</style>

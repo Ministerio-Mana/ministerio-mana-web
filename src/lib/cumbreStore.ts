@@ -1,7 +1,8 @@
 import { supabaseAdmin } from './supabaseAdmin';
-import { statusFromPaid, depositThreshold, generateAccessToken, hashToken } from './cumbre2026';
+import { statusFromPaid, depositThreshold, generateAccessToken, hashToken, type Currency } from './cumbre2026';
 import { logSecurityEvent } from './securityEvents';
 import { sendCumbreEmail } from './cumbreMailer';
+import { roundCurrency } from './cumbreInstallments';
 
 function ensureSupabase() {
   if (!supabaseAdmin) {
@@ -50,6 +51,20 @@ export type PaymentPlanRecord = {
   last_attempt_at: string | null;
 };
 
+export type PaymentRecord = {
+  id: string;
+  booking_id: string;
+  provider: string;
+  provider_tx_id: string | null;
+  reference: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  plan_id?: string | null;
+  installment_id?: string | null;
+  created_at: string;
+};
+
 export type InstallmentRecord = {
   id: string;
   plan_id: string;
@@ -85,6 +100,13 @@ export type InstallmentLinkRecord = {
   created_at: string;
 };
 
+export const ACTIVE_PENDING_PAYMENT_STATUSES = [
+  'PENDING',
+  'PROCESSING',
+  'REQUIRES_ACTION',
+  'APPROVAL_PENDING',
+] as const;
+
 export async function getBookingById(id: string): Promise<BookingRecord | null> {
   const supabase = ensureSupabase();
   const { data, error } = await supabase
@@ -110,6 +132,70 @@ export async function countPayments(bookingId: string): Promise<number> {
     return 0;
   }
   return count ?? 0;
+}
+
+export async function getApprovedPaymentsTotal(bookingId: string): Promise<number> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_payments')
+    .select('amount')
+    .eq('booking_id', bookingId)
+    .eq('status', 'APPROVED');
+  if (error) {
+    console.error('[cumbre.payments] approved sum error', error);
+    return 0;
+  }
+  return (data || []).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+}
+
+export async function listActivePendingPayments(params: {
+  bookingId: string;
+  installmentId?: string | null;
+  reference?: string | null;
+}): Promise<PaymentRecord[]> {
+  const supabase = ensureSupabase();
+  let query = supabase
+    .from('cumbre_payments')
+    .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, plan_id, installment_id, created_at')
+    .eq('booking_id', params.bookingId)
+    .in('status', [...ACTIVE_PENDING_PAYMENT_STATUSES])
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (params.installmentId) {
+    query = query.eq('installment_id', params.installmentId);
+  }
+
+  if (params.reference) {
+    query = query.eq('reference', params.reference);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('[cumbre.payments] pending list error', error);
+    return [];
+  }
+  return (data || []) as PaymentRecord[];
+}
+
+export async function hasApprovedPaymentByReference(params: {
+  provider: string;
+  reference: string;
+}): Promise<boolean> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_payments')
+    .select('id')
+    .eq('provider', params.provider)
+    .eq('reference', params.reference)
+    .eq('status', 'APPROVED')
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error('[cumbre.payments] approved by reference error', error);
+    return false;
+  }
+  return Boolean(data?.id);
 }
 
 export async function recordPayment(params: {
@@ -329,10 +415,21 @@ export async function applyManualPaymentToPlan(params: {
   reference?: string | null;
   paidAt?: string;
 }): Promise<{ paidAmount: number; remainingAmount: number; paidInstallments: number }> {
+  const plan = await getPlanById(params.planId);
+  if (!plan) {
+    return {
+      paidAmount: 0,
+      remainingAmount: Number(params.amount || 0),
+      paidInstallments: 0,
+    };
+  }
+
   const installments = await listPendingInstallments(params.planId);
-  let remaining = Number(params.amount || 0);
+  let remaining = Math.max(Number(params.amount || 0), 0);
   let paidAmount = 0;
   let paidCount = 0;
+  const paidAt = params.paidAt ?? new Date().toISOString();
+  const currency = plan.currency === 'USD' ? 'USD' : 'COP';
 
   for (const installment of installments) {
     const installmentAmount = Number(installment.amount || 0);
@@ -343,19 +440,64 @@ export async function applyManualPaymentToPlan(params: {
     await updateInstallment(installment.id, {
       status: 'PAID',
       provider_reference: params.reference ?? installment.provider_reference ?? null,
-      paid_at: params.paidAt ?? new Date().toISOString(),
+      paid_at: paidAt,
       last_error: null,
     });
   }
 
-  if (paidAmount > 0) {
-    await addPlanPayment(params.planId, paidAmount);
-    await refreshPlanNextDueDate(params.planId);
+  const maxPayable = Math.max(Number(plan.total_amount || 0) - Number(plan.amount_paid || 0), 0);
+  const appliedAmount = Math.min(maxPayable, paidAmount + remaining);
+
+  if (appliedAmount > 0) {
+    await addPlanPayment(plan.id, appliedAmount);
   }
 
+  const remainingBalance = Math.max(Number(plan.total_amount || 0) - (Number(plan.amount_paid || 0) + appliedAmount), 0);
+  const pendingAfter = installments.slice(paidCount);
+
+  if (pendingAfter.length === 0) {
+    await refreshPlanNextDueDate(plan.id);
+    return {
+      paidAmount: appliedAmount,
+      remainingAmount: remainingBalance,
+      paidInstallments: paidCount,
+    };
+  }
+
+  if (remainingBalance <= 0) {
+    await Promise.all(pendingAfter.map((installment) => updateInstallment(installment.id, {
+      status: 'PAID',
+      provider_reference: params.reference ?? installment.provider_reference ?? null,
+      paid_at: paidAt,
+      last_error: null,
+    })));
+    await refreshPlanNextDueDate(plan.id);
+    return {
+      paidAmount: appliedAmount,
+      remainingAmount: 0,
+      paidInstallments: paidCount + pendingAfter.length,
+    };
+  }
+
+  const pendingCount = pendingAfter.length;
+  const average = roundCurrency(remainingBalance / pendingCount, currency as Currency);
+  let accumulated = 0;
+
+  await Promise.all(pendingAfter.map((installment, index) => {
+    const isLast = index === pendingCount - 1;
+    const amount = isLast
+      ? roundCurrency(remainingBalance - accumulated, currency as Currency)
+      : average;
+    accumulated = roundCurrency(accumulated + amount, currency as Currency);
+    return updateInstallment(installment.id, { amount });
+  }));
+
+  await updatePaymentPlan(plan.id, { installment_amount: average });
+  await refreshPlanNextDueDate(plan.id);
+
   return {
-    paidAmount,
-    remainingAmount: remaining,
+    paidAmount: appliedAmount,
+    remainingAmount: remainingBalance,
     paidInstallments: paidCount,
   };
 }

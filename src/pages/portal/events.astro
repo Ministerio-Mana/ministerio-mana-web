@@ -1,0 +1,148 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Gestión Eventos | Portal Maná" description="Crea y administra eventos globales y locales." hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      
+      <!-- Shared Sidebar -->
+      <Sidebar />
+
+      <!-- Main Content -->
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+        <div class="max-w-6xl mx-auto space-y-8">
+            
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-display font-bold text-[#293C74]">Gestión de Eventos</h1>
+                    <p class="text-slate-600">Administra eventos, conferencias y reuniones.</p>
+                </div>
+                <button id="btn-new-event" class="px-6 py-3 bg-[#293C74] text-white rounded-xl font-bold hover:bg-[#1e2b58] transition-all shadow-lg shadow-[#293C74]/30 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    Crear Evento
+                </button>
+            </div>
+
+            <!-- Event List -->
+            <div id="events-loading" class="py-20 text-center animate-pulse">
+                <div class="h-6 w-48 bg-slate-200 rounded mx-auto mb-4"></div>
+                <p class="text-slate-400">Cargando eventos...</p>
+            </div>
+
+            <div id="events-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 hidden">
+                <!-- Event Cards will be injected here -->
+            </div>
+            
+            <div id="events-empty" class="hidden flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div class="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">No hay eventos creados</h3>
+                <p class="text-slate-500 text-sm">Comienza creando tu primer evento.</p>
+            </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Create/Edit Event Modal -->
+  <div id="event-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div class="w-full max-w-lg bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-8">
+          <div class="flex justify-between items-center mb-6">
+              <h2 class="text-xl font-bold text-[#293C74]">Nuevo Evento</h2>
+              <button id="close-modal" class="text-slate-400 hover:text-slate-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+          </div>
+          
+          <form id="event-form" class="space-y-4">
+              <input type="hidden" name="id" id="event-id">
+              <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Título del Evento</label>
+                  <input type="text" name="title" required class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#293C74]/20" placeholder="Ej: Ayuno Congregacional">
+              </div>
+
+              <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
+                  <textarea name="description" rows="3" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#293C74]/20" placeholder="Descripción breve del evento"></textarea>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Inicio</label>
+                    <input type="datetime-local" name="start_date" required class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Fin</label>
+                    <input type="datetime-local" name="end_date" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Alcance (Scope)</label>
+                  <select name="scope" id="event-scope" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
+                      <option value="LOCAL">Local (Mi Iglesia)</option>
+                      <option value="REGIONAL">Regional</option>
+                      <!-- Only Admins should see these, handled by JS logic ideally, or validation -->
+                      <option value="NATIONAL">Nacional</option>
+                      <option value="GLOBAL">Global</option>
+                  </select>
+              </div>
+
+              <div id="event-scope-region-wrapper" class="hidden">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Región</label>
+                  <select name="region_id" id="event-region-select" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
+                      <option value="">Selecciona una región</option>
+                  </select>
+              </div>
+
+              <div id="event-scope-church-wrapper" class="hidden">
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Iglesia</label>
+                  <select name="church_id" id="event-church-select" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
+                      <option value="">Selecciona una iglesia</option>
+                  </select>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del lugar</label>
+                  <input type="text" name="location_name" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Auditorio principal">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Dirección</label>
+                  <input type="text" name="location_address" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Calle 123 #45-67">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Ciudad</label>
+                  <input type="text" name="city" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Ciudad">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">País</label>
+                  <input type="text" name="country" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="País">
+                </div>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Imagen / Banner (URL)</label>
+                  <input type="url" name="banner_url" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="https://...">
+              </div>
+
+              <div class="pt-4">
+                  <button type="submit" class="w-full py-3 bg-brand-teal text-white font-bold rounded-xl shadow-lg shadow-brand-teal/30 hover:shadow-brand-teal/40 transition-all">
+                      Guardar Evento
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+
+  <script src="../../scripts/portal-events.js"></script>
+</BaseLayout>

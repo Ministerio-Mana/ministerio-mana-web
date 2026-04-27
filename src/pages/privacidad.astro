@@ -1,0 +1,120 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+
+const lastUpdated = '4 de febrero de 2026';
+const contactEmail = 'info@ministeriomana.org';
+const siteUrl = 'https://ministeriomana.org';
+---
+
+<BaseLayout
+  title="Politica de Privacidad | Ministerio Mana"
+  description="Conoce como cuidamos tus datos personales en Ministerio Mana."
+>
+  <section class="bg-white">
+    <div class="container mx-auto max-w-4xl px-6 py-16">
+      <header class="space-y-3">
+        <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Ministerio Mana</p>
+        <h1 class="text-3xl md:text-4xl font-display font-bold text-[#293C74]">Politica de Privacidad</h1>
+        <p class="text-sm text-slate-500">Ultima actualizacion: {lastUpdated}</p>
+      </header>
+
+      <div class="mt-10 space-y-8 text-sm leading-relaxed text-slate-600">
+        <p>
+          En Ministerio Mana respetamos tu privacidad. Esta politica explica que datos
+          recolectamos, como los usamos y que opciones tienes sobre tu informacion.
+        </p>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Responsable del tratamiento</h2>
+          <p>
+            Ministerio Mana es el responsable del tratamiento de los datos personales que se
+            recolectan a traves de {siteUrl} y de nuestros formularios de donaciones y eventos.
+            Para consultas puedes escribir a {contactEmail}.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Datos que recolectamos</h2>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Identificacion y contacto: nombre, correo, telefono, pais, ciudad.</li>
+            <li>Datos de donacion: monto, referencia de pago, estado, metodo de pago.</li>
+            <li>Datos de eventos: inscripciones, participantes y preferencias de contacto.</li>
+            <li>Datos requeridos por autoridades: tipo y numero de documento cuando aplique.</li>
+            <li>Datos tecnicos de seguridad: IP, dispositivo y registros de acceso.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Finalidades</h2>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Gestionar donaciones, pagos y comprobantes.</li>
+            <li>Administrar inscripciones a eventos y comunicaciones relacionadas.</li>
+            <li>Enviar recordatorios por email o WhatsApp cuando el usuario lo autorice.</li>
+            <li>Cumplir obligaciones legales y requerimientos de entidades gubernamentales.</li>
+            <li>Prevenir fraude, abuso y proteger la seguridad del portal.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Base legal</h2>
+          <p>
+            Tratamos datos con base en el consentimiento del titular, la ejecucion de
+            relaciones con el usuario (donaciones o inscripciones) y el cumplimiento de
+            obligaciones legales aplicables.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Compartir con terceros</h2>
+          <p>
+            Usamos proveedores para operar el portal, enviar comunicaciones y procesar pagos.
+            Entre ellos: Supabase, Vercel, SendGrid, Twilio (WhatsApp), Wompi y Stripe, asi
+            como proveedores de autenticacion (Google, Meta, Microsoft) cuando se habiliten.
+            Estos proveedores actuan bajo contratos y solo para los fines descritos.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Transferencias internacionales</h2>
+          <p>
+            Algunos proveedores pueden almacenar o procesar datos en otros paises. En estos
+            casos aplicamos medidas razonables para proteger la informacion.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Conservacion de datos</h2>
+          <p>
+            Conservamos la informacion el tiempo necesario para cumplir las finalidades
+            anteriores y las obligaciones legales y contables. Luego se elimina o anonimiza.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Derechos del titular</h2>
+          <p>
+            Puedes solicitar acceso, correccion, actualizacion o eliminacion de tus datos
+            escribiendo a {contactEmail}. Podremos pedir verificaciones razonables para
+            proteger tu informacion.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Seguridad</h2>
+          <p>
+            Implementamos medidas tecnicas y organizativas para proteger los datos personales.
+            Aun asi, ningun sistema es 100% seguro.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Cambios a esta politica</h2>
+          <p>
+            Podemos actualizar esta politica cuando sea necesario. Publicaremos la fecha de
+            actualizacion en esta pagina.
+          </p>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

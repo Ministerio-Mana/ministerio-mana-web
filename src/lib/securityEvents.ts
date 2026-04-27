@@ -22,7 +22,7 @@ const REST_TABLE_ENDPOINT = 'security_events';
 
 function getRestConfig() {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE;
   if (!url || !key) return null;
   return {
     endpoint: `${url}/rest/v1/${REST_TABLE_ENDPOINT}`,
@@ -36,14 +36,6 @@ function getRestConfig() {
 }
 
 export async function logSecurityEvent(event: SecurityEventPayload): Promise<void> {
-  const conf = getRestConfig();
-  if (!conf) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[securityEvent] config missing', event);
-    }
-    return;
-  }
-
   const payload = {
     type: event.type,
     identifier: event.identifier ?? null,
@@ -52,6 +44,29 @@ export async function logSecurityEvent(event: SecurityEventPayload): Promise<voi
     user_agent: event.userAgent ?? null,
     meta: event.meta ?? null,
   };
+
+  // Ruta principal: reuse del cliente admin para evitar fallas intermitentes por fetch directo.
+  if (supabaseAdmin) {
+    try {
+      const { error } = await supabaseAdmin.from(REST_TABLE_ENDPOINT).insert(payload);
+      if (!error) return;
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[securityEvent] insert failed', error);
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('[securityEvent] admin insert error', error);
+      }
+    }
+  }
+
+  const conf = getRestConfig();
+  if (!conf) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[securityEvent] config missing', event);
+    }
+    return;
+  }
 
   try {
     const res = await fetch(conf.endpoint, {

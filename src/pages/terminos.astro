@@ -1,0 +1,93 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+
+const lastUpdated = '4 de febrero de 2026';
+const contactEmail = 'info@ministeriomana.org';
+const siteUrl = 'https://ministeriomana.org';
+---
+
+<BaseLayout
+  title="Terminos de Servicio | Ministerio Mana"
+  description="Condiciones de uso del portal y servicios de Ministerio Mana."
+>
+  <section class="bg-white">
+    <div class="container mx-auto max-w-4xl px-6 py-16">
+      <header class="space-y-3">
+        <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Ministerio Mana</p>
+        <h1 class="text-3xl md:text-4xl font-display font-bold text-[#293C74]">Terminos de Servicio</h1>
+        <p class="text-sm text-slate-500">Ultima actualizacion: {lastUpdated}</p>
+      </header>
+
+      <div class="mt-10 space-y-8 text-sm leading-relaxed text-slate-600">
+        <p>
+          Al usar {siteUrl} y el Portal Mana aceptas estos terminos. Si no estas de acuerdo,
+          por favor no uses el servicio.
+        </p>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Uso del portal</h2>
+          <p>
+            El portal permite gestionar donaciones, inscripciones a eventos y acceso a
+            recursos. Debes usarlo de forma responsable y conforme a la ley.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Cuentas y seguridad</h2>
+          <p>
+            Eres responsable de mantener la confidencialidad de tus credenciales. No debes
+            compartir tu acceso con terceros. Podemos suspender cuentas por uso indebido.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Donaciones y pagos</h2>
+          <p>
+            Las donaciones se procesan por proveedores externos. Al donar, aceptas sus
+            politicas y condiciones. Algunos datos pueden requerirse por obligaciones
+            legales o regulatorias de entidades gubernamentales.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Eventos e inscripciones</h2>
+          <p>
+            Las inscripciones estan sujetas a disponibilidad y a las condiciones del evento.
+            Podemos actualizar detalles del evento por motivos logisiticos.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Propiedad intelectual</h2>
+          <p>
+            Los contenidos del sitio (marca, textos, imagenes) pertenecen a Ministerio Mana
+            o a sus respectivos titulares. No puedes reutilizarlos sin permiso.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Limitacion de responsabilidad</h2>
+          <p>
+            El portal se ofrece "tal cual". Hacemos esfuerzos razonables por mantenerlo
+            disponible y seguro, pero no garantizamos disponibilidad continua.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Cambios en el servicio</h2>
+          <p>
+            Podemos actualizar funcionalidades y estos terminos cuando sea necesario.
+            Publicaremos la fecha de actualizacion en esta pagina.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-lg font-bold text-[#293C74]">Contacto</h2>
+          <p>
+            Si tienes preguntas sobre estos terminos, escribenos a {contactEmail}.
+          </p>
+        </section>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

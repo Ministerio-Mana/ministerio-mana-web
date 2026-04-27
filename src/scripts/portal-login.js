@@ -43,6 +43,20 @@ const submitBtn = document.getElementById('btn-submit');
 const passwordBtn = document.getElementById('btn-submit-password');
 let lastAction = 'otp';
 
+function getTurnstileToken() {
+  const widget = document.querySelector('.cf-turnstile');
+  if (!widget) return '';
+  return window.turnstile?.getResponse?.() || '';
+}
+
+function buildSupabasePasswordPayload(email, password, captchaToken = '') {
+  const payload = { email, password };
+  if (captchaToken) {
+    payload.options = { captchaToken };
+  }
+  return payload;
+}
+
 submitBtn?.addEventListener('click', () => {
   lastAction = 'otp';
 });
@@ -74,7 +88,9 @@ form?.addEventListener('submit', async (event) => {
     if (password && action === 'password') {
       statusEl.textContent = 'Validando acceso...';
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const captchaToken = getTurnstileToken();
+      const supabasePayload = buildSupabasePasswordPayload(email, password, captchaToken);
+      const { error } = await supabase.auth.signInWithPassword(supabasePayload);
       if (error) throw error;
       statusIcon.classList.replace('bg-brand-teal', 'bg-green-400');
       statusIcon.classList.remove('animate-ping');
@@ -84,10 +100,11 @@ form?.addEventListener('submit', async (event) => {
     }
 
     const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+    const captchaToken = getTurnstileToken();
     const res = await fetch('/api/auth/send-link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email, kind: 'magiclink', redirectTo }),
+      body: JSON.stringify({ email, kind: 'magiclink', redirectTo, turnstileToken: captchaToken }),
     });
     const payload = await res.json();
     if (!res.ok || !payload?.ok) {

@@ -57,6 +57,7 @@ export function readPasswordSession(request: Request): PortalPasswordSession | n
   const [payload, signature] = value.split('.');
   if (!payload || !signature) return null;
   const expected = signToken(payload, secret);
+  if (signature.length !== expected.length) return null;
   if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
   const session = decodePayload(payload);
   if (!session) return null;

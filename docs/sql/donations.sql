@@ -22,14 +22,23 @@ create table if not exists donations (
   donor_phone text,
   donor_document_type text,
   donor_document_number text,
+  is_recurring boolean default false,
   donor_country text,
   donor_city text,
+  donation_description text,
+  need_certificate boolean default false,
   source text,
   cumbre_booking_id uuid,
   raw_event jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+alter table donations
+  add column if not exists donation_description text;
+
+alter table donations
+  add column if not exists need_certificate boolean default false;
 
 create index if not exists idx_donations_provider on donations(provider);
 create index if not exists idx_donations_status on donations(status);

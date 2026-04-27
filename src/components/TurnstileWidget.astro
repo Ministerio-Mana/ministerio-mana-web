@@ -10,11 +10,10 @@ interface Props {
 
 const { appearance = 'always', theme = 'auto', id } = Astro.props as Props;
 
-// Buscamos la llave en locals o en .env
+// Buscamos la llave en locals o en .env (ahora PUBLIC para que esté disponible en build-time)
 const siteKey =
   Astro.locals?.turnstile?.siteKey ??
-  import.meta.env?.TURNSTILE_SITE_KEY ??
-  process.env?.TURNSTILE_SITE_KEY;
+  import.meta.env?.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 {siteKey && (

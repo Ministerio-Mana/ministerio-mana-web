@@ -83,6 +83,7 @@ const cspNonce = Astro.locals?.cspNonce;
                  type="text" 
                  inputmode="numeric"
                  id="wompi-amount-display"
+                 required
                  placeholder={placeholderAmount}
                  class="currency-input w-full bg-transparent border-0 pl-8 pr-12 py-2 text-4xl font-display font-bold text-white placeholder-slate-600 focus:ring-0 focus:outline-none"
                />
@@ -114,10 +115,47 @@ const cspNonce = Astro.locals?.cspNonce;
              </div>
           </div>
 
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
+               <input type="tel" name="phone" required placeholder="3000000000" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all placeholder-slate-600" />
+             </div>
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ciudad</label>
+               <input type="text" name="city" required placeholder="Ciudad" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all placeholder-slate-600" />
+             </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Tipo de documento</label>
+               <select name="documentType" required class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all">
+                 <option value="" disabled selected>Selecciona</option>
+                 <option value="CC">CC</option>
+                 <option value="CE">CE</option>
+                 <option value="NIT">NIT</option>
+                 <option value="TI">TI</option>
+                 <option value="PAS">Pasaporte</option>
+               </select>
+             </div>
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Número de documento</label>
+               <input type="text" name="documentNumber" required placeholder="Documento" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all placeholder-slate-600" />
+             </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Iglesia o Campus</label>
+            <input type="text" name="church" required placeholder="Iglesia o sede" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all placeholder-slate-600" />
+          </div>
+
           <!-- Hidden Fields -->
           <input type="hidden" name="currency" value="COP" />
           <input type="hidden" name="source" value="primicias-wompi" />
           <input type="hidden" name="donationType" id="wompi-type" value="ofrendas" />
+          <input type="hidden" name="country" value="CO" />
+          <input type="hidden" name="projectName" id="wompi-project" value="Primicias" />
+          <input type="hidden" name="eventName" value="Primicias y Diezmos" />
           
           <TurnstileWidget appearance="interaction-only" />
 
@@ -169,6 +207,7 @@ const cspNonce = Astro.locals?.cspNonce;
                  type="text" 
                  inputmode="numeric"
                  id="stripe-amount-display"
+                 required
                  placeholder="100"
                  class="currency-input w-full bg-transparent border-0 pl-8 pr-12 py-2 text-4xl font-display font-bold text-white placeholder-slate-600 focus:ring-0 focus:outline-none"
                />
@@ -200,10 +239,56 @@ const cspNonce = Astro.locals?.cspNonce;
              </div>
           </div>
 
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
+               <input type="tel" name="phone" required placeholder="+1 555 000 0000" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all placeholder-slate-600" />
+             </div>
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Ciudad</label>
+               <input type="text" name="city" required placeholder="Ciudad" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all placeholder-slate-600" />
+             </div>
+          </div>
+
+          <div class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Tipo de documento</label>
+               <select name="documentType" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all">
+                 <option value="" selected>Selecciona</option>
+                 <option value="PAS">Pasaporte</option>
+                 <option value="NID">ID nacional</option>
+                 <option value="DL">Licencia de conducir</option>
+                 <option value="OTRO">Otro</option>
+               </select>
+             </div>
+             <div class="space-y-1">
+               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Número de documento</label>
+               <input type="text" name="documentNumber" placeholder="Documento" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all placeholder-slate-600" />
+             </div>
+          </div>
+
+          <div class="hidden flex items-center gap-3 px-2">
+            <div class="relative flex items-center">
+              <input type="checkbox" name="needCertificate" id="stripe-certificate" class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-white/20 bg-slate-800 transition-all checked:border-brand-ocean checked:bg-brand-ocean" />
+              <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 peer-checked:opacity-100 transition-opacity text-white" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <label for="stripe-certificate" class="cursor-pointer select-none text-sm text-slate-300">
+              Necesito certificado
+            </label>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Iglesia o Campus</label>
+            <input type="text" name="church" required placeholder="Iglesia o sede" class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-brand-ocean focus:ring-1 focus:ring-brand-ocean outline-none transition-all placeholder-slate-600" />
+          </div>
+
           <!-- Hidden Fields -->
           <input type="hidden" name="currency" value="USD" />
           <input type="hidden" name="source" value="primicias-stripe" />
           <input type="hidden" name="donationType" id="stripe-type" value="ofrendas" />
+          <input type="hidden" name="country" value={country} />
+          <input type="hidden" name="projectName" id="stripe-project" value="Primicias" />
+          <input type="hidden" name="eventName" value="Primicias y Diezmos" />
           
           <TurnstileWidget appearance="interaction-only" />
 
@@ -245,6 +330,8 @@ const cspNonce = Astro.locals?.cspNonce;
   const tabs = document.querySelectorAll('.tab-btn');
   const wompiType = document.getElementById('wompi-type');
   const stripeType = document.getElementById('stripe-type');
+  const wompiProject = document.getElementById('wompi-project');
+  const stripeProject = document.getElementById('stripe-project');
   
   tabs.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -261,6 +348,10 @@ const cspNonce = Astro.locals?.cspNonce;
       
       if (wompiType) wompiType.value = val;
       if (stripeType) stripeType.value = val;
+
+      const projectLabel = target === 'diezmo' ? 'Diezmos' : 'Primicias';
+      if (wompiProject) wompiProject.value = projectLabel;
+      if (stripeProject) stripeProject.value = projectLabel;
     });
   });
 
@@ -314,4 +405,164 @@ const cspNonce = Astro.locals?.cspNonce;
 
   setupCurrencyInput('wompi-amount-display', 'wompi-amount-real');
   setupCurrencyInput('stripe-amount-display', 'stripe-amount-real');
+
+  let portalProfileCache = null;
+  const DEFAULT_CHURCH = 'Ministerio Maná Virtual';
+
+  function getSupabaseAccessToken() {
+    try {
+      const key = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'));
+      if (!key) return null;
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const session = JSON.parse(raw);
+      return session?.access_token || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function setValueIfEmpty(el, value) {
+    if (!el || !value) return;
+    if (el.value) return;
+    el.value = value;
+  }
+
+  function ensureVirtualChurch(form) {
+    if (!form) return;
+    const churchInput = form.querySelector('input[name="church"]');
+    const campusInput = form.querySelector('input[name="campus"]');
+    const hasCampus = campusInput?.value?.trim();
+    if (churchInput && !churchInput.value.trim() && !hasCampus) {
+      churchInput.value = DEFAULT_CHURCH;
+    }
+  }
+
+  function setDocumentRequired(form, required) {
+    if (!form) return;
+    const docType = form.querySelector('select[name="documentType"]');
+    const docNumber = form.querySelector('input[name="documentNumber"]');
+    if (docType) docType.required = Boolean(required);
+    if (docNumber) docNumber.required = Boolean(required);
+  }
+
+  function fillDonationForm(form, profile) {
+    if (!form || !profile) return;
+    setValueIfEmpty(form.querySelector('input[name="fullName"]'), profile.full_name);
+    setValueIfEmpty(form.querySelector('input[name="email"]'), profile.email);
+    setValueIfEmpty(form.querySelector('input[name="phone"]'), profile.phone);
+    setValueIfEmpty(form.querySelector('input[name="city"]'), profile.city);
+    setValueIfEmpty(form.querySelector('input[name="church"]'), profile.church_name);
+
+    const docType = form.querySelector('select[name="documentType"]');
+    if (docType && !docType.value && profile.document_type) {
+      docType.value = profile.document_type;
+    }
+    setValueIfEmpty(form.querySelector('input[name="documentNumber"]'), profile.document_number);
+
+    const countryInput = form.querySelector('input[name="country"]');
+    if (countryInput && !countryInput.value && profile.country) {
+      countryInput.value = profile.country;
+    }
+  }
+
+  function resolveValue(form, selector, fallback) {
+    const el = form?.querySelector(selector);
+    const value = el?.value?.trim();
+    return value || fallback || '';
+  }
+
+  function saveProfileFromDonation(form) {
+    if (!form || !portalProfileCache) return;
+    ensureVirtualChurch(form);
+    const token = getSupabaseAccessToken();
+    if (!token) return;
+
+    const payload = {
+      fullName: resolveValue(form, 'input[name="fullName"]', portalProfileCache.full_name),
+      phone: resolveValue(form, 'input[name="phone"]', portalProfileCache.phone),
+      city: resolveValue(form, 'input[name="city"]', portalProfileCache.city),
+      country: resolveValue(form, 'input[name="country"]', portalProfileCache.country),
+      documentType: resolveValue(form, 'select[name="documentType"]', portalProfileCache.document_type),
+      documentNumber: resolveValue(form, 'input[name="documentNumber"]', portalProfileCache.document_number),
+      churchName: resolveValue(form, 'input[name="church"]', portalProfileCache.church_name),
+      affiliationType: portalProfileCache.affiliation_type || '',
+      churchId: portalProfileCache.church_id || null,
+    };
+
+    try {
+      fetch('/api/portal/profile', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
+        credentials: 'include',
+      }).catch(() => {});
+    } catch (err) {
+      // Non-blocking update; ignore errors here.
+    }
+  }
+
+  async function prefillFromPortalProfile() {
+    const token = getSupabaseAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch('/api/portal/session', {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.ok) return;
+      const profile = payload.profile || {};
+      portalProfileCache = profile;
+      fillDonationForm(wompiForm, profile);
+      fillDonationForm(stripeForm, profile);
+    } catch (err) {
+      console.warn('[primicias] No se pudo precargar perfil');
+    }
+  }
+
+  prefillFromPortalProfile();
+  ensureVirtualChurch(wompiForm);
+  ensureVirtualChurch(stripeForm);
+  setDocumentRequired(stripeForm, false);
+
+  wompiForm?.addEventListener('submit', () => saveProfileFromDonation(wompiForm));
+  stripeForm?.addEventListener('submit', () => saveProfileFromDonation(stripeForm));
+
+  function formatCop(value) {
+    return String(value).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  function applyQueryPrefill() {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type');
+    const amount = params.get('amount');
+    const recurring = params.get('recurring');
+
+    if (type === 'diezmos' || type === 'diezmo') {
+      const diezmoBtn = document.querySelector('.tab-btn[data-target="diezmo"]');
+      diezmoBtn?.dispatchEvent(new Event('click'));
+    }
+
+    if (amount && wompiForm) {
+      const display = document.getElementById('wompi-amount-display');
+      const real = document.getElementById('wompi-amount-real');
+      const numeric = String(amount).replace(/\D/g, '');
+      if (display && real && numeric) {
+        display.value = formatCop(numeric);
+        real.value = numeric;
+      }
+    }
+
+    if (recurring === '1' && wompiForm) {
+      const checkbox = document.getElementById('wompi-recurring');
+      if (checkbox) checkbox.checked = true;
+    }
+  }
+
+  applyQueryPrefill();
 </script>

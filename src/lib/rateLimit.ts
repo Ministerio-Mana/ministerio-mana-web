@@ -3,7 +3,7 @@ const WINDOW_SECONDS = 60;
 
 function getSupabaseRestConfig() {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE;
   if (!url || !key) return null;
 
   return {

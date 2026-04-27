@@ -1,87 +1,62 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { listAccessibleChurchIds } from '@lib/portalScope';
 
 export const prerender = false;
 
-type PortalContext = {
-  ok: boolean;
-  isAdmin: boolean;
-  churchId: string | null;
-  profile: any | null;
-};
-
-async function getPortalContext(request: Request): Promise<PortalContext> {
-  let isAllowed = false;
-  let isAdmin = false;
-  let churchId: string | null = null;
-  let profile: any = null;
-
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return { ok: false, isAdmin: false, churchId: null, profile: null };
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    isAdmin = Boolean(profile && isAdminRole(profile.role));
-    isAllowed = Boolean(profile && (isAdmin || hasChurchRole));
-    churchId = memberships.find((m: any) => m?.church?.id)?.church?.id || profile?.church_id || null;
-  }
-
-  if (!isAllowed) {
-    return { ok: false, isAdmin: false, churchId: null, profile: profile ?? null };
-  }
-
-  return { ok: true, isAdmin, churchId, profile };
-}
-
 export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
-    return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
   }
 
-  const ctx = await getPortalContext(request);
-  if (!ctx.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
-      headers: { 'content-type': 'application/json' },
-    });
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'Acceso denegado a datos operativos');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), { status: denied.status });
   }
 
+  const isAdmin = access.isAdmin;
+  let churchId: string | null = access.allowedChurchId;
+  let scopedChurchIds: string[] = churchId ? [churchId] : [];
   const url = new URL(request.url);
   const requestedChurch = url.searchParams.get('churchId');
-  const profileChurch = ctx.profile?.portal_church_id || ctx.profile?.church_id || null;
-  const targetChurch = ctx.isAdmin ? (requestedChurch || profileChurch || ctx.churchId) : ctx.churchId;
 
-  if (ctx.isAdmin && !targetChurch) {
-    return new Response(JSON.stringify({ ok: true, installments: [] }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    });
+  if (!isAdmin && !churchId) {
+    scopedChurchIds = await listAccessibleChurchIds(access);
+    if (requestedChurch) {
+      if (!scopedChurchIds.includes(requestedChurch)) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta sede' }), { status: 403 });
+      }
+      churchId = requestedChurch;
+    } else {
+      churchId = `IN:${scopedChurchIds.join(',')}`;
+    }
   }
 
-  const bookingQuery = supabaseAdmin
+  const includeAllSources = isAdmin && !requestedChurch;
+
+  // Build Query
+  let bookingQuery = supabaseAdmin
     .from('cumbre_bookings')
     .select('id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency')
-    .eq('source', 'portal-iglesia')
     .order('created_at', { ascending: false })
     .limit(400);
+  if (!includeAllSources) {
+    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
+  }
 
-  if (targetChurch) {
-    bookingQuery.eq('church_id', targetChurch);
+  // Apply Scope
+  if (isAdmin) {
+    if (requestedChurch) bookingQuery = bookingQuery.eq('church_id', requestedChurch);
+  } else if (churchId && churchId.startsWith('IN:')) {
+    const ids = scopedChurchIds.length ? scopedChurchIds : churchId.substring(3).split(',');
+    if (ids.length === 0) return new Response(JSON.stringify({ ok: true, installments: [] }), { status: 200 });
+    bookingQuery = bookingQuery.in('church_id', ids);
+  } else if (churchId) {
+    bookingQuery = bookingQuery.eq('church_id', churchId);
+  } else {
+    return new Response(JSON.stringify({ ok: true, installments: [] }), { status: 200 });
   }
 
   const { data: bookings, error: bookingsError } = await bookingQuery;
@@ -93,7 +68,12 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const bookingIds = (bookings || []).map((b: any) => b.id);
+  const eligibleBookings = (bookings || []).filter((booking: any) => {
+    const totalPaid = Number(booking.total_paid || 0);
+    return totalPaid > 0 || booking.status === 'DEPOSIT_OK' || booking.status === 'PAID';
+  });
+
+  const bookingIds = eligibleBookings.map((b: any) => b.id);
   if (!bookingIds.length) {
     return new Response(JSON.stringify({ ok: true, installments: [] }), {
       status: 200,
@@ -105,6 +85,7 @@ export const GET: APIRoute = async ({ request }) => {
     .from('cumbre_installments')
     .select('id, booking_id, plan_id, installment_index, due_date, amount, currency, status, provider_reference, provider_tx_id, paid_at, created_at, booking:cumbre_bookings(id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency), plan:cumbre_payment_plans(id, status, provider, currency, installment_count, provider_payment_method_id, provider_subscription_id)')
     .in('booking_id', bookingIds)
+    .in('status', ['PENDING', 'FAILED'])
     .order('due_date', { ascending: true })
     .limit(500);
 
@@ -116,7 +97,19 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const installmentIds = (installments || []).map((row: any) => row.id);
+  const nextByPlan = new Map<string, any>();
+  (installments || []).forEach((row: any) => {
+    const planId = row.plan_id || row.plan?.id;
+    if (!planId) return;
+    if (row.plan?.status && row.plan.status !== 'ACTIVE') return;
+    if (!nextByPlan.has(planId)) {
+      nextByPlan.set(planId, row);
+    }
+  });
+
+  const nextInstallments = Array.from(nextByPlan.values());
+
+  const installmentIds = nextInstallments.map((row: any) => row.id);
   const reminderMap: Record<string, any> = {};
   const linkMap: Record<string, any> = {};
 
@@ -146,7 +139,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const response = (installments || []).map((row: any) => ({
+  const response = nextInstallments.map((row: any) => ({
     ...row,
     last_reminder: reminderMap[row.id] || null,
     last_link: linkMap[row.id] || null,

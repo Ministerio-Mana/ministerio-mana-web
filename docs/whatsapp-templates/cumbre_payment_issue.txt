@@ -1,0 +1,5 @@
+⚠️ Cumbre Mundial 2026
+Hola {{1}}, gracias por tu inscripcion a la Cumbre Mundial 2026.
+Detectamos una inconsistencia con tu pago y ya estamos revisando.
+Si puedes, responde con el medio de pago usado. Booking: {{2}}.
+Gracias por tu paciencia.

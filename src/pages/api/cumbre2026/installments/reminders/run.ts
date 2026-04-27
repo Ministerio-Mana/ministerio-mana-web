@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { resolveBaseUrl } from '@lib/url';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
+import { sendWhatsappMessage } from '@lib/whatsapp';
 import {
   createInstallmentLinkToken,
   listInstallmentsByDueDates,
@@ -21,9 +22,14 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
+function isProduction(): boolean {
+  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+  return runtimeEnv === 'production';
+}
+
 function validateCron(request: Request): boolean {
   const secret = env('CUMBRE_CRON_SECRET');
-  if (!secret) return true;
+  if (!secret) return !isProduction();
   const header = request.headers.get('x-cron-secret');
   if (header && header === secret) return true;
   const url = new URL(request.url);
@@ -62,28 +68,6 @@ function diffDays(fromDate: string, toDate: string): number {
   const from = new Date(`${fromDate}T00:00:00-05:00`).getTime();
   const to = new Date(`${toDate}T00:00:00-05:00`).getTime();
   return Math.round((to - from) / (1000 * 60 * 60 * 24));
-}
-
-async function sendWhatsappMessage(params: {
-  to: string;
-  message: string;
-  meta?: Record<string, unknown>;
-}): Promise<boolean> {
-  const webhookUrl = env('WHATSAPP_WEBHOOK_URL');
-  if (!webhookUrl) return false;
-  const token = env('WHATSAPP_WEBHOOK_TOKEN');
-  const headers: Record<string, string> = { 'content-type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(webhookUrl, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      to: params.to,
-      message: params.message,
-      meta: params.meta ?? null,
-    }),
-  });
-  return res.ok;
 }
 
 function hasEmailProvider(): boolean {
@@ -263,6 +247,17 @@ export const POST: APIRoute = async ({ request }) => {
         channel: 'whatsapp',
       });
       if (!alreadySent) {
+        const whatsappTemplateSid = env('WHATSAPP_CUMBRE_REMINDER_CONTENT_SID');
+        const templateVariables = whatsappTemplateSid
+          ? {
+              '1': booking.contact_name || 'amigo',
+              '2': String(installment.installment_index || ''),
+              '3': String(plan.installment_count || ''),
+              '4': dueDateLabel,
+              '5': amountLabel,
+              '6': paymentLink,
+            }
+          : undefined;
         const message = `Cumbre Mundial 2026: Hola${booking.contact_name ? ` ${booking.contact_name}` : ''}. ` +
           `Tu cuota ${installment.installment_index}/${plan.installment_count} vence el ${dueDateLabel}. ` +
           `Valor: ${amountLabel}. ` +
@@ -273,6 +268,8 @@ export const POST: APIRoute = async ({ request }) => {
           const ok = await sendWhatsappMessage({
             to: booking.contact_phone,
             message,
+            contentSid: whatsappTemplateSid || null,
+            contentVariables: templateVariables,
             meta: {
               bookingId: booking.id,
               planId: plan.id,
@@ -281,6 +278,7 @@ export const POST: APIRoute = async ({ request }) => {
               amount,
               currency: plan.currency,
               paymentLink,
+              contentSid: whatsappTemplateSid || null,
             },
           });
           await recordInstallmentReminder({

@@ -1,10 +1,20 @@
 import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 
-const supabase = getSupabaseBrowserClient();
+let supabase = null;
+try {
+  supabase = getSupabaseBrowserClient();
+  console.log('[Activar] Supabase client initialized');
+} catch (err) {
+  console.error('[Activar] Supabase client error:', err);
+}
+
 const form = document.getElementById('activate-form');
 const password = document.getElementById('password');
 const confirm = document.getElementById('password-confirm');
 const status = document.getElementById('activate-status');
+const statusContainer = document.getElementById('activate-status-container');
+const statusWrapper = document.getElementById('activate-status-wrapper');
+const statusIcon = document.getElementById('activate-status-icon');
 const togglePasswordBtn = document.getElementById('toggle-password');
 const eyeIcon = document.getElementById('eye-icon');
 const eyeOffIcon = document.getElementById('eye-off-icon');
@@ -14,6 +24,104 @@ const eyeOffConfirm = document.getElementById('eye-off-icon-confirm');
 const guard = document.getElementById('activate-guard');
 const retryBtn = document.getElementById('activate-retry');
 let hasRecoveryContext = false;
+const TURNSTILE_RENDER_WAIT_MS = 3000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForTurnstileReady(widget, timeoutMs = TURNSTILE_RENDER_WAIT_MS) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt <= timeoutMs) {
+    if (window.turnstile || readTurnstileTokenField(widget)) return true;
+    await sleep(120);
+  }
+  return false;
+}
+
+function readTurnstileTokenField(widget) {
+  const selectors = 'input[name="cf-turnstile-response"], textarea[name="cf-turnstile-response"]';
+  const inWidget = widget?.querySelector?.(selectors);
+  if (inWidget?.value) return String(inWidget.value).trim();
+  const inDocument = document.querySelector(selectors);
+  if (inDocument?.value) return String(inDocument.value).trim();
+  return '';
+}
+
+function resetTurnstile() {
+  if (window.turnstile && typeof window.turnstile.reset === 'function') {
+    window.turnstile.reset();
+  }
+}
+
+async function verifyTurnstileIfPresent() {
+  const widget = document.querySelector('.cf-turnstile');
+  if (!widget) return { ok: true, bypass: true, token: '', reason: 'widget_absent' };
+
+  const siteKey = widget.getAttribute('data-sitekey');
+  if (!siteKey) {
+    return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.', reason: 'sitekey_missing' };
+  }
+
+  if (!window.turnstile && !readTurnstileTokenField(widget)) {
+    await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
+  }
+
+  if (!window.turnstile && !readTurnstileTokenField(widget)) {
+    return {
+      ok: false,
+      error: 'No cargó el captcha (Cloudflare). Desactiva bloqueadores/Brave Shields, recarga e intenta de nuevo.',
+      reason: 'widget_not_rendered',
+    };
+  }
+
+  const token = (window.turnstile?.getResponse?.() || readTurnstileTokenField(widget) || '').trim();
+  if (!token) {
+    return { ok: false, error: 'Completa la verificación antes de continuar.', reason: 'token_missing' };
+  }
+
+  try {
+    const res = await fetch('/api/turnstile/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ turnstileToken: token }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      return { ok: false, error: data?.error || 'Captcha inválido. Intenta de nuevo.' };
+    }
+    return { ok: true, token, reason: 'ok' };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: 'No pudimos validar el captcha. Intenta de nuevo.', reason: 'verify_failed' };
+  }
+}
+
+function showStatus(msg, type = 'loading') {
+  if (!status || !statusContainer || !statusWrapper || !statusIcon) return;
+  statusContainer.classList.remove('hidden');
+  status.textContent = msg;
+
+  // Update icon
+  statusIcon.className = type === 'error'
+    ? 'w-2 h-2 rounded-full bg-red-500'
+    : type === 'success'
+      ? 'w-2 h-2 rounded-full bg-green-500'
+      : 'w-2 h-2 rounded-full bg-blue-500 animate-ping';
+
+  // Update wrapper and text styles
+  if (type === 'error') {
+    statusWrapper.className = 'inline-flex items-center gap-2 px-4 py-3 rounded-full bg-red-50 border border-red-200';
+    status.className = 'text-sm font-semibold text-red-700';
+  } else if (type === 'success') {
+    statusWrapper.className = 'inline-flex items-center gap-2 px-4 py-3 rounded-full bg-green-50 border border-green-200';
+    status.className = 'text-sm font-semibold text-green-700';
+  } else {
+    statusWrapper.className = 'inline-flex items-center gap-2 px-4 py-3 rounded-full bg-blue-50 border border-blue-200';
+    status.className = 'text-sm font-semibold text-blue-700';
+  }
+}
+
 
 function setFormDisabled(disabled) {
   form?.querySelectorAll('input, button').forEach((el) => {
@@ -57,13 +165,34 @@ function getUrlParams() {
 
 function getTokenParams() {
   const { searchParams, hashParams } = getUrlParams();
+  const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+  const token = searchParams.get('token') || hashParams.get('token');
   const accessToken = hashParams.get('access_token') || hashParams.get('/access_token') || searchParams.get('access_token');
   const refreshToken = hashParams.get('refresh_token') || hashParams.get('/refresh_token') || searchParams.get('refresh_token');
-  const type = hashParams.get('type') || hashParams.get('/type') || searchParams.get('type');
+  const type = hashParams.get('type') || hashParams.get('/type') || searchParams.get('type') || searchParams.get('verification_type');
+  const email = searchParams.get('email') || hashParams.get('email') || '';
   const error = hashParams.get('error') || hashParams.get('/error') || searchParams.get('error');
+  const errorCode = hashParams.get('error_code') || hashParams.get('/error_code') || searchParams.get('error_code');
   const errorDescription =
     hashParams.get('error_description') || hashParams.get('/error_description') || searchParams.get('error_description');
-  return { accessToken, refreshToken, type, error, errorDescription };
+  return { tokenHash, token, accessToken, refreshToken, type, email, error, errorCode, errorDescription };
+}
+
+async function reportActivationIssue(message, meta = {}) {
+  try {
+    await fetch('/api/portal/client-error', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        identifier: 'portal.activar.token',
+        message,
+        meta,
+      }),
+      keepalive: true,
+    });
+  } catch (_err) {
+    // No interrumpir UX por errores de auditoria.
+  }
 }
 
 function normalizeHash() {
@@ -81,10 +210,57 @@ async function resolveSessionFromUrl() {
   const { url } = getUrlParams();
   const authCode = url.searchParams.get('code');
   const tokens = getTokenParams();
+  const otpType = tokens?.type === 'email_change_current' || tokens?.type === 'email_change_new' ? 'email_change' : tokens?.type;
+  const normalizedEmail = String(tokens?.email || '').trim().toLowerCase();
+
+  if (tokens?.tokenHash && otpType) {
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      token_hash: tokens.tokenHash,
+      type: otpType,
+    });
+    if (otpData?.session) return true;
+    if (otpError) {
+      console.warn('[Activar] verifyOtp failed', otpError.message || otpError);
+      void reportActivationIssue('verifyOtp(token_hash) failed', {
+        otp_type: otpType,
+        has_token_hash: true,
+        has_token: Boolean(tokens?.token),
+        has_email: Boolean(normalizedEmail),
+        error: otpError.message || String(otpError),
+      });
+    }
+  }
+
+  if (tokens?.token && otpType && normalizedEmail) {
+    const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: tokens.token,
+      type: otpType,
+    });
+    if (otpData?.session) return true;
+    if (otpError) {
+      console.warn('[Activar] verifyOtp(email,token) failed', otpError.message || otpError);
+      void reportActivationIssue('verifyOtp(email,token) failed', {
+        otp_type: otpType,
+        has_token_hash: false,
+        has_token: true,
+        has_email: true,
+        error: otpError.message || String(otpError),
+      });
+    }
+  }
 
   if (authCode) {
     const { data: codeData, error } = await supabase.auth.exchangeCodeForSession(authCode);
     if (codeData?.session) return true;
+    if (error) {
+      void reportActivationIssue('exchangeCodeForSession failed', {
+        has_code: true,
+        has_access_token: Boolean(tokens?.accessToken),
+        has_refresh_token: Boolean(tokens?.refreshToken),
+        error: error.message || String(error),
+      });
+    }
     if (error && tokens?.accessToken && tokens?.refreshToken) {
       const { data: tokenData } = await supabase.auth.setSession({
         access_token: tokens.accessToken,
@@ -106,13 +282,13 @@ async function resolveSessionFromUrl() {
 async function validateRecoveryLink() {
   setFormDisabled(true);
   showRetry(false);
-  if (status) status.textContent = 'Validando enlace...';
+  showStatus('Validando enlace...', 'loading');
   let ok = false;
   try {
     ok = await withTimeout(resolveSessionFromUrl(), 10000);
   } catch (err) {
     setGuardMessage(err?.message || 'No se pudo validar el enlace. Intenta de nuevo.');
-    if (status) status.textContent = '';
+    statusContainer?.classList.add('hidden');
     showRetry(true);
     return false;
   }
@@ -120,23 +296,33 @@ async function validateRecoveryLink() {
     guard?.classList.add('hidden');
     setFormDisabled(false);
     showRetry(false);
-    if (status) status.textContent = '';
+    statusContainer?.classList.add('hidden');
     const url = new URL(window.location.href);
-    if (url.hash) {
-      history.replaceState({}, document.title, `${url.pathname}${url.search}`);
-    }
+    const next = url.searchParams.get('next');
+    const cleanUrl = `${url.pathname}${next ? `?next=${encodeURIComponent(next)}` : ''}`;
+    history.replaceState({}, document.title, cleanUrl);
     return true;
   }
 
-  const { error, errorDescription } = getTokenParams();
-  if (error === 'access_denied') {
+  const { error, errorCode, errorDescription } = getTokenParams();
+  const normalizedDescription = (errorDescription || '').toLowerCase();
+  void reportActivationIssue('activation link invalid', {
+    error: error || null,
+    error_code: errorCode || null,
+    error_description: errorDescription || null,
+  });
+  if (error === 'access_denied' && (errorCode === 'otp_expired' || normalizedDescription.includes('expired'))) {
+    setGuardMessage('El enlace expiró o ya fue usado. Solicita uno nuevo desde el portal.');
+  } else if (error === 'access_denied' && normalizedDescription.includes('invalid')) {
+    setGuardMessage('El enlace ya no es válido. Solicita uno nuevo desde el portal.');
+  } else if (error === 'access_denied') {
     setGuardMessage('El enlace no pertenece a este dominio. Abre el link desde el dominio correcto.');
   } else if (errorDescription) {
     setGuardMessage(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
   } else {
     setGuardMessage('El enlace ya expiró o fue usado. Solicita uno nuevo desde el portal.');
   }
-  if (status) status.textContent = '';
+  statusContainer?.classList.add('hidden');
   showRetry(true);
   return false;
 }
@@ -190,14 +376,37 @@ toggleConfirmBtn?.addEventListener('click', () => {
 
 async function guardSession() {
   const { searchParams } = getUrlParams();
-  const { accessToken, refreshToken, type, error } = getTokenParams();
+  const { tokenHash, token, accessToken, refreshToken, type, error, errorCode, errorDescription } = getTokenParams();
   const hasRecoveryType = type === 'recovery';
-  const hasToken = Boolean(accessToken || refreshToken || error);
+  const hasToken = Boolean(tokenHash || token || accessToken || refreshToken || error);
   const hasCode = searchParams.has('code');
   hasRecoveryContext = hasRecoveryType || hasToken || hasCode;
 
   if (hasRecoveryContext) {
-    await validateRecoveryLink();
+    // No validamos de forma automática para evitar consumo temprano del token
+    // por prefetchers/escáneres de correo. La validación sucede al submit o
+    // cuando el usuario pulsa "Reintentar validación".
+    if (error) {
+      const normalizedDescription = (errorDescription || '').toLowerCase();
+      if (error === 'access_denied' && (errorCode === 'otp_expired' || normalizedDescription.includes('expired'))) {
+        setGuardMessage('El enlace expiró o ya fue usado. Solicita uno nuevo desde el portal.');
+      } else if (error === 'access_denied' && normalizedDescription.includes('invalid')) {
+        setGuardMessage('El enlace ya no es válido. Solicita uno nuevo desde el portal.');
+      } else if (error === 'access_denied') {
+        setGuardMessage('El enlace no pertenece a este dominio. Abre el link desde el dominio correcto.');
+      } else if (errorDescription) {
+        setGuardMessage(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+      } else {
+        setGuardMessage('El enlace no es válido. Solicita uno nuevo desde el portal.');
+      }
+      setFormDisabled(true);
+      showRetry(true);
+      return;
+    }
+    guard?.classList.add('hidden');
+    statusContainer?.classList.add('hidden');
+    setFormDisabled(false);
+    showRetry(false);
     return;
   }
 
@@ -226,41 +435,81 @@ retryBtn?.addEventListener('click', async () => {
 form?.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!status) return;
-  status.textContent = '';
+  statusContainer?.classList.add('hidden');
   const value = password?.value?.trim();
   const confirmValue = confirm?.value?.trim();
   if (!value || value.length < 6) {
-    status.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+    showStatus('La contraseña debe tener al menos 6 caracteres.', 'error');
     return;
   }
   if (value !== confirmValue) {
-    status.textContent = 'Las contraseñas no coinciden.';
+    showStatus('Las contraseñas no coinciden.', 'error');
     return;
   }
   if (!hasRecoveryContext) {
-    status.textContent = 'Debes abrir el enlace de recuperación para cambiar la contraseña.';
+    showStatus('Debes abrir el enlace de recuperación para cambiar la contraseña.', 'error');
     return;
   }
+
+  const captcha = await verifyTurnstileIfPresent();
+  if (!captcha.ok) {
+    void reportActivationIssue('activation captcha blocked', {
+      stage: 'submit',
+      reason: captcha?.reason || 'unknown',
+      error: captcha?.error || null,
+    });
+    showStatus(captcha.error || 'Captcha inválido.', 'error');
+    resetTurnstile();
+    return;
+  }
+
   setFormDisabled(true);
-  status.textContent = 'Guardando contraseña...';
+  showStatus('Guardando contraseña...', 'loading');
+
+  console.log('[Activar] Starting password update...');
+
   try {
     const sessionCheck = await ensureSessionReady();
+    console.log('[Activar] Session check:', sessionCheck);
+
     if (!sessionCheck.ok) {
-      status.textContent = 'Sesión no válida. Reintenta la validación del enlace.';
-      showRetry(true);
-      setFormDisabled(false);
-      return;
+      const recovered = await validateRecoveryLink();
+      if (!recovered) {
+        showStatus('Sesión no válida. Solicita un enlace nuevo si el problema persiste.', 'error');
+        showRetry(true);
+        setFormDisabled(false);
+        resetTurnstile();
+        return;
+      }
     }
+
+    console.log('[Activar] Calling updateUser...');
     const result = await withTimeout(supabase.auth.updateUser({ password: value }), 12000);
+    console.log('[Activar] updateUser result:', result);
+
     const { error } = result || {};
-    if (error) throw error;
+    if (error) {
+      console.error('[Activar] updateUser error:', error);
+      throw error;
+    }
+
+    console.log('[Activar] Password updated successfully, redirecting...');
+    showStatus('¡Contraseña guardada! Redirigiendo...', 'success');
+
   } catch (err) {
-    status.textContent = err?.message || 'No se pudo guardar.';
+    console.error('[Activar] Error:', err);
+    showStatus(err?.message || 'No se pudo guardar.', 'error');
     showRetry(true);
     setFormDisabled(false);
     return;
   }
+
+  // Redirect with a small delay to ensure the message is visible
   const url = new URL(window.location.href);
   const next = url.searchParams.get('next') || '/portal';
-  window.location.href = next;
+  console.log('[Activar] Redirecting to:', next);
+
+  setTimeout(() => {
+    window.location.href = next;
+  }, 500);
 });

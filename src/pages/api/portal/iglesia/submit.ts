@@ -1,27 +1,32 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 import {
   normalizeCountryGroup,
   currencyForGroup,
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  buildPaymentReference,
   generateAccessToken,
   type PackageType,
 } from '@lib/cumbre2026';
-import { buildInstallmentSchedule, type InstallmentFrequency } from '@lib/cumbreInstallments';
-import { createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
-import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
+import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
+import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { createDonation } from '@lib/donationsStore';
 import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
+import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
+import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 
 export const prerender = false;
+
+const VIRTUAL_CHURCH_NAME = 'Ministerio Maná Virtual';
+const VIRTUAL_CHURCH_ALIASES = [VIRTUAL_CHURCH_NAME, 'Virtual'];
 
 function normalizeFrequency(raw: string | null | undefined): InstallmentFrequency {
   const value = (raw || '').toString().trim().toUpperCase();
@@ -30,16 +35,39 @@ function normalizeFrequency(raw: string | null | undefined): InstallmentFrequenc
 }
 
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
-  const age = Number(ageRaw || 0);
+  const ageValue = String(ageRaw ?? '').trim();
+  const age = ageValue ? Number(ageValue) : null;
   const lodging = String(lodgingRaw || '').toLowerCase() === 'yes';
-  if (age <= 4) return 'child_0_7';
-  if (age <= 10) return 'child_7_13';
+  if (Number.isFinite(age)) {
+    if ((age as number) <= 4) return 'child_0_7';
+    if ((age as number) <= 10) return 'child_7_13';
+  }
   return lodging ? 'lodging' : 'no_lodging';
 }
 
 function isUuid(value: string | null | undefined): boolean {
   if (!value) return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+async function findIdempotentBooking(idempotencyKey: string | null, expectedParticipants: number) {
+  if (!supabaseAdmin || !idempotencyKey) return null;
+  const { data: booking, error } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .select('id')
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+  if (error || !booking?.id) return null;
+  const { count, error: countError } = await supabaseAdmin
+    .from('cumbre_participants')
+    .select('id', { count: 'exact', head: true })
+    .eq('booking_id', booking.id);
+  if (countError) return null;
+  if ((count ?? 0) >= expectedParticipants) {
+    return booking;
+  }
+  await cleanupCumbreBooking(booking.id);
+  return null;
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -61,41 +89,26 @@ export const POST: APIRoute = async ({ request }) => {
   let userId: string | null = null;
   let churchId: string | null = null;
   let churchNameFromRole: string | null = null;
-  let isAllowed = false;
   let isAdmin = false;
-
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 401,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    userId = user.id;
-    const profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    isAdmin = Boolean(profile && isAdminRole(profile.role));
-    isAllowed = Boolean(profile && (isAdmin || hasChurchRole));
-    const membership = memberships.find((m: any) => m?.church?.id);
-    churchId = membership?.church?.id || profile?.church_id || null;
-    churchNameFromRole = membership?.church?.name || null;
-  }
-
-  if (!isAllowed) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  let requiresScopedChurchSelection = false;
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'No tienes permisos para registrar participantes');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
+  userId = access.userId;
+  churchId = access.allowedChurchId;
+  churchNameFromRole = access.memberships.find((m: any) => m?.church?.id)?.church?.name
+    || access.profile?.church_name
+    || null;
+  isAdmin = access.isAdmin;
+  requiresScopedChurchSelection = !access.isAdmin && !access.allowedChurchId;
 
+  let createdBookingId: string | null = null;
+  let selectedChurchFromPayload: any = null;
   try {
     const contactName = sanitizePlainText(payload.contactName ?? '', 120);
     const email = (payload.email ?? '').toString().trim().toLowerCase();
@@ -103,14 +116,47 @@ export const POST: APIRoute = async ({ request }) => {
     const documentType = sanitizePlainText(payload.documentType ?? '', 10).toUpperCase();
     const documentNumber = sanitizePlainText(payload.documentNumber ?? '', 40);
     const countryGroup = normalizeCountryGroup(payload.countryGroup ?? 'CO');
-    const contactCountry = sanitizePlainText(payload.country ?? '', 40);
+    const contactCountry = normalizeCountryRegion(payload.country ?? '');
     const contactCity = normalizeCityName(payload.city ?? '');
-    const contactChurchRaw = normalizeChurchName(payload.church ?? '');
+    const contactChurchInput = sanitizePlainText(payload.church ?? '', 120);
+    const isVirtualSelection = /virtual/i.test(contactChurchInput);
+    const contactChurchRaw = isVirtualSelection ? VIRTUAL_CHURCH_NAME : normalizeChurchName(contactChurchInput);
     const churchIdFromPayload = isUuid(payload.churchId) ? payload.churchId : null;
     const paymentOption = (payload.paymentOption ?? 'FULL').toString().toUpperCase();
+    const depositDueDateRaw = (payload.deposit_due_date ?? payload.depositDueDate ?? '').toString().trim();
     const paymentMethod = sanitizePlainText(payload.paymentMethod ?? '', 40);
-    const paymentAmount = Number(payload.paymentAmount ?? 0);
+    const rawPaymentAmount = Number(payload.paymentAmount ?? 0);
+    const paymentAmount = Number.isFinite(rawPaymentAmount) ? rawPaymentAmount : 0;
     const frequency = normalizeFrequency(payload.frequency);
+
+    if (requiresScopedChurchSelection) {
+      if (!churchIdFromPayload) {
+        return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      const { data: church } = await supabaseAdmin
+        .from('churches')
+        .select('id, name, city, country')
+        .eq('id', churchIdFromPayload)
+        .maybeSingle();
+      const isAllowedChurch = await isChurchAllowedForAccess(churchIdFromPayload, access);
+      if (!church?.id || !isAllowedChurch) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta iglesia' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      selectedChurchFromPayload = church;
+    }
+
+    if (isVirtualSelection && !contactCountry.trim()) {
+      return new Response(JSON.stringify({ ok: false, error: 'Escribe el país o región para Maná Virtual' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
 
     if (!contactName || !email || !phone) {
       return new Response(JSON.stringify({ ok: false, error: 'Datos de contacto incompletos' }), {
@@ -158,10 +204,94 @@ export const POST: APIRoute = async ({ request }) => {
     const currency = currencyForGroup(countryGroup);
     const totalAmount = calculateTotals(currency, participants.map((p: any) => p.safe));
     const threshold = depositThreshold(totalAmount);
+
+    if (paymentAmount < 0) {
+      return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede ser negativo' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (paymentAmount > totalAmount) {
+      return new Response(JSON.stringify({ ok: false, error: 'El monto pagado no puede superar el total' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
+    const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
+    const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+
+    if (planOption === 'DEPOSIT') {
+      if (!isValidDateOnly(depositDueDateRaw)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Fecha de segundo pago inválida' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      const deadline = getInstallmentDeadline();
+      const today = new Date();
+      const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      if (depositDueDateRaw < todayValue) {
+        return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (depositDueDateRaw > deadline) {
+        return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha límite' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+
+    const idempotencySeed = JSON.stringify({
+      source: 'portal-iglesia',
+      contactName,
+      email,
+      phone,
+      totalAmount,
+      currency,
+      paymentAmount,
+      planOption,
+      frequency,
+      depositDueDateRaw: depositDueDateRaw || null,
+      churchId: churchIdFromPayload || churchId,
+      participants: participants.map((item: any) => ({
+        fullName: item.safe.fullName,
+        packageType: item.safe.packageType,
+        relationship: item.safe.relationship,
+        documentNumber: item.safe.documentNumber,
+      })),
+    });
+    const idempotencyKey = buildIdempotencyKey({
+      request,
+      rawKey: payload.idempotencyKey ?? payload.idempotency_key,
+      fallbackSeed: idempotencySeed,
+    });
+
+    const existingBooking = await findIdempotentBooking(idempotencyKey, participants.length);
+    if (existingBooking) {
+      return new Response(JSON.stringify({
+        ok: true,
+        bookingId: existingBooking.id,
+        idempotent: true,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const tokenPair = generateAccessToken();
 
     let resolvedChurchId = churchId;
     let resolvedChurchName = churchNameFromRole || contactChurchRaw;
+
+    if (requiresScopedChurchSelection && selectedChurchFromPayload?.id) {
+      resolvedChurchId = selectedChurchFromPayload.id;
+      resolvedChurchName = selectedChurchFromPayload.name || resolvedChurchName;
+    }
 
     if (isAdmin && churchIdFromPayload) {
       const { data: selectedChurch } = await supabaseAdmin
@@ -176,11 +306,33 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (isAdmin && !resolvedChurchId && contactChurchRaw) {
-      const { data: existing } = await supabaseAdmin
-        .from('churches')
-        .select('id, name')
-        .ilike('name', contactChurchRaw)
-        .maybeSingle();
+      let existing: { id?: string; name?: string } | null = null;
+      if (isVirtualSelection) {
+        for (const alias of VIRTUAL_CHURCH_ALIASES) {
+          let query = supabaseAdmin
+            .from('churches')
+            .select('id, name')
+            .ilike('name', alias);
+          if (contactCountry) {
+            query = query.eq('country', contactCountry);
+          }
+          const { data } = await query.maybeSingle();
+          if (data?.id) {
+            existing = data;
+            break;
+          }
+        }
+      } else {
+        let query = supabaseAdmin
+          .from('churches')
+          .select('id, name')
+          .ilike('name', contactChurchRaw);
+        if (contactCountry) {
+          query = query.eq('country', contactCountry);
+        }
+        const { data } = await query.maybeSingle();
+        if (data?.id) existing = data;
+      }
       if (existing?.id) {
         resolvedChurchId = existing.id;
         resolvedChurchName = existing.name || contactChurchRaw;
@@ -219,7 +371,9 @@ export const POST: APIRoute = async ({ request }) => {
         total_paid: 0,
         status: 'PENDING',
         deposit_threshold: threshold,
+        payment_method: 'manual',
         token_hash: tokenPair.hash,
+        idempotency_key: idempotencyKey,
         source: 'portal-iglesia',
         church_id: resolvedChurchId || null,
         created_by: isUuid(userId) ? userId : null,
@@ -228,11 +382,25 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (bookingError || !booking) {
+      if (idempotencyKey) {
+        const existing = await findIdempotentBooking(idempotencyKey, participants.length);
+        if (existing) {
+          return new Response(JSON.stringify({
+            ok: true,
+            bookingId: existing.id,
+            idempotent: true,
+          }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+      }
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear la reserva' }), {
         status: 500,
         headers: { 'content-type': 'application/json' },
       });
     }
+    createdBookingId = booking.id;
 
     const participantRows = participants.map((item: any) => ({
       booking_id: booking.id,
@@ -251,10 +419,7 @@ export const POST: APIRoute = async ({ request }) => {
       .insert(participantRows);
 
     if (participantError) {
-      return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), {
-        status: 500,
-        headers: { 'content-type': 'application/json' },
-      });
+      throw new Error('No se pudo guardar participantes');
     }
 
     try {
@@ -272,7 +437,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     let planId: string | null = null;
-    if (paymentOption === 'INSTALLMENTS') {
+    if (planOption === 'INSTALLMENTS') {
       const schedule = buildInstallmentSchedule({
         totalAmount,
         currency,
@@ -293,10 +458,33 @@ export const POST: APIRoute = async ({ request }) => {
         installments: schedule.installments,
       });
       planId = plan.id;
+    } else if (planOption === 'DEPOSIT') {
+      if (remainingAmount > 0) {
+        const schedule = buildDepositSchedule({
+          totalAmount: remainingAmount,
+          currency,
+          dueDate: depositDueDateRaw,
+        });
+        const plan = await createPaymentPlan({
+          bookingId: booking.id,
+          frequency: 'DEPOSIT',
+          startDate: schedule.startDate,
+          endDate: schedule.endDate,
+          totalAmount: remainingAmount,
+          currency,
+          installmentCount: schedule.installmentCount,
+          installmentAmount: schedule.installmentAmount,
+          provider: 'manual',
+          autoDebit: false,
+          installments: schedule.installments,
+        });
+        planId = plan.id;
+      }
     }
 
     if (paymentAmount > 0) {
-      const reference = buildDonationReference();
+      const paymentIndex = (await countPayments(booking.id)) + 1;
+      const reference = buildPaymentReference(booking.id, paymentIndex);
       await recordPayment({
         bookingId: booking.id,
         provider: 'manual',
@@ -311,7 +499,7 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
 
-      if (planId) {
+      if (planId && planOption === 'INSTALLMENTS') {
         await applyManualPaymentToPlan({
           planId,
           amount: paymentAmount,
@@ -338,15 +526,22 @@ export const POST: APIRoute = async ({ request }) => {
         donor_phone: phone,
         donor_document_type: documentType || null,
         donor_document_number: documentNumber || null,
+        is_recurring: false,
         donor_country: contactCountry || null,
         donor_city: contactCity || null,
+        donation_description: null,
+        need_certificate: false,
         source: 'portal-iglesia',
         cumbre_booking_id: booking.id,
         raw_event: null,
       });
     }
 
-    await recomputeBookingTotals(booking.id);
+    try {
+      await recomputeBookingTotals(booking.id);
+    } catch (error) {
+      console.error('[portal.iglesia.submit] recompute error', error);
+    }
 
     return new Response(JSON.stringify({
       ok: true,
@@ -358,6 +553,9 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'content-type': 'application/json' },
     });
   } catch (error: any) {
+    if (createdBookingId) {
+      await cleanupCumbreBooking(createdBookingId);
+    }
     console.error('[portal.iglesia.submit] error', error);
     return new Response(JSON.stringify({ ok: false, error: 'Error creando reserva' }), {
       status: 500,

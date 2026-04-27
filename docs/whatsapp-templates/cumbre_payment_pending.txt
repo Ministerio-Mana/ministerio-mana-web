@@ -1,0 +1,5 @@
+⏳ Cumbre Mundial 2026
+Hola {{1}}, gracias por tu inscripcion a la Cumbre Mundial 2026.
+Tu pago esta en verificacion. Si pagaste con PSE/Nequi/ahorros puede tardar unos minutos.
+⚠️ No hagas otro pago. Booking: {{2}}.
+Si necesitas ayuda, responde este WhatsApp.

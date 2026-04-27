@@ -19,4 +19,4 @@ los lugares donde Jesús caminó y donde ocurrieron muchos de los relatos que es
 - Tiempo de oración y adoración
 - Acompañamiento pastoral durante todo el viaje
 
-Si quieres más información, escribe a [administracion@ministeriomana.org](mailto:administracion@ministeriomana.org).
+Si quieres más información, escribe a [info@ministeriomana.org](mailto:info@ministeriomana.org).

@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, listUserMemberships, isAdminRole } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 
 export const prerender = false;
 
@@ -14,45 +13,38 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  let isAllowed = false;
-  let isAdmin = false;
-  let churchId: string | null = null;
-
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 401,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    isAllowed = true;
-    isAdmin = true;
-  } else {
-    const profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    isAdmin = Boolean(profile && isAdminRole(profile.role));
-    isAllowed = Boolean(profile && (isAdmin || hasChurchRole));
-    churchId = memberships.find((m: any) => m?.church?.id)?.church?.id || profile?.church_id || null;
-  }
-
-  if (!isAllowed) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  const ctx = await getPortalChurchAccessContext(request);
+  if (!ctx.ok) {
+    const denied = mapPortalAccessError(ctx.reason);
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   const url = new URL(request.url);
   const requestedChurch = url.searchParams.get('churchId');
-  const targetChurch = isAdmin ? (requestedChurch || churchId) : churchId;
+  let targetChurch = ctx.isAdmin ? (requestedChurch || ctx.allowedChurchId) : ctx.allowedChurchId;
+  const requiresScopedChurchSelection = !ctx.isAdmin && !ctx.allowedChurchId;
+  if (requiresScopedChurchSelection) {
+    if (!requestedChurch) {
+      return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    const isAllowedChurch = await isChurchAllowedForAccess(requestedChurch, ctx);
+    if (!isAllowedChurch) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    targetChurch = requestedChurch;
+  }
 
   if (!targetChurch) {
-    if (isAdmin) {
+    if (ctx.isAdmin) {
       return new Response(JSON.stringify({ ok: true, members: [] }), {
         status: 200,
         headers: { 'content-type': 'application/json' },

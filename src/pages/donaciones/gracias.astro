@@ -13,23 +13,130 @@ export const prerender = false;
     <p class="max-w-2xl mx-auto text-slate-600">
       Recibimos tu aporte. En cuanto el pago quede confirmado por la pasarela, lo verás reflejado
       en nuestros registros. Si tienes alguna duda, escríbenos a
-      <a class="text-sky-700 font-semibold" href="mailto:administracion@ministeriomana.org">
-        administracion@ministeriomana.org
+      <a class="text-sky-700 font-semibold" href="mailto:info@ministeriomana.org">
+        info@ministeriomana.org
       </a>.
     </p>
+    <div id="reminder-card" class="hidden max-w-2xl mx-auto rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm">
+      <h2 class="text-lg font-bold text-[#293C74] mb-2">Recordatorio de diezmo mensual</h2>
+      <p class="text-sm text-slate-600 mb-4">
+        Actívalo solo si tu aporte fue manual (PSE/Nequi/transferencia). Este mensaje se envía con tu consentimiento.
+      </p>
+      <form id="reminder-form" class="space-y-4">
+        <input type="hidden" name="provider" id="reminder-provider" />
+        <input type="hidden" name="reference" id="reminder-reference" />
+
+        <div class="flex flex-wrap gap-4">
+          <label class="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="channels" value="email" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+            Email
+          </label>
+          <label class="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" name="channels" value="whatsapp" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+            WhatsApp
+          </label>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Duración del recordatorio</label>
+          <select name="months" class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400">
+            <option value="3" selected>3 meses</option>
+            <option value="6">6 meses</option>
+            <option value="12">12 meses</option>
+          </select>
+        </div>
+
+        <p class="text-[11px] text-slate-500">
+          Este recordatorio se enviará bajo tu consentimiento, para ayudarte a recordar tu diezmo en las fechas indicadas.
+        </p>
+
+        <button type="submit" class="w-full rounded-full px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 via-sky-600 to-teal-500 shadow">
+          Activar recordatorio
+        </button>
+        <p id="reminder-status" class="text-sm text-slate-500 min-h-[1.25rem]"></p>
+      </form>
+    </div>
+
     <div class="inline-flex flex-col gap-2 items-center">
       <a
         href="/"
-        class="rounded-full px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 via-sky-600 to-teal-500 shadow"
+        class="rounded-full px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#293C74] via-indigo-600 to-sky-600 shadow"
       >
-        Volver al inicio
+        Ir a la Cumbre 2026
       </a>
       <a
         href="/"
         class="text-sm text-slate-500 hover:text-slate-700"
       >
-        Ir al inicio
+        Volver al inicio
       </a>
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  const provider = params.get('provider');
+  const recurring = params.get('recurring');
+  const type = params.get('type');
+
+  const reminderCard = document.getElementById('reminder-card');
+  const reminderForm = document.getElementById('reminder-form');
+  const reminderProvider = document.getElementById('reminder-provider');
+  const reminderReference = document.getElementById('reminder-reference');
+  const reminderStatus = document.getElementById('reminder-status');
+
+  async function initReminder() {
+    if (!ref || provider !== 'wompi' || recurring !== '1' || type !== 'diezmos') return;
+    try {
+      const res = await fetch(`/api/donations/lookup?provider=${encodeURIComponent(provider)}&reference=${encodeURIComponent(ref)}`);
+      const payload = await res.json();
+      if (!res.ok || !payload?.ok) return;
+
+      const donation = payload.donation || {};
+      if (!donation.is_recurring) return;
+      if (donation.payment_method && String(donation.payment_method).toUpperCase() === 'CARD') {
+        return;
+      }
+
+      reminderProvider.value = provider;
+      reminderReference.value = ref;
+      reminderCard.classList.remove('hidden');
+    } catch (err) {
+      console.warn('[donation.reminder] no se pudo validar la donacion');
+    }
+  }
+
+  reminderForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!reminderStatus) return;
+    reminderStatus.textContent = 'Activando recordatorio...';
+
+    const channels = Array.from(reminderForm.querySelectorAll('input[name="channels"]:checked'))
+      .map((input) => input.value);
+    const months = reminderForm.querySelector('select[name="months"]')?.value || '3';
+
+    try {
+      const res = await fetch('/api/donations/reminders/opt-in', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          provider: reminderProvider.value,
+          reference: reminderReference.value,
+          channels,
+          months,
+        }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'No se pudo activar');
+      }
+      reminderStatus.textContent = '¡Recordatorio activado! Gracias por tu generosidad.';
+    } catch (err) {
+      reminderStatus.textContent = err?.message || 'No se pudo activar el recordatorio.';
+    }
+  });
+
+  initReminder();
+</script>

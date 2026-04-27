@@ -2,8 +2,8 @@
 
 ## Roles clave
 - Antigravity: UI/UX Lead
-- Codex: Backend/Security Lead
-- Cloud/Claude: Copywriting
+- Delta: Backend/Security Lead
+- Atlas: Copywriting
 
 ## Formato de entrada
 - Fecha:
@@ -14,8 +14,143 @@
 
 ## Entradas
 
+### 2026-04-27 (Cumbre: corrección paquete sin alojamiento + auditoría)
+- Responsable: Delta
+- Cambios:
+  - Se corrigió la edición de reservas manuales del Portal para que `lodging: "no"` se guarde como `package_type = no_lodging` y no caiga por defecto en `lodging`.
+  - Se ajustó el registro avanzado para aceptar también `lodging` como respaldo cuando no venga `packageType/package_type`.
+  - El formulario manual del portal ahora envía `packageType` explícito junto con `lodging`.
+  - Se endureció la normalización de edad para no tratar edades vacías como `0` y evitar paquetes infantiles accidentales.
+  - Se agregó auditoría protegida `/api/portal/admin/cumbre/package-audit` para detectar reservas cuyo `total_amount` no cuadra con la suma de paquetes de participantes.
+  - La auditoría también puede exportar detalle por participante con `scope=participants`, incluyendo responsable y acompañantes, paquete guardado, precio esperado y posibles candidatos a corregir de `lodging` a `no_lodging`.
+  - Se agregó endpoint protegido `/api/portal/admin/cumbre/package-correction` con `dryRun` por defecto para corregir históricos seleccionados de `lodging` a `no_lodging`, recalculando total, estado y cuotas pendientes.
+- Pruebas:
+  - `npm run build` exitoso.
+- Pendientes:
+  - Ejecutar auditoría en producción y revisar reservas con `TOTAL_NO_CUADRA_CON_PAQUETES` antes del cierre operativo de Cumbre.
+  - Aplicar correcciones históricas solo con `participant_id` confirmado y después de validar la vista previa (`dryRun`).
+
+### 2026-02-16 (Directorio Iglesias global: datos + UX mapa)
+- Responsable: Delta
+- Cambios:
+  - Se amplió `src/data/churches.json` con nuevas sedes: Pereira, Ecuador (Cuenca/Quito/Guayaquil Sur/Guayaquil Norte), México (Tantoyuca), Francia (París) y contacto regional Europa.
+  - Se rediseñó `/iglesias` para escalar por continentes y países:
+    - chips por continente y por país con contador,
+    - búsqueda por texto sobre ciudad/iglesia/dirección/notas/servicio,
+    - enlace “Cómo llegar” en cada tarjeta.
+  - Se refactorizó `ChurchesMap.astro`:
+    - foco por país (chips dentro del mapa),
+    - popups con acciones `Cómo llegar` + `WhatsApp`,
+    - sincronización mapa/listado vía evento `mana:church-country-focus`.
+  - Se ajustó `seed-churches` para usar país real del JSON (ya no fuerza Colombia), generar `code` determinístico y hacer upsert más estable.
+  - Se creó documentación operativa `docs/iglesias-mapas.md` y seed SQL incremental `docs/sql/churches_global_seed.sql`.
+  - Se actualizó `docs/portal-iglesias.md` con flujo de sincronización y roles de equipo (pastor/colaborador).
+- Pruebas:
+  - Build local con `npm run build`.
+- Pendientes:
+  - Confirmar coordenadas exactas de Ecuador/México en producción (si se quiere precisión calle por calle).
+  - Cargar próximas iglesias de México cuando llegue el consolidado final.
+
+### 2026-02-03 (Seguridad Supabase: vista Cumbre)
+- Responsable: Delta
+- Cambios:
+  - Vista `public.vw_cumbre_general`: se recrea con `security_invoker=true` (quita SECURITY DEFINER).
+  - Se revocan privilegios a `anon` y `authenticated`; se mantiene `SELECT` para `service_role`.
+- Pruebas:
+  - SQL: `reloptions` muestra `security_invoker=true`.
+  - SQL: grants verificados en `information_schema.role_table_grants`.
+- Pendientes:
+  - (Opcional) auditar otras vistas con SECURITY DEFINER.
+
+### 2026-02-03 (Auth: contraseñas fuertes + HIBP)
+- Responsable: Delta
+- Cambios:
+  - API signup y creación admin: validación de contraseña fuerte (mínimo 10, mayúscula, minúscula, número, símbolo).
+  - Chequeo HIBP k-anonymity antes de crear usuario; bloquea contraseñas filtradas.
+- Pruebas: N/A
+- Pendientes:
+  - (Opcional) mostrar requisitos en UI de registro/admin.
+
+### 2026-02-03 (Portal: OAuth Google/Facebook)
+- Responsable: Delta
+- Cambios:
+  - Portal login: botones OAuth Google/Facebook y flujo con `signInWithOAuth`.
+- Pruebas: N/A
+- Pendientes:
+  - Configurar providers en Supabase (Google/Facebook) y redirects del dominio.
+
+### 2026-02-04 (Legal: privacidad y eliminacion de datos)
+- Responsable: Delta
+- Cambios:
+  - Pagina de politica de privacidad en `/privacidad`.
+  - Pagina de eliminacion de datos en `/eliminar-datos` para requisito de Meta.
+  - Pagina de terminos de servicio en `/terminos`.
+  - Icono 1024x1024 para Meta en `public/images/app-icon-1024.png`.
+- Pruebas: N/A
+
+### 2026-02-02 (Portal Finanzas: ingresos reales + alertas)
+- Responsable: Delta
+- Cambios:
+  - Finanzas: “Últimas Transacciones” ahora solo muestra pagos APPROVED/PAID (ingresos reales).
+  - Finanzas: nuevo resumen por categorías (diezmos, ofrendas, misiones, campus, eventos, peregrinaciones, general).
+  - Finanzas: sección “Alertas de pago” para pendientes/fallidos con motivo y acciones rápidas (correo/WhatsApp/copiar).
+  - Donaciones: se habilita categoría “peregrinaciones” en el formulario.
+- Pruebas: N/A
+- Pendientes:
+  - Validar en producción la extracción de motivos desde webhooks (pending/failed).
+
+### 2026-02-02 (Portal Cumbre: Centro de Soluciones + higiene de datos)
+- Responsable: Delta
+- Cambios:
+  - Portal Maná: nuevo “Centro de Soluciones” para admins con filtros (registro incompleto, pago pendiente, descuadre, duplicados, sin iglesia) y acciones rápidas (correo, WhatsApp, asignar iglesia, recalcular).
+  - API Admin Cumbre: endpoints `issues`, `notify` (registro incompleto + pago pendiente), `recompute`, `assign-church`, `link`, y `followups`.
+  - Mailer Cumbre: soporte para nuevos tipos (payment_pending, plan_created, final_payment_due, link_ready/expired, registration_complete) + payload extendido (next_due_date, installments_count, etc).
+  - WhatsApp templates: registro incompleto, pago pendiente, pago con inconsistencia, sin iglesia.
+  - Portal datos: “Inscritos” solo con pago real (total_paid > 0 o status DEPOSIT_OK/PAID).
+  - Cuotas pendientes: solo próxima cuota por plan y solo con pago real.
+  - Últimos pagos: solo pagos APPROVED (filtro en API y frontend).
+  - Fallback de columnas: si `payment_method/payment_status` no existen en `cumbre_bookings`, endpoints hacen fallback para evitar error 42703.
+- Pruebas: N/A
+- Pendientes:
+  - Validar en producción los filtros nuevos y que el Centro de Soluciones cargue sin errores.
+  - (Opcional) limpiar intentos de reserva sin pago si se desea mantener la vista 100% limpia.
+
+### 2026-02-02 (Cumbre 2026: registro previo al pago)
+- Responsable: Delta
+- Cambios:
+  - Cumbre 2026: nuevo paso “Datos de asistentes” antes del pago (documento, nacimiento, género, menú).
+  - Documentos por país/edad: CO menores RC/TI, adultos CC/CE/Pasaporte; INT Pasaporte/ID nacional/Otro (OTRO:).
+  - Registro: prefill + autosave con “Otro documento”; /estado ajusta CTA a Completar/Modificar y muestra estado de pago.
+  - Checkout: statusUrl con `source=payment`, redirección post‑pago a /estado, webhook Wompi acepta firma directa, parsing de referencias configurable, CSP nonces y CTA de retorno en landing.
+- Pruebas: N/A
+- Pendientes:
+  - QA end‑to‑end en staging (Stripe/Wompi, menores, internacional, cuotas).
+
+### 2026-02-01 (Donaciones Stripe: identidad opcional y oculta)
+- Responsable: Delta
+- Cambios:
+  - Stripe (Primicias + Donaciones): se ocultan campos de documento y el checkbox de certificado mientras se define el flujo.
+  - Stripe: validacion backend deja documento como opcional.
+  - Documentos internacionales quedan listos en validacion de perfil para futuro uso.
+- Pruebas: N/A
+- Pendientes:
+  - Definir flujo de certificados y requisito de documento para eventos internacionales.
+
+### 2026-02-01 (Recordatorios de diezmo manual Wompi)
+- Responsable: Delta
+- Cambios:
+  - Donaciones: se agrega opt-in de recordatorio mensual en `/donaciones/gracias` para diezmos Wompi recurrentes.
+  - Se crea tabla de suscripciones y logs de recordatorios (`docs/sql/donation_reminders.sql`).
+  - API de recordatorios: opt-in y cron para envíos por email/WhatsApp.
+  - Primicias: soporta prefill por query (`type`, `amount`, `recurring`) para enlaces de recordatorio.
+  - Wompi checkout: agrega referencia en redirect para validar recordatorio.
+- Pruebas: N/A
+- Pendientes:
+  - Configurar `DONATION_REMINDER_CRON_SECRET` y programar el cron.
+  - Validar `WHATSAPP_WEBHOOK_URL` en producción si se usará WhatsApp.
+
 ### 2026-01-28 (Portal logout fiable)
-- Responsable: Codex
+- Responsable: Delta
 - Cambios:
   - Portal Maná: cierre de sesión ahora limpia siempre la sesión local de Supabase (scope local), incluso en modo contraseña.
   - Mantiene limpieza del cookie de fallback en `/api/portal/password-logout`.
@@ -23,7 +158,7 @@
 - Pendientes: Verificar en Preview que al cerrar sesión siempre redirija a `/portal/ingresar`.
 
 ### 2026-01-28 (Portal Admin y equipos por iglesia)
-- Responsable: Codex
+- Responsable: Delta
 - Cambios:
   - Portal Maná: panel Admin/Superadmin para listar usuarios, asignar roles y resetear contraseñas.
   - Portal Iglesias: listado de colaboradores por iglesia + invitaciones para delegados/líderes.
@@ -34,14 +169,14 @@
   - Confirmar `PORTAL_SUPERADMIN_EMAILS` con los superadmins activos.
 
 ### 2026-01-28 (Portal fallback sin sesión Supabase)
-- Responsable: Codex
+- Responsable: Delta
 - Cambios:
   - Portal Maná: modo contraseña ahora muestra el dashboard aunque no haya sesión Supabase.
   - En modo fallback, el resumen usa datos mínimos y no bloquea acceso a admin/iglesia.
 - Pruebas: N/A
 
 ### 2026-01-28
-- Responsable: Codex
+- Responsable: Delta
 - Cambios:
   - Portal Maná: agregado botón "Volver al inicio" en el dashboard.
   - Portal Iglesias: formulario manual + listado por iglesia (backend + frontend).
@@ -53,7 +188,7 @@
 - Pendientes: Validar flujo de registro post‑pago con bookingId + token reales.
 
 ### 2026-01-28 (Portal activación + control post‑pago)
-- Responsable: Codex
+- Responsable: Delta
 - Cambios:
   - Portal: se agrega rol visible en perfil y se ajusta etiqueta de “Iglesia” para admins.
   - Portal Login: se habilita scroll suave (sin bloquear overflow) y link de regreso a la Cumbre.
@@ -96,7 +231,7 @@
   - Considerar reducir items en header desktop para evitar overflow
 
 ### 2026-01-26 (Cuentas, cuotas y contabilidad)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agregaron cuentas de usuario con Supabase OTP: `/cuenta/ingresar` y `/cuenta/`.
   - Se implemento cron de cuotas y export CSV de cuotas para Cumbre.
@@ -132,7 +267,7 @@
   - Validar webhooks y flujos reales de pago.
 
 ### 2026-01-27 (Recordatorios cuotas + links de pago)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agrego cron de recordatorios para cuotas manuales (D-3, D-2, D0).
   - Se genera link de pago por cuota (Wompi COP o Stripe USD) para enviar por email/WhatsApp.
@@ -147,7 +282,7 @@
   - Configurar `WHATSAPP_WEBHOOK_URL` (si aplica) y validar envio.
 
 ### 2026-01-27 (Ajustes precios y condiciones)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se actualizo copy de paquetes: evento + alimentacion + alojamiento / evento + alimentacion.
   - Se actualizo nota de ninos 0-4 / 5-10 (alojamiento compartido con padres, menu infantil para 5-10).
@@ -156,7 +291,7 @@
 - Pruebas: N/A
 
 ### 2026-01-27 (Modo prueba pasarela)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agrego opcion de pago de prueba (solo preview) para cobrar montos minimos en COP/USD.
   - Se permite crear cuotas de prueba con total fijo (CUMBRE_TEST_AMOUNT_*).
@@ -164,7 +299,7 @@
 - Pruebas: N/A
 
 ### 2026-01-27 (Portal Iglesias - base)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agrego SQL base para portal iglesias (roles, iglesias, memberships).
   - Se agrego perfil de usuario y endpoint `/api/portal/session`.
@@ -173,7 +308,7 @@
 - Pruebas: N/A
 
 ### 2026-01-28 (Portal Maná - fase 2 login/onboarding)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se creo `/portal` y `/portal/ingresar` como rutas principales (alias `/cuenta` via redirect).
   - Se actualizo copy: “Mis Aportes”, “Mis Eventos”, “Mi Perfil”, “Portal Maná”.
@@ -278,7 +413,7 @@
 
 
 ### 2026-01-28 (Hotfix: Internal Server Error en Preview)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se detecto error 500: `Astro.resolve is not a function` en Astro 5 (rompia `/` y rutas portal).
   - Se reemplazo `Astro.resolve(...)` por imports `?url` en:
@@ -295,7 +430,7 @@
   - Confirmar que portal carga scripts (sin 404) y aparece mensaje de “Enviando enlace mágico…”.
 
 ### 2026-01-28 (Hotfix: CSP bloqueando scripts data:video/mp2t)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se renombro `src/scripts/*.ts` a `.js` para evitar MIME `video/mp2t` en Vercel.
   - Se actualizo BaseLayout/Portal/AccountButton/ChurchesMap para importar scripts `?url` con `.js`.
@@ -304,7 +439,7 @@
   - Pendiente validar preview: scripts deben cargar sin CSP block ni MIME error.
 
 ### 2026-01-28 (Portal: login por contraseña para superadmins)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agregó login temporal por contraseña para superadmins (cuando Supabase Auth está en mantenimiento).
   - Nuevo endpoint: `/api/portal/password-login` crea cookie segura con sesión temporal.
@@ -319,14 +454,14 @@
   - (Opcional) `PORTAL_ADMIN_SESSION_SECRET` para firmar cookie con clave distinta.
 
 ### 2026-01-28 (Portal login UX)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agrego boton separado “Ingresar con Contraseña” para superadmins.
   - Se desactivo smooth scroll en `/portal/ingresar` para evitar scroll pegado.
 - Pruebas: Pendiente en preview
 
 ### 2026-01-25 (Cumbre Mundial 2026 - backend)
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se agrego esquema SQL para cumbre: bookings, participants, payments.
   - Se creo backend base de cumbre (booking create/get, registration submit, status).
@@ -385,11 +520,11 @@
   - Verificar que animaciones funcionen correctamente en producción
 
 #### Parte 3 - Documentación y Reglas
-- Responsable: Delta (Codex)
+- Responsable: Delta
 - Cambios:
   - Se creó `docs/contrato-equipo.md` con roles y reglas de trabajo
   - Se creó `docs/bitacora.md` con formato de registro
-  - Se definieron apodos: Nova (Antigravity), Delta (Codex), Atlas (Cloud)
+  - Se definieron apodos: Nova (Antigravity), Delta, Atlas (Copywriting)
   - Se estableció regla de no incluir referencias a herramientas internas en código
 - Pruebas: N/A
 - Pendientes: Mantener bitácora actualizada por cada PR/merge
@@ -486,3 +621,50 @@
   - Proyecto Astro inicial.
 - Pruebas: N/A
 - Pendientes: Definir estructura de contenido.
+
+### 2026-04-16 (CMS Portal: base completa para gestión de contenido)
+- Responsable: Delta
+- Cambios:
+  - Se crea SQL base de CMS en `docs/sql/cms_schema.sql`:
+    - `cms_pages`, `cms_sections`, `cms_revisions`, `cms_audit_logs`.
+    - RLS y políticas para admin/superadmin.
+    - Seed inicial de páginas (`home`, `eventos`, `noticias`).
+  - Se agregan utilidades CMS:
+    - `src/lib/cms.ts` (normalización, validación, revision/audit helpers).
+    - `src/lib/cmsAdmin.ts` (guard + json response helpers).
+  - Se agregan APIs CMS (`/api/portal/content/*`):
+    - `pages` (listar, crear, editar),
+    - `sections` (listar, crear, editar, eliminar),
+    - `publish` (publicar/despublicar + versionar),
+    - `history` (revisiones + auditoría).
+  - Se crea módulo UI inicial `src/pages/portal/content.astro` + `src/scripts/portal-content.js`.
+  - Se agrega acceso en sidebar del portal: “Contenido”.
+  - Se documenta roadmap extendido en `docs/cms_master_plan_2026-04-16.md`.
+- Pruebas:
+  - Pendiente `npm run build` y validación manual end-to-end con SQL aplicado en Supabase.
+- Pendientes:
+  - Integrar render dinámico público para Home en fase siguiente.
+  - Conectar biblioteca multimedia en Supabase Storage.
+
+### 2026-04-16 (CMS Portal fase extendida: Home dinámica + media + preview + SEO)
+- Responsable: Delta
+- Cambios:
+  - Home (`/`) ahora puede renderizar contenido dinámico desde CMS publicado con fallback seguro al home clásico si no hay bloques publicados.
+  - Se agrega renderer de bloques CMS: `hero`, `rich_text`, `gallery`, `video`, `cards`, `cta`, `custom`.
+  - Se agrega preview de CMS por token (`CMS_PREVIEW_TOKEN`) para visualizar borradores en público.
+  - Panel `/portal/content` actualizado con:
+    - UI responsive reforzada,
+    - estados loading/disabled en acciones,
+    - modales de creación (sin prompt),
+    - SEO editable por página,
+    - botón de preview,
+    - reordenamiento de secciones (arriba/abajo).
+  - Biblioteca multimedia en panel:
+    - upload/list/delete/copy URL,
+    - endpoint `media` con bucket configurable `CMS_MEDIA_BUCKET` (default `cms-media`).
+  - SQL CMS extendido con tabla `cms_media` y políticas admin/superadmin.
+- Pruebas:
+  - `npm run build` exitoso.
+- Pendientes:
+  - Ejecutar SQL `docs/sql/cms_schema.sql` en Supabase para habilitar tablas/policies.
+  - Configurar env `CMS_PREVIEW_TOKEN` (y opcional `CMS_MEDIA_BUCKET`) en Preview/Prod.

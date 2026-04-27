@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -8,11 +9,17 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
+function isProduction(): boolean {
+  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+  return runtimeEnv === 'production';
+}
+
 function validateExport(request: Request): boolean {
   const secret = env('CUMBRE_EXPORT_SECRET');
   if (!secret) return false;
   const header = request.headers.get('x-export-secret');
   if (header && header === secret) return true;
+  if (isProduction()) return false;
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
   return Boolean(token && token === secret);
@@ -27,7 +34,7 @@ function csvEscape(value: unknown): string {
   return text;
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, clientAddress }) => {
   if (!validateExport(request)) {
     void logSecurityEvent({
       type: 'webhook_invalid',
@@ -36,6 +43,19 @@ export const GET: APIRoute = async ({ request }) => {
     });
     return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
       status: 401,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'cumbre.installments.export',
+    allowlistKeys: ['CUMBRE_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
       headers: { 'content-type': 'application/json' },
     });
   }
@@ -65,6 +85,7 @@ export const GET: APIRoute = async ({ request }) => {
       plan:cumbre_payment_plans(frequency, status, provider, amount_paid, installment_count),
       booking:cumbre_bookings(contact_name, contact_email, total_amount, currency, status)
     `)
+    .eq('status', 'PAID')
     .order('due_date', { ascending: true });
 
   if (error) {

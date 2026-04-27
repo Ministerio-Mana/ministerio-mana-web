@@ -88,9 +88,22 @@ export function statusFromPaid(totalPaid: number, totalAmount: number): BookingS
   return 'PENDING';
 }
 
+const DEFAULT_REFERENCE_PREFIX = 'MM-EVT-CM26';
+
+function getReferencePrefix(): string {
+  const prefixRaw = process.env.CUMBRE_REFERENCE_PREFIX || DEFAULT_REFERENCE_PREFIX;
+  const prefix = prefixRaw.replace(/[^A-Z0-9_-]/gi, '').toUpperCase() || DEFAULT_REFERENCE_PREFIX;
+  return prefix;
+}
+
+function getReferencePrefixes(): string[] {
+  const current = getReferencePrefix();
+  const prefixes = new Set([current, DEFAULT_REFERENCE_PREFIX]);
+  return Array.from(prefixes);
+}
+
 export function buildPaymentReference(bookingId: string, paymentIndex: number): string {
-  const prefixRaw = process.env.CUMBRE_REFERENCE_PREFIX || 'MM-EVT-CM26';
-  const prefix = prefixRaw.replace(/[^A-Z0-9_-]/gi, '').toUpperCase() || 'MM-EVT-CM26';
+  const prefix = getReferencePrefix();
   const index = String(paymentIndex).padStart(2, '0');
   const rand = crypto.randomBytes(3).toString('hex').toUpperCase();
   return `${prefix}-${bookingId}-P${index}-${rand}`;
@@ -101,8 +114,7 @@ export function buildInstallmentReference(params: {
   planId: string;
   installmentIndex: number;
 }): string {
-  const prefixRaw = process.env.CUMBRE_REFERENCE_PREFIX || 'MM-EVT-CM26';
-  const prefix = prefixRaw.replace(/[^A-Z0-9_-]/gi, '').toUpperCase() || 'MM-EVT-CM26';
+  const prefix = getReferencePrefix();
   const index = String(params.installmentIndex).padStart(2, '0');
   const rand = crypto.randomBytes(3).toString('hex').toUpperCase();
   return `${prefix}-${params.bookingId}-PLN-${params.planId}-P${index}-${rand}`;
@@ -119,14 +131,18 @@ export function generateAccessToken(): { token: string; hash: string } {
 
 export function parseReferenceBookingId(reference: string | null | undefined): string | null {
   if (!reference) return null;
-  const match = reference.match(/MM-EVT-CM26-([a-f0-9-]{8,})(?:-PLN-[a-f0-9-]{8,})?-P\d{2}-/i);
-  if (!match) return null;
-  return match[1];
+  for (const prefix of getReferencePrefixes()) {
+    const match = reference.match(new RegExp(`${prefix}-([a-f0-9-]{8,})(?:-PLN-[a-f0-9-]{8,})?-P\\d{2}-`, 'i'));
+    if (match) return match[1];
+  }
+  return null;
 }
 
 export function parseReferencePlanId(reference: string | null | undefined): string | null {
   if (!reference) return null;
-  const match = reference.match(/MM-EVT-CM26-[a-f0-9-]{8,}-PLN-([a-f0-9-]{8,})-P\d{2}-/i);
-  if (!match) return null;
-  return match[1];
+  for (const prefix of getReferencePrefixes()) {
+    const match = reference.match(new RegExp(`${prefix}-[a-f0-9-]{8,}-PLN-([a-f0-9-]{8,})-P\\d{2}-`, 'i'));
+    if (match) return match[1];
+  }
+  return null;
 }

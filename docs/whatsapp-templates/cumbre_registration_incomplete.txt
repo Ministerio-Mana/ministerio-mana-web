@@ -1,0 +1,5 @@
+📝 Cumbre Mundial 2026
+Hola {{1}}, gracias por inscribirte a la Cumbre Mundial 2026.
+Nos faltan estos datos: {{2}}.
+Completa el registro aqui: {{3}}.
+Booking: {{4}}. Si necesitas ayuda, responde este WhatsApp.

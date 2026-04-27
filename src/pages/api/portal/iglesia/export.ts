@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { ensureUserProfile, isAdminRole, listUserMemberships } from '@lib/portalAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
+import { isChurchAllowedForAccess } from '@lib/portalScope';
 
 export const prerender = false;
 
@@ -10,29 +9,6 @@ function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '""';
   const str = String(value).replace(/"/g, '""');
   return `"${str}"`;
-}
-
-async function getAccessContext(request: Request) {
-  const user = await getUserFromRequest(request);
-  if (user?.email) {
-    const profile = await ensureUserProfile(user);
-    const memberships = await listUserMemberships(user.id);
-    const hasChurchRole = memberships.some((m: any) =>
-      ['church_admin', 'church_member'].includes(m?.role) && m?.status !== 'pending',
-    );
-    const isAdmin = Boolean(profile && isAdminRole(profile.role));
-    return {
-      ok: Boolean(profile && (isAdmin || hasChurchRole)),
-      isAdmin,
-      memberships,
-      profile,
-    };
-  }
-
-  const passwordSession = readPasswordSession(request);
-  if (!passwordSession?.email) return { ok: false };
-
-  return { ok: true, isAdmin: true, memberships: [], profile: null };
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -43,19 +19,36 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const ctx = await getAccessContext(request);
-  if (!ctx.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
+  const access = await getPortalChurchAccessContext(request);
+  if (!access.ok) {
+    const denied = mapPortalAccessError(access.reason, 'Acceso denegado a exportación');
+    return new Response(JSON.stringify({ ok: false, error: denied.error }), {
+      status: denied.status,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   const url = new URL(request.url);
   const requestedChurch = url.searchParams.get('churchId');
-  const membershipChurch = ctx.memberships?.find((m: any) => m?.church?.id)?.church?.id || null;
-  const profileChurch = (ctx.profile as any)?.portal_church_id || (ctx.profile as any)?.church_id || null;
-  const targetChurch = ctx.isAdmin ? (requestedChurch || profileChurch) : membershipChurch;
+  const profileChurch = access.profile?.portal_church_id || access.profile?.church_id || null;
+  let targetChurch = access.isAdmin ? (requestedChurch || profileChurch) : access.allowedChurchId;
+  const requiresScopedChurchSelection = !access.isAdmin && !access.allowedChurchId;
+  if (requiresScopedChurchSelection) {
+    if (!requestedChurch) {
+      return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    const isAllowedChurch = await isChurchAllowedForAccess(requestedChurch, access);
+    if (!isAllowedChurch) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    targetChurch = requestedChurch;
+  }
 
   if (!targetChurch) {
     return new Response(JSON.stringify({ ok: false, error: 'Selecciona una iglesia' }), {
@@ -96,6 +89,7 @@ export const GET: APIRoute = async ({ request }) => {
       .from('cumbre_payments')
       .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, raw_event, created_at, installment_id')
       .in('booking_id', bookingIds)
+      .eq('status', 'APPROVED')
       .order('created_at', { ascending: true });
     if (error) {
       console.error('[portal.iglesia.export] payments error', error);
@@ -144,32 +138,6 @@ export const GET: APIRoute = async ({ request }) => {
   (bookings || []).forEach((booking: any) => {
     const paymentRows = paymentsByBooking[booking.id] || [];
     if (!paymentRows.length) {
-      rows.push([
-        booking.church_id,
-        churchInfo?.code || '',
-        churchInfo?.name || booking.contact_church || '',
-        booking.id,
-        booking.contact_name,
-        booking.contact_email,
-        booking.contact_phone,
-        booking.contact_document_type,
-        booking.contact_document_number,
-        booking.contact_country,
-        booking.contact_city,
-        booking.total_amount,
-        booking.total_paid,
-        booking.currency,
-        booking.status,
-        booking.created_at,
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-      ].map(csvEscape).join(','));
       return;
     }
     paymentRows.forEach((payment: any) => {

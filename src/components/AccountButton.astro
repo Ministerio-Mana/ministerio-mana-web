@@ -52,6 +52,7 @@ const cspNonce = Astro.locals?.cspNonce;
 
 <script>
   import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
+  import type { SupabaseClient } from '@supabase/supabase-js';
 
   const container = document.getElementById('account-button-container');
   const loading = document.getElementById('account-loading');
@@ -70,7 +71,7 @@ const cspNonce = Astro.locals?.cspNonce;
     }
   }
 
-  let supabase = null;
+  let supabase: SupabaseClient | null = null;
   try {
     supabase = getSupabaseBrowserClient();
   } catch (err) {
@@ -135,4 +136,3 @@ const cspNonce = Astro.locals?.cspNonce;
 
   checkSession();
 </script>
-

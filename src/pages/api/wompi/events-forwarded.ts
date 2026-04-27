@@ -4,6 +4,7 @@ import { createWompiPaymentSource, verifyWompiWebhook } from '@lib/wompi';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { parseReferenceBookingId, parseReferencePlanId } from '@lib/cumbre2026';
+import { formatCurrency } from '@lib/fx';
 import {
   recordPayment,
   recomputeBookingTotals,
@@ -16,14 +17,23 @@ import {
   updatePaymentPlan,
   refreshPlanNextDueDate,
   markInstallmentLinksUsed,
+  hasInstallmentReminder,
+  recordInstallmentReminder,
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
+import { sendWhatsappMessage } from '@lib/whatsapp';
 
 export const prerender = false;
 
 function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
+
+function hasWhatsappProvider(): boolean {
+  return Boolean(env('WHATSAPP_WEBHOOK_URL'));
+}
+
+const WOMPI_FAILED_STATUSES = new Set(['DECLINED', 'VOIDED', 'ERROR', 'FAILED']);
 
 function validInternalSignature(payload: string, signature: string | null): boolean {
   const secret = env('INTERNAL_WEBHOOK_SECRET');
@@ -43,11 +53,29 @@ export const POST: APIRoute = async ({ request }) => {
   const internalSignature = request.headers.get('x-internal-signature');
   const wompiSignature = request.headers.get('x-wompi-signature');
 
-  if (!validInternalSignature(payload, internalSignature)) {
+  const internalOk = validInternalSignature(payload, internalSignature);
+  let wompiOk = false;
+
+  if (wompiSignature) {
+    try {
+      wompiOk = verifyWompiWebhook(payload, wompiSignature);
+    } catch (error: any) {
+      if (!internalOk) {
+        console.error('[wompi.forwarded] wompi signature error', error);
+        void logSecurityEvent({
+          type: 'webhook_invalid',
+          identifier: 'wompi.forwarded',
+          detail: error?.message || 'Firma Wompi invalida',
+        });
+      }
+    }
+  }
+
+  if (!internalOk && !wompiOk) {
     void logSecurityEvent({
       type: 'webhook_invalid',
       identifier: 'wompi.forwarded',
-      detail: 'Firma interna invalida',
+      detail: 'Firma invalida',
     });
     return new Response(JSON.stringify({ ok: false, error: 'Firma invalida' }), {
       status: 401,
@@ -111,26 +139,6 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  if (wompiSignature) {
-    try {
-      const ok = verifyWompiWebhook(payload, wompiSignature);
-      if (!ok) {
-        throw new Error('Firma Wompi invalida');
-      }
-    } catch (error: any) {
-      console.error('[wompi.forwarded] wompi signature error', error);
-      void logSecurityEvent({
-        type: 'webhook_invalid',
-        identifier: 'wompi.forwarded',
-        detail: error?.message || 'Firma Wompi invalida',
-      });
-      return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-  }
-
   try {
     const bookingId = parseReferenceBookingId(reference);
     const planId = parseReferencePlanId(reference);
@@ -142,7 +150,12 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const normalizedStatus = transaction?.status ?? 'PENDING';
+    const wompiStatus = String(transaction?.status ?? 'PENDING').toUpperCase();
+    const normalizedStatus = wompiStatus === 'APPROVED'
+      ? 'APPROVED'
+      : WOMPI_FAILED_STATUSES.has(wompiStatus)
+        ? 'FAILED'
+        : 'PENDING';
     const amount = amountInCents ? Number(amountInCents) / 100 : 0;
     const normalizedCurrency = transaction?.currency || 'COP';
     const providerTxId = txId ? String(txId) : null;
@@ -155,18 +168,23 @@ export const POST: APIRoute = async ({ request }) => {
       const installmentByRef = reference ? await getInstallmentByReference(reference) : null;
       const installment = installmentByRef || await getNextPendingInstallment(planId);
       if (installment) {
+        const isApproved = normalizedStatus === 'APPROVED';
+        const isFailed = normalizedStatus === 'FAILED';
+        const wasPaid = installment.status === 'PAID';
+        const nextInstallmentStatus = isApproved ? 'PAID' : isFailed ? 'FAILED' : 'PROCESSING';
+
         installmentId = installment.id;
         await updateInstallment(installment.id, {
-          status: normalizedStatus === 'APPROVED' ? 'PAID' : 'FAILED',
+          status: nextInstallmentStatus,
           provider_tx_id: providerTxId,
           provider_reference: reference,
-          paid_at: normalizedStatus === 'APPROVED' ? new Date().toISOString() : null,
-          attempt_count: normalizedStatus === 'APPROVED'
-            ? installment.attempt_count
-            : Number(installment.attempt_count || 0) + 1,
-          last_error: normalizedStatus === 'APPROVED' ? null : 'Wompi payment failed',
+          paid_at: isApproved ? new Date().toISOString() : null,
+          attempt_count: isFailed
+            ? Number(installment.attempt_count || 0) + 1
+            : installment.attempt_count,
+          last_error: isFailed ? 'Wompi payment failed' : null,
         });
-        if (normalizedStatus === 'APPROVED') {
+        if (isApproved && !wasPaid) {
           await addPlanPayment(planId, amount);
           await refreshPlanNextDueDate(planId);
           if (installmentId) {
@@ -222,8 +240,14 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    const pendingNotify = normalizedStatus === 'PENDING'
+      && bookingId
+      && paymentMethodType
+      && paymentMethodType !== 'CARD';
+    const shouldLookupBooking = Boolean(bookingId && (normalizedStatus === 'APPROVED' || pendingNotify));
+    const booking = shouldLookupBooking ? await getBookingById(bookingId!) : null;
+
     if (normalizedStatus === 'APPROVED' && bookingId) {
-      const booking = await getBookingById(bookingId);
       if (booking?.contact_email) {
         await sendCumbreEmail('payment_received', {
           to: booking.contact_email,
@@ -236,6 +260,119 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
       await recomputeBookingTotals(bookingId);
+    }
+
+    if (booking?.contact_phone && hasWhatsappProvider()) {
+      if (normalizedStatus === 'APPROVED') {
+        const reminderKey = 'PAYMENT_RECEIVED';
+        const alreadySent = installmentId
+          ? await hasInstallmentReminder({ installmentId, reminderKey, channel: 'whatsapp' })
+          : false;
+        if (!alreadySent) {
+          const amountLabel = formatCurrency(amount, normalizedCurrency as any);
+          const contentSid = env('WHATSAPP_CUMBRE_PAYMENT_RECEIVED_CONTENT_SID');
+          const contentVariables = contentSid
+            ? {
+                '1': booking.contact_name || 'amigo',
+                '2': amountLabel,
+                '3': bookingId || '',
+              }
+            : undefined;
+          const message = `Cumbre Mundial 2026: Hola${booking.contact_name ? ` ${booking.contact_name}` : ''}. ` +
+            `Confirmamos tu pago de ${amountLabel}. Booking: ${(bookingId || '').slice(0, 8).toUpperCase()}.`;
+          const ok = await sendWhatsappMessage({
+            to: booking.contact_phone,
+            message,
+            contentSid: contentSid || null,
+            contentVariables,
+            meta: {
+              bookingId,
+              planId,
+              installmentId,
+              provider: 'wompi',
+              reference,
+              providerTxId,
+              amount,
+              currency: normalizedCurrency,
+            },
+          });
+          if (installmentId) {
+            await recordInstallmentReminder({
+              installmentId,
+              reminderKey,
+              channel: 'whatsapp',
+              payload: {
+                bookingId,
+                planId,
+                reference,
+                providerTxId,
+                amount,
+                currency: normalizedCurrency,
+                contentSid: contentSid || null,
+                ok,
+              },
+              error: ok ? null : 'WhatsApp failed',
+            });
+          }
+        }
+      }
+
+      if (pendingNotify && bookingId) {
+        const reminderKey = 'PAYMENT_PENDING';
+        const alreadySent = installmentId
+          ? await hasInstallmentReminder({ installmentId, reminderKey, channel: 'whatsapp' })
+          : false;
+        if (!alreadySent) {
+          const contentSid = env('WHATSAPP_CUMBRE_PAYMENT_PENDING_CONTENT_SID');
+          const contentVariables = contentSid
+            ? {
+                '1': booking.contact_name || 'amigo',
+                '2': bookingId || '',
+              }
+            : undefined;
+          const message = `Cumbre Mundial 2026: Hola${booking.contact_name ? ` ${booking.contact_name}` : ''}. ` +
+            `Tu pago esta en verificacion. Si pagaste con PSE/Nequi/ahorros puede tardar unos minutos. ` +
+            `No hagas otro pago. Booking: ${(bookingId || '').slice(0, 8).toUpperCase()}.`;
+          const ok = await sendWhatsappMessage({
+            to: booking.contact_phone,
+            message,
+            contentSid: contentSid || null,
+            contentVariables,
+            meta: {
+              bookingId,
+              planId,
+              installmentId,
+              provider: 'wompi',
+              reference,
+              providerTxId,
+              amount,
+              currency: normalizedCurrency,
+              status: normalizedStatus,
+              paymentMethodType,
+            },
+          });
+          if (installmentId) {
+            await recordInstallmentReminder({
+              installmentId,
+              reminderKey,
+              channel: 'whatsapp',
+              payload: {
+                bookingId,
+                planId,
+                reference,
+                providerTxId,
+                amount,
+                currency: normalizedCurrency,
+                status: normalizedStatus,
+                paymentMethodType,
+                contentSid: contentSid || null,
+                ok,
+              },
+              error: ok ? null : 'WhatsApp failed',
+            });
+          }
+        }
+      }
     }
   } catch (error: any) {
     console.error('[wompi.forwarded] processing error', error);

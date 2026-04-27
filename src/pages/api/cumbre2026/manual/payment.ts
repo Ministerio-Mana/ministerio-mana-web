@@ -1,12 +1,19 @@
 import type { APIRoute } from 'astro';
 import { sanitizePlainText } from '@lib/validation';
-import { buildDonationReference, createDonation } from '@lib/donationsStore';
-import { getBookingById, getPlanByBookingId, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { createDonation } from '@lib/donationsStore';
+import { buildPaymentReference } from '@lib/cumbre2026';
+import { countPayments, getBookingById, getPlanByBookingId, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
 function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
+}
+
+function isProduction(): boolean {
+  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+  return runtimeEnv === 'production';
 }
 
 function validateAdmin(request: Request, token?: string | null): boolean {
@@ -15,12 +22,26 @@ function validateAdmin(request: Request, token?: string | null): boolean {
   const header = request.headers.get('x-admin-secret');
   if (header && header === secret) return true;
   if (token && token === secret) return true;
+  if (isProduction()) return false;
   const url = new URL(request.url);
   const urlToken = url.searchParams.get('token');
   return Boolean(urlToken && urlToken === secret);
 }
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'cumbre.manual.payment',
+    allowlistKeys: ['CUMBRE_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const form = await request.formData();
   const token = form.get('token')?.toString();
 
@@ -51,7 +72,8 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const currency = booking.currency || 'COP';
-  const reference = buildDonationReference();
+  const paymentIndex = (await countPayments(bookingId)) + 1;
+  const reference = buildPaymentReference(bookingId, paymentIndex);
 
   await recordPayment({
     bookingId,
@@ -97,8 +119,11 @@ export const POST: APIRoute = async ({ request }) => {
     donor_phone: booking.contact_phone ?? null,
     donor_document_type: booking.contact_document_type ?? null,
     donor_document_number: booking.contact_document_number ?? null,
+    is_recurring: false,
     donor_country: booking.contact_country ?? null,
     donor_city: booking.contact_city ?? null,
+    donation_description: null,
+    need_certificate: false,
     source: 'cumbre-manual',
     cumbre_booking_id: bookingId,
     raw_event: null,

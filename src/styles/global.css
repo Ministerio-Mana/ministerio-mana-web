@@ -65,6 +65,11 @@ body {
   min-height: 100vh;
 }
 
+.input-error {
+  border-color: rgba(248, 113, 113, 0.9) !important;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.35) !important;
+}
+
 main {
   position: relative;
   z-index: 10;

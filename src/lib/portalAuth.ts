@@ -1,8 +1,28 @@
 import type { User } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 
-export type PortalRole = 'user' | 'admin' | 'superadmin';
+export type PortalRole =
+  | 'user'
+  | 'admin'
+  | 'superadmin'
+  | 'national_pastor'
+  | 'national_collaborator'
+  | 'regional_pastor'
+  | 'regional_collaborator'
+  | 'pastor'
+  | 'local_collaborator'
+  | 'campus_missionary'
+  | 'leader';
 export type ChurchRole = 'church_admin' | 'church_member';
+export type EffectiveManagementRole =
+  | 'superadmin'
+  | 'admin'
+  | 'national_pastor'
+  | 'national_collaborator'
+  | 'regional_pastor'
+  | 'regional_collaborator'
+  | 'pastor'
+  | 'local_collaborator';
 
 export type UserProfile = {
   user_id: string;
@@ -16,8 +36,24 @@ export type UserProfile = {
   church_name?: string | null;
   church_id?: string | null;
   portal_church_id?: string | null;
+  region_id?: string | null;
+  document_type?: string | null;
+  document_number?: string | null;
   created_at?: string;
   updated_at?: string;
+};
+
+export type UserMembership = {
+  id?: string;
+  role?: ChurchRole | string;
+  status?: string | null;
+  church?: {
+    id?: string | null;
+    code?: string | null;
+    name?: string | null;
+    city?: string | null;
+    country?: string | null;
+  } | null;
 };
 
 function env(key: string): string | undefined {
@@ -45,7 +81,8 @@ export async function ensureUserProfile(user: User): Promise<UserProfile | null>
   const email = user.email?.toLowerCase();
   if (!email) return null;
 
-  const desiredRole: PortalRole = isSuperadminEmail(email) ? 'superadmin' : 'user';
+  const shouldBeSuperadmin = isSuperadminEmail(email);
+  const desiredRole: PortalRole = shouldBeSuperadmin ? 'superadmin' : 'user';
 
   const { data: existing, error: existingError } = await supabaseAdmin
     .from('user_profiles')
@@ -59,10 +96,10 @@ export async function ensureUserProfile(user: User): Promise<UserProfile | null>
   }
 
   if (existing) {
-    if (existing.role !== desiredRole) {
+    if (shouldBeSuperadmin && existing.role !== 'superadmin') {
       const { data, error } = await supabaseAdmin
         .from('user_profiles')
-        .update({ role: desiredRole, updated_at: new Date().toISOString() })
+        .update({ role: 'superadmin', updated_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .select('*')
         .single();
@@ -119,9 +156,48 @@ export async function listUserMemberships(userId: string) {
     console.error('[portal.memberships] fetch error', error);
     return [];
   }
-  return data ?? [];
+  return (data ?? []) as UserMembership[];
 }
 
 export function isAdminRole(role?: string | null): boolean {
   return role === 'admin' || role === 'superadmin';
+}
+
+export function getActiveChurchMembership(memberships: UserMembership[] = []): UserMembership | null {
+  const active = memberships.filter((m) =>
+    ['church_admin', 'church_member'].includes(String(m?.role || ''))
+    && String(m?.status || '').toLowerCase() !== 'pending',
+  );
+  const adminMembership = active.find((m) => m?.role === 'church_admin');
+  if (adminMembership) return adminMembership;
+  const memberMembership = active.find((m) => m?.role === 'church_member');
+  return memberMembership || null;
+}
+
+export function resolveEffectivePortalRole(profileRole?: string | null, memberships: UserMembership[] = []): string {
+  const role = String(profileRole || 'user');
+  if ([
+    'superadmin',
+    'admin',
+    'national_pastor',
+    'national_collaborator',
+    'regional_pastor',
+    'regional_collaborator',
+    'pastor',
+    'local_collaborator',
+    'leader',
+  ].includes(role)) {
+    return role;
+  }
+
+  const activeMembership = getActiveChurchMembership(memberships);
+  if (activeMembership?.role === 'church_admin') return 'pastor';
+  if (activeMembership?.role === 'church_member') return 'local_collaborator';
+
+  return role;
+}
+
+export function resolveEffectiveChurchId(profileChurchId?: string | null, memberships: UserMembership[] = []): string | null {
+  const activeMembership = getActiveChurchMembership(memberships);
+  return profileChurchId || activeMembership?.church?.id || null;
 }

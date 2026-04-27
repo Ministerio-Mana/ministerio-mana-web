@@ -1,0 +1,106 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Finanzas | Portal Maná" description="Reportes financieros y control de diezmos." hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC]">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <Sidebar />
+      
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+         <div class="max-w-6xl mx-auto space-y-8">
+            <div>
+               <h1 class="text-3xl font-display font-bold text-[#293C74]">Finanzas</h1>
+               <p class="text-slate-600">Resumen financiero de tu iglesia/sede.</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Total Card -->
+                <div class="bg-gradient-to-br from-[#293C74] to-[#1e2b58] text-white rounded-[2.5rem] p-8 shadow-xl shadow-[#293C74]/20 relative overflow-hidden group">
+                     <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                     </div>
+                     <p class="text-white/60 text-sm font-bold uppercase tracking-widest mb-3">Total Recaudado</p>
+                     <div class="space-y-2">
+                        <div class="flex items-baseline gap-2">
+                           <span class="text-[10px] font-bold uppercase tracking-widest text-white/60">COP</span>
+                           <h3 id="stat-total-cop" class="text-2xl font-bold font-display text-white">$ 0</h3>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                           <span class="text-[10px] font-bold uppercase tracking-widest text-white/60">USD</span>
+                           <h3 id="stat-total-usd" class="text-2xl font-bold font-display text-white">$ 0</h3>
+                        </div>
+                     </div>
+                     <p class="text-white/40 text-xs mt-3">Mes actual (Proyección)</p>
+                </div>
+
+                <!-- Secondary Card -->
+                 <div class="bg-white text-[#293C74] rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+                     <p class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-1">Concepto Principal</p>
+                     <h3 id="stat-top-concept" class="text-3xl font-bold font-display">-</h3>
+                     <p class="text-slate-400 text-xs mt-2">Mayor fuente de ingresos</p>
+                </div>
+            </div>
+
+            <!-- Category Summary -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-[#293C74]">Resumen por categoría</h3>
+                        <p class="text-xs text-slate-400">Solo pagos aprobados (ingresos reales).</p>
+                    </div>
+                    <p class="text-[10px] uppercase tracking-widest text-slate-400">Mes actual</p>
+                </div>
+                <div id="finances-categories" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+
+            <!-- Transactions List -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <h3 class="text-lg font-bold text-[#293C74] mb-6">Últimas Transacciones</h3>
+                
+                <div id="finances-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando datos...</div>
+                
+                <div class="overflow-x-auto">
+                    <table id="finances-table" class="w-full text-left border-collapse hidden">
+                        <thead>
+                            <tr class="text-xs text-slate-400 border-b border-slate-100">
+                                <th class="font-bold uppercase tracking-widest py-3 pl-2">Fecha</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Concepto</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Donante</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Estado</th>
+                                <th class="font-bold uppercase tracking-widest py-3 text-right pr-2">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-slate-600 divide-y divide-slate-50">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="finances-empty" class="hidden text-center py-10 text-slate-400 text-sm">No hay registros financieros recientes.</div>
+            </div>
+
+            <!-- Payment Alerts -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-[#293C74]">Alertas de pago</h3>
+                        <p class="text-xs text-slate-400">Pendientes o fallidos. No se cuentan como ingresos.</p>
+                    </div>
+                    <p class="text-[10px] uppercase tracking-widest text-slate-400">Acción rápida</p>
+                </div>
+                <div id="finances-issues-list" class="space-y-4">
+                    <!-- Cards injected by JS -->
+                </div>
+                <div id="finances-issues-empty" class="hidden text-center py-6 text-slate-400 text-sm">No hay alertas de pago por ahora.</div>
+            </div>
+
+         </div>
+      </section>
+    </div>
+  </main>
+  <script src="../../scripts/portal-finances.js"></script>
+</BaseLayout>

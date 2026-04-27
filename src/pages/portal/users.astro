@@ -1,0 +1,185 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Usuarios | Portal Maná" description="Gestión de usuarios." hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC]">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <Sidebar />
+      
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+         <div class="max-w-6xl mx-auto space-y-8">
+            <div class="flex items-center justify-between">
+               <div>
+                   <h1 class="text-3xl font-display font-bold text-[#293C74]">Usuarios</h1>
+                   <p class="text-slate-600">Gestiona los miembros de tu iglesia/red.</p>
+               </div>
+               <button id="btn-open-create-user" class="bg-[#293C74] text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
+                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                   Nuevo Usuario
+               </button>
+            </div>
+
+            <!-- Users List -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <div class="mb-5">
+                    <div id="users-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+                </div>
+
+                <div class="space-y-3 mb-6">
+                    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div class="relative">
+                                <input id="users-search" type="search" class="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20 w-72" placeholder="Buscar nombre, email, iglesia, región, ciudad...">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            </div>
+                            <select id="users-role-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
+                                <option value="">Todos los roles</option>
+                                <option value="superadmin">Superadmin</option>
+                                <option value="admin">Admin</option>
+                                <option value="national_pastor">Pastor Nacional</option>
+                                <option value="national_collaborator">Colaborador Nacional</option>
+                                <option value="regional_pastor">Pastor Regional</option>
+                                <option value="regional_collaborator">Colaborador Regional</option>
+                                <option value="campus_missionary">Misionero Campus</option>
+                                <option value="pastor">Pastor Local</option>
+                                <option value="local_collaborator">Colaborador Local</option>
+                                <option value="leader">Líder</option>
+                                <option value="user">Usuario (Asistente)</option>
+                            </select>
+                            <select id="users-status-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activo</option>
+                                <option value="invited">Invitado</option>
+                                <option value="confirmed">Confirmado sin ingreso</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="blocked">Bloqueado</option>
+                                <option value="deleted">Eliminado</option>
+                                <option value="unknown">Sin diagnóstico</option>
+                            </select>
+                        </div>
+                        <div id="users-count" class="text-xs text-slate-400 font-bold uppercase tracking-widest">0 usuarios</div>
+                    </div>
+
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                        <select id="users-country-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[200px]">
+                            <option value="">Todos los países</option>
+                        </select>
+                        <select id="users-city-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[200px]">
+                            <option value="">Todas las ciudades</option>
+                        </select>
+                        <select id="users-scope-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[210px]">
+                            <option value="">Todas las categorías</option>
+                            <option value="global">Global (Admin/Superadmin)</option>
+                            <option value="national">Nacional</option>
+                            <option value="regional">Regional</option>
+                            <option value="church">Iglesia local</option>
+                            <option value="campus">Campus</option>
+                            <option value="assistant">Asistente/usuario base</option>
+                        </select>
+                        <button id="users-clear-filters" type="button" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50">
+                            Limpiar filtros
+                        </button>
+                    </div>
+                </div>
+                <div id="users-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando usuarios...</div>
+                
+                <div class="overflow-x-auto">
+                    <table id="users-table" class="w-full text-left border-collapse hidden">
+                        <thead>
+                            <tr class="text-xs text-slate-400 border-b border-slate-100">
+                                <th class="font-bold uppercase tracking-widest py-3 pl-2">Nombre</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Email</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Rol</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Alcance</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Estado acceso</th>
+                                <th class="font-bold uppercase tracking-widest py-3">Último ingreso</th>
+                                <th class="font-bold uppercase tracking-widest py-3 text-right pr-2">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-slate-600 divide-y divide-slate-50">
+                            <!-- Rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="users-empty" class="hidden text-center py-10 text-slate-400 text-sm">No se encontraron usuarios.</div>
+            </div>
+
+         </div>
+      </section>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="create-user-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 transform transition-all scale-100">
+            <h3 class="text-xl font-bold text-[#293C74] mb-6">Crear Nuevo Usuario</h3>
+            
+            <form id="create-user-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Nombre</label>
+                        <input type="text" name="firstName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Apellido</label>
+                        <input type="text" name="lastName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Email</label>
+                    <input type="email" name="email" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                </div>
+                <div>
+                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Contraseña Inicial</label>
+                     <div class="relative">
+                        <input type="password" id="user-password-input" name="password" required minlength="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm pr-12" placeholder="Mínimo 6 caracteres">
+                        <button type="button" id="toggle-password-user" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#293C74] transition-colors focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        </button>
+                     </div>
+                </div>
+                 <div>
+                     <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Rol</label>
+                     <select name="role" id="user-role-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                         <option value="user">Usuario (Asistente)</option>
+                         <option value="leader">Líder</option>
+                         <option value="pastor" class="admin-only hidden">Pastor</option>
+                         <option value="admin" class="admin-only hidden">Admin</option>
+                     </select>
+                </div>
+
+                <div id="user-scope-country" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">País (Rol Nacional)</label>
+                    <input id="user-country-input" type="text" name="country" list="user-country-list" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" placeholder="Ej: Colombia">
+                </div>
+
+                <div id="user-scope-region" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Región (Rol Regional)</label>
+                    <select id="user-region-select" name="regionId" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                        <option value="">Selecciona una región</option>
+                    </select>
+                </div>
+
+                <div id="user-scope-church" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Iglesia / Ciudad (Pastor Local)</label>
+                    <select id="user-church-select" name="churchId" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                        <option value="">Selecciona una iglesia</option>
+                    </select>
+                </div>
+
+                <datalist id="user-country-list"></datalist>
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" id="btn-cancel-create" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition-colors">Cancelar</button>
+                    <button type="submit" id="btn-submit-create" class="flex-1 py-3 bg-[#293C74] text-white rounded-xl font-bold text-sm shadow-lg hover:brightness-110 transition-colors">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+  </main>
+  <script>
+      import '@scripts/portal-users.js';
+  </script>
+</BaseLayout>

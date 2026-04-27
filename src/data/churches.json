@@ -1,6 +1,8 @@
 [
   {
     "city": "Medellín / Itagüí",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Ditaires",
     "address": "Cra 64 #35-39, Ditaires, Itagüí",
     "lat": 6.165,
@@ -11,10 +13,13 @@
       "phone": "+57 312 4226129"
     },
     "whatsapp": "+573124226129",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Medellín",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Belén",
     "address": "Calle 30A #80-107",
     "lat": 6.225,
@@ -25,10 +30,13 @@
       "phone": "+57 300 5877370"
     },
     "whatsapp": "+573005877370",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Bogotá",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Modelia",
     "address": "Calle 25 F # 74 B – 04, Barrio Modelia",
     "lat": 4.67,
@@ -39,10 +47,13 @@
       "phone": "+57 318 4937659"
     },
     "whatsapp": "+573184937659",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Cali",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Cali",
     "address": "Avenida Roosevelt #27-44, Segundo piso",
     "lat": 3.431,
@@ -53,10 +64,13 @@
       "phone": "+57 305 2232890"
     },
     "whatsapp": "+573052232890",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Armenia",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Armenia",
     "address": "Carrera 17 # 1 N – 27, Barrio Nueva Cecilia",
     "lat": 4.548,
@@ -67,10 +81,13 @@
       "phone": "+57 315 2865175"
     },
     "whatsapp": "+573152865175",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "La Unión (Valle)",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná La Unión",
     "address": "Calle 14 #16-44, Barrio La Cruz",
     "lat": 4.537,
@@ -81,10 +98,13 @@
       "phone": "+57 317 5918318"
     },
     "whatsapp": "+573175918318",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Tuluá",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Tuluá",
     "address": "Calle 14 #3-82, Portal de San Felipe, Vía Tres Esquinas",
     "lat": 4.09,
@@ -95,10 +115,13 @@
       "phone": "+57 317 4655226"
     },
     "whatsapp": "+573174655226",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Buenaventura",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Buenaventura",
     "address": "—",
     "lat": 3.877,
@@ -109,10 +132,13 @@
       "phone": "+57 315 4833033"
     },
     "whatsapp": "+573154833033",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Bucaramanga",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Bucaramanga",
     "address": "Cabecera Country Hotel. Calle 48 #34 – 29, Cabecera",
     "lat": 7.115,
@@ -123,10 +149,13 @@
       "phone": "+57 311 4733983"
     },
     "whatsapp": "+573114733983",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Marinilla",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Marinilla",
     "address": "—",
     "lat": 6.176,
@@ -137,10 +166,13 @@
       "phone": "+57 312 8472997"
     },
     "whatsapp": "+573128472997",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Ibagué",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Ibagué",
     "address": "Carrera 7 A # 51-71, Barrio Rincón de Piedra Pintada",
     "lat": 4.438,
@@ -151,10 +183,13 @@
       "phone": "+57 317 2852399"
     },
     "whatsapp": "+573172852399",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Cartago",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Cartago",
     "address": "Calle 12 # 1N – 28, Salón de Eventos Emprender",
     "lat": 4.746,
@@ -165,10 +200,31 @@
       "phone": "+57 316 4280558"
     },
     "whatsapp": "+573164280558",
+    "service": "Domingos",
     "notes": ""
   },
   {
+    "city": "Pereira",
+    "country": "Colombia",
+    "continent": "América",
+    "name": "Iglesia Maná Pereira",
+    "address": "Calle 22 #5-45",
+    "maps_url": "https://maps.google.com/?q=Calle+22+%235-45+Pereira+Colombia",
+    "lat": 4.8143,
+    "lng": -75.6946,
+    "contact": {
+      "name": "Ps. Edwin Andrés Grijalba Mora",
+      "email": "iglesiapereira@ministeriomana.org",
+      "phone": "+57 316 4280558"
+    },
+    "whatsapp": "+573164280558",
+    "service": "Domingos",
+    "notes": "Apoyo local: Psa. Aura María Martínez Castañeda (+57 313 6416313) · auramartinez@ministeriomana.org"
+  },
+  {
     "city": "Manizales",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Manizales",
     "address": "Carrera 23 #67A-55 Apto 502B, Edificio Atalaya",
     "lat": 5.07,
@@ -179,10 +235,13 @@
       "phone": "+57 311 7770660"
     },
     "whatsapp": "+573117770660",
+    "service": "Domingos",
     "notes": ""
   },
   {
     "city": "Pasto",
+    "country": "Colombia",
+    "continent": "América",
     "name": "Iglesia Maná Pasto",
     "address": "—",
     "lat": 1.214,
@@ -193,6 +252,132 @@
       "phone": "+57 301 5582036"
     },
     "whatsapp": "+573015582036",
+    "service": "Domingos",
     "notes": ""
+  },
+  {
+    "city": "Cuenca",
+    "country": "Ecuador",
+    "continent": "América",
+    "name": "Maná Ecuador · Cuenca",
+    "address": "Calle Benigno Vasquez y Av 25 de Marzo, al costado de los bomberos, Ricaurte (Iglesia Pueblo Especial)",
+    "maps_url": "https://maps.google.com/?q=Calle+Benigno+Vasquez+y+Av+25+de+Marzo+Ricaurte+Cuenca",
+    "lat": -2.8856,
+    "lng": -78.9721,
+    "contact": {
+      "name": "Ps. Luis Pando",
+      "email": null,
+      "phone": "+593 992098343"
+    },
+    "whatsapp": "+593992098343",
+    "service": "Domingo 10:00 am",
+    "notes": ""
+  },
+  {
+    "city": "Quito",
+    "country": "Ecuador",
+    "continent": "América",
+    "name": "Maná Ecuador · Quito",
+    "address": "Luxemburgo N34-150 y Holanda, Edificio Piacevole",
+    "maps_url": "https://maps.google.com/?q=Luxemburgo+N34-150+y+Holanda+Quito",
+    "lat": -0.1806,
+    "lng": -78.4844,
+    "contact": {
+      "name": "Ps. Luis Niño",
+      "email": null,
+      "phone": "+593 993312750"
+    },
+    "whatsapp": "+593993312750",
+    "service": "Domingo 9:00 am",
+    "notes": ""
+  },
+  {
+    "city": "Guayaquil (Sur)",
+    "country": "Ecuador",
+    "continent": "América",
+    "name": "Maná Ecuador · Guayaquil Sur",
+    "address": "Av. La Saiba y Bogotá (esquina), Cdla. La Saiba",
+    "maps_url": "https://maps.google.com/?q=Av+La+Saiba+y+Bogota+Guayaquil",
+    "lat": -2.2163,
+    "lng": -79.8988,
+    "contact": {
+      "name": "Ps. Luis Niño",
+      "email": null,
+      "phone": "+593 993312750"
+    },
+    "whatsapp": "+593993312750",
+    "service": "Jueves 6:00 pm",
+    "notes": ""
+  },
+  {
+    "city": "Guayaquil (Norte)",
+    "country": "Ecuador",
+    "continent": "América",
+    "name": "Maná Ecuador · Guayaquil Norte",
+    "address": "Circunvalación Sur 725 y Guayacanes (esquina), Sector Urdesa Central",
+    "maps_url": "https://maps.google.com/?q=Circunvalacion+Sur+725+y+Guayacanes+Guayaquil",
+    "lat": -2.172,
+    "lng": -79.9126,
+    "contact": {
+      "name": "Ls. Christian Landivar",
+      "email": null,
+      "phone": "+593 961778888"
+    },
+    "whatsapp": "+593961778888",
+    "service": "Miércoles 6:30 pm (Grupo de Vida)",
+    "notes": ""
+  },
+  {
+    "city": "Tantoyuca, Veracruz",
+    "country": "México",
+    "continent": "América",
+    "name": "Maná México · Emanuel Cielos Abiertos",
+    "address": "Naucalpan esq. con Acolman S/N, Colonia Guadalupe Victoria, Tantoyuca, Veracruz",
+    "maps_url": "https://maps.google.com/?q=Naucalpan+con+Acolman+Tantoyuca+Veracruz",
+    "lat": 21.3542,
+    "lng": -98.2255,
+    "contact": {
+      "name": "Ps. Emanuel",
+      "email": null,
+      "phone": "+52 789 1094998"
+    },
+    "whatsapp": "+527891094998",
+    "service": "Por confirmar",
+    "notes": "Correo institucional pendiente"
+  },
+  {
+    "city": "París",
+    "country": "Francia",
+    "continent": "Europa",
+    "name": "Maná Francia · París",
+    "address": "3 rue de la Pierre L'evée, 75011 Paris",
+    "maps_url": "https://maps.google.com/?q=3+rue+de+la+Pierre+L%27evee+75011+Paris",
+    "lat": 48.8663,
+    "lng": 2.3703,
+    "contact": {
+      "name": "Carlos Claros",
+      "email": "carlosclaros@ministeriomana.org",
+      "phone": "+33 6 66 54 83 05"
+    },
+    "whatsapp": "+33666548305",
+    "service": "Por confirmar",
+    "notes": "Contacto principal para Francia"
+  },
+  {
+    "city": "Europa (Virtual)",
+    "country": "Europa",
+    "continent": "Europa",
+    "name": "Maná Europa · Contacto Regional",
+    "address": "Conexión virtual coordinada desde París",
+    "lat": 48.8566,
+    "lng": 2.3522,
+    "contact": {
+      "name": "Carlos Claros",
+      "email": "carlosclaros@ministeriomana.org",
+      "phone": "+33 6 66 54 83 05"
+    },
+    "whatsapp": "+33666548305",
+    "service": "Conexiones virtuales con España, Suiza y Alemania; seguimiento en Londres",
+    "notes": "Mismo contacto de Francia para Europa"
   }
 ]

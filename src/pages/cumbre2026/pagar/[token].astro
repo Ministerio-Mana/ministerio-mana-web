@@ -4,7 +4,7 @@ import { buildInstallmentReference } from '@lib/cumbre2026';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
 import { resolveBaseUrl } from '@lib/url';
-import { getInstallmentByLinkToken, updateInstallment } from '@lib/cumbreStore';
+import { getInstallmentByLinkToken, listActivePendingPayments, updateInstallment } from '@lib/cumbreStore';
 
 const token = Astro.params.token ?? '';
 const baseUrl = resolveBaseUrl(Astro.request);
@@ -58,63 +58,73 @@ if (token) {
       title = 'Monto inválido';
       subtitle = 'No se pudo preparar el cobro. Contacta al equipo de soporte.';
     } else {
-      const description = `Cumbre Mundial 2026 - Cuota ${installment.installment_index}/${plan.installment_count}`;
-      const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${encodeURIComponent(booking.id)}&source=payment`;
-
-      let reference = installment.provider_reference || null;
-      if (!reference) {
-        reference = buildInstallmentReference({
-          bookingId: booking.id,
-          planId: plan.id,
-          installmentIndex: installment.installment_index,
-        });
-        await updateInstallment(installment.id, { provider_reference: reference });
-      }
-
-      if ((plan.currency || installment.currency) === 'USD' || plan.provider === 'stripe') {
-        const session = await createStripeDonationSession({
-          amountUsd: amount,
-          currency: 'USD',
-          description,
-          successUrl: statusUrl,
-          cancelUrl: statusUrl,
-          customerEmail: booking.contact_email || undefined,
-          metadata: {
-            cumbre_booking_id: booking.id,
-            cumbre_plan_id: plan.id,
-            cumbre_installment_id: installment.id,
-            cumbre_reference: reference,
-          },
-        });
-        paymentUrl = session.url || null;
-      } else {
-        const { url } = buildWompiCheckoutUrl({
-          amountInCents: Math.round(amount * 100),
-          currency: 'COP',
-          description,
-          redirectUrl: statusUrl,
-          reference,
-          email: booking.contact_email || undefined,
-          customerData: {
-            name: booking.contact_name || '',
-            phone: booking.contact_phone || '',
-          },
-        });
-        paymentUrl = url;
-      }
-
-      if (paymentUrl) {
-        status = 'ready';
-        title = 'Pagar cuota';
-        subtitle = 'Completa el pago para mantener tu plan al día.';
-        installmentLabel = `${installment.installment_index}/${plan.installment_count}`;
-        amountLabel = formatCurrency(amount, plan.currency || installment.currency || 'COP');
-        dueDateLabel = formatDateLong(installment.due_date);
-        contactName = booking.contact_name || '';
-      } else {
+      const pendingPayments = await listActivePendingPayments({
+        bookingId: booking.id,
+        installmentId: installment.id,
+      });
+      if (pendingPayments.length > 0) {
         status = 'error';
-        title = 'No se pudo crear el link';
-        subtitle = 'Intenta nuevamente o contáctanos por WhatsApp.';
+        title = 'Pago en verificación';
+        subtitle = 'Ya detectamos un pago en proceso para esta cuota. Espera confirmación antes de volver a intentar.';
+      } else {
+        const description = `Cumbre Mundial 2026 - Cuota ${installment.installment_index}/${plan.installment_count}`;
+        const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${encodeURIComponent(booking.id)}&source=payment`;
+
+        let reference = installment.provider_reference || null;
+        if (!reference) {
+          reference = buildInstallmentReference({
+            bookingId: booking.id,
+            planId: plan.id,
+            installmentIndex: installment.installment_index,
+          });
+          await updateInstallment(installment.id, { provider_reference: reference });
+        }
+
+        if ((plan.currency || installment.currency) === 'USD' || plan.provider === 'stripe') {
+          const session = await createStripeDonationSession({
+            amountUsd: amount,
+            currency: 'USD',
+            description,
+            successUrl: statusUrl,
+            cancelUrl: statusUrl,
+            customerEmail: booking.contact_email || undefined,
+            metadata: {
+              cumbre_booking_id: booking.id,
+              cumbre_plan_id: plan.id,
+              cumbre_installment_id: installment.id,
+              cumbre_reference: reference,
+            },
+          });
+          paymentUrl = session.url || null;
+        } else {
+          const { url } = buildWompiCheckoutUrl({
+            amountInCents: Math.round(amount * 100),
+            currency: 'COP',
+            description,
+            redirectUrl: statusUrl,
+            reference,
+            email: booking.contact_email || undefined,
+            customerData: {
+              name: booking.contact_name || '',
+              phone: booking.contact_phone || '',
+            },
+          });
+          paymentUrl = url;
+        }
+
+        if (paymentUrl) {
+          status = 'ready';
+          title = 'Pagar cuota';
+          subtitle = 'Completa el pago para mantener tu plan al día.';
+          installmentLabel = `${installment.installment_index}/${plan.installment_count}`;
+          amountLabel = formatCurrency(amount, plan.currency || installment.currency || 'COP');
+          dueDateLabel = formatDateLong(installment.due_date);
+          contactName = booking.contact_name || '';
+        } else {
+          status = 'error';
+          title = 'No se pudo crear el link';
+          subtitle = 'Intenta nuevamente o contáctanos por WhatsApp.';
+        }
       }
     }
   }

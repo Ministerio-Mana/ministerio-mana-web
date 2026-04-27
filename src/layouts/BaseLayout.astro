@@ -3,6 +3,7 @@ import SEO from '@components/SEO.astro';
 import Header from '@components/Header.astro';
 import Footer from '@components/Footer.astro';
 import '../styles/global.css';
+import appModalScript from '../scripts/app-modal.js?url';
 
 const {
   title,
@@ -16,12 +17,26 @@ const {
   disableSmoothScroll = true,
 } = Astro.props;
 const cspNonce = Astro.locals?.cspNonce;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? import.meta.env.SUPABASE_URL;
+let supabaseConnectSrc = '';
+if (supabaseUrl) {
+  try {
+    const supabaseOrigin = new URL(supabaseUrl).origin;
+    const supabaseWss = supabaseOrigin.replace('https://', 'wss://');
+    supabaseConnectSrc = ` ${supabaseOrigin} ${supabaseWss}`;
+  } catch {
+    supabaseConnectSrc = '';
+  }
+}
+const cspConnectSrc = `'self' https://checkout.wompi.co https://api.stripe.com https://challenges.cloudflare.com${supabaseConnectSrc}`;
+const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.stripe.com https://checkout.wompi.co https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com";
 ---
 <!doctype html>
 <html lang="es" class="scroll-smooth">
   <head>
     <SEO {title} {description} {image} {type} {structuredData} {noindex} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta http-equiv="Content-Security-Policy" content={`default-src 'self'; img-src 'self' data: https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com https://*.transparenttextures.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; connect-src ${cspConnectSrc}; frame-src ${cspFrameSrc};`}>
     <!-- Turnstile: script global (NO inline) -->
     <script
       src="https://challenges.cloudflare.com/turnstile/v0/api.js"
@@ -34,6 +49,17 @@ const cspNonce = Astro.locals?.cspNonce;
     {!hideHeader && <Header />}
     <main class="min-h-[60vh]"><slot /></main>
     {!hideFooter && <Footer />}
+
+    <!-- App Modal -->
+    <div id="app-modal" class="fixed inset-0 z-[999] hidden items-center justify-center">
+      <div id="app-modal-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="relative z-10 w-[92%] max-w-lg rounded-2xl border border-white/10 bg-brand-navy/95 p-6 shadow-2xl">
+        <button id="app-modal-close" type="button" class="absolute right-4 top-4 text-white/60 hover:text-white text-xl leading-none">×</button>
+        <h3 id="app-modal-title" class="text-xl font-bold text-white mb-2">Aviso</h3>
+        <p id="app-modal-message" class="text-sm text-white/60 mb-4"></p>
+        <ul id="app-modal-list" class="hidden space-y-2 text-sm text-white/80 list-disc pl-5"></ul>
+      </div>
+    </div>
     
     <!-- Smooth Scroll & Parallax Animations -->
     {!disableSmoothScroll && (
@@ -103,5 +129,6 @@ const cspNonce = Astro.locals?.cspNonce;
       });
     </script>
     )}
+    <script type="module" src={appModalScript} nonce={cspNonce}></script>
   </body>
 </html>

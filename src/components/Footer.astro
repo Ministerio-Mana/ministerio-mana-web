@@ -1,49 +1,45 @@
 
----
-import TurnstileWidget from './TurnstileWidget.astro';
-const cspNonce = Astro.locals?.cspNonce;
----
 <footer class="relative mt-24 bg-[#293C74] text-white overflow-hidden">
   <!-- Decorators -->
   <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#28A6BD] to-transparent opacity-50"></div>
   <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-[#28A6BD] rounded-full mix-blend-multiply filter blur-[100px] opacity-10 pointer-events-none"></div>
   <div class="absolute -top-24 -left-24 w-96 h-96 bg-amber-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-5 pointer-events-none"></div>
 
-  <!-- Newsletter Section -->
+  <!-- Devocional / Comunidad -->
   <div class="relative z-10 border-b border-white/10 bg-[#243567]">
     <div class="container mx-auto px-6 py-12 md:flex md:items-center md:justify-between gap-8">
       <div class="mb-8 md:mb-0 max-w-lg">
         <div class="flex items-center gap-2 mb-3">
           <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <p class="text-xs font-bold uppercase tracking-widest text-amber-200/80">Devocional Semanal</p>
+          <p class="text-xs font-bold uppercase tracking-widest text-amber-200/80">Devocional Maná</p>
         </div>
-        <h2 class="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">Recibe alimento para tu espíritu</h2>
-        <p class="mt-2 text-slate-300 text-sm leading-relaxed">Historias, noticias y palabras de aliento directamente en tu bandeja de entrada.</p>
+        <h2 class="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">Recibe el alimento espiritual diario</h2>
+        <p class="mt-2 text-slate-300 text-sm leading-relaxed">Acompáñanos y escucha la palabra de Dios con nosotros.</p>
       </div>
       
-      <form id="newsletter-form" class="flex-1 max-w-md w-full" method="post" action="/api/newsletter/subscribe">
-        <div class="relative group">
-           <input 
-             type="email" 
-             name="email" 
-             placeholder="Tu correo electrónico" 
-             class="w-full h-14 pl-6 pr-36 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:bg-white/10 focus:border-amber-400/50 focus:ring-1 focus:ring-amber-400/50 outline-none transition-all" 
-             required 
-           />
-           <button class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-[#28A6BD] to-[#1e8fa3] hover:from-[#32b5cc] hover:to-[#22a1b8] text-white font-bold text-sm px-6 rounded-xl shadow-lg shadow-cyan-900/20 transition-all hover:scale-[1.02]">
-             Suscribirme
-           </button>
-        </div>
-        <div class="mt-2">
-           <TurnstileWidget appearance="interaction-only" />
-        </div>
-        <p class="mt-2 text-[10px] text-slate-400 opacity-60 pl-2">Respetamos tu privacidad. Sin spam.</p>
-      </form>
+      <div class="flex-1 max-w-md w-full flex flex-col sm:flex-row sm:items-center gap-3">
+        <a
+          href="https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-2xl bg-[#28A6BD] hover:bg-[#32b5cc] text-white font-bold text-sm shadow-lg shadow-cyan-900/20 transition-all"
+        >
+          <span>Unirse a comunidad</span>
+        </a>
+        <a
+          href="https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-xs text-amber-100/80 hover:text-white transition-colors"
+        >
+          Canal Devocional Maná
+        </a>
+      </div>
     </div>
   </div>
 
   <!-- Main Footer Content -->
-  <div class="relative z-10 container mx-auto px-6 py-16">
+  <div class="hidden relative z-10 container mx-auto px-6 py-16">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8">
       
       <!-- Brand Column -->
@@ -115,7 +111,7 @@ const cspNonce = Astro.locals?.cspNonce;
   </div>
 
   <!-- Copyright -->
-  <div class="border-t border-white/5 bg-[#243567]/50 backdrop-blur-sm">
+  <div class="hidden border-t border-white/5 bg-[#243567]/50 backdrop-blur-sm">
     <div class="container mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
       <p class="text-xs text-slate-500">
         © {new Date().getFullYear()} Ministerio Maná. Todos los derechos reservados.
@@ -127,46 +123,3 @@ const cspNonce = Astro.locals?.cspNonce;
     </div>
   </div>
 </footer>
-
-<script is:inline nonce={cspNonce}>
-  const form = document.getElementById('newsletter-form');
-  if (form) {
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const btn = form.querySelector('button');
-      const originalText = btn.innerHTML;
-      btn.innerHTML = 'Enviando...';
-      btn.disabled = true;
-
-      const fd = new FormData(form);
-      try {
-        const res = await fetch(form.action, {
-          method: 'POST',
-          body: fd,
-        });
-        const json = await res.json();
-        if (json?.ok) {
-          form.reset();
-          if (window.turnstile && typeof window.turnstile.reset === 'function') {
-            window.turnstile.reset();
-          }
-          btn.innerHTML = '¡Suscrito!';
-          btn.classList.add('bg-green-500');
-          setTimeout(() => {
-             btn.innerHTML = originalText;
-             btn.disabled = false;
-             btn.classList.remove('bg-green-500');
-          }, 3000);
-        } else {
-          alert(json?.error || 'No pudimos procesar tu suscripción. Intenta de nuevo.');
-          btn.innerHTML = originalText;
-          btn.disabled = false;
-        }
-      } catch (err) {
-        alert('Error de red. Intenta nuevamente.');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-      }
-    });
-  }
-</script>

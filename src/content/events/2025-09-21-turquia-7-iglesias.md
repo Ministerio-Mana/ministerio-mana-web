@@ -19,4 +19,4 @@ y ver cómo esos mensajes siguen siendo actuales para la iglesia de hoy.
 - Enseñanza bíblica aplicada
 - Momentos de oración y comunión
 
-Para más información: [administracion@ministeriomana.org](mailto:administracion@ministeriomana.org).
+Para más información: [info@ministeriomana.org](mailto:info@ministeriomana.org).

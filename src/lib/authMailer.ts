@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { isSendgridEnabled, sendSendgridEmail } from './sendgrid';
+import { logSecurityEvent } from './securityEvents';
 
 export type AuthEmailKind = 'invite' | 'magiclink' | 'recovery';
 
@@ -27,6 +28,96 @@ const CTA_LABELS: Record<AuthEmailKind, string> = {
   magiclink: 'Ingresar al portal',
   recovery: 'Cambiar contraseña',
 };
+
+function maskEmail(email: string): string {
+  const value = String(email || '').trim().toLowerCase();
+  const [local, domain] = value.split('@');
+  if (!domain) return value.slice(0, 3) + '***';
+  if (!local) return `***@${domain}`;
+  if (local.length <= 2) return `${local[0] || '*'}***@${domain}`;
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
+function getPublicBaseUrl(): string | null {
+  const raw =
+    env('PUBLIC_SITE_URL') ||
+    env('SITE_URL') ||
+    env('VERCEL_PROJECT_PRODUCTION_URL') ||
+    env('VERCEL_URL');
+  if (!raw) return null;
+  const normalized = raw.startsWith('http') ? raw : `https://${raw}`;
+  try {
+    const url = new URL(normalized);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeVerificationType(type?: string | null): string {
+  if (type === 'email_change_current' || type === 'email_change_new') {
+    return 'email_change';
+  }
+  return String(type || '');
+}
+
+function parseActionLink(actionLink?: string | null): { tokenHash?: string; verificationType?: string } {
+  if (!actionLink) return {};
+  try {
+    const url = new URL(actionLink);
+    const tokenHash = url.searchParams.get('token') || url.searchParams.get('token_hash') || '';
+    const verificationType =
+      url.searchParams.get('type') || url.searchParams.get('verification_type') || '';
+    return {
+      tokenHash: tokenHash || undefined,
+      verificationType: verificationType || undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function buildPortalActivationUrl(params: {
+  redirectTo?: string;
+  email: string;
+  verificationType?: string | null;
+  hashedToken?: string | null;
+  fallbackActionLink?: string | null;
+}): string {
+  const { redirectTo, email, verificationType, hashedToken, fallbackActionLink } = params;
+
+  const base = getPublicBaseUrl() || 'https://ministeriomana.org';
+  let activationUrl: URL;
+
+  try {
+    activationUrl = new URL(redirectTo || `${base}/portal/activar`, base);
+  } catch {
+    activationUrl = new URL('/portal/activar', base);
+  }
+
+  if (!activationUrl.pathname.startsWith('/portal/activar')) {
+    return fallbackActionLink || activationUrl.toString();
+  }
+
+  const parsed = parseActionLink(fallbackActionLink);
+  const resolvedTokenHash = hashedToken || parsed.tokenHash || null;
+  const resolvedVerificationType = normalizeVerificationType(verificationType || parsed.verificationType || null);
+
+  if (resolvedTokenHash) {
+    activationUrl.searchParams.set('token_hash', resolvedTokenHash);
+  }
+  if (resolvedVerificationType) {
+    activationUrl.searchParams.set('type', resolvedVerificationType);
+  }
+  activationUrl.searchParams.set('email', email);
+
+  // Ultimo fallback: si no pudimos construir un link util para /portal/activar,
+  // devolvemos action_link original para no romper el envio.
+  if (!resolvedTokenHash && !resolvedVerificationType && fallbackActionLink) {
+    return fallbackActionLink;
+  }
+  return activationUrl.toString();
+}
 
 function buildAuthHtml(kind: AuthEmailKind, actionUrl: string): string {
   const title = SUBJECTS[kind];
@@ -89,11 +180,31 @@ export async function sendAuthLink(params: {
       if (params.kind === 'invite') {
         const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(params.email, { redirectTo });
         if (error) throw error;
+        void logSecurityEvent({
+          type: 'maintenance',
+          identifier: 'auth.send-link.supabase',
+          detail: 'Auth link enviado via Supabase (inviteUserByEmail)',
+          meta: {
+            kind: params.kind,
+            email: maskEmail(params.email),
+            has_redirect_to: Boolean(redirectTo),
+          },
+        });
         return { ok: true, method: 'supabase', userId: data?.user?.id ?? null };
       }
       if (params.kind === 'recovery') {
         const { error } = await supabaseAdmin.auth.resetPasswordForEmail(params.email, { redirectTo });
         if (error) throw error;
+        void logSecurityEvent({
+          type: 'maintenance',
+          identifier: 'auth.send-link.supabase',
+          detail: 'Auth link enviado via Supabase (resetPasswordForEmail)',
+          meta: {
+            kind: params.kind,
+            email: maskEmail(params.email),
+            has_redirect_to: Boolean(redirectTo),
+          },
+        });
         return { ok: true, method: 'supabase' };
       }
       const { error } = await supabaseAdmin.auth.signInWithOtp({
@@ -101,8 +212,28 @@ export async function sendAuthLink(params: {
         options: { emailRedirectTo: redirectTo },
       });
       if (error) throw error;
+      void logSecurityEvent({
+        type: 'maintenance',
+        identifier: 'auth.send-link.supabase',
+        detail: 'Auth link enviado via Supabase (signInWithOtp)',
+        meta: {
+          kind: params.kind,
+          email: maskEmail(params.email),
+          has_redirect_to: Boolean(redirectTo),
+        },
+      });
       return { ok: true, method: 'supabase' };
     } catch (err: any) {
+      void logSecurityEvent({
+        type: 'maintenance',
+        identifier: 'auth.send-link.supabase.error',
+        detail: 'Fallo envio auth link via Supabase',
+        meta: {
+          kind: params.kind,
+          email: maskEmail(params.email),
+          error: err?.message || 'unknown',
+        },
+      });
       return { ok: false, method: 'supabase', error: err?.message || 'No se pudo enviar' };
     }
   }
@@ -156,15 +287,62 @@ export async function sendAuthLink(params: {
     return { ok: false, method: 'sendgrid', error: errorMsg };
   }
 
+  const actionUrl = buildPortalActivationUrl({
+    redirectTo,
+    email: params.email,
+    verificationType: data?.properties?.verification_type,
+    hashedToken: data?.properties?.hashed_token,
+    fallbackActionLink: data?.properties?.action_link,
+  });
+  let actionPath = '';
+  try {
+    actionPath = new URL(actionUrl).pathname;
+  } catch {
+    actionPath = '';
+  }
+  void logSecurityEvent({
+    type: 'maintenance',
+    identifier: 'auth.send-link.generated',
+    detail: 'Auth link generado via generateLink',
+    meta: {
+      kind: params.kind,
+      email: maskEmail(params.email),
+      verification_type: normalizeVerificationType(data?.properties?.verification_type || ''),
+      has_hashed_token: Boolean(data?.properties?.hashed_token),
+      has_action_link: Boolean(data?.properties?.action_link),
+      action_path: actionPath || null,
+    },
+  });
+
   const sent = await sendAuthEmail({
     kind: params.kind,
     email: params.email,
-    actionUrl: data.properties.action_link,
+    actionUrl,
   });
 
   if (!sent) {
+    void logSecurityEvent({
+      type: 'maintenance',
+      identifier: 'auth.send-link.sendgrid.error',
+      detail: 'Fallo envio auth email via SendGrid',
+      meta: {
+        kind: params.kind,
+        email: maskEmail(params.email),
+      },
+    });
     return { ok: false, method: 'sendgrid', error: 'No se pudo enviar el correo' };
   }
+
+  void logSecurityEvent({
+    type: 'maintenance',
+    identifier: 'auth.send-link.sent',
+    detail: 'Auth email enviado via SendGrid',
+    meta: {
+      kind: params.kind,
+      email: maskEmail(params.email),
+      action_path: actionPath || null,
+    },
+  });
 
   return { ok: true, method: 'sendgrid', userId: data.user?.id ?? null };
 }

@@ -32,3 +32,4 @@ interface ImportMetaEnv {
   readonly FX_API_KEY?: string;
 }
 
+declare module 'gsap';

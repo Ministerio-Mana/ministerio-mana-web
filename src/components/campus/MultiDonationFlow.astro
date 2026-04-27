@@ -1,0 +1,319 @@
+---
+import { MISIONEROS } from '@data/misioneros';
+interface Props { country?: string; }
+const { country = 'CO' } = Astro.props;
+const isColombia = country.toUpperCase() === 'CO';
+const totalMissionaries = MISIONEROS.length;
+---
+
+<section id="multi-donation" class="py-24 bg-brand-teal relative overflow-hidden">
+    <div class="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]"></div>
+
+    <div class="container-tight px-4 relative z-10"
+         id="multi-donation-flow"
+         data-country={country}
+         data-missionaries={JSON.stringify(MISIONEROS.map(m => ({ slug: m.slug, nombre: m.nombre })))}>
+
+        <!-- ===== STEP 1: ¿Quieres sembrar en varios? ===== -->
+        <div class="flow-step active" data-step="1">
+            <div class="text-center mb-12">
+                <span class="font-summer text-white block mb-[-12px] transform -rotate-2" style="font-size: clamp(5rem, 10vw, 8rem);">¿Quieres sembrar</span>
+                <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(3.5rem, 8vw, 6rem);">
+                    EN VARIOS MISIONEROS?
+                </h2>
+            </div>
+
+            <p class="text-center text-white/90 font-intro-reg text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
+                Selecciona cuántos misioneros Campus quieres apoyar y elige a quiénes sembrar.
+            </p>
+
+            <div class="flex flex-wrap justify-center gap-4 md:gap-6">
+                <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count="2">
+                    2 misioneros
+                </button>
+                <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count="3">
+                    3 misioneros
+                </button>
+                <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count="4">
+                    4 misioneros
+                </button>
+                <button type="button" class="count-btn btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-xl md:text-2xl uppercase tracking-wider" data-count={totalMissionaries}>
+                    Todos ({totalMissionaries})
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== STEP 2: Selecciona misioneros ===== -->
+        <div class="flow-step hidden" data-step="2">
+            <div class="text-center mb-8">
+                <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.5rem, 7vw, 5.5rem);">Selecciona</span>
+                <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">
+                    TUS MISIONEROS
+                </h2>
+                <p class="text-white/90 font-intro-reg text-lg mt-4">
+                    Elige <span class="selected-count font-intro text-[#001B3A]">2</span> misioneros Campus
+                </p>
+            </div>
+
+            <!-- Random button -->
+            <div class="text-center mb-8">
+                <button type="button" id="random-btn" class="btn-scribble px-6 py-3 bg-[#001B3A]/80 text-white font-intro text-sm uppercase tracking-wider inline-flex items-center gap-2">
+                    🎲 AL AZAR
+                </button>
+            </div>
+
+            <!-- Missionary chips -->
+            <div class="flex flex-wrap justify-center gap-4 mb-12" id="missionary-chips">
+                {MISIONEROS.map((m) => (
+                    <button type="button"
+                        class="missionary-chip px-6 py-4 font-intro text-base md:text-lg uppercase tracking-wide transition-all duration-300 cursor-pointer select-none"
+                        data-slug={m.slug}
+                        data-name={m.nombre}>
+                        <span class="name">{m.nombre}</span>
+                        <span class="check-mark ml-2 hidden">✓</span>
+                    </button>
+                ))}
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button type="button" class="back-btn btn-scribble px-6 py-3 bg-transparent text-white font-intro text-base uppercase border-none">
+                    ← Volver
+                </button>
+                <button type="button" id="confirm-selection-btn" class="btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-lg uppercase tracking-wider opacity-50 pointer-events-none">
+                    Continuar →
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== STEP 3: Monto y Frecuencia ===== -->
+        <div class="flow-step hidden" data-step="3">
+            <div class="text-center mb-8">
+                <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.5rem, 7vw, 5.5rem);">¿Cuánto quieres</span>
+                <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">
+                    SEMBRAR POR MISIONERO?
+                </h2>
+            </div>
+
+            <div class="max-w-xl mx-auto">
+                <!-- Currency -->
+                <div class="mb-6">
+                    <label class="block text-xs font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Moneda</label>
+                    <div class="relative max-w-xs mx-auto">
+                        <select id="multi-currency" class="select-organic w-full appearance-none text-[#001B3A] font-intro text-sm py-2.5 px-4 pr-8 focus:outline-none cursor-pointer bg-white">
+                            {isColombia ? (
+                                <><option value="COP">🇨🇴 Peso Colombiano (COP)</option>
+                                <option value="USD">🇺🇸 Dólar (USD)</option></>
+                            ) : (
+                                <><option value="USD">🇺🇸 Dólar (USD)</option>
+                                <option value="COP">🇨🇴 Peso Colombiano (COP)</option></>
+                            )}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#001B3A]">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Frequency -->
+                <div class="flex gap-3 mb-6 max-w-xs mx-auto">
+                    <button type="button" class="multi-freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-white" data-freq="monthly" style="background-color: #001B3A;">Mensual</button>
+                    <button type="button" class="multi-freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-white/50" data-freq="once">Única vez</button>
+                </div>
+
+                <!-- Amount buttons -->
+                <div class="grid grid-cols-3 gap-3 mb-6" id="multi-amounts-grid">
+                    <!-- JS populates -->
+                </div>
+
+                <!-- Custom input -->
+                <div class="relative mb-6 select-organic p-2 bg-white max-w-xs mx-auto">
+                    <span class="multi-currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
+                    <input type="number"
+                           id="multi-custom-amount"
+                           class="w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-6 pr-4 focus:outline-none text-center placeholder-gray-300"
+                           placeholder="Otro..." min="0">
+                </div>
+
+                <!-- Summary -->
+                <div id="multi-summary" class="text-center mb-8 py-4 px-6 bg-[#001B3A]/20 rounded-2xl hidden">
+                    <p class="text-white font-intro-reg text-base">
+                        Sembrarás <span id="summary-amount" class="font-intro text-[#001B3A]">$0</span>
+                        × <span id="summary-count" class="font-intro text-[#001B3A]">0</span> misioneros
+                        = <span id="summary-total" class="font-intro text-white text-xl">$0</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button type="button" class="back-btn btn-scribble px-6 py-3 bg-transparent text-white font-intro text-base uppercase border-none">
+                    ← Volver
+                </button>
+                <button type="button" id="confirm-amount-btn" class="btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-lg uppercase tracking-wider opacity-50 pointer-events-none">
+                    Ver Resumen →
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== STEP 4: Donor Info & Pay ===== -->
+        <div class="flow-step hidden" data-step="4">
+            <div class="text-center mb-8">
+                <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.5rem, 7vw, 5.5rem);">Tu siembra</span>
+                <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">
+                    ESTÁ LISTA
+                </h2>
+            </div>
+
+            <!-- Summary cards -->
+            <div class="max-w-2xl mx-auto mb-8" id="payment-summary">
+                <!-- JS populates with per-missionary cards -->
+            </div>
+
+            <div class="text-center mb-8">
+                <p class="text-[#001B3A] font-intro text-2xl" id="grand-total">Total: $0</p>
+                <p class="text-white/70 font-intro-reg text-xs mt-1" id="freq-label"></p>
+            </div>
+
+            <!-- Donor Info Form -->
+            <div class="max-w-md mx-auto mb-8 space-y-4">
+                <p class="text-center text-white/80 font-intro text-xs uppercase tracking-widest mb-4">Tus datos para el pago</p>
+                
+                <div>
+                    <input type="text" id="donor-name" required
+                           placeholder="Nombre completo *"
+                           class="donor-input">
+                </div>
+                <div>
+                    <input type="email" id="donor-email" required
+                           placeholder="tucorreo@email.com *"
+                           class="donor-input">
+                </div>
+                <div>
+                    <input type="tel" id="donor-phone"
+                           placeholder="Teléfono / WhatsApp"
+                           class="donor-input">
+                </div>
+                <div>
+                    <input type="text" id="donor-city"
+                           placeholder="Ciudad"
+                           class="donor-input">
+                </div>
+            </div>
+
+            <!-- Error message -->
+            <div id="checkout-error" class="hidden text-center mb-4">
+                <p class="text-red-200 font-intro-reg text-sm bg-red-900/30 py-2 px-4 rounded-xl inline-block"></p>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button type="button" class="back-btn btn-scribble px-6 py-3 bg-transparent text-white font-intro text-base uppercase border-none">
+                    ← Volver
+                </button>
+                <button type="button" id="pay-btn" class="btn-scribble px-10 py-5 bg-[#001B3A] text-white font-intro text-2xl uppercase tracking-wider shadow-2xl">
+                    SEMBRAR AHORA
+                </button>
+            </div>
+
+            <p class="text-center text-white/50 font-intro-reg text-[10px] mt-4 flex items-center justify-center gap-1">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                Pago seguro procesado por <span id="provider-label" class="font-intro">Wompi / Stripe</span>
+            </p>
+        </div>
+    </div>
+</section>
+
+<style>
+    .font-intro { font-family: 'Intro', sans-serif; font-weight: 900; }
+    .font-intro-reg { font-family: 'Intro', sans-serif; font-weight: 400; }
+    .font-summer { font-family: 'Summer Loving', cursive; }
+
+    .flow-step {
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .flow-step.hidden {
+        display: none;
+    }
+    .flow-step.active {
+        animation: fadeSlideIn 0.5s ease forwards;
+    }
+
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Missionary chip — organic unselected */
+    .missionary-chip {
+        background: transparent;
+        color: white;
+        border: 2px solid rgba(255,255,255,0.4);
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    }
+    .missionary-chip:hover {
+        border-color: white;
+        background: rgba(255,255,255,0.1);
+    }
+    .missionary-chip.selected {
+        background: #001B3A;
+        color: #2DD4BF;
+        border-color: #001B3A;
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(0,27,58,0.4);
+    }
+    .missionary-chip.selected .check-mark {
+        display: inline;
+    }
+
+    /* Scribble Button in multi-flow context */
+    .btn-scribble {
+        position: relative;
+        z-index: 10;
+        transition: transform 0.2s, background-color 0.3s, color 0.3s;
+    }
+    .btn-scribble::before {
+        content: '';
+        position: absolute;
+        inset: -4px;
+        border: 2px solid currentColor;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        z-index: -1;
+        opacity: 0.5;
+        transition: all 0.4s ease;
+    }
+    .btn-scribble:hover::before {
+        border-radius: 15px 255px 15px 255px / 255px 15px 255px 15px;
+        transform: scale(1.06);
+        opacity: 1;
+    }
+
+    .select-organic {
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        border: 2px solid #001B3A;
+        background: transparent;
+        transition: border-color 0.3s;
+    }
+    .select-organic:focus, .select-organic:hover {
+        border-color: #001B3A;
+    }
+
+    /* Donor info inputs — solid white with visible placeholders */
+    .donor-input {
+        width: 100%;
+        background: #ffffff;
+        color: #001B3A;
+        font-family: 'Intro', sans-serif;
+        font-weight: 400;
+        font-size: 0.875rem;
+        padding: 0.625rem 1rem;
+        border: 2px solid #001B3A;
+        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        transition: border-color 0.3s, box-shadow 0.3s;
+        outline: none;
+    }
+    .donor-input::placeholder {
+        color: rgba(0, 27, 58, 0.40);
+    }
+    .donor-input:focus {
+        border-color: #001B3A;
+        box-shadow: 0 0 0 3px rgba(0, 27, 58, 0.15);
+    }
+</style>

@@ -1,0 +1,40 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+
+const contactEmail = 'info@ministeriomana.org';
+const lastUpdated = '4 de febrero de 2026';
+---
+
+<BaseLayout
+  title="Eliminacion de datos | Ministerio Mana"
+  description="Instrucciones para solicitar la eliminacion de datos personales."
+>
+  <section class="bg-white">
+    <div class="container mx-auto max-w-3xl px-6 py-16">
+      <header class="space-y-3">
+        <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Ministerio Mana</p>
+        <h1 class="text-3xl md:text-4xl font-display font-bold text-[#293C74]">Eliminacion de datos</h1>
+        <p class="text-sm text-slate-500">Ultima actualizacion: {lastUpdated}</p>
+      </header>
+
+      <div class="mt-8 space-y-6 text-sm leading-relaxed text-slate-600">
+        <p>
+          Si deseas eliminar tu informacion, escribe a {contactEmail} con el asunto
+          <strong class="text-slate-700">"Eliminar mis datos"</strong> e incluye:
+        </p>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>Nombre completo</li>
+          <li>Correo usado en el portal o en donaciones</li>
+          <li>Telefono (si aplica)</li>
+          <li>Referencia de donacion o evento (opcional, ayuda a encontrar tu registro)</li>
+        </ul>
+
+        <p>
+          Procesaremos la solicitud y eliminaremos o anonimizaremos tus datos en la medida
+          permitida por la ley. Algunos registros contables pueden conservarse por
+          obligaciones legales.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -36,6 +36,22 @@ function stripAccents(value: string): string {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+const COUNTRY_REGION_ALIASES: Record<string, string> = {
+  usa: 'Estados Unidos',
+  us: 'Estados Unidos',
+  unitedstates: 'Estados Unidos',
+  unitedstatesofamerica: 'Estados Unidos',
+  estadosunidos: 'Estados Unidos',
+  estadosunidosdeamerica: 'Estados Unidos',
+  eeuu: 'Estados Unidos',
+  eua: 'Estados Unidos',
+  centroamerica: 'Centroamérica',
+  centralamerica: 'Centroamérica',
+  europa: 'Europa',
+  europe: 'Europa',
+  australia: 'Australia',
+};
+
 export function normalizeCityName(value: string | null | undefined): string {
   const cleaned = sanitizePlainText(value ?? '', 80);
   if (!cleaned) return '';
@@ -43,6 +59,14 @@ export function normalizeCityName(value: string | null | undefined): string {
   if (!normalized) return '';
   const alias = CITY_ALIASES[normalized] ?? normalized;
   return titleCase(alias);
+}
+
+export function normalizeCountryRegion(value: string | null | undefined): string {
+  const cleaned = sanitizePlainText(value ?? '', 80);
+  if (!cleaned) return '';
+  const key = stripAccents(cleaned).toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!key) return cleaned;
+  return COUNTRY_REGION_ALIASES[key] || cleaned;
 }
 
 export function normalizeChurchName(value: string | null | undefined): string {

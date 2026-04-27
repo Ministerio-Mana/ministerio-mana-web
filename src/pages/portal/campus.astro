@@ -1,0 +1,56 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+<BaseLayout title="Campus | Portal Maná" description="Gestión de donantes Campus" hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC]">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <Sidebar />
+      
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+         <div class="max-w-7xl mx-auto space-y-8">
+            <!-- Header -->
+            <div class="flex items-center justify-between">
+               <div>
+                   <h1 class="text-3xl font-display font-bold text-[#293C74]">Campus</h1>
+                   <p class="text-slate-600" id="campus-subtitle">Gestión de donantes y relaciones</p>
+               </div>
+            </div>
+
+            <!-- Stats Cards (Only for Admins) -->
+            <div id="admin-stats" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total Donantes</p>
+                    <p class="text-3xl font-bold text-[#293C74]" id="stat-total-donors">0</p>
+                </div>
+                <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Donaciones Este Mes</p>
+                    <p class="text-3xl font-bold text-brand-teal" id="stat-month-donations">$0</p>
+                </div>
+                <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Misioneros Activos</p>
+                    <p class="text-3xl font-bold text-[#293C74]" id="stat-active-missionaries">0</p>
+                </div>
+            </div>
+
+            <!-- Donors List -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+                <div id="donors-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando donantes...</div>
+                
+                <div id="donors-content" class="hidden space-y-6">
+                    <!-- Donor cards will be injected here by JS -->
+                </div>
+                
+                <div id="donors-empty" class="hidden text-center py-10 text-slate-400 text-sm">
+                    No se encontraron donantes todavía.
+                </div>
+            </div>
+
+         </div>
+      </section>
+    </div>
+  </main>
+  <script>
+      import '@scripts/portal-campus.js';
+  </script>
+</BaseLayout>

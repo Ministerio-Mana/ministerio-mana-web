@@ -11,6 +11,7 @@ interface Props {
 
 const { preferred = 'wompi', country = 'CO', rates } = Astro.props as Props;
 const isWompi = preferred === 'wompi';
+const cspNonce = Astro.locals?.cspNonce;
 
 // Si tienes snapshot de tasas, puedes sacar algo de ahí
 const copPerUsd: number | null =
@@ -137,7 +138,7 @@ const copPerUsd: number | null =
             />
           </div>
 
-          <div class="grid gap-3 md:grid-cols-2">
+          <div class="hidden grid gap-3 md:grid-cols-2">
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">
                 Tipo de documento
@@ -245,6 +246,7 @@ const copPerUsd: number | null =
                 <option value="misiones">Misiones</option>
                 <option value="campus">Campus</option>
                 <option value="evento">Evento</option>
+                <option value="peregrinaciones">Peregrinaciones</option>
                 <option value="general">General</option>
               </select>
             </div>
@@ -392,16 +394,14 @@ const copPerUsd: number | null =
               </label>
               <select
                 name="documentType"
-                required
                 class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
                        focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
               >
-                <option value="" disabled selected>Selecciona</option>
-                <option value="CC">CC</option>
-                <option value="CE">CE</option>
-                <option value="NIT">NIT</option>
-                <option value="TI">TI</option>
+                <option value="" selected>Selecciona</option>
                 <option value="PAS">Pasaporte</option>
+                <option value="NID">ID nacional</option>
+                <option value="DL">Licencia de conducir</option>
+                <option value="OTRO">Otro</option>
               </select>
             </div>
             <div>
@@ -411,12 +411,23 @@ const copPerUsd: number | null =
               <input
                 type="text"
                 name="documentNumber"
-                required
                 placeholder="Documento"
                 class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm
                        focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
               />
             </div>
+          </div>
+
+          <div class="hidden flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="stripe-need-certificate"
+              name="needCertificate"
+              class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label for="stripe-need-certificate" class="text-sm text-slate-600">
+              Necesito certificado
+            </label>
           </div>
 
           <div class="grid gap-3 md:grid-cols-2">
@@ -493,6 +504,7 @@ const copPerUsd: number | null =
                 <option value="misiones">Misiones</option>
                 <option value="campus">Campus</option>
                 <option value="evento">Evento</option>
+                <option value="peregrinaciones">Peregrinaciones</option>
                 <option value="general">General</option>
               </select>
             </div>
@@ -606,3 +618,138 @@ const copPerUsd: number | null =
     }
   }
 </style>
+
+<script nonce={cspNonce}>
+  const wompiForm = document.querySelector('form[action="/api/wompi/checkout"]');
+  const stripeForm = document.querySelector('form[action="/api/stripe/checkout"]');
+  let portalProfileCache = null;
+  const DEFAULT_CHURCH = 'Ministerio Maná Virtual';
+
+  function getSupabaseAccessToken() {
+    try {
+      const key = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'));
+      if (!key) return null;
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const session = JSON.parse(raw);
+      return session?.access_token || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function setValueIfEmpty(el, value) {
+    if (!el || !value) return;
+    if (el.value) return;
+    el.value = value;
+  }
+
+  function ensureVirtualChurch(form) {
+    if (!form) return;
+    const churchInput = form.querySelector('input[name="church"]');
+    const campusInput = form.querySelector('input[name="campus"]');
+    const hasCampus = campusInput?.value?.trim();
+    if (churchInput && !churchInput.value.trim() && !hasCampus) {
+      churchInput.value = DEFAULT_CHURCH;
+    }
+  }
+
+  function setDocumentRequired(form, required) {
+    if (!form) return;
+    const docType = form.querySelector('select[name="documentType"]');
+    const docNumber = form.querySelector('input[name="documentNumber"]');
+    if (docType) docType.required = Boolean(required);
+    if (docNumber) docNumber.required = Boolean(required);
+  }
+
+  function updateStripeDocumentRequirement() {
+    if (!stripeForm) return;
+    setDocumentRequired(stripeForm, false);
+  }
+
+  function fillDonationForm(form, profile) {
+    if (!form || !profile) return;
+    setValueIfEmpty(form.querySelector('input[name="fullName"]'), profile.full_name);
+    setValueIfEmpty(form.querySelector('input[name="email"]'), profile.email);
+    setValueIfEmpty(form.querySelector('input[name="phone"]'), profile.phone);
+    setValueIfEmpty(form.querySelector('input[name="city"]'), profile.city);
+    setValueIfEmpty(form.querySelector('input[name="church"]'), profile.church_name);
+
+    const docType = form.querySelector('select[name="documentType"]');
+    if (docType && !docType.value && profile.document_type) {
+      docType.value = profile.document_type;
+    }
+    setValueIfEmpty(form.querySelector('input[name="documentNumber"]'), profile.document_number);
+
+    const countryInput = form.querySelector('input[name="country"]');
+    if (countryInput && !countryInput.value && profile.country) {
+      countryInput.value = profile.country;
+    }
+  }
+
+  function resolveValue(form, selector, fallback) {
+    const el = form?.querySelector(selector);
+    const value = el?.value?.trim();
+    return value || fallback || '';
+  }
+
+  function saveProfileFromDonation(form) {
+    if (!form || !portalProfileCache) return;
+    ensureVirtualChurch(form);
+    const token = getSupabaseAccessToken();
+    if (!token) return;
+
+    const payload = {
+      fullName: resolveValue(form, 'input[name="fullName"]', portalProfileCache.full_name),
+      phone: resolveValue(form, 'input[name="phone"]', portalProfileCache.phone),
+      city: resolveValue(form, 'input[name="city"]', portalProfileCache.city),
+      country: resolveValue(form, 'input[name="country"]', portalProfileCache.country),
+      documentType: resolveValue(form, 'select[name="documentType"]', portalProfileCache.document_type),
+      documentNumber: resolveValue(form, 'input[name="documentNumber"]', portalProfileCache.document_number),
+      churchName: resolveValue(form, 'input[name="church"]', portalProfileCache.church_name),
+      affiliationType: portalProfileCache.affiliation_type || '',
+      churchId: portalProfileCache.church_id || null,
+    };
+
+    try {
+      fetch('/api/portal/profile', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
+        credentials: 'include',
+      }).catch(() => {});
+    } catch (err) {
+      // Non-blocking update; ignore errors here.
+    }
+  }
+
+  async function prefillFromPortalProfile() {
+    const token = getSupabaseAccessToken();
+    if (!token) return;
+    try {
+      const res = await fetch('/api/portal/session', {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+      });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.ok) return;
+      const profile = payload.profile || {};
+      portalProfileCache = profile;
+      fillDonationForm(wompiForm, profile);
+      fillDonationForm(stripeForm, profile);
+    } catch (err) {
+      console.warn('[donaciones] No se pudo precargar perfil');
+    }
+  }
+
+  prefillFromPortalProfile();
+  ensureVirtualChurch(wompiForm);
+  ensureVirtualChurch(stripeForm);
+  updateStripeDocumentRequirement();
+  wompiForm?.addEventListener('submit', () => saveProfileFromDonation(wompiForm));
+  stripeForm?.addEventListener('submit', () => saveProfileFromDonation(stripeForm));
+</script>

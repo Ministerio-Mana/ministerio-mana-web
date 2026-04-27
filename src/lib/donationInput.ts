@@ -10,10 +10,14 @@ const DONATION_TYPES = new Set([
   'misiones',
   'campus',
   'evento',
+  'peregrinaciones',
   'general',
 ]);
 
-const DOCUMENT_TYPES = new Set(['CC', 'CE', 'NIT', 'TI', 'PAS']);
+export const DOCUMENT_TYPES_CO = new Set(['CC', 'CE', 'NIT', 'TI', 'PAS']);
+export const DOCUMENT_TYPES_INTL = new Set(['PAS', 'NID', 'ID', 'DL', 'OTRO']);
+export const DOCUMENT_TYPES_ANY = new Set([...DOCUMENT_TYPES_CO, ...DOCUMENT_TYPES_INTL]);
+const DEFAULT_VIRTUAL_CHURCH = 'Ministerio Maná Virtual';
 
 function readText(form: FormData, key: string, max = 120): string {
   return sanitizePlainText(form.get(key)?.toString() ?? '', max);
@@ -24,12 +28,17 @@ export function normalizeDonationType(raw: string): string | null {
   return DONATION_TYPES.has(value) ? value : null;
 }
 
-export function normalizeDocumentType(raw: string): string | null {
+export function normalizeDocumentType(raw: string, allowedTypes: Set<string> = DOCUMENT_TYPES_CO): string | null {
   const value = (raw || '').toString().trim().toUpperCase();
-  return DOCUMENT_TYPES.has(value) ? value : null;
+  return allowedTypes.has(value) ? value : null;
 }
 
-export function parseDonationFormBase(form: FormData, defaultCountry: string): {
+type DonationFormOptions = {
+  requireDocument?: boolean;
+  allowedDocumentTypes?: Set<string>;
+};
+
+export function parseDonationFormBase(form: FormData, defaultCountry: string, options: DonationFormOptions = {}): {
   fullName: string;
   email: string;
   phone: string;
@@ -46,11 +55,13 @@ export function parseDonationFormBase(form: FormData, defaultCountry: string): {
   const fullName = readText(form, 'fullName', 120);
   const email = (form.get('email')?.toString() ?? '').trim().toLowerCase();
   const phone = readText(form, 'phone', 30);
-  const documentType = normalizeDocumentType(form.get('documentType')?.toString() ?? '') || '';
+  const allowedDocumentTypes = options.allowedDocumentTypes ?? DOCUMENT_TYPES_CO;
+  const requireDocument = options.requireDocument ?? true;
+  const documentType = normalizeDocumentType(form.get('documentType')?.toString() ?? '', allowedDocumentTypes) || '';
   const documentNumber = readText(form, 'documentNumber', 40);
   const country = safeCountry(form.get('country')?.toString()) ?? defaultCountry;
   const city = normalizeCityName(form.get('city')?.toString() ?? '');
-  const church = normalizeChurchName(form.get('church')?.toString() ?? '');
+  let church = normalizeChurchName(form.get('church')?.toString() ?? '');
   const campus = normalizeChurchName(form.get('campus')?.toString() ?? '');
   const donationType = normalizeDonationType(form.get('donationType')?.toString() ?? '') || '';
   const projectName = readText(form, 'projectName', 120);
@@ -65,10 +76,17 @@ export function parseDonationFormBase(form: FormData, defaultCountry: string): {
   if (!fullName) throw new Error('Nombre requerido');
   if (!email || !EMAIL_REGEX.test(email)) throw new Error('Email invalido');
   if (!phone) throw new Error('Telefono requerido');
-  if (!documentType) throw new Error('Tipo de documento requerido');
-  if (!documentNumber) throw new Error('Documento requerido');
+  if (requireDocument) {
+    if (!documentType) throw new Error('Tipo de documento requerido');
+    if (!documentNumber) throw new Error('Documento requerido');
+  } else {
+    if (documentType && !documentNumber) throw new Error('Documento requerido');
+    if (documentNumber && !documentType) throw new Error('Tipo de documento requerido');
+  }
   if (!city) throw new Error('Ciudad requerida');
-  if (!church && !campus) throw new Error('Iglesia o campus requerido');
+  if (!church && !campus) {
+    church = normalizeChurchName(DEFAULT_VIRTUAL_CHURCH);
+  }
   if (!donationType) throw new Error('Tipo de donacion requerido');
   if (!projectName) throw new Error('Proyecto requerido');
   if (!eventName) throw new Error('Evento requerido');

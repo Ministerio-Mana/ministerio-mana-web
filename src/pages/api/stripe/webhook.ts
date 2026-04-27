@@ -2,9 +2,11 @@ import type { APIRoute } from 'astro';
 import type Stripe from 'stripe';
 import { verifyStripeWebhook, getStripeClient } from '@lib/stripe';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
+import { formatCurrency } from '@lib/fx';
 import {
   recordPayment,
   recomputeBookingTotals,
+  hasApprovedPaymentByReference,
   getBookingById,
   getInstallmentById,
   getPlanByProviderSubscription,
@@ -14,11 +16,92 @@ import {
   addPlanPayment,
   refreshPlanNextDueDate,
   markInstallmentLinksUsed,
+  hasInstallmentReminder,
+  recordInstallmentReminder,
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { updateDonationById, updateDonationByReference } from '@lib/donationsStore';
+import { sendWhatsappMessage } from '@lib/whatsapp';
 
 export const prerender = false;
+
+function env(key: string): string | undefined {
+  return import.meta.env?.[key] ?? process.env?.[key];
+}
+
+function hasWhatsappProvider(): boolean {
+  return Boolean(env('WHATSAPP_WEBHOOK_URL'));
+}
+
+async function maybeSendWhatsappPaymentReceived(params: {
+  bookingId: string;
+  booking: any;
+  amount: number;
+  currency: string;
+  installmentId?: string | null;
+  planId?: string | null;
+  providerTxId?: string | null;
+  reference?: string | null;
+}): Promise<void> {
+  if (!params.booking?.contact_phone || !hasWhatsappProvider()) return;
+  const reminderKey = 'PAYMENT_RECEIVED';
+  if (params.installmentId) {
+    const alreadySent = await hasInstallmentReminder({
+      installmentId: params.installmentId,
+      reminderKey,
+      channel: 'whatsapp',
+    });
+    if (alreadySent) return;
+  }
+
+  const amountLabel = formatCurrency(params.amount, params.currency as any);
+  const contentSid = env('WHATSAPP_CUMBRE_PAYMENT_RECEIVED_CONTENT_SID');
+  const contentVariables = contentSid
+    ? {
+        '1': params.booking.contact_name || 'amigo',
+        '2': amountLabel,
+        '3': params.bookingId,
+      }
+    : undefined;
+  const message = `Cumbre Mundial 2026: Hola${params.booking.contact_name ? ` ${params.booking.contact_name}` : ''}. ` +
+    `Confirmamos tu pago de ${amountLabel}. Booking: ${(params.bookingId || '').slice(0, 8).toUpperCase()}.`;
+
+  const ok = await sendWhatsappMessage({
+    to: params.booking.contact_phone,
+    message,
+    contentSid: contentSid || null,
+    contentVariables,
+    meta: {
+      bookingId: params.bookingId,
+      planId: params.planId,
+      installmentId: params.installmentId,
+      provider: 'stripe',
+      providerTxId: params.providerTxId,
+      reference: params.reference,
+      amount: params.amount,
+      currency: params.currency,
+    },
+  });
+
+  if (params.installmentId) {
+    await recordInstallmentReminder({
+      installmentId: params.installmentId,
+      reminderKey,
+      channel: 'whatsapp',
+      payload: {
+        bookingId: params.bookingId,
+        planId: params.planId,
+        reference: params.reference,
+        providerTxId: params.providerTxId,
+        amount: params.amount,
+        currency: params.currency,
+        contentSid: contentSid || null,
+        ok,
+      },
+      error: ok ? null : 'WhatsApp failed',
+    });
+  }
+}
 
 async function processEvent(event: Stripe.Event): Promise<void> {
   const stripe = getStripeClient();
@@ -42,6 +125,10 @@ async function processEvent(event: Stripe.Event): Promise<void> {
         const cumbreReference = session.metadata?.cumbre_reference ?? session.id;
         const installmentId = session.metadata?.cumbre_installment_id || null;
         const planId = session.metadata?.cumbre_plan_id || null;
+        const isPaid = session.payment_status === 'paid';
+        const alreadyApproved = isPaid
+          ? await hasApprovedPaymentByReference({ provider: 'stripe', reference: cumbreReference })
+          : false;
 
         const serializedSession = JSON.parse(JSON.stringify(session));
         await recordPayment({
@@ -51,26 +138,28 @@ async function processEvent(event: Stripe.Event): Promise<void> {
           reference: cumbreReference,
           amount,
           currency,
-          status: session.payment_status === 'paid' ? 'APPROVED' : 'PENDING',
+          status: isPaid ? 'APPROVED' : 'PENDING',
           planId,
           installmentId,
           rawEvent: serializedSession,
         });
 
-        if (session.payment_status === 'paid') {
+        if (isPaid && !alreadyApproved) {
           if (installmentId) {
             const installment = await getInstallmentById(installmentId);
-            await updateInstallment(installmentId, {
-              status: 'PAID',
-              provider_tx_id: providerTxId,
-              provider_reference: cumbreReference,
-              paid_at: new Date().toISOString(),
-              attempt_count: Number(installment?.attempt_count || 0) + 1,
-            });
-            await markInstallmentLinksUsed(installmentId);
-            if (planId) {
-              await addPlanPayment(planId, amount);
-              await refreshPlanNextDueDate(planId);
+            if (installment?.status !== 'PAID') {
+              await updateInstallment(installmentId, {
+                status: 'PAID',
+                provider_tx_id: providerTxId,
+                provider_reference: cumbreReference,
+                paid_at: new Date().toISOString(),
+                attempt_count: Number(installment?.attempt_count || 0) + 1,
+              });
+              await markInstallmentLinksUsed(installmentId);
+              if (planId) {
+                await addPlanPayment(planId, amount);
+                await refreshPlanNextDueDate(planId);
+              }
             }
           }
           const booking = await getBookingById(bookingId);
@@ -83,6 +172,18 @@ async function processEvent(event: Stripe.Event): Promise<void> {
               currency,
               totalPaid: booking.total_paid,
               totalAmount: booking.total_amount,
+            });
+          }
+          if (booking) {
+            await maybeSendWhatsappPaymentReceived({
+              bookingId,
+              booking,
+              amount,
+              currency,
+              installmentId,
+              planId,
+              providerTxId,
+              reference: cumbreReference,
             });
           }
           await recomputeBookingTotals(bookingId);
@@ -146,6 +247,11 @@ async function processEvent(event: Stripe.Event): Promise<void> {
       const currency = invoice.currency?.toUpperCase() || plan.currency || 'USD';
       const providerTxId = invoice.payment_intent ? String(invoice.payment_intent) : invoice.id;
       const reference = invoice.id;
+      const alreadyApproved = await hasApprovedPaymentByReference({
+        provider: 'stripe',
+        reference,
+      });
+      if (alreadyApproved) break;
 
       await updateInstallment(installment.id, {
         status: 'PAID',
@@ -179,6 +285,18 @@ async function processEvent(event: Stripe.Event): Promise<void> {
           currency,
           totalPaid: booking.total_paid,
           totalAmount: booking.total_amount,
+        });
+      }
+      if (booking) {
+        await maybeSendWhatsappPaymentReceived({
+          bookingId: plan.booking_id,
+          booking,
+          amount,
+          currency,
+          installmentId: installment.id,
+          planId: plan.id,
+          providerTxId,
+          reference,
         });
       }
 

@@ -6,7 +6,7 @@ import { resolveBaseUrl } from '@lib/url';
 import { createStripeDonationSession } from '@lib/stripe';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { stripeSupportedCurrencyCodes } from '@lib/geo';
-import { parseDonationFormBase } from '@lib/donationInput';
+import { DOCUMENT_TYPES_ANY, parseDonationFormBase } from '@lib/donationInput';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
 
 export const prerender = false;
@@ -88,13 +88,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     );
     let donorInfo;
     try {
-      donorInfo = parseDonationFormBase(data, 'UN');
+      donorInfo = parseDonationFormBase(data, 'UN', {
+        requireDocument: false,
+        allowedDocumentTypes: DOCUMENT_TYPES_ANY,
+      });
     } catch (error: any) {
       return new Response(JSON.stringify({ ok: false, error: error?.message || 'Datos inválidos' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
+    const recurringFlag = String(data.get('isRecurring') || '').toLowerCase();
+    const isRecurring = ['true', '1', 'on', 'yes'].includes(recurringFlag);
+    const certificateFlag = String(data.get('needCertificate') || '').toLowerCase();
+    const needCertificate = ['true', '1', 'on', 'yes'].includes(certificateFlag);
 
     const baseUrl = resolveBaseUrl(request);
     const successUrl = (import.meta.env?.STRIPE_SUCCESS_URL ?? process.env.STRIPE_SUCCESS_URL) || `${baseUrl}/donaciones/gracias`;
@@ -120,8 +127,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       donor_phone: donorInfo.phone,
       donor_document_type: donorInfo.documentType,
       donor_document_number: donorInfo.documentNumber,
+      is_recurring: isRecurring,
       donor_country: donorInfo.country,
       donor_city: donorInfo.city,
+      donation_description: description,
+      need_certificate: needCertificate,
       source: 'donaciones-stripe',
       cumbre_booking_id: null,
       raw_event: null,

@@ -3,140 +3,374 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 
 const token = Astro.url.searchParams.get('token') ?? '';
 const cspNonce = Astro.locals?.cspNonce;
+const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '2026-05-15') as string;
 ---
 
 <BaseLayout title="Cumbre 2026 Manual | Ministerio Maná" description="Formulario manual para pagos físicos.">
-  <section class="py-16 px-4 md:px-8">
-    <div class="max-w-4xl mx-auto space-y-10">
-      <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
-        <h1 class="text-2xl font-bold text-white">Cumbre 2026 - Registro Manual</h1>
-        <p class="text-white/60 mt-2">Usa este formulario para pagos físicos en iglesias.</p>
-      </div>
+  <main class="min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
+    <section class="py-12 md:py-16 px-4 md:px-8">
+      <div class="max-w-5xl mx-auto space-y-8">
+        <div class="relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 md:p-10 shadow-lg shadow-slate-200/60">
+          <div class="absolute -top-12 -right-10 h-40 w-40 rounded-full bg-[#293C74]/10"></div>
+          <div class="relative">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Portal Maná</p>
+            <h1 class="text-3xl md:text-4xl font-display font-bold text-[#293C74]">Registro manual Cumbre 2026</h1>
+            <p class="text-slate-600 mt-2 max-w-2xl">Usa este formulario para crear reservas físicas y registrar abonos cuando el pago ya se realizó por fuera del portal.</p>
+          </div>
+        </div>
 
-      <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
-        <h2 class="text-xl font-semibold text-white mb-4">Crear reserva manual</h2>
-        <form id="manual-booking-form" method="POST" action="/api/cumbre2026/manual/submit" class="space-y-6">
-          <input type="hidden" name="token" value={token} />
-          <input type="hidden" name="participants" id="participants-json" value="[]" />
-
-          <div class="grid gap-4 md:grid-cols-2">
+        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-lg shadow-slate-200/50">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Nombre responsable</label>
-              <input name="contactName" required class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Nombre completo" />
+              <h2 class="text-xl md:text-2xl font-display font-bold text-[#293C74]">Crear reserva manual</h2>
+              <p class="text-sm text-slate-500">Datos del responsable + participantes y forma de pago.</p>
             </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Email</label>
-              <input type="email" name="email" required class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="correo@email.com" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Teléfono</label>
-              <input name="phone" required class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="3000000000" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Tipo documento</label>
-              <select name="documentType" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white">
-                <option value="">Selecciona</option>
-                <option value="CC">CC</option>
-                <option value="CE">CE</option>
-                <option value="NIT">NIT</option>
-                <option value="TI">TI</option>
-                <option value="PAS">Pasaporte</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Número documento</label>
-              <input name="documentNumber" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Documento" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">País</label>
-              <input name="country" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Colombia" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Ciudad</label>
-              <input name="city" required class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Ciudad" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Iglesia / Sede</label>
-              <input name="church" required class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Iglesia / Sede" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Grupo país</label>
-              <select name="countryGroup" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white">
-                <option value="CO" selected>Colombia</option>
-                <option value="INT">Internacional</option>
-              </select>
-            </div>
+            <span class="inline-flex items-center gap-2 rounded-full bg-[#293C74]/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#293C74]">Formulario interno</span>
           </div>
 
-          <div class="border-t border-white/10 pt-6">
-            <h3 class="text-white font-semibold mb-3">Participantes</h3>
-            <div class="grid gap-3 md:grid-cols-4">
-              <input id="p-name" class="rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-white" placeholder="Nombre" />
-              <input id="p-age" type="number" class="rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-white" placeholder="Edad" />
-              <select id="p-lodging" class="rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-white">
-                <option value="yes">Con alojamiento</option>
-                <option value="no">Sin alojamiento</option>
-              </select>
-              <input id="p-rel" class="rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-white" placeholder="Relación" />
-            </div>
-            <button type="button" id="add-participant" class="mt-3 px-4 py-2 rounded-xl bg-brand-teal text-white">Agregar participante</button>
-            <ul id="participants-list" class="mt-4 text-sm text-white/70 space-y-1"></ul>
-          </div>
+          <form id="manual-booking-form" method="POST" action="/api/cumbre2026/manual/submit" class="space-y-8" data-installment-deadline={installmentDeadline}>
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="participants" id="participants-json" value="[]" />
+            <input type="hidden" name="idempotencyKey" id="manual-idempotency-key" />
 
-          <div class="border-t border-white/10 pt-6">
-            <h3 class="text-white font-semibold mb-3">Pago</h3>
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-5 md:grid-cols-2">
               <div>
-                <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Opción de pago</label>
-                <select name="paymentOption" id="payment-option" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white">
-                  <option value="FULL">Pago completo</option>
-                  <option value="DEPOSIT">Reserva 50%</option>
-                  <option value="INSTALLMENTS">Cuotas</option>
-                </select>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre responsable</label>
+                <input name="contactName" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Nombre completo" />
               </div>
-              <div id="frequency-wrapper" class="hidden">
-                <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Frecuencia cuotas</label>
-                <select name="frequency" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white">
-                  <option value="MONTHLY">Mensual</option>
-                  <option value="BIWEEKLY">Quincenal</option>
+              <div>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Email</label>
+                <input type="email" name="email" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="correo@email.com" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono</label>
+                <input name="phone" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="3000000000" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Tipo documento</label>
+                <select name="documentType" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                  <option value="">Selecciona</option>
+                  <option value="CC">CC</option>
+                  <option value="CE">CE</option>
+                  <option value="NIT">NIT</option>
+                  <option value="TI">TI</option>
+                  <option value="PAS">Pasaporte</option>
                 </select>
               </div>
               <div>
-                <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Valor pagado hoy</label>
-                <input name="paymentAmount" type="number" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="0" />
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Número documento</label>
+                <input name="documentNumber" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Documento" />
               </div>
               <div>
-                <label class="block text-xs font-bold text-white/60 mb-2 uppercase tracking-wider">Método de pago</label>
-                <input name="paymentMethod" class="w-full rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Efectivo / Transferencia" />
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
+                <input name="country" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Colombia" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
+                <input name="city" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Ciudad" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Iglesia / Sede</label>
+                <input name="church" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Iglesia / Sede" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Grupo país</label>
+                <select id="manual-country-group" name="countryGroup" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                  <option value="CO" selected>Colombia</option>
+                  <option value="INT">Internacional</option>
+                </select>
               </div>
             </div>
-          </div>
 
-          <button type="submit" class="mt-4 px-6 py-3 rounded-xl bg-white text-brand-dark font-semibold">Crear reserva</button>
-          <p id="manual-status" class="text-sm text-white/60 mt-3"></p>
-        </form>
-      </div>
+            <div class="rounded-[2rem] border border-slate-100 bg-slate-50/70 p-6">
+              <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                <h3 class="text-sm font-bold text-[#293C74]">Participantes</h3>
+                <button type="button" id="add-participant" class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90 transition">Agregar participante</button>
+              </div>
+              <div class="grid gap-3 md:grid-cols-4">
+                <input id="p-name" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Nombre" />
+                <input id="p-age" type="number" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Edad" />
+                <select id="p-lodging" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm">
+                  <option value="yes">Con alojamiento</option>
+                  <option value="no">Sin alojamiento</option>
+                </select>
+                <input id="p-rel" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Relación" />
+              </div>
+              <ul id="participants-list" class="mt-4 text-xs text-slate-500 space-y-1"></ul>
+            </div>
 
-      <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
-        <h2 class="text-xl font-semibold text-white mb-4">Registrar abono manual</h2>
-        <form id="manual-payment-form" method="POST" action="/api/cumbre2026/manual/payment" class="space-y-4">
-          <input type="hidden" name="token" value={token} />
-          <div class="grid gap-4 md:grid-cols-3">
-            <input name="bookingId" required class="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Booking ID" />
-            <input name="amount" type="number" required class="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Monto" />
-            <input name="paymentMethod" class="rounded-xl bg-black/20 border border-white/10 px-4 py-3 text-white" placeholder="Método (efectivo...)" />
+            <div class="rounded-[2rem] border border-slate-100 bg-white p-6">
+              <h3 class="text-sm font-bold text-[#293C74] mb-4">Pago</h3>
+              <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Opción de pago</label>
+                  <select name="paymentOption" id="payment-option" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                    <option value="FULL">Pago completo</option>
+                    <option value="DEPOSIT">Reserva 50%</option>
+                    <option value="INSTALLMENTS">Cuotas</option>
+                  </select>
+                </div>
+                <div id="frequency-wrapper" class="hidden">
+                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Frecuencia cuotas</label>
+                  <select id="frequency-select" name="frequency" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                    <option value="MONTHLY">Mensual</option>
+                    <option value="BIWEEKLY">Quincenal</option>
+                  </select>
+                </div>
+                <div id="deposit-wrapper" class="hidden md:col-span-2">
+                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Fecha de segundo pago</label>
+                  <input id="deposit-due-date" name="deposit_due_date" type="date" max={installmentDeadline} class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" />
+                  <p class="text-[11px] text-slate-500 ml-1 mt-1">Disponible hasta <span id="deposit-deadline-label" class="font-semibold text-[#293C74]">15 de mayo de 2026</span> (incluido).</p>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Moneda de pago</label>
+                  <select id="manual-currency" name="currency" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                    <option value="COP">Pesos colombianos (COP)</option>
+                    <option value="USD">Dólares (USD)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Valor pagado hoy</label>
+                  <input id="manual-payment-amount" name="paymentAmount" type="text" inputmode="decimal" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="0" />
+                  <div class="flex items-center justify-between text-[11px] text-slate-500 ml-1 mt-1">
+                    <span id="manual-payment-hint">Automático: $0</span>
+                    <label class="inline-flex items-center gap-2 font-semibold text-slate-500 cursor-pointer">
+                      <input id="manual-payment-custom-toggle" type="checkbox" class="h-3.5 w-3.5 rounded border-slate-300 text-brand-teal focus:ring-brand-teal">
+                      Aporte libre
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Método de pago</label>
+                  <input name="paymentMethod" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Efectivo / Transferencia" />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <button type="submit" class="px-8 py-4 rounded-2xl bg-[#293C74] text-white font-bold hover:shadow-lg hover:shadow-[#293C74]/20 transition-all">Crear reserva</button>
+              <p id="manual-status" class="text-xs text-slate-500"></p>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-lg shadow-slate-200/50">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+              <h2 class="text-xl md:text-2xl font-display font-bold text-[#293C74]">Registrar abono manual</h2>
+              <p class="text-sm text-slate-500">Usa el Booking ID y el monto recibido.</p>
+            </div>
+            <span class="inline-flex items-center gap-2 rounded-full bg-brand-teal/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-brand-teal">Abonos</span>
           </div>
-          <button type="submit" class="px-6 py-3 rounded-xl bg-brand-teal text-white font-semibold">Registrar abono</button>
-          <p id="payment-status" class="text-sm text-white/60 mt-3"></p>
-        </form>
+          <form id="manual-payment-form" method="POST" action="/api/cumbre2026/manual/payment" class="space-y-5">
+            <input type="hidden" name="token" value={token} />
+            <div class="grid gap-4 md:grid-cols-3">
+              <input name="bookingId" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Booking ID" />
+              <input name="amount" type="number" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Monto" />
+              <input name="paymentMethod" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Método (efectivo...)" />
+            </div>
+            <div class="flex items-center gap-4">
+              <button type="submit" class="px-8 py-4 rounded-2xl bg-brand-teal text-white font-bold hover:shadow-lg hover:shadow-brand-teal/20 transition-all">Registrar abono</button>
+              <p id="payment-status" class="text-xs text-slate-500"></p>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
   <script type="module" nonce={cspNonce}>
     const participants = [];
     const list = document.getElementById('participants-list');
     const input = document.getElementById('participants-json');
+    const bookingForm = document.getElementById('manual-booking-form');
+    const idempotencyInput = document.getElementById('manual-idempotency-key');
+    const paymentOption = document.getElementById('payment-option');
+    const frequencyWrapper = document.getElementById('frequency-wrapper');
+    const frequencySelect = document.getElementById('frequency-select');
+    const currencySelect = document.getElementById('manual-currency');
+    const countryGroupSelect = document.getElementById('manual-country-group');
+    const paymentAmountInput = document.getElementById('manual-payment-amount');
+    const paymentHint = document.getElementById('manual-payment-hint');
+    const paymentCustomToggle = document.getElementById('manual-payment-custom-toggle');
+    const depositWrapper = document.getElementById('deposit-wrapper');
+    const depositInput = document.getElementById('deposit-due-date');
+    const depositDeadlineLabel = document.getElementById('deposit-deadline-label');
+    const installmentDeadline = bookingForm?.dataset?.installmentDeadline || '2026-05-15';
+    let paymentAmountTouched = false;
+    let bookingIdempotencyKey = null;
+    let bookingSignature = null;
+
+    const generateIdempotencyKey = () => {
+      if (window.crypto?.randomUUID) {
+        return window.crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    };
+
+    const prices = {
+      COP: {
+        lodging: 850000,
+        no_lodging: 660000,
+        child_0_7: 300000,
+        child_7_13: 550000,
+      },
+      USD: {
+        lodging: 220,
+        no_lodging: 170,
+        child_0_7: 80,
+        child_7_13: 140,
+      },
+    };
+
+    const normalizeCurrency = (value) => (value === 'USD' ? 'USD' : 'COP');
+
+    const roundCurrency = (amount, currency) => (
+      currency === 'COP' ? Math.round(amount) : Math.round(amount * 100) / 100
+    );
+
+    const formatCurrency = (amount, currency) => {
+      if (currency === 'USD') {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(amount);
+      }
+      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+    };
+
+    const formatInputAmount = (amount, currency) => {
+      if (!Number.isFinite(amount)) return '';
+      if (currency === 'USD') {
+        return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
+      }
+      return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(amount);
+    };
+
+    const parseInputAmount = (raw, currency) => {
+      const value = (raw || '').toString().trim();
+      if (!value) return null;
+      if (currency === 'COP') {
+        const digits = value.replace(/[^\d]/g, '');
+        if (!digits) return null;
+        const amount = Number(digits);
+        return Number.isFinite(amount) ? amount : null;
+      }
+      const normalized = value.replace(/[^0-9.,]/g, '').replace(/,/g, '');
+      if (!normalized) return null;
+      const amount = Number(normalized);
+      return Number.isFinite(amount) ? amount : null;
+    };
+
+    const getPackageType = (age, lodging) => {
+      if (age <= 4) return 'child_0_7';
+      if (age <= 10) return 'child_7_13';
+      return lodging === 'yes' ? 'lodging' : 'no_lodging';
+    };
+
+    const getSelectedCurrency = () => normalizeCurrency(currencySelect?.value);
+
+    const getTotalAmount = () => {
+      const currency = getSelectedCurrency();
+      return participants.reduce((sum, p) => {
+        const packageType = getPackageType(p.age || 0, p.lodging);
+        const price = prices[currency]?.[packageType] || 0;
+        return sum + price;
+      }, 0);
+    };
+
+    const getInstallmentPreview = (total, frequency) => {
+      const [year, month, day] = installmentDeadline.split('-').map(Number);
+      const end = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
+      const now = new Date();
+      const current = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+      if (end < current) {
+        return { count: 1, amount: total };
+      }
+      const dueDates = [];
+      let tempDate = new Date(current);
+      while (tempDate <= end) {
+        dueDates.push(new Date(tempDate));
+        if (frequency === 'BIWEEKLY') {
+          tempDate.setUTCDate(tempDate.getUTCDate() + 14);
+        } else {
+          tempDate.setUTCMonth(tempDate.getUTCMonth() + 1);
+        }
+      }
+      const count = Math.max(1, dueDates.length);
+      return { count, amount: total / count };
+    };
+
+    const getDefaultPaymentAmount = () => {
+      const total = getTotalAmount();
+      const currency = getSelectedCurrency();
+      const option = paymentOption?.value || 'FULL';
+      if (option === 'DEPOSIT') return roundCurrency(total * 0.5, currency);
+      if (option === 'INSTALLMENTS') {
+        const frequency = frequencySelect?.value || 'MONTHLY';
+        const preview = getInstallmentPreview(total, frequency);
+        return roundCurrency(preview.amount, currency);
+      }
+      return roundCurrency(total, currency);
+    };
+
+    const updatePaymentHint = () => {
+      if (!paymentHint) return;
+      const currency = getSelectedCurrency();
+      const suggested = getDefaultPaymentAmount();
+      const customEnabled = Boolean(paymentCustomToggle?.checked);
+      const label = customEnabled ? 'Sugerido' : 'Automático';
+      paymentHint.textContent = `${label}: ${formatCurrency(suggested, currency)}`;
+    };
+
+    const syncPaymentAmount = (force = false) => {
+      if (!paymentAmountInput) return;
+      const customEnabled = Boolean(paymentCustomToggle?.checked);
+      paymentAmountInput.readOnly = !customEnabled;
+      paymentAmountInput.classList.toggle('bg-white', customEnabled);
+      paymentAmountInput.classList.toggle('bg-slate-50', !customEnabled);
+
+      const shouldSync = (!customEnabled && (force || !paymentAmountTouched || !paymentAmountInput.value));
+      if (shouldSync) {
+        const defaultAmount = getDefaultPaymentAmount();
+        paymentAmountInput.value = defaultAmount ? formatInputAmount(defaultAmount, getSelectedCurrency()) : '';
+        if (force) paymentAmountTouched = false;
+      } else if (customEnabled && force && !paymentAmountInput.value) {
+        const defaultAmount = getDefaultPaymentAmount();
+        paymentAmountInput.value = defaultAmount ? formatInputAmount(defaultAmount, getSelectedCurrency()) : '';
+      }
+      updatePaymentHint();
+    };
+
+    const formatLongDateWithYear = (value) => {
+      try {
+        const [year, month, day] = value.split('-').map(Number);
+        const date = new Date(year, (month || 1) - 1, day || 1);
+        return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch {
+        return value;
+      }
+    };
+
+    const getDepositMinDate = () => {
+      const base = new Date();
+      base.setDate(base.getDate() + 1);
+      const year = base.getFullYear();
+      const month = String(base.getMonth() + 1).padStart(2, '0');
+      const day = String(base.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const syncDepositSchedule = () => {
+      if (!depositInput) return;
+      const minDate = getDepositMinDate();
+      depositInput.min = minDate;
+      depositInput.max = installmentDeadline;
+      if (depositDeadlineLabel) {
+        depositDeadlineLabel.textContent = formatLongDateWithYear(installmentDeadline);
+      }
+      if (!depositInput.value || depositInput.value < minDate || depositInput.value > installmentDeadline) {
+        const next = installmentDeadline >= minDate ? installmentDeadline : minDate;
+        depositInput.value = next;
+      }
+    };
 
     document.getElementById('add-participant')?.addEventListener('click', () => {
       const name = document.getElementById('p-name').value.trim();
@@ -152,31 +386,121 @@ const cspNonce = Astro.locals?.cspNonce;
       document.getElementById('p-name').value = '';
       document.getElementById('p-age').value = '';
       document.getElementById('p-rel').value = '';
+      paymentAmountTouched = false;
+      syncPaymentAmount(true);
     });
 
-    const paymentOption = document.getElementById('payment-option');
-    const frequencyWrapper = document.getElementById('frequency-wrapper');
-    paymentOption?.addEventListener('change', (e) => {
-      const value = e.target.value;
-      if (value === 'INSTALLMENTS') {
-        frequencyWrapper.classList.remove('hidden');
-      } else {
-        frequencyWrapper.classList.add('hidden');
+    const updatePaymentSections = () => {
+      const value = paymentOption?.value || 'FULL';
+      frequencyWrapper?.classList.toggle('hidden', value !== 'INSTALLMENTS');
+      depositWrapper?.classList.toggle('hidden', value !== 'DEPOSIT');
+      if (depositInput) depositInput.required = value === 'DEPOSIT';
+      if (value === 'DEPOSIT') {
+        syncDepositSchedule();
       }
-    });
+      paymentAmountTouched = false;
+      syncPaymentAmount(true);
+    };
 
-    document.getElementById('manual-booking-form')?.addEventListener('submit', async (e) => {
+    const syncCurrencyFromCountryGroup = () => {
+      if (!countryGroupSelect || !currencySelect) return;
+      const next = countryGroupSelect.value === 'INT' ? 'USD' : 'COP';
+      currencySelect.value = next;
+    };
+
+    const syncCountryGroupFromCurrency = () => {
+      if (!countryGroupSelect || !currencySelect) return;
+      const next = normalizeCurrency(currencySelect.value) === 'USD' ? 'INT' : 'CO';
+      countryGroupSelect.value = next;
+    };
+
+    paymentOption?.addEventListener('change', updatePaymentSections);
+    frequencySelect?.addEventListener('change', () => {
+      paymentAmountTouched = false;
+      syncPaymentAmount(true);
+    });
+    currencySelect?.addEventListener('change', () => {
+      syncCountryGroupFromCurrency();
+      paymentAmountTouched = false;
+      syncPaymentAmount(true);
+    });
+    countryGroupSelect?.addEventListener('change', () => {
+      syncCurrencyFromCountryGroup();
+      paymentAmountTouched = false;
+      syncPaymentAmount(true);
+    });
+    paymentAmountInput?.addEventListener('input', () => {
+      paymentAmountTouched = true;
+      const amount = parseInputAmount(paymentAmountInput.value, getSelectedCurrency());
+      if (amount !== null) {
+        paymentAmountInput.value = formatInputAmount(amount, getSelectedCurrency());
+      }
+      updatePaymentHint();
+    });
+    paymentCustomToggle?.addEventListener('change', () => {
+      paymentAmountTouched = Boolean(paymentCustomToggle?.checked);
+      syncPaymentAmount(true);
+    });
+    depositInput?.addEventListener('change', syncDepositSchedule);
+    depositInput?.addEventListener('blur', syncDepositSchedule);
+
+    syncCurrencyFromCountryGroup();
+    updatePaymentSections();
+    syncPaymentAmount(true);
+
+    bookingForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
       const status = document.getElementById('manual-status');
+      const option = paymentOption?.value || 'FULL';
+      if (option === 'DEPOSIT' && (!depositInput || !depositInput.value)) {
+        status.textContent = 'Selecciona la fecha del segundo pago';
+        return;
+      }
+      const parsedPayment = parseInputAmount(paymentAmountInput?.value, getSelectedCurrency());
+      if (paymentCustomToggle?.checked && (!paymentAmountInput?.value || !parsedPayment || parsedPayment <= 0)) {
+        status.textContent = 'Ingresa el valor pagado hoy para el aporte libre';
+        return;
+      }
       status.textContent = 'Enviando...';
+      const formData = new FormData(form);
+      if (parsedPayment !== null) {
+        formData.set('paymentAmount', String(parsedPayment));
+      }
+      const signature = JSON.stringify({
+        contactName: formData.get('contactName'),
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        documentType: formData.get('documentType'),
+        documentNumber: formData.get('documentNumber'),
+        countryGroup: formData.get('countryGroup'),
+        country: formData.get('country'),
+        city: formData.get('city'),
+        church: formData.get('church'),
+        paymentOption: formData.get('paymentOption'),
+        paymentAmount: formData.get('paymentAmount'),
+        frequency: formData.get('frequency'),
+        depositDueDate: formData.get('deposit_due_date'),
+        currency: formData.get('currency'),
+        participants: formData.get('participants'),
+      });
+      if (!bookingIdempotencyKey || bookingSignature !== signature) {
+        bookingIdempotencyKey = generateIdempotencyKey();
+        bookingSignature = signature;
+      }
+      if (idempotencyInput) {
+        idempotencyInput.value = bookingIdempotencyKey;
+      }
+      formData.set('idempotencyKey', bookingIdempotencyKey);
       const res = await fetch(form.action, {
         method: 'POST',
-        body: new FormData(form),
+        body: formData,
       });
       const payload = await res.json();
       if (payload?.ok) {
         status.textContent = `Reserva creada: ${payload.bookingId}`;
+        bookingIdempotencyKey = null;
+        bookingSignature = null;
       } else {
         status.textContent = payload?.error || 'No se pudo crear la reserva';
       }

@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import TurnstileWidget from '@components/TurnstileWidget.astro';
 ---
 
-<BaseLayout title="Accede al Portal Maná | Ministerio Maná" description="Ingresa al Portal Maná para ver tus aportes y gestionar tu inscripción.">
+<BaseLayout title="Accede al Portal Maná | Ministerio Maná" description="Ingresa al Portal Maná para ver tus aportes y gestionar tu inscripción." hideFooter>
   <main class="relative min-h-screen flex items-center justify-center p-4 overflow-x-hidden bg-[#EBF1F6]">
     <!-- Corporate Clean Background -->
     <div class="absolute inset-0 z-0 overflow-hidden">
@@ -63,6 +64,11 @@ import BaseLayout from '@layouts/BaseLayout.astro';
               <button type="submit" id="btn-submit-password" class="w-full bg-[#293C74] text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all">
                 Iniciar Sesión
               </button>
+              
+              <p class="text-center text-xs text-slate-500 mt-4">
+                 ¿No tienes cuenta? 
+                 <a href="/portal/registro" class="font-bold text-[#293C74] hover:underline">Regístrate aquí</a>
+              </p>
             </div>
             
             <div class="pt-2 text-center">
@@ -72,16 +78,34 @@ import BaseLayout from '@layouts/BaseLayout.astro';
             </div>
           </form>
 
-          <div class="relative py-2">
+          <div class="relative py-4">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
-            <div class="relative flex justify-center"><span class="bg-white px-4 text-xs font-bold text-slate-300 uppercase tracking-widest">O</span></div>
+            <div class="relative flex justify-center">
+              <span class="bg-white px-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">O continuar con</span>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <button type="button" id="btn-oauth-google" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group">
+              <span class="h-8 w-8 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold text-[#293C74] bg-white">G</span>
+              <span class="text-sm font-semibold text-slate-700 group-hover:text-[#293C74]">Continuar con Google</span>
+            </button>
+            <button type="button" id="btn-oauth-facebook" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group">
+              <span class="h-8 w-8 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-sm font-bold text-[#1877F2]">f</span>
+              <span class="text-sm font-semibold text-slate-700 group-hover:text-[#293C74]">Continuar con Facebook</span>
+            </button>
           </div>
 
           <!-- Secondary Options -->
-           <button type="button" id="btn-passkey" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group mb-4" title="Ingresar con FaceID / TouchID">
+           <button type="button" id="btn-passkey" class="hidden w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group mb-4" title="Ingresar con FaceID / TouchID">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-hover:text-[#293C74]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.131A8 8 0 008 8m8.363 12.18c.201-.06.401-.123.6-.192" /></svg>
               <span class="text-xs font-bold text-slate-600 group-hover:text-[#293C74]">Ingresar con Passkey (Huella / Rostro)</span>
            </button>
+
+          <!-- Turnstile -->
+          <div class="mt-4">
+            <TurnstileWidget appearance="always" theme="light" />
+          </div>
 
           <!-- Hidden Magic Link Form -->
           <form id="magic-link-form" class="hidden space-y-4 pt-4 border-t border-slate-100">
@@ -105,9 +129,9 @@ import BaseLayout from '@layouts/BaseLayout.astro';
         </div>
 
         <div id="login-status-container" class="hidden mt-6 text-center">
-           <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200">
-              <span id="login-status-icon" class="w-2 h-2 rounded-full bg-[#293C74] animate-ping"></span>
-              <p id="login-status" class="text-xs text-slate-600 font-medium"></p>
+           <div id="login-status-wrapper" class="inline-flex items-center gap-2 px-4 py-3 rounded-full">
+              <span id="login-status-icon" class="w-2 h-2 rounded-full animate-ping"></span>
+              <p id="login-status" class="text-sm font-semibold"></p>
            </div>
         </div>
 
@@ -125,171 +149,7 @@ import BaseLayout from '@layouts/BaseLayout.astro';
     </div>
   </main>
 
-
   <script>
-    import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
-    import { gsap } from 'gsap';
-
-    window.addEventListener('load', () => {
-      gsap.to('#login-card', { opacity: 1, y: 0, duration: 1.2, ease: 'power4.out', delay: 0.2 });
-      
-      // Stars Animation
-      const starsContainer = document.getElementById('stars-container');
-      if (starsContainer) {
-        for (let i = 0; i < 30; i += 1) {
-          const star = document.createElement('div');
-          star.className = 'absolute w-[2px] h-[2px] bg-white rounded-full';
-          star.style.left = `${Math.random() * 100}%`;
-          star.style.top = `${Math.random() * 100}%`;
-          starsContainer.appendChild(star);
-          gsap.to(star, { opacity: 0.2, duration: 2 + Math.random() * 3, repeat: -1, yoyo: true, delay: Math.random() * 5 });
-        }
-      }
-    });
-
-    // Elements
-    const magicForm = document.getElementById('magic-link-form');
-    const passwordForm = document.getElementById('password-form');
-    const magicEmailInput = document.getElementById('magic-email');
-    const passwordEmailInput = document.getElementById('password-email');
-    const passwordInput = document.getElementById('login-password');
-    const toggleMagicBtn = document.getElementById('btn-toggle-magic');
-    const cancelMagicBtn = document.getElementById('btn-cancel-magic');
-    const togglePasswordViewBtn = document.getElementById('toggle-password-view');
-    const passkeyBtn = document.getElementById('btn-passkey');
-    
-    const statusContainer = document.getElementById('login-status-container');
-    const statusEl = document.getElementById('login-status');
-    const statusIcon = document.getElementById('login-status-icon');
-
-    let supabase = null;
-    try {
-      supabase = getSupabaseBrowserClient();
-    } catch (err) {
-      console.error('Supabase client not available:', err);
-      showStatus('El portal no está configurado. Escríbenos por WhatsApp.', 'error');
-    }
-
-    // Listen for Auth State Changes (Magic Link Redirect Fix)
-    supabase?.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        showStatus('¡Sesión iniciada! Entrando...', 'success');
-        window.location.href = '/portal';
-      }
-    });
-
-    function showStatus(msg, type = 'loading') {
-      statusContainer.classList.remove('hidden');
-      statusEl.textContent = msg;
-      statusIcon.className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-[#293C74] animate-ping'}`;
-      gsap.from(statusContainer, { scale: 0.9, duration: 0.4, ease: 'back.out' });
-    }
-
-    // Toggle Forms
-    toggleMagicBtn?.addEventListener('click', () => {
-       passwordForm.classList.add('hidden');
-       magicForm.classList.remove('hidden');
-       if (passwordEmailInput.value) magicEmailInput.value = passwordEmailInput.value;
-       magicForm.scrollIntoView({ behavior: 'smooth' });
-    });
-
-    cancelMagicBtn?.addEventListener('click', () => {
-       magicForm.classList.add('hidden');
-       passwordForm.classList.remove('hidden');
-    });
-
-    togglePasswordViewBtn?.addEventListener('click', () => {
-       const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-       passwordInput.setAttribute('type', type);
-       togglePasswordViewBtn.classList.toggle('text-[#293C74]');
-    });
-
-    // Magic Link Submit
-    magicForm?.addEventListener('submit', async (e) => {
-       e.preventDefault();
-       const email = magicEmailInput.value.trim();
-       if (!email) return;
-
-       showStatus('Enviando enlace de restablecimiento...', 'loading');
-       const btn = document.getElementById('btn-submit-magic');
-       btn.disabled = true;
-       btn.classList.add('opacity-50');
-
-       try {
-        const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
-        const res = await fetch('/api/auth/send-link', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email, kind: 'recovery', redirectTo }),
-        });
-        const payload = await res.json();
-        if (!res.ok || !payload?.ok) throw new Error(payload?.error || 'Error al enviar enlace.');
-        
-        showStatus('¡Enlace enviado! Revisa tu correo para restablecer.', 'success');
-        magicEmailInput.value = '';
-       } catch (err) {
-         showStatus(err.message, 'error');
-         btn.disabled = false;
-         btn.classList.remove('opacity-50');
-       }
-    });
-
-    // Password Submit
-    passwordForm?.addEventListener('submit', async (e) => {
-       e.preventDefault();
-       const email = passwordEmailInput.value.trim();
-       const password = passwordInput.value.trim();
-       if (!email || !password) return;
-
-       showStatus('Validando contraseña...', 'loading');
-       const btn = document.getElementById('btn-submit-password');
-       btn.disabled = true;
-       btn.classList.add('opacity-50');
-
-       try {
-          if (!supabase) {
-            throw new Error('El portal no está configurado.');
-          }
-          const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) throw error;
-          showStatus('Acceso correcto. Entrando...', 'success');
-          window.location.href = '/portal';
-       } catch (err) {
-          showStatus('Contraseña incorrecta o usuario no encontrado.', 'error');
-          btn.disabled = false;
-          btn.classList.remove('opacity-50');
-       }
-    });
-
-    // Passkey Handler
-    passkeyBtn?.addEventListener('click', async () => {
-       showStatus('Verificando soporte de Passkeys...', 'loading');
-       try {
-           if (!supabase) {
-             throw new Error('El portal no está configurado.');
-           }
-           // Check if WebAuthn is supported in this Supabase client version
-           if (typeof supabase.auth.signInWithSSO !== 'function') {
-              throw new Error('Passkeys no configurado en esta versión.');
-           }
-           // Placeholder for Passkey flow
-           const { data, error } = await supabase.auth.signInWithSSO({ 
-             domain: 'ministeriomana.com',
-             options: {
-                redirectTo: `${window.location.origin}/portal`
-             } 
-           });
-           
-           if (error) throw error;
-           if (data?.url) window.location.href = data.url;
-           else throw new Error('Debes configurar Passkeys en tu cuenta primero.');
-
-       } catch (err) {
-          showStatus(err.message || 'Función Beta: Contacta soporte para activar.', 'error');
-          setTimeout(() => { showStatus('', 'loading'); statusContainer.classList.add('hidden'); }, 3000);
-       }
-    });
-
+    import '@scripts/portal-ingresar.js';
   </script>
 </BaseLayout>
-

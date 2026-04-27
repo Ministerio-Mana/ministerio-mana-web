@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { enforceAdminIp } from '@lib/adminIpAllowlist';
 
 export const prerender = false;
 
@@ -8,11 +9,17 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
+function isProduction(): boolean {
+  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+  return runtimeEnv === 'production';
+}
+
 function validateExport(request: Request): boolean {
   const secret = env('DONATIONS_EXPORT_SECRET');
-  if (!secret) return true;
+  if (!secret) return !isProduction();
   const header = request.headers.get('x-export-secret');
   if (header && header === secret) return true;
+  if (isProduction()) return false;
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
   return Boolean(token && token === secret);
@@ -27,7 +34,14 @@ function csvEscape(value: unknown): string {
   return str;
 }
 
-export const GET = async ({ request }: APIContext) => {
+function ilikeValue(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.includes('%') ? trimmed : `%${trimmed}%`;
+}
+
+export const GET = async ({ request, clientAddress }: APIContext) => {
   if (!validateExport(request)) {
     void logSecurityEvent({
       type: 'webhook_invalid',
@@ -40,7 +54,21 @@ export const GET = async ({ request }: APIContext) => {
     });
   }
 
-  const provider = (new URL(request.url).searchParams.get('provider') ?? '').toLowerCase();
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'donations.export',
+    allowlistKeys: ['ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const url = new URL(request.url);
+  const provider = (url.searchParams.get('provider') ?? '').toLowerCase();
   const allowed = new Set(['wompi', 'stripe', 'physical']);
   if (!provider) {
     return new Response(JSON.stringify({ ok: false, error: 'provider requerido' }), {
@@ -62,11 +90,41 @@ export const GET = async ({ request }: APIContext) => {
     });
   }
 
-  const { data, error } = await supabaseAdmin
+  const from = url.searchParams.get('from');
+  const to = url.searchParams.get('to');
+  const country = ilikeValue(url.searchParams.get('country'));
+  const city = ilikeValue(url.searchParams.get('city'));
+  const church = ilikeValue(url.searchParams.get('church'));
+  const campus = ilikeValue(url.searchParams.get('campus'));
+  const missionary = ilikeValue(url.searchParams.get('missionary'));
+  const email = ilikeValue(url.searchParams.get('email'));
+  const name = ilikeValue(url.searchParams.get('name'));
+  const currency = (url.searchParams.get('currency') ?? '').toUpperCase();
+  const minAmountRaw = url.searchParams.get('minAmount');
+  const maxAmountRaw = url.searchParams.get('maxAmount');
+  const minAmount = minAmountRaw ? Number(minAmountRaw) : NaN;
+  const maxAmount = maxAmountRaw ? Number(maxAmountRaw) : NaN;
+
+  let query = supabaseAdmin
     .from('donations')
     .select('*')
     .eq('provider', provider)
-    .order('created_at', { ascending: false });
+    .eq('status', 'APPROVED');
+
+  if (from) query = query.gte('created_at', from);
+  if (to) query = query.lte('created_at', to);
+  if (country) query = query.ilike('donor_country', country);
+  if (city) query = query.ilike('donor_city', city);
+  if (church) query = query.ilike('church', church);
+  if (campus) query = query.ilike('campus', campus);
+  if (missionary) query = query.ilike('missionary_name', missionary);
+  if (email) query = query.ilike('donor_email', email);
+  if (name) query = query.ilike('donor_name', name);
+  if (currency) query = query.eq('currency', currency);
+  if (Number.isFinite(minAmount)) query = query.gte('amount', minAmount);
+  if (Number.isFinite(maxAmount)) query = query.lte('amount', maxAmount);
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     console.error('[donations.export] error', error);
@@ -86,10 +144,15 @@ export const GET = async ({ request }: APIContext) => {
     'reference',
     'provider_tx_id',
     'payment_method',
+    'payment_domain',
+    'concept_code',
+    'concept_label',
     'donation_type',
     'project_name',
     'event_name',
     'campus',
+    'missionary_id',
+    'missionary_name',
     'church',
     'church_city',
     'donor_name',
@@ -99,6 +162,9 @@ export const GET = async ({ request }: APIContext) => {
     'donor_document_number',
     'donor_country',
     'donor_city',
+    'is_recurring',
+    'donation_description',
+    'need_certificate',
     'source',
     'cumbre_booking_id',
   ];
@@ -113,10 +179,15 @@ export const GET = async ({ request }: APIContext) => {
     csvEscape(row.reference),
     csvEscape(row.provider_tx_id),
     csvEscape(row.payment_method),
+    csvEscape(row.payment_domain),
+    csvEscape(row.concept_code),
+    csvEscape(row.concept_label),
     csvEscape(row.donation_type),
     csvEscape(row.project_name),
     csvEscape(row.event_name),
     csvEscape(row.campus),
+    csvEscape(row.missionary_id),
+    csvEscape(row.missionary_name),
     csvEscape(row.church),
     csvEscape(row.church_city),
     csvEscape(row.donor_name),
@@ -126,6 +197,9 @@ export const GET = async ({ request }: APIContext) => {
     csvEscape(row.donor_document_number),
     csvEscape(row.donor_country),
     csvEscape(row.donor_city),
+    csvEscape(row.is_recurring),
+    csvEscape(row.donation_description),
+    csvEscape(row.need_certificate),
     csvEscape(row.source),
     csvEscape(row.cumbre_booking_id),
   ]);

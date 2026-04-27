@@ -10,9 +10,14 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
+function isProduction(): boolean {
+  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
+  return runtimeEnv === 'production';
+}
+
 function validateCron(request: Request): boolean {
   const secret = env('CUMBRE_CRON_SECRET');
-  if (!secret) return true;
+  if (!secret) return !isProduction();
   const header = request.headers.get('x-cron-secret');
   if (header && header === secret) return true;
   const url = new URL(request.url);

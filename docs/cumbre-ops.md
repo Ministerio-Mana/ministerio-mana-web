@@ -19,6 +19,12 @@ Guia corta para cron de cuotas, export CSV y acceso de cuenta.
 - `CUMBRE_EMAIL_FROM` (opcional, default `info@ministeriomana.org`)
 - `WHATSAPP_WEBHOOK_URL` (opcional para recordatorios por WhatsApp)
 - `WHATSAPP_WEBHOOK_TOKEN` (opcional, si tu webhook requiere auth)
+- `WHATSAPP_CUMBRE_REMINDER_CONTENT_SID` (opcional, template Twilio para recordatorios)
+- `WHATSAPP_CUMBRE_PAYMENT_RECEIVED_CONTENT_SID` (opcional, pago recibido)
+- `WHATSAPP_CUMBRE_PAYMENT_PENDING_CONTENT_SID` (opcional, pago en verificacion)
+- `WHATSAPP_CUMBRE_PAYMENT_ISSUE_CONTENT_SID` (opcional, pago con inconsistencia)
+- `WHATSAPP_CUMBRE_REG_INCOMPLETE_CONTENT_SID` (opcional, registro incompleto)
+- `WHATSAPP_CUMBRE_NO_CHURCH_CONTENT_SID` (opcional, sin iglesia asignada)
 
 > Nota: puedes reutilizar `SUPABASE_URL` y `SUPABASE_ANON_KEY` como `PUBLIC_*`.
 > El modo prueba solo se permite fuera de produccion.
@@ -91,12 +97,28 @@ Endpoint:
 - `GET /api/cumbre2026/admin/export`
 - Header requerido: `x-export-secret: <CUMBRE_ADMIN_EXPORT_SECRET>`
 - Alternativa: `?token=<CUMBRE_ADMIN_EXPORT_SECRET>`
+- Filtro opcional: `?provider=wompi|stripe|manual` (manual = fisico)
 
 Ejemplo:
 
 ```bash
 curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export?token=TU_SECRETO" \
   -o cumbre-admin.csv
+```
+
+## Export Todo-en-Uno (reservas + participantes + pagos + cuotas)
+
+Endpoint:
+- `GET /api/cumbre2026/admin/export-all`
+- Header requerido: `x-export-secret: <CUMBRE_ADMIN_EXPORT_SECRET>`
+- Alternativa: `?token=<CUMBRE_ADMIN_EXPORT_SECRET>`
+- Filtro opcional: `?provider=wompi|stripe|manual` (manual = fisico)
+
+Ejemplo:
+
+```bash
+curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export-all?token=TU_SECRETO" \
+  -o cumbre-admin-all.csv
 ```
 
 ## Formulario manual (pagos físicos)

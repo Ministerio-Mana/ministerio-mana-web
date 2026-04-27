@@ -12,6 +12,8 @@ create table if not exists public.user_profiles (
   affiliation_type text,
   church_name text,
   church_id uuid,
+  document_type text,
+  document_number text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -45,6 +47,10 @@ alter table public.user_profiles
   add column if not exists church_name text;
 alter table public.user_profiles
   add column if not exists church_id uuid references public.churches(id);
+alter table public.user_profiles
+  add column if not exists document_type text;
+alter table public.user_profiles
+  add column if not exists document_number text;
 
 alter table public.user_profiles
   add column if not exists portal_church_id uuid references public.churches(id);

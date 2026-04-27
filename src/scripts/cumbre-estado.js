@@ -16,6 +16,20 @@ const registroUrl = bookingId && token
   ? `/eventos/cumbre-mundial-2026/registro?bookingId=${encodeURIComponent(bookingId)}&token=${encodeURIComponent(token)}`
   : '/eventos/cumbre-mundial-2026';
 
+function resetTurnstile() {
+  if (window.turnstile && typeof window.turnstile.reset === 'function') {
+    window.turnstile.reset();
+  }
+}
+
+function getTurnstileToken() {
+  const widget = document.querySelector('.cf-turnstile');
+  if (!widget) return { ok: true, token: '' };
+  const tokenValue = window.turnstile?.getResponse?.() || '';
+  if (!tokenValue) return { ok: false, error: 'Captcha requerido.' };
+  return { ok: true, token: tokenValue };
+}
+
 if (completeBtn) {
   completeBtn.href = registroUrl;
 }
@@ -32,6 +46,7 @@ if (hasBookingLink) {
   }
 }
 let bookingEmail = '';
+let bookingData = null;
 
 function formatMoney(amount, currency) {
   if (!amount) return '';
@@ -73,6 +88,41 @@ function setPaymentStatus({ status, amount, currency, createdAt }) {
   }
 }
 
+function isMissingDocType(value) {
+  if (!value) return true;
+  const raw = value.toString().trim();
+  const upper = raw.toUpperCase();
+  if (upper === 'OTHER' || upper === 'OTRO') return true;
+  if (upper.startsWith('OTRO:')) {
+    const detail = raw.slice(raw.indexOf(':') + 1).trim();
+    return !detail;
+  }
+  return false;
+}
+
+function needsMenu(participant) {
+  const type = participant?.package_type || participant?.type || '';
+  return type === 'lodging' || type === 'no_lodging';
+}
+
+function isParticipantIncomplete(participant) {
+  if (!participant) return true;
+  if (isMissingDocType(participant.document_type)) return true;
+  if (!participant.document_number) return true;
+  if (!participant.birthdate) return true;
+  if (!participant.gender) return true;
+  if (needsMenu(participant) && !participant.diet_type) return true;
+  return false;
+}
+
+function updateCompleteButtonLabel() {
+  if (!completeBtn) return;
+  const participants = bookingData?.participants;
+  if (!Array.isArray(participants) || participants.length === 0) return;
+  const incomplete = participants.some(isParticipantIncomplete);
+  completeBtn.textContent = incomplete ? 'Completar datos de asistentes' : 'Modificar datos de asistentes';
+}
+
 async function fetchPaymentStatus() {
   if (!isPayment || !bookingId || !paymentStatusDetail) return;
   try {
@@ -90,13 +140,17 @@ async function fetchPaymentStatus() {
   }
 }
 
-async function fetchBookingEmail() {
+async function fetchBookingDetails() {
   if (!bookingId || !token) return '';
   try {
     const res = await fetch(`/api/cumbre2026/booking/get?bookingId=${encodeURIComponent(bookingId)}&token=${encodeURIComponent(token)}`);
     if (!res.ok) return '';
     const payload = await res.json();
+    if (payload?.ok) {
+      bookingData = payload;
+    }
     bookingEmail = (payload?.booking?.contact_email || '').toString().trim().toLowerCase();
+    updateCompleteButtonLabel();
     return bookingEmail;
   } catch (err) {
     console.error(err);
@@ -116,7 +170,7 @@ function showComplete(show = true) {
 
 if (isPayment) {
   showActivation(false);
-  showComplete(false);
+  showComplete(Boolean(bookingId && token));
 }
 
 async function checkSession() {
@@ -139,9 +193,15 @@ async function checkSession() {
 async function sendMagicLink() {
   if (!activationStatus) return;
   activationStatus.textContent = '';
-  const email = bookingEmail || (await fetchBookingEmail());
+  const email = bookingEmail || (await fetchBookingDetails());
   if (!email) {
     activationStatus.textContent = 'No encontramos tu correo. Escríbenos por WhatsApp para ayudarte.';
+    return;
+  }
+  const captcha = getTurnstileToken();
+  if (!captcha.ok) {
+    activationStatus.textContent = captcha.error || 'Captcha requerido.';
+    resetTurnstile();
     return;
   }
   activationStatus.textContent = 'Enviando enlace...';
@@ -152,7 +212,7 @@ async function sendMagicLink() {
     const res = await fetch('/api/auth/send-link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email, kind: 'magiclink', redirectTo }),
+      body: JSON.stringify({ email, kind: 'magiclink', redirectTo, turnstileToken: captcha.token }),
     });
     const payload = await res.json();
     if (!res.ok || !payload?.ok) {
@@ -162,6 +222,7 @@ async function sendMagicLink() {
   } catch (err) {
     console.error(err);
     activationStatus.textContent = err?.message || 'No se pudo enviar el enlace.';
+    resetTurnstile();
   } finally {
     activateBtn?.removeAttribute('disabled');
     activateBtn?.classList.remove('opacity-60');
@@ -179,7 +240,7 @@ if (!isPayment) {
   } else {
     showComplete(true);
     showActivation(!supabase);
-    void fetchBookingEmail();
+    void fetchBookingDetails();
     void checkSession();
   }
 
@@ -195,4 +256,7 @@ if (!isPayment) {
 
 if (isPayment) {
   void fetchPaymentStatus();
+  if (hasBookingLink) {
+    void fetchBookingDetails();
+  }
 }
