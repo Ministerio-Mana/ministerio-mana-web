@@ -2529,6 +2529,23 @@ function getParticipantPaymentBadge(item) {
   return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}">${safeText(label)}</span>`;
 }
 
+function getParticipantPaymentMethodBadge(item) {
+  const label = item?.payment_type || 'Online';
+  const isPhysical = normalizeGeoToken(label).includes('fisico');
+  const className = isPhysical
+    ? 'bg-slate-100 text-slate-600 border-slate-200'
+    : 'bg-purple-50 text-purple-700 border-purple-100';
+  const icon = isPhysical
+    ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>';
+  return `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}">${icon}${safeText(label)}</span>`;
+}
+
+function getParticipantMenuBadge(item) {
+  const label = item?.diet_label || '-';
+  return `<span class="inline-flex px-2 py-1 rounded-md border border-slate-200 bg-white text-slate-600 text-[10px] font-bold uppercase tracking-widest">${safeText(label)}</span>`;
+}
+
 function renderChurchParticipantsPagination(meta) {
   if (!churchParticipantsPagination) return;
   if (!meta || meta.total <= 0) {
@@ -2596,19 +2613,21 @@ function renderChurchParticipants(list) {
     const docLabel = [item.document_type, item.document_number].filter(Boolean).join(' ') || '-';
     const originLabel = [item.city, item.nationality].filter(Boolean).join(' · ') || '-';
     const churchLabel = item.church_final || item.church_input || '-';
-    const paymentLabel = `${formatCurrency(item.total_paid, item.currency)} / ${formatCurrency(item.total_amount, item.currency)}`;
+    const totalPaidLabel = formatCurrency(item.total_paid, item.currency);
+    const totalAmountLabel = formatCurrency(item.total_amount, item.currency);
+    const pendingAmount = Number(item.pending_amount || 0);
     const pendingLabel = Number(item.pending_amount || 0) > 0
       ? `Pendiente ${formatCurrency(item.pending_amount, item.currency)}`
       : 'Sin saldo';
     const lastPaymentLabel = item.last_payment_at
       ? `${formatCurrency(item.last_payment_amount, item.last_payment_currency || item.currency)} · ${formatDate(item.last_payment_at)}`
-      : 'Sin pago registrado';
+      : 'Sin abono aprobado';
     const nextDueLabel = item.next_due_date
       ? `${formatCurrency(item.next_due_amount, item.next_due_currency || item.currency)} · ${formatDate(item.next_due_date)}`
-      : '';
+      : pendingAmount > 0
+        ? `${formatCurrency(pendingAmount, item.currency)} · Sin fecha`
+        : '—';
     const registeredLabel = item.created_at ? formatDateTime(item.created_at) : '-';
-    const menuLabel = item.diet_label || '-';
-    const ownerLabel = item.is_payment_owner ? '<span class="text-[10px] text-brand-teal font-bold">(Responsable)</span>' : '';
     const participantCountLabel = Number(item.participant_count || 0) > 1
       ? `${item.participant_count} inscritos`
       : 'Individual';
@@ -2616,61 +2635,83 @@ function renderChurchParticipants(list) {
     const groupLabel = Number(item.participant_count || 0) > 1
       ? item.is_payment_owner
         ? `Responsable del grupo · ${participantCountLabel}`
-        : `Grupo de ${groupOwner} · ${participantCountLabel}`
+        : `Pertenece al grupo de ${groupOwner} · ${participantCountLabel}`
       : participantCountLabel;
     const groupBadgeClass = item.is_payment_owner
       ? 'bg-brand-teal/10 text-brand-teal border-brand-teal/20'
       : 'bg-slate-50 text-slate-600 border-slate-200';
+    const alertBadge = item.package_issue ? getParticipantAlertBadge(item.package_issue) : '';
+    const contactLine = [item.email, item.phone].filter(Boolean).join(' · ') || 'Sin contacto';
     return `
-      <tr class="hover:bg-slate-50/70 transition-colors">
-        <td class="px-4 py-3 align-top">
-          <p class="text-sm font-bold text-[#293C74]">${safeText(item.participant_name || '-')}</p>
-          <div class="mt-1 flex flex-wrap items-center gap-1.5">
-            <span class="inline-flex max-w-[260px] items-center rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${groupBadgeClass}" title="${safeAttr(groupLabel)}">
+      <article class="rounded-[1.75rem] border border-slate-200 bg-white p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div class="min-w-0">
+            <p class="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 mb-2">${safeText(churchLabel)}</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="text-lg md:text-xl font-black text-[#293C74]">#${safeText(item.booking_ref || '')}</p>
+              <span class="text-slate-300">•</span>
+              <p class="text-base font-bold text-slate-700">${safeText(item.participant_name || '-')}</p>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              ${getParticipantPaymentBadge(item)}
+              ${getParticipantPaymentMethodBadge(item)}
+              ${getParticipantPackageBadge(item)}
+              ${getParticipantMenuBadge(item)}
+              ${alertBadge}
+            </div>
+            <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              <p class="text-slate-600">
+                <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Último abono</span>
+                <span class="ml-2 font-semibold">${safeText(lastPaymentLabel)}</span>
+              </p>
+              <p class="text-slate-600">
+                <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Próximo abono</span>
+                <span class="ml-2 font-semibold">${safeText(nextDueLabel)}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="lg:min-w-[220px] lg:border-l lg:border-slate-100 lg:pl-6">
+            <div class="grid grid-cols-2 gap-4 text-right">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Pagado</p>
+                <p class="mt-1 text-xl font-black text-brand-teal">${safeText(totalPaidLabel)}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Total</p>
+                <p class="mt-1 text-xl font-black text-[#293C74]">${safeText(totalAmountLabel)}</p>
+              </div>
+            </div>
+            <p class="mt-2 text-right text-[11px] font-semibold text-slate-400">${safeText(pendingLabel)}</p>
+          </div>
+        </div>
+
+        <div class="mt-5 border-t border-slate-100 pt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div class="min-w-0 space-y-3">
+            <div class="inline-flex max-w-full items-center rounded-xl border px-3 py-2 text-xs font-bold ${groupBadgeClass}" title="${safeAttr(groupLabel)}">
               <span class="truncate">${safeText(groupLabel)}</span>
-            </span>
-            ${ownerLabel}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-500">
+              <p><span class="font-bold text-slate-400 uppercase tracking-widest">Documento</span><br><span class="font-semibold text-slate-700">${safeText(docLabel)}</span></p>
+              <p><span class="font-bold text-slate-400 uppercase tracking-widest">Origen</span><br><span class="font-semibold text-slate-700">${safeText(originLabel)}</span></p>
+              <p><span class="font-bold text-slate-400 uppercase tracking-widest">Contacto</span><br><span class="font-semibold text-slate-700">${safeText(contactLine)}</span></p>
+            </div>
+            <p class="text-[11px] text-slate-400">${safeText(ageLabel)}${item.gender ? ` · ${safeText(item.gender)}` : ''} · ${safeText(item.registration_type || '')}</p>
           </div>
-          <p class="mt-1 text-[11px] text-slate-400">#${safeText(item.booking_ref || '')} · ${safeText(item.reserva_tipo || '')}</p>
-        </td>
-        <td class="px-4 py-3 align-top">
-          <p class="text-xs font-semibold text-slate-700">${safeText(docLabel)}</p>
-          <p class="text-[11px] text-slate-400">${safeText(ageLabel)}${item.gender ? ` · ${safeText(item.gender)}` : ''}</p>
-        </td>
-        <td class="px-4 py-3 align-top">${getParticipantPackageBadge(item)}</td>
-        <td class="px-4 py-3 align-top">
-          <p class="text-xs font-semibold text-slate-700">${safeText(menuLabel)}</p>
-        </td>
-        <td class="px-4 py-3 align-top">
-          <p class="text-xs text-slate-600">${safeText(originLabel)}</p>
-          <p class="text-[11px] text-slate-400">${safeText(item.phone || '')}</p>
-        </td>
-        <td class="px-4 py-3 align-top">
-          <p class="text-xs text-slate-600 max-w-[180px] truncate" title="${safeAttr(churchLabel)}">${safeText(churchLabel)}</p>
-          <p class="text-[11px] text-slate-400">${safeText(item.registration_type || '')}</p>
-        </td>
-        <td class="px-4 py-3 align-top">
-          <div class="mb-1">${getParticipantPaymentBadge(item)}</div>
-          <p class="text-xs font-bold text-[#293C74]">${safeText(paymentLabel)}</p>
-          <p class="text-[11px] text-slate-400">${safeText(pendingLabel)} · ${safeText(item.payment_type || '')}</p>
-        </td>
-        <td class="px-4 py-3 align-top">
-          <p class="text-xs font-semibold text-slate-700">${safeText(lastPaymentLabel)}</p>
-          <p class="text-[11px] text-slate-400">Registro: ${safeText(registeredLabel)}</p>
-          ${nextDueLabel ? `<p class="text-[11px] text-amber-600">Próxima: ${safeText(nextDueLabel)}</p>` : ''}
-        </td>
-        <td class="px-4 py-3 align-top">${getParticipantAlertBadge(item.package_issue)}</td>
-        <td class="px-4 py-3 align-top text-right">
-          <div class="flex flex-col gap-2 items-end">
-            <button type="button" class="btn-view-participant-booking px-3 py-2 rounded-lg border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50" data-booking-id="${safeBookingId}">
-              Ver detalle
-            </button>
-            <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeBookingId}">
-              Editar perfil
-            </button>
+
+          <div class="flex flex-col items-stretch gap-3 lg:items-end">
+            <p class="text-xs md:text-sm font-semibold text-slate-400 lg:text-right">Registro: ${safeText(registeredLabel)}</p>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <button type="button" class="btn-view-participant-booking px-5 py-3 rounded-xl border border-slate-200 bg-white text-[#293C74] text-sm font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+                Ver detalle
+              </button>
+              <button type="button" class="btn-edit-participant-booking px-5 py-3 rounded-xl border border-brand-teal text-brand-teal text-sm font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+                Editar perfil
+              </button>
+            </div>
           </div>
-        </td>
-      </tr>
+        </div>
+      </article>
     `;
   }).join('');
 

@@ -535,7 +535,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           </div>
                           <div class="flex flex-wrap items-center gap-2 lg:justify-end">
                             <select id="church-participants-sort" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
-                              <option value="recent_payment_desc">Inscritos recientes</option>
+                              <option value="recent_payment_desc">Más recientes</option>
                               <option value="name_asc">Nombre A-Z</option>
                               <option value="created_desc">Fecha de registro</option>
                               <option value="lodging_asc">Alojamiento</option>
@@ -570,9 +570,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
                               <option value="review">Por revisar</option>
                             </select>
                             <select id="church-participants-page-size" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
-                              <option value="15" selected>15</option>
-                              <option value="30">30</option>
-                              <option value="60">60</option>
+                              <option value="20" selected>20</option>
+                              <option value="40">40</option>
+                              <option value="80">80</option>
                             </select>
                           </div>
                         </div>
@@ -581,24 +581,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         <div id="church-participants-empty" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
                           <p class="text-sm text-slate-600">No hay participantes para mostrar.</p>
                         </div>
-                        <div id="church-participants-table-wrap" class="hidden overflow-x-auto rounded-2xl border border-slate-100">
-                          <table class="min-w-[1280px] w-full text-left">
-                            <thead class="bg-slate-50 border-b border-slate-100">
-                              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                <th class="px-4 py-3">Participante</th>
-                                <th class="px-4 py-3">Documento</th>
-                                <th class="px-4 py-3">Alojamiento</th>
-                                <th class="px-4 py-3">Menú</th>
-                                <th class="px-4 py-3">Origen</th>
-                                <th class="px-4 py-3">Iglesia</th>
-                                <th class="px-4 py-3">Pago</th>
-                                <th class="px-4 py-3">Fechas</th>
-                                <th class="px-4 py-3">Alerta</th>
-                                <th class="px-4 py-3 text-right">Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody id="church-participants-table" class="divide-y divide-slate-100 bg-white"></tbody>
-                          </table>
+                        <div id="church-participants-table-wrap" class="hidden">
+                          <div id="church-participants-table" class="space-y-4"></div>
                         </div>
                         <div id="church-participants-pagination" class="hidden mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
                       </div>
