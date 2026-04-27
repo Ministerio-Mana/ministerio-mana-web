@@ -1,0 +1,165 @@
+---
+type CmsSection = {
+  id: string;
+  kind: string;
+  title?: string | null;
+  payload?: Record<string, any> | null;
+};
+
+const { sections = [] } = Astro.props as { sections?: CmsSection[] };
+
+function asArray<T = any>(value: any): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function safeUrl(value: string | null | undefined): string {
+  const url = String(value || '').trim();
+  if (!url) return '';
+  if (url.startsWith('/')) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return '';
+}
+
+function youtubeEmbed(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!['youtube.com', 'www.youtube.com', 'youtu.be'].includes(parsed.hostname)) return '';
+    if (parsed.hostname === 'youtu.be') {
+      const id = parsed.pathname.slice(1);
+      return id ? `https://www.youtube.com/embed/${id}` : '';
+    }
+    const id = parsed.searchParams.get('v');
+    return id ? `https://www.youtube.com/embed/${id}` : '';
+  } catch {
+    return '';
+  }
+}
+
+function vimeoEmbed(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(parsed.hostname)) return '';
+    const id = parsed.pathname.split('/').filter(Boolean).pop();
+    return id ? `https://player.vimeo.com/video/${id}` : '';
+  } catch {
+    return '';
+  }
+}
+
+function toEmbedUrl(raw: string): string {
+  const url = safeUrl(raw);
+  if (!url) return '';
+  return youtubeEmbed(url) || vimeoEmbed(url);
+}
+---
+
+<div class="cms-page-renderer">
+  {sections.map((section) => {
+    const payload = section.payload || {};
+    const kind = String(section.kind || 'custom');
+
+    if (kind === 'hero') {
+      const image = safeUrl(payload.image);
+      const ctaHref = safeUrl(payload.ctaHref || payload.cta_url || '/');
+      return (
+        <section class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-[#293C74] via-[#304B8D] to-[#2E7FA3] text-white px-6 py-14 md:px-10 md:py-20">
+          {image && <img src={image} alt={String(payload.imageAlt || payload.title || 'Hero')} class="absolute inset-0 h-full w-full object-cover opacity-25" loading="lazy" />}
+          <div class="relative z-10 max-w-3xl space-y-4">
+            {payload.eyebrow && <p class="text-xs font-bold uppercase tracking-[0.3em] text-white/80">{String(payload.eyebrow)}</p>}
+            <h1 class="text-3xl md:text-5xl font-display font-bold leading-tight">{String(payload.title || section.title || 'Ministerio Maná')}</h1>
+            {payload.subtitle && <p class="text-sm md:text-lg text-white/90">{String(payload.subtitle)}</p>}
+            {payload.ctaLabel && (
+              <a href={ctaHref || '/'} class="inline-flex items-center rounded-xl bg-white text-[#293C74] px-5 py-3 text-sm font-bold hover:bg-white/90 transition">
+                {String(payload.ctaLabel)}
+              </a>
+            )}
+          </div>
+        </section>
+      );
+    }
+
+    if (kind === 'rich_text') {
+      return (
+        <section class="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 md:px-8 md:py-10">
+          {(payload.title || section.title) && <h2 class="text-2xl font-display font-bold text-[#293C74] mb-3">{String(payload.title || section.title)}</h2>}
+          {payload.text && <p class="text-slate-700 whitespace-pre-wrap leading-relaxed">{String(payload.text)}</p>}
+        </section>
+      );
+    }
+
+    if (kind === 'gallery') {
+      const images = asArray(payload.images);
+      return (
+        <section class="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 md:px-8 md:py-10 space-y-5">
+          {(payload.title || section.title) && <h2 class="text-2xl font-display font-bold text-[#293C74]">{String(payload.title || section.title)}</h2>}
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            {images.map((img: any) => {
+              const src = safeUrl(img?.src);
+              if (!src) return null;
+              return (
+                <figure class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  <img src={src} alt={String(img?.alt || 'Imagen')} class="h-36 md:h-44 w-full object-cover" loading="lazy" />
+                </figure>
+              );
+            })}
+          </div>
+        </section>
+      );
+    }
+
+    if (kind === 'video') {
+      const embed = toEmbedUrl(String(payload.url || payload.videoUrl || ''));
+      return (
+        <section class="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 md:px-8 md:py-10 space-y-5">
+          {(payload.title || section.title) && <h2 class="text-2xl font-display font-bold text-[#293C74]">{String(payload.title || section.title)}</h2>}
+          {embed ? (
+            <div class="aspect-video overflow-hidden rounded-xl border border-slate-200">
+              <iframe src={embed} title={String(payload.title || section.title || 'Video')} class="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          ) : (
+            <p class="text-sm text-slate-500">Video no configurado.</p>
+          )}
+        </section>
+      );
+    }
+
+    if (kind === 'cards') {
+      const cards = asArray(payload.cards);
+      return (
+        <section class="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 md:px-8 md:py-10 space-y-5">
+          {(payload.title || section.title) && <h2 class="text-2xl font-display font-bold text-[#293C74]">{String(payload.title || section.title)}</h2>}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {cards.map((card: any) => (
+              <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="text-base font-bold text-[#293C74]">{String(card?.title || 'Card')}</h3>
+                {card?.text && <p class="text-sm text-slate-600 mt-1">{String(card.text)}</p>}
+              </article>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (kind === 'cta') {
+      const primaryHref = safeUrl(payload.primaryHref || payload.primary_url || '/');
+      const secondaryHref = safeUrl(payload.secondaryHref || payload.secondary_url || '/');
+      return (
+        <section class="rounded-[2rem] border border-[#293C74]/20 bg-[#293C74]/5 px-6 py-10 md:px-8 md:py-12 text-center">
+          <h2 class="text-2xl md:text-3xl font-display font-bold text-[#293C74]">{String(payload.title || section.title || '¿Listo para participar?')}</h2>
+          {payload.text && <p class="text-slate-600 mt-2">{String(payload.text)}</p>}
+          <div class="mt-5 flex flex-wrap justify-center gap-3">
+            {payload.primaryLabel && <a href={primaryHref || '/'} class="px-5 py-3 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">{String(payload.primaryLabel)}</a>}
+            {payload.secondaryLabel && <a href={secondaryHref || '/'} class="px-5 py-3 rounded-xl border border-[#293C74]/30 text-[#293C74] text-sm font-bold hover:bg-white transition">{String(payload.secondaryLabel)}</a>}
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section class="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 md:px-8 md:py-10">
+        <h2 class="text-xl font-bold text-[#293C74]">{String(section.title || 'Bloque')}</h2>
+        <pre class="mt-3 text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 overflow-auto text-slate-700">{JSON.stringify(payload, null, 2)}</pre>
+      </section>
+    );
+  })}
+</div>

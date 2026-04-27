@@ -35,10 +35,13 @@ function normalizeFrequency(raw: string | null | undefined): InstallmentFrequenc
 }
 
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
-  const age = Number(ageRaw || 0);
+  const ageValue = String(ageRaw ?? '').trim();
+  const age = ageValue ? Number(ageValue) : null;
   const lodging = String(lodgingRaw || '').toLowerCase() === 'yes';
-  if (age <= 4) return 'child_0_7';
-  if (age <= 10) return 'child_7_13';
+  if (Number.isFinite(age)) {
+    if ((age as number) <= 4) return 'child_0_7';
+    if ((age as number) <= 10) return 'child_7_13';
+  }
   return lodging ? 'lodging' : 'no_lodging';
 }
 

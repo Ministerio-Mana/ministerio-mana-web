@@ -1698,10 +1698,12 @@ function collectParticipants() {
   rows.forEach((row) => {
     const getValue = (field) => row.querySelector(`[data-field="${field}"]`)?.value?.toString().trim() || '';
     const ageValue = Number(getValue('age') || 0);
+    const lodgingValue = getValue('lodging');
     participants.push({
       fullName: getValue('fullName'),
       age: ageValue,
-      lodging: getValue('lodging'),
+      lodging: lodgingValue,
+      packageType: lodgingValue === 'no' ? 'no_lodging' : 'lodging',
       menuType: getValue('menuType'),
       relationship: getValue('relationship'),
       documentType: getValue('documentType'),
