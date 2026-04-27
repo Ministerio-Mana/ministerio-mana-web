@@ -110,6 +110,8 @@ const churchBookingsPageSize = document.getElementById('church-bookings-page-siz
 const churchBookingsCount = document.getElementById('church-bookings-count');
 const churchBookingsPagination = document.getElementById('church-bookings-pagination');
 const churchParticipantsSearch = document.getElementById('church-participants-search');
+const churchParticipantsSort = document.getElementById('church-participants-sort');
+const churchParticipantsPayment = document.getElementById('church-participants-payment');
 const churchParticipantsLodging = document.getElementById('church-participants-lodging');
 const churchParticipantsMenu = document.getElementById('church-participants-menu');
 const churchParticipantsAlert = document.getElementById('church-participants-alert');
@@ -2393,6 +2395,7 @@ function updateChurchBookingsView(options = {}) {
 
 function filterChurchParticipants(list) {
   const query = normalizeGeoToken(churchParticipantsSearch?.value || '');
+  const payment = churchParticipantsPayment?.value || '';
   const lodging = churchParticipantsLodging?.value || '';
   const menu = churchParticipantsMenu?.value || '';
   const alert = churchParticipantsAlert?.value || '';
@@ -2413,9 +2416,16 @@ function filterChurchParticipants(list) {
       item.church_input,
       item.booking_ref,
       item.booking_id,
+      item.payment_type,
+      item.booking_status,
+      item.last_payment_at,
+      item.next_due_date,
     ].filter(Boolean).map(normalizeGeoToken).join(' ');
 
     if (query && !searchable.includes(query)) return false;
+    if (payment === 'full' && !item.is_paid_full) return false;
+    if (payment === 'pending' && Number(item.pending_amount || 0) <= 0) return false;
+    if (payment === 'recent' && !item.last_payment_at) return false;
     if (lodging && item.package_label !== lodging) return false;
     if (menu && item.diet_label !== menu) return false;
     if (alert === 'with' && !item.package_issue) return false;
@@ -2429,6 +2439,43 @@ function getChurchParticipantsPageSize() {
   const raw = Number(churchParticipantsPageSize?.value || DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE);
   if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE;
   return raw;
+}
+
+function getParticipantActivityTime(item) {
+  const lastPayment = toDate(item?.last_payment_at)?.getTime() || 0;
+  const created = toDate(item?.created_at)?.getTime() || 0;
+  return lastPayment || created;
+}
+
+function getChurchParticipantsSortOption() {
+  return churchParticipantsSort?.value || 'recent_payment_desc';
+}
+
+function sortChurchParticipants(list) {
+  const items = [...(list || [])];
+  const sortOption = getChurchParticipantsSortOption();
+  items.sort((a, b) => {
+    const activityA = getParticipantActivityTime(a);
+    const activityB = getParticipantActivityTime(b);
+    const createdA = toDate(a?.created_at)?.getTime() || 0;
+    const createdB = toDate(b?.created_at)?.getTime() || 0;
+    const paidA = Number(a?.total_paid || 0);
+    const paidB = Number(b?.total_paid || 0);
+    const pendingA = Number(a?.pending_amount || 0);
+    const pendingB = Number(b?.pending_amount || 0);
+    const nameA = String(a?.participant_name || '').localeCompare(String(b?.participant_name || ''), 'es');
+    const lodgingA = String(a?.package_label || '').localeCompare(String(b?.package_label || ''), 'es');
+    const menuA = String(a?.diet_label || '').localeCompare(String(b?.diet_label || ''), 'es');
+
+    if (sortOption === 'name_asc') return nameA;
+    if (sortOption === 'created_desc') return createdB - createdA || nameA;
+    if (sortOption === 'lodging_asc') return lodgingA || nameA;
+    if (sortOption === 'menu_asc') return menuA || nameA;
+    if (sortOption === 'paid_desc') return paidB - paidA || activityB - activityA;
+    if (sortOption === 'pending_desc') return pendingB - pendingA || activityB - activityA;
+    return activityB - activityA || nameA;
+  });
+  return items;
 }
 
 function paginateChurchParticipants(list) {
@@ -2471,6 +2518,15 @@ function getParticipantAlertBadge(issue) {
     : 'bg-amber-50 text-amber-700 border-amber-100';
   const label = isCorrected ? 'Corregido export' : 'Revisar';
   return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}" title="${safeAttr(issue)}">${safeText(label)}</span>`;
+}
+
+function getParticipantPaymentBadge(item) {
+  const isFull = Boolean(item?.is_paid_full);
+  const className = isFull
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    : 'bg-amber-50 text-amber-700 border-amber-100';
+  const label = isFull ? 'Completo' : 'Con saldo';
+  return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}">${safeText(label)}</span>`;
 }
 
 function renderChurchParticipantsPagination(meta) {
@@ -2528,7 +2584,8 @@ function renderChurchParticipants(list) {
 
   churchParticipantsEmpty.classList.add('hidden');
   churchParticipantsTableWrap.classList.remove('hidden');
-  const paginated = paginateChurchParticipants(list);
+  const sortedList = sortChurchParticipants(list);
+  const paginated = paginateChurchParticipants(sortedList);
   if (churchParticipantsResultCount) {
     churchParticipantsResultCount.textContent = `${paginated.total} resultado${paginated.total === 1 ? '' : 's'}`;
   }
@@ -2540,14 +2597,41 @@ function renderChurchParticipants(list) {
     const originLabel = [item.city, item.nationality].filter(Boolean).join(' · ') || '-';
     const churchLabel = item.church_final || item.church_input || '-';
     const paymentLabel = `${formatCurrency(item.total_paid, item.currency)} / ${formatCurrency(item.total_amount, item.currency)}`;
+    const pendingLabel = Number(item.pending_amount || 0) > 0
+      ? `Pendiente ${formatCurrency(item.pending_amount, item.currency)}`
+      : 'Sin saldo';
+    const lastPaymentLabel = item.last_payment_at
+      ? `${formatCurrency(item.last_payment_amount, item.last_payment_currency || item.currency)} · ${formatDate(item.last_payment_at)}`
+      : 'Sin pago registrado';
+    const nextDueLabel = item.next_due_date
+      ? `${formatCurrency(item.next_due_amount, item.next_due_currency || item.currency)} · ${formatDate(item.next_due_date)}`
+      : '';
+    const registeredLabel = item.created_at ? formatDateTime(item.created_at) : '-';
     const menuLabel = item.diet_label || '-';
     const ownerLabel = item.is_payment_owner ? '<span class="text-[10px] text-brand-teal font-bold">(Responsable)</span>' : '';
+    const participantCountLabel = Number(item.participant_count || 0) > 1
+      ? `${item.participant_count} inscritos`
+      : 'Individual';
+    const groupOwner = item.responsable_grupo || item.titular_reserva || 'Responsable';
+    const groupLabel = Number(item.participant_count || 0) > 1
+      ? item.is_payment_owner
+        ? `Responsable del grupo · ${participantCountLabel}`
+        : `Grupo de ${groupOwner} · ${participantCountLabel}`
+      : participantCountLabel;
+    const groupBadgeClass = item.is_payment_owner
+      ? 'bg-brand-teal/10 text-brand-teal border-brand-teal/20'
+      : 'bg-slate-50 text-slate-600 border-slate-200';
     return `
       <tr class="hover:bg-slate-50/70 transition-colors">
         <td class="px-4 py-3 align-top">
           <p class="text-sm font-bold text-[#293C74]">${safeText(item.participant_name || '-')}</p>
-          <p class="text-[11px] text-slate-500">#${safeText(item.booking_ref || '')} · ${safeText(item.reserva_tipo || '')} ${ownerLabel}</p>
-          <p class="text-[11px] text-slate-400">${safeText(item.titular_reserva || '')}</p>
+          <div class="mt-1 flex flex-wrap items-center gap-1.5">
+            <span class="inline-flex max-w-[260px] items-center rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-widest ${groupBadgeClass}" title="${safeAttr(groupLabel)}">
+              <span class="truncate">${safeText(groupLabel)}</span>
+            </span>
+            ${ownerLabel}
+          </div>
+          <p class="mt-1 text-[11px] text-slate-400">#${safeText(item.booking_ref || '')} · ${safeText(item.reserva_tipo || '')}</p>
         </td>
         <td class="px-4 py-3 align-top">
           <p class="text-xs font-semibold text-slate-700">${safeText(docLabel)}</p>
@@ -2566,18 +2650,36 @@ function renderChurchParticipants(list) {
           <p class="text-[11px] text-slate-400">${safeText(item.registration_type || '')}</p>
         </td>
         <td class="px-4 py-3 align-top">
+          <div class="mb-1">${getParticipantPaymentBadge(item)}</div>
           <p class="text-xs font-bold text-[#293C74]">${safeText(paymentLabel)}</p>
-          <p class="text-[11px] text-slate-400">${safeText(item.booking_status || '')}</p>
+          <p class="text-[11px] text-slate-400">${safeText(pendingLabel)} · ${safeText(item.payment_type || '')}</p>
+        </td>
+        <td class="px-4 py-3 align-top">
+          <p class="text-xs font-semibold text-slate-700">${safeText(lastPaymentLabel)}</p>
+          <p class="text-[11px] text-slate-400">Registro: ${safeText(registeredLabel)}</p>
+          ${nextDueLabel ? `<p class="text-[11px] text-amber-600">Próxima: ${safeText(nextDueLabel)}</p>` : ''}
         </td>
         <td class="px-4 py-3 align-top">${getParticipantAlertBadge(item.package_issue)}</td>
         <td class="px-4 py-3 align-top text-right">
-          <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeBookingId}">
-            Editar
-          </button>
+          <div class="flex flex-col gap-2 items-end">
+            <button type="button" class="btn-view-participant-booking px-3 py-2 rounded-lg border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50" data-booking-id="${safeBookingId}">
+              Ver detalle
+            </button>
+            <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeBookingId}">
+              Editar perfil
+            </button>
+          </div>
         </td>
       </tr>
     `;
   }).join('');
+
+  churchParticipantsTable.querySelectorAll('.btn-view-participant-booking').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const bookingId = btn.dataset.bookingId;
+      if (bookingId) openBookingInspectorModal(bookingId);
+    });
+  });
 
   churchParticipantsTable.querySelectorAll('.btn-edit-participant-booking').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -3138,12 +3240,15 @@ async function sendChurchInstallmentReminder(installmentId) {
 }
 
 async function loadChurchBookings(headers = {}) {
-  if (!churchBookingsList || !churchBookingsEmpty) return;
   ensureAllChurchesSelection();
   if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
-    churchBookingsEmpty.textContent = 'Selecciona una iglesia para ver los registros.';
-    churchBookingsEmpty.classList.remove('hidden');
-    churchBookingsList.classList.add('hidden');
+    if (churchBookingsEmpty && churchBookingsList) {
+      churchBookingsEmpty.textContent = 'Selecciona una iglesia para ver los registros.';
+      churchBookingsEmpty.classList.remove('hidden');
+      churchBookingsList.classList.add('hidden');
+    }
+    churchBookingsData = [];
+    updateChurchStats();
     return;
   }
   try {
@@ -3156,6 +3261,7 @@ async function loadChurchBookings(headers = {}) {
     churchBookingsData = payload.bookings || [];
     updateChurchBookingsView({ resetPage: true });
     updateChurchInstallmentsView({ resetPage: true });
+    updateChurchStats();
   } catch (err) {
     console.error(err);
   }
@@ -5374,6 +5480,12 @@ churchBookingsPageSize?.addEventListener('change', () => {
   updateChurchBookingsView({ resetPage: true });
 });
 churchParticipantsSearch?.addEventListener('input', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsSort?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsPayment?.addEventListener('change', () => {
   updateChurchParticipantsView({ resetPage: true });
 });
 churchParticipantsLodging?.addEventListener('change', () => {

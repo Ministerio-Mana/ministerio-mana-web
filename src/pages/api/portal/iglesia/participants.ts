@@ -173,6 +173,39 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
+  const { data: payments } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('id, booking_id, amount, currency, status, created_at')
+    .in('booking_id', bookingIds)
+    .order('created_at', { ascending: false });
+
+  const { data: installments } = await supabaseAdmin
+    .from('cumbre_installments')
+    .select('id, booking_id, due_date, amount, currency, status')
+    .in('booking_id', bookingIds);
+
+  const paidStatuses = new Set(['APPROVED', 'PAID']);
+  const lastPaymentByBooking = new Map<string, any>();
+  for (const payment of payments || []) {
+    const bookingId = String(payment.booking_id || '');
+    const status = String(payment.status || '').toUpperCase();
+    if (!bookingId || !paidStatuses.has(status) || lastPaymentByBooking.has(bookingId)) continue;
+    lastPaymentByBooking.set(bookingId, payment);
+  }
+
+  const nextInstallmentByBooking = new Map<string, any>();
+  for (const installment of installments || []) {
+    const bookingId = String(installment.booking_id || '');
+    const status = String(installment.status || '').toUpperCase();
+    if (!bookingId || !['PENDING', 'FAILED', 'OVERDUE'].includes(status)) continue;
+    const dueTime = Date.parse(String(installment.due_date || ''));
+    const existing = nextInstallmentByBooking.get(bookingId);
+    const existingDueTime = Date.parse(String(existing?.due_date || ''));
+    if (!existing || (Number.isFinite(dueTime) && (!Number.isFinite(existingDueTime) || dueTime < existingDueTime))) {
+      nextInstallmentByBooking.set(bookingId, installment);
+    }
+  }
+
   const bookingMap = new Map<string, any>();
   for (const booking of enrolledBookings || []) {
     bookingMap.set(booking.id, booking);
@@ -194,6 +227,15 @@ export const GET: APIRoute = async ({ request }) => {
     const primaryParticipant = list.find((participant) => participant.id === primaryId);
     const packageResolution = resolveParticipantPackagesForExport(booking, list);
     const participantCount = list.length;
+    const totalAmount = Number(booking.total_amount || 0);
+    const totalPaid = Number(booking.total_paid || 0);
+    const pendingAmount = Math.max(0, totalAmount - totalPaid);
+    const lastPayment = lastPaymentByBooking.get(String(bookingId)) || null;
+    const nextInstallment = nextInstallmentByBooking.get(String(bookingId)) || null;
+    const paymentMethod = String(booking.payment_method || '').toLowerCase();
+    const isManualPayment = paymentMethod === 'cash'
+      || paymentMethod === 'manual'
+      || booking.source === 'portal-iglesia';
 
     for (const participant of list) {
       const packageInfo = packageResolution.get(String(participant.id || ''));
@@ -228,9 +270,19 @@ export const GET: APIRoute = async ({ request }) => {
         church_input: booking.contact_church || '',
         registration_type: resolveRegistrationType(booking),
         booking_status: booking.status || '',
-        total_amount: Number(booking.total_amount || 0),
-        total_paid: Number(booking.total_paid || 0),
+        participant_count: participantCount,
+        total_amount: totalAmount,
+        total_paid: totalPaid,
+        pending_amount: pendingAmount,
         currency: booking.currency || '',
+        payment_type: isManualPayment ? 'Físico' : 'Online',
+        is_paid_full: booking.status === 'PAID' || totalPaid >= totalAmount,
+        last_payment_amount: lastPayment ? Number(lastPayment.amount || 0) : null,
+        last_payment_currency: lastPayment?.currency || booking.currency || '',
+        last_payment_at: lastPayment?.created_at || '',
+        next_due_amount: nextInstallment ? Number(nextInstallment.amount || 0) : null,
+        next_due_currency: nextInstallment?.currency || booking.currency || '',
+        next_due_date: nextInstallment?.due_date || '',
         created_at: booking.created_at || '',
       });
     }
