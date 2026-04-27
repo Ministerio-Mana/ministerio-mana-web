@@ -728,7 +728,7 @@ const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
 const MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY = 28;
 const DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE = 20;
-const DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE = 15;
+const DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE = 10;
 const DEFAULT_CHURCH_PAYMENTS_PAGE_SIZE = 10;
 const DEFAULT_CHURCH_INSTALLMENTS_PAGE_SIZE = 10;
 const DEFAULT_ADMIN_FOLLOWUPS_PAGE_SIZE = 12;
@@ -2643,72 +2643,75 @@ function renderChurchParticipants(list) {
     const alertBadge = item.package_issue ? getParticipantAlertBadge(item.package_issue) : '';
     const contactLine = [item.email, item.phone].filter(Boolean).join(' · ') || 'Sin contacto';
     return `
-      <article class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
-        <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_220px]">
+      <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px]">
           <div class="min-w-0">
-            <p class="break-words text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 mb-2">${safeText(churchLabel)}</p>
+            <p class="mb-1 break-words text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">${safeText(churchLabel)}</p>
             <div class="flex flex-wrap items-center gap-2">
-              <p class="shrink-0 text-lg md:text-xl font-black text-[#293C74]">#${safeText(item.booking_ref || '')}</p>
+              <p class="shrink-0 text-base md:text-lg font-black text-[#293C74]">#${safeText(item.booking_ref || '')}</p>
               <span class="text-slate-300">•</span>
-              <p class="min-w-0 break-words text-base font-bold text-slate-700">${safeText(item.participant_name || '-')}</p>
+              <p class="min-w-0 break-words text-sm md:text-base font-bold text-slate-700">${safeText(item.participant_name || '-')}</p>
             </div>
-            <div class="mt-4 flex flex-wrap items-center gap-2">
+            <div class="mt-3 flex flex-wrap items-center gap-1.5">
               ${getParticipantPaymentBadge(item)}
               ${getParticipantPaymentMethodBadge(item)}
               ${getParticipantPackageBadge(item)}
               ${getParticipantMenuBadge(item)}
               ${alertBadge}
             </div>
-            <div class="mt-5 grid grid-cols-1 gap-2 text-sm xl:grid-cols-2">
-              <p class="min-w-0 text-slate-600">
-                <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Último abono</span>
-                <span class="block break-words font-semibold">${safeText(lastPaymentLabel)}</span>
-              </p>
-              <p class="min-w-0 text-slate-600">
-                <span class="block text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Próximo abono</span>
-                <span class="block break-words font-semibold">${safeText(nextDueLabel)}</span>
-              </p>
-            </div>
           </div>
 
-          <div class="border-t border-slate-100 pt-4 2xl:border-l 2xl:border-t-0 2xl:pl-6 2xl:pt-0">
-            <div class="grid grid-cols-2 gap-4 text-left sm:text-right">
-              <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Pagado</p>
-                <p class="mt-1 break-words text-xl font-black text-brand-teal">${safeText(totalPaidLabel)}</p>
-              </div>
-              <div>
-                <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Total</p>
-                <p class="mt-1 break-words text-xl font-black text-[#293C74]">${safeText(totalAmountLabel)}</p>
-              </div>
+          <div class="grid grid-cols-3 gap-2 rounded-xl bg-slate-50/70 p-3 text-left xl:grid-cols-1 xl:text-right">
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Pagado</p>
+              <p class="break-words text-sm font-black text-brand-teal">${safeText(totalPaidLabel)}</p>
             </div>
-            <p class="mt-2 break-words text-left text-[11px] font-semibold text-slate-400 sm:text-right">${safeText(pendingLabel)}</p>
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Total</p>
+              <p class="break-words text-sm font-black text-[#293C74]">${safeText(totalAmountLabel)}</p>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Saldo</p>
+              <p class="break-words text-[11px] font-semibold text-slate-500">${safeText(pendingLabel)}</p>
+            </div>
           </div>
         </div>
 
-        <div class="mt-5 border-t border-slate-100 pt-5 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-end">
-          <div class="min-w-0 space-y-3">
-            <div class="inline-flex max-w-full items-center rounded-xl border px-3 py-2 text-xs font-bold ${groupBadgeClass}" title="${safeAttr(groupLabel)}">
+        <div class="mt-3 grid grid-cols-1 gap-2 border-t border-slate-100 pt-3 text-xs sm:grid-cols-3">
+          <p class="min-w-0 text-slate-600">
+            <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Último abono</span>
+            <span class="block break-words font-semibold">${safeText(lastPaymentLabel)}</span>
+          </p>
+          <p class="min-w-0 text-slate-600">
+            <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Próximo abono</span>
+            <span class="block break-words font-semibold">${safeText(nextDueLabel)}</span>
+          </p>
+          <p class="min-w-0 text-slate-600">
+            <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Registro</span>
+            <span class="block break-words font-semibold">${safeText(registeredLabel)}</span>
+          </p>
+        </div>
+
+        <div class="mt-3 grid gap-3 border-t border-slate-100 pt-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+          <div class="min-w-0">
+            <div class="inline-flex max-w-full items-center rounded-lg border px-2.5 py-1.5 text-[11px] font-bold ${groupBadgeClass}" title="${safeAttr(groupLabel)}">
               <span class="truncate">${safeText(groupLabel)}</span>
             </div>
-            <div class="grid grid-cols-1 gap-3 text-xs text-slate-500 md:grid-cols-2 xl:grid-cols-3">
-              <p class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Documento</span><br><span class="block break-words font-semibold text-slate-700">${safeText(docLabel)}</span></p>
-              <p class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Origen</span><br><span class="block break-words font-semibold text-slate-700">${safeText(originLabel)}</span></p>
-              <p class="min-w-0 md:col-span-2 xl:col-span-1"><span class="font-bold text-slate-400 uppercase tracking-widest">Contacto</span><br><span class="block break-all font-semibold leading-relaxed text-slate-700">${safeText(contactLine)}</span></p>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+              <span class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Doc:</span> <span class="break-words font-semibold text-slate-700">${safeText(docLabel)}</span></span>
+              <span class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Origen:</span> <span class="break-words font-semibold text-slate-700">${safeText(originLabel)}</span></span>
+              <span class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Contacto:</span> <span class="break-all font-semibold text-slate-700">${safeText(contactLine)}</span></span>
+              <span class="min-w-0 break-words text-slate-400">${safeText(ageLabel)}${item.gender ? ` · ${safeText(item.gender)}` : ''} · ${safeText(item.registration_type || '')}</span>
             </div>
-            <p class="break-words text-[11px] text-slate-400">${safeText(ageLabel)}${item.gender ? ` · ${safeText(item.gender)}` : ''} · ${safeText(item.registration_type || '')}</p>
           </div>
 
-          <div class="min-w-0 flex flex-col items-stretch gap-3 2xl:items-end">
-            <p class="break-words text-xs md:text-sm font-semibold text-slate-400 2xl:text-right">Registro: ${safeText(registeredLabel)}</p>
-            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap 2xl:justify-end">
-              <button type="button" class="btn-view-participant-booking min-w-[132px] px-5 py-3 rounded-xl border border-slate-200 bg-white text-[#293C74] text-sm font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
-                Ver detalle
-              </button>
-              <button type="button" class="btn-edit-participant-booking min-w-[132px] px-5 py-3 rounded-xl border border-brand-teal text-brand-teal text-sm font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
-                Editar perfil
-              </button>
-            </div>
+          <div class="flex flex-col gap-2 sm:flex-row xl:justify-end">
+            <button type="button" class="btn-view-participant-booking px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+              Ver detalle
+            </button>
+            <button type="button" class="btn-edit-participant-booking px-4 py-2.5 rounded-xl border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+              Editar perfil
+            </button>
           </div>
         </div>
       </article>
