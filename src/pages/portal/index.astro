@@ -573,6 +573,76 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       </div>
                    </div>
 
+                   <!-- Participant Review Table -->
+                   <div class="bg-white border border-slate-100 rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden">
+                      <div class="px-8 py-6 border-b border-slate-50 flex flex-col gap-4">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div>
+                            <h3 class="text-lg font-bold text-[#293C74]">Revisión de Participantes</h3>
+                            <p class="text-xs text-slate-500 mt-1">Alojamiento, alimentación, origen y alertas de paquete.</p>
+                          </div>
+                          <span id="church-participants-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 resultados</span>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
+                          <div class="relative">
+                            <input id="church-participants-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74] text-xs font-medium" placeholder="Buscar nombre, documento, email, ciudad, país o iglesia...">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                          </div>
+                          <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                            <select id="church-participants-lodging" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Alojamiento</option>
+                              <option value="Con alojamiento">Con alojamiento</option>
+                              <option value="Sin alojamiento">Sin alojamiento</option>
+                              <option value="Nino 0-4">Niños 0-4</option>
+                              <option value="Nino 5-10">Niños 5-10</option>
+                            </select>
+                            <select id="church-participants-menu" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Menú</option>
+                              <option value="TRADICIONAL">Tradicional</option>
+                              <option value="VEGETARIANO">Vegetariano</option>
+                              <option value="INFANTIL">Infantil</option>
+                              <option value="SIN ALIMENTACION">Sin alimentación</option>
+                            </select>
+                            <select id="church-participants-alert" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Alertas</option>
+                              <option value="with">Con alerta</option>
+                              <option value="corrected">Corregidos en export</option>
+                              <option value="review">Por revisar</option>
+                            </select>
+                            <select id="church-participants-page-size" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="15" selected>15</option>
+                              <option value="30">30</option>
+                              <option value="60">60</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="p-6">
+                        <div id="church-participants-empty" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
+                          <p class="text-sm text-slate-600">No hay participantes para mostrar.</p>
+                        </div>
+                        <div id="church-participants-table-wrap" class="hidden overflow-x-auto rounded-2xl border border-slate-100">
+                          <table class="min-w-[1120px] w-full text-left">
+                            <thead class="bg-slate-50 border-b border-slate-100">
+                              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                                <th class="px-4 py-3">Participante</th>
+                                <th class="px-4 py-3">Documento</th>
+                                <th class="px-4 py-3">Alojamiento</th>
+                                <th class="px-4 py-3">Menú</th>
+                                <th class="px-4 py-3">Origen</th>
+                                <th class="px-4 py-3">Iglesia</th>
+                                <th class="px-4 py-3">Pago</th>
+                                <th class="px-4 py-3">Alerta</th>
+                                <th class="px-4 py-3 text-right">Acción</th>
+                              </tr>
+                            </thead>
+                            <tbody id="church-participants-table" class="divide-y divide-slate-100 bg-white"></tbody>
+                          </table>
+                        </div>
+                        <div id="church-participants-pagination" class="hidden mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
+                      </div>
+                   </div>
+
                    <!-- Secondary Sections Grid -->
                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                        <!-- Installments -->

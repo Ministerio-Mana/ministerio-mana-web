@@ -109,6 +109,16 @@ const churchBookingsSort = document.getElementById('church-bookings-sort');
 const churchBookingsPageSize = document.getElementById('church-bookings-page-size');
 const churchBookingsCount = document.getElementById('church-bookings-count');
 const churchBookingsPagination = document.getElementById('church-bookings-pagination');
+const churchParticipantsSearch = document.getElementById('church-participants-search');
+const churchParticipantsLodging = document.getElementById('church-participants-lodging');
+const churchParticipantsMenu = document.getElementById('church-participants-menu');
+const churchParticipantsAlert = document.getElementById('church-participants-alert');
+const churchParticipantsPageSize = document.getElementById('church-participants-page-size');
+const churchParticipantsResultCount = document.getElementById('church-participants-count');
+const churchParticipantsEmpty = document.getElementById('church-participants-empty');
+const churchParticipantsTableWrap = document.getElementById('church-participants-table-wrap');
+const churchParticipantsTable = document.getElementById('church-participants-table');
+const churchParticipantsPagination = document.getElementById('church-participants-pagination');
 const churchPaymentsEmpty = document.getElementById('church-payments-empty');
 const churchPaymentsList = document.getElementById('church-payments-list');
 const churchPaymentsSearch = document.getElementById('church-payments-search');
@@ -700,6 +710,8 @@ let selectorCountryFilter = '';
 let selectorSearchFilter = '';
 let churchBookingsData = [];
 let churchBookingsPage = 1;
+let churchParticipantsData = [];
+let churchParticipantsPage = 1;
 let churchMembersData = [];
 let churchPaymentsData = [];
 let churchPaymentsPage = 1;
@@ -714,6 +726,7 @@ const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
 const MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY = 28;
 const DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE = 20;
+const DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE = 15;
 const DEFAULT_CHURCH_PAYMENTS_PAGE_SIZE = 10;
 const DEFAULT_CHURCH_INSTALLMENTS_PAGE_SIZE = 10;
 const DEFAULT_ADMIN_FOLLOWUPS_PAGE_SIZE = 12;
@@ -1573,6 +1586,7 @@ async function loadDashboardData(authResult) {
         console.error('Error cargando selector de iglesias:', err);
       }
       backgroundTasks.push(loadChurchBookings(headers));
+      backgroundTasks.push(loadChurchParticipants(headers));
       backgroundTasks.push(loadChurchPayments(headers));
       backgroundTasks.push(loadChurchInstallments(headers));
       backgroundTasks.push(loadChurchMembers(headers));
@@ -1911,6 +1925,7 @@ if (churchSelectorInput) {
 
       await Promise.all([
         loadChurchBookings(portalAuthHeaders),
+        loadChurchParticipants(portalAuthHeaders),
         loadChurchInstallments(portalAuthHeaders),
         loadChurchPayments(portalAuthHeaders),
         loadChurchMembers(portalAuthHeaders),
@@ -2374,6 +2389,211 @@ function updateChurchBookingsView(options = {}) {
   const meta = buildChurchBookingsMeta();
   const filtered = filterChurchBookings(churchBookingsData, meta);
   renderChurchBookings(filtered, meta);
+}
+
+function filterChurchParticipants(list) {
+  const query = normalizeGeoToken(churchParticipantsSearch?.value || '');
+  const lodging = churchParticipantsLodging?.value || '';
+  const menu = churchParticipantsMenu?.value || '';
+  const alert = churchParticipantsAlert?.value || '';
+
+  return (list || []).filter((item) => {
+    const searchable = [
+      item.participant_name,
+      item.titular_reserva,
+      item.responsable_grupo,
+      item.document_type,
+      item.document_number,
+      item.email,
+      item.phone,
+      item.nationality,
+      item.city,
+      item.church_final,
+      item.church_catalog,
+      item.church_input,
+      item.booking_ref,
+      item.booking_id,
+    ].filter(Boolean).map(normalizeGeoToken).join(' ');
+
+    if (query && !searchable.includes(query)) return false;
+    if (lodging && item.package_label !== lodging) return false;
+    if (menu && item.diet_label !== menu) return false;
+    if (alert === 'with' && !item.package_issue) return false;
+    if (alert === 'corrected' && item.package_issue !== 'CORREGIDO_EN_EXPORT_POR_TOTAL') return false;
+    if (alert === 'review' && (!item.package_issue || item.package_issue === 'CORREGIDO_EN_EXPORT_POR_TOTAL')) return false;
+    return true;
+  });
+}
+
+function getChurchParticipantsPageSize() {
+  const raw = Number(churchParticipantsPageSize?.value || DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE);
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE;
+  return raw;
+}
+
+function paginateChurchParticipants(list) {
+  const safeList = list || [];
+  const pageSize = getChurchParticipantsPageSize();
+  const total = safeList.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (churchParticipantsPage > totalPages) churchParticipantsPage = totalPages;
+  if (churchParticipantsPage < 1) churchParticipantsPage = 1;
+  const start = (churchParticipantsPage - 1) * pageSize;
+  const end = Math.min(start + pageSize, total);
+  return {
+    items: safeList.slice(start, end),
+    total,
+    pageSize,
+    totalPages,
+    page: churchParticipantsPage,
+    start,
+    end,
+  };
+}
+
+function getParticipantPackageBadge(item) {
+  const label = item?.package_label || '-';
+  const className = label === 'Con alojamiento'
+    ? 'bg-[#293C74]/10 text-[#293C74] border-[#293C74]/10'
+    : label === 'Sin alojamiento'
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+      : 'bg-sky-50 text-sky-700 border-sky-100';
+  return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}">${safeText(label)}</span>`;
+}
+
+function getParticipantAlertBadge(issue) {
+  if (!issue) {
+    return '<span class="text-[11px] text-slate-400">-</span>';
+  }
+  const isCorrected = issue === 'CORREGIDO_EN_EXPORT_POR_TOTAL';
+  const className = isCorrected
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    : 'bg-amber-50 text-amber-700 border-amber-100';
+  const label = isCorrected ? 'Corregido export' : 'Revisar';
+  return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}" title="${safeAttr(issue)}">${safeText(label)}</span>`;
+}
+
+function renderChurchParticipantsPagination(meta) {
+  if (!churchParticipantsPagination) return;
+  if (!meta || meta.total <= 0) {
+    churchParticipantsPagination.innerHTML = '';
+    churchParticipantsPagination.classList.add('hidden');
+    return;
+  }
+
+  const canPrev = meta.page > 1;
+  const canNext = meta.page < meta.totalPages;
+  const safeStart = meta.start + 1;
+  const safeEnd = meta.end;
+  churchParticipantsPagination.innerHTML = `
+    <span class="font-medium text-slate-500">Mostrando ${safeStart}-${safeEnd} de ${meta.total}</span>
+    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+      <button type="button" class="church-participants-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+        Anterior
+      </button>
+      <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
+      <button type="button" class="church-participants-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+        Siguiente
+      </button>
+    </div>
+  `;
+  churchParticipantsPagination.classList.remove('hidden');
+
+  churchParticipantsPagination.querySelectorAll('.church-participants-page-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = Number(btn.dataset.page || 0);
+      if (!Number.isFinite(next) || next < 1 || next > meta.totalPages) return;
+      churchParticipantsPage = next;
+      updateChurchParticipantsView();
+    });
+  });
+}
+
+function renderChurchParticipants(list) {
+  if (!churchParticipantsTable || !churchParticipantsEmpty || !churchParticipantsTableWrap) return;
+  churchParticipantsTable.innerHTML = '';
+  if (churchParticipantsResultCount) {
+    churchParticipantsResultCount.textContent = '0 resultados';
+  }
+  if (churchParticipantsPagination) {
+    churchParticipantsPagination.innerHTML = '';
+    churchParticipantsPagination.classList.add('hidden');
+  }
+
+  if (!list.length) {
+    churchParticipantsEmpty.classList.remove('hidden');
+    churchParticipantsTableWrap.classList.add('hidden');
+    return;
+  }
+
+  churchParticipantsEmpty.classList.add('hidden');
+  churchParticipantsTableWrap.classList.remove('hidden');
+  const paginated = paginateChurchParticipants(list);
+  if (churchParticipantsResultCount) {
+    churchParticipantsResultCount.textContent = `${paginated.total} resultado${paginated.total === 1 ? '' : 's'}`;
+  }
+
+  churchParticipantsTable.innerHTML = paginated.items.map((item) => {
+    const safeBookingId = safeAttr(item.booking_id || '');
+    const ageLabel = item.age != null ? `${item.age} años` : 'Edad n/d';
+    const docLabel = [item.document_type, item.document_number].filter(Boolean).join(' ') || '-';
+    const originLabel = [item.city, item.nationality].filter(Boolean).join(' · ') || '-';
+    const churchLabel = item.church_final || item.church_input || '-';
+    const paymentLabel = `${formatCurrency(item.total_paid, item.currency)} / ${formatCurrency(item.total_amount, item.currency)}`;
+    const menuLabel = item.diet_label || '-';
+    const ownerLabel = item.is_payment_owner ? '<span class="text-[10px] text-brand-teal font-bold">(Responsable)</span>' : '';
+    return `
+      <tr class="hover:bg-slate-50/70 transition-colors">
+        <td class="px-4 py-3 align-top">
+          <p class="text-sm font-bold text-[#293C74]">${safeText(item.participant_name || '-')}</p>
+          <p class="text-[11px] text-slate-500">#${safeText(item.booking_ref || '')} · ${safeText(item.reserva_tipo || '')} ${ownerLabel}</p>
+          <p class="text-[11px] text-slate-400">${safeText(item.titular_reserva || '')}</p>
+        </td>
+        <td class="px-4 py-3 align-top">
+          <p class="text-xs font-semibold text-slate-700">${safeText(docLabel)}</p>
+          <p class="text-[11px] text-slate-400">${safeText(ageLabel)}${item.gender ? ` · ${safeText(item.gender)}` : ''}</p>
+        </td>
+        <td class="px-4 py-3 align-top">${getParticipantPackageBadge(item)}</td>
+        <td class="px-4 py-3 align-top">
+          <p class="text-xs font-semibold text-slate-700">${safeText(menuLabel)}</p>
+        </td>
+        <td class="px-4 py-3 align-top">
+          <p class="text-xs text-slate-600">${safeText(originLabel)}</p>
+          <p class="text-[11px] text-slate-400">${safeText(item.phone || '')}</p>
+        </td>
+        <td class="px-4 py-3 align-top">
+          <p class="text-xs text-slate-600 max-w-[180px] truncate" title="${safeAttr(churchLabel)}">${safeText(churchLabel)}</p>
+          <p class="text-[11px] text-slate-400">${safeText(item.registration_type || '')}</p>
+        </td>
+        <td class="px-4 py-3 align-top">
+          <p class="text-xs font-bold text-[#293C74]">${safeText(paymentLabel)}</p>
+          <p class="text-[11px] text-slate-400">${safeText(item.booking_status || '')}</p>
+        </td>
+        <td class="px-4 py-3 align-top">${getParticipantAlertBadge(item.package_issue)}</td>
+        <td class="px-4 py-3 align-top text-right">
+          <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeBookingId}">
+            Editar
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  churchParticipantsTable.querySelectorAll('.btn-edit-participant-booking').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const bookingId = btn.dataset.bookingId;
+      if (bookingId) openEditBookingModal(bookingId);
+    });
+  });
+
+  renderChurchParticipantsPagination(paginated);
+}
+
+function updateChurchParticipantsView(options = {}) {
+  if (options.resetPage) {
+    churchParticipantsPage = 1;
+  }
+  renderChurchParticipants(filterChurchParticipants(churchParticipantsData));
 }
 
 function updateChurchPaymentsView(options = {}) {
@@ -2938,6 +3158,33 @@ async function loadChurchBookings(headers = {}) {
     updateChurchInstallmentsView({ resetPage: true });
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function loadChurchParticipants(headers = {}) {
+  if (!churchParticipantsTable || !churchParticipantsEmpty || !churchParticipantsTableWrap) return;
+  ensureAllChurchesSelection();
+  if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
+    churchParticipantsEmpty.textContent = 'Selecciona una iglesia para ver participantes.';
+    churchParticipantsEmpty.classList.remove('hidden');
+    churchParticipantsTableWrap.classList.add('hidden');
+    return;
+  }
+  try {
+    const url = new URL('/api/portal/iglesia/participants', window.location.origin);
+    const resolvedId = resolveSelectedChurchId();
+    if (resolvedId) url.searchParams.set('churchId', resolvedId);
+    const res = await fetch(url.toString(), { headers, credentials: 'include' });
+    const payload = await res.json();
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'No se pudo cargar');
+    churchParticipantsData = payload.participants || [];
+    updateChurchParticipantsView({ resetPage: true });
+  } catch (err) {
+    console.error(err);
+    churchParticipantsData = [];
+    churchParticipantsEmpty.textContent = err?.message || 'No se pudo cargar participantes.';
+    churchParticipantsEmpty.classList.remove('hidden');
+    churchParticipantsTableWrap.classList.add('hidden');
   }
 }
 
@@ -5125,6 +5372,21 @@ churchBookingsSort?.addEventListener('change', () => {
 });
 churchBookingsPageSize?.addEventListener('change', () => {
   updateChurchBookingsView({ resetPage: true });
+});
+churchParticipantsSearch?.addEventListener('input', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsLodging?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsMenu?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsAlert?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsPageSize?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
 });
 churchPaymentsSearch?.addEventListener('input', () => {
   updateChurchPaymentsView({ resetPage: true });

@@ -72,7 +72,8 @@ function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number {
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
   const ageValue = String(ageRaw ?? '').trim();
   const age = ageValue ? Number(ageValue) : null;
-  const lodging = String(lodgingRaw || '').toLowerCase() === 'yes';
+  const lodgingValue = String(lodgingRaw ?? '').trim().toLowerCase();
+  const lodging = lodgingRaw === true || ['yes', 'si', 'sí', 'lodging', 'con alojamiento', 'con_alojamiento', 'with_lodging'].includes(lodgingValue);
   if (Number.isFinite(age)) {
     if ((age as number) <= 4) return 'child_0_7';
     if ((age as number) <= 10) return 'child_7_13';

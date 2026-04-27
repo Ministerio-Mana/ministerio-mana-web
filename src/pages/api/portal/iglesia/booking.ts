@@ -104,10 +104,15 @@ function resolveParticipantAge(participant: any): number | null {
   return ageFromBirthdate(participant?.birthdate);
 }
 
+function isNoLodgingChoice(raw: unknown): boolean {
+  if (raw === false) return true;
+  const value = String(raw ?? '').trim().toLowerCase();
+  return ['no_lodging', 'no', 'false', '0', 'sin alojamiento', 'sin_alojamiento', 'without_lodging'].includes(value);
+}
+
 function packageTypeFromAge(ageRaw: unknown, lodgingRaw: unknown): PackageType {
   const age = Number(ageRaw);
-  const lodgingValue = String(lodgingRaw || '').trim().toLowerCase();
-  const lodging = !['no_lodging', 'no', 'sin alojamiento', 'sin_alojamiento', 'without_lodging'].includes(lodgingValue);
+  const lodging = !isNoLodgingChoice(lodgingRaw);
   if (Number.isFinite(age)) {
     if (age <= 4) return 'child_0_7';
     if (age <= 10) return 'child_7_13';

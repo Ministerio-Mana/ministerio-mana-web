@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
 
 export const prerender = false;
 
@@ -369,6 +370,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'email',
     'alimentacion',
     'tipo_alojamiento',
+    'alerta_paquete',
     'iglesia_final',
     'iglesia_catalogo',
     'iglesia_escrita',
@@ -421,6 +423,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     const churchName = booking?.church?.name || '';
     const churchInput = booking?.contact_church || '';
     const iglesiaFinal = resolveChurchFinal(booking);
+    const packageResolution = resolveParticipantPackagesForExport(booking, list);
 
     for (const participant of list) {
       const docType = participant.document_type || booking?.contact_document_type || '';
@@ -429,7 +432,8 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       const gender = participant.gender || '';
       const nationality = participant.nationality || booking?.contact_country || '';
       const diet = formatDietLabel(participant.diet_type);
-      const lodging = formatLodgingLabel(participant.package_type);
+      const packageInfo = packageResolution.get(String(participant.id || ''));
+      const lodging = formatLodgingLabel(packageInfo?.packageType ?? participant.package_type);
       const isPaymentOwner = Boolean(primaryId && participant?.id === primaryId);
 
       records.push({
@@ -450,6 +454,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         email: participant.email ?? booking?.contact_email ?? '',
         alimentacion: diet,
         tipo_alojamiento: lodging,
+        alerta_paquete: packageInfo?.issue || '',
         iglesia_final: iglesiaFinal,
         iglesia_catalogo: churchName,
         iglesia_escrita: churchInput,
