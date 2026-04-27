@@ -121,6 +121,7 @@ const churchPaymentsPageSize = document.getElementById('church-payments-page-siz
 const churchPaymentsCount = document.getElementById('church-payments-count');
 const churchPaymentsPagination = document.getElementById('church-payments-pagination');
 const churchExportBtn = document.getElementById('church-export-btn');
+const churchAuditBtn = document.getElementById('church-audit-btn');
 const churchExportStatus = document.getElementById('church-export-status');
 const churchInstallmentsEmpty = document.getElementById('church-installments-empty');
 const churchInstallmentsList = document.getElementById('church-installments-list');
@@ -1323,6 +1324,7 @@ async function loadDashboardData(authResult) {
     portalIsAdmin = portalRole === 'admin' || portalRole === 'superadmin';
     portalIsSuperadmin = portalRole === 'superadmin';
     portalIsCountryPastor = portalRole === 'national_pastor';
+    churchAuditBtn?.classList.toggle('hidden', !portalIsAdmin);
 
     dlog('[DEBUG] Data loaded. Profile:', portalProfile);
 
@@ -3099,6 +3101,41 @@ async function exportChurchBookings() {
   } catch (err) {
     console.error(err);
     churchExportStatus.textContent = err?.message || 'No se pudo exportar.';
+  }
+}
+
+async function exportCumbrePackageAudit() {
+  if (!churchAuditBtn || !churchExportStatus) return;
+  if (!portalIsAdmin) {
+    churchExportStatus.textContent = 'Solo administradores pueden descargar la auditoría.';
+    return;
+  }
+  churchAuditBtn.disabled = true;
+  churchExportStatus.textContent = 'Generando auditoría de paquetes...';
+  try {
+    const url = new URL('/api/portal/admin/cumbre/package-audit', window.location.origin);
+    url.searchParams.set('format', 'csv');
+    url.searchParams.set('scope', 'participants');
+    const res = await fetch(url.toString(), { headers: portalAuthHeaders, credentials: 'include' });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.error || 'No se pudo descargar auditoría');
+    }
+    const blob = await res.blob();
+    const filename = res.headers.get('content-disposition')?.split('filename=')?.[1]?.replace(/"/g, '') || 'cumbre-package-audit-participants.csv';
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+    link.remove();
+    churchExportStatus.textContent = 'Auditoría descargada. Revisa primero antes de corregir datos.';
+  } catch (err) {
+    console.error(err);
+    churchExportStatus.textContent = err?.message || 'No se pudo descargar auditoría.';
+  } finally {
+    churchAuditBtn.disabled = false;
   }
 }
 
@@ -5130,6 +5167,9 @@ churchMembersRole?.addEventListener('change', () => {
 });
 churchExportBtn?.addEventListener('click', () => {
   void exportChurchBookings();
+});
+churchAuditBtn?.addEventListener('click', () => {
+  void exportCumbrePackageAudit();
 });
 
 
