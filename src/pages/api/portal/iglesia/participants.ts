@@ -246,6 +246,7 @@ export const GET: APIRoute = async ({ request }) => {
         booking_id: bookingId,
         booking_ref: String(bookingId).slice(0, 8).toUpperCase(),
         participant_name: participant.full_name || '',
+        relationship: participant.relationship || '',
         titular_reserva: booking.contact_name || '',
         responsable_grupo: primaryParticipant?.full_name || booking.contact_name || '',
         is_payment_owner: Boolean(primaryId && participant.id === primaryId),

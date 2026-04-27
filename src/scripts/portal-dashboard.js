@@ -110,6 +110,7 @@ const churchBookingsPageSize = document.getElementById('church-bookings-page-siz
 const churchBookingsCount = document.getElementById('church-bookings-count');
 const churchBookingsPagination = document.getElementById('church-bookings-pagination');
 const churchParticipantsSearch = document.getElementById('church-participants-search');
+const churchParticipantsViewToggle = document.getElementById('church-participants-view-toggle');
 const churchParticipantsSort = document.getElementById('church-participants-sort');
 const churchParticipantsPayment = document.getElementById('church-participants-payment');
 const churchParticipantsLodging = document.getElementById('church-participants-lodging');
@@ -714,6 +715,7 @@ let churchBookingsData = [];
 let churchBookingsPage = 1;
 let churchParticipantsData = [];
 let churchParticipantsPage = 1;
+let churchParticipantsViewMode = 'cards';
 let churchMembersData = [];
 let churchPaymentsData = [];
 let churchPaymentsPage = 1;
@@ -2441,6 +2443,21 @@ function getChurchParticipantsPageSize() {
   return raw;
 }
 
+function getChurchParticipantsViewMode() {
+  return churchParticipantsViewMode === 'table' ? 'table' : 'cards';
+}
+
+function setChurchParticipantsViewMode(mode) {
+  churchParticipantsViewMode = mode === 'table' ? 'table' : 'cards';
+  churchParticipantsViewToggle?.querySelectorAll('.church-participants-view-btn').forEach((btn) => {
+    const isActive = btn.dataset.view === churchParticipantsViewMode;
+    btn.classList.toggle('bg-[#293C74]', isActive);
+    btn.classList.toggle('text-white', isActive);
+    btn.classList.toggle('shadow-sm', isActive);
+    btn.classList.toggle('text-slate-500', !isActive);
+  });
+}
+
 function getParticipantActivityTime(item) {
   const lastPayment = toDate(item?.last_payment_at)?.getTime() || 0;
   const created = toDate(item?.created_at)?.getTime() || 0;
@@ -2582,6 +2599,130 @@ function renderChurchParticipantsPagination(meta) {
   });
 }
 
+function renderChurchParticipantsTableRows(items) {
+  const rows = (items || []).map((item) => {
+    const safeBookingId = safeAttr(item.booking_id || '');
+    const participantCountLabel = Number(item.participant_count || 0) > 1
+      ? `${item.participant_count} inscritos`
+      : 'Individual';
+    const groupOwner = item.responsable_grupo || item.titular_reserva || 'Responsable';
+    const groupLabel = Number(item.participant_count || 0) > 1
+      ? item.is_payment_owner
+        ? `Responsable del grupo · ${participantCountLabel}`
+        : `Pertenece al grupo de ${groupOwner} · ${participantCountLabel}`
+      : participantCountLabel;
+    const docLabel = [item.document_type, item.document_number].filter(Boolean).join(' ') || '-';
+    const ageLabel = item.age != null ? `${item.age} años` : 'Edad n/d';
+    const originLabel = [item.city, item.nationality].filter(Boolean).join(' · ') || '-';
+    const churchLabel = item.church_final || item.church_input || '-';
+    const contactLine = [item.email, item.phone].filter(Boolean).join(' · ') || 'Sin contacto';
+    const totalPaidLabel = formatCurrency(item.total_paid, item.currency);
+    const totalAmountLabel = formatCurrency(item.total_amount, item.currency);
+    const pendingAmount = Number(item.pending_amount || 0);
+    const pendingLabel = pendingAmount > 0 ? formatCurrency(pendingAmount, item.currency) : 'Sin saldo';
+    const lastPaymentLabel = item.last_payment_at
+      ? `${formatCurrency(item.last_payment_amount, item.last_payment_currency || item.currency)} · ${formatDate(item.last_payment_at)}`
+      : 'Sin abono aprobado';
+    const nextDueLabel = item.next_due_date
+      ? `${formatCurrency(item.next_due_amount, item.next_due_currency || item.currency)} · ${formatDate(item.next_due_date)}`
+      : pendingAmount > 0
+        ? `${formatCurrency(pendingAmount, item.currency)} · Sin fecha`
+        : '—';
+    const registeredLabel = item.created_at ? formatDateTime(item.created_at) : '-';
+    const packageOriginal = item.package_original_type && item.package_original_type !== item.package_type
+      ? `Original: ${item.package_original_type}`
+      : '';
+
+    return `
+      <tr class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70">
+        <td class="min-w-[190px] px-4 py-3 align-top">
+          <p class="text-sm font-black text-[#293C74]">#${safeText(item.booking_ref || '')}</p>
+          <p class="text-[11px] font-semibold text-slate-500">${safeText(item.reserva_tipo || '')} · ${safeText(participantCountLabel)}</p>
+          <p class="mt-1 text-[11px] text-slate-500">Titular: ${safeText(item.titular_reserva || '-')}</p>
+          <p class="text-[11px] text-slate-500">Responsable: ${safeText(item.responsable_grupo || '-')}</p>
+        </td>
+        <td class="min-w-[240px] px-4 py-3 align-top">
+          <p class="text-sm font-bold text-slate-800">${safeText(item.participant_name || '-')}</p>
+          <p class="mt-1 text-[11px] font-semibold text-brand-teal">${safeText(groupLabel)}</p>
+          <p class="text-[11px] text-slate-500">${safeText(item.relationship || 'Sin relación registrada')}</p>
+        </td>
+        <td class="min-w-[160px] px-4 py-3 align-top">
+          <p class="text-xs font-bold text-slate-700">${safeText(docLabel)}</p>
+          <p class="text-[11px] text-slate-500">${safeText(ageLabel)}${item.birthdate ? ` · ${safeText(item.birthdate)}` : ''}</p>
+          <p class="text-[11px] text-slate-500">${safeText(item.gender || 'Sin género')}</p>
+        </td>
+        <td class="min-w-[240px] px-4 py-3 align-top">
+          <p class="break-all text-xs font-semibold text-slate-700">${safeText(item.email || '-')}</p>
+          <p class="break-words text-[11px] text-slate-500">${safeText(item.phone || '-')}</p>
+        </td>
+        <td class="min-w-[230px] px-4 py-3 align-top">
+          <p class="break-words text-xs font-semibold text-slate-700">${safeText(originLabel)}</p>
+          <p class="break-words text-[11px] text-slate-500">${safeText(churchLabel)}</p>
+          <p class="text-[11px] text-slate-500">${safeText(item.registration_type || '')}</p>
+        </td>
+        <td class="min-w-[190px] px-4 py-3 align-top">
+          <div class="flex flex-wrap gap-1.5">
+            ${getParticipantPackageBadge(item)}
+            ${getParticipantMenuBadge(item)}
+          </div>
+          ${packageOriginal ? `<p class="mt-1 text-[11px] text-slate-400">${safeText(packageOriginal)}</p>` : ''}
+        </td>
+        <td class="min-w-[190px] px-4 py-3 align-top">
+          <div class="flex flex-wrap gap-1.5">
+            ${getParticipantPaymentBadge(item)}
+            ${getParticipantPaymentMethodBadge(item)}
+          </div>
+          <p class="mt-2 text-[11px] text-slate-600"><span class="font-bold">Pagado:</span> ${safeText(totalPaidLabel)}</p>
+          <p class="text-[11px] text-slate-600"><span class="font-bold">Total:</span> ${safeText(totalAmountLabel)}</p>
+          <p class="text-[11px] text-slate-600"><span class="font-bold">Saldo:</span> ${safeText(pendingLabel)}</p>
+          <p class="text-[11px] text-slate-400">${safeText(item.booking_status || '')}</p>
+        </td>
+        <td class="min-w-[220px] px-4 py-3 align-top">
+          <p class="text-[11px] text-slate-600"><span class="font-bold uppercase tracking-widest text-slate-400">Último:</span> ${safeText(lastPaymentLabel)}</p>
+          <p class="mt-1 text-[11px] text-slate-600"><span class="font-bold uppercase tracking-widest text-slate-400">Próximo:</span> ${safeText(nextDueLabel)}</p>
+          <p class="mt-1 text-[11px] text-slate-600"><span class="font-bold uppercase tracking-widest text-slate-400">Registro:</span> ${safeText(registeredLabel)}</p>
+        </td>
+        <td class="min-w-[150px] px-4 py-3 align-top">
+          ${getParticipantAlertBadge(item.package_issue)}
+          ${item.package_issue ? `<p class="mt-1 break-words text-[10px] text-slate-400">${safeText(item.package_issue)}</p>` : ''}
+        </td>
+        <td class="min-w-[150px] px-4 py-3 align-top">
+          <div class="flex flex-col gap-2">
+            <button type="button" class="btn-view-participant-booking px-3 py-2 rounded-lg border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+              Ver detalle
+            </button>
+            <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+              Editar perfil
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="overflow-x-auto rounded-2xl border border-slate-100">
+      <table class="min-w-[1900px] w-full text-left">
+        <thead class="bg-slate-50">
+          <tr class="border-b border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <th class="px-4 py-3">Reserva</th>
+            <th class="px-4 py-3">Participante y grupo</th>
+            <th class="px-4 py-3">Documento</th>
+            <th class="px-4 py-3">Contacto</th>
+            <th class="px-4 py-3">Origen / Iglesia</th>
+            <th class="px-4 py-3">Alojamiento / Menú</th>
+            <th class="px-4 py-3">Pago</th>
+            <th class="px-4 py-3">Fechas</th>
+            <th class="px-4 py-3">Alerta</th>
+            <th class="px-4 py-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white">${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderChurchParticipants(list) {
   if (!churchParticipantsTable || !churchParticipantsEmpty || !churchParticipantsTableWrap) return;
   churchParticipantsTable.innerHTML = '';
@@ -2607,6 +2748,29 @@ function renderChurchParticipants(list) {
     churchParticipantsResultCount.textContent = `${paginated.total} resultado${paginated.total === 1 ? '' : 's'}`;
   }
 
+  const viewMode = getChurchParticipantsViewMode();
+  if (viewMode === 'table') {
+    churchParticipantsTable.className = '';
+    churchParticipantsTable.innerHTML = renderChurchParticipantsTableRows(paginated.items);
+    churchParticipantsTable.querySelectorAll('.btn-view-participant-booking').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const bookingId = btn.dataset.bookingId;
+        if (bookingId) openBookingInspectorModal(bookingId);
+      });
+    });
+
+    churchParticipantsTable.querySelectorAll('.btn-edit-participant-booking').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const bookingId = btn.dataset.bookingId;
+        if (bookingId) openEditBookingModal(bookingId);
+      });
+    });
+
+    renderChurchParticipantsPagination(paginated);
+    return;
+  }
+
+  churchParticipantsTable.className = 'space-y-3';
   churchParticipantsTable.innerHTML = paginated.items.map((item) => {
     const safeBookingId = safeAttr(item.booking_id || '');
     const ageLabel = item.age != null ? `${item.age} años` : 'Edad n/d';
@@ -5525,6 +5689,12 @@ churchBookingsPageSize?.addEventListener('change', () => {
 });
 churchParticipantsSearch?.addEventListener('input', () => {
   updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsViewToggle?.addEventListener('click', (event) => {
+  const target = event.target.closest('.church-participants-view-btn');
+  if (!target) return;
+  setChurchParticipantsViewMode(target.dataset.view || 'cards');
+  updateChurchParticipantsView();
 });
 churchParticipantsSort?.addEventListener('change', () => {
   updateChurchParticipantsView({ resetPage: true });
