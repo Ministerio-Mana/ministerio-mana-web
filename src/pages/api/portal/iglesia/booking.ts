@@ -79,11 +79,39 @@ function resolveCountryGroup(rawCountryGroup: unknown, rawCountry: unknown): 'CO
   return normalizeCountryGroup(source);
 }
 
+function ageFromBirthdate(raw: unknown): number | null {
+  const value = String(raw || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split('-').map((part) => Number(part));
+  const birth = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(birth.getTime())) return null;
+
+  const now = new Date();
+  let age = now.getUTCFullYear() - birth.getUTCFullYear();
+  const monthDiff = now.getUTCMonth() - birth.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getUTCDate() < birth.getUTCDate())) {
+    age -= 1;
+  }
+  return age >= 0 ? age : null;
+}
+
+function resolveParticipantAge(participant: any): number | null {
+  const rawAge = participant?.age;
+  if (rawAge !== null && rawAge !== undefined && String(rawAge).trim() !== '') {
+    const age = Number(rawAge);
+    return Number.isFinite(age) ? age : null;
+  }
+  return ageFromBirthdate(participant?.birthdate);
+}
+
 function packageTypeFromAge(ageRaw: unknown, lodgingRaw: unknown): PackageType {
-  const age = Number(ageRaw || 0);
-  const lodging = String(lodgingRaw || '').toLowerCase() !== 'no_lodging' && String(lodgingRaw || '').toLowerCase() !== 'no';
-  if (age <= 4) return 'child_0_7';
-  if (age <= 10) return 'child_7_13';
+  const age = Number(ageRaw);
+  const lodgingValue = String(lodgingRaw || '').trim().toLowerCase();
+  const lodging = !['no_lodging', 'no', 'sin alojamiento', 'sin_alojamiento', 'without_lodging'].includes(lodgingValue);
+  if (Number.isFinite(age)) {
+    if (age <= 4) return 'child_0_7';
+    if (age <= 10) return 'child_7_13';
+  }
   return lodging ? 'lodging' : 'no_lodging';
 }
 
@@ -637,14 +665,17 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const participants = participantsRaw
     .map((participant: any) => {
-      const age = Number(participant?.age ?? 0);
-      const packageChoice = participant?.packageType ?? participant?.package_type ?? 'lodging';
-      const packageType = Number.isFinite(age) ? packageTypeFromAge(age, packageChoice) : packageChoice;
+      const age = resolveParticipantAge(participant);
+      const packageChoice = participant?.packageType
+        ?? participant?.package_type
+        ?? participant?.lodging
+        ?? 'lodging';
+      const packageType = packageTypeFromAge(age, packageChoice);
       const relationship = participant?.isLeader ? 'responsable' : 'acompanante';
       const documentType = sanitizePlainText(participant?.document_type ?? participant?.documentType ?? '', 40);
       const documentNumber = sanitizePlainText(participant?.document_number ?? participant?.documentNumber ?? '', 50);
       const safe = sanitizeParticipant({
-        fullName: participant?.name ?? participant?.full_name ?? '',
+        fullName: participant?.name ?? participant?.full_name ?? participant?.fullName ?? '',
         packageType,
         relationship,
         documentType,
@@ -734,7 +765,7 @@ export const PUT: APIRoute = async ({ request }) => {
     document_number: participant.safe.documentNumber,
     birthdate: participant.extra?.birthdate || null,
     gender: sanitizePlainText(participant.extra?.gender ?? '', 20) || null,
-    diet_type: sanitizePlainText(participant.extra?.menu ?? '', 40) || null,
+    diet_type: sanitizePlainText(participant.extra?.menu ?? participant.extra?.menuType ?? participant.extra?.diet_type ?? '', 40) || null,
     email: normalizeEmail(participant.extra?.email) || null,
   }));
 
