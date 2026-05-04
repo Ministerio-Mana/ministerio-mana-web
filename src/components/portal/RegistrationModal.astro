@@ -306,6 +306,47 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               </div>
             </div>
 
+            <div id="portal-payment-actions-section" class="hidden mb-6 space-y-3">
+              <p class="text-[11px] uppercase tracking-widest font-bold text-[#293C74]">Acciones de pago</p>
+
+              <div id="physical-payment-action" class="hidden bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_160px] gap-3">
+                  <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Abono físico</label>
+                    <input type="text" id="physical-payment-amount" inputmode="decimal" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" placeholder="0">
+                  </div>
+                  <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Método</label>
+                    <select id="physical-payment-method" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
+                      <option value="cash">Efectivo</option>
+                      <option value="bank_transfer">Transferencia</option>
+                      <option value="card_reader">Datáfono</option>
+                      <option value="other">Otro</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <p id="physical-payment-action-hint" class="text-[11px] text-slate-500"></p>
+                  <button type="button" id="btn-record-physical-payment" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f5f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Registrar abono
+                  </button>
+                </div>
+              </div>
+
+              <div id="payment-plan-action" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div class="min-w-0">
+                    <p id="payment-plan-status" class="text-sm font-bold text-[#293C74] truncate">Plan activo</p>
+                    <p id="payment-plan-next" class="text-[11px] text-slate-500 mt-1"></p>
+                  </div>
+                  <button type="button" id="btn-stop-payment-plan" class="shrink-0 px-4 py-2.5 rounded-xl border border-amber-300 text-amber-700 bg-amber-50 text-sm font-bold hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Detener cobros futuros
+                  </button>
+                </div>
+                <p id="payment-plan-action-hint" class="mt-2 text-[11px] text-slate-500"></p>
+              </div>
+            </div>
+
             <div id="manual-payments-history-section" class="hidden mb-6 space-y-3">
               <div class="flex items-center justify-between">
                 <p class="text-[11px] uppercase tracking-widest font-bold text-[#293C74]">Últimos abonos manuales</p>

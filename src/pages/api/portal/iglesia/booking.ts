@@ -24,11 +24,14 @@ import {
   updatePaymentPlan,
   updateInstallment,
   recomputeBookingTotals,
+  applyManualPaymentToPlan,
+  completePaymentPlan,
 } from '@lib/cumbreStore';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createDonation } from '@lib/donationsStore';
+import { logSecurityEvent } from '@lib/securityEvents';
 
 export const prerender = false;
 
@@ -149,6 +152,126 @@ function buildManualEditProviderTxId(bookingId: string, idempotencyKey: string):
   return `portal-iglesia-edit-${digest}`;
 }
 
+function buildPhysicalTopupProviderTxId(bookingId: string, idempotencyKey: string): string {
+  const digest = crypto
+    .createHash('sha256')
+    .update(`portal-iglesia-physical-topup:${bookingId}:${idempotencyKey}`)
+    .digest('hex')
+    .slice(0, 32);
+  return `portal-iglesia-physical-${digest}`;
+}
+
+function jsonResponse(payload: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+async function getApprovedPaidTotal(bookingId: string): Promise<number> {
+  if (!supabaseAdmin) return 0;
+  const { data, error } = await supabaseAdmin
+    .from('cumbre_payments')
+    .select('amount')
+    .eq('booking_id', bookingId)
+    .eq('status', 'APPROVED');
+  if (error) {
+    console.error('[portal.iglesia.booking] approved total error', error);
+    return 0;
+  }
+  return (data || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+}
+
+async function completePlanIfBookingIsPaid(params: {
+  bookingId: string;
+  totalAmount: number;
+  totalPaid: number;
+  currency: 'COP' | 'USD';
+}): Promise<{ completed: boolean; cancelledInstallments: number }> {
+  const epsilon = params.currency === 'USD' ? 0.01 : 1;
+  if (Number(params.totalPaid || 0) + epsilon < Number(params.totalAmount || 0)) {
+    return { completed: false, cancelledInstallments: 0 };
+  }
+
+  const plan = await getPlanByBookingId(params.bookingId);
+  if (!plan) {
+    return { completed: false, cancelledInstallments: 0 };
+  }
+
+  if (plan.provider === 'stripe' && plan.provider_subscription_id) {
+    return { completed: false, cancelledInstallments: 0 };
+  }
+
+  const amountPaid = Math.min(Number(params.totalPaid || 0), Number(params.totalAmount || 0));
+  const result = await completePaymentPlan(plan.id, {
+    totalAmount: params.totalAmount,
+    amountPaid,
+    currency: params.currency,
+  });
+
+  return { completed: true, cancelledInstallments: result.cancelledInstallments };
+}
+
+async function ensurePhysicalTopupDonation(params: {
+  booking: any;
+  reference: string | null;
+  amount: number;
+  currency: 'COP' | 'USD';
+  paymentMethod: string | null;
+  userId?: string | null;
+  idempotencyKey?: string | null;
+}): Promise<void> {
+  if (!supabaseAdmin || !params.reference) return;
+
+  const { data: existingDonation, error: existingDonationError } = await supabaseAdmin
+    .from('donations')
+    .select('id')
+    .eq('cumbre_booking_id', params.booking.id)
+    .eq('reference', params.reference)
+    .eq('status', 'APPROVED')
+    .limit(1)
+    .maybeSingle();
+
+  if (existingDonationError) {
+    console.error('[portal.iglesia.booking] physical donation lookup error', existingDonationError);
+  }
+  if (existingDonation?.id) return;
+
+  await createDonation({
+    provider: 'physical',
+    status: 'APPROVED',
+    amount: params.amount,
+    currency: params.currency,
+    reference: params.reference,
+    provider_tx_id: null,
+    payment_method: params.paymentMethod || 'physical',
+    donation_type: 'evento',
+    project_name: 'Cumbre Mundial 2026',
+    event_name: 'Cumbre Mundial 2026',
+    campus: params.booking.contact_church ?? null,
+    church: params.booking.contact_church ?? null,
+    church_city: params.booking.contact_city ?? null,
+    donor_name: params.booking.contact_name ?? null,
+    donor_email: params.booking.contact_email ?? null,
+    donor_phone: params.booking.contact_phone ?? null,
+    donor_document_type: params.booking.contact_document_type ?? null,
+    donor_document_number: params.booking.contact_document_number ?? null,
+    is_recurring: false,
+    donor_country: params.booking.contact_country ?? null,
+    donor_city: params.booking.contact_city ?? null,
+    donation_description: null,
+    need_certificate: false,
+    source: 'portal-iglesia-physical-topup',
+    cumbre_booking_id: params.booking.id,
+    church_id: params.booking.church_id ?? null,
+    user_id: params.userId ?? null,
+    raw_event: {
+      source: 'portal-iglesia-physical-topup',
+      idempotency_key: params.idempotencyKey ?? null,
+    },
+  });
+}
+
 async function hasOnlinePaymentSignals(bookingId: string): Promise<boolean> {
   if (!supabaseAdmin) return true;
 
@@ -234,6 +357,16 @@ async function updatePlanForBooking(params: {
 
   const planCurrency = params.currency;
   const planFrequency = (plan.frequency || 'MONTHLY').toUpperCase();
+  const fullyPaid = await completePlanIfBookingIsPaid({
+    bookingId: params.bookingId,
+    totalAmount: params.totalAmount,
+    totalPaid: params.totalPaid,
+    currency: planCurrency,
+  });
+
+  if (fullyPaid.completed) {
+    return;
+  }
 
   if (planFrequency === 'DEPOSIT') {
     const remaining = Math.max(Number(params.totalAmount || 0) - Number(params.totalPaid || 0), 0);
@@ -267,8 +400,12 @@ async function updatePlanForBooking(params: {
   const frequency = normalizeFrequency(planFrequency);
   const deadline = plan.end_date || getInstallmentDeadline();
   const startDate = plan.start_date ? new Date(`${plan.start_date}T00:00:00Z`) : new Date();
+  const remainingAmount = roundCurrency(
+    Math.max(Number(params.totalAmount || 0) - Number(params.totalPaid || 0), 0),
+    planCurrency,
+  );
   const schedule = buildInstallmentSchedule({
-    totalAmount: params.totalAmount,
+    totalAmount: remainingAmount,
     currency: planCurrency,
     frequency,
     startDate,
@@ -277,8 +414,7 @@ async function updatePlanForBooking(params: {
 
   await updatePaymentPlan(plan.id, {
     total_amount: params.totalAmount,
-    installment_amount: schedule.installmentAmount,
-    installment_count: schedule.installmentCount,
+    amount_paid: Math.min(Number(params.totalPaid || 0), Number(params.totalAmount || 0)),
     currency: planCurrency,
     start_date: schedule.startDate,
     end_date: schedule.endDate,
@@ -286,30 +422,38 @@ async function updatePlanForBooking(params: {
 
   const { data: installments } = await supabaseAdmin
     .from('cumbre_installments')
-    .select('id, status, installment_index')
+    .select('id, status, installment_index, due_date')
     .eq('plan_id', plan.id);
 
   const scheduleByIndex = new Map(schedule.installments.map((item) => [item.installmentIndex, item]));
 
-  const pending = (installments || []).filter((item) => ['PENDING', 'FAILED'].includes(item.status));
+  const pending = (installments || [])
+    .filter((item) => ['PENDING', 'FAILED'].includes(item.status))
+    .sort((a, b) => Number(a.installment_index || 0) - Number(b.installment_index || 0));
   if (pending.length) {
-    await Promise.all(pending.map((installment) => {
-      const scheduleItem = scheduleByIndex.get(installment.installment_index);
-      if (!scheduleItem) return Promise.resolve();
+    const pendingAmount = roundCurrency(remainingAmount / pending.length, planCurrency);
+    let accumulated = 0;
+    let nextDueDate: string | null = null;
+    await Promise.all(pending.map((installment, pendingIndex) => {
+      const scheduleItem = schedule.installments[pendingIndex] || scheduleByIndex.get(installment.installment_index);
+      const isLast = pendingIndex === pending.length - 1;
+      const amount = isLast
+        ? roundCurrency(remainingAmount - accumulated, planCurrency)
+        : pendingAmount;
+      accumulated = roundCurrency(accumulated + amount, planCurrency);
+      const dueDate = scheduleItem?.dueDate || installment.due_date;
+      if (!nextDueDate && dueDate) nextDueDate = dueDate;
       return updateInstallment(installment.id, {
-        amount: scheduleItem.amount,
-        due_date: scheduleItem.dueDate,
+        amount,
+        due_date: dueDate,
         currency: planCurrency,
       });
     }));
 
-    const next = pending
-      .map((item) => scheduleByIndex.get(item.installment_index)?.dueDate)
-      .filter(Boolean)
-      .sort()[0];
-    if (next) {
-      await updatePaymentPlan(plan.id, { next_due_date: next });
-    }
+    await updatePaymentPlan(plan.id, {
+      installment_amount: pendingAmount,
+      next_due_date: nextDueDate,
+    });
   }
 }
 
@@ -380,7 +524,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   const { data: plan } = await supabaseAdmin
     .from('cumbre_payment_plans')
-    .select('id, status, provider, currency, installment_count, installment_amount, frequency, next_due_date, provider_payment_method_id, provider_subscription_id, amount_paid')
+    .select('id, status, provider, currency, total_amount, installment_count, installment_amount, frequency, next_due_date, auto_debit, provider_payment_method_id, provider_subscription_id, amount_paid')
     .eq('booking_id', bookingId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -433,12 +577,241 @@ export const GET: APIRoute = async ({ request }) => {
     permissions: {
       can_edit_profile: true,
       can_edit_payment: canEditManualPayment(booking),
+      can_record_physical_payment: true,
+      can_stop_payment_plan: true,
       can_delete_booking: canEditManualPayment(booking) && !hasOnlineSignals,
     },
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   });
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  if (!supabaseAdmin) {
+    return jsonResponse({ ok: false, error: 'Supabase no configurado' }, 500);
+  }
+
+  const body = await request.json().catch(() => null);
+  if (!body) {
+    return jsonResponse({ ok: false, error: 'Payload inválido' }, 400);
+  }
+
+  const action = String(body.action || '').trim();
+  const bookingId = String(body.booking_id || body.bookingId || '').trim();
+  if (!bookingId) {
+    return jsonResponse({ ok: false, error: 'bookingId requerido' }, 400);
+  }
+
+  const ctx = await getAccessContext(request);
+  if (!ctx.ok) {
+    const denied = mapPortalAccessError(ctx.reason);
+    return jsonResponse({ ok: false, error: denied.error }, denied.status);
+  }
+
+  const { data: booking, error: bookingError } = await supabaseAdmin
+    .from('cumbre_bookings')
+    .select('id, contact_name, contact_email, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, country_group, currency, total_amount, total_paid, status, payment_method, source')
+    .eq('id', bookingId)
+    .maybeSingle();
+
+  if (bookingError || !booking) {
+    return jsonResponse({ ok: false, error: 'Reserva no encontrada' }, 404);
+  }
+
+  const allowed = await isBookingAllowed(booking, ctx);
+  if (!allowed) {
+    return jsonResponse({ ok: false, error: 'No autorizado' }, 403);
+  }
+
+  const currency = normalizeCurrency(booking.currency) || 'COP';
+  const totalAmount = Number(booking.total_amount || 0);
+  const totalPaidBefore = await getApprovedPaidTotal(bookingId);
+  const remainingBefore = Math.max(totalAmount - totalPaidBefore, 0);
+  const epsilon = currency === 'USD' ? 0.01 : 1;
+
+  if (action === 'record_physical_payment') {
+    const amount = parseAmountForCurrency(body.amount ?? body.payment_amount ?? body.paymentAmount, currency);
+    const paymentMethod = sanitizePlainText(body.payment_method ?? body.paymentMethod ?? 'physical', 40) || 'physical';
+
+    if (amount == null || amount <= 0) {
+      return jsonResponse({ ok: false, error: 'Ingresa un abono físico válido' }, 400);
+    }
+
+    if (amount > remainingBefore + epsilon) {
+      return jsonResponse({
+        ok: false,
+        error: 'El abono supera el saldo pendiente actual',
+        remaining_amount: remainingBefore,
+      }, 400);
+    }
+
+    const idempotencyKey = buildIdempotencyKey({
+      request,
+      rawKey: body.idempotencyKey ?? body.idempotency_key,
+    });
+    const providerTxId = idempotencyKey
+      ? buildPhysicalTopupProviderTxId(bookingId, idempotencyKey)
+      : null;
+
+    if (providerTxId) {
+      const { data: existingPayment, error: existingPaymentError } = await supabaseAdmin
+        .from('cumbre_payments')
+        .select('id, reference, amount, currency')
+        .eq('booking_id', bookingId)
+        .eq('provider', 'manual')
+        .eq('provider_tx_id', providerTxId)
+        .maybeSingle();
+
+      if (existingPaymentError) {
+        console.error('[portal.iglesia.booking] physical payment replay lookup error', existingPaymentError);
+      }
+
+      if (existingPayment?.id) {
+        await ensurePhysicalTopupDonation({
+          booking,
+          reference: existingPayment.reference || null,
+          amount: Number(existingPayment.amount || amount),
+          currency,
+          paymentMethod,
+          userId: ctx.userId,
+          idempotencyKey,
+        });
+        await recomputeBookingTotals(bookingId);
+        return jsonResponse({ ok: true, reference: existingPayment.reference, duplicate: true });
+      }
+    }
+
+    const paymentIndex = (await countPayments(bookingId)) + 1;
+    const reference = buildPaymentReference(bookingId, paymentIndex);
+    const { error: paymentInsertError } = await supabaseAdmin
+      .from('cumbre_payments')
+      .insert({
+        booking_id: bookingId,
+        provider: 'manual',
+        provider_tx_id: providerTxId,
+        reference,
+        amount,
+        currency,
+        status: 'APPROVED',
+        raw_event: {
+          source: 'portal-iglesia-physical-topup',
+          method: paymentMethod,
+          entered_by: ctx.userId || null,
+          idempotency_key: idempotencyKey || null,
+        },
+      });
+
+    if (paymentInsertError) {
+      console.error('[portal.iglesia.booking] physical payment insert error', paymentInsertError);
+      return jsonResponse({ ok: false, error: 'No se pudo registrar el abono físico' }, 500);
+    }
+
+    const plan = await getPlanByBookingId(bookingId);
+    if (plan && !['COMPLETED', 'CANCELLED'].includes(String(plan.status || '').toUpperCase())) {
+      await applyManualPaymentToPlan({
+        planId: plan.id,
+        amount,
+        reference,
+      });
+    }
+
+    await ensurePhysicalTopupDonation({
+      booking,
+      reference,
+      amount,
+      currency,
+      paymentMethod,
+      userId: ctx.userId,
+      idempotencyKey,
+    });
+
+    await recomputeBookingTotals(bookingId);
+    const totalPaidAfter = await getApprovedPaidTotal(bookingId);
+    const completed = await completePlanIfBookingIsPaid({
+      bookingId,
+      totalAmount,
+      totalPaid: totalPaidAfter,
+      currency,
+    });
+
+    void logSecurityEvent({
+      type: 'payment_processed',
+      identifier: 'portal.iglesia.physical-topup',
+      detail: 'Abono físico registrado en inscripción Cumbre',
+      meta: {
+        bookingId,
+        amount,
+        currency,
+        reference,
+        userId: ctx.userId || null,
+        completedPlan: completed.completed,
+      },
+    });
+
+    return jsonResponse({
+      ok: true,
+      reference,
+      total_paid: totalPaidAfter,
+      remaining_amount: Math.max(totalAmount - totalPaidAfter, 0),
+      plan_completed: completed.completed,
+    });
+  }
+
+  if (action === 'stop_payment_plan') {
+    const plan = await getPlanByBookingId(bookingId);
+    if (!plan) {
+      return jsonResponse({ ok: false, error: 'Esta reserva no tiene plan de cobros' }, 404);
+    }
+
+    const planStatus = String(plan.status || '').toUpperCase();
+    if (planStatus === 'COMPLETED' || planStatus === 'CANCELLED') {
+      return jsonResponse({ ok: true, already_closed: true });
+    }
+
+    if (plan.provider === 'stripe' && plan.provider_subscription_id) {
+      return jsonResponse({
+        ok: false,
+        error: 'Este plan tiene suscripción activa en Stripe y requiere cancelación desde la pasarela.',
+      }, 409);
+    }
+
+    if (totalPaidBefore + epsilon < totalAmount) {
+      return jsonResponse({
+        ok: false,
+        error: 'Aún hay saldo pendiente. Primero ajusta participantes o registra el abono faltante.',
+        remaining_amount: remainingBefore,
+      }, 409);
+    }
+
+    const result = await completePaymentPlan(plan.id, {
+      totalAmount,
+      amountPaid: Math.min(totalPaidBefore, totalAmount),
+      currency,
+    });
+    await recomputeBookingTotals(bookingId);
+
+    void logSecurityEvent({
+      type: 'payment_processed',
+      identifier: 'portal.iglesia.stop-plan',
+      detail: 'Plan de cobros Cumbre cerrado desde portal',
+      meta: {
+        bookingId,
+        planId: plan.id,
+        provider: plan.provider,
+        userId: ctx.userId || null,
+        cancelledInstallments: result.cancelledInstallments,
+      },
+    });
+
+    return jsonResponse({
+      ok: true,
+      plan_closed: true,
+      cancelled_installments: result.cancelledInstallments,
+    });
+  }
+
+  return jsonResponse({ ok: false, error: 'Acción no soportada' }, 400);
 };
 
 export const PUT: APIRoute = async ({ request }) => {
@@ -789,6 +1162,7 @@ export const PUT: APIRoute = async ({ request }) => {
       const paymentIndex = (await countPayments(bookingId)) + 1;
       let reference = buildPaymentReference(bookingId, paymentIndex);
       const providerTxId = idempotencyKey ? buildManualEditProviderTxId(bookingId, idempotencyKey) : null;
+      let paymentInserted = true;
       const { error: paymentInsertError } = await supabaseAdmin
         .from('cumbre_payments')
         .insert({
@@ -826,6 +1200,7 @@ export const PUT: APIRoute = async ({ request }) => {
         }
 
         reference = existingPayment.reference || reference;
+        paymentInserted = false;
       }
 
       let donationExists = false;
@@ -874,6 +1249,16 @@ export const PUT: APIRoute = async ({ request }) => {
           cumbre_booking_id: bookingId,
           raw_event: idempotencyKey ? { idempotency_key: idempotencyKey } : null,
         });
+      }
+      if (paymentInserted) {
+        const plan = await getPlanByBookingId(bookingId);
+        if (plan && !['COMPLETED', 'CANCELLED'].includes(String(plan.status || '').toUpperCase())) {
+          await applyManualPaymentToPlan({
+            planId: plan.id,
+            amount: paymentAmountInput,
+            reference,
+          });
+        }
       }
       paymentUpdated = true;
     }
