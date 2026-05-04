@@ -18,6 +18,7 @@ export class RegistrationModal {
         this.editBookingId = null;
         this.editPaymentId = null;
         this.canEditPayment = true;
+        this.canRecordPhysicalPayment = true;
         this.canDeleteBooking = false;
         this.paymentSummary = null;
         this.savedPaymentTotalAmount = null;
@@ -146,6 +147,9 @@ export class RegistrationModal {
         this.paymentPlanStatus = document.getElementById('payment-plan-status');
         this.paymentPlanNext = document.getElementById('payment-plan-next');
         this.stopPaymentPlanBtn = document.getElementById('btn-stop-payment-plan');
+        this.paymentPlanDateAction = document.getElementById('payment-plan-date-action');
+        this.paymentPlanNextDateInput = document.getElementById('payment-plan-next-date');
+        this.updatePlanDateBtn = document.getElementById('btn-update-plan-date');
         this.paymentPlanActionHint = document.getElementById('payment-plan-action-hint');
         this.manualPaymentsHistorySection = document.getElementById('manual-payments-history-section');
         this.manualPaymentsHistoryList = document.getElementById('manual-payments-history-list');
@@ -313,6 +317,7 @@ export class RegistrationModal {
         this.deleteBookingBtn?.addEventListener('click', () => this.handleDeleteBooking());
         this.recordPhysicalPaymentBtn?.addEventListener('click', () => this.handleRecordPhysicalPayment());
         this.stopPaymentPlanBtn?.addEventListener('click', () => this.handleStopPaymentPlan());
+        this.updatePlanDateBtn?.addEventListener('click', () => this.handleUpdatePlanDate());
     }
 
     // --- Alert System ---
@@ -886,8 +891,13 @@ export class RegistrationModal {
 
     updatePaymentHint() {
         if (!this.paymentAmountHint) return;
-        if (this.isEditMode && !this.canEditPayment) {
+        if (this.isEditMode && !this.canEditPayment && !this.canRecordPhysicalPayment) {
             this.paymentAmountHint.textContent = 'Pago online: gestionado automáticamente';
+            return;
+        }
+        if (this.isEditMode && !this.canEditPayment && this.canRecordPhysicalPayment) {
+            const remaining = this.getCurrentRemainingAmount();
+            this.paymentAmountHint.textContent = `Ingresa un abono físico nuevo. Pendiente: ${this.formatPrice(remaining)}`;
             return;
         }
         if (this.isEditMode && this.canEditPayment) {
@@ -904,14 +914,14 @@ export class RegistrationModal {
 
     syncPaymentAmount(force = false) {
         if (!this.paymentAmountInput) return;
-        if (this.isEditMode && !this.canEditPayment) {
+        if (this.isEditMode && !this.canEditPayment && !this.canRecordPhysicalPayment) {
             this.paymentAmountInput.readOnly = true;
             this.paymentAmountInput.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
             this.paymentAmountInput.classList.remove('bg-white', 'bg-slate-50');
             this.updatePaymentHint();
             return;
         }
-        const customEnabled = Boolean(this.paymentCustomToggle?.checked);
+        const customEnabled = Boolean(this.paymentCustomToggle?.checked) || Boolean(this.isEditMode && !this.canEditPayment && this.canRecordPhysicalPayment);
         this.paymentAmountInput.readOnly = !customEnabled;
         this.paymentAmountInput.classList.remove('cursor-not-allowed', 'text-slate-500');
         this.paymentAmountInput.classList.toggle('bg-white', customEnabled);
@@ -922,6 +932,8 @@ export class RegistrationModal {
             const defaultAmount = this.getDefaultPaymentAmount();
             this.paymentAmountInput.value = defaultAmount ? this.formatInputAmount(defaultAmount) : '';
             if (force) this.paymentAmountTouched = false;
+        } else if (this.isEditMode && !this.canEditPayment && this.canRecordPhysicalPayment && force && !this.paymentAmountTouched) {
+            this.paymentAmountInput.value = '';
         } else if (!this.isEditMode && customEnabled && force && !this.paymentAmountInput.value) {
             const defaultAmount = this.getDefaultPaymentAmount();
             this.paymentAmountInput.value = defaultAmount ? this.formatInputAmount(defaultAmount) : '';
@@ -1043,7 +1055,7 @@ export class RegistrationModal {
         const plan = this.paymentPlan;
         const planStatus = (plan?.status || '').toString().trim().toUpperCase();
         const hasOpenPlan = Boolean(plan && !['COMPLETED', 'CANCELLED'].includes(planStatus));
-        const showPhysicalAction = Boolean(hasEditMode && !this.canEditPayment && remaining > 0);
+        const showPhysicalAction = Boolean(hasEditMode && this.canRecordPhysicalPayment && remaining > 0);
         const showPlanAction = Boolean(hasEditMode && hasOpenPlan);
         const showSection = showPhysicalAction || showPlanAction;
 
@@ -1065,7 +1077,8 @@ export class RegistrationModal {
 
         if (showPlanAction) {
             const hasStripeSubscription = (plan.provider || '').toString().toLowerCase() === 'stripe' && Boolean(plan.provider_subscription_id);
-            const canClosePlan = !hasStripeSubscription && remaining <= (this.currency === 'USD' ? 0.01 : 1);
+            const canClosePlan = !hasStripeSubscription;
+            const canUpdateDate = !hasStripeSubscription;
             if (this.paymentPlanStatus) {
                 this.paymentPlanStatus.textContent = this.formatPlanStatus(plan);
             }
@@ -1073,16 +1086,25 @@ export class RegistrationModal {
                 const next = this.formatShortDate(plan.next_due_date);
                 this.paymentPlanNext.textContent = next ? `Próximo cobro: ${next}` : 'Sin próxima fecha';
             }
+            this.paymentPlanDateAction?.classList.toggle('hidden', !canUpdateDate);
+            if (this.paymentPlanNextDateInput && plan.next_due_date && !this.paymentPlanNextDateInput.value) {
+                this.paymentPlanNextDateInput.value = plan.next_due_date;
+            }
+            if (this.updatePlanDateBtn) {
+                this.updatePlanDateBtn.disabled = this.paymentActionInProgress || !canUpdateDate;
+            }
             if (this.stopPaymentPlanBtn) {
                 this.stopPaymentPlanBtn.disabled = this.paymentActionInProgress || !canClosePlan;
             }
             if (this.paymentPlanActionHint) {
                 this.paymentPlanActionHint.textContent = hasStripeSubscription
                     ? 'Stripe requiere cierre directo desde la pasarela.'
-                    : canClosePlan
-                        ? 'El cierre conserva pagos e historial; solo detiene cuotas pendientes.'
-                        : `Disponible cuando el pendiente sea ${this.formatPrice(0)}. Falta ${this.formatPrice(remaining)}.`;
+                    : remaining > (this.currency === 'USD' ? 0.01 : 1)
+                        ? `Puedes detener los cobros futuros, pero la reserva seguirá con pendiente de ${this.formatPrice(remaining)}.`
+                        : 'El cierre conserva pagos e historial; solo detiene cuotas pendientes.';
             }
+        } else {
+            this.paymentPlanDateAction?.classList.add('hidden');
         }
     }
 
@@ -1132,7 +1154,7 @@ export class RegistrationModal {
         const scrollContainer = document.getElementById('modal-scroll-container');
         const previousScroll = scrollContainer ? scrollContainer.scrollTop : 0;
         const customEnabled = Boolean(this.paymentCustomToggle?.checked);
-        const lockPaymentEdition = this.isEditMode && !this.canEditPayment;
+        const lockPaymentEdition = this.isEditMode && !this.canEditPayment && !this.canRecordPhysicalPayment;
 
         this.updatePaymentSummaryUI();
         this.updatePaymentActionsUI();
@@ -1306,7 +1328,7 @@ export class RegistrationModal {
         }
 
         const totalAmount = this.getTotal();
-        const lockPaymentEdition = this.isEditMode && !this.canEditPayment;
+        const lockPaymentEdition = this.isEditMode && !this.canEditPayment && !this.canRecordPhysicalPayment;
         const paymentAmount = lockPaymentEdition ? null : this.parsePaymentAmount();
         const customEnabledForValidation = lockPaymentEdition ? false : customEnabled;
         if (customEnabledForValidation && paymentAmount == null && !this.isEditMode) {
@@ -1558,13 +1580,11 @@ export class RegistrationModal {
         if (this.paymentActionInProgress) return;
 
         const remaining = this.getCurrentRemainingAmount();
-        if (remaining > (this.currency === 'USD' ? 0.01 : 1)) {
-            this.showAlert(`Aún queda pendiente ${this.formatPrice(remaining)}. Primero ajusta el grupo o registra el abono faltante.`);
-            return;
-        }
-
         const bookingCode = String(this.editBookingId).slice(0, 8).toUpperCase();
-        const confirmed = window.confirm(`Se detendrán los cobros futuros de la reserva ${bookingCode}. Los pagos registrados se conservan. ¿Continuar?`);
+        const pendingText = remaining > (this.currency === 'USD' ? 0.01 : 1)
+            ? ` La reserva seguirá con pendiente de ${this.formatPrice(remaining)}.`
+            : '';
+        const confirmed = window.confirm(`Se detendrán los cobros futuros de la reserva ${bookingCode}.${pendingText} Los pagos registrados se conservan. ¿Continuar?`);
         if (!confirmed) return;
 
         const idempotencyKey = this.generateIdempotencyKey();
@@ -1613,6 +1633,75 @@ export class RegistrationModal {
             }, 1500);
         } catch (error) {
             this.showAlert(`Error al detener cobros: ${error.message}`);
+            if (this.statusMsg) {
+                this.statusMsg.textContent = `Error: ${error.message}`;
+                this.statusMsg.className = 'mt-4 text-sm text-center text-red-400';
+            }
+            this.paymentActionInProgress = false;
+            this.updatePaymentActionsUI();
+        }
+    }
+
+    async handleUpdatePlanDate() {
+        if (!this.isEditMode || !this.editBookingId) {
+            this.showAlert('No hay una reserva seleccionada');
+            return;
+        }
+        if (this.paymentActionInProgress) return;
+
+        const dueDate = this.paymentPlanNextDateInput?.value || '';
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) {
+            this.showAlert('Selecciona una fecha válida para el próximo cobro');
+            return;
+        }
+
+        const idempotencyKey = this.generateIdempotencyKey();
+        this.paymentActionInProgress = true;
+        this.updatePaymentActionsUI();
+        if (this.statusMsg) {
+            this.statusMsg.textContent = 'Actualizando plazo...';
+            this.statusMsg.className = 'mt-4 text-sm text-center text-amber-200 font-semibold';
+        }
+
+        try {
+            const authHeaders = (typeof window.getPortalAuthHeaders === 'function')
+                ? await window.getPortalAuthHeaders()
+                : ((window.portalAuthHeaders && Object.keys(window.portalAuthHeaders).length)
+                    ? window.portalAuthHeaders
+                    : {});
+
+            const response = await fetch('/api/portal/iglesia/booking', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-idempotency-key': idempotencyKey,
+                    ...authHeaders,
+                },
+                body: JSON.stringify({
+                    action: 'update_plan_due_date',
+                    booking_id: this.editBookingId,
+                    due_date: dueDate,
+                    idempotencyKey,
+                }),
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result?.ok) {
+                throw new Error(result?.error || 'No se pudo actualizar el plazo');
+            }
+
+            this.showAlert('Plazo actualizado correctamente', 'success', 'Plan actualizado');
+            if (this.statusMsg) {
+                this.statusMsg.textContent = '✓ Plazo actualizado';
+                this.statusMsg.className = 'mt-4 text-sm text-center text-green-400 font-bold';
+            }
+            setTimeout(() => {
+                this.close();
+                window.location.reload();
+            }, 1200);
+        } catch (error) {
+            this.showAlert(`Error al actualizar plazo: ${error.message}`);
             if (this.statusMsg) {
                 this.statusMsg.textContent = `Error: ${error.message}`;
                 this.statusMsg.className = 'mt-4 text-sm text-center text-red-400';
@@ -1679,7 +1768,7 @@ export class RegistrationModal {
             deposit_due_date: paymentOption === 'DEPOSIT' ? depositDueDate : null,
             total_amount: this.getTotal(),
             currency: this.currency,
-            payment_amount: (this.isEditMode && !this.canEditPayment) ? null : paymentAmount,
+            payment_amount: (this.isEditMode && !this.canEditPayment && !this.canRecordPhysicalPayment) ? null : paymentAmount,
         };
         if (this.isEditMode && this.editBookingId) {
             payload.booking_id = this.editBookingId;
@@ -1697,6 +1786,7 @@ export class RegistrationModal {
         this.editBookingId = payload.booking.id || null;
         this.editPaymentId = payload.payment?.id || null;
         this.canEditPayment = payload?.permissions?.can_edit_payment !== false;
+        this.canRecordPhysicalPayment = payload?.permissions?.can_record_physical_payment !== false;
         this.canDeleteBooking = payload?.permissions?.can_delete_booking === true;
         this.paymentSummary = payload?.payment_summary || null;
         this.savedPaymentTotalAmount = Number(payload?.payment_summary?.total_amount ?? booking.total_amount ?? 0);
@@ -1777,6 +1867,9 @@ export class RegistrationModal {
             if (this.canEditPayment) {
                 this.paymentAmountInput.value = '';
                 this.paymentAmountInput.placeholder = 'Nuevo abono';
+            } else if (this.canRecordPhysicalPayment) {
+                this.paymentAmountInput.value = '';
+                this.paymentAmountInput.placeholder = 'Nuevo abono físico';
             } else {
                 const paidAmount = payload?.payment_summary?.total_paid ?? payload.payment?.amount ?? booking.total_paid ?? null;
                 this.paymentAmountInput.value = paidAmount != null ? this.formatInputAmount(Number(paidAmount)) : '';
@@ -1821,6 +1914,7 @@ export class RegistrationModal {
         this.editPaymentId = null;
         this.isEditMode = false;
         this.canEditPayment = true;
+        this.canRecordPhysicalPayment = true;
         this.canDeleteBooking = false;
         this.paymentSummary = null;
         this.savedPaymentTotalAmount = null;

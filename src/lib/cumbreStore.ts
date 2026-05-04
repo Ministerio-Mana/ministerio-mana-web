@@ -396,6 +396,34 @@ export async function completePaymentPlan(planId: string, params?: {
   return { cancelledInstallments };
 }
 
+export async function closePaymentPlan(planId: string, params?: {
+  status?: 'COMPLETED' | 'CANCELLED';
+  totalAmount?: number;
+  amountPaid?: number;
+  currency?: string;
+}): Promise<{ cancelledInstallments: number }> {
+  const cancelledInstallments = await cancelPendingInstallmentsForPlan(planId);
+  const updates: Partial<PaymentPlanRecord> = {
+    status: params?.status ?? 'CANCELLED',
+    auto_debit: false,
+    next_due_date: null,
+    installment_amount: 0,
+  };
+
+  if (params?.totalAmount !== undefined) {
+    updates.total_amount = params.totalAmount;
+  }
+  if (params?.amountPaid !== undefined) {
+    updates.amount_paid = params.amountPaid;
+  }
+  if (params?.currency) {
+    updates.currency = params.currency;
+  }
+
+  await updatePaymentPlan(planId, updates);
+  return { cancelledInstallments };
+}
+
 export async function getInstallmentByReference(reference: string): Promise<InstallmentRecord | null> {
   const supabase = ensureSupabase();
   const { data, error } = await supabase

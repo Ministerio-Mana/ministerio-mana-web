@@ -26,6 +26,7 @@ import {
   recomputeBookingTotals,
   applyManualPaymentToPlan,
   completePaymentPlan,
+  closePaymentPlan,
 } from '@lib/cumbreStore';
 import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
@@ -73,6 +74,13 @@ function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number |
   if (!normalized) return null;
   const amount = Number(normalized);
   return Number.isFinite(amount) ? amount : null;
+}
+
+function parseDateString(raw: unknown): string | null {
+  const value = String(raw || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : value;
 }
 
 function resolveCountryGroup(rawCountryGroup: unknown, rawCountry: unknown): 'CO' | 'INT' {
@@ -776,15 +784,9 @@ export const POST: APIRoute = async ({ request }) => {
       }, 409);
     }
 
-    if (totalPaidBefore + epsilon < totalAmount) {
-      return jsonResponse({
-        ok: false,
-        error: 'Aún hay saldo pendiente. Primero ajusta participantes o registra el abono faltante.',
-        remaining_amount: remainingBefore,
-      }, 409);
-    }
-
-    const result = await completePaymentPlan(plan.id, {
+    const isPaid = totalPaidBefore + epsilon >= totalAmount;
+    const result = await closePaymentPlan(plan.id, {
+      status: isPaid ? 'COMPLETED' : 'CANCELLED',
       totalAmount,
       amountPaid: Math.min(totalPaidBefore, totalAmount),
       currency,
@@ -807,7 +809,70 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({
       ok: true,
       plan_closed: true,
+      plan_status: isPaid ? 'COMPLETED' : 'CANCELLED',
+      remaining_amount: remainingBefore,
       cancelled_installments: result.cancelledInstallments,
+    });
+  }
+
+  if (action === 'update_plan_due_date') {
+    const dueDate = parseDateString(body.due_date ?? body.dueDate ?? body.next_due_date ?? body.nextDueDate);
+    if (!dueDate) {
+      return jsonResponse({ ok: false, error: 'Fecha inválida' }, 400);
+    }
+
+    const plan = await getPlanByBookingId(bookingId);
+    if (!plan) {
+      return jsonResponse({ ok: false, error: 'Esta reserva no tiene plan de cobros' }, 404);
+    }
+
+    const planStatus = String(plan.status || '').toUpperCase();
+    if (planStatus === 'COMPLETED' || planStatus === 'CANCELLED') {
+      return jsonResponse({ ok: false, error: 'El plan ya está cerrado' }, 409);
+    }
+
+    if (plan.provider === 'stripe' && plan.provider_subscription_id) {
+      return jsonResponse({
+        ok: false,
+        error: 'Este plan tiene suscripción activa en Stripe y requiere ajuste desde la pasarela.',
+      }, 409);
+    }
+
+    const { data: pendingInstallment, error: pendingError } = await supabaseAdmin
+      .from('cumbre_installments')
+      .select('id')
+      .eq('plan_id', plan.id)
+      .in('status', ['PENDING', 'FAILED'])
+      .order('installment_index', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (pendingError) {
+      console.error('[portal.iglesia.booking] due date pending lookup error', pendingError);
+      return jsonResponse({ ok: false, error: 'No se pudo consultar la próxima cuota' }, 500);
+    }
+    if (!pendingInstallment?.id) {
+      return jsonResponse({ ok: false, error: 'No hay cuotas pendientes para modificar' }, 409);
+    }
+
+    await updateInstallment(pendingInstallment.id, { due_date: dueDate });
+    await updatePaymentPlan(plan.id, { next_due_date: dueDate });
+
+    void logSecurityEvent({
+      type: 'payment_processed',
+      identifier: 'portal.iglesia.plan-date',
+      detail: 'Fecha de próximo cobro Cumbre actualizada desde portal',
+      meta: {
+        bookingId,
+        planId: plan.id,
+        dueDate,
+        userId: ctx.userId || null,
+      },
+    });
+
+    return jsonResponse({
+      ok: true,
+      due_date: dueDate,
     });
   }
 
@@ -858,6 +923,7 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   const canEditPayment = canEditManualPayment(booking);
+  const canRecordPhysicalPayment = true;
 
   const participantsRaw = Array.isArray(body.participants) ? body.participants : [];
   if (participantsRaw.length === 0) {
@@ -1078,7 +1144,7 @@ export const PUT: APIRoute = async ({ request }) => {
   const currency = currencyOverride ?? currencyForGroup(countryGroup);
 
   let paymentAmountInput = parseAmountForCurrency(body.payment_amount ?? body.paymentAmount, currency);
-  if (!canEditPayment) {
+  if (!canEditPayment && !canRecordPhysicalPayment) {
     paymentAmountInput = null;
   }
 
@@ -1157,11 +1223,16 @@ export const PUT: APIRoute = async ({ request }) => {
 
   let paymentUpdated = false;
 
-  if (paymentAmountInput != null && canEditPayment) {
+  if (paymentAmountInput != null && (canEditPayment || canRecordPhysicalPayment)) {
     if (paymentAmountInput > 0) {
       const paymentIndex = (await countPayments(bookingId)) + 1;
       let reference = buildPaymentReference(bookingId, paymentIndex);
-      const providerTxId = idempotencyKey ? buildManualEditProviderTxId(bookingId, idempotencyKey) : null;
+      const paymentSource = canEditPayment ? 'portal-iglesia-edit' : 'portal-iglesia-physical-topup';
+      const providerTxId = idempotencyKey
+        ? (canEditPayment
+          ? buildManualEditProviderTxId(bookingId, idempotencyKey)
+          : buildPhysicalTopupProviderTxId(bookingId, idempotencyKey))
+        : null;
       let paymentInserted = true;
       const { error: paymentInsertError } = await supabaseAdmin
         .from('cumbre_payments')
@@ -1174,7 +1245,7 @@ export const PUT: APIRoute = async ({ request }) => {
           currency,
           status: 'APPROVED',
           raw_event: {
-            source: 'portal-iglesia-edit',
+            source: paymentSource,
             method: 'manual',
             idempotency_key: idempotencyKey || null,
           },
@@ -1245,7 +1316,7 @@ export const PUT: APIRoute = async ({ request }) => {
           donor_city: contactCity || null,
           donation_description: null,
           need_certificate: false,
-          source: 'portal-iglesia-edit',
+          source: paymentSource,
           cumbre_booking_id: bookingId,
           raw_event: idempotencyKey ? { idempotency_key: idempotencyKey } : null,
         });

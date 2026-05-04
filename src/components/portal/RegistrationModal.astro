@@ -343,6 +343,15 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     Detener cobros futuros
                   </button>
                 </div>
+                <div id="payment-plan-date-action" class="hidden mt-4 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
+                  <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nueva fecha de próximo cobro</label>
+                    <input type="date" id="payment-plan-next-date" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
+                  </div>
+                  <button type="button" id="btn-update-plan-date" class="px-4 py-3 rounded-xl border border-[#293C74]/20 text-[#293C74] bg-white text-sm font-bold hover:bg-[#293C74]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Actualizar plazo
+                  </button>
+                </div>
                 <p id="payment-plan-action-hint" class="mt-2 text-[11px] text-slate-500"></p>
               </div>
             </div>
