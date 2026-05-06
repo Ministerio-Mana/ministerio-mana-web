@@ -168,36 +168,6 @@ export async function getWompiTransaction(transactionId: string): Promise<any | 
   return payload?.data || null;
 }
 
-export async function findWompiTransactionByReference(reference: string): Promise<any | null> {
-  const normalizedReference = String(reference || '').trim();
-  if (!normalizedReference) return null;
-
-  const privateKey = getPrivateKey();
-  const apiBase = env('WOMPI_API_BASE') ?? DEFAULT_API_BASE;
-  const url = new URL(`${apiBase}/transactions`);
-  url.searchParams.set('reference', normalizedReference);
-
-  const res = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${privateKey}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    throw new Error(`Wompi transaction lookup failed: ${res.status} ${detail}`);
-  }
-
-  const payload = await res.json();
-  const data = payload?.data;
-  if (Array.isArray(data)) return data[0] || null;
-  if (Array.isArray(data?.data)) return data.data[0] || null;
-  if (data?.id) return data;
-  return null;
-}
-
 export async function createWompiPaymentSource(params: {
   token: string;
   customerEmail: string;
