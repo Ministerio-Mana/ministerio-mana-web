@@ -179,6 +179,20 @@ function bindSyncButtons() {
                     });
                     payload = await response.json();
                 }
+                if (!response.ok && payload?.code === 'WOMPI_LOOKUP_FAILED') {
+                    const transactionId = window.prompt('No pude consultar Wompi automáticamente. Si en Wompi está aprobada, pega nuevamente el ID de transacción para marcarla aprobada manualmente.');
+                    if (!transactionId) throw new Error(payload.error || 'No se pudo consultar Wompi');
+                    response = await fetch('/api/portal/donations/sync-wompi', {
+                        method: 'POST',
+                        headers: {
+                            ...currentAuthHeaders,
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ reference, transactionId, manualApprove: true }),
+                    });
+                    payload = await response.json();
+                }
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.error || 'No se pudo sincronizar');
                 }

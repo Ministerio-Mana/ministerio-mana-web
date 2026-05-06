@@ -73,6 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
   const body = await request.json().catch(() => null);
   const reference = String(body?.reference || '').trim();
   const submittedTransactionId = extractTransactionId(body?.transactionId);
+  const manualApprove = body?.manualApprove === true;
   if (!reference) {
     return new Response(JSON.stringify({ ok: false, error: 'Referencia requerida' }), {
       status: 400,
@@ -95,15 +96,54 @@ export const POST: APIRoute = async ({ request }) => {
     || extractTransactionId(transaction?.id)
     || extractTransactionId(storedEvent?.tx_id);
 
+  let lookupError: string | null = null;
   if (!transaction && transactionId) {
-    transaction = await getWompiTransaction(transactionId);
+    try {
+      transaction = await getWompiTransaction(transactionId);
+    } catch (error: any) {
+      lookupError = error?.message || 'No se pudo consultar Wompi';
+    }
   }
 
   if (!transaction) {
+    if (manualApprove && transactionId) {
+      await updateDonationByReference({
+        provider: 'wompi',
+        reference,
+        status: 'APPROVED',
+        providerTxId: transactionId,
+        paymentMethod: donation.payment_method,
+        rawEvent: {
+          source: 'manual_wompi_admin_approval',
+          reason: 'Admin confirmed approved status in Wompi dashboard',
+          reference,
+          transactionId,
+          lookupError,
+          previousStatus: donation.status,
+          amount: donation.amount,
+          currency: donation.currency,
+          approvedAt: new Date().toISOString(),
+        },
+      });
+
+      return new Response(JSON.stringify({
+        ok: true,
+        status: 'APPROVED',
+        providerTxId: transactionId,
+        manual: true,
+      }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     return new Response(JSON.stringify({
       ok: false,
-      code: 'TRANSACTION_ID_REQUIRED',
-      error: 'No tengo el ID de transacción de Wompi para consultar ese pago. Cópialo desde Wompi e inténtalo de nuevo.',
+      code: transactionId ? 'WOMPI_LOOKUP_FAILED' : 'TRANSACTION_ID_REQUIRED',
+      error: transactionId
+        ? 'No pude consultar Wompi con ese ID. Si ya verificaste que está aprobada en Wompi, confirma la conciliación manual.'
+        : 'No tengo el ID de transacción de Wompi para consultar ese pago. Cópialo desde Wompi e inténtalo de nuevo.',
+      detail: lookupError,
     }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
