@@ -11,6 +11,14 @@ function isAdminRole(role?: string | null): boolean {
   return role === 'admin' || role === 'superadmin';
 }
 
+function env(key: string): string | undefined {
+  return import.meta.env?.[key] ?? process.env?.[key];
+}
+
+function allowsManualApproval(): boolean {
+  return env('ALLOW_MANUAL_WOMPI_APPROVAL') === 'true';
+}
+
 function normalizeWompiStatus(status: unknown): DonationStatus {
   const normalized = String(status || '').toUpperCase();
   if (normalized === 'APPROVED') return 'APPROVED';
@@ -107,6 +115,18 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!transaction) {
     if (manualApprove && transactionId) {
+      if (!allowsManualApproval()) {
+        return new Response(JSON.stringify({
+          ok: false,
+          code: 'MANUAL_APPROVAL_DISABLED',
+          error: 'La aprobación manual está deshabilitada. Revisa la configuración de Wompi o reenvía el evento desde Wompi.',
+          detail: lookupError,
+        }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
       await updateDonationByReference({
         provider: 'wompi',
         reference,
@@ -141,9 +161,10 @@ export const POST: APIRoute = async ({ request }) => {
       ok: false,
       code: transactionId ? 'WOMPI_LOOKUP_FAILED' : 'TRANSACTION_ID_REQUIRED',
       error: transactionId
-        ? 'No pude consultar Wompi con ese ID. Si ya verificaste que está aprobada en Wompi, confirma la conciliación manual.'
+        ? 'No pude consultar Wompi con ese ID. Revisa la configuración de Wompi o reenvía el evento desde Wompi.'
         : 'No tengo el ID de transacción de Wompi para consultar ese pago. Cópialo desde Wompi e inténtalo de nuevo.',
       detail: lookupError,
+      manualAvailable: allowsManualApproval(),
     }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
