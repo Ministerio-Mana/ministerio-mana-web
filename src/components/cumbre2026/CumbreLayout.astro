@@ -20,8 +20,8 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
         href="/eventos/cumbre-mundial-2026"
         class={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest border backdrop-blur-md transition ${
           isLight
-            ? 'bg-white/80 border-brand-navy/10 text-brand-navy hover:bg-white'
-            : 'bg-white/10 border-white/10 text-white/80 hover:text-white'
+            ? 'bg-white/80 border-brand-navy/10 !text-brand-navy hover:bg-white hover:!text-brand-navy focus-visible:!text-brand-navy active:!text-brand-navy'
+            : 'bg-white/10 border-white/10 !text-white/80 hover:!text-white focus-visible:!text-white active:!text-white'
         }`}
       >
         <span aria-hidden="true">←</span>
@@ -66,7 +66,7 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
       href="https://wa.me/573148297534" 
       target="_blank"
       rel="noopener noreferrer"
-      class="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-[#25D366] rounded-full shadow-lg hover:scale-110 transition-transform duration-300 group"
+      class="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-[#25D366] !text-white rounded-full shadow-lg hover:!text-white focus-visible:!text-white active:!text-white hover:scale-110 transition-transform duration-300 group"
       aria-label="Contactar por WhatsApp"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
