@@ -75,8 +75,7 @@ const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.s
       
       if (!prefersReducedMotion) {
         lenis = new Lenis({
-          duration: 0.5,
-          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          lerp: 0.08,
           orientation: 'vertical',
           gestureOrientation: 'vertical',
           smoothWheel: true,
@@ -85,6 +84,8 @@ const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.s
           touchMultiplier: 2,
           infinite: false,
         });
+
+        lenis.on('scroll', ScrollTrigger.update);
         
         function raf(time) {
           lenis.raf(time);
