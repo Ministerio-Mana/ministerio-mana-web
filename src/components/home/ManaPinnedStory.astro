@@ -369,6 +369,20 @@ const cspNonce = Astro.locals?.cspNonce;
     z-index: 1;
   }
 
+  .mana-story-code.is-pinned-deck {
+    height: var(--slide-h);
+    min-height: var(--slide-h);
+    overflow: hidden;
+  }
+
+  .mana-story-code.is-pinned-deck .mana-scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: var(--slide-h);
+    height: var(--slide-h);
+  }
+
   .mana-slide {
     position: relative;
     width: 100%;
