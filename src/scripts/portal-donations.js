@@ -9,6 +9,7 @@ const domainEl = document.getElementById('donations-domain');
 const statCountEl = document.getElementById('donations-stat-count');
 const statCopEl = document.getElementById('donations-stat-cop');
 const statUsdEl = document.getElementById('donations-stat-usd');
+let currentAuthHeaders = {};
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -73,6 +74,7 @@ async function loadDonations() {
         if (domainEl?.value) params.set('domain', domainEl.value);
 
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+        currentAuthHeaders = headers;
         const response = await fetch(`/api/portal/donations?${params.toString()}`, {
             headers,
             credentials: 'include',
@@ -113,6 +115,12 @@ function renderDonations(donations, stats) {
             const reference = donation.reference
                 ? `<p class="text-[11px] text-slate-400 mt-1">Ref: ${escapeHtml(donation.reference)}</p>`
                 : '';
+            const canSyncWompi = String(donation.provider || '').toLowerCase() === 'wompi'
+                && String(donation.status || '').toUpperCase() === 'PENDING'
+                && donation.reference;
+            const syncAction = canSyncWompi
+                ? `<button class="mt-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
+                : '';
 
             return `
                 <tr>
@@ -127,14 +135,50 @@ function renderDonations(donations, stats) {
                     </td>
                     <td class="py-3 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
                     <td class="py-3 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
-                    <td class="py-3 align-top">${statusBadge(donation.status)}</td>
+                    <td class="py-3 align-top">${statusBadge(donation.status)}${syncAction}</td>
                     <td class="py-3 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
                 </tr>
             `;
         }).join('');
+        bindSyncButtons();
     }
 
     if (tableEl) tableEl.classList.remove('hidden');
+}
+
+function bindSyncButtons() {
+    document.querySelectorAll('[data-sync-wompi]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const reference = button.getAttribute('data-sync-wompi');
+            if (!reference) return;
+
+            button.textContent = 'Sincronizando...';
+            button.setAttribute('disabled', 'disabled');
+            try {
+                const response = await fetch('/api/portal/donations/sync-wompi', {
+                    method: 'POST',
+                    headers: {
+                        ...currentAuthHeaders,
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ reference }),
+                });
+                const payload = await response.json();
+                if (!response.ok || !payload.ok) {
+                    throw new Error(payload.error || 'No se pudo sincronizar');
+                }
+                await loadDonations();
+            } catch (error) {
+                console.error('[portal-donations] sync error', error);
+                button.textContent = 'Error al sincronizar';
+                setTimeout(() => {
+                    button.textContent = 'Sincronizar Wompi';
+                    button.removeAttribute('disabled');
+                }, 2000);
+            }
+        });
+    });
 }
 
 statusEl?.addEventListener('change', loadDonations);
