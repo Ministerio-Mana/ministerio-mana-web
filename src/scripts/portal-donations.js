@@ -155,7 +155,7 @@ function bindSyncButtons() {
             button.textContent = 'Sincronizando...';
             button.setAttribute('disabled', 'disabled');
             try {
-                const response = await fetch('/api/portal/donations/sync-wompi', {
+                let response = await fetch('/api/portal/donations/sync-wompi', {
                     method: 'POST',
                     headers: {
                         ...currentAuthHeaders,
@@ -164,7 +164,21 @@ function bindSyncButtons() {
                     credentials: 'include',
                     body: JSON.stringify({ reference }),
                 });
-                const payload = await response.json();
+                let payload = await response.json();
+                if (!response.ok && payload?.code === 'TRANSACTION_ID_REQUIRED') {
+                    const transactionId = window.prompt('Pega el ID de transacción de Wompi para esta referencia.');
+                    if (!transactionId) throw new Error(payload.error || 'ID de transacción requerido');
+                    response = await fetch('/api/portal/donations/sync-wompi', {
+                        method: 'POST',
+                        headers: {
+                            ...currentAuthHeaders,
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ reference, transactionId }),
+                    });
+                    payload = await response.json();
+                }
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.error || 'No se pudo sincronizar');
                 }

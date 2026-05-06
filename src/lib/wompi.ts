@@ -145,6 +145,29 @@ export async function createWompiCharge(params: {
     : null;
 }
 
+export async function getWompiTransaction(transactionId: string): Promise<any | null> {
+  const normalizedId = String(transactionId || '').trim();
+  if (!normalizedId) return null;
+
+  const publicKey = getPublicKey();
+  const apiBase = env('WOMPI_API_BASE') ?? DEFAULT_API_BASE;
+  const res = await fetch(`${apiBase}/transactions/${encodeURIComponent(normalizedId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${publicKey}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Wompi transaction lookup failed: ${res.status} ${detail}`);
+  }
+
+  const payload = await res.json();
+  return payload?.data || null;
+}
+
 export async function findWompiTransactionByReference(reference: string): Promise<any | null> {
   const normalizedReference = String(reference || '').trim();
   if (!normalizedReference) return null;
