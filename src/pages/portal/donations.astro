@@ -1,0 +1,82 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Donaciones | Portal Maná" description="Todas las donaciones del ministerio." hideHeader hideFooter>
+  <main class="min-h-screen bg-[#F8FAFC]">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <Sidebar />
+
+      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+        <div class="max-w-7xl mx-auto space-y-8">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 class="text-3xl font-display font-bold text-[#293C74]">Donaciones</h1>
+              <p class="text-slate-600">Todas las donaciones con su concepto, destino y donante.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <select id="donations-status" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+                <option value="all">Todos los estados</option>
+                <option value="approved">Aprobadas</option>
+                <option value="pending">Pendientes</option>
+                <option value="failed">Fallidas</option>
+              </select>
+              <select id="donations-domain" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+                <option value="">Todos los conceptos</option>
+                <option value="DONATION">Donaciones generales</option>
+                <option value="CAMPUS">Campus</option>
+                <option value="CUMBRE">Eventos</option>
+                <option value="PRIMICIAS">Primicias</option>
+                <option value="OTHER">Otros</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Registros</p>
+              <p class="text-3xl font-bold text-[#293C74]" id="donations-stat-count">0</p>
+            </div>
+            <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total COP</p>
+              <p class="text-3xl font-bold text-brand-teal" id="donations-stat-cop">$ 0</p>
+            </div>
+            <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total USD</p>
+              <p class="text-3xl font-bold text-[#293C74]" id="donations-stat-usd">$ 0</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6 md:p-8">
+            <div id="donations-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando donaciones...</div>
+
+            <div class="overflow-x-auto">
+              <table id="donations-table" class="w-full min-w-[980px] text-left border-collapse hidden">
+                <thead>
+                  <tr class="text-xs text-slate-400 border-b border-slate-100">
+                    <th class="font-bold uppercase tracking-widest py-3 pl-2">Fecha</th>
+                    <th class="font-bold uppercase tracking-widest py-3">Concepto</th>
+                    <th class="font-bold uppercase tracking-widest py-3">Destino</th>
+                    <th class="font-bold uppercase tracking-widest py-3">Donante</th>
+                    <th class="font-bold uppercase tracking-widest py-3">Contacto</th>
+                    <th class="font-bold uppercase tracking-widest py-3">Estado</th>
+                    <th class="font-bold uppercase tracking-widest py-3 text-right pr-2">Monto</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm text-slate-600 divide-y divide-slate-50"></tbody>
+              </table>
+            </div>
+
+            <div id="donations-empty" class="hidden text-center py-10 text-slate-400 text-sm">
+              No hay donaciones para este filtro.
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    import '@scripts/portal-donations.js';
+  </script>
+</BaseLayout>

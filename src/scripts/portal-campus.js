@@ -12,6 +12,15 @@ const statTotalDonors = document.getElementById('stat-total-donors');
 const statMonthDonations = document.getElementById('stat-month-donations');
 const statActiveMissionaries = document.getElementById('stat-active-missionaries');
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 async function loadDonors() {
     try {
         const auth = await ensureAuthenticated();
@@ -34,9 +43,9 @@ async function loadDonors() {
 
         // Update subtitle based on role
         if (isCampusMissionary) {
-            subtitleEl.textContent = 'Tus donantes y personas que te apoyan';
+            subtitleEl.textContent = 'Tus donantes para enviar agradecimientos';
         } else if (isAdmin) {
-            subtitleEl.textContent = 'Vista global de donantes y misioneros';
+            subtitleEl.textContent = 'Solo donaciones Campus, con donante, monto y misionero';
         }
 
         // Show admin stats if applicable
@@ -60,6 +69,39 @@ async function loadDonors() {
                 month: 'short',
                 day: 'numeric'
             });
+            const donorName = escapeHtml(donor.name || 'Donante Anónimo');
+            const donorEmail = escapeHtml(donor.email || '');
+            const donorPhone = escapeHtml(donor.phone || '');
+            const phoneDigits = String(donor.phone || '').replace(/\D/g, '');
+            const thanksMessage = encodeURIComponent(`Hola ${donor.name || ''}, gracias por apoyar Campus Maná. Tu generosidad nos ayuda a seguir compartiendo el evangelio en las universidades.`);
+            const contactActions = [
+                donor.email ? `<a class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" href="mailto:${encodeURIComponent(donor.email)}?subject=${encodeURIComponent('Gracias por apoyar Campus Maná')}&body=${thanksMessage}">Correo</a>` : '',
+                phoneDigits.length >= 8 ? `<a class="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noreferrer">WhatsApp</a>` : ''
+            ].filter(Boolean).join('');
+            const donationLines = Array.isArray(donor.donations) && donor.donations.length
+                ? `
+                    <div class="mt-4 rounded-2xl bg-slate-50 p-4 space-y-2">
+                        ${donor.donations.slice(0, 4).map((donation) => {
+                            const date = donation.created_at ? new Date(donation.created_at).toLocaleDateString('es-CO') : '';
+                            const names = donation.missionary?.names?.length
+                                ? donation.missionary.names.join(', ')
+                                : donation.missionary?.name || 'Campus';
+                            const amount = isAdmin && donation.amount !== null
+                                ? `<span class="font-bold text-brand-teal">${formatCurrency(donation.amount, donation.currency)}</span>`
+                                : '';
+                            const perMissionary = isAdmin && donation.amountPerMissionary
+                                ? `<span class="text-slate-400">(${formatCurrency(donation.amountPerMissionary, donation.currency)} por misionero)</span>`
+                                : '';
+                            return `
+                                <div class="flex flex-col gap-1 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
+                                    <span><strong class="text-[#293C74]">${escapeHtml(names)}</strong> ${date ? `· ${escapeHtml(date)}` : ''}</span>
+                                    <span>${amount} ${perMissionary}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `
+                : '';
 
             // Only show amounts for admins
             const amountDisplay = isAdmin && donor.totalAmount !== null
@@ -77,14 +119,14 @@ async function loadDonors() {
                         <div class="flex items-start gap-4 flex-1">
                             <!-- Donor Avatar -->
                             <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-teal to-[#293C74] flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                                ${donor.name.charAt(0).toUpperCase()}
+                                ${donorName.charAt(0).toUpperCase()}
                             </div>
                             
                             <!-- Donor Info -->
                             <div class="flex-1">
-                                <h3 class="text-lg font-bold text-[#293C74] mb-1">${donor.name}</h3>
-                                ${donor.email ? `<p class="text-sm text-slate-600 mb-1">${donor.email}</p>` : ''}
-                                ${donor.phone ? `<p class="text-sm text-slate-500">${donor.phone}</p>` : ''}
+                                <h3 class="text-lg font-bold text-[#293C74] mb-1">${donorName}</h3>
+                                ${donor.email ? `<p class="text-sm text-slate-600 mb-1">${donorEmail}</p>` : ''}
+                                ${donor.phone ? `<p class="text-sm text-slate-500">${donorPhone}</p>` : ''}
                                 
                                 <div class="flex items-center gap-4 mt-3">
                                     <div class="text-xs text-slate-400">
@@ -95,14 +137,16 @@ async function loadDonors() {
                                     </div>
                                 </div>
 
-                                ${isAdmin && donor.missionary?.name ? `
+                                ${donor.missionary?.name ? `
                                     <div class="mt-2">
                                         <span class="inline-flex items-center gap-1 px-3 py-1 bg-[#293C74]/10 text-[#293C74] rounded-full text-xs font-bold">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                            ${donor.missionary.name}
+                                            ${escapeHtml(donor.missionary.name)}
                                         </span>
                                     </div>
                                 ` : ''}
+                                ${contactActions ? `<div class="mt-4 flex flex-wrap gap-2">${contactActions}</div>` : ''}
+                                ${donationLines}
                             </div>
                         </div>
                         
