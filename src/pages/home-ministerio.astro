@@ -1,0 +1,16 @@
+---
+export const prerender = false;
+import BaseLayout from '@layouts/BaseLayout.astro';
+import ManaPinnedStory from '@components/home/ManaPinnedStory.astro';
+---
+
+<BaseLayout
+  title="Borrador Home Ministerio Maná"
+  description="Borrador narrativo del nuevo home de Ministerio Maná, construido con HTML, CSS y animaciones scroll-driven."
+  disableSmoothScroll={false}
+  noindex={true}
+>
+  <main class="overflow-x-hidden">
+    <ManaPinnedStory />
+  </main>
+</BaseLayout>

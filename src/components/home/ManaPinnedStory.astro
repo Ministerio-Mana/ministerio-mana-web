@@ -1,0 +1,1303 @@
+---
+const fronts = [
+  {
+    number: '01',
+    title: 'Devocional Maná',
+    detail: '5 audios cada semana y agenda devocional.',
+  },
+  {
+    number: '02',
+    title: 'Escuela Bíblica',
+    detail: '5 cursos discipulares para formar creyentes maduros.',
+  },
+  {
+    number: '03',
+    title: 'Iglesias Maná',
+    detail: 'Comunidades locales, misiones y grupos pequeños.',
+  },
+];
+
+const objectives = [
+  'Cumplir en obediencia la Gran Comisión de llevar el evangelio hasta lo último de la tierra.',
+  'Discipular a quienes han experimentado un nuevo nacimiento hasta que lleguen a la madurez.',
+  'Capacitar a los hijos de Dios por el Espíritu Santo en el uso de sus dones.',
+];
+
+const values = [
+  'Enseñamos la Palabra de Dios como fundamento de fe y práctica.',
+  'Procuramos depender de Dios a través de hábitos de vida piadosos.',
+  'Desafiamos a servir a Dios en el liderazgo para el uso de los dones.',
+  'Proclamamos nuestra fe para dar a conocer a Dios.',
+  'Propiciamos ambientes de adoración y consagración a Dios.',
+];
+
+const programs = [
+  ['Lunes 7:00 p.m.', 'Reunión de Varones'],
+  ['Lunes 7:30 p.m.', 'Cristianos Emprendedores'],
+  ['Lunes 8:00 p.m.', 'Hablando con Dios en vivo'],
+  ['Miércoles 7:00 p.m.', 'Reunión de Mujeres'],
+  ['Viernes 7:00 p.m.', 'Reunión de Parejas'],
+  ['Domingo 10:30 a.m.', 'Maná Familiar'],
+];
+
+const metrics = [
+  ['14.600', 'Suscriptores en YouTube'],
+  ['1.141', 'Videos publicados'],
+  ['7.204', 'Seguidores en Facebook'],
+  ['2.567', 'Seguidores en SoundCloud'],
+];
+
+const cities = [
+  { name: 'Medellín', x: 42, y: 27 },
+  { name: 'Rionegro', x: 53, y: 32 },
+  { name: 'Marinilla', x: 49, y: 40 },
+  { name: 'Armenia', x: 35, y: 50 },
+  { name: 'Ibagué', x: 48, y: 56 },
+  { name: 'Bogotá', x: 58, y: 66 },
+  { name: 'Cali', x: 28, y: 70 },
+  { name: 'Quito', x: 78, y: 58 },
+  { name: 'Cuenca', x: 82, y: 72 },
+];
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<section class="mana-story-code" aria-label="Nuevo home en construcción para Ministerio Maná">
+  <section class="mana-scene mana-scene--hero" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-hero-layout">
+        <div class="mana-hero-mark" data-mana-visual aria-hidden="true">
+          <span class="mana-outline-word">ORAR</span>
+          <span class="mana-script-word">Es momento de</span>
+          <span class="mana-solid-word">AGRADECER</span>
+        </div>
+        <div class="mana-hero-copy">
+          <p class="mana-label" data-mana-line>Ministerio Maná</p>
+          <h1 data-mana-title>
+            Es momento de
+            <span>ORAR</span>
+            <span>AGRADECER</span>
+          </h1>
+          <p data-mana-copy>
+            Una iglesia que enseña las Escrituras, edifica vidas y forma discípulos para impactar su entorno cercano y el mundo.
+          </p>
+          <nav class="mana-actions" data-mana-actions aria-label="Acciones del borrador">
+            <button type="button" class="mana-btn mana-btn--fill" data-mana-next>Comenzar historia</button>
+            <a href="/eventos/cumbre-mundial-2026/" class="mana-btn mana-btn--line">Volver a Cumbre</a>
+          </nav>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section id="mana-mision" class="mana-scene mana-scene--mission" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-split">
+        <div class="mana-title-block" data-mana-copy>
+          <p class="mana-script">Nuestra</p>
+          <h2>MISIÓN</h2>
+        </div>
+        <div class="mana-copy-panel" data-mana-visual>
+          <div class="mana-hanging-logo" aria-hidden="true">
+            <span></span>
+            <img src="/logo.svg" alt="" />
+          </div>
+          <p>
+            Somos una iglesia que enseña las Escrituras, edificando las vidas de los hijos de Dios a través de hábitos espirituales que los lleven a conocer, amar y obedecer a Dios, con un alto grado de compromiso en el servicio ministerial para dar cumplimiento al plan de Dios.
+          </p>
+          <p>
+            Formamos hombres y mujeres de Dios que guiados por el Espíritu Santo lleguen a ser sus instrumentos en el establecimiento de grupos pequeños e iglesias locales que impacten su entorno cercano y el mundo.
+          </p>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--vision" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-vision-layout">
+        <div class="mana-title-block mana-title-block--light" data-mana-copy>
+          <p class="mana-script">Nuestra</p>
+          <h2>VISIÓN</h2>
+        </div>
+        <div class="mana-year-card" data-mana-title>
+          <span>2030</span>
+        </div>
+        <div class="mana-copy-panel mana-copy-panel--light" data-mana-visual>
+          <p>
+            Ser una iglesia bíblica, cristocéntrica y relevante en su entorno, con presencia nacional e internacional en el 2030.
+          </p>
+          <p>
+            Una iglesia que discipula a quienes han nacido de nuevo, que predica el evangelio como un estilo de vida a través de todos los medios posibles, enseñando a amar a Dios genuinamente y a servir a su prójimo.
+          </p>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--history" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-history-grid">
+        <div class="mana-title-block" data-mana-copy>
+          <p class="mana-script">Nuestra</p>
+          <h2>HISTORIA</h2>
+        </div>
+        <div class="mana-route" data-mana-visual aria-label="Ruta Londres a Medellín">
+          <span>Londres</span>
+          <i></i>
+          <strong>2016</strong>
+          <i></i>
+          <span>Medellín</span>
+        </div>
+        <div class="mana-copy-panel" data-mana-copy>
+          <p>
+            La Iglesia Ministerio Maná surge tras la llegada a Medellín de los pastores Carlos Ríos y Gloria Cano desde Londres.
+          </p>
+          <p>
+            Diez años antes de llegar a Medellín, el pastor Carlos inició el podcast Devocional Maná para llegar a sus feligreses en lugares apartados.
+          </p>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--fronts" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-fronts-layout">
+        <div class="mana-title-block mana-title-block--light" data-mana-copy>
+          <p class="mana-script">3 grandes</p>
+          <h2>FRENTES</h2>
+        </div>
+        <div class="mana-fronts-list" data-mana-stagger>
+          {fronts.map((front) => (
+            <article>
+              <span>{front.number}</span>
+              <h3>{front.title}</h3>
+              <p>{front.detail}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--objectives" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-objectives-layout">
+        <div class="mana-title-block" data-mana-copy>
+          <p class="mana-script">Nuestros</p>
+          <h2>OBJETIVOS</h2>
+        </div>
+        <div class="mana-numbered-list" data-mana-stagger>
+          {objectives.map((objective, index) => (
+            <article>
+              <span>{index + 1}</span>
+              <p>{objective}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--values" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-values-layout">
+        <div class="mana-title-block mana-title-block--light" data-mana-copy>
+          <p class="mana-script">Principios y</p>
+          <h2>VALORES</h2>
+        </div>
+        <div class="mana-values-grid" data-mana-stagger>
+          {values.map((value) => (
+            <p>{value}</p>
+          ))}
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--food" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-food-layout">
+        <div class="mana-food-title" data-mana-title>
+          <p>Alimento</p>
+          <h2>ESPIRITUAL</h2>
+        </div>
+        <div class="mana-program-stack" data-mana-stagger>
+          <span>21 Hábitos que Sanan</span>
+          <span>Mi Casa</span>
+          <span>Dos para Ser Uno</span>
+          <span>Nacidos para Multiplicarnos</span>
+          <span>Escogidos para Servir</span>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--churches" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-church-layout">
+        <div class="mana-title-block" data-mana-copy>
+          <p class="mana-script">Nuestras</p>
+          <h2>IGLESIAS</h2>
+        </div>
+        <div class="mana-code-map" data-mana-visual aria-hidden="true">
+          <span class="mana-map-country mana-map-country--co">Colombia</span>
+          <span class="mana-map-country mana-map-country--ec">Ecuador</span>
+          {cities.map((city) => <i style={`left:${city.x}%;top:${city.y}%`}>{city.name}</i>)}
+        </div>
+        <div class="mana-copy-panel" data-mana-copy>
+          <p>
+            Presencia en 7 departamentos y 13 municipios, y en Ecuador en las ciudades de Cuenca y Quito.
+          </p>
+          <p>
+            Iglesias y misiones dirigidas por líderes servidores bivocacionales que impactan su entorno cercano.
+          </p>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--virtual" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-virtual-layout">
+        <div class="mana-title-block mana-title-block--light" data-mana-copy>
+          <p class="mana-script">Programas</p>
+          <h2>VIRTUALES</h2>
+        </div>
+        <div class="mana-schedule" data-mana-stagger>
+          {programs.map(([time, name]) => (
+            <article>
+              <span>{time}</span>
+              <strong>{name}</strong>
+            </article>
+          ))}
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-scene mana-scene--impact" data-mana-scene>
+    <div class="mana-stage">
+      <div class="mana-impact-layout">
+        <div class="mana-title-block" data-mana-copy>
+          <p class="mana-script">Nuestro</p>
+          <h2>IMPACTO</h2>
+        </div>
+        <div class="mana-metrics" data-mana-stagger>
+          {metrics.map(([value, label]) => (
+            <article>
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </article>
+          ))}
+        </div>
+        <div class="mana-country-strip" data-mana-visual>
+          <span>Colombia 1,2M</span>
+          <span>Estados Unidos 1,07M</span>
+          <span>Ecuador 90K</span>
+          <span>España 66K</span>
+        </div>
+      </div>
+      <div class="mana-progress"><span data-mana-progress></span></div>
+    </div>
+  </section>
+
+  <section class="mana-final-code">
+    <div>
+      <p class="mana-script">Ministerio Maná</p>
+      <h2>Conocer, amar, obedecer y servir.</h2>
+      <p>Este borrador vive separado del home actual para seguir refinándolo hasta que esté listo para reemplazarlo.</p>
+      <nav aria-label="Acciones finales">
+        <a href="/devocional/" class="mana-btn mana-btn--fill">Devocional Maná</a>
+        <a href="/iglesias/" class="mana-btn mana-btn--line">Encontrar iglesia</a>
+        <a href="/" class="mana-btn mana-btn--line">Home actual</a>
+      </nav>
+    </div>
+  </section>
+</section>
+
+<style>
+  @font-face {
+    font-family: "Mana Script";
+    src: url("/fonts/SUMMER%20FONT/Summer%20Loving%20Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .mana-story-code {
+    --navy: #293c74;
+    --navy-deep: #17245b;
+    --teal: #28a6bd;
+    --sky: #cbd9e6;
+    --beige: #f5efeb;
+    --white: #fff;
+    background: var(--beige);
+    color: var(--navy);
+    overflow-x: clip;
+  }
+
+  :global(html),
+  :global(body) {
+    overflow-x: hidden;
+  }
+
+  .mana-story-code,
+  .mana-story-code * {
+    box-sizing: border-box;
+  }
+
+  .mana-scene {
+    position: relative;
+    min-height: 100vh;
+  }
+
+  .mana-stage {
+    position: relative;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 100vh;
+    display: grid;
+    align-items: center;
+    overflow: hidden;
+    padding: 112px 72px 56px;
+    background: var(--beige);
+  }
+
+  .mana-scene--hero .mana-stage,
+  .mana-scene--vision .mana-stage,
+  .mana-scene--fronts .mana-stage,
+  .mana-scene--values .mana-stage,
+  .mana-scene--virtual .mana-stage {
+    background: var(--navy);
+    color: var(--white);
+  }
+
+  .mana-stage::before,
+  .mana-stage::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .mana-stage::before {
+    top: -96px;
+    right: -48px;
+    width: 280px;
+    height: 280px;
+    border-radius: 0 0 0 160px;
+    background: var(--teal);
+  }
+
+  .mana-stage::after {
+    left: -72px;
+    bottom: -96px;
+    width: 260px;
+    height: 260px;
+    border: 2px solid rgba(40, 166, 189, 0.42);
+    border-radius: 50%;
+  }
+
+  .mana-scene--mission .mana-stage::before,
+  .mana-scene--history .mana-stage::before,
+  .mana-scene--objectives .mana-stage::before,
+  .mana-scene--churches .mana-stage::before,
+  .mana-scene--impact .mana-stage::before {
+    background: var(--sky);
+  }
+
+  .mana-hero-layout,
+  .mana-split,
+  .mana-vision-layout,
+  .mana-history-grid,
+  .mana-fronts-layout,
+  .mana-objectives-layout,
+  .mana-values-layout,
+  .mana-food-layout,
+  .mana-church-layout,
+  .mana-virtual-layout,
+  .mana-impact-layout {
+    position: relative;
+    z-index: 2;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+  }
+
+  .mana-hero-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 620px;
+    align-items: center;
+  }
+
+  .mana-hero-mark {
+    position: absolute;
+    top: 120px;
+    left: 210px;
+    height: 420px;
+    width: 900px;
+    opacity: 0.28;
+  }
+
+  .mana-outline-word {
+    position: absolute;
+    inset: 24px auto auto 120px;
+    color: transparent;
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 12rem;
+    font-weight: 800;
+    line-height: 1;
+    -webkit-text-stroke: 4px var(--teal);
+    text-stroke: 4px var(--teal);
+  }
+
+  .mana-script-word {
+    position: absolute;
+    top: 148px;
+    left: 330px;
+    color: var(--white);
+    font-family: "Mana Script", cursive;
+    font-size: 6.5rem;
+    line-height: 1;
+  }
+
+  .mana-solid-word {
+    position: absolute;
+    top: 216px;
+    left: 430px;
+    color: var(--white);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .mana-hero-copy {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 760px;
+  }
+
+  .mana-label {
+    margin: 0 0 12px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .mana-hero-copy h1 {
+    margin: 0;
+    color: var(--white);
+    font-family: "Mana Script", cursive;
+    font-size: 4rem;
+    font-weight: 400;
+    line-height: 0.95;
+  }
+
+  .mana-hero-copy h1 span {
+    display: block;
+    color: var(--teal);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 7rem;
+    font-weight: 800;
+    line-height: 0.85;
+  }
+
+  .mana-hero-copy p {
+    max-width: 650px;
+    margin: 28px 0 0;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 1.18rem;
+    line-height: 1.55;
+    overflow-wrap: break-word;
+  }
+
+  .mana-actions,
+  .mana-final-code nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .mana-btn {
+    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border-radius: 8px;
+    padding: 13px 18px;
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .mana-btn--fill {
+    background: var(--teal);
+    color: var(--white);
+  }
+
+  .mana-btn--line {
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+  }
+
+  .mana-split,
+  .mana-history-grid,
+  .mana-church-layout {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 64px;
+    align-items: center;
+  }
+
+  .mana-title-block {
+    max-width: 520px;
+  }
+
+  .mana-script {
+    margin: 0 0 4px;
+    color: var(--navy);
+    font-family: "Mana Script", cursive;
+    font-size: 4.5rem;
+    line-height: 0.88;
+  }
+
+  .mana-title-block h2,
+  .mana-food-title h2 {
+    margin: 0;
+    color: var(--teal);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 7.6rem;
+    font-weight: 800;
+    line-height: 0.82;
+  }
+
+  .mana-title-block--light .mana-script,
+  .mana-title-block--light h2,
+  .mana-scene--food .mana-script {
+    color: var(--white);
+  }
+
+  .mana-title-block--light h2 {
+    color: var(--teal);
+  }
+
+  .mana-copy-panel {
+    position: relative;
+    border-left: 3px solid var(--teal);
+    padding: 28px 0 28px 36px;
+  }
+
+  .mana-copy-panel p {
+    margin: 0 0 22px;
+    color: rgba(41, 60, 116, 0.86);
+    font-size: 1.22rem;
+    line-height: 1.58;
+  }
+
+  .mana-copy-panel p:last-child {
+    margin-bottom: 0;
+  }
+
+  .mana-copy-panel--light p {
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .mana-hanging-logo {
+    position: absolute;
+    top: -132px;
+    left: 36px;
+    width: 126px;
+    height: 126px;
+    border: 3px solid var(--teal);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--white);
+  }
+
+  .mana-hanging-logo span {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: 2px;
+    height: 96px;
+    background: var(--teal);
+  }
+
+  .mana-hanging-logo img {
+    width: 58px;
+    height: auto;
+  }
+
+  .mana-vision-layout {
+    display: grid;
+    grid-template-columns: 0.72fr 0.6fr;
+    grid-template-rows: auto auto;
+    gap: 36px 64px;
+    align-items: center;
+  }
+
+  .mana-year-card {
+    justify-self: end;
+    color: rgba(40, 166, 189, 0.24);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 12rem;
+    font-weight: 800;
+    line-height: 0.8;
+  }
+
+  .mana-vision-layout .mana-copy-panel {
+    grid-column: 1 / -1;
+    max-width: 920px;
+  }
+
+  .mana-route {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+    color: var(--navy);
+    font-family: "Intro", system-ui, sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .mana-route i {
+    height: 3px;
+    background: var(--teal);
+  }
+
+  .mana-route strong {
+    color: var(--teal);
+    font-size: 6rem;
+    line-height: 0.9;
+  }
+
+  .mana-history-grid {
+    grid-template-columns: 0.72fr 1.1fr;
+  }
+
+  .mana-history-grid .mana-copy-panel {
+    grid-column: 2;
+  }
+
+  .mana-fronts-layout,
+  .mana-values-layout,
+  .mana-virtual-layout {
+    display: grid;
+    grid-template-columns: 0.75fr 1.25fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .mana-fronts-list,
+  .mana-values-grid,
+  .mana-schedule,
+  .mana-metrics {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mana-fronts-list article,
+  .mana-numbered-list article,
+  .mana-values-grid p,
+  .mana-program-stack span,
+  .mana-schedule article,
+  .mana-metrics article,
+  .mana-country-strip span {
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 20px;
+  }
+
+  .mana-fronts-list span {
+    display: block;
+    margin-bottom: 16px;
+    color: var(--teal);
+    font-family: "Intro", system-ui, sans-serif;
+    font-weight: 800;
+  }
+
+  .mana-fronts-list h3 {
+    margin: 0 0 8px;
+    color: var(--white);
+    font-size: 1.6rem;
+    line-height: 1.1;
+  }
+
+  .mana-fronts-list p,
+  .mana-values-grid p,
+  .mana-schedule article,
+  .mana-country-strip span {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.76);
+    line-height: 1.45;
+  }
+
+  .mana-objectives-layout,
+  .mana-impact-layout {
+    display: grid;
+    grid-template-columns: 0.78fr 1.22fr;
+    gap: 56px;
+    align-items: center;
+  }
+
+  .mana-numbered-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .mana-numbered-list article {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 20px;
+    align-items: start;
+    border-color: rgba(41, 60, 116, 0.14);
+    background: rgba(255, 255, 255, 0.68);
+  }
+
+  .mana-numbered-list span {
+    color: var(--teal);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 0.88;
+  }
+
+  .mana-numbered-list p {
+    margin: 0;
+    color: rgba(41, 60, 116, 0.82);
+    font-size: 1.08rem;
+    line-height: 1.5;
+  }
+
+  .mana-food-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 42px;
+  }
+
+  .mana-food-title p {
+    margin: 0;
+    color: var(--navy);
+    font-family: "Mana Script", cursive;
+    font-size: 5.2rem;
+    line-height: 0.8;
+  }
+
+  .mana-program-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    max-width: 920px;
+  }
+
+  .mana-program-stack span {
+    border-color: rgba(41, 60, 116, 0.12);
+    background: var(--white);
+    color: var(--navy);
+    font-weight: 800;
+  }
+
+  .mana-code-map {
+    position: relative;
+    min-height: 420px;
+    border-radius: 8px;
+    border: 1px solid rgba(41, 60, 116, 0.14);
+    background:
+      linear-gradient(90deg, rgba(203, 217, 230, 0.54) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(203, 217, 230, 0.54) 1px, transparent 1px),
+      var(--white);
+    background-size: 46px 46px;
+    overflow: hidden;
+  }
+
+  .mana-code-map::before {
+    content: "";
+    position: absolute;
+    width: 210px;
+    height: 300px;
+    left: 150px;
+    top: 58px;
+    border: 4px solid var(--teal);
+    border-radius: 48% 44% 46% 52%;
+    transform: rotate(-12deg);
+  }
+
+  .mana-code-map::after {
+    content: "";
+    position: absolute;
+    width: 86px;
+    height: 126px;
+    right: 120px;
+    bottom: 66px;
+    border: 4px solid var(--teal);
+    border-radius: 52% 46% 52% 42%;
+    transform: rotate(10deg);
+  }
+
+  .mana-map-country {
+    position: absolute;
+    z-index: 2;
+    color: var(--navy);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+
+  .mana-map-country--co {
+    left: 114px;
+    top: 32px;
+  }
+
+  .mana-map-country--ec {
+    right: 84px;
+    bottom: 32px;
+  }
+
+  .mana-code-map i {
+    position: absolute;
+    z-index: 3;
+    transform: translate(-50%, -50%);
+    border-radius: 8px;
+    background: var(--navy);
+    color: var(--white);
+    padding: 7px 9px;
+    font-style: normal;
+    font-size: 0.78rem;
+    line-height: 1;
+  }
+
+  .mana-schedule {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mana-schedule span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--teal);
+    font-weight: 800;
+  }
+
+  .mana-schedule strong {
+    display: block;
+    color: var(--white);
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
+  .mana-impact-layout {
+    grid-template-columns: 0.65fr 0.82fr 1fr;
+  }
+
+  .mana-metrics article {
+    border-color: rgba(41, 60, 116, 0.14);
+    background: rgba(255, 255, 255, 0.74);
+  }
+
+  .mana-metrics strong {
+    display: block;
+    color: var(--teal);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 3.2rem;
+    font-weight: 800;
+    line-height: 0.92;
+  }
+
+  .mana-metrics span {
+    display: block;
+    margin-top: 8px;
+    color: rgba(41, 60, 116, 0.76);
+  }
+
+  .mana-country-strip {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mana-country-strip span {
+    border-color: rgba(41, 60, 116, 0.14);
+    background: var(--navy);
+    color: var(--white);
+    font-weight: 800;
+  }
+
+  .mana-final-code {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 112px 24px;
+    background: var(--navy);
+    color: var(--white);
+    text-align: center;
+  }
+
+  .mana-final-code > div {
+    width: min(880px, 100%);
+  }
+
+  .mana-final-code .mana-script {
+    color: var(--white);
+  }
+
+  .mana-final-code h2 {
+    margin: 0;
+    color: var(--teal);
+    font-family: "Intro", system-ui, sans-serif;
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 0.94;
+  }
+
+  .mana-final-code p:not(.mana-script) {
+    max-width: 620px;
+    margin: 24px auto 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.16rem;
+    line-height: 1.55;
+  }
+
+  .mana-final-code nav {
+    justify-content: center;
+  }
+
+  .mana-progress {
+    position: absolute;
+    z-index: 4;
+    left: 72px;
+    right: 72px;
+    bottom: 28px;
+    height: 2px;
+    background: rgba(40, 166, 189, 0.24);
+  }
+
+  .mana-progress span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--teal);
+  }
+
+  @media (max-width: 980px) {
+    .mana-stage {
+      padding: 96px 28px 52px;
+    }
+
+    .mana-hero-layout {
+      min-height: 560px;
+    }
+
+    .mana-hero-mark {
+      top: 90px;
+      left: 220px;
+      height: 300px;
+    }
+
+    .mana-outline-word {
+      left: 0;
+      font-size: 7rem;
+      -webkit-text-stroke-width: 3px;
+      text-stroke-width: 3px;
+    }
+
+    .mana-script-word {
+      top: 110px;
+      left: 110px;
+      font-size: 4.4rem;
+    }
+
+    .mana-solid-word {
+      top: 165px;
+      left: 146px;
+      font-size: 2.7rem;
+    }
+
+    .mana-hero-copy h1 {
+      font-size: 3rem;
+    }
+
+    .mana-hero-copy h1 span,
+    .mana-title-block h2,
+    .mana-food-title h2 {
+      font-size: 4.6rem;
+    }
+
+    .mana-script,
+    .mana-food-title p {
+      font-size: 3.2rem;
+    }
+
+    .mana-split,
+    .mana-history-grid,
+    .mana-fronts-layout,
+    .mana-objectives-layout,
+    .mana-values-layout,
+    .mana-church-layout,
+    .mana-virtual-layout,
+    .mana-impact-layout,
+    .mana-vision-layout {
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+
+    .mana-vision-layout .mana-copy-panel,
+    .mana-history-grid .mana-copy-panel {
+      grid-column: auto;
+    }
+
+    .mana-year-card {
+      justify-self: start;
+      font-size: 6.8rem;
+    }
+
+    .mana-hanging-logo {
+      display: none;
+    }
+
+    .mana-schedule {
+      grid-template-columns: 1fr;
+    }
+
+    .mana-code-map {
+      min-height: 320px;
+    }
+
+    .mana-code-map::before {
+      left: 52px;
+      top: 62px;
+    }
+
+    .mana-code-map::after {
+      right: 48px;
+    }
+
+    .mana-final-code h2 {
+      font-size: 3.5rem;
+    }
+
+    .mana-progress {
+      left: 28px;
+      right: 28px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .mana-stage {
+      min-height: 100svh;
+      padding: 92px 20px 46px;
+    }
+
+    .mana-stage::before {
+      width: 150px;
+      height: 150px;
+    }
+
+    .mana-stage::after {
+      width: 160px;
+      height: 160px;
+    }
+
+    .mana-hero-layout {
+      min-height: 640px;
+    }
+
+    .mana-hero-mark {
+      display: none;
+    }
+
+    .mana-hero-copy h1 {
+      font-size: 2.25rem;
+    }
+
+    .mana-hero-copy {
+      width: min(330px, 100%);
+      max-width: min(330px, 100%);
+    }
+
+    .mana-hero-copy h1 span,
+    .mana-title-block h2,
+    .mana-food-title h2 {
+      font-size: 3.05rem;
+    }
+
+    .mana-script,
+    .mana-food-title p {
+      font-size: 2.8rem;
+    }
+
+    .mana-hero-copy p,
+    .mana-copy-panel p {
+      width: 100%;
+      max-width: 100%;
+      font-size: 1rem;
+      line-height: 1.48;
+    }
+
+    .mana-actions {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .mana-btn {
+      width: min(100%, 250px);
+    }
+
+    .mana-copy-panel {
+      padding: 20px 0 20px 18px;
+    }
+
+    .mana-route {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .mana-route i {
+      width: 3px;
+      height: 34px;
+    }
+
+    .mana-route strong {
+      font-size: 4.2rem;
+    }
+
+    .mana-numbered-list article {
+      grid-template-columns: 1fr;
+    }
+
+    .mana-fronts-list article,
+    .mana-numbered-list article,
+    .mana-values-grid p,
+    .mana-program-stack span,
+    .mana-schedule article,
+    .mana-metrics article,
+    .mana-country-strip span {
+      padding: 14px;
+    }
+
+    .mana-code-map {
+      min-height: 280px;
+    }
+
+    .mana-code-map i {
+      font-size: 0.7rem;
+    }
+
+    .mana-map-country--co {
+      left: 28px;
+    }
+
+    .mana-map-country--ec {
+      right: 28px;
+    }
+
+    .mana-metrics strong {
+      font-size: 2.3rem;
+    }
+
+    .mana-final-code h2 {
+      font-size: 2.8rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mana-scene,
+    .mana-stage {
+      min-height: auto;
+    }
+  }
+</style>
+
+<script nonce={cspNonce}>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  function initManaStoryCode() {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const scenes = gsap.utils.toArray('[data-mana-scene]');
+
+    ScrollTrigger.getAll()
+      .filter((trigger) => trigger.vars?.id?.startsWith('mana-code-story-'))
+      .forEach((trigger) => trigger.kill());
+
+    if (reduceMotion || !scenes.length) return;
+
+    document.querySelectorAll('[data-mana-next]').forEach((button) => {
+      if (button.dataset.manaBound === 'true') return;
+      button.dataset.manaBound = 'true';
+      button.addEventListener('click', () => {
+        const nextY = window.scrollY + window.innerHeight * 1.45;
+        if (window.lenis?.scrollTo) window.lenis.scrollTo(nextY);
+        else window.scrollTo({ top: nextY, behavior: 'smooth' });
+      }, { once: false });
+    });
+
+    scenes.forEach((scene, index) => {
+      const stage = scene.querySelector('.mana-stage');
+      const title = scene.querySelector('[data-mana-title]') || scene.querySelector('h2');
+      const copy = scene.querySelectorAll('[data-mana-copy], [data-mana-line], [data-mana-actions]');
+      const visual = scene.querySelector('[data-mana-visual]');
+      const staggerItems = scene.querySelectorAll('[data-mana-stagger] > *');
+      const progress = scene.querySelector('[data-mana-progress]');
+
+      const timeline = gsap.timeline({
+        defaults: { ease: 'power2.out' },
+        scrollTrigger: {
+          id: `mana-code-story-${index}`,
+          trigger: scene,
+          start: 'top top',
+          end: '+=145%',
+          pin: stage,
+          scrub: 1.15,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: ({ progress: t }) => {
+            if (progress) progress.style.transform = `scaleX(${t})`;
+          },
+        },
+      });
+
+      timeline
+        .fromTo(title, { autoAlpha: 0.18, y: 56 }, { autoAlpha: 1, y: 0, duration: 0.28 }, 0.03)
+        .fromTo(copy, { autoAlpha: 0.18, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.26, stagger: 0.035 }, 0.11);
+
+      if (visual) {
+        timeline.fromTo(visual, { autoAlpha: 0.18, y: 48, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.34 }, 0.14);
+        timeline.to(visual, { y: -16, scale: 1.03, duration: 0.46, ease: 'none' }, 0.5);
+      }
+
+      if (staggerItems.length) {
+        timeline.fromTo(staggerItems, { autoAlpha: 0.18, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.22, stagger: 0.04 }, 0.23);
+      }
+
+      timeline.to(stage, { autoAlpha: 0.72, scale: 0.988, duration: 0.16, ease: 'power1.in' }, 0.91);
+    });
+
+    requestAnimationFrame(() => ScrollTrigger.refresh());
+  }
+
+  document.addEventListener('astro:page-load', initManaStoryCode);
+  document.addEventListener('DOMContentLoaded', initManaStoryCode);
+</script>
