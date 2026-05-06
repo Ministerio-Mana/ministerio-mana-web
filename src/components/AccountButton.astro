@@ -1,7 +1,33 @@
 ---
 // This component detects if user has an active session
 // Shows "Iniciar sesión" for guests or account dropdown for logged users
+const { variant = 'light' } = Astro.props;
 const cspNonce = Astro.locals?.cspNonce;
+
+const isDark = variant === 'dark';
+const guestClass = isDark
+  ? 'hidden items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15 transition-all text-sm font-medium text-white/90 hover:text-white'
+  : 'hidden items-center gap-2 px-4 py-2 rounded-full border border-[var(--mana-border)] bg-white/70 hover:border-brand-medium hover:bg-brand-teal/5 transition-all text-sm font-medium text-brand-dark hover:text-brand-medium';
+const loggedSummaryClass = isDark
+  ? 'flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15 transition-all cursor-pointer select-none text-white/90 hover:text-white'
+  : 'flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--mana-border)] bg-white/70 hover:border-brand-medium hover:bg-brand-teal/5 transition-all cursor-pointer select-none text-brand-dark hover:text-brand-medium';
+const avatarClass = isDark
+  ? 'w-8 h-8 rounded-full bg-brand-teal/20 flex items-center justify-center text-white font-bold text-sm'
+  : 'w-8 h-8 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-dark font-bold text-sm';
+const nameClass = isDark
+  ? 'hidden sm:inline text-sm font-medium text-white/90'
+  : 'hidden sm:inline text-sm font-medium text-brand-dark';
+const chevronClass = isDark ? 'h-4 w-4 text-white/70' : 'h-4 w-4 text-neutral-400';
+const dropdownClass = isDark
+  ? 'absolute right-0 mt-3 w-56 rounded-2xl border border-white/20 bg-brand-void/95 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl z-50'
+  : 'absolute right-0 mt-3 w-56 rounded-2xl border border-[var(--mana-border-strong)] bg-[var(--mana-surface)] p-2 shadow-lg z-50';
+const portalLinkClass = isDark
+  ? 'flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-white/80 hover:text-white transition-colors text-sm'
+  : 'flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-50 text-neutral-700 hover:text-brand-dark transition-colors text-sm';
+const dividerClass = isDark ? 'my-2 border-white/15' : 'my-2 border-[var(--mana-border)]';
+const logoutClass = isDark
+  ? 'w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 text-red-300 hover:text-red-200 transition-colors text-sm'
+  : 'w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors text-sm';
 ---
 
 <div id="account-button-container" class="relative">
@@ -12,7 +38,7 @@ const cspNonce = Astro.locals?.cspNonce;
   <a 
     id="account-guest" 
     href="/portal/ingresar" 
-    class="hidden items-center gap-2 px-4 py-2 rounded-full border border-[var(--mana-border)] hover:border-brand-medium hover:bg-brand-teal/5 transition-all text-sm font-medium text-neutral-700 hover:text-brand-dark dark:text-white dark:hover:text-blue-500"
+    class={guestClass}
   >
     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -22,25 +48,25 @@ const cspNonce = Astro.locals?.cspNonce;
   
   <!-- Logged state: Show account button -->
   <details id="account-logged" class="hidden relative">
-    <summary class="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--mana-border)] hover:border-brand-medium hover:bg-brand-teal/5 transition-all cursor-pointer select-none">
-      <div class="w-8 h-8 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-dark font-bold text-sm">
+    <summary class={loggedSummaryClass}>
+      <div class={avatarClass}>
         <span id="account-initials">U</span>
       </div>
-      <span id="account-name" class="hidden sm:inline text-sm font-medium text-neutral-700"></span>
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <span id="account-name" class={nameClass}></span>
+      <svg xmlns="http://www.w3.org/2000/svg" class={chevronClass} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
       </svg>
     </summary>
     
-    <div class="absolute right-0 mt-3 w-56 rounded-2xl border border-[var(--mana-border-strong)] bg-[var(--mana-surface)] p-2 shadow-lg z-50">
-      <a href="/portal/" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-neutral-50 text-neutral-700 hover:text-brand-dark transition-colors text-sm">
+    <div class={dropdownClass}>
+      <a href="/portal/" class={portalLinkClass}>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
         Portal Maná
       </a>
-      <hr class="my-2 border-[var(--mana-border)]" />
-      <button id="btn-logout-header" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors text-sm">
+      <hr class={dividerClass} />
+      <button id="btn-logout-header" class={logoutClass}>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
         </svg>

@@ -29,7 +29,7 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
       </a>
       <div class="pointer-events-auto">
         <div class={`rounded-full border backdrop-blur-md px-2 py-1 ${isLight ? 'bg-white/70 border-brand-navy/10' : 'bg-white/10 border-white/10'}`}>
-          <AccountButton />
+          <AccountButton variant={isLight ? 'light' : 'dark'} />
         </div>
       </div>
     </div>
