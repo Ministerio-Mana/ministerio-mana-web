@@ -19,6 +19,7 @@ export class RegistrationModal {
         this.editPaymentId = null;
         this.canEditPayment = true;
         this.canRecordPhysicalPayment = true;
+        this.canStopPaymentPlan = true;
         this.canDeleteBooking = false;
         this.paymentSummary = null;
         this.savedPaymentTotalAmount = null;
@@ -1056,7 +1057,7 @@ export class RegistrationModal {
         const planStatus = (plan?.status || '').toString().trim().toUpperCase();
         const hasOpenPlan = Boolean(plan && !['COMPLETED', 'CANCELLED'].includes(planStatus));
         const showPhysicalAction = Boolean(hasEditMode && this.canRecordPhysicalPayment && remaining > 0);
-        const showPlanAction = Boolean(hasEditMode && hasOpenPlan);
+        const showPlanAction = Boolean(hasEditMode && hasOpenPlan && this.canStopPaymentPlan);
         const showSection = showPhysicalAction || showPlanAction;
 
         this.paymentActionsSection.classList.toggle('hidden', !showSection);
@@ -1787,6 +1788,7 @@ export class RegistrationModal {
         this.editPaymentId = payload.payment?.id || null;
         this.canEditPayment = payload?.permissions?.can_edit_payment !== false;
         this.canRecordPhysicalPayment = payload?.permissions?.can_record_physical_payment !== false;
+        this.canStopPaymentPlan = payload?.permissions?.can_stop_payment_plan !== false;
         this.canDeleteBooking = payload?.permissions?.can_delete_booking === true;
         this.paymentSummary = payload?.payment_summary || null;
         this.savedPaymentTotalAmount = Number(payload?.payment_summary?.total_amount ?? booking.total_amount ?? 0);
@@ -1915,6 +1917,7 @@ export class RegistrationModal {
         this.isEditMode = false;
         this.canEditPayment = true;
         this.canRecordPhysicalPayment = true;
+        this.canStopPaymentPlan = true;
         this.canDeleteBooking = false;
         this.paymentSummary = null;
         this.savedPaymentTotalAmount = null;

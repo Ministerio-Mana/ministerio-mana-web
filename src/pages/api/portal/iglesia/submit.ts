@@ -17,7 +17,6 @@ import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createDonation } from '@lib/donationsStore';
-import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
@@ -424,7 +423,11 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     try {
-      const baseUrl = resolveBaseUrl(request);
+      const configuredBaseUrl = import.meta.env?.PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL;
+      if (!configuredBaseUrl) {
+        throw new Error('PUBLIC_SITE_URL no está configurado');
+      }
+      const baseUrl = configuredBaseUrl.replace(/\/+$/, '');
       const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
       const existingUser = await findAuthUserByEmail(email);
       if (!existingUser) {

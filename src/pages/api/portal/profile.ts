@@ -99,7 +99,37 @@ export const POST: APIRoute = async ({ request }) => {
   const churchName = sanitizePlainText(payload.church_name || payload.churchName || '', 120);
   const churchId = payload.church_id || payload.churchId || null;
 
-  if (affiliationType === 'local' && !churchName && !churchId) {
+  const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
+    .from('user_profiles')
+    .select('role, country, church_id, region_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existingProfileError && existingProfileError.code !== 'PGRST116') {
+    console.error('[portal.profile] read before update error', existingProfileError);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar el perfil' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const lockedScopeRoles = new Set([
+    'superadmin',
+    'admin',
+    'national_pastor',
+    'national_collaborator',
+    'regional_pastor',
+    'regional_collaborator',
+    'pastor',
+    'local_collaborator',
+    'leader',
+  ]);
+  const existingRole = String(existingProfile?.role || 'user');
+  const lockScopeFields = lockedScopeRoles.has(existingRole);
+  const scopedCountry = lockScopeFields ? (existingProfile?.country || null) : (country || null);
+  const scopedChurchId = lockScopeFields ? (existingProfile?.church_id || null) : churchId;
+
+  if (affiliationType === 'local' && !churchName && !scopedChurchId) {
     return new Response(JSON.stringify({ ok: false, error: 'Selecciona una sede o escribe el nombre de tu iglesia' }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
@@ -116,12 +146,13 @@ export const POST: APIRoute = async ({ request }) => {
     full_name: fullName || null,
     phone: phone || null,
     city: city || null,
-    country: country || null,
+    country: scopedCountry,
     document_type: documentType || null,
     document_number: documentNumber || null,
     affiliation_type: affiliationType,
     church_name: churchName || null,
-    church_id: churchId,
+    church_id: scopedChurchId,
+    region_id: lockScopeFields ? (existingProfile?.region_id || null) : undefined,
     updated_at: new Date().toISOString(),
   };
 

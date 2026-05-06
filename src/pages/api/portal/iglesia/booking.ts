@@ -33,6 +33,7 @@ import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createDonation } from '@lib/donationsStore';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { getRoleCapabilities } from '@lib/portalRbac';
 
 export const prerender = false;
 
@@ -149,6 +150,11 @@ function canEditManualPayment(booking: any): boolean {
 function isManualProvider(rawProvider: unknown): boolean {
   const provider = String(rawProvider || '').trim().toLowerCase();
   return provider === 'manual' || provider === 'cash' || provider === 'physical';
+}
+
+function canManagePaymentPlan(ctx: Awaited<ReturnType<typeof getAccessContext>>, booking: any, plan: any): boolean {
+  if (ctx.canAccessFinances) return true;
+  return canEditManualPayment(booking) && isManualProvider(plan?.provider);
 }
 
 function buildManualEditProviderTxId(bookingId: string, idempotencyKey: string): string {
@@ -324,6 +330,8 @@ async function hasOnlinePaymentSignals(bookingId: string): Promise<boolean> {
 
 async function getAccessContext(request: Request) {
   const access = await getPortalChurchAccessContext(request);
+  const role = String(access.role || access.profile?.role || '');
+  const capabilities = getRoleCapabilities(role);
   return {
     ok: access.ok,
     reason: access.reason,
@@ -334,7 +342,9 @@ async function getAccessContext(request: Request) {
     isRegional: access.isRegional,
     allowedRegionIds: access.allowedRegionIds,
     profile: access.profile,
+    role,
     userId: access.userId,
+    canAccessFinances: Boolean(access.isAdmin || capabilities.can_access_finances),
   };
 }
 
@@ -567,6 +577,8 @@ export const GET: APIRoute = async ({ request }) => {
   const totalAmount = Number(booking.total_amount || 0);
   const remainingAmount = Math.max(totalAmount - totalPaid, 0);
   const hasOnlineSignals = await hasOnlinePaymentSignals(bookingId);
+  const canRecordPhysicalPayment = canEditManualPayment(booking);
+  const canManageCurrentPaymentPlan = Boolean(plan && canManagePaymentPlan(ctx, booking, plan));
 
   return new Response(JSON.stringify({
     ok: true,
@@ -585,8 +597,8 @@ export const GET: APIRoute = async ({ request }) => {
     permissions: {
       can_edit_profile: true,
       can_edit_payment: canEditManualPayment(booking),
-      can_record_physical_payment: true,
-      can_stop_payment_plan: true,
+      can_record_physical_payment: canRecordPhysicalPayment,
+      can_stop_payment_plan: canManageCurrentPaymentPlan,
       can_delete_booking: canEditManualPayment(booking) && !hasOnlineSignals,
     },
   }), {
@@ -639,6 +651,13 @@ export const POST: APIRoute = async ({ request }) => {
   const epsilon = currency === 'USD' ? 0.01 : 1;
 
   if (action === 'record_physical_payment') {
+    if (!canEditManualPayment(booking)) {
+      return jsonResponse({
+        ok: false,
+        error: 'Solo se pueden registrar abonos físicos en reservas manuales o de pago físico',
+      }, 409);
+    }
+
     const amount = parseAmountForCurrency(body.amount ?? body.payment_amount ?? body.paymentAmount, currency);
     const paymentMethod = sanitizePlainText(body.payment_method ?? body.paymentMethod ?? 'physical', 40) || 'physical';
 
@@ -771,6 +790,9 @@ export const POST: APIRoute = async ({ request }) => {
     if (!plan) {
       return jsonResponse({ ok: false, error: 'Esta reserva no tiene plan de cobros' }, 404);
     }
+    if (!canManagePaymentPlan(ctx, booking, plan)) {
+      return jsonResponse({ ok: false, error: 'No autorizado para gestionar planes de cobro' }, 403);
+    }
 
     const planStatus = String(plan.status || '').toUpperCase();
     if (planStatus === 'COMPLETED' || planStatus === 'CANCELLED') {
@@ -824,6 +846,9 @@ export const POST: APIRoute = async ({ request }) => {
     const plan = await getPlanByBookingId(bookingId);
     if (!plan) {
       return jsonResponse({ ok: false, error: 'Esta reserva no tiene plan de cobros' }, 404);
+    }
+    if (!canManagePaymentPlan(ctx, booking, plan)) {
+      return jsonResponse({ ok: false, error: 'No autorizado para gestionar planes de cobro' }, 403);
     }
 
     const planStatus = String(plan.status || '').toUpperCase();

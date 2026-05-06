@@ -5,6 +5,7 @@ import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } f
 import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { resolveBaseUrl } from '@lib/url';
 
 function env(key: string): string | undefined {
     return import.meta.env?.[key] ?? process.env?.[key];
@@ -33,6 +34,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     try {
+        let baseUrl: string;
+        try {
+            baseUrl = resolveBaseUrl(request);
+        } catch (error) {
+            console.warn('[signup] Invalid host for base URL:', error);
+            return new Response(JSON.stringify({ ok: false, error: 'Host no permitido' }), { status: 400 });
+        }
+
         const body = await request.json();
         const { email, password, firstName, lastName, turnstileToken } = body;
         const userAgent = request.headers.get('user-agent') || '';
@@ -86,11 +95,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             console.warn('[signup] HIBP check failed:', leaked.error);
         }
 
-        // Create user with auto-confirmed email
+        // Create user and require email confirmation before password login.
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
-            email_confirm: true,
+            email_confirm: false,
             user_metadata: {
                 first_name: firstName,
                 last_name: lastName,
@@ -100,7 +109,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
         if (authError) {
             if (isAlreadyRegisteredError(authError)) {
-                const redirectTo = `${new URL(request.url).origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+                const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
                 const linkResult = await sendAuthLink({
                     kind: 'recovery',
                     email,
@@ -147,7 +156,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             const emailResult = await sendAuthLink({
                 kind: 'magiclink',
                 email: email,
-                redirectTo: `${new URL(request.url).origin}/portal`
+                redirectTo: `${baseUrl}/portal`
             });
 
             if (!emailResult.ok) {

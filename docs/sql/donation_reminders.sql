@@ -43,3 +43,9 @@ create unique index if not exists donation_reminder_logs_unique
 
 create index if not exists donation_reminder_logs_subscription_idx
   on public.donation_reminder_logs(subscription_id);
+
+alter table if exists public.donation_reminder_subscriptions enable row level security;
+alter table if exists public.donation_reminder_logs enable row level security;
+
+revoke all on table public.donation_reminder_subscriptions from anon, authenticated;
+revoke all on table public.donation_reminder_logs from anon, authenticated;

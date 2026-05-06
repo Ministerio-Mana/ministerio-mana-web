@@ -4,3 +4,7 @@ create table if not exists public.cumbre_registration_drafts (
   payload jsonb not null,
   updated_at timestamptz not null default now()
 );
+
+alter table public.cumbre_registration_drafts enable row level security;
+
+revoke all on public.cumbre_registration_drafts from anon, authenticated;

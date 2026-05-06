@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ request }) => {
         // They could be the leader (registered_by) or a participant (email match)
         const { data: bookings, error: bookingError } = await supabaseAdmin
             .from('cumbre_bookings')
-            .select('*')
+            .select('booking_group_id, package_type, payment_method, payment_status, amount, created_at')
             .eq('email', user.email)
             .order('created_at', { ascending: false });
 
@@ -41,30 +41,36 @@ export const GET: APIRoute = async ({ request }) => {
         const myBooking = bookings[0];
         const groupId = myBooking.booking_group_id;
 
-        // Get all participants in the same group
+        // Get only fields needed by the regular-user portal UI.
         const { data: groupMembers } = await supabaseAdmin
             .from('cumbre_bookings')
-            .select('*')
+            .select('name, age, package_type, is_leader, amount')
             .eq('booking_group_id', groupId)
             .order('is_leader', { ascending: false }); // Leader first
 
-        // Get installments for this group
+        // Get only installment fields needed by the UI.
         const { data: installments } = await supabaseAdmin
             .from('cumbre_payment_plans')
-            .select('*')
+            .select('installment_number, due_date, amount, status')
             .eq('booking_group_id', groupId)
             .order('due_date', { ascending: true });
 
         // Calculate totals
-        const totalAmount = (groupMembers || []).reduce((sum, m) => sum + (m.amount || 0), 0);
+        const totalAmount = (groupMembers || []).reduce((sum, m) => {
+            const amount = typeof m.amount === 'number' ? m.amount : Number(m.amount || 0);
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
 
         // Get payments made for this group
         const { data: payments } = await supabaseAdmin
             .from('cumbre_payments')
-            .select('*')
+            .select('amount')
             .eq('booking_group_id', groupId);
 
-        const totalPaid = (payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+        const totalPaid = (payments || []).reduce((sum, p) => {
+            const amount = typeof p.amount === 'number' ? p.amount : Number(p.amount || 0);
+            return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
 
         // Payment status
         const isPaidFull = myBooking.payment_status === 'PAID' || totalPaid >= totalAmount;
@@ -73,10 +79,20 @@ export const GET: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({
             ok: true,
             enrolled: true,
-            booking: myBooking,
+            booking: {
+                packageType: myBooking.package_type,
+                paymentMethod: myBooking.payment_method,
+                paymentStatus: myBooking.payment_status,
+                amount: myBooking.amount,
+            },
             group: {
                 id: groupId,
-                members: groupMembers || [],
+                members: (groupMembers || []).map((member: any) => ({
+                    name: member.name,
+                    age: member.age,
+                    package_type: member.package_type,
+                    is_leader: member.is_leader,
+                })),
                 memberCount: (groupMembers || []).length
             },
             payment: {

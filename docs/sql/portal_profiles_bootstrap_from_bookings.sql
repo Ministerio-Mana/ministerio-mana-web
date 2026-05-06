@@ -47,6 +47,30 @@ create index if not exists idx_bootstrap_queue_status
 create index if not exists idx_bootstrap_queue_church
   on public.portal_profile_bootstrap_queue(church_id, status);
 
+-- Endurecimiento inline: evitar exposicion si se ejecuta este script de forma aislada.
+revoke all on table public.portal_profile_bootstrap_queue from anon, authenticated;
+grant all on table public.portal_profile_bootstrap_queue to service_role;
+
+alter table public.portal_profile_bootstrap_queue enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'portal_profile_bootstrap_queue'
+      and policyname = 'service_role_all_portal_profile_bootstrap_queue'
+  ) then
+    create policy service_role_all_portal_profile_bootstrap_queue
+      on public.portal_profile_bootstrap_queue
+      for all
+      to service_role
+      using (true)
+      with check (true);
+  end if;
+end
+$$;
+
 -- =========================================================
 -- B) Preview: candidatos sin perfil (SOLO LECTURA)
 -- =========================================================

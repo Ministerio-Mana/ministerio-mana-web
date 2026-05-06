@@ -54,6 +54,22 @@ function getPublicBaseUrl(): string | null {
   }
 }
 
+function normalizeTrustedRedirectTo(rawRedirectTo?: string | null): string | undefined {
+  const raw = String(rawRedirectTo || '').trim();
+  if (!raw) return undefined;
+
+  const trustedBase = new URL(getPublicBaseUrl() || 'https://ministeriomana.org');
+  try {
+    const requested = new URL(raw, trustedBase);
+    if (requested.protocol !== 'http:' && requested.protocol !== 'https:') {
+      return trustedBase.toString();
+    }
+    return new URL(`${requested.pathname}${requested.search}${requested.hash}`, trustedBase).toString();
+  } catch {
+    return trustedBase.toString();
+  }
+}
+
 function normalizeVerificationType(type?: string | null): string {
   if (type === 'email_change_current' || type === 'email_change_new') {
     return 'email_change';
@@ -87,16 +103,19 @@ function buildPortalActivationUrl(params: {
   const { redirectTo, email, verificationType, hashedToken, fallbackActionLink } = params;
 
   const base = getPublicBaseUrl() || 'https://ministeriomana.org';
-  let activationUrl: URL;
+  const trustedBase = new URL(base);
+  const activationUrl = new URL('/portal/activar', trustedBase);
 
   try {
-    activationUrl = new URL(redirectTo || `${base}/portal/activar`, base);
+    const requestedUrl = new URL(redirectTo || '/portal/activar', trustedBase);
+    if (requestedUrl.pathname.startsWith('/portal/activar')) {
+      activationUrl.pathname = requestedUrl.pathname;
+      requestedUrl.searchParams.forEach((value, key) => {
+        activationUrl.searchParams.set(key, value);
+      });
+    }
   } catch {
-    activationUrl = new URL('/portal/activar', base);
-  }
-
-  if (!activationUrl.pathname.startsWith('/portal/activar')) {
-    return fallbackActionLink || activationUrl.toString();
+    // Ignore invalid redirectTo and keep trusted default.
   }
 
   const parsed = parseActionLink(fallbackActionLink);
@@ -173,7 +192,7 @@ export async function sendAuthLink(params: {
     return { ok: false, method: 'supabase', error: 'Supabase no configurado' };
   }
 
-  const redirectTo = params.redirectTo;
+  const redirectTo = normalizeTrustedRedirectTo(params.redirectTo);
 
   if (!isSendgridEnabled()) {
     try {

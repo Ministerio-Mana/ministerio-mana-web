@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { sendAuthLink } from '@lib/authMailer';
-import { resolveBaseUrl } from '@lib/url';
 import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { logSecurityEvent } from '@lib/securityEvents';
@@ -22,6 +21,14 @@ function env(key: string): string | undefined {
 function isProduction(): boolean {
   const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
   return runtimeEnv === 'production';
+}
+
+function getTrustedSiteUrl(): string {
+  const configured = env('PUBLIC_SITE_URL')?.trim();
+  if (!configured) {
+    throw new Error('PUBLIC_SITE_URL no configurado');
+  }
+  return configured.replace(/\/+$/, '');
 }
 
 function makeTraceId(): string {
@@ -86,7 +93,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  const baseUrl = resolveBaseUrl(request);
+  let baseUrl: string;
+  try {
+    baseUrl = getTrustedSiteUrl();
+  } catch (error) {
+    console.error('[auth.send-link] missing trusted site URL', error);
+    return new Response(JSON.stringify({ ok: false, error: 'Servidor no configurado' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   let redirectTo = payload?.redirectTo ? String(payload.redirectTo) : '';
   if (redirectTo) {
     try {

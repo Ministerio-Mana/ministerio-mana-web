@@ -171,13 +171,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
           )
         : [];
 
-      // Fallback temporal por país para perfiles legacy sin region_id/church_id
-      let merged = dedupeProfiles([...byRegion, ...byChurch]);
-      if (!merged.length && access.allowedCountry) {
-        const byCountry = await fetchProfiles((query) => query.eq('country', access.allowedCountry));
-        merged = dedupeProfiles([...merged, ...byCountry]);
-      }
-      scopedUsers = merged;
+      scopedUsers = dedupeProfiles([...byRegion, ...byChurch]);
     } else if (access.isNational) {
       if (!access.allowedCountry) {
         return new Response(JSON.stringify({ ok: true, users: [] }), { status: 200 });

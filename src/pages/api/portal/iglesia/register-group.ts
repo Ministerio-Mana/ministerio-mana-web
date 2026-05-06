@@ -121,20 +121,29 @@ function packageTypeFromAge(ageRaw: unknown, lodgingRaw: unknown): PackageType {
     return lodging ? 'lodging' : 'no_lodging';
 }
 
-async function findIdempotentBooking(idempotencyKey: string | null, expectedParticipants: number) {
-    if (!supabaseAdmin || !idempotencyKey) return null;
-    const { data: booking, error } = await supabaseAdmin
+async function findIdempotentBooking(params: {
+    idempotencyKey: string | null;
+    expectedParticipants: number;
+    churchId: string | null;
+}) {
+    if (!supabaseAdmin || !params.idempotencyKey) return null;
+    let query = supabaseAdmin
         .from('cumbre_bookings')
         .select('id')
-        .eq('idempotency_key', idempotencyKey)
-        .maybeSingle();
+        .eq('idempotency_key', params.idempotencyKey);
+    if (params.churchId) {
+        query = query.eq('church_id', params.churchId);
+    } else {
+        query = query.is('church_id', null);
+    }
+    const { data: booking, error } = await query.maybeSingle();
     if (error || !booking?.id) return null;
     const { count, error: countError } = await supabaseAdmin
         .from('cumbre_participants')
         .select('id', { count: 'exact', head: true })
         .eq('booking_id', booking.id);
     if (countError) return null;
-    if ((count ?? 0) >= expectedParticipants) {
+    if ((count ?? 0) >= params.expectedParticipants) {
         return booking;
     }
     await cleanupCumbreBooking(booking.id);
@@ -458,7 +467,11 @@ export const POST: APIRoute = async ({ request }) => {
         fallbackSeed: idempotencySeed,
     });
 
-    const existingBooking = await findIdempotentBooking(idempotencyKey, participants.length);
+    const existingBooking = await findIdempotentBooking({
+        idempotencyKey,
+        expectedParticipants: participants.length,
+        churchId: resolvedChurchId,
+    });
     if (existingBooking) {
         return new Response(
             JSON.stringify({
@@ -502,7 +515,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (bookingError || !booking) {
         if (idempotencyKey) {
-            const existing = await findIdempotentBooking(idempotencyKey, participants.length);
+            const existing = await findIdempotentBooking({
+                idempotencyKey,
+                expectedParticipants: participants.length,
+                churchId: resolvedChurchId,
+            });
             if (existing) {
                 return new Response(
                     JSON.stringify({

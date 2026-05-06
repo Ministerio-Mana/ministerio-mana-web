@@ -96,10 +96,14 @@ export async function ensureUserProfile(user: User): Promise<UserProfile | null>
   }
 
   if (existing) {
-    if (shouldBeSuperadmin && existing.role !== 'superadmin') {
+    const nextRole: PortalRole | null = shouldBeSuperadmin && existing.role !== 'superadmin'
+      ? 'superadmin'
+      : (!shouldBeSuperadmin && existing.role === 'superadmin' ? 'user' : null);
+
+    if (nextRole) {
       const { data, error } = await supabaseAdmin
         .from('user_profiles')
-        .update({ role: 'superadmin', updated_at: new Date().toISOString() })
+        .update({ role: nextRole, updated_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .select('*')
         .single();
@@ -199,5 +203,5 @@ export function resolveEffectivePortalRole(profileRole?: string | null, membersh
 
 export function resolveEffectiveChurchId(profileChurchId?: string | null, memberships: UserMembership[] = []): string | null {
   const activeMembership = getActiveChurchMembership(memberships);
-  return profileChurchId || activeMembership?.church?.id || null;
+  return activeMembership?.church?.id || profileChurchId || null;
 }
