@@ -22,6 +22,7 @@ import {
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { sendWhatsappMessage } from '@lib/whatsapp';
+import { updateDonationByReference } from '@lib/donationsStore';
 
 export const prerender = false;
 
@@ -51,7 +52,7 @@ function sha256Hex(payload: string): string {
 export const POST: APIRoute = async ({ request }) => {
   const payload = await request.text();
   const internalSignature = request.headers.get('x-internal-signature');
-  const wompiSignature = request.headers.get('x-wompi-signature');
+  const wompiSignature = request.headers.get('x-event-checksum') || request.headers.get('x-wompi-signature');
 
   const internalOk = validInternalSignature(payload, internalSignature);
   let wompiOk = false;
@@ -142,24 +143,34 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const bookingId = parseReferenceBookingId(reference);
     const planId = parseReferencePlanId(reference);
-
-    if (!bookingId && !planId) {
-      return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-
     const wompiStatus = String(transaction?.status ?? 'PENDING').toUpperCase();
     const normalizedStatus = wompiStatus === 'APPROVED'
       ? 'APPROVED'
       : WOMPI_FAILED_STATUSES.has(wompiStatus)
         ? 'FAILED'
         : 'PENDING';
-    const amount = amountInCents ? Number(amountInCents) / 100 : 0;
-    const normalizedCurrency = transaction?.currency || 'COP';
     const providerTxId = txId ? String(txId) : null;
     const paymentMethodType = transaction?.payment_method?.type ?? transaction?.payment_method_type ?? null;
+
+    if (!bookingId && !planId) {
+      if (reference) {
+        await updateDonationByReference({
+          provider: 'wompi',
+          reference,
+          status: normalizedStatus,
+          providerTxId,
+          paymentMethod: paymentMethodType ? String(paymentMethodType) : null,
+          rawEvent: event,
+        });
+      }
+      return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const amount = amountInCents ? Number(amountInCents) / 100 : 0;
+    const normalizedCurrency = transaction?.currency || 'COP';
     const paymentMethodToken = transaction?.payment_method?.token ?? null;
     const paymentSourceId = transaction?.payment_source_id ?? null;
 
