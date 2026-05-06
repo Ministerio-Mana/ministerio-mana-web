@@ -38,6 +38,7 @@ const navLinkEvents = document.getElementById('nav-link-events');
 const navLinkUsers = document.getElementById('nav-link-users');
 const navLinkCampus = document.getElementById('nav-link-campus');
 const navLinkFinances = document.getElementById('nav-link-finances');
+const navLinkDonations = document.getElementById('nav-link-donations');
 const navLinkRegions = document.getElementById('nav-link-regions');
 
 let currentUserRole = 'user';
@@ -194,6 +195,7 @@ function applySidebarPermissions(role, memberships = []) {
     if (navLinkUsers) navLinkUsers.style.display = userManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkCampus) navLinkCampus.style.display = campusRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkFinances) navLinkFinances.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkDonations) navLinkDonations.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkRegions) navLinkRegions.style.display = regionsRoles.includes(effectiveRole) ? 'flex' : 'none';
     return effectiveRole;
 }

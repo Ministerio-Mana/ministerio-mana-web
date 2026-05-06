@@ -1350,6 +1350,7 @@ async function loadDashboardData(authResult) {
     const navLinkFinances = document.getElementById('nav-link-finances'); // Finanzas
     const navLinkUsers = document.getElementById('nav-link-users'); // Usuarios
     const navLinkCampus = document.getElementById('nav-link-campus'); // Campus
+    const navLinkDonations = document.getElementById('nav-link-donations'); // Donaciones
     const navLinkRegions = document.getElementById('nav-link-regions'); // Regiones
     const tabIglesia = document.getElementById('tab-iglesia'); // The actual tab content
 
@@ -1358,6 +1359,7 @@ async function loadDashboardData(authResult) {
     if (navLinkFinances) navLinkFinances.style.display = 'none';
     if (navLinkUsers) navLinkUsers.style.display = 'none';
     if (navLinkCampus) navLinkCampus.style.display = 'none';
+    if (navLinkDonations) navLinkDonations.style.display = 'none';
     if (navLinkRegions) navLinkRegions.style.display = 'none';
 
     const myRole = portalProfile?.role || 'user';
@@ -1417,6 +1419,10 @@ async function loadDashboardData(authResult) {
 
       if (financeRoles.includes(myRole) && navLinkFinances) {
         navLinkFinances.style.display = 'flex';
+      }
+
+      if (financeRoles.includes(myRole) && navLinkDonations) {
+        navLinkDonations.style.display = 'flex';
       }
 
       if (regionsRoles.includes(myRole) && navLinkRegions) {
