@@ -1,4 +1,6 @@
 ---
+import manaPinnedStoryScript from '../../scripts/mana-pinned-story.js?url';
+
 const fronts = [
   ['01', 'Devocional Maná', '5 audios cada semana y agenda devocional para alimentar la fe en casa.'],
   ['02', 'Escuela Bíblica', '5 cursos discipulares para formar creyentes maduros y servidores.'],
@@ -342,8 +344,7 @@ const cspNonce = Astro.locals?.cspNonce;
     --sky: #cbd9e6;
     --beige: #f5efeb;
     --white: #fff;
-    --header-offset: var(--mana-header-offset, 72px);
-    --slide-h: calc(100svh - var(--header-offset));
+    --slide-h: 100svh;
     background: var(--deep);
     color: var(--ink);
     isolation: isolate;
@@ -352,7 +353,7 @@ const cspNonce = Astro.locals?.cspNonce;
 
   @supports (height: 100dvh) {
     .mana-story-code {
-      --slide-h: calc(100dvh - var(--header-offset));
+      --slide-h: 100dvh;
     }
   }
 
@@ -1157,150 +1158,4 @@ const cspNonce = Astro.locals?.cspNonce;
   }
 </style>
 
-<script nonce={cspNonce}>
-  import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-  gsap.registerPlugin(ScrollTrigger);
-
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-  function splitWords(target) {
-    if (!target || target.dataset.manaSplitDone === 'true') return;
-    const text = target.textContent?.replace(/\s+/g, ' ').trim();
-    if (!text) return;
-
-    target.textContent = '';
-    text.split(' ').forEach((word, index, words) => {
-      const span = document.createElement('span');
-      span.className = 'mana-word';
-      span.textContent = index === words.length - 1 ? word : `${word} `;
-      target.appendChild(span);
-    });
-    target.dataset.manaSplitDone = 'true';
-  }
-
-  function initManaStoryCode() {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const story = document.querySelector('.mana-story-code');
-    const header = document.getElementById('main-header');
-    const scenes = gsap.utils.toArray('[data-mana-scene]');
-    const isTouch = ScrollTrigger.isTouch === 1;
-
-    ScrollTrigger.getAll()
-      .filter((trigger) => trigger.vars?.id?.startsWith('mana-slide-story-'))
-      .forEach((trigger) => trigger.kill());
-
-    if (!story || !scenes.length) return;
-
-    function setHeaderOffset() {
-      const offset = header?.offsetHeight || 0;
-      document.documentElement.style.setProperty('--mana-header-offset', `${offset}px`);
-      return offset;
-    }
-
-    setHeaderOffset();
-    story.querySelectorAll('[data-mana-split]').forEach(splitWords);
-
-    document.querySelectorAll('[data-mana-next]').forEach((button) => {
-      if (button.dataset.manaBound === 'true') return;
-      button.dataset.manaBound = 'true';
-      button.addEventListener('click', () => {
-        const nextY = window.scrollY + window.innerHeight * 1.15;
-        if (window.lenis?.scrollTo) window.lenis.scrollTo(nextY);
-        else window.scrollTo({ top: nextY, behavior: 'smooth' });
-      });
-    });
-
-    if (reduceMotion) return;
-
-    scenes.forEach((scene, index) => {
-      const slide = scene.querySelector('.mana-slide');
-      const titleWords = scene.querySelectorAll('[data-mana-title] .mana-word, .mana-title-lockup h2 .mana-word, .mana-food-grid h2 .mana-word, .mana-final-grid h2 .mana-word');
-      const scriptWords = scene.querySelectorAll('.mana-script .mana-word, .mana-hero-title > span .mana-word, .mana-eyebrow .mana-word');
-      const copyWords = scene.querySelectorAll('[data-mana-copy] .mana-word');
-      const visual = scene.querySelector('[data-mana-visual]');
-      const art = scene.querySelector('.mana-slide__art');
-      const staggerItems = scene.querySelectorAll('[data-mana-stagger] > *');
-      const ui = scene.querySelectorAll('[data-mana-ui]');
-      const progress = scene.querySelector('[data-mana-progress]');
-
-      if (!slide) return;
-
-      gsap.set(scene, { zIndex: index + 1 });
-      gsap.set(slide, { autoAlpha: 1, scale: 1, y: 0 });
-      gsap.set([titleWords, scriptWords, copyWords, visual, staggerItems, ui], { clearProps: 'all' });
-
-      const timeline = gsap.timeline({
-        defaults: { ease: 'power3.out' },
-        scrollTrigger: {
-          id: `mana-slide-story-${index}`,
-          trigger: scene,
-          start: () => `top top+=${setHeaderOffset()}`,
-          end: () => `+=${Math.round(window.innerHeight * 1.25)}`,
-          pin: slide,
-          pinSpacing: true,
-          scrub: 1.1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          snap: isTouch
-            ? false
-            : {
-                snapTo: (value) => (value < 0.52 ? 0 : 1),
-                duration: { min: 0.18, max: 0.45 },
-                delay: 0.06,
-                ease: 'power2.out',
-              },
-          onUpdate: ({ progress: t }) => {
-            if (progress) progress.style.transform = `scaleX(${t})`;
-            slide.style.setProperty('--scene-progress', String(t));
-          },
-        },
-      });
-
-      timeline
-        .fromTo(scriptWords, { autoAlpha: 0, y: 28, filter: 'blur(8px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', stagger: 0.018, duration: 0.18 }, 0.02)
-        .fromTo(titleWords, { autoAlpha: 0, y: 72, rotateX: -24, filter: 'blur(10px)' }, { autoAlpha: 1, y: 0, rotateX: 0, filter: 'blur(0px)', stagger: 0.024, duration: 0.26 }, 0.06)
-        .fromTo(copyWords, { autoAlpha: 0, y: 24, filter: 'blur(6px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', stagger: 0.006, duration: 0.28 }, 0.22)
-        .fromTo(ui, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.18, stagger: 0.04 }, 0.32);
-
-      if (visual) {
-        timeline.fromTo(visual, { autoAlpha: 0, y: 54, scale: 0.94, filter: 'blur(12px)' }, { autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.32 }, 0.14);
-        timeline.to(visual, { y: -18, scale: 1.035, duration: 0.42, ease: 'none' }, 0.44);
-      }
-
-      if (art) {
-        timeline.fromTo(art, { autoAlpha: 0.16, x: 90, scale: 0.96 }, { autoAlpha: 0.36, x: 0, scale: 1, duration: 0.44 }, 0.08);
-        timeline.to(art, { x: -44, scale: 1.08, duration: 0.48, ease: 'none' }, 0.42);
-      }
-
-      if (staggerItems.length) {
-        timeline.fromTo(staggerItems, { autoAlpha: 0, y: 46, scale: 0.96 }, { autoAlpha: 1, y: 0, scale: 1, stagger: 0.055, duration: 0.28 }, 0.2);
-      }
-
-      const routeLines = scene.querySelectorAll('.mana-route i');
-      if (routeLines.length) {
-        timeline.fromTo(routeLines, { scaleX: 0 }, { scaleX: 1, duration: 0.22, stagger: 0.08 }, 0.2);
-      }
-
-      timeline.to(slide, {
-        autoAlpha: 0.16,
-        scale: 0.94,
-        y: () => -clamp(window.innerHeight * 0.06, 28, 64),
-        filter: 'blur(8px)',
-        duration: 0.18,
-        ease: 'power2.in',
-      }, 0.82);
-    });
-
-    window.addEventListener('resize', () => {
-      setHeaderOffset();
-      ScrollTrigger.refresh();
-    }, { passive: true });
-
-    requestAnimationFrame(() => ScrollTrigger.refresh());
-  }
-
-  document.addEventListener('astro:page-load', initManaStoryCode);
-  document.addEventListener('DOMContentLoaded', initManaStoryCode);
-</script>
+<script type="module" src={manaPinnedStoryScript} nonce={cspNonce}></script>
