@@ -166,6 +166,7 @@ function showActivation(show = true) {
 function showComplete(show = true) {
   if (!completeBtn) return;
   completeBtn.classList.toggle('hidden', !show);
+  completeBtn.classList.toggle('flex', show);
 }
 
 if (isPayment) {

@@ -18,11 +18,11 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
       <a
         id="cumbre-back-link"
         href="/eventos/cumbre-mundial-2026"
-        class={`pointer-events-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest border backdrop-blur-md transition ${
+        class={`cumbre-action ${
           isLight
-            ? 'bg-white/80 border-brand-navy/10 !text-brand-navy hover:bg-white hover:!text-brand-navy focus-visible:!text-brand-navy active:!text-brand-navy'
-            : 'bg-white/10 border-white/10 !text-white/80 hover:!text-white focus-visible:!text-white active:!text-white'
-        }`}
+            ? 'cumbre-action--light-ghost'
+            : 'cumbre-action--dark-ghost'
+        } pointer-events-auto inline-flex gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-md transition`}
       >
         <span aria-hidden="true">←</span>
         <span>Volver</span>
@@ -66,10 +66,10 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
       href="https://wa.me/573148297534" 
       target="_blank"
       rel="noopener noreferrer"
-      class="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-[#25D366] !text-white rounded-full shadow-lg hover:!text-white focus-visible:!text-white active:!text-white hover:scale-110 transition-transform duration-300 group"
+      class="cumbre-action cumbre-action--whatsapp fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 rounded-full shadow-lg hover:scale-110 transition-transform duration-300 group"
       aria-label="Contactar por WhatsApp"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
       </svg>
       <!-- Tooltip -->
@@ -79,5 +79,93 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
     </a>
   </div>
 </BaseLayout>
+
+<style is:global>
+  .cumbre-action {
+    --cumbre-action-bg: transparent;
+    --cumbre-action-fg: #ffffff;
+    --cumbre-action-border: transparent;
+    --cumbre-action-hover-bg: var(--cumbre-action-bg);
+    --cumbre-action-hover-fg: var(--cumbre-action-fg);
+    --cumbre-action-hover-border: var(--cumbre-action-border);
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--cumbre-action-border);
+    background: var(--cumbre-action-bg);
+    color: var(--cumbre-action-fg) !important;
+  }
+
+  .cumbre-action:hover,
+  .cumbre-action:focus-visible,
+  .cumbre-action:active {
+    border-color: var(--cumbre-action-hover-border);
+    background: var(--cumbre-action-hover-bg);
+    color: var(--cumbre-action-hover-fg) !important;
+  }
+
+  .cumbre-action--teal {
+    --cumbre-action-bg: #28a6bd;
+    --cumbre-action-fg: #0b1120;
+    --cumbre-action-border: #28a6bd;
+    --cumbre-action-hover-bg: #4cc9e0;
+    --cumbre-action-hover-fg: #0b1120;
+    --cumbre-action-hover-border: #4cc9e0;
+  }
+
+  .cumbre-action--white {
+    --cumbre-action-bg: #ffffff;
+    --cumbre-action-fg: #293c74;
+    --cumbre-action-border: #ffffff;
+    --cumbre-action-hover-bg: #f1f3f8;
+    --cumbre-action-hover-fg: #1a255c;
+    --cumbre-action-hover-border: #f1f3f8;
+  }
+
+  .cumbre-action--dark-ghost {
+    --cumbre-action-bg: rgba(255, 255, 255, 0.1);
+    --cumbre-action-fg: rgba(255, 255, 255, 0.82);
+    --cumbre-action-border: rgba(255, 255, 255, 0.16);
+    --cumbre-action-hover-bg: rgba(255, 255, 255, 0.18);
+    --cumbre-action-hover-fg: #ffffff;
+    --cumbre-action-hover-border: rgba(255, 255, 255, 0.3);
+  }
+
+  .cumbre-action--light-ghost {
+    --cumbre-action-bg: rgba(255, 255, 255, 0.8);
+    --cumbre-action-fg: #293c74;
+    --cumbre-action-border: rgba(41, 60, 116, 0.12);
+    --cumbre-action-hover-bg: #ffffff;
+    --cumbre-action-hover-fg: #1a255c;
+    --cumbre-action-hover-border: rgba(41, 60, 116, 0.22);
+  }
+
+  .cumbre-action--gold-ghost {
+    --cumbre-action-bg: transparent;
+    --cumbre-action-fg: #f2c94c;
+    --cumbre-action-border: rgba(242, 201, 76, 0.4);
+    --cumbre-action-hover-bg: rgba(242, 201, 76, 0.14);
+    --cumbre-action-hover-fg: #ffe38a;
+    --cumbre-action-hover-border: rgba(255, 227, 138, 0.58);
+  }
+
+  .cumbre-action--whatsapp {
+    --cumbre-action-bg: #25d366;
+    --cumbre-action-fg: #062914;
+    --cumbre-action-border: #25d366;
+    --cumbre-action-hover-bg: #20bd5c;
+    --cumbre-action-hover-fg: #031b0d;
+    --cumbre-action-hover-border: #20bd5c;
+  }
+
+  .cumbre-inline-link {
+    color: rgba(255, 255, 255, 0.72) !important;
+  }
+
+  .cumbre-inline-link:hover,
+  .cumbre-inline-link:focus-visible,
+  .cumbre-inline-link:active {
+    color: #ffffff !important;
+  }
+</style>
 
 <script type="module" src={cumbreNavScript} nonce={cspNonce}></script>

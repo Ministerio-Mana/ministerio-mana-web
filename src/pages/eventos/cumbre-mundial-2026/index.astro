@@ -86,21 +86,20 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
          
          <div class="flex flex-col sm:flex-row gap-4">
              <!-- Primary CTA -->
-             <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="group relative px-10 py-4 bg-brand-ocean !text-white font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] hover:!text-white focus-visible:!text-white active:!text-white hover:shadow-[0_0_60px_rgba(40,166,189,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+             <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--teal group relative inline-flex px-10 py-4 font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] hover:shadow-[0_0_60px_rgba(40,166,189,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 <span class="relative z-10 flex items-center gap-2 uppercase tracking-wider">
                   {ctaLabel}
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                 </span>
-                <div class="absolute inset-0 bg-gradient-to-r from-brand-ocean via-[#4CC9E0] to-brand-ocean opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
              </a>
 
              <!-- More Info -->
-             <a href="#detalles" class="px-10 py-4 border border-white/20 hover:bg-white/5 !text-white font-medium rounded-full transition-colors uppercase tracking-wide text-sm flex items-center hover:!text-white focus-visible:!text-white active:!text-white">
+             <a href="#detalles" class="cumbre-action cumbre-action--dark-ghost px-10 py-4 font-medium rounded-full transition-colors uppercase tracking-wide text-sm flex items-center">
                 Más Información
              </a>
 
              <!-- Portal CTA -->
-             <a href="/primicias" class="px-10 py-4 border border-brand-gold/40 !text-brand-gold font-semibold rounded-full transition-colors uppercase tracking-wide text-sm flex items-center hover:bg-brand-gold/10 hover:!text-brand-gold focus-visible:!text-brand-gold active:!text-brand-gold">
+             <a href="/primicias" class="cumbre-action cumbre-action--gold-ghost px-10 py-4 font-semibold rounded-full transition-colors uppercase tracking-wide text-sm flex items-center">
                 Ir a Primicias
              </a>
          </div>
@@ -164,14 +163,14 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
       <p class="text-white/70">
         Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.
       </p>
-      <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="inline-block px-10 py-5 bg-white !text-brand-dark font-black text-xl rounded-full hover:!text-brand-dark focus-visible:!text-brand-dark active:!text-brand-dark hover:scale-105 transition-transform">
+      <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--white inline-flex px-10 py-5 font-black text-xl rounded-full hover:scale-105 transition-transform">
         {ctaLabelCaps}
       </a>
-      <a id="cta-registro" href="#" class="hidden text-sm !text-white/70 underline hover:!text-white focus-visible:!text-white active:!text-white">
+      <a id="cta-registro" href="#" class="hidden cumbre-inline-link text-sm underline">
         ¿Ya pagaste? Completa o modifica tu registro
       </a>
       <p class="text-xs text-white/50">
-        <a href="/eventos/cumbre-mundial-2026/condiciones" class="!text-white/70 underline underline-offset-4 transition-colors hover:!text-white">Ver condiciones comerciales</a>.
+        <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4 transition-colors">Ver condiciones comerciales</a>.
       </p>
     </div>
   </section>
