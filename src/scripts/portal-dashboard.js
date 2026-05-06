@@ -19,6 +19,11 @@ const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#96;');
 const safeText = (value, fallback = '') => escapeHtml(value ?? fallback);
 const safeAttr = (value, fallback = '') => escapeAttr(value ?? fallback);
 
+function isApprovedChurchMembershipStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'approved' || normalized === 'active';
+}
+
 async function clearStaleServiceWorkersOnce() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return false;
   if (sessionStorage.getItem('portal_sw_cleared') === '1') return false;
@@ -1433,7 +1438,8 @@ async function loadDashboardData(authResult) {
     // -------------------------------------
 
     const hasChurchRole = portalMemberships.some(
-      (membership) => ['church_admin', 'church_member'].includes(membership?.role) && membership?.status !== 'pending',
+      (membership) => ['church_admin', 'church_member'].includes(membership?.role)
+        && isApprovedChurchMembershipStatus(membership?.status),
     );
     const hasChurchAccess = portalIsAdmin
       || hasChurchRole
@@ -5133,7 +5139,8 @@ function renderMemberships(memberships) {
         : (membership.role || '—');
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-slate-50/80 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3';
-    const statusLabel = membership.status === 'approved' ? 'Aprobado' : membership.status === 'rejected' ? 'Rechazado' : 'Pendiente';
+    const isApprovedMembership = isApprovedChurchMembershipStatus(membership.status);
+    const statusLabel = isApprovedMembership ? 'Aprobado' : membership.status === 'rejected' ? 'Rechazado' : 'Pendiente';
     const safeRoleLabel = safeText(roleLabel);
     const safeStatusLabel = safeText(statusLabel);
     const safeChurchName = safeText(membership.church?.name || 'Iglesia sin nombre');
@@ -5147,7 +5154,7 @@ function renderMemberships(memberships) {
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 whitespace-nowrap">${safeRoleLabel}</span>
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${membership.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'} whitespace-nowrap">${safeStatusLabel}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${isApprovedMembership ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'} whitespace-nowrap">${safeStatusLabel}</span>
       </div>
     `;
     churchMembershipsList.appendChild(card);

@@ -66,6 +66,23 @@ create table if not exists donation_events (
   created_at timestamptz default now()
 );
 
+-- Internal audit/payment tables: service role only.
+alter table public.security_throttle enable row level security;
+alter table public.security_events enable row level security;
+alter table public.donation_events enable row level security;
+
+drop policy if exists "read_public" on public.security_throttle;
+drop policy if exists "read_public" on public.security_events;
+drop policy if exists "read_public" on public.donation_events;
+
+revoke all on table public.security_throttle from anon, authenticated, public;
+revoke all on table public.security_events from anon, authenticated, public;
+revoke all on table public.donation_events from anon, authenticated, public;
+
+grant all on table public.security_throttle to service_role;
+grant all on table public.security_events to service_role;
+grant all on table public.donation_events to service_role;
+
 -- 7) Cumbre Mundial 2026
 create table if not exists cumbre_bookings (
   id uuid primary key default gen_random_uuid(),

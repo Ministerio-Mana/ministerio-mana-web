@@ -167,10 +167,15 @@ export function isAdminRole(role?: string | null): boolean {
   return role === 'admin' || role === 'superadmin';
 }
 
+function isApprovedChurchMembershipStatus(status?: string | null): boolean {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'approved' || normalized === 'active';
+}
+
 export function getActiveChurchMembership(memberships: UserMembership[] = []): UserMembership | null {
   const active = memberships.filter((m) =>
     ['church_admin', 'church_member'].includes(String(m?.role || ''))
-    && String(m?.status || '').toLowerCase() !== 'pending',
+    && isApprovedChurchMembershipStatus(m?.status),
   );
   const adminMembership = active.find((m) => m?.role === 'church_admin');
   if (adminMembership) return adminMembership;

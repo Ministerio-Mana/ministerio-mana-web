@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { resolveBaseUrl } from '@lib/url';
-import { buildInstallmentReference } from '@lib/cumbre2026';
+import { buildInstallmentReference, hashToken } from '@lib/cumbre2026';
 import { buildInstallmentSchedule, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import {
   createPaymentPlan,
@@ -21,19 +22,10 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
-function isTestModeAllowed(runtimeEnv: string): boolean {
-  if (runtimeEnv === 'production') return false;
-  const flag = env('CUMBRE_TEST_MODE') ?? env('PUBLIC_CUMBRE_TEST_MODE');
-  return flag === 'true';
-}
-
-function getTestAmount(currency: string): number {
-  const raw = currency === 'COP'
-    ? env('CUMBRE_TEST_AMOUNT_COP') ?? env('PUBLIC_CUMBRE_TEST_AMOUNT_COP')
-    : env('CUMBRE_TEST_AMOUNT_USD') ?? env('PUBLIC_CUMBRE_TEST_AMOUNT_USD');
-  const fallback = currency === 'COP' ? 5000 : 1;
-  const value = Number(raw ?? fallback);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 function normalizeFrequency(raw: string | null | undefined): InstallmentFrequency {
@@ -65,8 +57,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const bookingId = (payload.bookingId || '').toString();
-  if (!bookingId) {
-    return new Response(JSON.stringify({ ok: false, error: 'bookingId requerido' }), {
+  const token = (payload.token || '').toString();
+  if (!bookingId || !token) {
+    return new Response(JSON.stringify({ ok: false, error: 'Parametros incompletos' }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
@@ -95,6 +88,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
+    const tokenHash = hashToken(token);
+    if (!safeEqual(tokenHash, booking.token_hash || '')) {
+      void logSecurityEvent({
+        type: 'webhook_invalid',
+        identifier: 'cumbre.installments.create',
+        ip: clientAddress,
+        detail: 'Token invalido',
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Token invalido' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const existingPlan = await getPlanByBookingId(bookingId);
     if (existingPlan) {
       return new Response(JSON.stringify({ ok: false, error: 'La reserva ya tiene un plan de cuotas' }), {
@@ -103,13 +110,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
-    const runtimeEnv =
-      import.meta.env?.VERCEL_ENV ?? process.env?.VERCEL_ENV ?? process.env?.NODE_ENV ?? 'development';
-    const allowTestMode = isTestModeAllowed(runtimeEnv);
-    const testMode = Boolean(payload.testMode) && allowTestMode;
     const frequency = normalizeFrequency(payload.frequency);
     const currency = booking.currency === 'COP' ? 'COP' : 'USD';
-    const totalAmount = testMode ? getTestAmount(currency) : Number(booking.total_amount || 0);
+    const totalAmount = Number(booking.total_amount || 0);
     const schedule = buildInstallmentSchedule({
       totalAmount,
       currency,

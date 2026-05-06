@@ -22,25 +22,6 @@ import { buildIdempotencyKey, isSafeTokenCandidate } from '@lib/cumbreIdempotenc
 
 export const prerender = false;
 
-function env(key: string): string | undefined {
-  return import.meta.env?.[key] ?? process.env?.[key];
-}
-
-function isTestModeAllowed(runtimeEnv: string): boolean {
-  if (runtimeEnv === 'production') return false;
-  const flag = env('CUMBRE_TEST_MODE') ?? env('PUBLIC_CUMBRE_TEST_MODE');
-  return flag === 'true';
-}
-
-function getTestAmount(currency: string): number {
-  const raw = currency === 'COP'
-    ? env('CUMBRE_TEST_AMOUNT_COP') ?? env('PUBLIC_CUMBRE_TEST_AMOUNT_COP')
-    : env('CUMBRE_TEST_AMOUNT_USD') ?? env('PUBLIC_CUMBRE_TEST_AMOUNT_USD');
-  const fallback = currency === 'COP' ? 5000 : 1;
-  const value = Number(raw ?? fallback);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
 function normalizeDate(value: unknown): string | null {
   const raw = (value ?? '').toString().trim();
   if (!raw) return null;
@@ -114,7 +95,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     const runtimeEnv =
       import.meta.env?.VERCEL_ENV ?? process.env?.VERCEL_ENV ?? process.env?.NODE_ENV ?? 'development';
-    const allowTestMode = isTestModeAllowed(runtimeEnv);
     const enforceTurnstile = runtimeEnv === 'production';
     const turnstileConfigured = enforceTurnstile && Boolean(
       import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
@@ -174,7 +154,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const countryGroup = normalizeCountryGroup(payload.countryGroup);
     const currency = currencyForGroup(countryGroup);
-    const testMode = Boolean(payload.testMode) && allowTestMode;
 
     let participantsRaw: unknown = payload.participants;
     if (typeof participantsRaw === 'string') {
@@ -208,10 +187,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
-    let totalAmount = calculateTotals(currency, safeParticipants);
-    if (testMode) {
-      totalAmount = getTestAmount(currency);
-    }
+    const totalAmount = calculateTotals(currency, safeParticipants);
     const threshold = depositThreshold(totalAmount);
     const rawIdempotencyKey = buildIdempotencyKey({
       request,
