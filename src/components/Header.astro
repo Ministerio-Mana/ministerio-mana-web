@@ -5,25 +5,24 @@ import LangSwitch from '@components/LangSwitch.astro';
 import AccountButton from '@components/AccountButton.astro';
 
 const locale = Astro.cookies.get('lang')?.value === 'en' ? 'en' : 'es';
-const cspNonce = Astro.locals?.cspNonce;
 ---
 
-<header id="main-header" class="sticky top-0 z-40 transition-all duration-300 border-b border-transparent">
-  <div class="absolute inset-0 bg-white/95 backdrop-blur-xl opacity-0 transition-opacity duration-300" id="header-bg"></div>
+<header id="main-header" class="sticky top-0 z-40 border-b border-white/10 bg-[#121F4E] shadow-[0_10px_30px_rgba(11,17,32,0.18)]">
+  <div class="absolute inset-x-0 bottom-0 h-px bg-[#28A6BD]/35"></div>
   
   <div class="relative w-full max-w-[1440px] mx-auto grid grid-cols-[auto,1fr,auto] items-center gap-4 lg:gap-8 py-4 px-6 md:px-8 lg:px-12">
     <a href="/" class="group inline-flex items-center gap-3 shrink-0 z-50">
       <!-- Logo Container -->
       <div class="relative flex h-10 w-10 items-start justify-center overflow-hidden">
         <!-- Logo for Light Backgrounds (Default) -->
-        <img src="/images/cumbre/logo-ministerio-mana-teal.svg" alt="Ministerio Maná" class="absolute top-0 left-1/2 h-[4.25rem] w-[4.25rem] max-w-none -translate-x-1/2 object-contain transition-opacity duration-300 opacity-100 logo-dark" />
+        <img src="/images/cumbre/logo-ministerio-mana-teal.svg" alt="Ministerio Maná" class="absolute top-0 left-1/2 h-[4.25rem] w-[4.25rem] max-w-none -translate-x-1/2 object-contain opacity-100" />
         <!-- Logo for Dark Backgrounds (White) -->
-        <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="absolute top-0 left-1/2 h-[4.25rem] w-[4.25rem] max-w-none -translate-x-1/2 object-contain transition-opacity duration-300 opacity-0 logo-light" />
+        <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="" class="hidden" />
       </div>
       
       <div class="hidden sm:flex flex-col leading-tight">
-        <span class="text-xs font-display font-semibold uppercase tracking-[0.12em] text-neutral-500 group-hover:text-brand-medium transition-colors">Ministerio</span>
-        <span class="text-base font-display font-bold text-brand-dark transition-colors brand-text">Maná</span>
+        <span class="text-xs font-display font-semibold uppercase tracking-[0.12em] text-white/65 group-hover:text-[#28A6BD] transition-colors">Ministerio</span>
+        <span class="text-base font-display font-bold text-white transition-colors">Maná</span>
       </div>
     </a>
 
@@ -31,11 +30,11 @@ const cspNonce = Astro.locals?.cspNonce;
     <div class="hidden lg:block"></div>
 
     <div class="flex items-center justify-end gap-3 shrink-0 z-50">
-      <a href="/donaciones/" class="hidden lg:inline-flex items-center justify-center rounded-full bg-[#28A6BD] px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#293C74] hover:shadow-lg">{t(locale,'nav_donate')}</a>
-      <AccountButton />
-      <LangSwitch />
+      <a href="/donaciones/" class="hidden lg:inline-flex items-center justify-center rounded-full bg-[#28A6BD] px-6 py-2.5 text-sm font-bold text-[#0B1120] shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#5CCBE0] hover:text-[#0B1120] hover:shadow-lg">{t(locale,'nav_donate')}</a>
+      <AccountButton variant="dark" />
+      <LangSwitch variant="dark" />
       <details class="relative lg:hidden">
-        <summary class="btn-outline btn-sm cursor-pointer select-none bg-white/50 backdrop-blur-md">Menú</summary>
+        <summary class="inline-flex cursor-pointer select-none items-center justify-center rounded-full border border-white/25 bg-white/10 px-6 py-2.5 font-display text-xs font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md transition-all hover:bg-white/15">Menú</summary>
         <div class="absolute right-0 mt-3 w-64 rounded-3xl border border-[var(--mana-border-strong)] bg-white p-4 shadow-lg">
           <div class="flex flex-col gap-3">
             <a href="/portal/" class="nav-link flex items-center gap-2">
@@ -61,47 +60,3 @@ const cspNonce = Astro.locals?.cspNonce;
     </div>
   </div>
 </header>
-
-<script nonce={cspNonce}>
-  const header = document.getElementById('main-header');
-  const headerBg = document.getElementById('header-bg');
-  const logoDark = document.querySelector<HTMLImageElement>('.logo-dark');
-  const logoLight = document.querySelector<HTMLImageElement>('.logo-light');
-  const brandText = document.querySelector<HTMLElement>('.brand-text');
-
-  function updateHeader() {
-    const isScrolled = window.scrollY > 20;
-    
-    // Check if there is a dark section behind the header (simple heuristic or manual overrides could be added)
-    // For now, we strictly implement the "Scrolled = White/Solid" vs "Top = Transparent" logic
-    // But we default to Solid if we don't know the background is dark, to avoid White text on White bg.
-    // Ideally, pages would set a data attribute on the body or header. 
-    
-    if (isScrolled) {
-      header?.classList.add('shadow-sm');
-      if (headerBg) headerBg.style.opacity = '1';
-      // Recover Dark Logo when background is white
-      if (logoDark) logoDark.style.opacity = '1';
-      if (logoLight) logoLight.style.opacity = '0';
-      if (brandText) brandText.classList.remove('text-white');
-    } else {
-      header?.classList.remove('shadow-sm');
-      
-      // If we are at the top, we enable transparency.
-      // CHECK: Does the current page allow transparent header? 
-      // We can check if the first element is a Hero with dark bg.
-      // For safety, we keep the background 0 (Transparent) BUT we must ensure the logo is visible.
-      // If the page is light, we keep Dark Logo. If page is dark, we swap.
-      // Let's assume default is Light Background until told otherwise, so we keep Dark Logo.
-      
-      if (headerBg) headerBg.style.opacity = '0.85'; // Keep slightly visible by default for contrast
-      // To strictly follow "cambia inmediatamente", we'd need full transparency. 
-      // But purely transparent header on a white page = illegible nav.
-      // I will set it to 0.85 (glass) as it was, but support the swap if a class is present.
-    }
-  }
-
-  window.addEventListener('scroll', updateHeader);
-  // Run once
-  updateHeader();
-</script>
