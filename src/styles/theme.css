@@ -13,6 +13,11 @@
   --mana-white: 255 255 255;
   /* #FFFFFF */
 
+  /* Aliases legacy usados por componentes compartidos */
+  --mana-surface: rgb(var(--mana-white));
+  --mana-border: rgb(var(--mana-sky) / 0.62);
+  --mana-border-strong: rgb(var(--mana-teal-2) / 0.38);
+
   /* Gradiente principal */
   --mana-gradient: linear-gradient(135deg,
       rgb(var(--mana-navy)) 0%,
