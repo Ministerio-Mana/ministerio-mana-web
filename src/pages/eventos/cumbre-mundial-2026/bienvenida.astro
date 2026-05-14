@@ -216,7 +216,7 @@ const schedule = [
 
           <article class="cumbre-venue-map-card relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/78 p-4 shadow-2xl shadow-brand-dark/14 backdrop-blur-md" data-reveal>
             <div class="cumbre-venue-map relative overflow-hidden rounded-[1.5rem] bg-[#07111c]">
-              <svg class="absolute inset-0 h-full w-full" viewBox="0 0 640 420" aria-hidden="true">
+              <svg class="absolute inset-0 h-full w-full" viewBox="0 0 640 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                 <defs>
                   <filter id="map-pin-shadow" x="-40%" y="-20%" width="180%" height="180%">
                     <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#07111c" flood-opacity="0.28" />
@@ -234,78 +234,60 @@ const schedule = [
 
                 <rect width="640" height="420" fill="url(#venue-map-bg)" />
                 <rect width="640" height="420" fill="url(#venue-map-glow)" />
-                <g opacity="0.16" stroke="#ffffff" stroke-width="1">
-                  <path d="M0 48H640M0 96H640M0 144H640M0 192H640M0 240H640M0 288H640M0 336H640M0 384H640" />
-                  <path d="M64 0V420M128 0V420M192 0V420M256 0V420M320 0V420M384 0V420M448 0V420M512 0V420M576 0V420" />
-                </g>
 
-                <path d="M0 338 C92 330 150 360 226 346 C299 333 338 282 430 290 C512 296 552 334 640 318" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="28" />
-                <path d="M-24 260 C68 234 138 250 214 212 C295 171 382 190 458 154 C530 120 574 132 662 100" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="22" />
-                <path d="M90 420 C116 350 118 286 148 226 C179 165 212 123 218 -8" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="20" />
-                <path d="M520 -20 C502 48 495 101 514 165 C535 238 586 288 584 430" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="20" />
+                <path d="M168 128 L280 92 L354 142 L330 242 L204 254 L148 202 Z" fill="#28A6BD" opacity="0.18" />
+                <path d="M416 128 C488 110 566 132 650 168 L650 424 L486 424 C470 342 408 276 416 128Z" fill="#28A6BD" opacity="0.12" />
+                <path d="M198 112 C236 136 229 188 260 214 C236 230 206 258 190 292 C164 248 158 202 180 164 C194 140 190 126 198 112Z" fill="#8ee2ee" opacity="0.22" />
 
-                <path d="M34 104 L198 46 L294 106 L250 220 L110 214 Z" fill="#28A6BD" opacity="0.2" />
-                <path d="M126 66 C155 85 150 126 173 150 C151 164 124 190 112 216 C88 181 86 144 105 112 C116 94 117 78 126 66Z" fill="#8ee2ee" opacity="0.28" />
-                <path d="M44 116 C98 93 153 76 210 68" fill="none" stroke="rgba(255,255,255,0.36)" stroke-width="7" stroke-linecap="round" opacity="0.58" />
+                <path d="M-32 176 C84 160 154 152 238 112 C292 86 326 130 390 122 C468 112 544 60 672 20" fill="none" stroke="rgba(40,166,189,0.36)" stroke-width="34" stroke-linecap="round" />
+                <path d="M-32 176 C84 160 154 152 238 112 C292 86 326 130 390 122 C468 112 544 60 672 20" fill="none" stroke="#14233e" stroke-width="22" stroke-linecap="round" />
+                <path d="M-32 176 C84 160 154 152 238 112 C292 86 326 130 390 122 C468 112 544 60 672 20" fill="none" stroke="rgba(203,217,230,0.72)" stroke-width="5" stroke-linecap="round" />
 
-                <path d="M510 -22 C500 42 494 91 508 142 C525 203 577 248 574 420" fill="none" stroke="rgba(40,166,189,0.42)" stroke-width="28" stroke-linecap="round" />
-                <path d="M510 -22 C500 42 494 91 508 142 C525 203 577 248 574 420" fill="none" stroke="rgba(7,17,28,0.92)" stroke-width="16" stroke-linecap="round" />
-                <path d="M510 -22 C500 42 494 91 508 142 C525 203 577 248 574 420" fill="none" stroke="rgba(203,217,230,0.7)" stroke-width="4" stroke-linecap="round" />
+                <path d="M388 122 C372 174 368 226 370 282 C372 336 366 376 344 430" fill="none" stroke="rgba(40,166,189,0.34)" stroke-width="30" stroke-linecap="round" />
+                <path d="M388 122 C372 174 368 226 370 282 C372 336 366 376 344 430" fill="none" stroke="#14233e" stroke-width="19" stroke-linecap="round" />
+                <path d="M388 122 C372 174 368 226 370 282 C372 336 366 376 344 430" fill="none" stroke="rgba(203,217,230,0.72)" stroke-width="5" stroke-linecap="round" />
 
-                <path d="M360 420 C354 355 374 313 422 284 C469 255 511 228 526 178" fill="none" stroke="rgba(40,166,189,0.42)" stroke-width="26" stroke-linecap="round" />
-                <path d="M360 420 C354 355 374 313 422 284 C469 255 511 228 526 178" fill="none" stroke="rgba(7,17,28,0.92)" stroke-width="15" stroke-linecap="round" />
-                <path d="M360 420 C354 355 374 313 422 284 C469 255 511 228 526 178" fill="none" stroke="rgba(203,217,230,0.7)" stroke-width="4" stroke-linecap="round" />
+                <path d="M370 228 C356 231 346 235 334 238" fill="none" stroke="rgba(40,166,189,0.34)" stroke-width="25" stroke-linecap="round" />
+                <path d="M370 228 C356 231 346 235 334 238" fill="none" stroke="#14233e" stroke-width="15" stroke-linecap="round" />
+                <path d="M370 228 C356 231 346 235 334 238" fill="none" stroke="rgba(203,217,230,0.72)" stroke-width="4" stroke-linecap="round" />
 
-                <path class="cumbre-route-gold" d="M574 420 C570 340 548 260 526 178 C476 188 415 204 334 190" fill="none" stroke="#F2C94C" stroke-width="6" stroke-linecap="round" stroke-dasharray="16 14" />
-                <circle cx="526" cy="178" r="23" fill="none" stroke="rgba(242,201,76,0.5)" stroke-width="4" />
+                <path class="cumbre-route-gold" d="M-32 176 C84 160 154 152 238 112 C292 86 326 130 388 122 C372 174 368 226 370 228 C356 231 346 235 334 238" fill="none" stroke="#F2C94C" stroke-width="6" stroke-linecap="round" stroke-dasharray="16 14" />
 
-                <g stroke="rgba(255,255,255,0.18)" stroke-width="4" stroke-linecap="round" fill="none">
-                  <path d="M-10 386 L330 386" />
-                  <path d="M-8 362 L318 404" />
-                  <path d="M36 420 C86 362 148 344 230 338" />
-                  <path d="M48 306 C126 292 202 294 282 312" />
-                  <path d="M52 258 L240 234" />
-                  <path d="M64 228 L282 224" />
-                  <path d="M12 188 L148 180" />
-                  <path d="M17 156 L98 128" />
-                  <path d="M550 110 L648 92" />
-                  <path d="M548 144 L656 150" />
-                  <path d="M540 220 L658 208" />
-                </g>
-
-                <text x="145" y="130" class="cumbre-map-label cumbre-map-secondary" text-anchor="middle">
-                  <tspan x="145" dy="0">Parque Recreativo</tspan>
-                  <tspan x="145" dy="20">Comfama Tutucán</tspan>
+                <text x="178" y="132" class="cumbre-map-label">Tutucán</text>
+                <text x="252" y="190" class="cumbre-map-label" text-anchor="middle">
+                  <tspan x="252" dy="0">Comfama</tspan>
+                  <tspan x="252" dy="17">Rionegro</tspan>
                 </text>
-                <text x="238" y="54" class="cumbre-map-label cumbre-map-secondary">Parqueadero</text>
-                <text x="514" y="68" class="cumbre-map-road cumbre-map-secondary" transform="rotate(82 514 68)">Calle 38</text>
-                <text x="566" y="342" class="cumbre-map-road" transform="rotate(88 566 342)">Carrera 55A</text>
-                <text x="350" y="352" class="cumbre-map-road" transform="rotate(-62 350 352)">Variante San Antonio</text>
-                <text x="118" y="386" class="cumbre-map-road cumbre-map-secondary" transform="rotate(8 118 386)">Calle 24</text>
-                <text x="154" y="312" class="cumbre-map-label cumbre-map-secondary" text-anchor="middle">
-                  <tspan x="154" dy="0">Conjunto Residencial</tspan>
-                  <tspan x="154" dy="18">Pietra Santa</tspan>
+                <text x="452" y="186" class="cumbre-map-label" text-anchor="middle">
+                  <tspan x="452" dy="0">Parque recreativo</tspan>
+                  <tspan x="452" dy="17">Comfama Rionegro</tspan>
                 </text>
-                <text x="576" y="134" class="cumbre-map-label cumbre-map-secondary">Parcela</text>
-                <text x="576" y="152" class="cumbre-map-label cumbre-map-secondary">Badén</text>
+                <text x="260" y="86" class="cumbre-map-place">Jumbo Rionegro</text>
+                <text x="360" y="104" class="cumbre-map-place">City Médica</text>
+                <text x="334" y="352" class="cumbre-map-label" text-anchor="middle">
+                  <tspan x="334" dy="0">San Antonio</tspan>
+                  <tspan x="334" dy="17">de Pereira</tspan>
+                </text>
+                <text x="388" y="324" class="cumbre-map-road" transform="rotate(-78 388 324)">Calle La Ceja-Rionegro</text>
+                <text x="466" y="84" class="cumbre-map-road cumbre-map-secondary" transform="rotate(-18 466 84)">Diagonal 55</text>
 
                 <g filter="url(#map-pin-shadow)">
-                  <circle cx="334" cy="190" r="18" fill="#F2C94C" />
-                  <circle cx="334" cy="190" r="8" fill="#07111c" />
-                  <circle cx="334" cy="190" r="30" fill="none" stroke="#F2C94C" stroke-width="2" opacity="0.42" />
+                  <circle cx="334" cy="238" r="18" fill="#F2C94C" />
+                  <circle cx="334" cy="238" r="8" fill="#07111c" />
+                  <circle cx="334" cy="238" r="30" fill="none" stroke="#F2C94C" stroke-width="2" opacity="0.42" />
                 </g>
 
                 <g class="cumbre-map-destination">
-                  <path d="M354 190 H452" stroke="#F2C94C" stroke-width="2" stroke-linecap="round" opacity="0.75" />
-                  <text x="462" y="185" class="cumbre-map-destination-title">De La Salle</text>
-                  <text x="462" y="204" class="cumbre-map-destination-subtitle">Casa de Encuentros</text>
+                  <path d="M352 238 H400" stroke="#F2C94C" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+                  <text x="410" y="233" class="cumbre-map-destination-title">De La Salle</text>
+                  <text x="410" y="252" class="cumbre-map-destination-subtitle">Casa de Encuentros</text>
                 </g>
               </svg>
               <div class="cumbre-map-reference absolute left-5 top-5 rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-white shadow-lg shadow-brand-dark/10 backdrop-blur-md">
                 <p class="text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold">Referencia</p>
                 <p class="mt-1 text-sm font-black leading-none">Comfama Tutucán · La Salle</p>
               </div>
-              <div class="cumbre-venue-pulse absolute left-[45.5%] top-[36%] h-24 w-24 rounded-full border border-brand-gold/50"></div>
+              <div class="cumbre-venue-pulse absolute left-[43%] top-[47%] h-24 w-24 rounded-full border border-brand-gold/50"></div>
             </div>
           </article>
         </div>
@@ -634,10 +616,23 @@ const schedule = [
   }
 
   .cumbre-map-label {
-    fill: rgba(255, 255, 255, 0.66);
+    fill: rgba(255, 255, 255, 0.72);
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: 0;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.48);
+    stroke-width: 3px;
+  }
+
+  .cumbre-map-place {
+    fill: #d7e8ff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.72);
+    stroke-width: 4px;
   }
 
   .cumbre-map-road {
