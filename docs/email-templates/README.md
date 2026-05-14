@@ -90,6 +90,7 @@ Plantillas recomendadas (dynamic templates):
 | Pago final pendiente | `sendgrid/cumbre_final_payment_due.html` | `SENDGRID_TEMPLATE_CUMBRE_FINAL_DUE` |
 | Link de pago listo | `sendgrid/cumbre_payment_link_generated.html` | `SENDGRID_TEMPLATE_CUMBRE_LINK_READY` |
 | Link de pago expirado | `sendgrid/cumbre_payment_link_expired.html` | `SENDGRID_TEMPLATE_CUMBRE_LINK_EXPIRED` |
+| Guia de bienvenida | `sendgrid/cumbre_welcome_guide.html` | envio directo via `npm run campaign:cumbre:welcome` |
 
 Variables dinámicas usadas:
 
@@ -113,6 +114,32 @@ Variables dinámicas usadas:
 - `cta_label`
 - `support_email`
 - `support_whatsapp`
+
+#### Campana guia de bienvenida
+
+El script `scripts/cumbre-welcome-campaign.mjs` envia la guia de bienvenida por SendGrid a asistentes confirmados de la Cumbre:
+
+- Lee `cumbre_bookings` y `cumbre_participants`.
+- Incluye reservas con pago mayor a cero o estado `DEPOSIT_OK` / `PAID`.
+- Usa el email del participante cuando exista; si no, usa el email de contacto de la reserva.
+- Deduplica por email.
+- Corre en `dry-run` por defecto.
+
+Comandos:
+
+```bash
+npm run campaign:cumbre:welcome
+npm run campaign:cumbre:welcome -- --preview-html=/private/tmp/cumbre-welcome-preview.html
+npm run campaign:cumbre:welcome -- --test-email=correo@dominio.com --send
+npm run campaign:cumbre:welcome -- --send --confirm=ENVIAR
+```
+
+Env vars necesarias para envio:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SENDGRID_API_KEY`
+- `SENDGRID_FROM` o `CUMBRE_EMAIL_FROM`
 
 ### SendGrid · Donaciones (general + diezmos + iglesias + misiones)
 

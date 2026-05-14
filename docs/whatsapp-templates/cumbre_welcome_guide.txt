@@ -1,0 +1,9 @@
+Hola {{1}}, ya esta lista la guia de bienvenida para la Cumbre Mundial de Discipulado.
+
+Fecha: 6 al 8 de junio
+Lugar: Casa de Encuentros La Salle, Rionegro
+
+Revisa la ruta, clima, vestuario y horarios aqui:
+{{2}}
+
+Te recomendamos abrir Google Maps o Waze antes de salir hacia Rionegro.

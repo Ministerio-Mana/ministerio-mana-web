@@ -69,3 +69,15 @@ Variables sugeridas:
 
 Env var sugerida:
 - `WHATSAPP_CUMBRE_NO_CHURCH_CONTENT_SID`
+
+## 7) Guia de bienvenida
+Archivo: `cumbre_welcome_guide.txt`
+
+Variables sugeridas:
+- {{1}} = nombre
+- {{2}} = link de la guia de bienvenida
+
+Env var sugerida:
+- `WHATSAPP_CUMBRE_WELCOME_GUIDE_CONTENT_SID`
+
+Nota: para WhatsApp masivo usa una plantilla aprobada por Twilio y confirma consentimiento de contacto antes de enviar.
