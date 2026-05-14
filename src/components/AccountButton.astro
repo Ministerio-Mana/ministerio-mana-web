@@ -74,8 +74,7 @@ const cspNonce = Astro.locals?.cspNonce;
   let supabase: SupabaseClient | null = null;
   try {
     supabase = getSupabaseBrowserClient();
-  } catch (err) {
-    console.error('Supabase client not available:', err);
+  } catch {
     showGuest();
   }
 

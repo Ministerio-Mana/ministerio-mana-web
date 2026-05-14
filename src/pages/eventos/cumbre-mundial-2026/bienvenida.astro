@@ -1,0 +1,525 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import welcomeStoryScript from '@scripts/cumbre-welcome-story.js?url';
+
+const cspNonce = Astro.locals?.cspNonce;
+
+const unityReminders = [
+  'la obra no se hace solos',
+  'la red no se sostiene solos',
+  'el Reino avanza cuando caminamos en unidad, humildad y obediencia',
+];
+
+const climateFacts = [
+  { label: 'Día', value: '18°-22°C' },
+  { label: 'Noche / madrugada', value: '10°-13°C' },
+];
+
+const weatherItems = ['lluvia ligera', 'neblina', 'mañanas y noches frías'];
+
+const clothingItems = [
+  'Chaqueta abrigada',
+  'Buzo o saco cómodo',
+  'Zapatos cómodos y cerrados',
+  'Ropa casual y cómoda para las sesiones',
+  'Paraguas pequeño o impermeable',
+  'Ropa para clima frío en las noches',
+];
+
+const specialRecommendations = [
+  'ropa cómoda pero apropiada',
+  'evitar prendas excesivamente ajustadas o llamativas',
+  'llevar una presentación práctica para servir y moverse con facilidad',
+];
+
+const bringItems = [
+  'Biblia',
+  'Cuaderno y lapicero',
+  'Medicamentos personales',
+  'Botella de agua reutilizable',
+  'Disposición para servir y aprender',
+  'Corazón sensible a la voz de Dios',
+];
+
+const prayerItems = [
+  'vuelva a llenar las redes',
+  'renueve nuestras fuerzas',
+  'afirme nuestro llamado',
+  'nos recuerde que el discipulado verdadero siempre ocurre cerca de Cristo y junto a otros',
+];
+
+const schedule = [
+  {
+    day: 'Sábado',
+    title: 'Bienvenida y comunión',
+    items: [
+      'Mesa de bienvenida desde las 7:00 a.m.',
+      'Enseñanzas y talleres.',
+      'Tarde familiar en Comfama Tutucán.',
+      'Llevar traje de baño para piscinas climatizadas.',
+    ],
+    href: 'https://www.comfama.com/cultura-y-ocio/parques/parque-rionegro/',
+  },
+  {
+    day: 'Domingo',
+    title: 'Palabra y oración',
+    items: ['Devocional.', 'Enseñanzas y talleres.', 'Tiempos de oración.'],
+  },
+  {
+    day: 'Lunes',
+    title: 'Clausura y envío',
+    items: [
+      'Devocional.',
+      'Enseñanzas y talleres.',
+      'Tiempo de clausura.',
+      'Almuerzo incluido y cierre de la cumbre discipular.',
+    ],
+  },
+];
+---
+
+<CumbreLayout
+  title="Bienvenida | Cumbre Mundial de Discipulado"
+  description="Guía de bienvenida para la Cumbre Mundial de Discipulado, basada en Lucas 5."
+  flush
+  showEventBadge={false}
+>
+  <main class="cumbre-welcome-story" data-cumbre-story style="--panel-count: 6;">
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#07111c] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover" />
+        <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(7,17,28,0.98)_0%,rgba(7,17,28,0.86)_44%,rgba(7,17,28,0.46)_100%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(40,166,189,0.28),transparent_34%)]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+          <div class="max-w-3xl space-y-7">
+            <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 backdrop-blur-sm" data-reveal>
+              <span class="h-2 w-2 rounded-full bg-brand-gold"></span>
+              <span class="text-xs font-black uppercase tracking-[0.24em] text-white/90">Bienvenida oficial</span>
+            </div>
+
+            <img
+              src="/images/cumbre/cumbre-2026-logo-white.svg"
+              alt="Cumbre Mundial de Discipulado"
+              class="h-24 w-auto md:h-32"
+              data-reveal
+            />
+
+            <h1 class="max-w-4xl text-5xl font-black leading-[0.92] tracking-tight text-white drop-shadow-[0_12px_28px_rgba(0,0,0,0.6)] md:text-7xl" data-split-title>
+              Bienvenidos a la Cumbre Mundial de Discipulado
+            </h1>
+
+            <p class="max-w-2xl text-lg font-light leading-relaxed text-white/88 drop-shadow md:text-xl" data-reveal>
+              “Ven y ayúdanos”. Basado en Lucas 5. Nos reunimos como una sola familia para buscar a Cristo, servir juntos y responder al llamado del Señor.
+            </p>
+          </div>
+
+          <aside class="mana-glass relative space-y-5 rounded-3xl border border-white/15 bg-black/35 p-7 shadow-2xl shadow-black/25 backdrop-blur-xl md:p-9" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Información general</p>
+            <div class="space-y-5">
+              <div>
+                <p class="text-sm font-medium text-white/60">Fecha</p>
+                <h2 class="text-3xl font-black leading-tight text-white">6 al 8 de junio</h2>
+              </div>
+              <div class="h-px w-full bg-gradient-to-r from-white/25 to-transparent"></div>
+              <div>
+                <p class="text-sm font-medium text-white/60">Lugar</p>
+                <h2 class="text-3xl font-black leading-tight text-white">Casa de Encuentros La Salle</h2>
+                <p class="mt-2 text-sm leading-relaxed text-white/75">Rionegro, Antioquia, Colombia.</p>
+              </div>
+              <div class="h-px w-full bg-gradient-to-r from-white/25 to-transparent"></div>
+              <div>
+                <p class="text-sm font-medium text-white/60">Base bíblica</p>
+                <p class="mt-1 text-base leading-relaxed text-white/82">“Bogando mar adentro… echaron sus redes para pescar… y encerraron gran cantidad de peces.”</p>
+                <p class="mt-2 text-xs font-black uppercase tracking-[0.18em] text-brand-gold">Lucas 5:4-6</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#1A255C] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <img src="/images/cumbre/fishermen-sunset.jpg" alt="" class="h-full w-full object-cover opacity-45" />
+        <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,28,0.98),rgba(26,37,92,0.9)_55%,rgba(26,37,92,0.72))]"></div>
+        <div class="absolute right-[-12%] top-[10%] h-[760px] w-[760px] rounded-full bg-brand-teal/12 blur-[120px] mix-blend-screen"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]">
+          <div class="relative hidden lg:block" data-reveal>
+            <article class="rounded-[2rem] border border-white/14 bg-black/34 p-8 shadow-2xl shadow-black/25 backdrop-blur-xl">
+              <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Lucas 5:4-6</p>
+              <blockquote class="mt-6 text-3xl font-black leading-tight text-white">
+                “Bogando mar adentro… echaron sus redes para pescar… y encerraron gran cantidad de peces.”
+              </blockquote>
+              <p class="mt-6 border-l-2 border-brand-teal pl-5 text-base leading-relaxed text-white/74">
+                Así como en Lucas 5 la red se llenó cuando trabajaron juntos bajo la dirección de Cristo, creemos que Dios quiere recordarnos que nadie sostiene la red solo.
+              </p>
+              <div class="mt-8 grid grid-cols-2 gap-3">
+                {['Barca', 'Red', 'Obediencia', 'Unidad'].map((item) => (
+                  <p class="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/84">{item}</p>
+                ))}
+              </div>
+            </article>
+          </div>
+
+          <div class="max-w-3xl space-y-6">
+            <p class="font-display text-2xl font-light tracking-[0.2em] text-brand-gold/90" data-reveal>
+              Lucas 5:4-6
+            </p>
+            <h2 class="text-4xl font-black leading-[0.94] text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:text-6xl" data-split-title>
+              Entrar nuevamente en la barca con Jesús
+            </h2>
+            <div class="space-y-4 border-l-2 border-brand-teal/60 pl-6" data-reveal>
+              <p class="text-lg font-light leading-relaxed text-white/86">
+                Amados hermanos y hermanas, con gozo les damos la bienvenida a este tiempo especial donde nos reuniremos como una sola familia para buscar a Cristo, servir juntos y responder al llamado del Señor: “Ven y ayúdanos.”
+              </p>
+              <p class="text-base leading-relaxed text-white/74">
+                Esta cumbre no es solo un evento. Es una invitación a entrar nuevamente en la barca con Jesús.
+              </p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3" data-reveal>
+              {unityReminders.map((item) => (
+                <p class="rounded-2xl border border-white/12 bg-white/8 p-4 text-sm font-semibold leading-snug text-white/84 backdrop-blur-sm">{item}</p>
+              ))}
+            </div>
+            <p class="text-lg font-semibold leading-relaxed text-brand-gold" data-reveal>
+              Venimos a ser fortalecidos, equipados y enviados.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#f7f2e7] text-brand-dark"
+      data-cumbre-panel
+      data-panel-theme="light"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(242,201,76,0.28),transparent_34%),radial-gradient(circle_at_78%_28%,rgba(40,166,189,0.18),transparent_30%)]"></div>
+        <div class="cumbre-soft-grid absolute inset-0 opacity-[0.08]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="w-full space-y-12">
+          <div class="max-w-3xl space-y-4" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Preparación</p>
+            <h2 class="text-5xl font-black leading-tight text-brand-dark md:text-6xl" data-split-title>Clima y vestuario</h2>
+            <p class="text-xl leading-relaxed text-slate-700">
+              Rionegro tiene un clima fresco y variable. Ven preparado para lluvia ligera, neblina, mañanas frías y noches más bajas de temperatura.
+            </p>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+            <article class="rounded-3xl border border-white/70 bg-white/82 p-6 shadow-2xl shadow-brand-dark/10 backdrop-blur-md" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-medium/70">Clima en Rionegro</p>
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {climateFacts.map((item) => (
+                  <div class="rounded-2xl bg-brand-dark px-5 py-4 text-white">
+                    <p class="text-xs font-black uppercase tracking-[0.16em] text-brand-gold">{item.label}</p>
+                    <p class="mt-1 text-3xl font-black">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div class="mt-5 space-y-2">
+                {weatherItems.map((item) => (
+                  <p class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{item}</p>
+                ))}
+              </div>
+            </article>
+
+            <article class="rounded-3xl border border-white/70 bg-white/82 p-6 shadow-2xl shadow-brand-dark/10 backdrop-blur-md" data-reveal style="--reveal-delay:0.08s">
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-medium/70">Vestuario general</p>
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {clothingItems.map((item) => (
+                  <p class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-snug text-slate-700">{item}</p>
+                ))}
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#edf6f4] text-brand-dark"
+      data-cumbre-panel
+      data-panel-theme="light"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,255,255,0.92),rgba(237,246,244,0.92)_48%,rgba(242,201,76,0.2))]"></div>
+        <div class="cumbre-soft-grid absolute inset-0 opacity-[0.08]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+          <div class="space-y-5" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Preparación espiritual y práctica</p>
+            <h2 class="text-5xl font-black leading-tight text-brand-dark md:text-6xl" data-split-title>Qué traer a la Cumbre</h2>
+            <p class="text-lg leading-relaxed text-slate-700">
+              Para tiempos ministeriales y reuniones queremos reflejar sencillez, orden y modestia cristiana.
+            </p>
+          </div>
+
+          <div class="grid gap-5 md:grid-cols-2">
+            <article class="rounded-3xl border border-white/80 bg-white/82 p-6 shadow-2xl shadow-brand-dark/10 backdrop-blur-md" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-medium/70">Recomendaciones especiales</p>
+              <div class="mt-5 space-y-3">
+                {specialRecommendations.map((item) => (
+                  <p class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-snug text-slate-700">{item}</p>
+                ))}
+              </div>
+            </article>
+
+            <article class="rounded-3xl border border-white/80 bg-brand-dark p-6 text-white shadow-2xl shadow-brand-dark/18 backdrop-blur-md" data-reveal style="--reveal-delay:0.08s">
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-gold">Qué más debes traer</p>
+              <div class="mt-5 space-y-3">
+                {bringItems.map((item) => (
+                  <p class="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold leading-snug text-white/86">{item}</p>
+                ))}
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#0d1a2a] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover opacity-32" />
+        <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,28,0.96),rgba(7,17,28,0.74),rgba(7,17,28,0.98))]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="w-full space-y-12">
+          <div class="mx-auto max-w-3xl space-y-4 text-center" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-gold">Horario general</p>
+            <h2 class="text-5xl font-black leading-tight text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:text-6xl" data-split-title>
+              Tres días para escuchar, aprender, orar y compartir
+            </h2>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-3">
+            {schedule.map((day, index) => (
+              <article class="rounded-3xl border border-white/15 bg-black/34 p-7 shadow-2xl shadow-black/20 backdrop-blur-xl" data-reveal style={`--reveal-delay:${index * 0.08}s`}>
+                <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-gold">0{index + 1} · {day.day}</p>
+                <h3 class="mt-4 text-3xl font-black leading-tight text-white">{day.title}</h3>
+                <div class="mt-6 space-y-3">
+                  {day.items.map((item) => (
+                    <p class="border-l border-brand-teal/70 pl-4 text-sm leading-relaxed text-white/78">{item}</p>
+                  ))}
+                </div>
+                {day.href && (
+                  <a href={day.href} target="_blank" rel="noopener noreferrer" class="mt-6 inline-flex text-xs font-black uppercase tracking-[0.18em] text-brand-teal hover:text-white">
+                    Ver Comfama Tutucán
+                  </a>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#101827] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-gradient-to-br from-[#1A255C] via-[#293C74] to-[#101827]"></div>
+        <div class="absolute right-[-12%] top-[-18%] h-[760px] w-[760px] rounded-full bg-brand-teal/20 blur-[110px] mix-blend-screen"></div>
+        <div class="absolute bottom-[-20%] left-[-10%] h-[620px] w-[620px] rounded-full bg-brand-gold/16 blur-[120px] mix-blend-screen"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center justify-center px-6 py-12 text-center md:px-10" data-panel-inner>
+        <div class="mx-auto max-w-4xl space-y-4">
+          <img src="/images/cumbre/titulo-cumbre.svg" alt="Cumbre Mundial" class="mx-auto h-14 w-auto md:h-20" data-reveal />
+          <p class="text-xs font-black uppercase tracking-[0.3em] text-brand-gold" data-reveal>Nuestra oración</p>
+          <h2 class="text-4xl font-black leading-tight text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.5)] md:text-6xl" data-split-title>
+            Que el Señor vuelva a llenar las redes
+          </h2>
+          <div class="mx-auto grid max-w-3xl gap-3 sm:grid-cols-2" data-reveal>
+            {prayerItems.map((item) => (
+              <p class="rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-left text-sm font-semibold leading-snug text-white/82 backdrop-blur-sm">Que el Señor {item}.</p>
+            ))}
+          </div>
+          <blockquote class="mx-auto max-w-2xl border-l-2 border-brand-gold bg-black/20 py-2 pl-5 text-left text-sm text-white/86 backdrop-blur-sm" data-reveal>
+            “La red se llena cuando obedecemos juntos.”
+            <span class="mt-2 block text-xs font-black uppercase tracking-[0.2em] text-brand-gold">Lucas 5 nos recuerda: no fue la experiencia de Pedro la que produjo el milagro; fue la obediencia a la voz de Jesús.</span>
+          </blockquote>
+          <p class="mx-auto max-w-2xl text-base leading-relaxed text-white/72" data-reveal>
+            ¡Nos vemos pronto! Con amor en Cristo, Equipo Cumbre Mundial de Discipulado.
+          </p>
+
+          <div class="flex flex-wrap justify-center gap-4 pt-2" data-reveal>
+            <a href="/eventos/cumbre-mundial-2026" class="mana-btn px-8 py-3 text-sm shadow-[0_0_40px_-10px_var(--mana-teal)]">
+              Volver a la Cumbre
+            </a>
+            <a href="/eventos/cumbre-mundial-2026/inscripcion" class="mana-btn-ghost border-white/20 px-8 py-3 text-sm text-white hover:bg-white hover:text-brand-dark">
+              Ir a inscripción
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src={welcomeStoryScript} nonce={cspNonce}></script>
+</CumbreLayout>
+
+<style>
+  .cumbre-welcome-story {
+    background: #07111c;
+    height: 100svh;
+    min-height: 100svh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .cumbre-panel {
+    position: absolute;
+    inset: 0;
+    height: 100svh;
+    min-height: 100svh;
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    clip-path: inset(100% 0% 0% 0%);
+    will-change: clip-path, transform;
+  }
+
+  .cumbre-panel:first-child,
+  .cumbre-panel.is-visible {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .cumbre-panel.is-active {
+    pointer-events: auto;
+  }
+
+  .cumbre-panel a,
+  .cumbre-panel button {
+    pointer-events: auto;
+  }
+
+  .cumbre-panel [data-panel-bg] {
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .cumbre-panel-inner {
+    min-height: 100svh;
+  }
+
+  .cumbre-panel [data-reveal] {
+    will-change: transform, opacity;
+  }
+
+  .cumbre-panel [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .cumbre-panel [data-split-title] .split-word > span {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  .cumbre-soft-grid {
+    background-image:
+      linear-gradient(rgba(26, 37, 92, 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 37, 92, 0.22) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  @media (max-width: 767px) {
+    .cumbre-welcome-story {
+      height: auto;
+      min-height: auto;
+      overflow: visible;
+    }
+
+    .cumbre-panel,
+    .cumbre-panel-inner {
+      min-height: 100svh;
+      height: auto;
+      margin-bottom: 0;
+      transform: none;
+      pointer-events: auto;
+    }
+
+    .cumbre-panel {
+      position: relative;
+      overflow-x: hidden;
+      overflow-y: visible;
+      clip-path: inset(0% 0% 0% 0%);
+      border-radius: 0;
+    }
+
+    .cumbre-panel-inner {
+      position: relative;
+    }
+
+    .cumbre-panel + .cumbre-panel {
+      margin-top: -4svh;
+    }
+
+    .cumbre-panel-inner {
+      padding-top: 7.5rem;
+      padding-bottom: 5rem;
+    }
+
+    .cumbre-panel h1,
+    .cumbre-panel h2 {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      font-size: clamp(2.15rem, 10vw, 2.55rem);
+      line-height: 1.02;
+    }
+
+    .cumbre-panel aside h2,
+    .cumbre-panel article h3,
+    .cumbre-panel blockquote {
+      overflow-wrap: anywhere;
+    }
+
+    .cumbre-panel:last-child,
+    .cumbre-panel:last-child .cumbre-panel-inner {
+      min-height: auto;
+    }
+
+    .cumbre-panel:last-child .cumbre-panel-inner {
+      padding-bottom: 8rem;
+    }
+
+    .cumbre-panel:last-child .flex {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .cumbre-panel:last-child .mana-btn,
+    .cumbre-panel:last-child .mana-btn-ghost {
+      width: min(100%, 18rem);
+      justify-content: center;
+    }
+  }
+</style>

@@ -85,6 +85,8 @@ const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.s
           touchMultiplier: 2,
           infinite: false,
         });
+
+        lenis.on('scroll', ScrollTrigger.update);
         
         function raf(time) {
           lenis.raf(time);
