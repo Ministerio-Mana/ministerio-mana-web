@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
-  site: 'https://www.ejemplo-ministeriomana.org',
+  site: 'https://ministeriomana.org',
   output: 'server',
   adapter: vercel(),
   integrations: [tailwind({ config: { applyBaseStyles: true } }), sitemap()],

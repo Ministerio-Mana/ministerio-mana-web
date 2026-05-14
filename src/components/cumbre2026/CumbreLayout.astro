@@ -7,6 +7,7 @@ import cumbreNavScript from '../../scripts/cumbre-nav.js?url';
 const {
   title,
   description,
+  image,
   variant = 'dark',
   enableSmoothScroll = false,
   flush = false,
@@ -19,7 +20,7 @@ const overflowMode = flush ? 'overflow-visible' : 'overflow-hidden';
 const cspNonce = Astro.locals?.cspNonce;
 ---
 
-<BaseLayout title={title} description={description} hideHeader hideFooter disableSmoothScroll={!enableSmoothScroll}>
+<BaseLayout title={title} description={description} image={image} hideHeader hideFooter disableSmoothScroll={!enableSmoothScroll}>
   <div class={`relative min-h-screen ${mainBg} ${overflowMode}`}>
     <!-- Top Controls -->
     <div class="fixed top-5 left-5 right-5 z-50 flex items-center justify-between pointer-events-none">
