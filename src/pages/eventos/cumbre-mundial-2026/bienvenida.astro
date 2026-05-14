@@ -1,8 +1,5 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
-import welcomeStoryScript from '@scripts/cumbre-welcome-story.js?url';
-
-const cspNonce = Astro.locals?.cspNonce;
 
 const unityReminders = [
   'la obra no se hace solos',
@@ -382,7 +379,9 @@ const schedule = [
     </section>
   </main>
 
-  <script type="module" src={welcomeStoryScript} nonce={cspNonce}></script>
+  <script>
+    import '@scripts/cumbre-welcome-story.js';
+  </script>
 </CumbreLayout>
 
 <style>
