@@ -15,7 +15,6 @@ import targetIcon from 'lucide-static/icons/target.svg?raw';
 import usersIcon from 'lucide-static/icons/users-round.svg?raw';
 import { feature } from 'topojson-client';
 import worldLand from 'world-atlas/land-110m.json';
-import manaPinnedStoryScript from '../../scripts/mana-pinned-story.js?url';
 
 const assetBase = '/assets/home-ministerio';
 const bibleLinesTeal = `${assetBase}/bible-lines-teal.svg`;
@@ -156,8 +155,6 @@ const iconSvg = {
   vision: lucideIcon(targetIcon),
   church: lucideIcon(churchIcon),
 };
-
-const cspNonce = Astro.locals?.cspNonce;
 ---
 
 <section class="mana-story-code" aria-label="Borrador del nuevo home de Ministerio Maná">
@@ -3373,4 +3370,6 @@ const cspNonce = Astro.locals?.cspNonce;
   }
 </style>
 
-<script type="module" src={manaPinnedStoryScript} nonce={cspNonce}></script>
+<script>
+  import '../../scripts/mana-pinned-story.js';
+</script>
