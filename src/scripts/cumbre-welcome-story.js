@@ -6,6 +6,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const desktopQuery = window.matchMedia('(min-width: 768px)');
+let viewportCleanup = null;
 
 if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual';
@@ -16,6 +17,7 @@ function cleanupPreviousStory() {
     window.__cumbreWelcomeCleanup();
     window.__cumbreWelcomeCleanup = null;
   }
+  viewportCleanup?.();
 }
 
 function setupLenis() {
@@ -83,6 +85,35 @@ function splitTitle(title) {
 
 function setActiveTheme(panel) {
   document.documentElement.dataset.cumbrePanelTheme = panel?.dataset?.panelTheme || 'dark';
+}
+
+function getViewportHeight() {
+  return Math.round(window.visualViewport?.height || window.innerHeight || 1);
+}
+
+function syncViewportHeight() {
+  document.documentElement.style.setProperty('--cumbre-vh', `${getViewportHeight()}px`);
+}
+
+function setupViewportHeightSync() {
+  viewportCleanup?.();
+  syncViewportHeight();
+
+  const refresh = () => {
+    syncViewportHeight();
+    ScrollTrigger.refresh();
+  };
+
+  window.addEventListener('resize', refresh);
+  window.addEventListener('orientationchange', refresh);
+  window.visualViewport?.addEventListener('resize', refresh);
+
+  viewportCleanup = () => {
+    window.removeEventListener('resize', refresh);
+    window.removeEventListener('orientationchange', refresh);
+    window.visualViewport?.removeEventListener('resize', refresh);
+    viewportCleanup = null;
+  };
 }
 
 function revealStaticPanels(panels) {
@@ -204,142 +235,24 @@ function addContentExit(timeline, panel, at) {
   }
 }
 
-function setupMobileStory(story, panels) {
-  const context = gsap.context(() => {
-    panels.forEach((panel, index) => {
-      panel.querySelectorAll('[data-split-title]').forEach(splitTitle);
-      panel.style.zIndex = String(index + 1);
-      panel.classList.add('is-visible');
-
-      const titleWords = panel.querySelectorAll('[data-split-title] .split-word > span');
-      const revealItems = panel.querySelectorAll('[data-reveal]:not([data-split-title])');
-      const bg = panel.querySelector('[data-panel-bg]');
-
-      gsap.set(panel, {
-        clipPath: index === 0 ? 'inset(0% 0% 0% 0%)' : 'inset(10% 0% 0% 0%)',
-      });
-
-      gsap.set(titleWords, {
-        autoAlpha: 1,
-        y: 0,
-        rotateX: 0,
-        scale: 1,
-        filter: 'blur(0px)',
-      });
-
-      gsap.set(revealItems, {
-        autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        filter: 'blur(0px)',
-      });
-
-      if (index > 0) {
-        gsap.to(panel, {
-          clipPath: 'inset(0% 0% 0% 0%)',
-          ease: 'none',
-          scrollTrigger: {
-            trigger: panel,
-            start: 'top 96%',
-            end: 'top 56%',
-            scrub: 0.3,
-          },
-        });
-      }
-
-      if (index < panels.length - 1) {
-        const entrance = gsap.timeline({
-          delay: index === 0 ? 0.08 : 0,
-          scrollTrigger:
-            index === 0
-              ? undefined
-              : {
-                  trigger: panel,
-                  start: 'top 70%',
-                  toggleActions: 'play none none none',
-                },
-        });
-
-        entrance
-          .from(titleWords, {
-            autoAlpha: 0,
-            y: 30,
-            rotateX: -10,
-            scale: 0.985,
-            filter: 'blur(1.5px)',
-            duration: 0.46,
-            ease: 'power3.out',
-            stagger: 0.035,
-            immediateRender: index === 0,
-          })
-          .from(
-            revealItems,
-            {
-              autoAlpha: 0,
-              y: 24,
-              scale: 0.99,
-              filter: 'blur(0px)',
-              duration: 0.34,
-              ease: 'power3.out',
-              stagger: 0.035,
-              immediateRender: index === 0,
-            },
-            titleWords.length ? '-=0.3' : 0
-          );
-      }
-
-      if (bg) {
-        gsap.fromTo(
-          bg,
-          { scale: 1.025, yPercent: 1.5 },
-          {
-            scale: 1,
-            yPercent: -1.5,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: panel,
-              start: 'top bottom',
-              end: 'bottom top',
-              scrub: 0.5,
-            },
-          }
-        );
-      }
-
-      ScrollTrigger.create({
-        trigger: panel,
-        start: 'top 52%',
-        end: 'bottom 52%',
-        onEnter: () => setActiveTheme(panel),
-        onEnterBack: () => setActiveTheme(panel),
-      });
-    });
-
-    setActiveTheme(panels[0]);
-    ScrollTrigger.refresh();
-  }, story);
-
-  window.__cumbreWelcomeCleanup = () => {
-    context.revert();
-  };
-}
-
 function setupStory() {
   cleanupPreviousStory();
+  setupViewportHeightSync();
 
   const story = document.querySelector('[data-cumbre-story]');
   const panels = Array.from(document.querySelectorAll('[data-cumbre-panel]'));
   if (!story || !panels.length) return;
 
+  document.documentElement.dataset.cumbreWelcomeStory = 'true';
   story.style.setProperty('--panel-count', String(panels.length));
 
   if (prefersReducedMotion) {
     revealStaticPanels(panels);
-    return;
-  }
-
-  if (!desktopQuery.matches) {
-    setupMobileStory(story, panels);
+    window.__cumbreWelcomeCleanup = () => {
+      viewportCleanup?.();
+      document.documentElement.removeAttribute('data-cumbre-welcome-story');
+      document.documentElement.style.removeProperty('--cumbre-vh');
+    };
     return;
   }
 
@@ -354,7 +267,10 @@ function setupStory() {
         id: 'cumbre-welcome-story',
         trigger: story,
         start: 'top top',
-        end: () => `+=${Math.max(window.innerHeight, 1) * lastIndex * 1.34}`,
+        end: () => {
+          const scrollFactor = desktopQuery.matches ? 1.34 : 1;
+          return `+=${getViewportHeight() * lastIndex * scrollFactor}`;
+        },
         pin: true,
         scrub: 1.05,
         anticipatePin: 1,
@@ -428,7 +344,10 @@ function setupStory() {
       gsap.ticker.remove(window.__cumbreWelcomeTicker);
       window.__cumbreWelcomeTicker = null;
     }
+    viewportCleanup?.();
     document.documentElement.removeAttribute('data-cumbre-lenis');
+    document.documentElement.removeAttribute('data-cumbre-welcome-story');
+    document.documentElement.style.removeProperty('--cumbre-vh');
   };
 }
 
