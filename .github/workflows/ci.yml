@@ -22,7 +22,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Astro check
-        run: npx astro check
-
-      # NOTE: Skip `astro build` until an SSR adapter is configured for API routes.
+      - name: Build
+        run: npm run build
