@@ -215,25 +215,85 @@ const schedule = [
           </div>
 
           <article class="cumbre-venue-map-card relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/78 p-4 shadow-2xl shadow-brand-dark/14 backdrop-blur-md" data-reveal>
-            <div class="cumbre-venue-map relative overflow-hidden rounded-[1.5rem] bg-[#07111c]">
-              <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(26,37,92,0.96),rgba(40,166,189,0.68))]"></div>
-              <div class="cumbre-map-grid absolute inset-0 opacity-35"></div>
+            <div class="cumbre-venue-map relative overflow-hidden rounded-[1.5rem] bg-[#f7f2e7]">
               <svg class="absolute inset-0 h-full w-full" viewBox="0 0 640 420" aria-hidden="true">
-                <path d="M62 308 C154 238 211 330 286 236 C355 149 426 188 574 96" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="18" stroke-linecap="round" />
-                <path d="M62 308 C154 238 211 330 286 236 C355 149 426 188 574 96" fill="none" stroke="#F2C94C" stroke-width="5" stroke-linecap="round" stroke-dasharray="16 16" />
-                <circle cx="574" cy="96" r="17" fill="#F2C94C" />
-                <circle cx="574" cy="96" r="8" fill="#07111c" />
+                <defs>
+                  <filter id="map-pin-shadow" x="-40%" y="-20%" width="180%" height="180%">
+                    <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#07111c" flood-opacity="0.28" />
+                  </filter>
+                </defs>
+
+                <rect width="640" height="420" fill="#f7f2e7" />
+                <path d="M0 338 C92 330 150 360 226 346 C299 333 338 282 430 290 C512 296 552 334 640 318" fill="none" stroke="#e1dccd" stroke-width="28" />
+                <path d="M-24 260 C68 234 138 250 214 212 C295 171 382 190 458 154 C530 120 574 132 662 100" fill="none" stroke="#ded8c8" stroke-width="22" />
+                <path d="M90 420 C116 350 118 286 148 226 C179 165 212 123 218 -8" fill="none" stroke="#ded8c8" stroke-width="20" />
+                <path d="M520 -20 C502 48 495 101 514 165 C535 238 586 288 584 430" fill="none" stroke="#ded8c8" stroke-width="20" />
+
+                <path d="M34 104 L198 46 L294 106 L250 220 L110 214 Z" fill="#bfe29c" opacity="0.92" />
+                <path d="M126 66 C155 85 150 126 173 150 C151 164 124 190 112 216 C88 181 86 144 105 112 C116 94 117 78 126 66Z" fill="#93c9d2" opacity="0.9" />
+                <path d="M44 116 C98 93 153 76 210 68" fill="none" stroke="#f8f4e9" stroke-width="8" stroke-linecap="round" opacity="0.8" />
+
+                <path d="M510 -22 C500 42 494 91 508 142 C525 203 577 248 574 420" fill="none" stroke="#87b76e" stroke-width="28" stroke-linecap="round" />
+                <path d="M510 -22 C500 42 494 91 508 142 C525 203 577 248 574 420" fill="none" stroke="#f7f2e7" stroke-width="16" stroke-linecap="round" />
+                <path d="M510 -22 C500 42 494 91 508 142 C525 203 577 248 574 420" fill="none" stroke="#87b76e" stroke-width="5" stroke-linecap="round" />
+
+                <path d="M360 420 C354 355 374 313 422 284 C469 255 511 228 526 178" fill="none" stroke="#87b76e" stroke-width="26" stroke-linecap="round" />
+                <path d="M360 420 C354 355 374 313 422 284 C469 255 511 228 526 178" fill="none" stroke="#f7f2e7" stroke-width="15" stroke-linecap="round" />
+                <path d="M360 420 C354 355 374 313 422 284 C469 255 511 228 526 178" fill="none" stroke="#87b76e" stroke-width="5" stroke-linecap="round" />
+
+                <path class="cumbre-route-red" d="M510 -22 C500 42 494 91 508 142 C520 186 550 220 562 268" fill="none" stroke="#c9453e" stroke-width="7" stroke-linecap="round" />
+                <circle cx="526" cy="178" r="22" fill="none" stroke="#87b76e" stroke-width="8" />
+                <circle cx="526" cy="178" r="33" fill="none" stroke="#f7f2e7" stroke-width="5" opacity="0.8" />
+
+                <g stroke="#d9d2c1" stroke-width="4" stroke-linecap="round" fill="none">
+                  <path d="M-10 386 L330 386" />
+                  <path d="M-8 362 L318 404" />
+                  <path d="M36 420 C86 362 148 344 230 338" />
+                  <path d="M48 306 C126 292 202 294 282 312" />
+                  <path d="M52 258 L240 234" />
+                  <path d="M64 228 L282 224" />
+                  <path d="M12 188 L148 180" />
+                  <path d="M17 156 L98 128" />
+                  <path d="M550 110 L648 92" />
+                  <path d="M548 144 L656 150" />
+                  <path d="M540 220 L658 208" />
+                </g>
+
+                <text x="145" y="130" class="cumbre-map-label cumbre-map-secondary" text-anchor="middle">
+                  <tspan x="145" dy="0">Parque Recreativo</tspan>
+                  <tspan x="145" dy="20">Comfama Tutucán</tspan>
+                </text>
+                <text x="238" y="54" class="cumbre-map-label cumbre-map-secondary">Parqueadero</text>
+                <text x="514" y="68" class="cumbre-map-road cumbre-map-secondary" transform="rotate(82 514 68)">Calle 38</text>
+                <text x="566" y="342" class="cumbre-map-road" transform="rotate(88 566 342)">Carrera 55A</text>
+                <text x="350" y="352" class="cumbre-map-road" transform="rotate(-62 350 352)">Variante San Antonio</text>
+                <text x="118" y="386" class="cumbre-map-road cumbre-map-secondary" transform="rotate(8 118 386)">Calle 24</text>
+                <text x="154" y="312" class="cumbre-map-label cumbre-map-secondary" text-anchor="middle">
+                  <tspan x="154" dy="0">Conjunto Residencial</tspan>
+                  <tspan x="154" dy="18">Pietra Santa</tspan>
+                </text>
+                <text x="576" y="134" class="cumbre-map-label cumbre-map-secondary">Parcela</text>
+                <text x="576" y="152" class="cumbre-map-label cumbre-map-secondary">Badén</text>
+
+                <g filter="url(#map-pin-shadow)">
+                  <path d="M294 190c0-22 18-40 40-40s40 18 40 40c0 32-40 70-40 70s-40-38-40-70Z" fill="#e22f36" />
+                  <circle cx="334" cy="190" r="15" fill="#b91524" opacity="0.8" />
+                  <circle cx="334" cy="262" r="14" fill="#26333c" opacity="0.9" />
+                  <circle cx="334" cy="262" r="8" fill="#f7f2e7" opacity="0.9" />
+                </g>
+
+                <g class="cumbre-map-popup">
+                  <rect x="372" y="170" width="234" height="64" rx="9" fill="#ffffff" />
+                  <path d="M372 202 L354 214 L372 218 Z" fill="#ffffff" />
+                  <text x="390" y="196" class="cumbre-map-popup-title">De La Salle Casa de Encuentros</text>
+                  <text x="390" y="216" class="cumbre-map-popup-subtitle">Rionegro, Antioquia, Colombia</text>
+                </g>
               </svg>
-              <div class="absolute left-6 top-6 rounded-2xl border border-white/14 bg-white/10 px-4 py-3 text-white backdrop-blur-md">
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-brand-gold">Destino</p>
-                <p class="mt-1 text-lg font-black leading-none">La Salle</p>
+              <div class="cumbre-map-reference absolute left-5 top-5 rounded-2xl border border-brand-dark/10 bg-white/82 px-4 py-3 text-brand-dark shadow-lg shadow-brand-dark/10 backdrop-blur-md">
+                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-brand-medium/70">Referencia</p>
+                <p class="mt-1 text-sm font-black leading-none">Cerca de Comfama Tutucán</p>
               </div>
-              <div class="absolute bottom-6 left-6 right-6 rounded-3xl border border-white/14 bg-black/28 p-5 text-white backdrop-blur-xl">
-                <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-gold">Ruta recomendada</p>
-                <h3 class="mt-2 text-3xl font-black leading-tight text-white">De La Salle Casa de Encuentros</h3>
-                <p class="mt-2 text-sm leading-relaxed text-white/74">Abre la navegación en Google Maps o Waze antes de salir hacia Rionegro.</p>
-              </div>
-              <div class="cumbre-venue-pulse absolute right-[8.5%] top-[17%] h-24 w-24 rounded-full border border-brand-gold/50"></div>
+              <div class="cumbre-venue-pulse absolute left-[47.5%] top-[38%] h-24 w-24 rounded-full border border-red-500/35"></div>
             </div>
           </article>
         </div>
@@ -557,6 +617,47 @@ const schedule = [
     background-size: 34px 34px;
   }
 
+  .cumbre-venue-map svg text {
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .cumbre-map-label {
+    fill: #68715f;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .cumbre-map-road {
+    fill: #466946;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    paint-order: stroke;
+    stroke: rgba(247, 242, 231, 0.82);
+    stroke-width: 4px;
+  }
+
+  .cumbre-map-popup {
+    filter: drop-shadow(0 8px 12px rgba(7, 17, 28, 0.16));
+  }
+
+  .cumbre-map-popup-title {
+    fill: #d92532;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .cumbre-map-popup-subtitle {
+    fill: #334155;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .cumbre-route-red {
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.65));
+  }
+
   .cumbre-venue-pulse {
     animation: cumbre-map-pulse 2.6s ease-out infinite;
   }
@@ -737,6 +838,30 @@ const schedule = [
       min-height: 12.4rem;
     }
 
+    .cumbre-map-reference {
+      left: 0.65rem;
+      top: 0.65rem;
+      padding: 0.52rem 0.7rem !important;
+      border-radius: 0.75rem;
+    }
+
+    .cumbre-map-reference p:first-child {
+      font-size: 0.48rem;
+      letter-spacing: 0.13em;
+    }
+
+    .cumbre-map-reference p:last-child {
+      font-size: 0.62rem;
+    }
+
+    .cumbre-map-popup-title {
+      font-size: 12px;
+    }
+
+    .cumbre-map-popup-subtitle {
+      font-size: 10px;
+    }
+
     .cumbre-venue-panel .cumbre-venue-actions {
       grid-template-columns: 1fr 1fr;
     }
@@ -793,7 +918,8 @@ const schedule = [
         min-height: 8.8rem;
       }
 
-      .cumbre-venue-panel .cumbre-venue-map .absolute.left-6.top-6 {
+      .cumbre-map-secondary,
+      .cumbre-map-reference {
         display: none;
       }
 
