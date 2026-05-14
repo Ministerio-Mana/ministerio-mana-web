@@ -4,6 +4,10 @@ const {
   title = 'Ministerio Maná',
   description = 'Iglesias, devocionales y eventos para crecer en la fe.',
   image = '/og.jpg',
+  imageAlt,
+  imageWidth,
+  imageHeight,
+  imageType,
   type = 'website',
   canonicalUrl,
   noindex = false,
@@ -20,6 +24,7 @@ const resolvedImage = (() => {
     return site ? new URL(image, site).toString() : image;
   }
 })();
+const resolvedImageAlt = imageAlt ?? title;
 const cspNonce = Astro.locals?.cspNonce;
 ---
 <meta charset="utf-8" />
@@ -32,10 +37,16 @@ const cspNonce = Astro.locals?.cspNonce;
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={resolvedImage} />
+<meta property="og:image:secure_url" content={resolvedImage} />
+{imageType && <meta property="og:image:type" content={imageType} />}
+{imageWidth && <meta property="og:image:width" content={String(imageWidth)} />}
+{imageHeight && <meta property="og:image:height" content={String(imageHeight)} />}
+<meta property="og:image:alt" content={resolvedImageAlt} />
 <meta property="og:url" content={url} />
 <meta property="og:site_name" content="Ministerio Maná" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={resolvedImage} />
+<meta name="twitter:image:alt" content={resolvedImageAlt} />
 {structuredData && (<script type="application/ld+json" nonce={cspNonce}>{JSON.stringify(structuredData)}</script>)}
