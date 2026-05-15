@@ -6,8 +6,6 @@ interface Props {
 }
 
 const { slug, missionaryName, country = 'CO' } = Astro.props;
-const isColombia = country.toUpperCase() === 'CO';
-const defaultCurrency = isColombia ? 'COP' : 'USD';
 ---
 
 <div class="donation-widget relative p-6 transition-all group overflow-visible"
@@ -31,26 +29,8 @@ const defaultCurrency = isColombia ? 'COP' : 'USD';
         <button type="button" class="freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-gray-400" data-freq="once">Única vez</button>
       </div>
 
-      <!-- Currency Selector — organic border -->
-      <div class="mb-6 relative">
-          <label class="block text-[10px] font-intro uppercase text-gray-400 mb-2 tracking-widest">Moneda</label>
-        <div class="relative">
-            <select class="currency-select select-organic w-full appearance-none text-[#001B3A] font-intro text-sm py-2.5 px-4 pr-8 focus:outline-none cursor-pointer">
-                {isColombia ? (
-                    <><option value="COP">🇨🇴 Peso Colombiano (COP)</option>
-                    <option value="USD">🇺🇸 Dólar (USD)</option></>
-                ) : (
-                    <><option value="USD">🇺🇸 Dólar (USD)</option>
-                    <option value="COP">🇨🇴 Peso Colombiano (COP)</option></>
-                )}
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#001B3A]">
-                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-            </div>
-        </div>
-      </div>
-
       <!-- Predefined Amounts -->
+      <p class="block text-[10px] font-intro uppercase text-gray-400 mb-2 tracking-widest">Monto</p>
       <div class="amounts-grid grid grid-cols-3 gap-3 mb-6">
         <!-- JS populates this -->
       </div>
