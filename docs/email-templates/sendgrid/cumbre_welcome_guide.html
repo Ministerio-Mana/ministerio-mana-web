@@ -6,24 +6,124 @@
     <title>{{subject}}</title>
   </head>
   <body style="margin:0;padding:0;background:#eef8f7;color:#10172f;font-family:Arial,Helvetica,sans-serif;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef8f7;padding:28px 14px;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Revisa tu reserva, alojamiento, menu, saldo y la informacion esencial para llegar a la Cumbre.
+    </div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef8f7;padding:28px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:28px;overflow:hidden;box-shadow:0 24px 50px rgba(16,23,47,0.18);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:700px;background:#ffffff;border-radius:30px;overflow:hidden;box-shadow:0 28px 62px rgba(16,23,47,0.19);">
             <tr>
-              <td style="padding:0;background:#17235a;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:linear-gradient(135deg,#17235a 0%,#123b5b 58%,#0f6d80 100%);">
+              <td style="padding:0;background:#10172f;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:linear-gradient(135deg,#10172f 0%,#17235a 42%,#0f6d80 100%);">
                   <tr>
-                    <td style="padding:28px 30px 20px;">
-                      <img src="{{logo_url}}" width="168" alt="Cumbre Mundial de Discipulado" style="display:block;border:0;max-width:168px;height:auto;" />
+                    <td style="padding:30px 34px 14px;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td align="left">
+                            <img src="{{logo_url}}" width="176" alt="Cumbre Mundial de Discipulado" style="display:block;border:0;max-width:176px;height:auto;" />
+                          </td>
+                          <td align="right" style="color:#f2c94c;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;font-weight:900;">
+                            &nbsp;
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                   <tr>
-                    <td style="padding:6px 30px 36px;color:#ffffff;">
-                      <p style="margin:0 0 12px;color:#f2c94c;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:800;">Guia de bienvenida</p>
-                      <h1 style="margin:0;font-size:36px;line-height:1.08;font-weight:900;letter-spacing:-0.5px;">Nos vemos en la Cumbre</h1>
-                      <p style="margin:18px 0 0;color:rgba(255,255,255,0.82);font-size:16px;line-height:1.55;">
-                        {{greeting}} tenemos lista la informacion esencial para llegar preparados a este tiempo de comunion, oracion y discipulado.
+                    <td style="padding:6px 34px 34px;color:#ffffff;">
+                      <p style="margin:0 0 12px;color:#f2c94c;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:900;">Guia de bienvenida</p>
+                      <h1 style="margin:0;font-size:42px;line-height:1.03;font-weight:900;letter-spacing:-0.3px;">{{hero_title}}</h1>
+                      <p style="margin:18px 0 0;color:rgba(255,255,255,0.88);font-size:17px;line-height:1.58;">
+                        {{greeting}} esta es la informacion registrada para tu participacion en la Cumbre Mundial de Discipulado. Rev&iacute;sala con calma antes del evento.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 34px 34px;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid rgba(255,255,255,0.18);border-radius:22px;background:rgba(255,255,255,0.08);">
+                        <tr>
+                          <td style="padding:18px 20px;color:#ffffff;">
+                            <p style="margin:0;color:#ffffff;font-size:15px;line-height:1.55;">
+                              &ldquo;Bogando mar adentro... echaron sus redes para pescar... y encerraron gran cantidad de peces.&rdquo;
+                            </p>
+                            <p style="margin:9px 0 0;color:#f2c94c;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:900;">Lucas 5:4-6</p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:30px 34px 8px;background:#ffffff;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:26px;overflow:hidden;background:#10172f;">
+                  <tr>
+                    <td style="padding:24px 24px 22px;color:#ffffff;background:linear-gradient(135deg,#10172f,#17235a 58%,#123b5b);">
+                      <p style="margin:0 0 8px;color:#f2c94c;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;font-weight:900;">Estado de tu reserva</p>
+                      <h2 style="margin:0;font-size:27px;line-height:1.2;font-weight:900;">{{reservation_status}}</h2>
+                      <p style="margin:10px 0 0;color:rgba(255,255,255,0.84);font-size:14px;line-height:1.55;">{{reservation_note}}</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 18px 20px;background:#10172f;">
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td width="33.33%" style="padding:0 5px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+                              <tr>
+                                <td style="padding:15px 14px;">
+                                  <p style="margin:0 0 7px;color:#b8c7dc;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;font-weight:900;">Pagado</p>
+                                  <p style="margin:0;color:#ffffff;font-size:18px;line-height:1.2;font-weight:900;">{{total_paid}}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                          <td width="33.33%" style="padding:0 5px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+                              <tr>
+                                <td style="padding:15px 14px;">
+                                  <p style="margin:0 0 7px;color:#b8c7dc;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;font-weight:900;">Saldo</p>
+                                  <p style="margin:0;color:#ffffff;font-size:18px;line-height:1.2;font-weight:900;">{{balance_due}}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                          <td width="33.33%" style="padding:0 5px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:18px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);">
+                              <tr>
+                                <td style="padding:15px 14px;">
+                                  <p style="margin:0 0 7px;color:#b8c7dc;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;font-weight:900;">Estado</p>
+                                  <p style="margin:0;color:#ffffff;font-size:18px;line-height:1.2;font-weight:900;">{{reservation_badge}}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 34px 4px;background:#ffffff;">
+                <p style="margin:0 0 10px;color:#63709a;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;font-weight:900;">Personas registradas en este correo</p>
+                {{{participants_html}}}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:8px 34px 10px;background:#ffffff;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #eadfae;border-radius:20px;background:#fffaf0;">
+                  <tr>
+                    <td style="padding:18px 20px;color:#334155;">
+                      <p style="margin:0 0 8px;color:#9a7415;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;font-weight:900;">Revision importante</p>
+                      <p style="margin:0;font-size:14px;line-height:1.58;">
+                        {{review_note}}
                       </p>
                     </td>
                   </tr>
@@ -32,20 +132,31 @@
             </tr>
 
             <tr>
-              <td style="padding:28px 30px 8px;background:#ffffff;">
+              <td style="padding:12px 34px 4px;background:#ffffff;">
+                <p style="margin:0 0 12px;color:#63709a;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;font-weight:900;">Informacion esencial</p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td width="50%" style="padding:0 6px 12px 0;">
-                      <div style="border:1px solid #e6edf3;border-radius:18px;padding:16px;background:#f9fbfc;">
-                        <p style="margin:0 0 8px;color:#63709a;font-size:10px;letter-spacing:2.2px;text-transform:uppercase;font-weight:900;">Fecha</p>
-                        <p style="margin:0;color:#10172f;font-size:22px;line-height:1.2;font-weight:900;">6 al 8 de junio</p>
-                      </div>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="height:100%;border:1px solid #e6edf3;border-radius:20px;background:#f9fbfc;">
+                        <tr>
+                          <td style="padding:18px;">
+                            <p style="margin:0 0 7px;color:#63709a;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:900;">Fecha</p>
+                            <p style="margin:0;color:#10172f;font-size:22px;line-height:1.2;font-weight:900;">6 al 8 de junio</p>
+                            <p style="margin:8px 0 0;color:#64748b;font-size:13px;line-height:1.45;">Mesa de bienvenida el s&aacute;bado desde las 7:00 a.m.</p>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                     <td width="50%" style="padding:0 0 12px 6px;">
-                      <div style="border:1px solid #e6edf3;border-radius:18px;padding:16px;background:#f9fbfc;">
-                        <p style="margin:0 0 8px;color:#63709a;font-size:10px;letter-spacing:2.2px;text-transform:uppercase;font-weight:900;">Lugar</p>
-                        <p style="margin:0;color:#10172f;font-size:18px;line-height:1.25;font-weight:900;">Casa de Encuentros La Salle</p>
-                      </div>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="height:100%;border:1px solid #e6edf3;border-radius:20px;background:#f9fbfc;">
+                        <tr>
+                          <td style="padding:18px;">
+                            <p style="margin:0 0 7px;color:#63709a;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:900;">Lugar</p>
+                            <p style="margin:0;color:#10172f;font-size:20px;line-height:1.2;font-weight:900;">Casa de Encuentros La Salle</p>
+                            <p style="margin:8px 0 0;color:#64748b;font-size:13px;line-height:1.45;">Rionegro, Antioquia, Colombia.</p>
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                 </table>
@@ -53,17 +164,43 @@
             </tr>
 
             <tr>
-              <td style="padding:8px 30px 6px;background:#ffffff;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:24px;overflow:hidden;background:#17235a;">
+              <td style="padding:4px 34px 8px;background:#ffffff;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0 10px;">
                   <tr>
-                    <td style="padding:24px 24px 26px;background:linear-gradient(135deg,#17235a,#123b5b 62%,#0f6d80);color:#ffffff;">
-                      <p style="margin:0 0 8px;color:#f2c94c;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;font-weight:900;">Ruta recomendada</p>
-                      <h2 style="margin:0 0 10px;font-size:25px;line-height:1.18;font-weight:900;">Abre la guia antes de salir</h2>
-                      <p style="margin:0;color:rgba(255,255,255,0.84);font-size:14px;line-height:1.55;">
-                        En la pagina de bienvenida esta la ubicacion, Google Maps, Waze, clima, vestuario y el horario general.
+                    <td style="padding:17px 18px;border-radius:20px;background:#f9fbfc;border:1px solid #e6edf3;">
+                      <p style="margin:0 0 7px;color:#63709a;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:900;">Clima y vestuario</p>
+                      <p style="margin:0;color:#334155;font-size:14px;line-height:1.58;">Rionegro tiene clima fresco y variable: d&iacute;a 18-22&deg;C, noche y madrugada 10-13&deg;C. Recomendamos chaqueta abrigada, zapatos c&oacute;modos y cerrados, ropa casual para las sesiones y paraguas peque&ntilde;o o impermeable.</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:17px 18px;border-radius:20px;background:#f9fbfc;border:1px solid #e6edf3;">
+                      <p style="margin:0 0 7px;color:#63709a;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:900;">Sabado en la tarde</p>
+                      <p style="margin:0;color:#334155;font-size:14px;line-height:1.58;">Compartiremos como familia en la fe en Comfama Tutuc&aacute;n. El lugar cuenta con piscinas climatizadas; recomendamos llevar traje de ba&ntilde;o.</p>
+                      <p style="margin:10px 0 0;"><a href="{{comfama_url}}" style="color:#0f6d80;font-size:13px;font-weight:900;text-decoration:none;">Ver Comfama Tutucan</a></p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:17px 18px;border-radius:20px;background:#f9fbfc;border:1px solid #e6edf3;">
+                      <p style="margin:0 0 7px;color:#63709a;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:900;">Lunes de clausura</p>
+                      <p style="margin:0;color:#334155;font-size:14px;line-height:1.58;">Tendremos devocional, ense&ntilde;anzas, talleres y tiempo de clausura. Ese d&iacute;a est&aacute; incluido el almuerzo; despu&eacute;s de esto se dar&aacute; por concluida nuestra Cumbre discipular.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:10px 34px 8px;background:#ffffff;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:26px;overflow:hidden;background:#17235a;">
+                  <tr>
+                    <td style="padding:25px 24px 26px;background:linear-gradient(135deg,#17235a,#123b5b 58%,#0f6d80);color:#ffffff;">
+                      <p style="margin:0 0 8px;color:#f2c94c;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;font-weight:900;">Guia completa</p>
+                      <h2 style="margin:0 0 10px;font-size:27px;line-height:1.18;font-weight:900;">Abre la pagina antes de salir</h2>
+                      <p style="margin:0;color:rgba(255,255,255,0.86);font-size:14px;line-height:1.58;">
+                        Alli encontraras ubicacion, ruta, clima, vestuario, que traer y el horario general actualizado.
                       </p>
                       <p style="margin:22px 0 0;">
-                        <a href="{{guide_url}}" style="display:inline-block;background:#f2c94c;color:#10172f;text-decoration:none;padding:13px 18px;border-radius:999px;font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;">Abrir guia</a>
+                        <a href="{{guide_url}}" style="display:inline-block;background:#f2c94c;color:#10172f;text-decoration:none;padding:13px 19px;border-radius:999px;font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;">Abrir guia</a>
                       </p>
                     </td>
                   </tr>
@@ -72,7 +209,7 @@
             </tr>
 
             <tr>
-              <td style="padding:14px 30px 8px;background:#ffffff;">
+              <td style="padding:14px 34px 8px;background:#ffffff;">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                   <tr>
                     <td width="50%" style="padding:0 6px 12px 0;">
@@ -87,22 +224,31 @@
             </tr>
 
             <tr>
-              <td style="padding:4px 30px 30px;background:#ffffff;color:#334155;">
-                <p style="margin:0 0 14px;font-size:15px;line-height:1.55;">
-                  Recomendamos salir con tiempo hacia Rionegro y revisar la ruta desde el celular antes de comenzar el viaje.
+              <td style="padding:4px 34px 30px;background:#ffffff;color:#334155;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #d9f0ee;border-radius:22px;background:#edf8f7;">
+                  <tr>
+                    <td style="padding:19px 20px;">
+                      <p style="margin:0 0 8px;color:#0f6d80;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;font-weight:900;">Si algo no coincide</p>
+                      <p style="margin:0;font-size:14px;line-height:1.58;">Si ves una incoherencia, necesitas hacer un cambio o tu reserva aparece equivocada, responde este correo o comun&iacute;cate con <a href="mailto:info@ministeriomana.org" style="color:#0f6d80;font-weight:800;">info@ministeriomana.org</a>, <a href="mailto:administracion@ministeriomana.org" style="color:#0f6d80;font-weight:800;">administracion@ministeriomana.org</a> o el WhatsApp del Ministerio Man&aacute;: <a href="{{support_whatsapp_url}}" style="color:#0f6d80;font-weight:800;text-decoration:none;">{{support_whatsapp}}</a>.</p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:18px 0 0;font-size:15px;line-height:1.58;">
+                  Ven con un corazon dispuesto. Creemos que sera un tiempo para escuchar al Se&ntilde;or, fortalecer la fe y responder juntos al llamado: <strong>&ldquo;Ven y ayudanos.&rdquo;</strong>
                 </p>
-                <p style="margin:0;font-size:15px;line-height:1.55;">
-                  Ven con un corazon dispuesto. Creemos que sera un tiempo para escuchar al Senor, fortalecer la fe y responder juntos al llamado: <strong>Ven y ayudanos.</strong>
+                <p style="margin:12px 0 0;color:#10172f;font-size:16px;line-height:1.45;font-weight:900;">
+                  La red se llena cuando obedecemos juntos.
                 </p>
               </td>
             </tr>
           </table>
 
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:700px;">
             <tr>
-              <td style="padding:16px 20px 0;text-align:center;color:#6b7a90;font-size:12px;line-height:1.5;">
-                Ministerio Mana · Cumbre Mundial de Discipulado<br />
-                Si necesitas ayuda, escribe a <a href="mailto:{{support_email}}" style="color:#0f6d80;">{{support_email}}</a> o por WhatsApp {{support_whatsapp}}.
+              <td style="padding:16px 20px 0;text-align:center;color:#6b7a90;font-size:12px;line-height:1.55;">
+                Ministerio Mana &middot; Cumbre Mundial de Discipulado<br />
+                Respuestas: <a href="mailto:info@ministeriomana.org" style="color:#0f6d80;">info@ministeriomana.org</a> y <a href="mailto:administracion@ministeriomana.org" style="color:#0f6d80;">administracion@ministeriomana.org</a> &middot; WhatsApp {{support_whatsapp}}.
               </td>
             </tr>
           </table>
