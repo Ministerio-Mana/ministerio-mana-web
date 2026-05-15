@@ -2,17 +2,41 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NetOverlay from './NetOverlay.astro';
 import AccountButton from '@components/AccountButton.astro';
+import cumbreNavScript from '../../scripts/cumbre-nav.js?url';
 
-const { title, description, variant = 'dark' } = Astro.props;
+const {
+  title,
+  description,
+  image,
+  imageAlt,
+  imageWidth,
+  imageHeight,
+  imageType,
+  variant = 'dark',
+  enableSmoothScroll = false,
+  flush = false,
+  showEventBadge = true,
+} = Astro.props;
 
 const isLight = variant === 'light';
 const mainBg = isLight ? 'bg-slate-50 text-brand-dark' : 'bg-brand-void text-white';
+const overflowMode = flush ? 'overflow-visible' : 'overflow-hidden';
 const cspNonce = Astro.locals?.cspNonce;
-const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
 ---
 
-<BaseLayout title={title} description={description} hideHeader hideFooter>
-  <div class={`relative min-h-screen ${mainBg} overflow-hidden`}>
+<BaseLayout
+  title={title}
+  description={description}
+  image={image}
+  imageAlt={imageAlt}
+  imageWidth={imageWidth}
+  imageHeight={imageHeight}
+  imageType={imageType}
+  hideHeader
+  hideFooter
+  disableSmoothScroll={!enableSmoothScroll}
+>
+  <div class={`relative min-h-screen ${mainBg} ${overflowMode}`}>
     <!-- Top Controls -->
     <div class="fixed top-5 left-5 right-5 z-50 flex items-center justify-between pointer-events-none">
       <a
@@ -28,7 +52,10 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
         <span>Volver</span>
       </a>
       <div class="pointer-events-auto">
-        <div class={`rounded-full border backdrop-blur-md px-2 py-1 ${isLight ? 'bg-white/70 border-brand-navy/10' : 'bg-white/10 border-white/10'}`}>
+        <div
+          id="cumbre-account-shell"
+          class={`rounded-full border backdrop-blur-md px-2 py-1 ${isLight ? 'bg-white/70 border-brand-navy/10' : 'bg-white/10 border-white/10'}`}
+        >
           <AccountButton variant={isLight ? 'light' : 'dark'} />
         </div>
       </div>
@@ -50,14 +77,16 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
     )}
 
     <!-- Content -->
-    <div class="relative z-10 pt-16">
-      <div class="px-4 md:px-8">
-        <div class="max-w-7xl mx-auto">
-          <div class={`inline-flex items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md text-xs font-semibold tracking-[0.4em] uppercase ${isLight ? 'bg-white/60 border-brand-navy/10 text-brand-navy' : 'bg-white/5 border-white/10 text-brand-teal'}`}>
-            Ven y Ayúdanos · Cumbre Mundial
+    <div class={`relative z-10 ${flush ? '' : 'pt-16'}`}>
+      {showEventBadge && (
+        <div class="px-4 md:px-8">
+          <div class="max-w-7xl mx-auto">
+            <div class={`inline-flex items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md text-xs font-semibold tracking-[0.4em] uppercase ${isLight ? 'bg-white/60 border-brand-navy/10 text-brand-navy' : 'bg-white/5 border-white/10 text-brand-teal'}`}>
+              Ven y Ayúdanos · Cumbre Mundial
+            </div>
           </div>
         </div>
-      </div>
+      )}
       <slot />
     </div>
 
@@ -77,6 +106,8 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
         ¿Necesitas ayuda?
       </span>
     </a>
+
+    <script type="module" src={cumbreNavScript} nonce={cspNonce}></script>
   </div>
 </BaseLayout>
 
@@ -166,6 +197,22 @@ const cumbreNavScript = new URL('../../scripts/cumbre-nav.js', import.meta.url);
   .cumbre-inline-link:active {
     color: #ffffff !important;
   }
-</style>
 
-<script type="module" src={cumbreNavScript} nonce={cspNonce}></script>
+  html[data-cumbre-panel-theme='light'] #cumbre-back-link {
+    background: rgba(255, 255, 255, 0.84);
+    border-color: rgba(26, 37, 92, 0.16);
+    color: #1A255C;
+    box-shadow: 0 14px 40px rgba(26, 37, 92, 0.12);
+  }
+
+  html[data-cumbre-panel-theme='light'] #cumbre-account-shell {
+    background: rgba(255, 255, 255, 0.84);
+    border-color: rgba(26, 37, 92, 0.16);
+    box-shadow: 0 14px 40px rgba(26, 37, 92, 0.12);
+  }
+
+  html[data-cumbre-panel-theme='light'] #account-guest {
+    color: #1A255C;
+    border-color: rgba(26, 37, 92, 0.18);
+  }
+</style>

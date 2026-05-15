@@ -104,9 +104,12 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
         Levantando una generación <span id="rn-apasionada" class="font-intro text-white relative z-10">apasionada</span> por Jesús en las universidades.
       </p>
       
-      <div class="flex justify-center items-center">
+      <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
         <a href="#misioneros" class="btn-scribble px-10 py-4 bg-[#001B3A] text-white font-intro text-xl uppercase tracking-wider">
           APOYAR AHORA
+        </a>
+        <a href="/campus/como-ser-socio" class="btn-scribble px-10 py-4 bg-[#2DD4BF] text-[#001B3A] font-intro text-xl uppercase tracking-wider">
+          VER PASO A PASO
         </a>
       </div>
     </div>
@@ -190,14 +193,13 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
   </section>
 
   <!-- ===== MISSIONARIES SECTION ===== -->
-  <section id="misioneros" class="py-24 bg-[#001B3A] relative">
+  <section id="misioneros" class="scroll-mt-24 py-24 bg-[#001B3A] relative">
       <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 20px 20px;"></div>
 
     <div class="container-tight px-4 relative z-10">
-      <div class="text-center mb-24">
-        <!-- "Nuestro" SAME visual weight as "EQUIPO" -->
-        <span class="font-summer text-brand-teal block mb-[-16px] transform -rotate-2" style="font-size: clamp(7rem, 12vw, 10rem);">Nuestro</span>
-        <h2 class="font-intro text-white uppercase inline-block" style="font-size: clamp(6rem, 12vw, 10rem);">
+      <div class="text-center mb-16 md:mb-24">
+        <span class="font-summer text-brand-teal block mb-[-10px] transform -rotate-2" style="font-size: clamp(4.5rem, 16vw, 10rem);">Nuestro</span>
+        <h2 class="font-intro text-white uppercase inline-block" style="font-size: clamp(3.9rem, 16vw, 10rem);">
           EQUIPO
         </h2>
       </div>

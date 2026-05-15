@@ -9,6 +9,8 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  hasUnavailableLodging,
+  CUMBRE_LODGING_CLOSED_MESSAGE,
   generateAccessToken,
   hashToken,
 } from '@lib/cumbre2026';
@@ -183,6 +185,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!safeParticipants.length) {
       return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), {
         status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (hasUnavailableLodging(safeParticipants)) {
+      return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }

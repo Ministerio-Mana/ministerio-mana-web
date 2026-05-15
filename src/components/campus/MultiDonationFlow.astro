@@ -2,7 +2,6 @@
 import { MISIONEROS } from '@data/misioneros';
 interface Props { country?: string; }
 const { country = 'CO' } = Astro.props;
-const isColombia = country.toUpperCase() === 'CO';
 const totalMissionaries = MISIONEROS.length;
 ---
 
@@ -17,8 +16,8 @@ const totalMissionaries = MISIONEROS.length;
         <!-- ===== STEP 1: ¿Quieres sembrar en varios? ===== -->
         <div class="flow-step active" data-step="1">
             <div class="text-center mb-12">
-                <span class="font-summer text-white block mb-[-12px] transform -rotate-2" style="font-size: clamp(5rem, 10vw, 8rem);">¿Quieres sembrar</span>
-                <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(3.5rem, 8vw, 6rem);">
+                <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.7rem, 12vw, 8rem);">¿Quieres sembrar</span>
+                <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(2.35rem, 10vw, 6rem);">
                     EN VARIOS MISIONEROS?
                 </h2>
             </div>
@@ -95,25 +94,6 @@ const totalMissionaries = MISIONEROS.length;
             </div>
 
             <div class="max-w-xl mx-auto">
-                <!-- Currency -->
-                <div class="mb-6">
-                    <label class="block text-xs font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Moneda</label>
-                    <div class="relative max-w-xs mx-auto">
-                        <select id="multi-currency" class="select-organic w-full appearance-none text-[#001B3A] font-intro text-sm py-2.5 px-4 pr-8 focus:outline-none cursor-pointer bg-white">
-                            {isColombia ? (
-                                <><option value="COP">🇨🇴 Peso Colombiano (COP)</option>
-                                <option value="USD">🇺🇸 Dólar (USD)</option></>
-                            ) : (
-                                <><option value="USD">🇺🇸 Dólar (USD)</option>
-                                <option value="COP">🇨🇴 Peso Colombiano (COP)</option></>
-                            )}
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#001B3A]">
-                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Frequency -->
                 <div class="flex gap-3 mb-6 max-w-xs mx-auto">
                     <button type="button" class="multi-freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-white" data-freq="monthly" style="background-color: #001B3A;">Mensual</button>

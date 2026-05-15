@@ -7,6 +7,8 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  hasUnavailableLodging,
+  CUMBRE_LODGING_CLOSED_MESSAGE,
   buildPaymentReference,
   generateAccessToken,
   type PackageType,
@@ -194,6 +196,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!participants.length) {
       return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), {
         status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (hasUnavailableLodging(participants)) {
+      return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }

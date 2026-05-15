@@ -14,6 +14,22 @@
 
 ## Entradas
 
+### 2026-04-27 (Cumbre: corrección paquete sin alojamiento + auditoría)
+- Responsable: Delta
+- Cambios:
+  - Se corrigió la edición de reservas manuales del Portal para que `lodging: "no"` se guarde como `package_type = no_lodging` y no caiga por defecto en `lodging`.
+  - Se ajustó el registro avanzado para aceptar también `lodging` como respaldo cuando no venga `packageType/package_type`.
+  - El formulario manual del portal ahora envía `packageType` explícito junto con `lodging`.
+  - Se endureció la normalización de edad para no tratar edades vacías como `0` y evitar paquetes infantiles accidentales.
+  - Se agregó auditoría protegida `/api/portal/admin/cumbre/package-audit` para detectar reservas cuyo `total_amount` no cuadra con la suma de paquetes de participantes.
+  - La auditoría también puede exportar detalle por participante con `scope=participants`, incluyendo responsable y acompañantes, paquete guardado, precio esperado y posibles candidatos a corregir de `lodging` a `no_lodging`.
+  - Se agregó endpoint protegido `/api/portal/admin/cumbre/package-correction` con `dryRun` por defecto para corregir históricos seleccionados de `lodging` a `no_lodging`, recalculando total, estado y cuotas pendientes.
+- Pruebas:
+  - `npm run build` exitoso.
+- Pendientes:
+  - Ejecutar auditoría en producción y revisar reservas con `TOTAL_NO_CUADRA_CON_PAQUETES` antes del cierre operativo de Cumbre.
+  - Aplicar correcciones históricas solo con `participant_id` confirmado y después de validar la vista previa (`dryRun`).
+
 ### 2026-02-16 (Directorio Iglesias global: datos + UX mapa)
 - Responsable: Delta
 - Cambios:
@@ -605,3 +621,50 @@
   - Proyecto Astro inicial.
 - Pruebas: N/A
 - Pendientes: Definir estructura de contenido.
+
+### 2026-04-16 (CMS Portal: base completa para gestión de contenido)
+- Responsable: Delta
+- Cambios:
+  - Se crea SQL base de CMS en `docs/sql/cms_schema.sql`:
+    - `cms_pages`, `cms_sections`, `cms_revisions`, `cms_audit_logs`.
+    - RLS y políticas para admin/superadmin.
+    - Seed inicial de páginas (`home`, `eventos`, `noticias`).
+  - Se agregan utilidades CMS:
+    - `src/lib/cms.ts` (normalización, validación, revision/audit helpers).
+    - `src/lib/cmsAdmin.ts` (guard + json response helpers).
+  - Se agregan APIs CMS (`/api/portal/content/*`):
+    - `pages` (listar, crear, editar),
+    - `sections` (listar, crear, editar, eliminar),
+    - `publish` (publicar/despublicar + versionar),
+    - `history` (revisiones + auditoría).
+  - Se crea módulo UI inicial `src/pages/portal/content.astro` + `src/scripts/portal-content.js`.
+  - Se agrega acceso en sidebar del portal: “Contenido”.
+  - Se documenta roadmap extendido en `docs/cms_master_plan_2026-04-16.md`.
+- Pruebas:
+  - Pendiente `npm run build` y validación manual end-to-end con SQL aplicado en Supabase.
+- Pendientes:
+  - Integrar render dinámico público para Home en fase siguiente.
+  - Conectar biblioteca multimedia en Supabase Storage.
+
+### 2026-04-16 (CMS Portal fase extendida: Home dinámica + media + preview + SEO)
+- Responsable: Delta
+- Cambios:
+  - Home (`/`) ahora puede renderizar contenido dinámico desde CMS publicado con fallback seguro al home clásico si no hay bloques publicados.
+  - Se agrega renderer de bloques CMS: `hero`, `rich_text`, `gallery`, `video`, `cards`, `cta`, `custom`.
+  - Se agrega preview de CMS por token (`CMS_PREVIEW_TOKEN`) para visualizar borradores en público.
+  - Panel `/portal/content` actualizado con:
+    - UI responsive reforzada,
+    - estados loading/disabled en acciones,
+    - modales de creación (sin prompt),
+    - SEO editable por página,
+    - botón de preview,
+    - reordenamiento de secciones (arriba/abajo).
+  - Biblioteca multimedia en panel:
+    - upload/list/delete/copy URL,
+    - endpoint `media` con bucket configurable `CMS_MEDIA_BUCKET` (default `cms-media`).
+  - SQL CMS extendido con tabla `cms_media` y políticas admin/superadmin.
+- Pruebas:
+  - `npm run build` exitoso.
+- Pendientes:
+  - Ejecutar SQL `docs/sql/cms_schema.sql` en Supabase para habilitar tablas/policies.
+  - Configurar env `CMS_PREVIEW_TOKEN` (y opcional `CMS_MEDIA_BUCKET`) en Preview/Prod.

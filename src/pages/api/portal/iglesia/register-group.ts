@@ -8,6 +8,8 @@ import {
     sanitizeParticipant,
     calculateTotals,
     depositThreshold,
+    hasUnavailableLodging,
+    CUMBRE_LODGING_CLOSED_MESSAGE,
     buildPaymentReference,
     generateAccessToken,
     type PackageType,
@@ -364,7 +366,7 @@ export const POST: APIRoute = async ({ request }) => {
             const packageChoice = participant?.packageType
                 ?? participant?.package_type
                 ?? participant?.lodging
-                ?? 'lodging';
+                ?? 'no_lodging';
             const packageType = packageTypeFromAge(age, packageChoice);
             const relationship = participant?.isLeader ? 'responsable' : 'acompanante';
             const documentType = normalizeDocType(participant?.document_type ?? participant?.documentType ?? '');
@@ -386,6 +388,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!participants.length) {
         return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
+    }
+    if (hasUnavailableLodging(participants.map((p) => p.safe))) {
+        return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), { status: 409 });
     }
 
     let countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);

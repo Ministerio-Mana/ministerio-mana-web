@@ -438,7 +438,7 @@ export class RegistrationModal {
     updateLeaderParticipant() {
         const name = this.leaderName?.value?.trim();
         const age = this.parseAge(this.leaderAge?.value);
-        const packageChoice = this.leaderPackage?.value || 'lodging';
+        const packageChoice = this.leaderPackage?.value || 'no_lodging';
         const menuChoice = this.normalizeMenuValue(this.leaderMenu?.value) || 'TRADICIONAL';
         const birthdate = this.leaderBirthdate?.value || '';
         const gender = this.leaderGender?.value || '';
@@ -509,7 +509,7 @@ export class RegistrationModal {
         // Reset package options
         if (this.companionPackage) {
             this.companionPackage.disabled = false;
-            this.companionPackage.value = 'lodging';
+            this.companionPackage.value = 'no_lodging';
         }
         if (this.companionPackageContainer) this.companionPackageContainer.style.opacity = '1';
 
@@ -573,7 +573,7 @@ export class RegistrationModal {
         const name = this.companionName?.value?.trim();
         const email = this.companionEmail?.value?.trim() || '';
         const age = this.parseAge(this.companionAge?.value);
-        const packageChoice = this.companionPackage?.value || 'lodging';
+        const packageChoice = this.companionPackage?.value || 'no_lodging';
         const menuChoice = this.normalizeMenuValue(this.companionMenu?.value) || 'TRADICIONAL';
         const birthdate = this.companionBirthdate?.value || '';
         const gender = this.companionGender?.value || '';
@@ -1802,7 +1802,7 @@ export class RegistrationModal {
         const participants = participantsRaw.map((item, index) => {
             const birthdate = item.birthdate || '';
             const age = item.age != null ? Number(item.age) : this.getAgeFromBirthdate(birthdate);
-            const packageType = item.package_type || item.packageType || (age != null ? this.getPackageTypeFromAge(age, 'lodging') : 'lodging');
+            const packageType = item.package_type || item.packageType || (age != null ? this.getPackageTypeFromAge(age, 'no_lodging') : 'no_lodging');
             return {
                 id: item.id || `${Date.now()}-${index}`,
                 name: item.full_name || item.name || '',

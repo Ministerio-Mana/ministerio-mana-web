@@ -90,6 +90,7 @@ Plantillas recomendadas (dynamic templates):
 | Pago final pendiente | `sendgrid/cumbre_final_payment_due.html` | `SENDGRID_TEMPLATE_CUMBRE_FINAL_DUE` |
 | Link de pago listo | `sendgrid/cumbre_payment_link_generated.html` | `SENDGRID_TEMPLATE_CUMBRE_LINK_READY` |
 | Link de pago expirado | `sendgrid/cumbre_payment_link_expired.html` | `SENDGRID_TEMPLATE_CUMBRE_LINK_EXPIRED` |
+| Guia de bienvenida | `sendgrid/cumbre_welcome_guide.html` | envio directo via `npm run campaign:cumbre:welcome` |
 
 Variables dinámicas usadas:
 
@@ -113,6 +114,47 @@ Variables dinámicas usadas:
 - `cta_label`
 - `support_email`
 - `support_whatsapp`
+
+#### Campana guia de bienvenida
+
+El script `scripts/cumbre-welcome-campaign.mjs` envia la guia de bienvenida por SendGrid a asistentes confirmados de la Cumbre:
+
+- Lee `cumbre_bookings` y `cumbre_participants`.
+- Consulta pagos para auditar diferencias entre `booking.total_paid` y pagos `APPROVED`.
+- Incluye reservas con pago mayor a cero o estado `DEPOSIT_OK` / `PAID`; `--include-pending` permite sumar pendientes si se decide enviarles.
+- Agrupa por reserva y correo: usa el email del participante cuando exista; si no, usa el email de contacto de la reserva.
+- Personaliza nombre, estado de reserva, total, pagado, saldo, participantes, alojamiento, menu y datos pendientes.
+- Bloquea el envio masivo si hay datos que pueden producir correos incorrectos: reserva sin participantes, paquetes desconocidos, total de paquetes diferente a `total_amount` o pagado mayor al total.
+- Las reservas sin correo quedan como advertencia y no se envian por email.
+- Si quedan advertencias, el envio masivo requiere `--allow-warnings` despues de revisar la auditoria.
+- Configura respuestas a `info@ministeriomana.org` y `administracion@ministeriomana.org` usando `reply_to_list`.
+- Corre en `dry-run` por defecto.
+
+Comandos:
+
+```bash
+npm run campaign:cumbre:welcome
+npm run campaign:cumbre:welcome -- --preview-html=docs/email-templates/sendgrid/cumbre_welcome_guide.preview.html
+npm run campaign:cumbre:welcome -- --audit-json=/private/tmp/cumbre_welcome_audit.json
+npm run campaign:cumbre:welcome -- --test-email=correo@dominio.com --send
+npm run campaign:cumbre:welcome -- --send --confirm=ENVIAR --allow-warnings
+```
+
+Env vars necesarias para envio:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SENDGRID_API_KEY`
+- `SENDGRID_FROM` o `CUMBRE_EMAIL_FROM`
+
+Env vars opcionales:
+
+- `CUMBRE_EMAIL_SUPPORTS` o `SENDGRID_REPLY_TO_LIST` para reemplazar la lista de respuesta.
+- `CUMBRE_SUPPORT_WHATSAPP`
+- `CUMBRE_WELCOME_GUIDE_URL`
+- `CUMBRE_WELCOME_MAPS_URL`
+- `CUMBRE_WELCOME_WAZE_URL`
+- `CUMBRE_COMFAMA_URL`
 
 ### SendGrid · Donaciones (general + diezmos + iglesias + misiones)
 

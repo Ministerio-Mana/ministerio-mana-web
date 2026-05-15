@@ -28,7 +28,6 @@ const pricing = isColombia
     };
 
 const priceRows = [
-  { label: 'Asistencia + alimentación + alojamiento', key: 'lodging' },
   { label: 'Asistencia + alimentación (sin alojamiento)', key: 'no_lodging' },
   { label: 'Niños 0 a 4 años', key: 'child_0_7' },
   { label: 'Niños 5 a 10 años', key: 'child_7_13' },
@@ -110,6 +109,14 @@ const formatTestAmount = (value, currency) =>
             <input type="hidden" name="countryGroup" id="country-group" value={countryGroup}>
          </div>
 
+         <div class="rounded-2xl border border-brand-gold/30 bg-brand-gold/10 p-5 text-sm text-white/80">
+            <p class="font-bold text-brand-gold">Hospedaje agotado</p>
+            <p class="mt-1">
+               Ya no hay cupos de hospedaje dentro del evento. La inscripción continúa abierta sin alojamiento;
+               cada asistente debe gestionar su hospedaje por fuera.
+            </p>
+         </div>
+
          <div class="bg-brand-navy/40 border border-white/5 rounded-2xl p-6 space-y-4">
             <div class="flex items-center justify-between">
                <h3 class="text-lg font-semibold text-white">Tarifas {countryLabel}</h3>
@@ -126,7 +133,7 @@ const formatTestAmount = (value, currency) =>
             <div class="text-xs text-white/50 space-y-2">
                <p>Los valores se muestran según tu ubicación.</p>
                <p>
-                 Niños 0 a 4 años: incluye material de trabajo. No incluye alimentación. El alojamiento se comparte con sus padres.
+                 Niños 0 a 4 años: incluye material de trabajo. No incluye alimentación.
                  Niños 5 a 10 años: incluye alimentación con menú infantil.
                  <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4">Ver condiciones comerciales</a>.
                </p>
@@ -225,11 +232,11 @@ const formatTestAmount = (value, currency) =>
                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-brand-dark placeholder:text-slate-400 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition-all">
             </div>
             <div class="space-y-1">
-                  <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tipo de asistencia</label>
+               <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tipo de asistencia</label>
                   <select name="leader_package" id="leader-package" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-brand-dark outline-none focus:border-brand-navy focus:ring-1 focus:ring-brand-navy transition-all">
-                     <option value="lodging">Con alojamiento (evento + alimentación)</option>
                      <option value="no_lodging">Sin alojamiento (evento + alimentación)</option>
                   </select>
+                  <p class="text-xs text-slate-400 mt-1">Los cupos con hospedaje ya están agotados.</p>
                </div>
          </div>
 
@@ -284,11 +291,10 @@ const formatTestAmount = (value, currency) =>
                <div class="space-y-1 transition-opacity duration-300">
                    <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Tipo de asistencia</label>
                    <select id="input-lodging" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
-                      <option value="lodging" class="text-black">Con alojamiento (evento + alimentación)</option>
                       <option value="no_lodging" class="text-black">Sin alojamiento (evento + alimentación)</option>
                    </select>
                    <p class="text-xs text-white/40 mt-1 pl-1">
-                      * Niños hasta 13 años se calculan automáticamente.
+                      * Hospedaje agotado. Niños hasta 13 años se calculan automáticamente.
                    </p>
                </div>
 
@@ -533,7 +539,7 @@ const formatTestAmount = (value, currency) =>
             </div>
             
             <p class="text-xs text-white/50">
-               El cupo con alojamiento se garantiza con un abono igual o superior al 50%.
+               El hospedaje dentro del evento ya no está disponible. La reserva cubre asistencia y alimentación según la tarifa seleccionada.
                <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4">Ver condiciones comerciales</a>.
             </p>
 
@@ -917,8 +923,7 @@ const formatTestAmount = (value, currency) =>
     },
 
     getLeaderPackageType() {
-       const value = this.dom.leaderPackage?.value;
-       return value === 'no_lodging' ? 'no_lodging' : 'lodging';
+       return 'no_lodging';
     },
 
     ensureLeaderParticipant() {
@@ -1286,7 +1291,7 @@ const formatTestAmount = (value, currency) =>
     getPackageTypeFromAge(age, lodgingChoice) {
        if (age <= 4) return 'child_0_7';
        if (age <= 10) return 'child_7_13';
-       return lodgingChoice === 'no_lodging' ? 'no_lodging' : 'lodging';
+       return 'no_lodging';
     },
 
     updateAddPersonControls() {
@@ -1334,7 +1339,7 @@ const formatTestAmount = (value, currency) =>
     addPerson() {
        const name = this.dom.inputName.value.trim();
        const age = this.parseAge(this.dom.inputAge?.value || '');
-       const lodgingChoice = this.dom.inputLodging?.value || 'lodging';
+       const lodgingChoice = this.dom.inputLodging?.value || 'no_lodging';
        
        if(!name) {
           this.clearValidationErrors();

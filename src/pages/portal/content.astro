@@ -1,0 +1,180 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Gestión de Contenido | Portal Maná" description="CMS para administrar contenido público del sitio." hideHeader hideFooter>
+  <main class="min-h-screen bg-gradient-to-b from-[#F8FAFC] via-[#F8FAFC] to-[#EEF3FF] text-slate-800 selection:bg-[#293C74]/20">
+    <div class="flex flex-col lg:flex-row min-h-screen">
+      <Sidebar />
+
+      <section class="flex-1 p-4 md:p-8 lg:p-12 xl:p-14 relative overflow-y-auto">
+        <div class="max-w-7xl mx-auto space-y-6 md:space-y-8">
+          <header class="rounded-[2rem] border border-slate-200/80 bg-white/90 backdrop-blur p-5 md:p-7 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              <div>
+                <p class="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">Portal Maná</p>
+                <h1 class="text-2xl md:text-4xl font-display font-bold text-[#293C74]">Gestión de Contenido</h1>
+                <p class="text-slate-600 mt-1 text-sm md:text-base">Panel editorial para administrar páginas públicas, bloques, publicación y trazabilidad.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center rounded-full px-3 py-1 bg-[#293C74]/10 text-[#293C74] text-xs font-bold">Versionado</span>
+                <span class="inline-flex items-center rounded-full px-3 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold">Auditoría</span>
+                <button id="cms-new-page" data-cms-action class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">
+                  Nueva página
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <div id="cms-alert" class="hidden rounded-xl border px-4 py-3 text-sm"></div>
+
+          <div id="cms-busy" class="hidden rounded-xl border border-[#293C74]/20 bg-[#293C74]/5 px-4 py-2 text-xs font-bold text-[#293C74] animate-pulse"></div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-[340px_1fr] gap-5 md:gap-6">
+            <aside class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-5 shadow-sm space-y-4 xl:sticky xl:top-6 xl:h-[calc(100vh-8rem)] xl:overflow-hidden">
+              <div class="space-y-2">
+                <label for="cms-filter" class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Buscar página</label>
+                <input id="cms-filter" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="home, eventos, noticias..." />
+              </div>
+              <div id="cms-pages" class="space-y-2 xl:max-h-[calc(100vh-14.5rem)] xl:overflow-auto pr-1"></div>
+              <div id="cms-pages-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No hay páginas CMS todavía.</div>
+            </aside>
+
+            <section class="space-y-5 md:space-y-6">
+              <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Configuración de Página</h2>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button id="cms-page-save" data-cms-action class="px-4 py-2 rounded-xl bg-brand-teal text-white text-sm font-bold hover:bg-brand-teal/90 transition">Guardar</button>
+                    <button id="cms-page-publish" data-cms-action class="px-4 py-2 rounded-xl border border-[#293C74]/30 text-[#293C74] text-sm font-bold hover:bg-[#293C74]/5 transition">Publicar</button>
+                    <button id="cms-page-unpublish" data-cms-action class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Borrador</button>
+                    <button id="cms-page-preview" data-cms-action class="px-4 py-2 rounded-xl border border-brand-teal/40 text-brand-teal text-sm font-bold hover:bg-brand-teal/10 transition">Preview</button>
+                  </div>
+                </div>
+
+                <div id="cms-page-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label class="text-xs font-bold text-slate-600">Clave de página
+                    <input id="cms-page-key" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                  </label>
+                  <label class="text-xs font-bold text-slate-600">Ruta pública
+                    <input id="cms-page-path" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="/" />
+                  </label>
+                  <label class="text-xs font-bold text-slate-600">Título
+                    <input id="cms-page-title" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                  </label>
+                  <label class="text-xs font-bold text-slate-600">Idioma
+                    <input id="cms-page-locale" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" value="es" />
+                  </label>
+                  <label class="text-xs font-bold text-slate-600 md:col-span-2">Descripción
+                    <textarea id="cms-page-description" rows="2" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm"></textarea>
+                  </label>
+                  <label class="text-xs font-bold text-slate-600">SEO Title
+                    <input id="cms-page-seo-title" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                  </label>
+                  <label class="text-xs font-bold text-slate-600">SEO Description
+                    <input id="cms-page-seo-description" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                  </label>
+                  <label class="text-xs font-bold text-slate-600 md:col-span-2">OG Image URL
+                    <input id="cms-page-seo-image" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="https://..." />
+                  </label>
+                </div>
+
+                <div id="cms-page-meta" class="text-xs text-slate-500"></div>
+              </div>
+
+              <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-5">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Secciones</h2>
+                  <button id="cms-section-new" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">Agregar sección</button>
+                </div>
+
+                <div id="cms-sections" class="space-y-3"></div>
+                <div id="cms-sections-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">Esta página aún no tiene secciones.</div>
+              </div>
+
+              <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Biblioteca Multimedia</h2>
+                  <button id="cms-media-refresh" data-cms-action class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Actualizar</button>
+                </div>
+                <form id="cms-media-upload-form" class="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-3">
+                  <input id="cms-media-file" type="file" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                  <input id="cms-media-folder" type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="folder (ej: home)" />
+                  <button type="submit" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">Subir</button>
+                </form>
+                <div id="cms-media-status" class="text-xs text-slate-500"></div>
+                <div id="cms-media-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <div id="cms-media-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No hay archivos cargados aún.</div>
+              </div>
+
+              <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-4">
+                <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Actividad Reciente</h2>
+                <div id="cms-history" class="space-y-2"></div>
+                <div id="cms-history-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">Sin movimientos para esta página.</div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="cms-page-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 md:p-6">
+    <div class="mx-auto mt-10 max-w-lg rounded-[1.75rem] bg-white border border-slate-200 p-5 md:p-6 shadow-2xl">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="text-lg font-bold text-[#293C74]">Nueva Página</h3>
+        <button id="cms-page-modal-close" class="h-9 w-9 rounded-full border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300">✕</button>
+      </div>
+      <form id="cms-page-modal-form" class="mt-4 space-y-3">
+        <label class="block text-xs font-bold text-slate-600">Clave
+          <input id="cms-modal-page-key" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="home" />
+        </label>
+        <label class="block text-xs font-bold text-slate-600">Título
+          <input id="cms-modal-page-title" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="Inicio" />
+        </label>
+        <label class="block text-xs font-bold text-slate-600">Ruta
+          <input id="cms-modal-page-path" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="/" />
+        </label>
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" id="cms-page-modal-cancel" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold">Cancelar</button>
+          <button type="submit" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold">Crear página</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="cms-section-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 md:p-6">
+    <div class="mx-auto mt-10 max-w-lg rounded-[1.75rem] bg-white border border-slate-200 p-5 md:p-6 shadow-2xl">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="text-lg font-bold text-[#293C74]">Nueva Sección</h3>
+        <button id="cms-section-modal-close" class="h-9 w-9 rounded-full border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300">✕</button>
+      </div>
+      <form id="cms-section-modal-form" class="mt-4 space-y-3">
+        <label class="block text-xs font-bold text-slate-600">Clave de sección
+          <input id="cms-modal-section-key" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="hero-principal" />
+        </label>
+        <label class="block text-xs font-bold text-slate-600">Tipo
+          <select id="cms-modal-section-kind" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm">
+            <option value="hero">hero</option>
+            <option value="rich_text" selected>rich_text</option>
+            <option value="gallery">gallery</option>
+            <option value="cta">cta</option>
+            <option value="video">video</option>
+            <option value="cards">cards</option>
+            <option value="custom">custom</option>
+          </select>
+        </label>
+        <label class="block text-xs font-bold text-slate-600">Título
+          <input id="cms-modal-section-title" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="Hero principal" />
+        </label>
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" id="cms-section-modal-cancel" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold">Cancelar</button>
+          <button type="submit" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold">Crear sección</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../../scripts/portal-content.js"></script>
+</BaseLayout>

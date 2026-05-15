@@ -9,6 +9,7 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
+  CUMBRE_LODGING_CLOSED_MESSAGE,
   buildPaymentReference,
   type PackageType,
 } from '@lib/cumbre2026';
@@ -949,6 +950,15 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const canEditPayment = canEditManualPayment(booking);
   const canRecordPhysicalPayment = true;
+  const { data: existingParticipantsForBooking } = await supabaseAdmin
+    .from('cumbre_participants')
+    .select('id, package_type')
+    .eq('booking_id', bookingId);
+  const existingLodgingParticipantIds = new Set(
+    (existingParticipantsForBooking || [])
+      .filter((participant) => participant?.package_type === 'lodging')
+      .map((participant) => String(participant.id)),
+  );
 
   const participantsRaw = Array.isArray(body.participants) ? body.participants : [];
   if (participantsRaw.length === 0) {
@@ -1135,10 +1145,11 @@ export const PUT: APIRoute = async ({ request }) => {
   const participants = participantsRaw
     .map((participant: any) => {
       const age = resolveParticipantAge(participant);
+      const participantId = String(participant?.id || '').trim();
       const packageChoice = participant?.packageType
         ?? participant?.package_type
         ?? participant?.lodging
-        ?? 'lodging';
+        ?? (existingLodgingParticipantIds.has(participantId) ? 'lodging' : 'no_lodging');
       const packageType = packageTypeFromAge(age, packageChoice);
       const relationship = participant?.isLeader ? 'responsable' : 'acompanante';
       const documentType = sanitizePlainText(participant?.document_type ?? participant?.documentType ?? '', 40);
@@ -1154,12 +1165,20 @@ export const PUT: APIRoute = async ({ request }) => {
       return {
         safe,
         extra: participant ?? {},
+        preservesExistingLodging: packageType === 'lodging' && existingLodgingParticipantIds.has(participantId),
       };
     })
-    .filter(Boolean) as { safe: NonNullable<ReturnType<typeof sanitizeParticipant>>; extra: any }[];
+    .filter(Boolean) as {
+      safe: NonNullable<ReturnType<typeof sanitizeParticipant>>;
+      extra: any;
+      preservesExistingLodging: boolean;
+    }[];
 
   if (!participants.length) {
     return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
+  }
+  if (participants.some((participant) => participant.safe.packageType === 'lodging' && !participant.preservesExistingLodging)) {
+    return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), { status: 409 });
   }
 
   let countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);

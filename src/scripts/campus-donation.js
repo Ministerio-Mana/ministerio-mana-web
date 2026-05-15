@@ -79,8 +79,9 @@ class DonationWidget {
             });
         });
 
-        // Currency Change
-        this.dom.currencySelect.addEventListener('change', (e) => {
+        // Optional currency selector kept for backwards compatibility.
+        // Current Campus flow auto-detects currency from country and does not render this control.
+        this.dom.currencySelect?.addEventListener('change', (e) => {
             this.currency = e.target.value;
             this.amount = 0;
             this.dom.customInput.value = '';

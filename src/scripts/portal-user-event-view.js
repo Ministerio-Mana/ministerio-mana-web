@@ -415,8 +415,8 @@ function renderPolicies() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
             <div>
-              <h4 class="font-bold text-[#293C74] mb-1">Alojamiento</h4>
-              <p class="text-slate-600 leading-relaxed">El alojamiento incluye hospedaje del 5 al 8 de junio. Check-in viernes 6 desde las 2:00 PM, check-out domingo 8 a las 12:00 PM.</p>
+              <h4 class="font-bold text-[#293C74] mb-1">Hospedaje</h4>
+              <p class="text-slate-600 leading-relaxed">Los cupos de hospedaje dentro del evento ya están agotados para nuevas inscripciones. Si tu reserva ya estaba confirmada con alojamiento, conserva esa confirmación; las nuevas reservas no incluyen hospedaje.</p>
             </div>
           </div>
         </div>

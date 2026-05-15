@@ -1,0 +1,1010 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+
+const unityReminders = [
+  'la obra no se hace solos',
+  'la red no se sostiene solos',
+  'el Reino avanza cuando caminamos en unidad, humildad y obediencia',
+];
+
+const climateFacts = [
+  { label: 'Día', value: '18°-22°C' },
+  { label: 'Noche / madrugada', value: '10°-13°C' },
+];
+
+const weatherItems = ['lluvia ligera', 'neblina', 'mañanas y noches frías'];
+
+const clothingItems = [
+  'Chaqueta abrigada',
+  'Buzo o saco cómodo',
+  'Zapatos cómodos y cerrados',
+  'Ropa casual y cómoda para las sesiones',
+  'Paraguas pequeño o impermeable',
+  'Ropa para clima frío en las noches',
+];
+
+const specialRecommendations = [
+  'ropa cómoda pero apropiada',
+  'evitar prendas excesivamente ajustadas o llamativas',
+  'llevar una presentación práctica para servir y moverse con facilidad',
+];
+
+const bringItems = [
+  'Biblia',
+  'Cuaderno y lapicero',
+  'Medicamentos personales',
+  'Botella de agua reutilizable',
+  'Disposición para servir y aprender',
+  'Corazón sensible a la voz de Dios',
+];
+
+const prayerItems = [
+  'vuelva a llenar las redes',
+  'renueve nuestras fuerzas',
+  'afirme nuestro llamado',
+  'nos recuerde que el discipulado verdadero siempre ocurre cerca de Cristo y junto a otros',
+];
+
+const venueLinks = {
+  google: 'https://www.google.com/maps/place/De+La+Salle+Casa+de+Encuentros/data=!4m2!3m1!1s0x0:0x4e396d4a9a3349a5?sa=X&ved=1t:2428&ictx=111&cshid=1778777449001802',
+  waze: 'https://www.waze.com/es/live-map/directions/co/antioquia/rionegro/de-la-salle-casa-de-encuentros?to=place.ChIJi_SE7SOfRo4RpUkzmkptOU4',
+  share: 'https://share.google/6ik8ZELGiqsuu1cle',
+};
+
+const venueHighlights = [
+  { label: 'Lugar', value: 'De La Salle Casa de Encuentros' },
+  { label: 'Ciudad', value: 'Rionegro, Antioquia' },
+];
+
+const schedule = [
+  {
+    day: 'Sábado',
+    title: 'Bienvenida y comunión',
+    items: [
+      'Mesa de bienvenida desde las 7:00 a.m.',
+      'Enseñanzas y talleres.',
+      'Tarde familiar en Comfama Tutucán.',
+      'Llevar traje de baño para piscinas climatizadas.',
+    ],
+    href: 'https://www.comfama.com/cultura-y-ocio/parques/parque-rionegro/',
+  },
+  {
+    day: 'Domingo',
+    title: 'Palabra y oración',
+    items: ['Devocional.', 'Enseñanzas y talleres.', 'Tiempos de oración.'],
+  },
+  {
+    day: 'Lunes',
+    title: 'Clausura y envío',
+    items: [
+      'Devocional.',
+      'Enseñanzas y talleres.',
+      'Tiempo de clausura.',
+      'Almuerzo incluido y cierre de la cumbre discipular.',
+    ],
+  },
+];
+---
+
+<CumbreLayout
+  title="Bienvenida | Cumbre Mundial de Discipulado"
+  description="Guía de bienvenida para la Cumbre Mundial de Discipulado, basada en Lucas 5."
+  image="/images/cumbre/bienvenida-og.jpg"
+  imageAlt="Bienvenidos a la Cumbre Mundial de Discipulado - Ministerio Maná"
+  imageWidth={1200}
+  imageHeight={630}
+  imageType="image/jpeg"
+  flush
+  showEventBadge={false}
+>
+  <main class="cumbre-welcome-story" data-cumbre-story style="--panel-count: 7;">
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#07111c] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover" />
+        <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(7,17,28,0.98)_0%,rgba(7,17,28,0.86)_44%,rgba(7,17,28,0.46)_100%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(40,166,189,0.28),transparent_34%)]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+          <div class="max-w-3xl space-y-7">
+            <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 backdrop-blur-sm" data-reveal>
+              <span class="h-2 w-2 rounded-full bg-brand-gold"></span>
+              <span class="text-xs font-black uppercase tracking-[0.24em] text-white/90">Bienvenida oficial</span>
+            </div>
+
+            <img
+              src="/images/cumbre/cumbre-2026-logo-white.svg"
+              alt="Cumbre Mundial de Discipulado"
+              class="h-24 w-auto md:h-32"
+              data-reveal
+            />
+
+            <h1 class="max-w-4xl text-5xl font-black leading-[0.92] tracking-tight text-white drop-shadow-[0_12px_28px_rgba(0,0,0,0.6)] md:text-7xl" data-split-title>
+              Bienvenidos a la Cumbre Mundial de Discipulado
+            </h1>
+
+            <p class="max-w-2xl text-lg font-light leading-relaxed text-white/88 drop-shadow md:text-xl" data-reveal>
+              “Ven y ayúdanos”. Basado en Lucas 5. Nos reunimos como una sola familia para buscar a Cristo, servir juntos y responder al llamado del Señor.
+            </p>
+          </div>
+
+          <aside class="mana-glass relative space-y-5 rounded-3xl border border-white/15 bg-black/35 p-7 shadow-2xl shadow-black/25 backdrop-blur-xl md:p-9" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Información general</p>
+            <div class="space-y-5">
+              <div>
+                <p class="text-sm font-medium text-white/60">Fecha</p>
+                <h2 class="text-3xl font-black leading-tight text-white">6 al 8 de junio</h2>
+              </div>
+              <div class="h-px w-full bg-gradient-to-r from-white/25 to-transparent"></div>
+              <div>
+                <p class="text-sm font-medium text-white/60">Lugar</p>
+                <h2 class="text-3xl font-black leading-tight text-white">Casa de Encuentros La Salle</h2>
+                <p class="mt-2 text-sm leading-relaxed text-white/75">Rionegro, Antioquia, Colombia.</p>
+              </div>
+              <div class="h-px w-full bg-gradient-to-r from-white/25 to-transparent"></div>
+              <div>
+                <p class="text-sm font-medium text-white/60">Base bíblica</p>
+                <p class="mt-1 text-base leading-relaxed text-white/82">“Bogando mar adentro… echaron sus redes para pescar… y encerraron gran cantidad de peces.”</p>
+                <p class="mt-2 text-xs font-black uppercase tracking-[0.18em] text-brand-gold">Lucas 5:4-6</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel cumbre-venue-panel isolate min-h-screen overflow-hidden bg-[#edf6f4] text-brand-dark"
+      data-cumbre-panel
+      data-panel-theme="light"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.94),rgba(237,246,244,0.9)_48%,rgba(40,166,189,0.22))]"></div>
+        <div class="cumbre-soft-grid absolute inset-0 opacity-[0.09]"></div>
+        <div class="absolute right-[-16%] top-[-12%] h-[620px] w-[620px] rounded-full bg-brand-teal/20 blur-[110px]"></div>
+        <div class="absolute bottom-[-18%] left-[-10%] h-[540px] w-[540px] rounded-full bg-brand-gold/18 blur-[120px]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-10 lg:grid-cols-[0.88fr_1.12fr]">
+          <div class="space-y-6">
+            <div class="space-y-4" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Lugar de encuentro</p>
+              <h2 class="text-5xl font-black leading-tight text-brand-dark md:text-6xl" data-split-title>
+                Casa de Encuentros La Salle
+              </h2>
+              <p class="cumbre-venue-copy text-xl leading-relaxed text-slate-700">
+                Llegaremos a Rionegro para vivir la Cumbre como una sola familia. Guarda la ruta y compártela con quienes viajan contigo.
+              </p>
+            </div>
+
+            <div class="cumbre-venue-meta grid gap-3 sm:grid-cols-2" data-reveal>
+              {venueHighlights.map((item) => (
+                <article class="rounded-3xl border border-white/80 bg-white/82 p-5 shadow-xl shadow-brand-dark/8 backdrop-blur-md">
+                  <p class="text-xs font-black uppercase tracking-[0.18em] text-brand-medium/70">{item.label}</p>
+                  <p class="mt-2 text-lg font-black leading-tight text-brand-dark">{item.value}</p>
+                </article>
+              ))}
+            </div>
+
+            <div class="cumbre-venue-actions grid gap-3 sm:grid-cols-2" data-reveal>
+              <a href={venueLinks.google} target="_blank" rel="noopener noreferrer" class="group inline-flex items-center justify-center gap-3 rounded-full bg-brand-dark px-6 py-4 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium">
+                <svg aria-hidden="true" class="h-5 w-5 flex-none text-brand-gold" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z" stroke="currentColor" stroke-width="2" />
+                  <path d="M12 12.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="2" />
+                </svg>
+                Google Maps
+              </a>
+              <a href={venueLinks.waze} target="_blank" rel="noopener noreferrer" class="group inline-flex items-center justify-center gap-3 rounded-full border border-brand-dark/12 bg-white px-6 py-4 text-sm font-black uppercase tracking-[0.16em] text-brand-dark shadow-xl shadow-brand-dark/8 transition hover:-translate-y-0.5 hover:border-brand-teal hover:text-brand-medium">
+                <svg aria-hidden="true" class="h-5 w-5 flex-none text-brand-teal" viewBox="0 0 24 24" fill="none">
+                  <path d="M4.2 14.5c-.9-1.1-1.2-2.4-.9-3.9C4 7 7.5 4.5 12 4.5c5 0 8.5 3 8.5 7.3 0 4.1-3.4 7.2-8.4 7.2-1.1 0-2.1-.14-3-.42L6.6 20.2l.2-2.8a7.1 7.1 0 0 1-2.6-2.9Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" />
+                  <path d="M9 11.6h.01M15 11.6h.01M9.7 14.8c1.2.8 3.4.8 4.6 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                Waze
+              </a>
+            </div>
+
+            <a href={venueLinks.share} target="_blank" rel="noopener noreferrer" class="cumbre-venue-share inline-flex text-xs font-black uppercase tracking-[0.18em] text-brand-medium hover:text-brand-dark" data-reveal>
+              Compartir ubicación
+            </a>
+          </div>
+
+          <article class="cumbre-venue-map-card relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/78 p-4 shadow-2xl shadow-brand-dark/14 backdrop-blur-md" data-reveal>
+            <div class="cumbre-venue-map relative overflow-hidden rounded-[1.5rem] bg-[#07111c]">
+              <svg class="absolute inset-0 h-full w-full" viewBox="0 0 640 570" aria-hidden="true">
+                <defs>
+                  <filter id="map-pin-shadow" x="-40%" y="-20%" width="180%" height="180%">
+                    <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#07111c" flood-opacity="0.28" />
+                  </filter>
+                  <linearGradient id="venue-map-bg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#17235a" />
+                    <stop offset="0.58" stop-color="#123b5b" />
+                    <stop offset="1" stop-color="#0f6d80" />
+                  </linearGradient>
+                  <radialGradient id="venue-map-glow" cx="28%" cy="22%" r="70%">
+                    <stop offset="0" stop-color="#28A6BD" stop-opacity="0.34" />
+                    <stop offset="1" stop-color="#28A6BD" stop-opacity="0" />
+                  </radialGradient>
+                </defs>
+
+                <rect width="640" height="570" fill="url(#venue-map-bg)" />
+                <rect width="640" height="570" fill="url(#venue-map-glow)" />
+                <g opacity="0.13" stroke="#ffffff" stroke-width="1">
+                  <path d="M0 48H640M0 96H640M0 144H640M0 192H640M0 240H640M0 288H640M0 336H640M0 384H640M0 432H640M0 480H640M0 528H640" />
+                  <path d="M64 0V570M128 0V570M192 0V570M256 0V570M320 0V570M384 0V570M448 0V570M512 0V570M576 0V570" />
+                </g>
+
+                <path d="M8 364 C82 346 114 334 182 338 C260 344 260 324 300 282 C344 236 384 226 448 210 C508 194 548 164 582 140" fill="none" stroke="rgba(203,217,230,0.32)" stroke-width="16" stroke-linecap="round" />
+                <path d="M8 364 C82 346 114 334 182 338 C260 344 260 324 300 282 C344 236 384 226 448 210 C508 194 548 164 582 140" fill="none" stroke="rgba(7,17,28,0.36)" stroke-width="9" stroke-linecap="round" />
+                <path class="cumbre-route-gold" d="M8 364 C82 346 114 334 182 338 C260 344 260 324 300 282 C344 236 384 226 448 210 C508 194 548 164 582 140" fill="none" stroke="#F2C94C" stroke-width="6" stroke-linecap="round" stroke-dasharray="16 14" />
+
+                <circle cx="538" cy="120" r="24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1" stroke-dasharray="4 4" />
+
+                <g filter="url(#map-pin-shadow)">
+                  <circle cx="582" cy="140" r="18" fill="#F2C94C" />
+                  <circle cx="582" cy="140" r="8" fill="#07111c" />
+                </g>
+
+                <g class="cumbre-map-destination-pill">
+                  <rect x="28" y="28" width="118" height="72" rx="18" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.74)" />
+                  <text x="50" y="56" class="cumbre-map-kicker">DESTINO</text>
+                  <text x="50" y="80" class="cumbre-map-pill-title">La Salle</text>
+                </g>
+
+                <g class="cumbre-route-card">
+                  <rect x="28" y="334" width="584" height="156" rx="26" fill="rgba(28,88,116,0.78)" stroke="rgba(255,255,255,0.74)" />
+                  <text x="54" y="372" class="cumbre-map-kicker">RUTA RECOMENDADA</text>
+                  <text x="54" y="414" class="cumbre-route-card-title">De La Salle Casa de Encuentros</text>
+                  <text x="54" y="446" class="cumbre-route-card-copy">Abre la navegación en Google Maps o Waze antes de salir hacia</text>
+                  <text x="54" y="472" class="cumbre-route-card-copy">Rionegro.</text>
+                </g>
+              </svg>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#1A255C] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <img src="/images/cumbre/fishermen-sunset.jpg" alt="" class="h-full w-full object-cover opacity-45" />
+        <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,28,0.98),rgba(26,37,92,0.9)_55%,rgba(26,37,92,0.72))]"></div>
+        <div class="absolute right-[-12%] top-[10%] h-[760px] w-[760px] rounded-full bg-brand-teal/12 blur-[120px] mix-blend-screen"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]">
+          <div class="relative hidden lg:block" data-reveal>
+            <article class="rounded-[2rem] border border-white/14 bg-black/34 p-8 shadow-2xl shadow-black/25 backdrop-blur-xl">
+              <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Lucas 5:4-6</p>
+              <blockquote class="mt-6 text-3xl font-black leading-tight text-white">
+                “Bogando mar adentro… echaron sus redes para pescar… y encerraron gran cantidad de peces.”
+              </blockquote>
+              <p class="mt-6 border-l-2 border-brand-teal pl-5 text-base leading-relaxed text-white/74">
+                Así como en Lucas 5 la red se llenó cuando trabajaron juntos bajo la dirección de Cristo, creemos que Dios quiere recordarnos que nadie sostiene la red solo.
+              </p>
+              <div class="mt-8 grid grid-cols-2 gap-3">
+                {['Barca', 'Red', 'Obediencia', 'Unidad'].map((item) => (
+                  <p class="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/84">{item}</p>
+                ))}
+              </div>
+            </article>
+          </div>
+
+          <div class="max-w-3xl space-y-6">
+            <p class="font-display text-2xl font-light tracking-[0.2em] text-brand-gold/90" data-reveal>
+              Lucas 5:4-6
+            </p>
+            <h2 class="text-4xl font-black leading-[0.94] text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:text-6xl" data-split-title>
+              Entrar nuevamente en la barca con Jesús
+            </h2>
+            <div class="space-y-4 border-l-2 border-brand-teal/60 pl-6" data-reveal>
+              <p class="text-lg font-light leading-relaxed text-white/86">
+                Amados hermanos y hermanas, con gozo les damos la bienvenida a este tiempo especial donde nos reuniremos como una sola familia para buscar a Cristo, servir juntos y responder al llamado del Señor: “Ven y ayúdanos.”
+              </p>
+              <p class="text-base leading-relaxed text-white/74">
+                Esta cumbre no es solo un evento. Es una invitación a entrar nuevamente en la barca con Jesús.
+              </p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3" data-reveal>
+              {unityReminders.map((item) => (
+                <p class="rounded-2xl border border-white/12 bg-white/8 p-4 text-sm font-semibold leading-snug text-white/84 backdrop-blur-sm">{item}</p>
+              ))}
+            </div>
+            <p class="text-lg font-semibold leading-relaxed text-brand-gold" data-reveal>
+              Venimos a ser fortalecidos, equipados y enviados.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#f7f2e7] text-brand-dark"
+      data-cumbre-panel
+      data-panel-theme="light"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(242,201,76,0.28),transparent_34%),radial-gradient(circle_at_78%_28%,rgba(40,166,189,0.18),transparent_30%)]"></div>
+        <div class="cumbre-soft-grid absolute inset-0 opacity-[0.08]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="w-full space-y-12">
+          <div class="max-w-3xl space-y-4" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Preparación</p>
+            <h2 class="text-5xl font-black leading-tight text-brand-dark md:text-6xl" data-split-title>Clima y vestuario</h2>
+            <p class="text-xl leading-relaxed text-slate-700">
+              Rionegro tiene un clima fresco y variable. Ven preparado para lluvia ligera, neblina, mañanas frías y noches más bajas de temperatura.
+            </p>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+            <article class="rounded-3xl border border-white/70 bg-white/82 p-6 shadow-2xl shadow-brand-dark/10 backdrop-blur-md" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-medium/70">Clima en Rionegro</p>
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {climateFacts.map((item) => (
+                  <div class="rounded-2xl bg-brand-dark px-5 py-4 text-white">
+                    <p class="text-xs font-black uppercase tracking-[0.16em] text-brand-gold">{item.label}</p>
+                    <p class="mt-1 text-3xl font-black">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div class="mt-5 space-y-2">
+                {weatherItems.map((item) => (
+                  <p class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700">{item}</p>
+                ))}
+              </div>
+            </article>
+
+            <article class="rounded-3xl border border-white/70 bg-white/82 p-6 shadow-2xl shadow-brand-dark/10 backdrop-blur-md" data-reveal style="--reveal-delay:0.08s">
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-medium/70">Vestuario general</p>
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {clothingItems.map((item) => (
+                  <p class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-snug text-slate-700">{item}</p>
+                ))}
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#edf6f4] text-brand-dark"
+      data-cumbre-panel
+      data-panel-theme="light"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-[linear-gradient(130deg,rgba(255,255,255,0.92),rgba(237,246,244,0.92)_48%,rgba(242,201,76,0.2))]"></div>
+        <div class="cumbre-soft-grid absolute inset-0 opacity-[0.08]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="grid w-full items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+          <div class="space-y-5" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Preparación espiritual y práctica</p>
+            <h2 class="text-5xl font-black leading-tight text-brand-dark md:text-6xl" data-split-title>Qué traer a la Cumbre</h2>
+            <p class="text-lg leading-relaxed text-slate-700">
+              Para tiempos ministeriales y reuniones queremos reflejar sencillez, orden y modestia cristiana.
+            </p>
+          </div>
+
+          <div class="grid gap-5 md:grid-cols-2">
+            <article class="rounded-3xl border border-white/80 bg-white/82 p-6 shadow-2xl shadow-brand-dark/10 backdrop-blur-md" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-medium/70">Recomendaciones especiales</p>
+              <div class="mt-5 space-y-3">
+                {specialRecommendations.map((item) => (
+                  <p class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold leading-snug text-slate-700">{item}</p>
+                ))}
+              </div>
+            </article>
+
+            <article class="rounded-3xl border border-white/80 bg-brand-dark p-6 text-white shadow-2xl shadow-brand-dark/18 backdrop-blur-md" data-reveal style="--reveal-delay:0.08s">
+              <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-gold">Qué más debes traer</p>
+              <div class="mt-5 space-y-3">
+                {bringItems.map((item) => (
+                  <p class="rounded-2xl border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold leading-snug text-white/86">{item}</p>
+                ))}
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel cumbre-schedule-panel isolate min-h-screen overflow-hidden bg-[#0d1a2a] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover opacity-32" />
+        <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,28,0.96),rgba(7,17,28,0.74),rgba(7,17,28,0.98))]"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="w-full space-y-12">
+          <div class="mx-auto max-w-3xl space-y-4 text-center" data-reveal>
+            <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-gold">Horario general</p>
+            <h2 class="text-5xl font-black leading-tight text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:text-6xl" data-split-title>
+              Tres días para escuchar, aprender, orar y compartir
+            </h2>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-3">
+            {schedule.map((day, index) => (
+              <article class="rounded-3xl border border-white/15 bg-black/34 p-7 shadow-2xl shadow-black/20 backdrop-blur-xl" data-reveal style={`--reveal-delay:${index * 0.08}s`}>
+                <p class="text-xs font-black uppercase tracking-[0.22em] text-brand-gold">0{index + 1} · {day.day}</p>
+                <h3 class="mt-4 text-3xl font-black leading-tight text-white">{day.title}</h3>
+                <div class="mt-6 space-y-3">
+                  {day.items.map((item) => (
+                    <p class="border-l border-brand-teal/70 pl-4 text-sm leading-relaxed text-white/78">{item}</p>
+                  ))}
+                </div>
+                {day.href && (
+                  <a href={day.href} target="_blank" rel="noopener noreferrer" class="mt-6 inline-flex text-xs font-black uppercase tracking-[0.18em] text-brand-teal hover:text-white">
+                    Ver Comfama Tutucán
+                  </a>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#101827] text-white"
+      data-cumbre-panel
+      data-panel-theme="dark"
+    >
+      <div class="absolute inset-0" data-panel-bg>
+        <div class="absolute inset-0 bg-gradient-to-br from-[#1A255C] via-[#293C74] to-[#101827]"></div>
+        <div class="absolute right-[-12%] top-[-18%] h-[760px] w-[760px] rounded-full bg-brand-teal/20 blur-[110px] mix-blend-screen"></div>
+        <div class="absolute bottom-[-20%] left-[-10%] h-[620px] w-[620px] rounded-full bg-brand-gold/16 blur-[120px] mix-blend-screen"></div>
+      </div>
+
+      <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center justify-center px-6 py-12 text-center md:px-10" data-panel-inner>
+        <div class="mx-auto max-w-4xl space-y-4">
+          <img src="/images/cumbre/titulo-cumbre.svg" alt="Cumbre Mundial" class="mx-auto h-14 w-auto md:h-20" data-reveal />
+          <p class="text-xs font-black uppercase tracking-[0.3em] text-brand-gold" data-reveal>Nuestra oración</p>
+          <h2 class="text-4xl font-black leading-tight text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.5)] md:text-6xl" data-split-title>
+            Que el Señor vuelva a llenar las redes
+          </h2>
+          <div class="mx-auto grid max-w-3xl gap-3 sm:grid-cols-2" data-reveal>
+            {prayerItems.map((item) => (
+              <p class="rounded-2xl border border-white/12 bg-black/20 px-4 py-3 text-left text-sm font-semibold leading-snug text-white/82 backdrop-blur-sm">Que el Señor {item}.</p>
+            ))}
+          </div>
+          <blockquote class="mx-auto max-w-2xl border-l-2 border-brand-gold bg-black/20 py-2 pl-5 text-left text-sm text-white/86 backdrop-blur-sm" data-reveal>
+            “La red se llena cuando obedecemos juntos.”
+            <span class="mt-2 block text-xs font-black uppercase tracking-[0.2em] text-brand-gold">Lucas 5 nos recuerda: no fue la experiencia de Pedro la que produjo el milagro; fue la obediencia a la voz de Jesús.</span>
+          </blockquote>
+          <p class="mx-auto max-w-2xl text-base leading-relaxed text-white/72" data-reveal>
+            ¡Nos vemos pronto! Con amor en Cristo, Equipo Cumbre Mundial de Discipulado.
+          </p>
+
+          <div class="flex flex-wrap justify-center gap-4 pt-2" data-reveal>
+            <a href="/eventos/cumbre-mundial-2026" class="mana-btn px-8 py-3 text-sm shadow-[0_0_40px_-10px_var(--mana-teal)]">
+              Volver a la Cumbre
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    import '@scripts/cumbre-welcome-story.js';
+  </script>
+</CumbreLayout>
+
+<style>
+  .cumbre-welcome-story {
+    background: #07111c;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .cumbre-panel {
+    position: absolute;
+    inset: 0;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    clip-path: inset(100% 0% 0% 0%);
+    will-change: clip-path, transform;
+  }
+
+  .cumbre-panel:first-child,
+  .cumbre-panel.is-visible {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .cumbre-panel.is-active {
+    pointer-events: auto;
+  }
+
+  .cumbre-panel a,
+  .cumbre-panel button {
+    pointer-events: auto;
+  }
+
+  .cumbre-panel [data-panel-bg] {
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .cumbre-panel-inner {
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+  }
+
+  .cumbre-panel [data-reveal] {
+    will-change: transform, opacity;
+  }
+
+  .cumbre-panel [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .cumbre-panel [data-split-title] .split-word > span {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  .cumbre-soft-grid {
+    background-image:
+      linear-gradient(rgba(26, 37, 92, 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 37, 92, 0.22) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .cumbre-venue-map {
+    min-height: min(56vh, 31rem);
+  }
+
+  .cumbre-map-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+
+  .cumbre-venue-map svg text {
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .cumbre-map-kicker {
+    fill: #f2c94c;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.28em;
+  }
+
+  .cumbre-map-pill-title {
+    fill: #ffffff;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+
+  .cumbre-route-card {
+    filter: drop-shadow(0 20px 30px rgba(7, 17, 28, 0.18));
+  }
+
+  .cumbre-route-card-title {
+    fill: #ffffff;
+    font-size: 29px;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+
+  .cumbre-route-card-copy {
+    fill: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0;
+  }
+
+  .cumbre-map-label {
+    fill: rgba(255, 255, 255, 0.72);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.48);
+    stroke-width: 3px;
+  }
+
+  .cumbre-map-place {
+    fill: #d7e8ff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.72);
+    stroke-width: 4px;
+  }
+
+  .cumbre-map-road {
+    fill: rgba(255, 255, 255, 0.74);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.76);
+    stroke-width: 4px;
+  }
+
+  .cumbre-map-destination {
+    filter: drop-shadow(0 6px 10px rgba(7, 17, 28, 0.4));
+  }
+
+  .cumbre-map-destination-title {
+    fill: #ffffff;
+    font-size: 14px;
+    font-weight: 800;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.7);
+    stroke-width: 4px;
+  }
+
+  .cumbre-map-destination-subtitle {
+    fill: rgba(255, 255, 255, 0.78);
+    font-size: 11px;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: rgba(7, 17, 28, 0.7);
+    stroke-width: 3px;
+  }
+
+  .cumbre-route-gold {
+    filter: drop-shadow(0 0 7px rgba(242, 201, 76, 0.42));
+  }
+
+  .cumbre-venue-pulse {
+    animation: cumbre-map-pulse 2.6s ease-out infinite;
+  }
+
+  @keyframes cumbre-map-pulse {
+    0% {
+      opacity: 0.85;
+      transform: scale(0.35);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.4);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .cumbre-welcome-story {
+      height: var(--cumbre-vh, 100svh);
+      min-height: var(--cumbre-vh, 100svh);
+      overflow: hidden;
+    }
+
+    .cumbre-panel,
+    .cumbre-panel-inner {
+      height: var(--cumbre-vh, 100svh);
+      min-height: var(--cumbre-vh, 100svh);
+    }
+
+    .cumbre-panel {
+      position: absolute;
+      overflow: hidden;
+      border-radius: 0;
+    }
+
+    .cumbre-panel-inner {
+      position: relative;
+      align-items: center;
+      padding: 5.5rem 1rem 2.1rem !important;
+    }
+
+    .cumbre-panel h1,
+    .cumbre-panel h2 {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      font-size: clamp(1.85rem, 8.8vw, 2.35rem);
+      line-height: 1.02;
+    }
+
+    .cumbre-panel h3 {
+      font-size: 1.05rem;
+      line-height: 1.12;
+    }
+
+    .cumbre-panel p,
+    .cumbre-panel li,
+    .cumbre-panel a {
+      line-height: 1.32;
+    }
+
+    .cumbre-panel aside h2,
+    .cumbre-panel article h3,
+    .cumbre-panel blockquote {
+      overflow-wrap: anywhere;
+    }
+
+    .cumbre-panel .space-y-12 > :not([hidden]) ~ :not([hidden]),
+    .cumbre-panel .space-y-7 > :not([hidden]) ~ :not([hidden]),
+    .cumbre-panel .space-y-6 > :not([hidden]) ~ :not([hidden]),
+    .cumbre-panel .space-y-5 > :not([hidden]) ~ :not([hidden]),
+    .cumbre-panel .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0.72rem;
+    }
+
+    .cumbre-panel .gap-12,
+    .cumbre-panel .gap-10,
+    .cumbre-panel .gap-5,
+    .cumbre-panel .gap-4,
+    .cumbre-panel .gap-3 {
+      gap: 0.55rem;
+    }
+
+    .cumbre-panel [class*='rounded-3xl'],
+    .cumbre-panel [class*='rounded-[2rem]'] {
+      border-radius: 1rem;
+    }
+
+    .cumbre-panel article,
+    .cumbre-panel aside {
+      padding: 0.78rem !important;
+      box-shadow: 0 18px 44px rgba(7, 17, 28, 0.14);
+    }
+
+    .cumbre-panel article [class*='mt-6'],
+    .cumbre-panel article [class*='mt-5'],
+    .cumbre-panel article [class*='mt-4'],
+    .cumbre-panel aside [class*='mt-2'],
+    .cumbre-panel blockquote [class*='mt-2'] {
+      margin-top: 0.45rem;
+    }
+
+    .cumbre-panel .grid {
+      gap: 0.55rem;
+    }
+
+    .cumbre-panel [class*='px-5'],
+    .cumbre-panel [class*='px-4'] {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .cumbre-panel [class*='py-4'],
+    .cumbre-panel [class*='py-3'] {
+      padding-top: 0.48rem;
+      padding-bottom: 0.48rem;
+    }
+
+    .cumbre-panel [class*='text-xl'],
+    .cumbre-panel [class*='text-lg'] {
+      font-size: 0.94rem;
+    }
+
+    .cumbre-panel [class*='text-base'] {
+      font-size: 0.86rem;
+    }
+
+    .cumbre-panel [class*='text-sm'] {
+      font-size: 0.76rem;
+    }
+
+    .cumbre-panel [class*='text-xs'] {
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+    }
+
+    .cumbre-panel [class*='text-3xl'] {
+      font-size: 1.25rem;
+    }
+
+    .cumbre-panel [src='/images/cumbre/cumbre-2026-logo-white.svg'] {
+      height: 4.25rem;
+    }
+
+    .cumbre-panel [src='/images/cumbre/titulo-cumbre.svg'] {
+      height: 2.8rem;
+    }
+
+    .cumbre-panel .border-l-2,
+    .cumbre-panel .border-l {
+      padding-left: 0.72rem;
+    }
+
+    .cumbre-venue-panel .cumbre-panel-inner {
+      padding-top: 5rem !important;
+      padding-bottom: 1.25rem !important;
+    }
+
+    .cumbre-venue-panel h2 {
+      font-size: clamp(1.72rem, 8vw, 2.12rem);
+    }
+
+    .cumbre-venue-panel .cumbre-venue-copy {
+      font-size: 0.82rem;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-map-card {
+      padding: 0.55rem !important;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-meta {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-meta article {
+      padding: 0.68rem !important;
+    }
+
+    .cumbre-venue-map {
+      min-height: 12.4rem;
+    }
+
+    .cumbre-map-reference {
+      left: 0.65rem;
+      top: 0.65rem;
+      padding: 0.52rem 0.7rem !important;
+      border-radius: 0.75rem;
+    }
+
+    .cumbre-map-reference p:first-child {
+      font-size: 0.48rem;
+      letter-spacing: 0.13em;
+    }
+
+    .cumbre-map-reference p:last-child {
+      font-size: 0.62rem;
+    }
+
+    .cumbre-map-destination-title {
+      font-size: 12px;
+    }
+
+    .cumbre-map-destination-subtitle {
+      font-size: 10px;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-actions {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-actions a {
+      padding: 0.72rem 0.62rem;
+      letter-spacing: 0.1em;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-map h3 {
+      font-size: 1.05rem;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-map .absolute.bottom-6 {
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: 0.75rem;
+      padding: 0.78rem !important;
+    }
+
+    .cumbre-venue-panel .cumbre-venue-map .absolute.left-6.top-6 {
+      left: 0.75rem;
+      top: 0.75rem;
+      padding: 0.55rem 0.7rem !important;
+    }
+
+    @media (max-height: 720px) {
+      .cumbre-venue-panel .cumbre-panel-inner {
+        padding-top: 4.65rem !important;
+        padding-bottom: 0.75rem !important;
+      }
+
+      .cumbre-venue-panel h2 {
+        font-size: clamp(1.42rem, 7.2vw, 1.84rem);
+      }
+
+      .cumbre-venue-panel .cumbre-venue-copy,
+      .cumbre-venue-panel .cumbre-venue-share {
+        display: none;
+      }
+
+      .cumbre-venue-panel .cumbre-venue-actions a {
+        min-height: 2.85rem;
+        padding: 0.58rem 0.48rem;
+        font-size: 0.56rem;
+      }
+
+      .cumbre-venue-panel .cumbre-venue-meta p:last-child {
+        font-size: 0.68rem;
+        line-height: 1.18;
+      }
+
+      .cumbre-venue-map {
+        min-height: 8.8rem;
+      }
+
+      .cumbre-map-secondary,
+      .cumbre-map-reference {
+        display: none;
+      }
+
+      .cumbre-venue-panel .cumbre-venue-map .absolute.bottom-6 {
+        padding: 0.58rem !important;
+      }
+
+      .cumbre-venue-panel .cumbre-venue-map h3 {
+        margin-top: 0.15rem;
+        font-size: 0.78rem;
+      }
+
+      .cumbre-venue-panel .cumbre-venue-map p:last-child {
+        display: none;
+      }
+    }
+
+    .cumbre-schedule-panel .cumbre-panel-inner {
+      padding-top: 5rem !important;
+      padding-bottom: 1.35rem !important;
+    }
+
+    .cumbre-schedule-panel h2 {
+      font-size: clamp(1.45rem, 7.4vw, 1.92rem);
+    }
+
+    .cumbre-schedule-panel article {
+      padding: 0.58rem 0.68rem !important;
+    }
+
+    .cumbre-schedule-panel article h3 {
+      margin-top: 0.22rem;
+      font-size: 0.9rem;
+    }
+
+    .cumbre-schedule-panel article div {
+      margin-top: 0.35rem;
+    }
+
+    .cumbre-schedule-panel article p {
+      font-size: 0.62rem;
+      line-height: 1.18;
+    }
+
+    .cumbre-panel:last-child .flex {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cumbre-panel:last-child .mana-btn,
+    .cumbre-panel:last-child .mana-btn-ghost {
+      width: min(100%, 18rem);
+      justify-content: center;
+      padding-top: 0.7rem;
+      padding-bottom: 0.7rem;
+    }
+  }
+</style>
+
+<style is:global>
+  @media (max-width: 767px) {
+    html[data-cumbre-welcome-story='true'] a[href^='https://wa.me/'] {
+      display: none !important;
+    }
+  }
+</style>
