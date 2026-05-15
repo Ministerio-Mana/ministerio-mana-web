@@ -1,0 +1,357 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+
+const title = 'Cómo ser socio de la Gran Comisión | Campus Maná';
+const description = 'Tutorial sencillo para apoyar mensualmente a los misioneros de Campus Maná.';
+const image = '/images/campus/misioneros/GRUPO-COMPLETO.jpg';
+const campusPath = '/campus';
+const tutorialUrl = 'https://ministeriomana.org/campus/como-ser-socio';
+const whatsappText = encodeURIComponent(
+  `Hola, quiero compartirte el paso a paso para ser socio de la Gran Comisión de Campus Maná: ${tutorialUrl}`
+);
+
+const singleSteps = [
+  {
+    title: 'Entra a la página',
+    text: 'Abre el enlace ministeriomana.org/campus. Si estás en el celular, espera unos segundos hasta que carguen las fotos. Toca “Apoyar ahora”.',
+    image: '/images/campus/tutorial/01-abrir-campus.jpg',
+    caption: 'Así se ve el inicio de Campus Maná en celular.',
+    marker: { x: 50, y: 76, label: 'Toca aquí' },
+  },
+  {
+    title: 'Busca “Nuestro equipo”',
+    text: 'Baja en la página hasta ver las tarjetas de los misioneros Campus.',
+    image: '/images/campus/tutorial/02-buscar-equipo.jpg',
+    caption: 'Busca el título “Nuestro equipo”.',
+    marker: { x: 52, y: 23, label: 'Equipo' },
+  },
+  {
+    title: 'Elige a quién apoyar',
+    text: 'En la tarjeta del misionero, revisa el nombre y ubica el formulario que dice “Tu apoyo ayuda a la extensión del Reino”.',
+    image: '/images/campus/tutorial/03-elegir-misionero.jpg',
+    caption: 'Cada misionero tiene su propia tarjeta.',
+    marker: { x: 30, y: 56, label: 'Elige' },
+  },
+  {
+    title: 'Marca “Mensual”',
+    text: 'Para ser socio, deja seleccionada la opción Mensual. Si solo quiere dar una vez, puede escoger “Única vez”.',
+    image: '/images/campus/tutorial/04-marcar-mensual.jpg',
+    caption: 'La opción Mensual es la que convierte el apoyo en recurrente.',
+    marker: { x: 35, y: 46, label: 'Mensual' },
+  },
+  {
+    title: 'Escoge el monto',
+    text: 'No hay que escoger moneda: la página muestra los montos automáticamente según el país. Toca un monto sugerido o escribe otro valor en “Otro...”.',
+    image: '/images/campus/tutorial/05-escoger-monto.jpg',
+    caption: 'Puede elegir un valor sugerido o escribir uno diferente.',
+    marker: { x: 50, y: 57, label: 'Elige monto' },
+  },
+  {
+    title: 'Toca “Donar Ahora”',
+    text: 'La página pedirá los datos básicos: nombre completo, correo y teléfono o WhatsApp.',
+    image: '/images/campus/tutorial/06-tocar-donar.jpg',
+    caption: 'Después de tocar el botón aparecen los campos de datos.',
+    marker: { x: 50, y: 73, label: 'Donar ahora' },
+  },
+  {
+    title: 'Confirma con “Sembrar Ahora”',
+    text: 'Después de escribir los datos, toca “Sembrar Ahora”. La página abrirá el pago seguro.',
+    image: '/images/campus/tutorial/07-sembrar-ahora.jpg',
+    caption: 'Revisa que los datos estén bien antes de continuar.',
+    marker: { x: 50, y: 64, label: 'Sembrar ahora' },
+  },
+  {
+    title: 'Termina el pago',
+    text: 'Completa el pago seguro. La página acomoda la moneda automáticamente según el país. Guarda el comprobante.',
+    image: '/images/campus/tutorial/08-pago-seguro.jpg',
+    caption: 'Al finalizar, debe aparecer una confirmación del proceso.',
+    marker: { x: 50, y: 37, label: 'Confirmación' },
+  },
+];
+
+const manySteps = [
+  'Baja hasta la sección “¿Quieres sembrar en varios misioneros?”.',
+  'Escoge cuántos misioneros quieres apoyar: 2, 3, 4 o todos.',
+  'Selecciona los nombres o usa “Al azar”. Luego toca “Continuar”.',
+  'Elige mensualidad y monto por cada misionero. La moneda se ajusta sola.',
+  'Revisa el resumen, escribe tus datos y toca “Sembrar Ahora”.',
+];
+
+const helpItems = [
+  'Nombre completo de la persona.',
+  'Correo electrónico que sí pueda revisar.',
+  'Teléfono o WhatsApp.',
+  'Tarjeta, cuenta o medio de pago listo.',
+  'Cinco minutos tranquilos para completar el proceso.',
+  'No hay que cambiar la moneda: el sitio la ajusta automáticamente.',
+];
+---
+
+<BaseLayout {title} {description} {image}>
+  <section class="relative overflow-hidden bg-[#001B3A] text-white">
+    <div class="absolute inset-0">
+      <img
+        src={image}
+        alt="Equipo de misioneros Campus Maná"
+        class="h-full w-full object-cover opacity-28"
+        loading="eager"
+      />
+      <div class="absolute inset-0 bg-[#001B3A]/80"></div>
+    </div>
+
+    <div class="container-tight relative z-10 grid min-h-[72vh] items-center gap-10 pb-16 pt-28 md:grid-cols-[1.08fr_0.92fr] md:py-20">
+      <div>
+        <p class="mb-4 inline-flex rounded-md bg-[#FACC15] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#001B3A]">
+          Tutorial sencillo
+        </p>
+        <h1 class="max-w-3xl text-3xl font-black leading-tight text-white sm:text-4xl md:text-6xl">
+          Cómo ser socio de la Gran Comisión
+        </h1>
+        <p class="mt-5 max-w-2xl text-lg leading-relaxed text-white/80 md:text-xl">
+          Una guía corta para acompañar a una persona paso a paso mientras apoya mensualmente a los misioneros de Campus Maná.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="#paso-a-paso" class="inline-flex items-center justify-center rounded-md bg-[#2DD4BF] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#001B3A] transition hover:-translate-y-0.5 hover:bg-white">
+            Ver pasos
+          </a>
+          <a href={campusPath} class="inline-flex items-center justify-center rounded-md border border-white/70 bg-white/10 px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-white hover:text-[#001B3A]">
+            Ir a Campus
+          </a>
+        </div>
+      </div>
+
+      <aside class="rounded-lg border border-white/20 bg-white/95 p-6 text-[#001B3A] shadow-2xl shadow-black/20">
+        <h2 class="text-2xl font-black text-[#001B3A]">Antes de comenzar</h2>
+        <p class="mt-2 text-sm text-[#001B3A]/70">
+          Ten esto a mano para que el proceso sea rápido:
+        </p>
+        <ul class="mt-5 space-y-3">
+          {helpItems.map((item) => (
+            <li class="flex gap-3 text-sm font-semibold text-[#001B3A]/80">
+              <span class="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-[#2DD4BF] text-xs font-black text-[#001B3A]">✓</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    </div>
+  </section>
+
+  <section id="paso-a-paso" class="scroll-mt-24 bg-[#F3F0E6] py-16">
+    <div class="container-tight">
+      <div class="max-w-3xl">
+        <p class="section-title">Forma recomendada</p>
+        <h2 class="mt-4 text-3xl font-black text-[#001B3A] md:text-4xl">
+          Para ser socio mensual de un misionero
+        </h2>
+        <p class="mt-4 text-lg text-[#001B3A]/70">
+          Esta es la explicación más fácil para una persona que no usa mucho internet. Acompáñala sin afán y revisa cada pantalla antes de tocar el siguiente botón.
+        </p>
+      </div>
+
+      <div class="mt-10 grid gap-4 md:grid-cols-2">
+        {singleSteps.map((step, index) => (
+          <article class="rounded-lg border border-[#001B3A]/10 bg-white p-4 shadow-sm md:p-5">
+            <div class="flex items-start gap-4">
+              <span class="flex h-10 w-10 flex-none items-center justify-center rounded-md bg-[#001B3A] text-base font-black text-white">
+                {index + 1}
+              </span>
+              <div>
+                <h3 class="text-xl font-black text-[#001B3A]">{step.title}</h3>
+                <p class="mt-2 text-base text-[#001B3A]/70">{step.text}</p>
+              </div>
+            </div>
+            <figure class="mt-5 rounded-lg border border-[#001B3A]/10 bg-[#F3F0E6] p-2 md:p-3">
+              <div class="tutorial-shot mx-auto w-full max-w-[340px]">
+                <img
+                  src={step.image}
+                  alt={`Pantallazo del paso ${index + 1}: ${step.title}`}
+                  class="w-full rounded-md object-contain shadow-sm"
+                  loading="lazy"
+                />
+                <span class="tap-marker" style={`--marker-x: ${step.marker.x}%; --marker-y: ${step.marker.y}%;`}>
+                  <span class="tap-marker__target" aria-hidden="true">
+                    <span class="tap-marker__dot"></span>
+                  </span>
+                  <span class="tap-marker__label">{step.marker.label}</span>
+                </span>
+              </div>
+              <figcaption class="mt-3 text-center text-xs font-semibold uppercase tracking-[0.08em] text-[#001B3A]/60">
+                {step.caption}
+              </figcaption>
+            </figure>
+          </article>
+        ))}
+      </div>
+
+      <div class="mt-10 flex flex-wrap gap-3">
+        <a href={`${campusPath}#misioneros`} class="inline-flex items-center justify-center rounded-md bg-[#001B3A] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-[#2DD4BF] hover:text-[#001B3A]">
+          Empezar ahora
+        </a>
+        <a href={`https://wa.me/?text=${whatsappText}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-md border border-[#001B3A]/20 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#001B3A] transition hover:-translate-y-0.5 hover:border-[#2DD4BF]">
+          Compartir por WhatsApp
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-16">
+    <div class="container-tight grid gap-10 md:grid-cols-[0.9fr_1.1fr]">
+      <div>
+        <p class="section-title">También se puede</p>
+        <h2 class="mt-4 text-3xl font-black text-[#001B3A] md:text-4xl">
+          Apoyar a varios misioneros
+        </h2>
+        <p class="mt-4 text-lg text-[#001B3A]/70">
+          Úsalo cuando una persona quiera repartir su apoyo mensual entre varios misioneros Campus.
+        </p>
+        <a href={`${campusPath}#multi-donation`} class="mt-7 inline-flex items-center justify-center rounded-md bg-[#2DD4BF] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#001B3A] transition hover:-translate-y-0.5 hover:bg-[#001B3A] hover:text-white">
+          Ir a varios misioneros
+        </a>
+      </div>
+
+      <ol class="space-y-4">
+        {manySteps.map((item, index) => (
+          <li class="rounded-lg border border-[#001B3A]/10 bg-[#F3F0E6] p-5">
+            <div class="flex gap-4">
+              <span class="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-[#FACC15] text-sm font-black text-[#001B3A]">
+                {index + 1}
+              </span>
+              <p class="font-semibold text-[#001B3A]/80">{item}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="bg-[#001B3A] py-16 text-white">
+    <div class="container-tight grid gap-8 md:grid-cols-2">
+      <div>
+        <p class="text-xs font-black uppercase tracking-[0.16em] text-[#2DD4BF]">Guion para explicarlo</p>
+        <h2 class="mt-4 text-3xl font-black text-white md:text-4xl">
+          Léelo así, sin palabras técnicas
+        </h2>
+      </div>
+
+      <div class="rounded-lg border border-white/15 bg-white/10 p-6">
+        <p class="text-lg leading-relaxed text-white/80">
+          “Vamos a abrir la página de Campus Maná. Primero escogemos el misionero que quieres apoyar. Como quieres ser socio, dejamos marcada la opción mensual. La página acomoda la moneda automáticamente; nosotros solo escogemos el monto, escribimos tus datos y al final te lleva a un pago seguro. Cuando termine, guardamos el comprobante.”
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-[#F3F0E6] py-16">
+    <div class="container-tight">
+      <div class="grid gap-6 md:grid-cols-3">
+        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
+          <h3 class="text-xl font-black text-[#001B3A]">Si no aparece el botón</h3>
+          <p class="mt-3 text-[#001B3A]/70">
+            Revisa que haya un monto seleccionado o escrito. El botón se activa después de elegir el valor.
+          </p>
+        </article>
+        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
+          <h3 class="text-xl font-black text-[#001B3A]">Si sale un error</h3>
+          <p class="mt-3 text-[#001B3A]/70">
+            Verifica que el nombre esté completo y que el correo tenga arroba y punto.
+          </p>
+        </article>
+        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
+          <h3 class="text-xl font-black text-[#001B3A]">Si el pago no carga</h3>
+          <p class="mt-3 text-[#001B3A]/70">
+            Espera unos segundos, revisa la conexión y vuelve a tocar “Sembrar Ahora” solo una vez.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .tutorial-shot {
+    position: relative;
+  }
+
+  .tap-marker {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    left: var(--marker-x);
+    pointer-events: none;
+    position: absolute;
+    top: var(--marker-y);
+    transform: translate(-50%, -50%);
+    z-index: 5;
+  }
+
+  .tap-marker__target {
+    align-items: center;
+    background: rgba(45, 212, 191, 0.2);
+    border: 2px solid #FACC15;
+    border-radius: 999px;
+    box-shadow: 0 10px 22px rgba(0, 27, 58, 0.22), 0 0 0 0 rgba(45, 212, 191, 0.28);
+    display: flex;
+    height: 2.8rem;
+    justify-content: center;
+    width: 2.8rem;
+    animation: tapGlow 2.4s ease-in-out infinite;
+  }
+
+  .tap-marker__dot {
+    background: #2DD4BF;
+    border: 3px solid #001B3A;
+    border-radius: 999px;
+    height: 1.15rem;
+    width: 1.15rem;
+  }
+
+  .tap-marker__label {
+    background: rgba(0, 27, 58, 0.94);
+    border: 2px solid #FACC15;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    padding: 0.42rem 0.58rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  @keyframes tapGlow {
+    0%, 100% {
+      box-shadow: 0 10px 22px rgba(0, 27, 58, 0.22), 0 0 0 0 rgba(45, 212, 191, 0.26);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 10px 22px rgba(0, 27, 58, 0.2), 0 0 0 7px rgba(45, 212, 191, 0.14);
+      transform: scale(1.04);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tap-marker__target {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .tap-marker__target {
+      height: 2.35rem;
+      width: 2.35rem;
+    }
+
+    .tap-marker__dot {
+      height: 0.95rem;
+      width: 0.95rem;
+    }
+
+    .tap-marker__label {
+      font-size: 0.55rem;
+      padding: 0.36rem 0.5rem;
+    }
+  }
+</style>
