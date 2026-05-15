@@ -5,6 +5,10 @@ export type CountryGroup = 'CO' | 'INT';
 export type Currency = 'COP' | 'USD';
 export type PackageType = 'lodging' | 'no_lodging' | 'child_0_7' | 'child_7_13';
 
+export const CUMBRE_LODGING_AVAILABLE = false;
+export const CUMBRE_LODGING_CLOSED_MESSAGE =
+  'Los cupos con hospedaje ya estan agotados. La inscripcion sigue disponible sin alojamiento.';
+
 export const CUMBRE_PRICES_COP: Record<PackageType, number> = {
   lodging: 850000,
   no_lodging: 660000,
@@ -74,6 +78,10 @@ export function getPrice(currency: Currency, packageType: PackageType): number {
 
 export function calculateTotals(currency: Currency, participants: SanitizedParticipant[]): number {
   return participants.reduce((sum, participant) => sum + getPrice(currency, participant.packageType), 0);
+}
+
+export function hasUnavailableLodging(participants: Array<{ packageType?: string | null }>): boolean {
+  return !CUMBRE_LODGING_AVAILABLE && participants.some((participant) => participant.packageType === 'lodging');
 }
 
 export function depositThreshold(totalAmount: number): number {

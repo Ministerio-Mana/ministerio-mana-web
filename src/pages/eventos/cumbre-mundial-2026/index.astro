@@ -5,7 +5,7 @@ const cspNonce = Astro.locals?.cspNonce;
 const eventDetails = {
   date: "Julio 2026",
   location: "Rionegro, Colombia",
-  price: "Desde $150 USD" 
+  price: "Desde $170 USD"
 };
 
 const whatsappOnly =
@@ -83,6 +83,9 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
          <p class="text-lg md:text-2xl text-white/80 font-light max-w-2xl text-center leading-relaxed">
             Un tiempo sobrenatural de conexión, visión y renovación espiritual.
          </p>
+         <p class="max-w-2xl rounded-2xl border border-brand-gold/30 bg-brand-gold/10 px-5 py-3 text-sm font-bold text-brand-gold">
+            Hospedaje dentro del evento agotado. Las inscripciones continúan abiertas sin alojamiento.
+         </p>
          
          <div class="flex flex-col sm:flex-row gap-4">
              <!-- Primary CTA -->
@@ -134,10 +137,10 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-white">Flexibilidad de alojamiento</h3>
+          <h3 class="text-xl font-bold text-white">Hospedaje por cuenta propia</h3>
           <p class="text-white/60 leading-relaxed text-sm">
-            El lugar cuenta con habitaciones tipo seminario (cama y nido por habitación). Si prefieres mayor comodidad,
-            puedes hospedarte en hoteles cercanos (se pagan por separado) y elegir el precio sin alojamiento.
+            Los cupos de hospedaje dentro del evento ya están agotados. Puedes asistir a la Cumbre y gestionar
+            tu alojamiento en hoteles cercanos o por tu cuenta.
           </p>
         </div>
 
@@ -150,7 +153,7 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
           </div>
           <h3 class="text-xl font-bold text-white">Pago flexible</h3>
           <p class="text-white/60 leading-relaxed text-sm">
-            Puedes pagar a cuotas o de forma diferida. El abono igual o superior al 50% garantiza el cupo con alojamiento.
+            Puedes pagar a cuotas o de forma diferida. La reserva cubre la asistencia a la Cumbre sin hospedaje.
           </p>
         </div>
       </div>
@@ -162,7 +165,7 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
     <div class="max-w-2xl mx-auto space-y-8 bg-gradient-to-b from-white/5 to-transparent p-12 rounded-[3rem] border border-white/10 backdrop-blur-md">
       <h2 class="text-3xl md:text-4xl font-bold text-white">¿Listo para ser parte?</h2>
       <p class="text-white/70">
-        Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.
+        Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo sin alojamiento incluido.
       </p>
       <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="inline-block px-10 py-5 bg-white text-brand-dark font-black text-xl rounded-full hover:scale-105 transition-transform">
         {ctaLabelCaps}
