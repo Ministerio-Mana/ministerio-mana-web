@@ -79,6 +79,8 @@ const copy = {
       anonymous: 'Alguien',
       fallbackRequest: 'Petición recibida para oración.',
       prayerRequest: 'Petición de oración',
+      selectedRequest: 'Petición seleccionada',
+      close: 'Cerrar',
       prayerSingular: 'oración',
       prayerPlural: 'oraciones',
       prayed: 'Orado',
@@ -171,6 +173,8 @@ const copy = {
       anonymous: 'Someone',
       fallbackRequest: 'Prayer request received.',
       prayerRequest: 'Prayer request',
+      selectedRequest: 'Selected request',
+      close: 'Close',
       prayerSingular: 'prayer',
       prayerPlural: 'prayers',
       prayed: 'Prayed',
@@ -235,6 +239,17 @@ const i18n = JSON.stringify(c.js);
           {stones.map((stone) => <span style={`--stone:${stone};`} />)}
         </div>
         <div class="prayer-note-layer" data-prayer-list></div>
+        <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite">
+          <button type="button" class="prayer-wall-detail__close" data-prayer-detail-close aria-label={c.js.close}>×</button>
+          <span>{c.js.selectedRequest}</span>
+          <h4 data-prayer-detail-name></h4>
+          <small data-prayer-detail-meta></small>
+          <p data-prayer-detail-text></p>
+          <footer>
+            <strong data-prayer-detail-count></strong>
+            <button type="button" data-prayer-detail-pray></button>
+          </footer>
+        </aside>
         <p class="prayer-empty" data-prayer-empty>{c.loading}</p>
       </div>
       <div class="prayer-wall-pager" data-prayer-pager hidden>
@@ -303,6 +318,17 @@ const i18n = JSON.stringify(c.js);
               </div>
               <div class="prayer-wall-light" aria-hidden="true"></div>
               <div class="prayer-note-layer" data-prayer-list></div>
+              <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite">
+                <button type="button" class="prayer-wall-detail__close" data-prayer-detail-close aria-label={c.js.close}>×</button>
+                <span>{c.js.selectedRequest}</span>
+                <h3 data-prayer-detail-name></h3>
+                <small data-prayer-detail-meta></small>
+                <p data-prayer-detail-text></p>
+                <footer>
+                  <strong data-prayer-detail-count></strong>
+                  <button type="button" data-prayer-detail-pray></button>
+                </footer>
+              </aside>
               <p class="prayer-empty" data-prayer-empty>{c.loading}</p>
             </div>
             <div class="prayer-wall-pager" data-prayer-pager hidden>
@@ -757,23 +783,23 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note {
-    --note-width: 12.2rem;
+    --note-width: 6.9rem;
     background:
       linear-gradient(90deg, rgba(125, 94, 35, 0.22), transparent 10%, transparent 88%, rgba(125, 94, 35, 0.12)),
       linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0)),
       var(--prayer-paper);
     border: 1px solid rgba(77, 59, 18, 0.16);
-    border-radius: 999px 0.75rem 0.75rem 999px;
+    border-radius: 999px 0.5rem 0.5rem 999px;
     box-shadow:
-      0 14px 26px rgba(26, 37, 92, 0.18),
-      -10px 10px 18px rgba(33, 43, 54, 0.18),
+      0 10px 18px rgba(26, 37, 92, 0.16),
+      -8px 7px 12px rgba(33, 43, 54, 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.7);
     cursor: pointer;
     left: clamp(calc(var(--note-width) / 2 + 0.65rem), var(--x), calc(100% - (var(--note-width) / 2 + 0.65rem)));
     max-width: calc(100% - 2rem);
-    min-height: 4.9rem;
+    min-height: 2.35rem;
     overflow: hidden;
-    padding: 0.78rem 0.82rem 0.72rem 1.68rem;
+    padding: 0.5rem 0.75rem 0.45rem 1.35rem;
     position: absolute;
     top: var(--y);
     transform:
@@ -783,11 +809,9 @@ const i18n = JSON.stringify(c.js);
       rotateY(var(--tilt-x, 0deg));
     transform-style: preserve-3d;
     transition:
-      border-radius 180ms ease,
       box-shadow 180ms ease,
-      min-height 180ms ease,
       transform 180ms ease,
-      width 180ms ease;
+      opacity 180ms ease;
     width: var(--note-width);
   }
 
@@ -797,40 +821,43 @@ const i18n = JSON.stringify(c.js);
       var(--prayer-paper);
     border: 1px solid rgba(77, 59, 18, 0.16);
     border-radius: 999px;
-    bottom: 0.42rem;
+    bottom: 0.24rem;
     box-shadow:
       inset -4px 0 8px rgba(77, 59, 18, 0.14),
       2px 0 6px rgba(77, 59, 18, 0.12);
     content: "";
-    left: 0.42rem;
+    left: 0.3rem;
     position: absolute;
-    top: 0.42rem;
-    width: 0.72rem;
+    top: 0.24rem;
+    width: 0.62rem;
   }
 
   .prayer-note::after {
     background: rgba(7, 17, 28, 0.32);
     border-radius: 999px;
     content: "";
-    height: 0.28rem;
-    left: 0.2rem;
+    height: 0.22rem;
+    left: 0.12rem;
     position: absolute;
     top: 50%;
     transform: translate(-100%, -50%);
-    width: 1.3rem;
+    width: 1rem;
   }
 
   .prayer-note:hover,
   .prayer-note:focus,
   .prayer-note:focus-within,
   .prayer-note.is-open {
-    border-radius: 1rem;
     box-shadow:
-      0 30px 62px rgba(26, 37, 92, 0.3),
-      0 0 0 1px rgba(242, 201, 76, 0.24),
+      0 18px 34px rgba(26, 37, 92, 0.28),
+      0 0 0 2px rgba(242, 201, 76, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.78);
-    min-height: 12.25rem;
-    width: min(18rem, calc(100% - 2rem));
+    transform:
+      translate(-50%, -50%)
+      rotate(var(--r))
+      rotateX(var(--tilt-y, 0deg))
+      rotateY(var(--tilt-x, 0deg))
+      scale(1.08);
     z-index: 4;
   }
 
@@ -843,11 +870,11 @@ const i18n = JSON.stringify(c.js);
     border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 999px;
     box-shadow: 0 8px 18px rgba(77, 59, 18, 0.2);
-    height: 0.46rem;
+    height: 0.28rem;
     right: 0.75rem;
     position: absolute;
-    top: 0.62rem;
-    width: 1.6rem;
+    top: 0.48rem;
+    width: 1.1rem;
   }
 
   .prayer-note header {
@@ -857,66 +884,26 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note h3 {
     color: var(--prayer-navy);
-    font-size: 0.94rem;
+    font-size: 0.72rem;
     font-weight: 900;
     line-height: 1.15;
     margin: 0;
-    max-width: calc(100% - 2rem);
+    max-width: calc(100% - 1.45rem);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .prayer-note small {
-    color: rgba(26, 37, 92, 0.58);
-    display: block;
-    font-size: 0.62rem;
-    font-weight: 800;
-    line-height: 1.2;
-    margin-top: 0.18rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
+    display: none;
   }
 
   .prayer-note p {
-    color: rgba(11, 17, 32, 0.76);
-    display: -webkit-box;
-    font-size: 0.78rem;
-    line-height: 1.36;
-    margin-top: 0.45rem;
-    max-height: 2.2rem;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .prayer-note.is-open p,
-  .prayer-note:focus-within p {
-    display: block;
-    font-size: 0.86rem;
-    line-height: 1.48;
-    max-height: 5.8rem;
-    overflow: auto;
+    display: none;
   }
 
   .prayer-note footer {
-    align-items: center;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: space-between;
-    margin-top: 0.8rem;
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    transition: max-height 180ms ease, opacity 180ms ease;
-  }
-
-  .prayer-note.is-open footer,
-  .prayer-note:focus-within footer {
-    max-height: 3rem;
-    opacity: 1;
+    display: none;
   }
 
   .prayer-note__count {
@@ -940,6 +927,114 @@ const i18n = JSON.stringify(c.js);
   .prayer-note button[disabled] {
     background: rgba(26, 37, 92, 0.4);
     cursor: default;
+  }
+
+  .prayer-wall-detail {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+      rgba(7, 17, 28, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 1rem;
+    bottom: 1rem;
+    box-shadow: 0 24px 60px rgba(7, 17, 28, 0.34);
+    color: white;
+    left: auto;
+    max-width: calc(100% - 2rem);
+    padding: 1rem;
+    position: absolute;
+    right: 1rem;
+    width: min(25rem, 44%);
+    z-index: 7;
+  }
+
+  .prayer-wall-detail[hidden] {
+    display: none;
+  }
+
+  .prayer-wall-detail__close {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    color: white;
+    display: inline-flex;
+    font-size: 1.2rem;
+    height: 2rem;
+    justify-content: center;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+    width: 2rem;
+  }
+
+  .prayer-wall-detail > span {
+    color: var(--prayer-gold);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    line-height: 1.2;
+    padding-right: 2.4rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-wall-detail h3,
+  .prayer-wall-detail h4 {
+    color: white;
+    font-size: 1.28rem;
+    font-weight: 900;
+    line-height: 1.08;
+    margin-top: 0.55rem;
+    padding-right: 2.4rem;
+  }
+
+  .prayer-wall-detail small {
+    color: rgba(255, 255, 255, 0.58);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 900;
+    line-height: 1.25;
+    margin-top: 0.28rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-wall-detail p {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.9rem;
+    line-height: 1.52;
+    margin-top: 0.8rem;
+    max-height: 8rem;
+    overflow: auto;
+  }
+
+  .prayer-wall-detail footer {
+    align-items: center;
+    display: flex;
+    gap: 0.7rem;
+    justify-content: space-between;
+    margin-top: 0.9rem;
+  }
+
+  .prayer-wall-detail strong {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.75rem;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .prayer-wall-detail footer button {
+    background: var(--prayer-gold);
+    border-radius: 999px;
+    color: var(--prayer-navy);
+    font-size: 0.72rem;
+    font-weight: 900;
+    min-height: 2rem;
+    padding: 0.45rem 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-wall-detail footer button[disabled] {
+    opacity: 0.58;
   }
 
   .prayer-empty {
@@ -1248,8 +1343,8 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-experience--compact .prayer-note {
-    --note-width: 10.8rem;
-    min-height: 4.65rem;
+    --note-width: 5.9rem;
+    min-height: 2.25rem;
   }
 
   [data-prayer-reveal] {
@@ -1384,30 +1479,46 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-note {
-      --note-width: 8.55rem;
-      min-height: 4.6rem;
-      padding: 0.68rem 0.68rem 0.64rem 1.42rem;
+      --note-width: 5.65rem;
+      min-height: 2.2rem;
+      padding: 0.46rem 0.58rem 0.42rem 1.2rem;
     }
 
     .prayer-note p {
-      font-size: 0.72rem;
-      line-height: 1.32;
+      display: none;
     }
 
     .prayer-note:hover,
     .prayer-note:focus,
     .prayer-note:focus-within,
     .prayer-note.is-open {
-      min-height: 11.4rem;
-      width: min(16.5rem, calc(100% - 1rem));
+      width: var(--note-width);
     }
 
     .prayer-note h3 {
-      font-size: 0.84rem;
+      font-size: 0.64rem;
     }
 
     .prayer-note small {
-      font-size: 0.56rem;
+      display: none;
+    }
+
+    .prayer-wall-detail {
+      bottom: 0.75rem;
+      left: 0.75rem;
+      max-width: calc(100% - 1.5rem);
+      right: 0.75rem;
+      width: auto;
+    }
+
+    .prayer-wall-detail h3,
+    .prayer-wall-detail h4 {
+      font-size: 1.05rem;
+    }
+
+    .prayer-wall-detail p {
+      font-size: 0.82rem;
+      max-height: 6.4rem;
     }
 
     .prayer-wall-pager {

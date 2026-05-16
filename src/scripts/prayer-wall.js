@@ -1,22 +1,31 @@
 const DESKTOP_SLOTS = [
-  [17, 18, -2.4],
-  [50, 16, 1.8],
-  [83, 19, -1.2],
-  [17, 44, 1.3],
-  [50, 43, -2.1],
-  [83, 45, 2.1],
-  [17, 70, -1.6],
-  [50, 72, 1.7],
-  [83, 69, -1.1],
+  [14, 15, -2.4],
+  [38, 15, 1.8],
+  [63, 15, -1.2],
+  [86, 15, 2.1],
+  [24, 31, 1.3],
+  [50, 31, -2.1],
+  [76, 31, 1.7],
+  [14, 47, 2.3],
+  [38, 47, -1.6],
+  [63, 47, 2.2],
+  [86, 47, -1.4],
+  [24, 63, -1.2],
+  [50, 63, 1.6],
+  [76, 63, -2],
+  [38, 79, 1.8],
+  [63, 79, -1.5],
 ];
 
 const MOBILE_SLOTS = [
-  [25, 14, -2],
-  [75, 16, 1.6],
-  [25, 36, 1.8],
-  [75, 38, -1.4],
-  [25, 60, -1.6],
-  [75, 62, 2],
+  [26, 15, -2],
+  [74, 15, 1.6],
+  [26, 31, 1.8],
+  [74, 31, -1.4],
+  [26, 47, -1.6],
+  [74, 47, 2],
+  [26, 63, 1.3],
+  [74, 63, -2.1],
 ];
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -44,7 +53,7 @@ function getSlotPositions(root) {
 
 function getPageSize(root) {
   if (isCompact(root)) return 6;
-  return mobileWallQuery.matches ? 6 : DESKTOP_SLOTS.length;
+  return mobileWallQuery.matches ? 8 : 12;
 }
 
 function formatPager(root, current, total) {
@@ -127,6 +136,63 @@ function updateStats(root, prayers) {
   });
 }
 
+async function handlePrayerAction(root, row, count, button) {
+  if (button.disabled) return;
+  button.disabled = true;
+  row.prayers_count += 1;
+  count.textContent = prayerCountLabel(root, row.prayers_count);
+  button.textContent = text(root, 'prayed');
+  markPrayed(row.id);
+  updateStats(root, root.__prayerRows || []);
+
+  if (!/^[0-9a-f-]{36}$/i.test(row.id)) return;
+
+  try {
+    const response = await fetch('/api/prayer/prayed', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: row.id }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok && Number.isFinite(Number(data.prayers_count))) {
+      row.prayers_count = Number(data.prayers_count);
+      count.textContent = prayerCountLabel(root, row.prayers_count);
+      updateStats(root, root.__prayerRows || []);
+    }
+  } catch {
+    // The local acknowledgement stays visible; the wall will resync on refresh.
+  }
+}
+
+function showPrayerDetail(root, row, note) {
+  const detail = root.querySelector('[data-prayer-detail]');
+  if (!detail) return;
+
+  root.querySelectorAll('[data-prayer-card].is-open').forEach((item) => {
+    if (item !== note) item.classList.remove('is-open');
+  });
+  note.classList.add('is-open');
+
+  const name = detail.querySelector('[data-prayer-detail-name]');
+  const meta = detail.querySelector('[data-prayer-detail-meta]');
+  const body = detail.querySelector('[data-prayer-detail-text]');
+  const count = detail.querySelector('[data-prayer-detail-count]');
+  const oldButton = detail.querySelector('[data-prayer-detail-pray]');
+  const button = oldButton?.cloneNode(true);
+  if (!name || !meta || !body || !count || !oldButton || !(button instanceof HTMLButtonElement)) return;
+
+  name.textContent = row.first_name;
+  meta.textContent = prayerLocation(root, row) || text(root, 'prayerRequest');
+  body.textContent = row.request_text;
+  count.textContent = prayerCountLabel(root, row.prayers_count);
+  button.type = 'button';
+  button.textContent = hasPrayed(row.id) ? text(root, 'prayed') : text(root, 'prayButton');
+  button.disabled = hasPrayed(row.id);
+  button.addEventListener('click', () => handlePrayerAction(root, row, count, button));
+  oldButton.replaceWith(button);
+  detail.hidden = false;
+}
+
 function createPrayerNote(root, row, index, slots, isNew = false) {
   const position = slots[index % slots.length];
   const note = document.createElement('article');
@@ -163,46 +229,12 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   button.textContent = hasPrayed(row.id) ? text(root, 'prayed') : text(root, 'prayButton');
   button.disabled = hasPrayed(row.id);
 
-  button.addEventListener('click', async () => {
-    if (button.disabled) return;
-    button.disabled = true;
-    row.prayers_count += 1;
-    count.textContent = prayerCountLabel(root, row.prayers_count);
-    button.textContent = text(root, 'prayed');
-    markPrayed(row.id);
-    updateStats(root, root.__prayerRows || []);
-
-    if (!/^[0-9a-f-]{36}$/i.test(row.id)) return;
-
-    try {
-      const response = await fetch('/api/prayer/prayed', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: row.id }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (response.ok && Number.isFinite(Number(data.prayers_count))) {
-        row.prayers_count = Number(data.prayers_count);
-        count.textContent = prayerCountLabel(root, row.prayers_count);
-        updateStats(root, root.__prayerRows || []);
-      }
-    } catch {
-      // The local acknowledgement stays visible; the wall will resync on refresh.
-    }
-  });
-
-  const toggleOpen = () => {
-    const isOpen = note.classList.contains('is-open');
-    root.querySelectorAll('[data-prayer-card].is-open').forEach((item) => {
-      if (item !== note) item.classList.remove('is-open');
-    });
-    note.classList.toggle('is-open', !isOpen);
-  };
+  button.addEventListener('click', () => handlePrayerAction(root, row, count, button));
 
   note.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest('button')) return;
-    toggleOpen();
+    showPrayerDetail(root, row, note);
   });
 
   note.addEventListener('keydown', (event) => {
@@ -210,7 +242,7 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest('button')) return;
     event.preventDefault();
-    toggleOpen();
+    showPrayerDetail(root, row, note);
   });
 
   note.addEventListener('pointermove', (event) => {
@@ -238,6 +270,9 @@ function renderPrayers(root, prayers, newPrayerId = '') {
   if (!list) return;
 
   list.replaceChildren();
+  root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
+    detail.hidden = true;
+  });
   const pageSize = getPageSize(root);
   const slots = getSlotPositions(root);
   const totalPages = Math.max(1, Math.ceil(prayers.length / pageSize));
@@ -315,6 +350,17 @@ function setupPagination(root) {
   } else {
     mobileWallQuery.addListener?.(rerender);
   }
+}
+
+function setupPrayerDetail(root) {
+  root.querySelectorAll('[data-prayer-detail-close]').forEach((button) => {
+    button.addEventListener('click', () => {
+      root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
+        detail.hidden = true;
+      });
+      root.querySelectorAll('[data-prayer-card].is-open').forEach((note) => note.classList.remove('is-open'));
+    });
+  });
 }
 
 function setupWallDrag(stage) {
@@ -444,6 +490,7 @@ function setupPrayerWall(root) {
   });
 
   setupPagination(root);
+  setupPrayerDetail(root);
   setupForm(root);
   setupReveals(root);
   loadPrayers(root);
