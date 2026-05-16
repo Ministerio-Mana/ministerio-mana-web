@@ -1431,6 +1431,9 @@ async function loadDashboardData(authResult) {
     const installments = Array.isArray(payload.installments) ? payload.installments.filter(Boolean) : [];
     const donations = Array.isArray(payload.donations) ? payload.donations.filter(Boolean) : [];
     const donationSubscriptions = Array.isArray(payload.donationSubscriptions) ? payload.donationSubscriptions.filter(Boolean) : [];
+    const donationRecurringSubscriptions = Array.isArray(payload.donationRecurringSubscriptions)
+      ? payload.donationRecurringSubscriptions.filter(Boolean)
+      : [];
     const events = Array.isArray(payload.events) ? payload.events.filter(Boolean) : [];
 
     const activeUser = payload.user || {};
@@ -1531,7 +1534,7 @@ async function loadDashboardData(authResult) {
     const paymentsForTable = buildPaymentsTableData(payload);
     runSafe('renderPayments', () => renderPayments(paymentsForTable));
     runSafe('renderSummaryEvents', () => renderSummaryEvents(bookings, plans, installments));
-    runSafe('renderGivingSummary', () => renderGivingSummary(donations, donationSubscriptions));
+    runSafe('renderGivingSummary', () => renderGivingSummary(donations, donationSubscriptions, donationRecurringSubscriptions));
     runSafe('renderCampusSummary', () => renderCampusSummary(donations, donationSubscriptions));
     runSafe('renderLocalEvents', () => renderLocalEvents(events));
     runSafe('renderMemberships', () => renderMemberships(portalMemberships));
@@ -4163,10 +4166,46 @@ function renderSummaryEvents(bookings, plans, installments) {
   });
 }
 
-function renderGivingSummary(donations, subscriptions) {
+function resolveDonationRecurringSchedule(item) {
+  const status = (item.status || '').toString().toUpperCase();
+  if (status === 'PENDING_SETUP') {
+    return item.provider === 'wompi'
+      ? 'Pendiente: activacion de cobro automatico Wompi'
+      : 'Pendiente de confirmacion';
+  }
+  if (status === 'PENDING') {
+    return 'Cobro en proceso de confirmacion';
+  }
+  if (status === 'PAUSED') {
+    return item.pause_until
+      ? `Pausado hasta ${formatDate(item.pause_until)}`
+      : 'Pausado hasta reactivar';
+  }
+  if (status === 'PAYMENT_FAILED') {
+    return 'Pago fallido: revisa el metodo de pago';
+  }
+  if (item.next_charge_at) return `Proximo cobro: ${formatDate(item.next_charge_at)}`;
+  if (item.current_period_end) return `Periodo actual hasta ${formatDate(item.current_period_end)}`;
+  return 'Aporte recurrente';
+}
+
+function resolveDonationProviderLabel(item) {
+  const provider = (item.provider || '').toString().toLowerCase();
+  if (provider === 'stripe') return 'Procesado por Stripe';
+  if (provider === 'wompi') return 'Procesado por Wompi';
+  return 'Procesador pendiente';
+}
+
+function renderGivingSummary(donations, subscriptions, recurringSubscriptions = []) {
   if (!givingList || !givingEmpty) return;
   givingList.innerHTML = '';
-  const recurring = (subscriptions || []).filter((item) => {
+  const reminderRecurring = (subscriptions || []).filter((item) => {
+    const status = (item.status || 'ACTIVE').toString().toUpperCase();
+    return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status)
+      && !isEventDonation(item)
+      && !isCampusDonation(item);
+  });
+  const realRecurring = (recurringSubscriptions || []).filter((item) => {
     const status = (item.status || 'ACTIVE').toString().toUpperCase();
     return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status)
       && !isEventDonation(item)
@@ -4175,11 +4214,13 @@ function renderGivingSummary(donations, subscriptions) {
   const oneTime = (donations || []).filter((item) => !item.is_recurring && !isEventDonation(item) && !isCampusDonation(item));
 
   const items = [
-    ...recurring.map((item) => ({ ...item, _type: 'recurring' })),
+    ...realRecurring.map((item) => ({ ...item, _type: 'real-recurring' })),
+    ...reminderRecurring.map((item) => ({ ...item, _type: 'recurring-reminder' })),
     ...oneTime.slice(0, 6).map((item) => ({ ...item, _type: 'one-time' })),
   ];
 
-  const hasTithe = recurring.some((item) => (item.donation_type || '').toString().toLowerCase() === 'diezmos');
+  const hasTithe = [...realRecurring, ...reminderRecurring]
+    .some((item) => (item.donation_type || '').toString().toLowerCase() === 'diezmos');
   if (givingCta) {
     givingCta.toggleAttribute('hidden', hasTithe);
   }
@@ -4193,14 +4234,20 @@ function renderGivingSummary(donations, subscriptions) {
   items.forEach((item) => {
     const label = resolveDonationLabel(item.donation_type);
     const amount = formatCurrency(item.amount || 0, item.currency || 'COP');
-    const schedule = item._type === 'recurring'
-      ? (item.next_reminder_date ? `Próximo: ${formatDate(item.next_reminder_date)}` : 'Próximo: Sin fecha')
-      : (item.created_at ? `Último aporte: ${formatDate(item.created_at)}` : 'Último aporte');
+    const isRealSubscription = item._type === 'real-recurring';
+    const schedule = isRealSubscription
+      ? resolveDonationRecurringSchedule(item)
+      : item._type === 'recurring-reminder'
+        ? (item.next_reminder_date ? `Próximo recordatorio: ${formatDate(item.next_reminder_date)}` : 'Próximo recordatorio: Sin fecha')
+        : (item.created_at ? `Último aporte: ${formatDate(item.created_at)}` : 'Último aporte');
     const context = item.event_name || item.project_name || item.campus || '';
-    const rawStatus = (item.status || (item._type === 'recurring' ? 'ACTIVE' : 'APPROVED')).toString().toUpperCase();
+    const rawStatus = (item.status || (isRealSubscription || item._type === 'recurring-reminder' ? 'ACTIVE' : 'APPROVED')).toString().toUpperCase();
     const statusMap = {
       ACTIVE: { label: 'Activo', className: 'bg-emerald-100 text-emerald-700' },
       PAUSED: { label: 'Pausado', className: 'bg-amber-100 text-amber-700' },
+      PENDING_SETUP: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
+      INCOMPLETE: { label: 'Incompleto', className: 'bg-amber-100 text-amber-700' },
+      PAYMENT_FAILED: { label: 'Pago fallido', className: 'bg-rose-100 text-rose-700' },
       CANCELLED: { label: 'Cancelado', className: 'bg-slate-100 text-slate-600' },
       ENDED: { label: 'Finalizado', className: 'bg-slate-100 text-slate-600' },
       DISABLED: { label: 'Desactivado', className: 'bg-slate-100 text-slate-600' },
@@ -4208,10 +4255,11 @@ function renderGivingSummary(donations, subscriptions) {
       PENDING: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
     };
     const statusInfo = statusMap[rawStatus] || { label: rawStatus, className: 'bg-slate-100 text-slate-600' };
-    const canManage = item._type === 'recurring' && item.id;
+    const canManageReminder = item._type === 'recurring-reminder' && item.id;
+    const canManageReal = isRealSubscription && item.id;
     const isPaused = rawStatus === 'PAUSED';
     const primaryAction = isPaused ? 'resume' : 'pause';
-    const primaryLabel = isPaused ? 'Reanudar' : 'Pausar';
+    const primaryLabel = isPaused ? 'Reanudar' : 'Pausar temporada';
     const safeLabel = safeText(label);
     const safeContext = safeText(context || 'Aporte personalizado');
     const safeSchedule = safeText(schedule);
@@ -4220,6 +4268,8 @@ function renderGivingSummary(donations, subscriptions) {
     const safePrimaryLabel = safeText(primaryLabel);
     const safeSubscriptionId = safeAttr(item.id || '');
     const safeNextReminderDate = safeAttr((item.next_reminder_date || '').toString());
+    const safeProvider = safeText(resolveDonationProviderLabel(item));
+    const canOpenProviderPortal = isRealSubscription && item.provider === 'stripe' && item.provider_customer_id;
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
@@ -4229,13 +4279,37 @@ function renderGivingSummary(donations, subscriptions) {
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${safeLabel}</p>
           <p class="text-sm font-bold text-[#293C74] mt-1">${safeContext}</p>
           <p class="text-xs text-slate-500 mt-1">${safeSchedule}</p>
+          ${isRealSubscription ? `<p class="text-[11px] text-slate-400 mt-1">${safeProvider}</p>` : ''}
         </div>
         <div class="text-right">
           <p class="text-sm font-bold text-brand-teal">${safeAmount}</p>
           <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${safeStatusLabel}</span>
         </div>
       </div>
-      ${canManage ? `
+      ${canManageReal ? `
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button type="button"
+            class="giving-recurring-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            data-giving-subscription-id="${safeSubscriptionId}"
+            data-giving-subscription-action="${primaryAction}">
+            ${safePrimaryLabel}
+          </button>
+          ${canOpenProviderPortal ? `
+            <button type="button"
+              class="giving-recurring-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+              data-giving-subscription-id="${safeSubscriptionId}"
+              data-giving-subscription-action="manage">
+              Metodo de pago
+            </button>
+          ` : ''}
+          <button type="button"
+            class="giving-recurring-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            data-giving-subscription-id="${safeSubscriptionId}"
+            data-giving-subscription-action="cancel">
+            Cancelar
+          </button>
+        </div>
+      ` : canManageReminder ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
             class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -4460,7 +4534,11 @@ async function handleDonationSubscriptionAction(button) {
       }
     }
 
-    renderGivingSummary(portalAccountPayload?.donations || [], portalAccountPayload?.donationSubscriptions || []);
+    renderGivingSummary(
+      portalAccountPayload?.donations || [],
+      portalAccountPayload?.donationSubscriptions || [],
+      portalAccountPayload?.donationRecurringSubscriptions || [],
+    );
     renderCampusSummary(portalAccountPayload?.donations || [], portalAccountPayload?.donationSubscriptions || []);
     const successMessages = {
       pause: 'Tu aporte quedó pausado.',
@@ -4472,6 +4550,91 @@ async function handleDonationSubscriptionAction(button) {
   } catch (err) {
     console.error(err);
     showPortalAlert(err.message || 'No se pudo actualizar el aporte.');
+  } finally {
+    button.textContent = originalText;
+    button.disabled = false;
+  }
+}
+
+async function handleGivingRecurringAction(button) {
+  const subscriptionId = button.getAttribute('data-giving-subscription-id');
+  const action = button.getAttribute('data-giving-subscription-action');
+  if (!subscriptionId || !action) return;
+
+  let pauseUntil = '';
+  if (action === 'pause') {
+    const requestedDate = window.prompt(
+      'Pausar hasta (YYYY-MM-DD). Deja vacio para pausar hasta que la reactives manualmente.',
+      '',
+    );
+    if (requestedDate === null) return;
+    pauseUntil = requestedDate.trim();
+    if (pauseUntil && !isValidDateOnlyInput(pauseUntil)) {
+      showPortalAlert('Usa el formato YYYY-MM-DD o deja el campo vacio.');
+      return;
+    }
+  }
+
+  if (action === 'cancel') {
+    const confirmed = await showPortalConfirm(
+      'Esto cancela los cobros futuros de esta donacion recurrente. Los pagos ya procesados no se devuelven automaticamente y se revisan caso por caso.',
+      {
+        title: 'Cancelar donacion recurrente',
+        confirmLabel: 'Cancelar futuros cobros',
+        tone: 'danger',
+      },
+    );
+    if (!confirmed) return;
+  }
+
+  const originalText = button.textContent;
+  button.textContent = 'Procesando...';
+  button.disabled = true;
+
+  try {
+    const res = await fetch('/api/portal/donations/recurring-subscriptions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: subscriptionId,
+        action,
+        ...(pauseUntil ? { pauseUntil } : {}),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar');
+
+    if (action === 'manage' && data.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    if (portalAccountPayload?.donationRecurringSubscriptions) {
+      const idx = portalAccountPayload.donationRecurringSubscriptions.findIndex((item) => item.id === subscriptionId);
+      if (idx !== -1) {
+        portalAccountPayload.donationRecurringSubscriptions[idx] = {
+          ...portalAccountPayload.donationRecurringSubscriptions[idx],
+          ...(data.subscription || {}),
+        };
+      }
+    }
+
+    renderGivingSummary(
+      portalAccountPayload?.donations || [],
+      portalAccountPayload?.donationSubscriptions || [],
+      portalAccountPayload?.donationRecurringSubscriptions || [],
+    );
+
+    const successMessages = {
+      pause: 'Tu donacion recurrente quedo pausada.',
+      resume: 'Tu donacion recurrente quedo reactivada.',
+      cancel: 'Tu donacion recurrente fue cancelada para cobros futuros.',
+    };
+    showPortalAlert(successMessages[action] || 'Actualizado correctamente.', { title: 'Listo' });
+  } catch (err) {
+    console.error(err);
+    showPortalAlert(err.message || 'No se pudo actualizar la donacion recurrente.');
   } finally {
     button.textContent = originalText;
     button.disabled = false;
@@ -5203,6 +5366,13 @@ document.addEventListener('click', (event) => {
   if (!button) return;
   event.preventDefault();
   void handleDonationSubscriptionAction(button);
+});
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('.giving-recurring-action');
+  if (!button) return;
+  event.preventDefault();
+  void handleGivingRecurringAction(button);
 });
 
 document.addEventListener('click', (event) => {

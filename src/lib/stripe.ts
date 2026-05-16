@@ -35,11 +35,17 @@ export interface StripeSessionParams {
   cancelUrl: string;
   metadata?: Record<string, string>;
   customerEmail?: string;
+  customerId?: string;
 }
 
 export async function createStripeDonationSession(params: StripeSessionParams): Promise<Stripe.Checkout.Session> {
   const stripe = getStripeClient();
   const amountInMinor = Math.round(params.amountUsd * 100);
+  const customerParams = params.customerId
+    ? { customer: params.customerId }
+    : params.customerEmail
+      ? { customer_email: params.customerEmail }
+      : {};
 
   return stripe.checkout.sessions.create({
     mode: 'payment',
@@ -47,7 +53,7 @@ export async function createStripeDonationSession(params: StripeSessionParams): 
     currency: params.currency.toLowerCase(),
     allow_promotion_codes: true,
     metadata: params.metadata,
-    customer_email: params.customerEmail,
+    ...customerParams,
     line_items: [
       {
         quantity: 1,
@@ -69,15 +75,21 @@ export async function createStripeInstallmentSession(params: {
   amount: number;
   currency: string;
   description: string;
-  interval: 'month' | 'week';
+  interval: 'month' | 'week' | 'year';
   intervalCount: number;
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
   customerEmail?: string;
+  customerId?: string;
 }): Promise<Stripe.Checkout.Session> {
   const stripe = getStripeClient();
   const amountInMinor = Math.round(params.amount * 100);
+  const customerParams = params.customerId
+    ? { customer: params.customerId }
+    : params.customerEmail
+      ? { customer_email: params.customerEmail }
+      : {};
 
   return stripe.checkout.sessions.create({
     mode: 'subscription',
@@ -85,7 +97,7 @@ export async function createStripeInstallmentSession(params: {
     currency: params.currency.toLowerCase(),
     allow_promotion_codes: true,
     metadata: params.metadata,
-    customer_email: params.customerEmail,
+    ...customerParams,
     line_items: [
       {
         quantity: 1,
@@ -108,6 +120,58 @@ export async function createStripeInstallmentSession(params: {
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
   });
+}
+
+export async function createStripeCustomer(params: {
+  email: string;
+  name?: string | null;
+  metadata?: Record<string, string>;
+}): Promise<Stripe.Customer> {
+  const stripe = getStripeClient();
+  return stripe.customers.create({
+    email: params.email,
+    name: params.name || undefined,
+    metadata: params.metadata,
+  });
+}
+
+export async function createStripeBillingPortalSession(params: {
+  customerId: string;
+  returnUrl: string;
+}): Promise<Stripe.BillingPortal.Session> {
+  const stripe = getStripeClient();
+  return stripe.billingPortal.sessions.create({
+    customer: params.customerId,
+    return_url: params.returnUrl,
+  });
+}
+
+export async function pauseStripeSubscription(params: {
+  subscriptionId: string;
+  pauseUntil?: string | null;
+}): Promise<Stripe.Subscription> {
+  const stripe = getStripeClient();
+  const resumesAt = params.pauseUntil
+    ? Math.floor(new Date(`${params.pauseUntil}T23:59:59Z`).getTime() / 1000)
+    : undefined;
+  return stripe.subscriptions.update(params.subscriptionId, {
+    pause_collection: {
+      behavior: 'void',
+      ...(resumesAt && Number.isFinite(resumesAt) ? { resumes_at: resumesAt } : {}),
+    },
+  });
+}
+
+export async function resumeStripeSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  const stripe = getStripeClient();
+  return stripe.subscriptions.update(subscriptionId, {
+    pause_collection: null,
+  });
+}
+
+export async function cancelStripeSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  const stripe = getStripeClient();
+  return stripe.subscriptions.cancel(subscriptionId);
 }
 
 export function verifyStripeWebhook(payload: string, signature: string | null): Stripe.Event {

@@ -20,8 +20,18 @@ import {
   recordInstallmentReminder,
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
-import { updateDonationById, updateDonationByReference } from '@lib/donationsStore';
+import {
+  createDonation,
+  getDonationByReference,
+  updateDonationById,
+  updateDonationByReference,
+} from '@lib/donationsStore';
 import { sendWhatsappMessage } from '@lib/whatsapp';
+import {
+  getDonationRecurringSubscriptionByProviderSubscription,
+  resolveStripeDonationPeriod,
+  updateDonationRecurringSubscriptionById,
+} from '@lib/donationRecurringSubscriptions';
 
 export const prerender = false;
 
@@ -231,6 +241,22 @@ async function processEvent(event: Stripe.Event): Promise<void> {
           });
         }
       }
+
+      const donationSubscriptionId = session.metadata?.donation_subscription_id;
+      if (donationSubscriptionId && session.subscription) {
+        const subscription = await stripe.subscriptions.retrieve(String(session.subscription)).catch(() => null);
+        const period = resolveStripeDonationPeriod(subscription);
+        await updateDonationRecurringSubscriptionById(donationSubscriptionId, {
+          status: session.payment_status === 'paid' ? 'ACTIVE' : 'INCOMPLETE',
+          provider_subscription_id: String(session.subscription),
+          provider_customer_id: session.customer ? String(session.customer) : null,
+          current_period_start: period.currentPeriodStart,
+          current_period_end: period.currentPeriodEnd,
+          next_charge_at: period.nextChargeAt,
+          last_charge_status: session.payment_status === 'paid' ? 'APPROVED' : 'PENDING',
+          raw_provider_data: session,
+        });
+      }
       break;
     }
     case 'invoice.paid': {
@@ -238,7 +264,66 @@ async function processEvent(event: Stripe.Event): Promise<void> {
       const subscriptionId = invoice.subscription ? String(invoice.subscription) : null;
       if (!subscriptionId) break;
       const plan = await getPlanByProviderSubscription(subscriptionId);
-      if (!plan) break;
+      if (!plan) {
+        const donationSubscription = await getDonationRecurringSubscriptionByProviderSubscription('stripe', subscriptionId);
+        if (!donationSubscription) break;
+
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId).catch(() => null);
+        const period = resolveStripeDonationPeriod(subscription);
+        const billingReason = String((invoice as any).billing_reason || '');
+        const amount = invoice.amount_paid ? invoice.amount_paid / 100 : 0;
+        const currency = invoice.currency?.toUpperCase() || donationSubscription.currency || 'USD';
+        const providerTxId = invoice.payment_intent ? String(invoice.payment_intent) : invoice.id;
+        const reference = invoice.id;
+
+        if (billingReason !== 'subscription_create') {
+          const existingDonation = await getDonationByReference('stripe', reference);
+          if (!existingDonation && amount > 0) {
+            const donation = await createDonation({
+              provider: 'stripe',
+              status: 'APPROVED',
+              amount,
+              currency,
+              reference,
+              provider_tx_id: providerTxId,
+              payment_method: 'card',
+              donation_type: donationSubscription.donation_type || 'general',
+              project_name: donationSubscription.project_name || 'Donacion recurrente',
+              event_name: donationSubscription.event_name || 'Donaciones Mana',
+              campus: donationSubscription.campus || '',
+              church: donationSubscription.church || '',
+              church_city: donationSubscription.donor_city || '',
+              donor_name: donationSubscription.donor_name || '',
+              donor_email: donationSubscription.donor_email,
+              donor_phone: donationSubscription.donor_phone || '',
+              donor_document_type: donationSubscription.donor_document_type || '',
+              donor_document_number: donationSubscription.donor_document_number || '',
+              is_recurring: true,
+              donor_country: donationSubscription.donor_country || '',
+              donor_city: donationSubscription.donor_city || '',
+              donation_description: donationSubscription.donation_description || 'Donacion recurrente Ministerio Mana',
+              need_certificate: Boolean(donationSubscription.need_certificate),
+              source: 'donaciones-recurrentes-stripe',
+              cumbre_booking_id: null,
+              raw_event: invoice,
+            });
+            await updateDonationRecurringSubscriptionById(donationSubscription.id, {
+              last_donation_id: donation.id,
+            });
+          }
+        }
+
+        await updateDonationRecurringSubscriptionById(donationSubscription.id, {
+          status: 'ACTIVE',
+          current_period_start: period.currentPeriodStart,
+          current_period_end: period.currentPeriodEnd,
+          next_charge_at: period.nextChargeAt,
+          last_charge_status: 'APPROVED',
+          last_charge_error: null,
+          raw_provider_data: invoice,
+        });
+        break;
+      }
 
       const installment = await getNextPendingInstallment(plan.id);
       if (!installment) break;
@@ -308,7 +393,18 @@ async function processEvent(event: Stripe.Event): Promise<void> {
       const subscriptionId = invoice.subscription ? String(invoice.subscription) : null;
       if (!subscriptionId) break;
       const plan = await getPlanByProviderSubscription(subscriptionId);
-      if (!plan) break;
+      if (!plan) {
+        const donationSubscription = await getDonationRecurringSubscriptionByProviderSubscription('stripe', subscriptionId);
+        if (donationSubscription) {
+          await updateDonationRecurringSubscriptionById(donationSubscription.id, {
+            status: 'PAYMENT_FAILED',
+            last_charge_status: 'FAILED',
+            last_charge_error: invoice.last_finalization_error?.message || 'Stripe invoice payment failed',
+            raw_provider_data: invoice,
+          });
+        }
+        break;
+      }
 
       const installment = await getNextPendingInstallment(plan.id);
       if (!installment) break;

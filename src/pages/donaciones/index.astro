@@ -2,19 +2,13 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DonationGateway from '@components/DonationGateway.astro';
 import { getFxSnapshot } from '@lib/fx';
+import { preferredGatewayForCountry } from '@lib/geo';
 
 const geo = Astro.locals?.geo ?? { country: 'CO', lang: 'es' };
 const rates = await getFxSnapshot();
-const preferred = geo.country === 'CO' ? 'wompi' : 'stripe';
+const preferred = preferredGatewayForCountry(geo.country);
 export const prerender = false;
 ---
-<BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión.">
-  <section class="container-tight py-10">
-    <h1 class="h1">Donaciones</h1>
-    <p class="lead mt-2 max-w-3xl">Todo nuestro lenguaje es donaciones: das con generosidad y recibes los recursos (libros, agenda, inscripciones) como agradecimiento.</p>
-    <div class="mt-8">
-      <DonationGateway preferred={preferred} rates={rates} country={geo.country} />
-    </div>
-    <p class="text-xs text-gray-500 mt-6">Emitimos reportes y exportaciones (CSV/Excel) para contabilidad y DIAN; pedimos número de identificación según país.</p>
-  </section>
+<BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión de Ministerio Maná.">
+  <DonationGateway preferred={preferred} rates={rates} country={geo.country} />
 </BaseLayout>

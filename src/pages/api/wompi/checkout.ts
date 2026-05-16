@@ -7,12 +7,26 @@ import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { parseDonationFormBase } from '@lib/donationInput';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
+import { getUserFromRequest } from '@lib/supabaseAuth';
+import { ensureUserProfile } from '@lib/portalAuth';
+import { supabaseAdmin } from '@lib/supabaseAdmin';
+import {
+  createDonationRecurringSubscription,
+  parseDonationFrequency,
+} from '@lib/donationRecurringSubscriptions';
 
 export const prerender = false;
 
 function acceptsJson(request: Request): boolean {
   const accept = request.headers.get('accept') || '';
   return accept.includes('application/json');
+}
+
+function buildLoginRedirect(baseUrl: string): string {
+  const url = new URL(`${baseUrl}/portal/ingresar`);
+  url.searchParams.set('next', '/donaciones/');
+  url.searchParams.set('reason', 'recurring-donation');
+  return url.toString();
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -85,10 +99,51 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
     const recurringFlag = String(data.get('isRecurring') || '').toLowerCase();
     const isRecurring = ['true', '1', 'on', 'yes'].includes(recurringFlag);
+    const frequencyConfig = parseDonationFrequency(data.get('frequency'));
     const certificateFlag = String(data.get('needCertificate') || '').toLowerCase();
     const needCertificate = ['true', '1', 'on', 'yes'].includes(certificateFlag);
+    const personType = String(data.get('personType') || 'natural').toLowerCase() === 'juridica'
+      ? 'juridica'
+      : 'natural';
 
     const baseUrl = resolveBaseUrl(request);
+    const user = isRecurring ? await getUserFromRequest(request) : null;
+    if (isRecurring && (!user?.id || !user.email)) {
+      if (acceptsJson(request)) {
+        return new Response(JSON.stringify({
+          ok: false,
+          requiresAccount: true,
+          redirect: buildLoginRedirect(baseUrl),
+          error: 'Para una donacion recurrente necesitas iniciar sesion o crear una cuenta.',
+        }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(null, { status: 303, headers: { location: buildLoginRedirect(baseUrl) } });
+    }
+
+    const profile = user ? await ensureUserProfile(user) : null;
+    const donorEmail = isRecurring && user?.email ? user.email.toLowerCase() : donorInfo.email;
+
+    if (user?.id && supabaseAdmin) {
+      const profileUpdates: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (donorInfo.fullName) profileUpdates.full_name = donorInfo.fullName;
+      if (donorInfo.phone) profileUpdates.phone = donorInfo.phone;
+      if (donorInfo.city) profileUpdates.city = donorInfo.city;
+      if (donorInfo.country) profileUpdates.country = donorInfo.country;
+      if (donorInfo.documentType) profileUpdates.document_type = donorInfo.documentType;
+      if (donorInfo.documentNumber) profileUpdates.document_number = donorInfo.documentNumber;
+      if (donorInfo.church) profileUpdates.church_name = donorInfo.church;
+
+      await supabaseAdmin
+        .from('user_profiles')
+        .update(profileUpdates)
+        .eq('user_id', user.id);
+    }
+
     const reference = buildDonationReference();
     const redirect = new URL(`${baseUrl}/donaciones/gracias`);
     redirect.searchParams.set('ref', reference);
@@ -102,7 +157,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       description,
       redirectUrl: redirect.toString(),
       reference,
-      email: donorInfo.email,
+      email: donorEmail,
       customerData: {
         country: donorInfo.country,
         city: donorInfo.city,
@@ -113,7 +168,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       },
     });
 
-    await createDonation({
+    const donation = await createDonation({
       provider: 'wompi',
       status: 'PENDING',
       amount: amountCop,
@@ -128,7 +183,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       church: donorInfo.church,
       church_city: donorInfo.city,
       donor_name: donorInfo.fullName,
-      donor_email: donorInfo.email,
+      donor_email: donorEmail,
       donor_phone: donorInfo.phone,
       donor_document_type: donorInfo.documentType,
       donor_document_number: donorInfo.documentNumber,
@@ -139,18 +194,62 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       need_certificate: needCertificate,
       source: 'donaciones-wompi',
       cumbre_booking_id: null,
-      raw_event: null,
+      raw_event: {
+        person_type: personType,
+        frequency: isRecurring ? frequencyConfig.value : null,
+      },
     });
+
+    let recurringSubscriptionId = '';
+    if (isRecurring) {
+      const subscription = await createDonationRecurringSubscription({
+        userId: user!.id,
+        status: 'PENDING_SETUP',
+        provider: 'wompi',
+        amount: amountCop,
+        currency: 'COP',
+        frequency: frequencyConfig.value,
+        donationType: donorInfo.donationType,
+        projectName: donorInfo.projectName,
+        eventName: donorInfo.eventName,
+        campus: donorInfo.campus,
+        church: donorInfo.church || profile?.church_name || '',
+        donorName: donorInfo.fullName,
+        donorEmail,
+        donorPhone: donorInfo.phone,
+        donorDocumentType: donorInfo.documentType,
+        donorDocumentNumber: donorInfo.documentNumber,
+        donorCity: donorInfo.city,
+        donorCountry: 'CO',
+        donationDescription: description,
+        needCertificate,
+        providerReference: reference,
+        lastDonationId: donation.id,
+        metadata: {
+          source: 'donations-form',
+          frequency_label: frequencyConfig.label,
+          note: 'Wompi activa cobro automatico si el pago aprobado entrega fuente/token de tarjeta.',
+        },
+      });
+      recurringSubscriptionId = subscription.id;
+    }
 
     void logPaymentEvent('wompi', 'checkout.created', reference, {
       amount: amountCop,
       currency: 'COP',
       country: donorInfo.country,
       checkout_url: url,
+      donation_subscription_id: recurringSubscriptionId || null,
     });
 
     if (acceptsJson(request)) {
-      return new Response(JSON.stringify({ ok: true, provider: 'wompi', reference, url }), {
+      return new Response(JSON.stringify({
+        ok: true,
+        provider: 'wompi',
+        reference,
+        url,
+        donationSubscriptionId: recurringSubscriptionId || null,
+      }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       });

@@ -75,6 +75,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   let donations: any[] = [];
   let donationSubscriptions: any[] = [];
+  let donationRecurringSubscriptions: any[] = [];
   try {
     const { data: donationsData, error: donationsError } = await supabaseAdmin
       .from('donations')
@@ -97,6 +98,24 @@ export const GET: APIRoute = async ({ request }) => {
     if (!subsError) donationSubscriptions = subsData ?? [];
   } catch (err) {
     console.error('[cuenta.resumen] donation subscriptions error', err);
+  }
+
+  try {
+    const recurringQuery = user?.id
+      ? supabaseAdmin
+          .from('donation_recurring_subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+      : supabaseAdmin
+          .from('donation_recurring_subscriptions')
+          .select('*')
+          .eq('donor_email', email);
+    const { data: recurringData, error: recurringError } = await recurringQuery
+      .order('created_at', { ascending: false })
+      .limit(80);
+    if (!recurringError) donationRecurringSubscriptions = recurringData ?? [];
+  } catch (err) {
+    console.error('[cuenta.resumen] donation recurring subscriptions error', err);
   }
 
   let events: any[] = [];
@@ -135,6 +154,7 @@ export const GET: APIRoute = async ({ request }) => {
     payments,
     donations,
     donationSubscriptions,
+    donationRecurringSubscriptions,
     events,
   }), {
     status: 200,

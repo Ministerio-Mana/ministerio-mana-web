@@ -9,6 +9,7 @@ Guia para exportar donaciones (Wompi, Stripe, Fisicas) y sincronizar a OneDrive 
 ## SQL requerido (Supabase)
 
 - Ejecuta `docs/sql/donations.sql`
+- Ejecuta `docs/sql/donation_recurring_subscriptions.sql` para suscripciones reales de diezmos, ofrendas y donaciones generales.
 - Ejecuta `docs/sql/cumbre_bookings_extra.sql` (para datos de reservas manuales)
 
 ## Endpoints de export
