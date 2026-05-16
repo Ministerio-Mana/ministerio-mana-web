@@ -13,14 +13,14 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
     ? {
         code: 'COP',
         context: 'Monto en pesos colombianos (COP)',
-        placeholder: '50.000',
+        placeholder: 'Ej: 200.000',
         minLabel: 'Mínimo $5.000 COP',
         provider: 'Wompi',
     }
     : {
         code: 'USD',
         context: 'Monto en dólares (USD)',
-        placeholder: '25',
+        placeholder: 'Ej: 100',
         minLabel: 'Mínimo $5 USD',
         provider: 'Stripe',
     };
@@ -140,7 +140,7 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
             <div class="text-center mb-8">
                 <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.5rem, 7vw, 5.5rem);">¿Cuánto quieres</span>
                 <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">
-                    SEMBRAR POR MISIONERO?
+                    SEMBRAR?
                 </h2>
             </div>
 
@@ -151,37 +151,48 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
                     <button type="button" class="multi-freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-white/50" data-freq="once">Única vez</button>
                 </div>
 
-                <!-- Custom input -->
+                <!-- Total budget input -->
                 <div class="mb-4 text-center">
-                    <p class="text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Escribe tu donación por misionero</p>
+                    <p class="text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Tengo este presupuesto total para Campus</p>
                     <p id="multi-currency-context" class="mt-1 text-[10px] font-intro-reg text-white/75">{initialCurrency.context}</p>
                 </div>
                 <div class="relative mb-2 select-organic p-2 bg-white max-w-xs mx-auto">
                     <span class="multi-currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
                     <input type="text"
                            inputmode="decimal"
-                           id="multi-custom-amount"
+                           id="multi-total-amount"
                            class="w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
                            placeholder={initialCurrency.placeholder}>
                     <span id="multi-currency-code" class="sr-only">{initialCurrency.code}</span>
                 </div>
                 <p id="multi-amount-min-label" class="mb-2 text-center text-[10px] font-intro-reg text-white/65">{initialCurrency.minLabel}</p>
                 <p class="mb-5 text-center text-[10px] font-intro-reg text-white/75">
-                    Este valor se aplica completo a cada misionero seleccionado; no se divide entre ellos.
+                    Si escribes un presupuesto total, lo dividimos en partes iguales. Luego puedes ajustar cada misionero.
                 </p>
 
                 <!-- Amount buttons -->
-                <p class="block text-[10px] font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Escoge un monto rápido por misionero</p>
+                <p class="block text-[10px] font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Mismo monto rápido para cada misionero</p>
                 <div class="grid grid-cols-3 gap-3 mb-6" id="multi-amounts-grid">
                     <!-- JS populates -->
+                </div>
+
+                <div class="mb-6 rounded-2xl bg-[#001B3A]/15 p-4">
+                    <p class="mb-3 text-center text-[10px] font-intro uppercase tracking-widest text-[#001B3A]">
+                        Ajusta la siembra por misionero
+                    </p>
+                    <div id="multi-allocation-list" class="space-y-3">
+                        <!-- JS populates selected missionaries -->
+                    </div>
                 </div>
 
                 <!-- Summary -->
                 <div id="multi-summary" class="text-center mb-8 py-4 px-6 bg-[#001B3A]/20 rounded-2xl hidden">
                     <p class="text-white font-intro-reg text-base">
-                        Sembrarás <span id="summary-amount" class="font-intro text-[#001B3A]">$0</span> a cada misionero
-                        × <span id="summary-count" class="font-intro text-[#001B3A]">0</span> misioneros
-                        = <span id="summary-total" class="font-intro text-white text-xl">$0</span>
+                        Total de tu siembra:
+                        <span id="summary-total" class="font-intro text-white text-xl">$0</span>
+                        <span class="block text-xs text-white/70 mt-1">
+                            Distribuida entre <span id="summary-count" class="font-intro text-[#001B3A]">0</span> misioneros.
+                        </span>
                     </p>
                 </div>
             </div>
