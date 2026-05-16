@@ -8,14 +8,24 @@ interface Props {
   preferred?: Gateway;
   country?: string;
   rates?: any;
+  initialDonationType?: string;
 }
 
-const { preferred = 'wompi', country = 'CO', rates } = Astro.props as Props;
+const { preferred = 'wompi', country = 'CO', rates, initialDonationType = '' } = Astro.props as Props;
 const isWompi = preferred === 'wompi';
 const cspNonce = Astro.locals?.cspNonce;
 const countryCode = (country || 'CO').toUpperCase();
 const copPerUsd: number | null =
   (rates && (rates.COP ?? rates?.rates?.COP)) || null;
+const donationOptions = [
+  { value: 'diezmos', label: 'Diezmos', project: 'Diezmos' },
+  { value: 'ofrendas', label: 'Ofrenda', project: 'Ofrenda' },
+  { value: 'misiones', label: 'Misiones', project: 'Misiones' },
+];
+const selectedDonationType = donationOptions.some((option) => option.value === initialDonationType)
+  ? initialDonationType
+  : '';
+const selectedDonationProject = donationOptions.find((option) => option.value === selectedDonationType)?.project ?? 'Ministerio Maná';
 
 const gateway = isWompi
   ? {
@@ -36,7 +46,7 @@ const gateway = isWompi
       action: '/api/stripe/checkout',
       currency: 'USD',
       source: 'donaciones-stripe',
-      amountLabel: 'Amount in USD',
+      amountLabel: 'Valor en dólares',
       min: 5,
       step: 1,
       placeholder: 'Ex. 50',
@@ -97,6 +107,8 @@ function formatPreset(value: number): string {
         action={gateway.action}
         class="donation-form"
         data-donation-form
+        data-gateway={preferred}
+        data-mission-wompi-url="/donaciones/?type=misiones"
         data-login-url="/portal/ingresar?next=/donaciones/&reason=recurring-donation"
         novalidate
       >
@@ -117,16 +129,11 @@ function formatPreset(value: number): string {
           )}
         </div>
 
-        <ol class="donation-progress" aria-label="Progreso de donación">
-          <li class="is-active" data-step-indicator="1" aria-current="step">
-            <span>1</span>
-            <strong>Donación</strong>
-          </li>
-          <li data-step-indicator="2">
-            <span>2</span>
-            <strong>Datos</strong>
-          </li>
-        </ol>
+        <div class="donation-progress" aria-live="polite">
+          <span data-progress-count>Paso 1 de 2</span>
+          <strong data-progress-title>Tu donación</strong>
+          <small data-progress-next>Luego: tus datos</small>
+        </div>
 
         <div class="donation-step is-active" data-donation-step="1">
           <div class="donation-section-label">
@@ -137,24 +144,15 @@ function formatPreset(value: number): string {
           <div class="donation-field donation-field--full">
             <label for="donation-type">Tipo de donación</label>
             <select id="donation-type" name="donationType" required>
-              <option value="" disabled selected>Selecciona</option>
-              <option value="diezmos">Diezmos</option>
-              <option value="ofrendas">Ofrendas</option>
-              <option value="misiones">Misiones</option>
-              <option value="campus">Campus Maná</option>
-              <option value="evento">Eventos</option>
-              <option value="peregrinaciones">Peregrinaciones</option>
-              <option value="general">General</option>
+              <option value="" disabled selected={!selectedDonationType}>Selecciona</option>
+              {donationOptions.map((option) => (
+                <option value={option.value} selected={selectedDonationType === option.value}>{option.label}</option>
+              ))}
             </select>
           </div>
 
           <div class="donation-field donation-field--full">
             <label for="amount">{gateway.amountLabel}</label>
-            <div class="donation-presets">
-              {gateway.presets.map((value) => (
-                <button type="button" data-amount-preset={value}>{formatPreset(value)}</button>
-              ))}
-            </div>
             <input
               id="amount"
               type="number"
@@ -165,6 +163,12 @@ function formatPreset(value: number): string {
               placeholder={gateway.placeholder}
               inputmode="numeric"
             />
+            <p class="donation-quick-label">Escoge un valor rápido si quieres</p>
+            <div class="donation-presets">
+              {gateway.presets.map((value) => (
+                <button type="button" data-amount-preset={value}>{formatPreset(value)}</button>
+              ))}
+            </div>
           </div>
 
           <fieldset class="donation-recurrence">
@@ -203,7 +207,15 @@ function formatPreset(value: number): string {
               </div>
               <div class="donation-field">
                 <label for="project-name">Destino / proyecto</label>
-                <input id="project-name" type="text" name="projectName" required value="Ministerio Maná" placeholder="Ministerio Maná" />
+                <input
+                  id="project-name"
+                  type="text"
+                  name="projectName"
+                  required
+                  value={selectedDonationProject}
+                  placeholder="Ministerio Maná"
+                  data-project-name
+                />
               </div>
             </div>
 
@@ -540,51 +552,35 @@ function formatPreset(value: number): string {
   }
 
   .donation-progress {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    margin: 0 0 1rem;
-    padding: 0;
-    border: 1px solid rgba(var(--mana-navy), 0.12);
-    background: rgba(var(--mana-navy), 0.12);
-    list-style: none;
-  }
-
-  .donation-progress li {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    min-width: 0;
-    background: rgba(255, 255, 255, 0.68);
-    color: rgba(var(--mana-navy), 0.58);
-    padding: 0.75rem;
-  }
-
-  .donation-progress li.is-active {
-    background: rgba(var(--mana-teal), 0.1);
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+    border-bottom: 1px solid rgba(var(--mana-navy), 0.1);
+    padding: 0 0 0.9rem;
     color: rgb(var(--mana-navy));
   }
 
-  .donation-progress li span {
+  .donation-progress span {
     display: inline-flex;
-    height: 1.65rem;
-    min-width: 1.65rem;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    background: rgba(var(--mana-navy), 0.12);
+    border-radius: 999px;
+    background: rgba(var(--mana-teal), 0.12);
     color: rgb(var(--mana-navy));
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 900;
-  }
-
-  .donation-progress li.is-active span {
-    background: rgb(var(--mana-gold));
+    padding: 0.35rem 0.65rem;
   }
 
   .donation-progress strong {
-    min-width: 0;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
+  }
+
+  .donation-progress small {
+    margin-left: auto;
+    color: rgba(var(--mana-navy), 0.56);
+    font-size: 0.78rem;
   }
 
   .donation-form__header h2 {
@@ -681,7 +677,14 @@ function formatPreset(value: number): string {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.45rem;
-    margin-bottom: 0.65rem;
+    margin-top: 0.45rem;
+  }
+
+  .donation-quick-label {
+    margin: 0.65rem 0 0;
+    color: rgba(var(--mana-navy), 0.6);
+    font-size: 0.78rem;
+    font-weight: 800;
   }
 
   .donation-presets button {
@@ -1035,6 +1038,16 @@ function formatPreset(value: number): string {
       font-size: 1.7rem;
     }
 
+    .donation-progress {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .donation-progress small {
+      margin-left: 0;
+    }
+
     .donation-presets {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1208,15 +1221,13 @@ function formatPreset(value: number): string {
       panel.hidden = !isActive;
       panel.classList.toggle('is-active', isActive);
     });
-    form.querySelectorAll('[data-step-indicator]').forEach((item) => {
-      const isActive = item.getAttribute('data-step-indicator') === targetStep;
-      item.classList.toggle('is-active', isActive);
-      if (isActive) {
-        item.setAttribute('aria-current', 'step');
-      } else {
-        item.removeAttribute('aria-current');
-      }
-    });
+
+    const progressCount = form.querySelector('[data-progress-count]');
+    const progressTitle = form.querySelector('[data-progress-title]');
+    const progressNext = form.querySelector('[data-progress-next]');
+    if (progressCount) progressCount.textContent = `Paso ${targetStep} de 2`;
+    if (progressTitle) progressTitle.textContent = targetStep === '1' ? 'Tu donación' : 'Tus datos';
+    if (progressNext) progressNext.textContent = targetStep === '1' ? 'Luego: tus datos' : 'Último paso';
     form.dataset.currentStep = targetStep;
 
     if (!shouldFocus) return;
@@ -1228,6 +1239,30 @@ function formatPreset(value: number): string {
     });
   }
 
+  function syncDonationProject(form) {
+    const donationType = form.querySelector('select[name="donationType"]')?.value || '';
+    const projectInput = form.querySelector('[data-project-name]');
+    if (!projectInput) return;
+    const current = projectInput.value?.trim() || '';
+    const automaticValues = ['Ministerio Maná', 'Diezmos', 'Ofrenda', 'Misiones'];
+    if (current && !automaticValues.includes(current)) return;
+
+    const projectByType = {
+      diezmos: 'Diezmos',
+      ofrendas: 'Ofrenda',
+      misiones: 'Misiones',
+    };
+    projectInput.value = projectByType[donationType] || 'Ministerio Maná';
+  }
+
+  function enforceMissionGateway(form) {
+    const donationType = form.querySelector('select[name="donationType"]')?.value || '';
+    if (donationType !== 'misiones') return false;
+    if (form.dataset.gateway !== 'stripe') return false;
+    window.location.href = form.dataset.missionWompiUrl || '/donaciones/?type=misiones';
+    return true;
+  }
+
   let portalProfileCache = null;
   prefillFromPortalProfile().then((profile) => {
     portalProfileCache = profile;
@@ -1236,6 +1271,7 @@ function formatPreset(value: number): string {
   donationForms.forEach((form) => {
     ensureVirtualChurch(form);
     syncFrequency(form);
+    syncDonationProject(form);
     setDonationStep(form, 1, false);
 
     form.querySelector('[data-step-next]')?.addEventListener('click', () => {
@@ -1250,6 +1286,11 @@ function formatPreset(value: number): string {
 
     form.querySelectorAll('[data-recurrence-radio]').forEach((radio) => {
       radio.addEventListener('change', () => syncFrequency(form));
+    });
+
+    form.querySelector('select[name="donationType"]')?.addEventListener('change', () => {
+      syncDonationProject(form);
+      enforceMissionGateway(form);
     });
 
     form.querySelectorAll('[data-amount-preset]').forEach((button) => {

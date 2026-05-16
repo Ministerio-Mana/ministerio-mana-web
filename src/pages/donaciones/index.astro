@@ -6,9 +6,15 @@ import { preferredGatewayForCountry } from '@lib/geo';
 
 const geo = Astro.locals?.geo ?? { country: 'CO', lang: 'es' };
 const rates = await getFxSnapshot();
-const preferred = preferredGatewayForCountry(geo.country);
+const requestedType = Astro.url.searchParams.get('type')?.toLowerCase() || '';
+const initialDonationType = ['diezmos', 'ofrendas', 'misiones'].includes(requestedType)
+  ? requestedType
+  : '';
+const preferred = initialDonationType === 'misiones'
+  ? 'wompi'
+  : preferredGatewayForCountry(geo.country);
 export const prerender = false;
 ---
 <BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión de Ministerio Maná.">
-  <DonationGateway preferred={preferred} rates={rates} country={geo.country} />
+  <DonationGateway preferred={preferred} rates={rates} country={geo.country} initialDonationType={initialDonationType} />
 </BaseLayout>

@@ -192,7 +192,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       donor_city: donorInfo.city,
       donation_description: description,
       need_certificate: needCertificate,
-      source: 'donaciones-wompi',
+      source: donorInfo.donationType === 'misiones' ? 'donaciones-misiones-wompi' : 'donaciones-wompi',
       cumbre_booking_id: null,
       raw_event: {
         person_type: personType,
