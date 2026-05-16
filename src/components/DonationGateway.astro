@@ -7,16 +7,13 @@ type Gateway = 'wompi' | 'stripe';
 interface Props {
   preferred?: Gateway;
   country?: string;
-  rates?: any;
   initialDonationType?: string;
 }
 
-const { preferred = 'wompi', country = 'CO', rates, initialDonationType = '' } = Astro.props as Props;
+const { preferred = 'wompi', country = 'CO', initialDonationType = '' } = Astro.props as Props;
 const isWompi = preferred === 'wompi';
 const cspNonce = Astro.locals?.cspNonce;
 const countryCode = (country || 'CO').toUpperCase();
-const copPerUsd: number | null =
-  (rates && (rates.COP ?? rates?.rates?.COP)) || null;
 const donationOptions = [
   { value: 'diezmos', label: 'Diezmos', project: 'Diezmos' },
   { value: 'ofrendas', label: 'Ofrenda', project: 'Ofrenda' },
@@ -122,11 +119,6 @@ function formatPreset(value: number): string {
               ? 'Recibimos tu donación en pesos colombianos y cuidamos la información necesaria para el soporte contable.'
               : 'Recibimos tu donación internacional en dólares y registramos el soporte administrativo correspondiente.'}
           </p>
-          {copPerUsd && (
-            <p class="donation-rate">
-              Referencia: 1 USD ~ {copPerUsd.toLocaleString('es-CO')} COP. La tasa final la define la pasarela.
-            </p>
-          )}
         </div>
 
         <div class="donation-progress" aria-live="polite">
