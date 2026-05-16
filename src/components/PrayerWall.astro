@@ -1,6 +1,5 @@
 ---
 import TurnstileWidget from '@components/TurnstileWidget.astro';
-import { normalizeLocale } from '@i18n/locales';
 
 interface Props {
   compact?: boolean;
@@ -8,7 +7,8 @@ interface Props {
 }
 
 const { compact = false, locale: localeProp } = Astro.props as Props;
-const locale = normalizeLocale(localeProp ?? (Astro.locals as { lang?: string }).lang);
+const normalizePrayerLocale = (value?: string | null) => (value === 'en' ? 'en' : 'es');
+const locale = normalizePrayerLocale(localeProp ?? (Astro.locals as { lang?: string }).lang);
 const showTurnstile = !import.meta.env.DEV;
 const stones = Array.from({ length: compact ? 30 : 58 }, (_, index) => index);
 const copy = {

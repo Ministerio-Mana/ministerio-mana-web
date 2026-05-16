@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import PrayerWall from '@components/PrayerWall.astro';
-import { normalizeLocale } from '@i18n/locales';
 
-const locale = normalizeLocale((Astro.locals as { lang?: string }).lang);
+const normalizePrayerLocale = (value?: string | null) => (value === 'en' ? 'en' : 'es');
+const locale = normalizePrayerLocale((Astro.locals as { lang?: string }).lang);
 const copy = {
   es: {
     title: 'Peticiones | Ministerio Maná',
