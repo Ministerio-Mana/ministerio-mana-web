@@ -1,15 +1,32 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import PrayerWall from '@components/PrayerWall.astro';
+import { normalizeLocale } from '@i18n/locales';
+
+const locale = normalizeLocale((Astro.locals as { lang?: string }).lang);
+const copy = {
+  es: {
+    title: 'Peticiones | Ministerio Maná',
+    description: 'Un espacio interactivo para dejar peticiones cristianas y unirnos en oración como iglesia.',
+    imageAlt: 'Muro de peticiones Ministerio Maná'
+  },
+  en: {
+    title: 'Prayer Requests | Mana Ministry',
+    description: 'An interactive space to leave Christian prayer requests and unite in prayer as a church.',
+    imageAlt: 'Mana Ministry prayer request wall'
+  }
+};
+const c = copy[locale as keyof typeof copy];
 ---
 <BaseLayout
-  title="Peticiones | Ministerio Maná"
-  description="Un espacio interactivo para dejar peticiones cristianas y unirnos en oración como iglesia."
+  {locale}
+  title={c.title}
+  description={c.description}
   image="/images/cumbre/fishermen-bg-highres.jpg"
-  imageAlt="Muro de peticiones Ministerio Maná"
+  imageAlt={c.imageAlt}
   imageWidth={1200}
   imageHeight={630}
   imageType="image/jpeg"
 >
-  <PrayerWall />
+  <PrayerWall {locale} />
 </BaseLayout>

@@ -5,8 +5,97 @@ import { enforceRateLimit } from '@lib/rateLimit';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { safeCountry } from '@lib/donations';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
+import { isSendgridEnabled, sendSendgridEmail } from '@lib/sendgrid';
 
 export const prerender = false;
+
+const PUBLIC_MODERATION_PATTERNS = [
+  /\b(hijue?puta|malparid[ao]s?|gonorre[ao]s?|mierda|puta|puto)\b/i,
+  /\b(fuck|shit|bitch|asshole)\b/i,
+];
+
+function json(body: Record<string, any>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+function normalizeVisibility(value: FormDataEntryValue | null): 'private' | 'public' {
+  return String(value || 'private').toLowerCase() === 'public' ? 'public' : 'private';
+}
+
+function hasPublicModerationFlag(value: string): boolean {
+  const normalized = value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  return PUBLIC_MODERATION_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function isMissingModerationColumn(error: any): boolean {
+  const message = String(error?.message || '');
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    /visibility|moderation_status|flagged/i.test(message)
+  );
+}
+
+function env(key: string): string | undefined {
+  return import.meta.env?.[key] ?? process.env?.[key];
+}
+
+function escapeHtml(value: string | null | undefined): string {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function notifyIntercession(params: {
+  firstName: string;
+  requestText: string;
+  city: string | null;
+  country: string | null;
+  visibility: 'private' | 'public';
+  moderationStatus: string;
+}): Promise<void> {
+  const to = env('PRAYER_INTERCESSION_EMAIL') || env('INTERCESSION_EMAIL');
+  if (!to || !isSendgridEnabled()) return;
+
+  const location = [params.city, params.country].filter(Boolean).join(', ') || 'Sin ubicación';
+  const subject = params.visibility === 'private'
+    ? 'Nueva petición privada de intercesión'
+    : 'Nueva petición pública pendiente de revisión';
+
+  try {
+    await sendSendgridEmail({
+      to,
+      subject,
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.55;color:#0B1120;">
+          <h2 style="margin:0 0 12px;color:#1A255C;">${escapeHtml(subject)}</h2>
+          <p><strong>Nombre:</strong> ${escapeHtml(params.firstName)}</p>
+          <p><strong>Ubicación:</strong> ${escapeHtml(location)}</p>
+          <p><strong>Privacidad:</strong> ${escapeHtml(params.visibility)}</p>
+          <p><strong>Estado:</strong> ${escapeHtml(params.moderationStatus)}</p>
+          <p style="white-space:pre-wrap;">${escapeHtml(params.requestText)}</p>
+        </div>
+      `,
+      text: [
+        subject,
+        `Nombre: ${params.firstName}`,
+        `Ubicación: ${location}`,
+        `Privacidad: ${params.visibility}`,
+        `Estado: ${params.moderationStatus}`,
+        '',
+        params.requestText,
+      ].join('\n'),
+    });
+  } catch (error: any) {
+    console.warn('[prayer.submit] intercession email failed', error?.message || error);
+  }
+}
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
@@ -15,6 +104,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const requestRaw = ((form.get('requestText') || form.get('request') || form.get('petition')) as string) || '';
     const cityRaw = (form.get('city') as string) || '';
     const countryRaw = (form.get('country') as string) || '';
+    const visibility = normalizeVisibility(form.get('visibility'));
 
     if (
       containsBlockedSequence(firstNameRaw) ||
@@ -22,10 +112,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       containsBlockedSequence(cityRaw) ||
       containsBlockedSequence(countryRaw)
     ) {
-      return new Response(JSON.stringify({ ok: false, error: 'No se permiten enlaces en las peticiones.' }), {
-        status: 400,
-        headers: { 'content-type': 'application/json' },
-      });
+      return json({ ok: false, error: 'No se permiten enlaces en las peticiones.' }, 400);
     }
 
     const firstName = sanitizePlainText(firstNameRaw, 60);
@@ -35,17 +122,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const captchaToken = form.get('cf-turnstile-response')?.toString();
 
     if (!firstName) {
-      return new Response(JSON.stringify({ ok: false, error: 'Nombre requerido' }), {
-        status: 400,
-        headers: { 'content-type': 'application/json' },
-      });
+      return json({ ok: false, error: 'Nombre requerido' }, 400);
     }
 
     if (!requestText) {
-      return new Response(JSON.stringify({ ok: false, error: 'Escribe una petición para orar.' }), {
-        status: 400,
-        headers: { 'content-type': 'application/json' },
-      });
+      return json({ ok: false, error: 'Escribe una petición para orar.' }, 400);
     }
 
     const turnstileConfigured = !import.meta.env.DEV && Boolean(
@@ -60,10 +141,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           ip: clientAddress,
           detail: 'Turnstile inválido',
         });
-        return new Response(JSON.stringify({ ok: false, error: 'Captcha inválido' }), {
-          status: 400,
-          headers: { 'content-type': 'application/json' },
-        });
+        return json({ ok: false, error: 'Captcha inválido' }, 400);
       }
     }
 
@@ -75,21 +153,23 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         ip: clientAddress,
         detail: 'Prayer submit',
       });
-      return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes' }), {
-        status: 429,
-        headers: { 'content-type': 'application/json' },
-      });
+      return json({ ok: false, error: 'Demasiadas solicitudes' }, 429);
     }
 
     const cityClean = city ? city.replace(/[^\p{L}\p{N}\s\.,-]+/gu, '').trim() : null;
     const countryCode = safeCountry(country) ?? null;
+    const flagged = hasPublicModerationFlag(`${firstName} ${requestText} ${cityClean || ''}`);
+    const moderationStatus = flagged ? 'flagged' : 'pending';
     const payload = {
       first_name: firstName,
       request_text: requestText,
       city: cityClean,
       country: countryCode,
       prayers_count: 0,
-      approved: true,
+      approved: false,
+      visibility,
+      moderation_status: moderationStatus,
+      flagged,
     };
 
     if (!supabaseAdmin) {
@@ -98,17 +178,35 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         id: `local-${Date.now()}`,
         created_at: new Date().toISOString(),
       };
-      return new Response(JSON.stringify({ ok: true, simulated: true, row }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
+      return json({ ok: true, simulated: true, visibility, moderation_status: moderationStatus, row });
     }
 
-    const { data, error } = await supabaseAdmin
+    const insertResult = await supabaseAdmin
       .from('prayer_requests')
       .insert(payload)
-      .select('id,first_name,request_text,city,country,prayers_count,created_at')
+      .select('id,first_name,request_text,city,country,prayers_count,visibility,moderation_status,approved,created_at')
       .single();
+
+    let data = insertResult.data;
+    let error = insertResult.error;
+
+    if (error && isMissingModerationColumn(error)) {
+      const legacyPayload = {
+        first_name: firstName,
+        request_text: requestText,
+        city: cityClean,
+        country: countryCode,
+        prayers_count: 0,
+        approved: false,
+      };
+      const fallback = await supabaseAdmin
+        .from('prayer_requests')
+        .insert(legacyPayload)
+        .select('id,first_name,request_text,city,country,prayers_count,approved,created_at')
+        .single();
+      data = fallback.data ? { ...fallback.data, visibility, moderation_status: moderationStatus } : fallback.data;
+      error = fallback.error;
+    }
 
     if (error) {
       void logSecurityEvent({
@@ -118,16 +216,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         detail: 'Supabase insert error',
         meta: { error: error.message },
       });
-      return new Response(JSON.stringify({ ok: false, error: error.message }), {
-        status: 500,
-        headers: { 'content-type': 'application/json' },
+      return json({ ok: false, error: error.message }, 500);
+    }
+
+    if (visibility === 'private') {
+      await notifyIntercession({
+        firstName,
+        requestText,
+        city: cityClean,
+        country: countryCode,
+        visibility,
+        moderationStatus,
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, row: data }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: true, visibility, moderation_status: moderationStatus, row: data });
   } catch (error: any) {
     void logSecurityEvent({
       type: 'payment_error',
@@ -135,9 +238,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       ip: clientAddress,
       detail: error?.message || 'Prayer submit error',
     });
-    return new Response(JSON.stringify({ ok: false, error: error?.message || 'Error' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: false, error: error?.message || 'Error' }, 500);
   }
 };

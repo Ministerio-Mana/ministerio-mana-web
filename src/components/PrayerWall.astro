@@ -1,68 +1,232 @@
 ---
 import TurnstileWidget from '@components/TurnstileWidget.astro';
+import { normalizeLocale } from '@i18n/locales';
 
 interface Props {
   compact?: boolean;
+  locale?: string;
 }
 
-const { compact = false } = Astro.props as Props;
+const { compact = false, locale: localeProp } = Astro.props as Props;
+const locale = normalizeLocale(localeProp ?? (Astro.locals as { lang?: string }).lang);
 const showTurnstile = !import.meta.env.DEV;
 const stones = Array.from({ length: compact ? 30 : 58 }, (_, index) => index);
-const samplePrayers = [
-  {
-    id: 'sample-ana',
-    first_name: 'Ana',
-    city: 'Medellín',
-    country: 'CO',
-    request_text: 'Por paz en mi casa y dirección para tomar una decisión familiar.',
-    prayers_count: 18,
-    created_at: '2026-01-04T10:00:00.000Z',
+const copy = {
+  es: {
+    compactKicker: 'Intercesión',
+    compactTitle: 'Oramos por personas reales',
+    requests: 'peticiones',
+    loading: 'Cargando peticiones...',
+    heroKicker: 'Muro de oración',
+    heroTitle: 'Un lugar para levantar peticiones juntos',
+    heroBody: 'Escribe una petición con sencillez. La iglesia la recibe como una carga compartida y la pone delante de Dios en oración.',
+    writeRequest: 'Escribir petición',
+    seeWall: 'Ver el muro',
+    verseLabel: 'Base bíblica',
+    verseRef: 'Santiago 5:16',
+    verse: 'La oración eficaz del justo puede mucho.',
+    verseBody: 'Una petición no queda sola; queda en medio de una familia que intercede.',
+    liveKicker: 'Intercesión viva',
+    liveTitle: 'Las cargas se insertan en el muro y la iglesia responde en oración',
+    activeRequests: 'peticiones activas',
+    registeredPrayers: 'oraciones registradas',
+    refreshLabel: 'Actualizar muro',
+    newKicker: 'Nueva petición',
+    formTitle: 'Deja tu carga en el muro',
+    formHelp: 'Puedes enviarla privada para intercesión o pedir que sea pública. Las públicas pasan por revisión antes de aparecer en el muro.',
+    visibilityLegend: 'Privacidad',
+    privateLabel: 'Privada para intercesión',
+    privateHelp: 'Solo el equipo autorizado la recibe para orar por ti.',
+    publicLabel: 'Pública en el muro',
+    publicHelp: 'Un administrador la revisa antes de publicarla.',
+    firstName: 'Primer nombre',
+    firstNamePlaceholder: 'Ej. Carlos',
+    request: 'Petición',
+    requestPlaceholder: 'Escribe una petición concreta por la que podamos orar',
+    city: 'Ciudad',
+    cityPlaceholder: 'Medellín',
+    country: 'País',
+    submit: 'Enviar petición',
+    pagerPrev: 'Anterior',
+    pagerNext: 'Siguiente',
+    rhythmKicker: 'Acuerdo',
+    rhythmTitle: 'Una cultura de oración constante',
+    steps: [
+      ['01', 'Recibimos', 'La petición entra protegida y queda pendiente si pidió aparecer en público.'],
+      ['02', 'Discernimos', 'El equipo revisa lo público antes de llevarlo al muro visible.'],
+      ['03', 'Intercedemos', 'La iglesia ora por las cargas publicadas y el ministerio acompaña las privadas.']
+    ],
+    samples: [
+      ['sample-ana', 'Ana', 'Medellín', 'CO', 'Por paz en mi casa y dirección para tomar una decisión familiar.', 18, '2026-01-04T10:00:00.000Z'],
+      ['sample-david', 'David', 'Bogotá', 'CO', 'Por sanidad, fortaleza y una fe firme durante este proceso.', 31, '2026-01-03T10:00:00.000Z'],
+      ['sample-maria', 'María', 'Miami', 'US', 'Por salvación en mi familia y reconciliación entre hermanos.', 24, '2026-01-02T10:00:00.000Z'],
+      ['sample-lina', 'Lina', 'Cali', 'CO', 'Por provisión para estudiar y servir con un corazón limpio.', 12, '2026-01-01T10:00:00.000Z'],
+      ['sample-juan', 'Juan', 'Quito', 'EC', 'Por trabajo estable y sabiduría para cuidar a mi familia.', 9, '2025-12-31T10:00:00.000Z'],
+      ['sample-sofia', 'Sofía', 'Pereira', 'CO', 'Por descanso interior y ánimo para seguir sirviendo.', 15, '2025-12-30T10:00:00.000Z'],
+      ['sample-esteban', 'Esteban', 'Lima', 'PE', 'Por una puerta abierta y claridad en una conversación importante.', 7, '2025-12-29T10:00:00.000Z'],
+      ['sample-paula', 'Paula', 'Madrid', 'ES', 'Por protección para mis hijos y unidad en la casa.', 21, '2025-12-28T10:00:00.000Z'],
+      ['sample-andres', 'Andrés', 'Barranquilla', 'CO', 'Por disciplina espiritual y una fe constante.', 11, '2025-12-27T10:00:00.000Z'],
+      ['sample-camila', 'Camila', 'Caracas', 'VE', 'Por sanidad emocional y restauración en mi familia.', 19, '2025-12-26T10:00:00.000Z'],
+      ['sample-felipe', 'Felipe', 'Santiago', 'CL', 'Por dirección en una decisión laboral.', 8, '2025-12-25T10:00:00.000Z'],
+      ['sample-valentina', 'Valentina', 'Medellín', 'CO', 'Por provisión y paz mientras esperamos respuesta.', 14, '2025-12-24T10:00:00.000Z'],
+      ['sample-ricardo', 'Ricardo', 'Ciudad de México', 'MX', 'Por fortaleza para cuidar a mi mamá.', 17, '2025-12-23T10:00:00.000Z'],
+      ['sample-isabel', 'Isabel', 'Buenos Aires', 'AR', 'Por reconciliación y humildad para pedir perdón.', 13, '2025-12-22T10:00:00.000Z'],
+      ['sample-samuel', 'Samuel', 'Bogotá', 'CO', 'Por claridad para servir donde Dios me está llamando.', 10, '2025-12-21T10:00:00.000Z'],
+      ['sample-natalia', 'Natalia', 'Orlando', 'US', 'Por una comunidad de fe y nuevas fuerzas.', 16, '2025-12-20T10:00:00.000Z'],
+      ['sample-daniel', 'Daniel', 'Cali', 'CO', 'Por paciencia, obediencia y una respuesta de Dios.', 6, '2025-12-19T10:00:00.000Z']
+    ],
+    js: {
+      anonymous: 'Alguien',
+      fallbackRequest: 'Petición recibida para oración.',
+      prayerRequest: 'Petición de oración',
+      prayerSingular: 'oración',
+      prayerPlural: 'oraciones',
+      prayed: 'Orado',
+      prayButton: 'Oré',
+      empty: 'Aún no hay peticiones publicadas.',
+      pageStatus: 'Grupo {current} de {total}',
+      submitting: 'Estamos recibiendo tu petición.',
+      submitError: 'No pudimos registrar la petición.',
+      success: 'Recibimos tu petición. Vamos a orar contigo.',
+      successPrivate: 'Recibimos tu petición privada. El Ministerio de Intercesión la tendrá presente.',
+      successPublicPending: 'Recibimos tu petición. Un administrador la revisará antes de publicarla en el muro.',
+      submitErrorRetry: 'No pudimos registrar la petición. Intenta de nuevo.',
+      countries: {
+        AR: 'Argentina',
+        CL: 'Chile',
+        CO: 'Colombia',
+        EC: 'Ecuador',
+        ES: 'España',
+        MX: 'México',
+        PE: 'Perú',
+        US: 'Estados Unidos',
+        VE: 'Venezuela'
+      }
+    }
   },
-  {
-    id: 'sample-david',
-    first_name: 'David',
-    city: 'Bogotá',
-    country: 'CO',
-    request_text: 'Por sanidad, fortaleza y una fe firme durante este proceso.',
-    prayers_count: 31,
-    created_at: '2026-01-03T10:00:00.000Z',
-  },
-  {
-    id: 'sample-maria',
-    first_name: 'María',
-    city: 'Miami',
-    country: 'US',
-    request_text: 'Por salvación en mi familia y reconciliación entre hermanos.',
-    prayers_count: 24,
-    created_at: '2026-01-02T10:00:00.000Z',
-  },
-  {
-    id: 'sample-lina',
-    first_name: 'Lina',
-    city: 'Cali',
-    country: 'CO',
-    request_text: 'Por provisión para estudiar y servir con un corazón limpio.',
-    prayers_count: 12,
-    created_at: '2026-01-01T10:00:00.000Z',
-  },
-];
+  en: {
+    compactKicker: 'Intercession',
+    compactTitle: 'We pray for real people',
+    requests: 'requests',
+    loading: 'Loading requests...',
+    heroKicker: 'Prayer wall',
+    heroTitle: 'A place to lift requests together',
+    heroBody: 'Write a request simply. The church receives it as a shared burden and brings it before God in prayer.',
+    writeRequest: 'Write a request',
+    seeWall: 'See the wall',
+    verseLabel: 'Biblical foundation',
+    verseRef: 'James 5:16',
+    verse: 'The prayer of a righteous person has great power.',
+    verseBody: 'A request does not stand alone; it rests in the middle of a family that intercedes.',
+    liveKicker: 'Living intercession',
+    liveTitle: 'Burdens are tucked into the wall and the church responds in prayer',
+    activeRequests: 'active requests',
+    registeredPrayers: 'recorded prayers',
+    refreshLabel: 'Refresh wall',
+    newKicker: 'New request',
+    formTitle: 'Leave your burden on the wall',
+    formHelp: 'You can send it privately for intercession or ask for it to be public. Public requests are reviewed before appearing on the wall.',
+    visibilityLegend: 'Privacy',
+    privateLabel: 'Private for intercession',
+    privateHelp: 'Only the authorized team receives it to pray for you.',
+    publicLabel: 'Public on the wall',
+    publicHelp: 'An administrator reviews it before publishing.',
+    firstName: 'First name',
+    firstNamePlaceholder: 'Ex. Carlos',
+    request: 'Request',
+    requestPlaceholder: 'Write a specific request we can pray for',
+    city: 'City',
+    cityPlaceholder: 'Medellin',
+    country: 'Country',
+    submit: 'Send request',
+    pagerPrev: 'Previous',
+    pagerNext: 'Next',
+    rhythmKicker: 'Agreement',
+    rhythmTitle: 'A culture of constant prayer',
+    steps: [
+      ['01', 'We receive', 'The request enters protected and stays pending if it asked to appear publicly.'],
+      ['02', 'We discern', 'The team reviews public requests before bringing them onto the visible wall.'],
+      ['03', 'We intercede', 'The church prays for published burdens and the ministry accompanies private ones.']
+    ],
+    samples: [
+      ['sample-ana', 'Ana', 'Medellin', 'CO', 'For peace in my home and direction to make a family decision.', 18, '2026-01-04T10:00:00.000Z'],
+      ['sample-david', 'David', 'Bogota', 'CO', 'For healing, strength, and firm faith during this process.', 31, '2026-01-03T10:00:00.000Z'],
+      ['sample-maria', 'Maria', 'Miami', 'US', 'For salvation in my family and reconciliation between siblings.', 24, '2026-01-02T10:00:00.000Z'],
+      ['sample-lina', 'Lina', 'Cali', 'CO', 'For provision to study and serve with a clean heart.', 12, '2026-01-01T10:00:00.000Z'],
+      ['sample-juan', 'Juan', 'Quito', 'EC', 'For steady work and wisdom to care for my family.', 9, '2025-12-31T10:00:00.000Z'],
+      ['sample-sofia', 'Sofia', 'Pereira', 'CO', 'For inner rest and encouragement to keep serving.', 15, '2025-12-30T10:00:00.000Z'],
+      ['sample-esteban', 'Esteban', 'Lima', 'PE', 'For an open door and clarity in an important conversation.', 7, '2025-12-29T10:00:00.000Z'],
+      ['sample-paula', 'Paula', 'Madrid', 'ES', 'For protection over my children and unity at home.', 21, '2025-12-28T10:00:00.000Z'],
+      ['sample-andres', 'Andres', 'Barranquilla', 'CO', 'For spiritual discipline and steady faith.', 11, '2025-12-27T10:00:00.000Z'],
+      ['sample-camila', 'Camila', 'Caracas', 'VE', 'For emotional healing and restoration in my family.', 19, '2025-12-26T10:00:00.000Z'],
+      ['sample-felipe', 'Felipe', 'Santiago', 'CL', 'For direction in a work decision.', 8, '2025-12-25T10:00:00.000Z'],
+      ['sample-valentina', 'Valentina', 'Medellin', 'CO', 'For provision and peace while we wait for an answer.', 14, '2025-12-24T10:00:00.000Z'],
+      ['sample-ricardo', 'Ricardo', 'Mexico City', 'MX', 'For strength to care for my mom.', 17, '2025-12-23T10:00:00.000Z'],
+      ['sample-isabel', 'Isabel', 'Buenos Aires', 'AR', 'For reconciliation and humility to ask forgiveness.', 13, '2025-12-22T10:00:00.000Z'],
+      ['sample-samuel', 'Samuel', 'Bogota', 'CO', 'For clarity to serve where God is calling me.', 10, '2025-12-21T10:00:00.000Z'],
+      ['sample-natalia', 'Natalia', 'Orlando', 'US', 'For a faith community and renewed strength.', 16, '2025-12-20T10:00:00.000Z'],
+      ['sample-daniel', 'Daniel', 'Cali', 'CO', 'For patience, obedience, and an answer from God.', 6, '2025-12-19T10:00:00.000Z']
+    ],
+    js: {
+      anonymous: 'Someone',
+      fallbackRequest: 'Prayer request received.',
+      prayerRequest: 'Prayer request',
+      prayerSingular: 'prayer',
+      prayerPlural: 'prayers',
+      prayed: 'Prayed',
+      prayButton: 'I prayed',
+      empty: 'There are no published requests yet.',
+      pageStatus: 'Group {current} of {total}',
+      submitting: 'We are receiving your request.',
+      submitError: 'We could not register the request.',
+      success: 'We received your request. We will pray with you.',
+      successPrivate: 'We received your private request. The Intercession Ministry will keep it in prayer.',
+      successPublicPending: 'We received your request. An administrator will review it before it appears on the wall.',
+      submitErrorRetry: 'We could not register the request. Try again.',
+      countries: {
+        AR: 'Argentina',
+        CL: 'Chile',
+        CO: 'Colombia',
+        EC: 'Ecuador',
+        ES: 'Spain',
+        MX: 'Mexico',
+        PE: 'Peru',
+        US: 'United States',
+        VE: 'Venezuela'
+      }
+    }
+  }
+};
+const c = copy[locale as keyof typeof copy];
+const samplePrayers = c.samples.map(([id, firstName, city, country, requestText, prayersCount, createdAt]) => ({
+  id,
+  first_name: firstName,
+  city,
+  country,
+  request_text: requestText,
+  prayers_count: prayersCount,
+  created_at: createdAt,
+}));
+const i18n = JSON.stringify(c.js);
 ---
 
 <section
   class:list={['prayer-wall-experience', compact && 'prayer-wall-experience--compact']}
   data-prayer-wall
+  data-prayer-compact={compact ? 'true' : 'false'}
   data-prayer-samples={JSON.stringify(samplePrayers)}
+  data-prayer-i18n={i18n}
 >
   {compact ? (
     <div class="prayer-compact">
       <div class="prayer-compact__header">
         <div>
-          <p class="prayer-kicker">Intercesión</p>
-          <h3>Oramos por personas reales</h3>
+          <p class="prayer-kicker">{c.compactKicker}</p>
+          <h3>{c.compactTitle}</h3>
         </div>
         <div class="prayer-count-pill">
           <span data-prayer-total>0</span>
-          <small>peticiones</small>
+          <small>{c.requests}</small>
         </div>
       </div>
 
@@ -71,7 +235,12 @@ const samplePrayers = [
           {stones.map((stone) => <span style={`--stone:${stone};`} />)}
         </div>
         <div class="prayer-note-layer" data-prayer-list></div>
-        <p class="prayer-empty" data-prayer-empty>Cargando peticiones...</p>
+        <p class="prayer-empty" data-prayer-empty>{c.loading}</p>
+      </div>
+      <div class="prayer-wall-pager" data-prayer-pager hidden>
+        <button type="button" data-prayer-prev>{c.pagerPrev}</button>
+        <span data-prayer-page aria-live="polite"></span>
+        <button type="button" data-prayer-next>{c.pagerNext}</button>
       </div>
     </div>
   ) : (
@@ -84,29 +253,29 @@ const samplePrayers = [
 
         <div class="prayer-hero__inner container-tight">
           <div class="prayer-hero__copy">
-            <p class="prayer-kicker">Muro de oración</p>
-            <h1>Un lugar para levantar peticiones juntos</h1>
+            <p class="prayer-kicker">{c.heroKicker}</p>
+            <h1>{c.heroTitle}</h1>
             <p>
-              Escribe una petición con sencillez. La iglesia la recibe como una carga compartida y se une para orar por esa vida.
+              {c.heroBody}
             </p>
             <div class="prayer-hero__actions">
-              <a href="#peticion" class="prayer-action prayer-action--primary">Escribir petición</a>
-              <a href="#muro" class="prayer-action prayer-action--ghost">Ver el muro</a>
+              <a href="#peticion" class="prayer-action prayer-action--primary">{c.writeRequest}</a>
+              <a href="#muro" class="prayer-action prayer-action--ghost">{c.seeWall}</a>
             </div>
           </div>
 
-          <aside class="prayer-verse" aria-label="Base bíblica">
-            <span>Santiago 5:16</span>
-            <blockquote>La oración eficaz del justo puede mucho.</blockquote>
-            <p>Una petición no queda sola; queda en medio de una familia que intercede.</p>
+          <aside class="prayer-verse" aria-label={c.verseLabel}>
+            <span>{c.verseRef}</span>
+            <blockquote>{c.verse}</blockquote>
+            <p>{c.verseBody}</p>
           </aside>
         </div>
       </section>
 
       <section id="muro" class="prayer-main">
         <div class="prayer-main__intro container-tight" data-prayer-reveal>
-          <p class="prayer-kicker">Intercesión viva</p>
-          <h2>Las cargas se ponen en el muro y la iglesia responde en oración</h2>
+          <p class="prayer-kicker">{c.liveKicker}</p>
+          <h2>{c.liveTitle}</h2>
         </div>
 
         <div class="prayer-main__grid container-tight">
@@ -114,13 +283,13 @@ const samplePrayers = [
             <div class="prayer-wall-panel__bar">
               <div>
                 <span data-prayer-total>0</span>
-                <small>peticiones activas</small>
+                <small>{c.activeRequests}</small>
               </div>
               <div>
                 <span data-prayer-count>0</span>
-                <small>oraciones registradas</small>
+                <small>{c.registeredPrayers}</small>
               </div>
-              <button type="button" data-refresh-prayers aria-label="Actualizar muro">
+              <button type="button" data-refresh-prayers aria-label={c.refreshLabel}>
                 <svg aria-hidden="true" viewBox="0 0 24 24">
                   <path d="M20 6v5h-5M4 18v-5h5" />
                   <path d="M18.2 9A7 7 0 0 0 6.3 6.7L4 9m1.8 6A7 7 0 0 0 17.7 17.3L20 15" />
@@ -134,39 +303,62 @@ const samplePrayers = [
               </div>
               <div class="prayer-wall-light" aria-hidden="true"></div>
               <div class="prayer-note-layer" data-prayer-list></div>
-              <p class="prayer-empty" data-prayer-empty>Cargando peticiones...</p>
+              <p class="prayer-empty" data-prayer-empty>{c.loading}</p>
+            </div>
+            <div class="prayer-wall-pager" data-prayer-pager hidden>
+              <button type="button" data-prayer-prev>{c.pagerPrev}</button>
+              <span data-prayer-page aria-live="polite"></span>
+              <button type="button" data-prayer-next>{c.pagerNext}</button>
             </div>
           </div>
 
           <form id="peticion" class="prayer-form" method="post" action="/api/prayer/submit" data-prayer-form data-prayer-reveal>
             <div>
-              <p class="prayer-kicker">Nueva petición</p>
-              <h2>Deja tu carga en el muro</h2>
+              <p class="prayer-kicker">{c.newKicker}</p>
+              <h2>{c.formTitle}</h2>
               <p>
-                Publicaremos solo tu primer nombre, ciudad y petición. Evita escribir apellidos, teléfonos, correos o datos sensibles.
+                {c.formHelp}
               </p>
             </div>
 
             <div class="prayer-field">
-              <label for="prayer-name">Primer nombre</label>
-              <input id="prayer-name" name="firstName" type="text" maxlength="60" autocomplete="given-name" required placeholder="Ej. Carlos" />
+              <label for="prayer-name">{c.firstName}</label>
+              <input id="prayer-name" name="firstName" type="text" maxlength="60" autocomplete="given-name" required placeholder={c.firstNamePlaceholder} />
             </div>
 
             <div class="prayer-field">
-              <label for="prayer-request">Petición</label>
-              <textarea id="prayer-request" name="requestText" maxlength="280" required placeholder="Escribe una petición concreta por la que podamos orar"></textarea>
+              <label for="prayer-request">{c.request}</label>
+              <textarea id="prayer-request" name="requestText" maxlength="280" required placeholder={c.requestPlaceholder}></textarea>
             </div>
+
+            <fieldset class="prayer-visibility">
+              <legend>{c.visibilityLegend}</legend>
+              <label>
+                <input type="radio" name="visibility" value="private" checked />
+                <span>
+                  <strong>{c.privateLabel}</strong>
+                  <small>{c.privateHelp}</small>
+                </span>
+              </label>
+              <label>
+                <input type="radio" name="visibility" value="public" />
+                <span>
+                  <strong>{c.publicLabel}</strong>
+                  <small>{c.publicHelp}</small>
+                </span>
+              </label>
+            </fieldset>
 
             <div class="prayer-form__row">
               <div class="prayer-field">
-                <label for="prayer-city">Ciudad</label>
-                <input id="prayer-city" name="city" type="text" maxlength="80" autocomplete="address-level2" placeholder="Medellín" />
+                <label for="prayer-city">{c.city}</label>
+                <input id="prayer-city" name="city" type="text" maxlength="80" autocomplete="address-level2" placeholder={c.cityPlaceholder} />
               </div>
 
               <div class="prayer-field">
-                <label for="prayer-country">País</label>
+                <label for="prayer-country">{c.country}</label>
                 <select id="prayer-country" name="country" autocomplete="country">
-                  <option value="">País</option>
+                  <option value="">{c.country}</option>
                   <option value="CO">Colombia</option>
                   <option value="US">Estados Unidos</option>
                   <option value="VE">Venezuela</option>
@@ -183,7 +375,7 @@ const samplePrayers = [
             {showTurnstile && <TurnstileWidget appearance="always" theme="dark" />}
 
             <button class="prayer-submit" type="submit" data-prayer-submit>
-              Subir petición al muro
+              {c.submit}
             </button>
             <p class="prayer-status" data-prayer-status aria-live="polite"></p>
           </form>
@@ -193,26 +385,18 @@ const samplePrayers = [
       <section class="prayer-rhythm">
         <div class="container-tight prayer-rhythm__inner">
           <div data-prayer-reveal>
-            <p class="prayer-kicker">Acuerdo</p>
-            <h2>Una cultura de oración constante</h2>
+            <p class="prayer-kicker">{c.rhythmKicker}</p>
+            <h2>{c.rhythmTitle}</h2>
           </div>
 
           <div class="prayer-rhythm__steps" data-prayer-reveal>
-            <article>
-              <span>01</span>
-              <h3>Recibimos</h3>
-              <p>La petición entra con sobriedad, sin exponer información privada.</p>
-            </article>
-            <article>
-              <span>02</span>
-              <h3>Intercedemos</h3>
-              <p>Cada persona puede marcar que oró y sumar fe alrededor de esa carga.</p>
-            </article>
-            <article>
-              <span>03</span>
-              <h3>Permanecemos</h3>
-              <p>El muro queda abierto para que la iglesia vuelva a orar durante la semana.</p>
-            </article>
+            {c.steps.map(([number, title, body]) => (
+              <article>
+                <span>{number}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -480,8 +664,9 @@ const samplePrayers = [
 
   .prayer-wall-stage {
     background:
-      linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 36%),
-      linear-gradient(180deg, #d7dfdf, #bfc9c9);
+      radial-gradient(circle at 18% 10%, rgba(255, 248, 229, 0.42), transparent 25rem),
+      linear-gradient(115deg, rgba(255, 255, 255, 0.24), transparent 36%),
+      linear-gradient(180deg, #d1d2c8, #aeb8b3 55%, #8f9d99);
     height: 42rem;
     max-height: 72svh;
     min-height: 32rem;
@@ -489,6 +674,29 @@ const samplePrayers = [
     perspective: 1000px;
     position: relative;
     touch-action: pan-y;
+  }
+
+  .prayer-wall-stage::before,
+  .prayer-wall-stage::after {
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  .prayer-wall-stage::before {
+    background:
+      linear-gradient(90deg, transparent 0 15%, rgba(33, 43, 54, 0.18) 15.2% 15.8%, transparent 16% 38%, rgba(33, 43, 54, 0.15) 38.2% 38.8%, transparent 39% 61%, rgba(33, 43, 54, 0.16) 61.2% 61.8%, transparent 62% 84%, rgba(33, 43, 54, 0.14) 84.2% 84.8%, transparent 85%),
+      linear-gradient(180deg, transparent 0 14%, rgba(33, 43, 54, 0.24) 14.1% 15%, transparent 15.2% 30%, rgba(33, 43, 54, 0.2) 30.1% 31%, transparent 31.2% 46%, rgba(33, 43, 54, 0.22) 46.1% 47%, transparent 47.2% 62%, rgba(33, 43, 54, 0.2) 62.1% 63%, transparent 63.2% 78%, rgba(33, 43, 54, 0.24) 78.1% 79%, transparent 79.2%);
+    mix-blend-mode: multiply;
+    z-index: 1;
+  }
+
+  .prayer-wall-stage::after {
+    background:
+      linear-gradient(90deg, rgba(7, 17, 28, 0.26), transparent 22%, transparent 78%, rgba(7, 17, 28, 0.22)),
+      linear-gradient(180deg, rgba(255, 248, 229, 0.2), transparent 35%, rgba(7, 17, 28, 0.2));
+    z-index: 2;
   }
 
   .prayer-wall-stage--compact {
@@ -507,13 +715,14 @@ const samplePrayers = [
 
   .prayer-stone-layer span {
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 42%),
-      linear-gradient(180deg, rgba(26, 37, 92, 0.08), rgba(26, 37, 92, 0.16));
-    border: 1px solid rgba(26, 37, 92, 0.13);
-    border-radius: 0.45rem;
+      linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 42%),
+      linear-gradient(180deg, rgba(242, 201, 76, 0.08), rgba(26, 37, 92, 0.15));
+    border: 1px solid rgba(26, 37, 92, 0.16);
+    border-radius: 0.35rem;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.44),
-      inset 0 -12px 24px rgba(26, 37, 92, 0.08);
+      inset 0 -18px 30px rgba(26, 37, 92, 0.1),
+      0 1px 0 rgba(255, 255, 255, 0.24);
     min-height: 5.8rem;
     opacity: calc(0.72 + (var(--stone) % 4) * 0.06);
     transform: translateY(calc((var(--stone) % 3) * 0.18rem));
@@ -531,12 +740,12 @@ const samplePrayers = [
 
   .prayer-wall-light {
     background:
-      linear-gradient(90deg, rgba(7, 17, 28, 0.24), transparent 22%, transparent 78%, rgba(7, 17, 28, 0.24)),
-      linear-gradient(180deg, rgba(255, 248, 229, 0.28), transparent 32%, rgba(7, 17, 28, 0.16));
+      radial-gradient(circle at 22% 18%, rgba(242, 201, 76, 0.2), transparent 14rem),
+      radial-gradient(circle at 78% 70%, rgba(40, 166, 189, 0.14), transparent 15rem);
     inset: 0;
     pointer-events: none;
     position: absolute;
-    z-index: 1;
+    z-index: 3;
   }
 
   .prayer-note-layer {
@@ -544,24 +753,27 @@ const samplePrayers = [
     position: absolute;
     transform: translate3d(var(--wall-pan-x, 0), var(--wall-pan-y, 0), 0);
     transition: transform 280ms ease;
-    z-index: 2;
+    z-index: 4;
   }
 
   .prayer-note {
-    --note-width: 14.5rem;
+    --note-width: 12.2rem;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
+      linear-gradient(90deg, rgba(125, 94, 35, 0.22), transparent 10%, transparent 88%, rgba(125, 94, 35, 0.12)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0)),
       var(--prayer-paper);
-    border: 1px solid rgba(77, 59, 18, 0.12);
-    border-radius: 0.5rem;
+    border: 1px solid rgba(77, 59, 18, 0.16);
+    border-radius: 999px 0.75rem 0.75rem 999px;
     box-shadow:
-      0 22px 42px rgba(26, 37, 92, 0.22),
+      0 14px 26px rgba(26, 37, 92, 0.18),
+      -10px 10px 18px rgba(33, 43, 54, 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    cursor: grab;
-    left: var(--x);
+    cursor: pointer;
+    left: clamp(calc(var(--note-width) / 2 + 0.65rem), var(--x), calc(100% - (var(--note-width) / 2 + 0.65rem)));
     max-width: calc(100% - 2rem);
-    min-height: 11.25rem;
-    padding: 1rem;
+    min-height: 4.9rem;
+    overflow: hidden;
+    padding: 0.78rem 0.82rem 0.72rem 1.68rem;
     position: absolute;
     top: var(--y);
     transform:
@@ -570,16 +782,55 @@ const samplePrayers = [
       rotateX(var(--tilt-y, 0deg))
       rotateY(var(--tilt-x, 0deg));
     transform-style: preserve-3d;
-    transition: transform 180ms ease, box-shadow 180ms ease, opacity 240ms ease;
+    transition:
+      border-radius 180ms ease,
+      box-shadow 180ms ease,
+      min-height 180ms ease,
+      transform 180ms ease,
+      width 180ms ease;
     width: var(--note-width);
   }
 
-  .prayer-note:hover,
-  .prayer-note:focus-within {
+  .prayer-note::before {
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.58), rgba(125, 94, 35, 0.18)),
+      var(--prayer-paper);
+    border: 1px solid rgba(77, 59, 18, 0.16);
+    border-radius: 999px;
+    bottom: 0.42rem;
     box-shadow:
-      0 30px 62px rgba(26, 37, 92, 0.28),
+      inset -4px 0 8px rgba(77, 59, 18, 0.14),
+      2px 0 6px rgba(77, 59, 18, 0.12);
+    content: "";
+    left: 0.42rem;
+    position: absolute;
+    top: 0.42rem;
+    width: 0.72rem;
+  }
+
+  .prayer-note::after {
+    background: rgba(7, 17, 28, 0.32);
+    border-radius: 999px;
+    content: "";
+    height: 0.28rem;
+    left: 0.2rem;
+    position: absolute;
+    top: 50%;
+    transform: translate(-100%, -50%);
+    width: 1.3rem;
+  }
+
+  .prayer-note:hover,
+  .prayer-note:focus,
+  .prayer-note:focus-within,
+  .prayer-note.is-open {
+    border-radius: 1rem;
+    box-shadow:
+      0 30px 62px rgba(26, 37, 92, 0.3),
       0 0 0 1px rgba(242, 201, 76, 0.24),
       inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    min-height: 12.25rem;
+    width: min(18rem, calc(100% - 2rem));
     z-index: 4;
   }
 
@@ -588,45 +839,66 @@ const samplePrayers = [
   }
 
   .prayer-note__pin {
-    background: var(--prayer-gold);
-    border: 2px solid rgba(255, 255, 255, 0.65);
+    background: rgba(242, 201, 76, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 999px;
-    box-shadow: 0 6px 16px rgba(77, 59, 18, 0.22);
-    height: 0.8rem;
-    left: 50%;
+    box-shadow: 0 8px 18px rgba(77, 59, 18, 0.2);
+    height: 0.46rem;
+    right: 0.75rem;
     position: absolute;
-    top: 0.45rem;
-    transform: translateX(-50%);
-    width: 0.8rem;
+    top: 0.62rem;
+    width: 1.6rem;
   }
 
   .prayer-note header {
-    margin-top: 0.35rem;
+    margin: 0;
+    min-width: 0;
   }
 
   .prayer-note h3 {
     color: var(--prayer-navy);
-    font-size: 1.05rem;
+    font-size: 0.94rem;
     font-weight: 900;
     line-height: 1.15;
     margin: 0;
+    max-width: calc(100% - 2rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .prayer-note small {
     color: rgba(26, 37, 92, 0.58);
     display: block;
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     font-weight: 800;
     line-height: 1.2;
-    margin-top: 0.2rem;
+    margin-top: 0.18rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .prayer-note p {
     color: rgba(11, 17, 32, 0.76);
-    font-size: 0.88rem;
+    display: -webkit-box;
+    font-size: 0.78rem;
+    line-height: 1.36;
+    margin-top: 0.45rem;
+    max-height: 2.2rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .prayer-note.is-open p,
+  .prayer-note:focus-within p {
+    display: block;
+    font-size: 0.86rem;
     line-height: 1.48;
-    margin-top: 0.8rem;
+    max-height: 5.8rem;
+    overflow: auto;
   }
 
   .prayer-note footer {
@@ -634,13 +906,24 @@ const samplePrayers = [
     display: flex;
     gap: 0.5rem;
     justify-content: space-between;
-    margin-top: 1rem;
+    margin-top: 0.8rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 180ms ease, opacity 180ms ease;
+  }
+
+  .prayer-note.is-open footer,
+  .prayer-note:focus-within footer {
+    max-height: 3rem;
+    opacity: 1;
   }
 
   .prayer-note__count {
     color: rgba(26, 37, 92, 0.62);
     font-size: 0.72rem;
     font-weight: 900;
+    white-space: nowrap;
   }
 
   .prayer-note button {
@@ -676,6 +959,44 @@ const samplePrayers = [
 
   .prayer-empty[hidden] {
     display: none;
+  }
+
+  .prayer-wall-pager {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.84);
+    border-top: 1px solid rgba(26, 37, 92, 0.1);
+    display: flex;
+    gap: 0.8rem;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+  }
+
+  .prayer-wall-pager[hidden] {
+    display: none;
+  }
+
+  .prayer-wall-pager button {
+    border: 1px solid rgba(26, 37, 92, 0.14);
+    border-radius: 999px;
+    color: var(--prayer-navy);
+    font-size: 0.74rem;
+    font-weight: 900;
+    min-height: 2.35rem;
+    padding: 0.55rem 0.9rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-wall-pager button:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+
+  .prayer-wall-pager span {
+    color: rgba(26, 37, 92, 0.64);
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-align: center;
+    text-transform: uppercase;
   }
 
   .prayer-form {
@@ -757,6 +1078,57 @@ const samplePrayers = [
   .prayer-field select:focus {
     border-color: rgba(242, 201, 76, 0.82);
     box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.18);
+  }
+
+  .prayer-visibility {
+    border: 0;
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  .prayer-visibility legend {
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 0.78rem;
+    font-weight: 900;
+    margin-bottom: 0.42rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-visibility label {
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.82rem;
+    cursor: pointer;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.78rem;
+  }
+
+  .prayer-visibility input {
+    accent-color: var(--prayer-gold);
+    margin-top: 0.16rem;
+  }
+
+  .prayer-visibility strong,
+  .prayer-visibility small {
+    display: block;
+    line-height: 1.3;
+  }
+
+  .prayer-visibility strong {
+    color: white;
+    font-size: 0.86rem;
+    font-weight: 900;
+  }
+
+  .prayer-visibility small {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.76rem;
+    margin-top: 0.18rem;
   }
 
   .prayer-submit {
@@ -876,12 +1248,8 @@ const samplePrayers = [
   }
 
   .prayer-wall-experience--compact .prayer-note {
-    --note-width: 12.6rem;
-    min-height: 10rem;
-  }
-
-  .prayer-wall-experience--compact .prayer-note:nth-child(n + 7) {
-    display: none;
+    --note-width: 10.8rem;
+    min-height: 4.65rem;
   }
 
   [data-prayer-reveal] {
@@ -912,11 +1280,13 @@ const samplePrayers = [
 
   @media (prefers-reduced-motion: reduce) {
     [data-prayer-reveal],
-    .prayer-note,
     .prayer-note.is-new {
       animation: none;
       opacity: 1;
-      transform: none;
+      transition: none;
+    }
+
+    .prayer-note {
       transition: none;
     }
   }
@@ -1014,14 +1384,40 @@ const samplePrayers = [
     }
 
     .prayer-note {
-      --note-width: 12.2rem;
-      min-height: 10.2rem;
-      padding: 0.82rem;
+      --note-width: 8.55rem;
+      min-height: 4.6rem;
+      padding: 0.68rem 0.68rem 0.64rem 1.42rem;
     }
 
     .prayer-note p {
-      font-size: 0.8rem;
-      line-height: 1.4;
+      font-size: 0.72rem;
+      line-height: 1.32;
+    }
+
+    .prayer-note:hover,
+    .prayer-note:focus,
+    .prayer-note:focus-within,
+    .prayer-note.is-open {
+      min-height: 11.4rem;
+      width: min(16.5rem, calc(100% - 1rem));
+    }
+
+    .prayer-note h3 {
+      font-size: 0.84rem;
+    }
+
+    .prayer-note small {
+      font-size: 0.56rem;
+    }
+
+    .prayer-wall-pager {
+      gap: 0.55rem;
+      padding: 0.75rem;
+    }
+
+    .prayer-wall-pager button {
+      min-height: 2.2rem;
+      padding: 0.48rem 0.7rem;
     }
 
     .prayer-form {
