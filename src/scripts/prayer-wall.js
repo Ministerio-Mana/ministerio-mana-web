@@ -2,12 +2,12 @@ const DESKTOP_SLOTS = [
   [18, 20, -7],
   [42, 20, 4],
   [66, 21, -5],
-  [84, 22, 6],
-  [30, 35, 5],
-  [49, 37, -4],
-  [80, 43, 3],
-  [17, 51, 6],
-  [41, 52, -5],
+  [88, 22, 6],
+  [24, 38, 5],
+  [56, 39, -4],
+  [80, 47, 3],
+  [18, 61, 6],
+  [49, 62, -5],
   [64, 52, 4],
   [85, 53, -3],
   [28, 68, -4],
@@ -214,13 +214,20 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   paper.className = 'prayer-note__paper';
   paper.setAttribute('aria-hidden', 'true');
   paper.innerHTML = `
-    <svg viewBox="0 0 78 54" focusable="false">
-      <path class="prayer-note__paper-shadow" d="M10 12 C24 7 42 13 67 9 L72 36 C54 31 38 40 12 35 Z" />
-      <path class="prayer-note__paper-body" d="M8 10 C24 5 42 11 68 7 L73 35 C54 31 39 40 10 34 Z" />
-      <path class="prayer-note__paper-fold" d="M15 13 C25 22 24 28 13 34" />
-      <path class="prayer-note__paper-fold" d="M58 8 C52 18 55 27 70 35" />
-      <path class="prayer-note__paper-line" d="M24 18 C35 15 44 17 57 14" />
-      <path class="prayer-note__paper-line" d="M22 26 C36 23 48 26 61 22" />
+    <svg viewBox="0 0 118 74" focusable="false">
+      <path class="prayer-note__crevice" d="M10 45 C25 34 46 38 61 31 C79 23 98 27 110 21" />
+      <path class="prayer-note__paper-shadow" d="M17 39 C34 34 48 38 64 34 L68 51 C48 47 36 55 16 50 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M14 37 C32 31 48 36 66 31 L71 49 C48 46 35 55 13 49 Z" />
+      <path class="prayer-note__paper-fold" d="M22 38 C31 42 31 47 20 50" />
+      <path class="prayer-note__paper-shadow" d="M45 25 C61 19 76 26 96 21 L101 42 C82 38 66 47 44 40 Z" />
+      <path class="prayer-note__paper-body" d="M42 23 C60 17 77 24 98 19 L103 40 C82 36 66 47 42 39 Z" />
+      <path class="prayer-note__paper-fold" d="M51 25 C61 32 60 37 49 40" />
+      <path class="prayer-note__paper-fold" d="M88 20 C83 29 87 35 101 40" />
+      <path class="prayer-note__paper-line" d="M62 30 C72 27 82 29 92 26" />
+      <path class="prayer-note__paper-line" d="M58 35 C70 32 82 35 94 31" />
+      <path class="prayer-note__paper-shadow" d="M26 13 C42 9 55 15 73 12 L77 27 C59 25 44 32 24 27 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M23 11 C41 7 57 13 75 10 L80 26 C60 23 43 32 23 26 Z" />
+      <path class="prayer-note__paper-fold" d="M31 12 C39 17 39 22 29 26" />
     </svg>
   `;
 
