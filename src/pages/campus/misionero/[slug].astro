@@ -98,7 +98,7 @@ const hasPlayableVideo = Boolean(misionero.video && !misionero.video.includes('V
         <div class="relative">
           <div class="absolute inset-0 rotate-2 rounded-[2rem] bg-[#2DD4BF]"></div>
           <div class="relative overflow-hidden border-organic border-2 border-[#001B3A] bg-white p-2 shadow-2xl">
-            <div class="relative h-72 overflow-hidden border-organic bg-[#001B3A]">
+            <div class="relative aspect-video overflow-hidden border-organic bg-[#001B3A]">
               {hasPlayableVideo ? (
                 <iframe
                   class="h-full w-full"
@@ -115,10 +115,10 @@ const hasPlayableVideo = Boolean(misionero.video && !misionero.video.includes('V
                   <span class="font-intro text-white/30">Campus Maná</span>
                 </div>
               )}
-              <div class="absolute bottom-4 left-4 right-4 border-organic border-2 border-[#001B3A] bg-yellow-400 px-4 py-3 shadow-lg">
-                <h2 class="font-intro text-xl uppercase text-[#001B3A]">{misionero.nombre}</h2>
-                <p class="font-intro-reg text-xs uppercase tracking-widest text-[#001B3A]/70">{misionero.rol || 'Misionero Campus'}</p>
-              </div>
+            </div>
+            <div class="mt-2 border-organic border-2 border-[#001B3A] bg-yellow-400 px-4 py-3 shadow-lg">
+              <h2 class="font-intro text-xl uppercase text-[#001B3A]">{misionero.nombre}</h2>
+              <p class="font-intro-reg text-xs uppercase tracking-widest text-[#001B3A]/70">{misionero.rol || 'Misionero Campus'}</p>
             </div>
             <div class="p-4">
               <DonationForm
