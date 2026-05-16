@@ -127,16 +127,12 @@ const wallCaperLeaves: Array<[number, number, number, number, number, number]> =
   [674, 214, 19, 8, 14, 0.46],
 ];
 const wallCaperFlowers = [
-  [506, 99, 0.62],
-  [552, 142, 0.74],
-  [598, 98, 0.7],
-  [646, 152, 0.76],
-  [690, 104, 0.68],
-  [734, 144, 0.62],
-  [604, 196, 0.56],
-  [668, 200, 0.52],
-  [242, 82, 0.72],
-  [492, 315, 0.62],
+  [756, 86, 0.48],
+  [790, 112, 0.56],
+  [824, 88, 0.52],
+  [858, 126, 0.54],
+  [882, 92, 0.46],
+  [810, 150, 0.46],
 ];
 const copy = {
   es: {
@@ -397,7 +393,7 @@ const i18n = JSON.stringify(c.js);
             <g class="prayer-wall-sketch__holes">
               {wallHoles.map(([cx, cy, radius]) => <circle cx={cx} cy={cy} r={radius} />)}
             </g>
-            <g class="prayer-wall-sketch__caper-bush">
+            <g class="prayer-wall-sketch__caper-bush" transform="translate(822 124) scale(0.54) translate(-631 -148)">
               <path class="bush-mass" d="M462 124 C478 72 542 44 612 58 C678 36 760 56 800 110 C820 156 770 201 704 206 C640 238 548 220 506 184 C454 178 430 154 462 124 Z" />
               {wallCaperBranches.map((d) => <path class="branch" d={d} />)}
               {wallCaperLeaves.map(([cx, cy, rx, ry, rotate, opacity]) => (
@@ -538,7 +534,7 @@ const i18n = JSON.stringify(c.js);
                   <g class="prayer-wall-sketch__holes">
                     {wallHoles.map(([cx, cy, radius]) => <circle cx={cx} cy={cy} r={radius} />)}
                   </g>
-                  <g class="prayer-wall-sketch__caper-bush">
+                  <g class="prayer-wall-sketch__caper-bush" transform="translate(822 124) scale(0.54) translate(-631 -148)">
                     <path class="bush-mass" d="M462 124 C478 72 542 44 612 58 C678 36 760 56 800 110 C820 156 770 201 704 206 C640 238 548 220 506 184 C454 178 430 154 462 124 Z" />
                     {wallCaperBranches.map((d) => <path class="branch" d={d} />)}
                     {wallCaperLeaves.map(([cx, cy, rx, ry, rotate, opacity]) => (
@@ -1117,22 +1113,22 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-sketch__caper-bush .bush-mass {
-    fill: rgba(35, 91, 72, 0.16);
-    stroke: rgba(35, 91, 72, 0.16);
+    fill: rgba(31, 83, 66, 0.2);
+    stroke: rgba(31, 83, 66, 0.2);
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__caper-bush .branch {
     fill: none;
-    stroke: rgba(29, 83, 67, 0.44);
+    stroke: rgba(25, 73, 58, 0.52);
     stroke-linecap: round;
     stroke-width: 1.6;
     vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__caper-bush .leaf {
-    fill: rgba(42, 107, 82, 0.54);
+    fill: rgba(37, 101, 78, 0.64);
     stroke: rgba(26, 61, 52, 0.28);
     stroke-width: 0.9;
     vector-effect: non-scaling-stroke;
