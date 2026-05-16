@@ -10,7 +10,41 @@ const { compact = false, locale: localeProp } = Astro.props as Props;
 const normalizePrayerLocale = (value?: string | null) => (value === 'en' ? 'en' : 'es');
 const locale = normalizePrayerLocale(localeProp ?? (Astro.locals as { lang?: string }).lang);
 const showTurnstile = !import.meta.env.DEV;
-const stones = Array.from({ length: compact ? 30 : 58 }, (_, index) => index);
+const wallStones = [
+  [12, 20, 138, 82, 10], [148, 18, 182, 84, 12], [328, 20, 154, 82, 10], [480, 18, 198, 84, 12], [676, 20, 138, 82, 10], [812, 18, 136, 84, 12],
+  [-20, 100, 118, 88, 10], [96, 102, 170, 84, 12], [264, 100, 210, 88, 10], [472, 102, 152, 84, 12], [622, 100, 202, 88, 11], [822, 102, 158, 84, 10],
+  [16, 186, 158, 92, 12], [172, 188, 198, 88, 10], [368, 186, 132, 92, 12], [498, 188, 216, 88, 10], [712, 186, 166, 92, 12], [876, 188, 112, 88, 10],
+  [-34, 276, 162, 90, 12], [126, 278, 218, 86, 10], [342, 276, 164, 90, 12], [504, 278, 188, 86, 10], [690, 276, 236, 90, 12],
+  [8, 364, 206, 88, 11], [212, 366, 152, 84, 10], [362, 364, 218, 88, 11], [578, 366, 174, 84, 10], [750, 364, 218, 88, 11],
+  [-20, 450, 144, 86, 10], [122, 452, 206, 82, 11], [326, 450, 182, 86, 10], [506, 452, 226, 82, 11], [730, 450, 250, 86, 10],
+  [16, 534, 182, 76, 9], [196, 536, 232, 74, 10], [426, 534, 156, 76, 9], [580, 536, 202, 74, 10], [780, 534, 170, 76, 9],
+];
+const wallCracks = [
+  'M150 21 C142 47 158 66 148 102 C138 136 162 153 150 188',
+  'M329 23 C322 60 338 75 329 103 C316 140 336 159 328 188',
+  'M481 20 C492 55 472 70 480 102 C489 136 468 155 482 187',
+  'M677 22 C664 54 688 74 676 101 C666 132 684 156 675 187',
+  'M96 103 C82 130 107 151 96 187 C86 219 108 240 98 276',
+  'M264 103 C252 136 279 158 264 188 C252 218 276 246 264 277',
+  'M499 187 C488 222 513 244 504 278 C493 316 512 334 504 365',
+  'M713 187 C699 218 724 244 690 276',
+  'M214 365 C203 392 224 419 212 452 C202 484 130 503 122 535',
+  'M581 365 C571 394 594 421 580 452 C566 480 512 506 506 536',
+];
+const wallHoles = [
+  [84, 73, 3], [254, 60, 2], [420, 78, 2], [602, 56, 3], [744, 78, 2], [884, 60, 2],
+  [58, 160, 2], [206, 139, 3], [386, 155, 2], [562, 134, 2], [786, 152, 3],
+  [112, 248, 2], [282, 228, 2], [456, 250, 3], [640, 228, 2], [832, 246, 2],
+  [70, 336, 3], [262, 314, 2], [438, 338, 2], [620, 314, 3], [850, 336, 2],
+  [166, 422, 2], [310, 404, 3], [530, 424, 2], [704, 404, 2], [900, 422, 3],
+];
+const wallPlants = [
+  'M66 508 C56 486 62 466 84 454 C78 476 88 492 66 508 Z',
+  'M82 454 C92 470 92 492 72 510',
+  'M772 258 C750 244 748 222 764 204 C770 228 788 238 772 258 Z',
+  'M763 206 C782 218 790 242 777 264',
+  'M874 516 C856 500 858 480 878 468 C874 490 892 500 874 516 Z',
+];
 const copy = {
   es: {
     compactKicker: 'Intercesión',
@@ -236,7 +270,34 @@ const i18n = JSON.stringify(c.js);
 
       <div class="prayer-wall-stage prayer-wall-stage--compact" data-wall-stage>
         <div class="prayer-stone-layer" aria-hidden="true">
-          {stones.map((stone) => <span style={`--stone:${stone};`} />)}
+          <svg class="prayer-wall-sketch" viewBox="0 0 960 620" preserveAspectRatio="none" focusable="false">
+            <rect class="prayer-wall-sketch__wash" x="0" y="0" width="960" height="620" rx="28"></rect>
+            <g class="prayer-wall-sketch__stones">
+              {wallStones.map(([x, y, width, height, radius], index) => (
+                <rect x={x} y={y} width={width} height={height} rx={radius} style={`--tone:${index % 5};`} />
+              ))}
+            </g>
+            <g class="prayer-wall-sketch__shade">
+              {wallStones.filter((_, index) => index % 3 === 0).map(([x, y, width, height]) => (
+                <path d={`M${x + 16} ${y + height - 18} C${x + width * 0.38} ${y + height - 3} ${x + width * 0.72} ${y + height - 28} ${x + width - 18} ${y + height - 12}`} />
+              ))}
+            </g>
+            <g class="prayer-wall-sketch__cracks">
+              {wallCracks.map((d) => <path d={d} />)}
+            </g>
+            <g class="prayer-wall-sketch__holes">
+              {wallHoles.map(([cx, cy, radius]) => <circle cx={cx} cy={cy} r={radius} />)}
+            </g>
+            <g class="prayer-wall-sketch__plants">
+              {wallPlants.map((d) => <path d={d} />)}
+            </g>
+            <g class="prayer-wall-sketch__hatch">
+              <path d="M52 44 C158 30 260 38 360 30" />
+              <path d="M520 52 C626 35 746 42 890 30" />
+              <path d="M70 584 C208 560 338 584 468 558" />
+              <path d="M612 586 C720 558 822 578 920 548" />
+            </g>
+          </svg>
         </div>
         <div class="prayer-note-layer" data-prayer-list></div>
         <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite">
@@ -314,7 +375,34 @@ const i18n = JSON.stringify(c.js);
 
             <div class="prayer-wall-stage" data-wall-stage>
               <div class="prayer-stone-layer" aria-hidden="true">
-                {stones.map((stone) => <span style={`--stone:${stone};`} />)}
+                <svg class="prayer-wall-sketch" viewBox="0 0 960 620" preserveAspectRatio="none" focusable="false">
+                  <rect class="prayer-wall-sketch__wash" x="0" y="0" width="960" height="620" rx="28"></rect>
+                  <g class="prayer-wall-sketch__stones">
+                    {wallStones.map(([x, y, width, height, radius], index) => (
+                      <rect x={x} y={y} width={width} height={height} rx={radius} style={`--tone:${index % 5};`} />
+                    ))}
+                  </g>
+                  <g class="prayer-wall-sketch__shade">
+                    {wallStones.filter((_, index) => index % 3 === 0).map(([x, y, width, height]) => (
+                      <path d={`M${x + 16} ${y + height - 18} C${x + width * 0.38} ${y + height - 3} ${x + width * 0.72} ${y + height - 28} ${x + width - 18} ${y + height - 12}`} />
+                    ))}
+                  </g>
+                  <g class="prayer-wall-sketch__cracks">
+                    {wallCracks.map((d) => <path d={d} />)}
+                  </g>
+                  <g class="prayer-wall-sketch__holes">
+                    {wallHoles.map(([cx, cy, radius]) => <circle cx={cx} cy={cy} r={radius} />)}
+                  </g>
+                  <g class="prayer-wall-sketch__plants">
+                    {wallPlants.map((d) => <path d={d} />)}
+                  </g>
+                  <g class="prayer-wall-sketch__hatch">
+                    <path d="M52 44 C158 30 260 38 360 30" />
+                    <path d="M520 52 C626 35 746 42 890 30" />
+                    <path d="M70 584 C208 560 338 584 468 558" />
+                    <path d="M612 586 C720 558 822 578 920 548" />
+                  </g>
+                </svg>
               </div>
               <div class="prayer-wall-light" aria-hidden="true"></div>
               <div class="prayer-note-layer" data-prayer-list></div>
@@ -690,9 +778,9 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-stage {
     background:
-      radial-gradient(circle at 18% 10%, rgba(255, 248, 229, 0.42), transparent 25rem),
-      linear-gradient(115deg, rgba(255, 255, 255, 0.24), transparent 36%),
-      linear-gradient(180deg, #d1d2c8, #aeb8b3 55%, #8f9d99);
+      radial-gradient(circle at 18% 10%, rgba(255, 248, 229, 0.58), transparent 25rem),
+      radial-gradient(circle at 88% 86%, rgba(40, 166, 189, 0.16), transparent 18rem),
+      linear-gradient(180deg, #e6e0cf, #c3c9bd 58%, #9eaaa1);
     height: 42rem;
     max-height: 72svh;
     min-height: 32rem;
@@ -712,8 +800,11 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-stage::before {
     background:
-      linear-gradient(90deg, transparent 0 15%, rgba(33, 43, 54, 0.18) 15.2% 15.8%, transparent 16% 38%, rgba(33, 43, 54, 0.15) 38.2% 38.8%, transparent 39% 61%, rgba(33, 43, 54, 0.16) 61.2% 61.8%, transparent 62% 84%, rgba(33, 43, 54, 0.14) 84.2% 84.8%, transparent 85%),
-      linear-gradient(180deg, transparent 0 14%, rgba(33, 43, 54, 0.24) 14.1% 15%, transparent 15.2% 30%, rgba(33, 43, 54, 0.2) 30.1% 31%, transparent 31.2% 46%, rgba(33, 43, 54, 0.22) 46.1% 47%, transparent 47.2% 62%, rgba(33, 43, 54, 0.2) 62.1% 63%, transparent 63.2% 78%, rgba(33, 43, 54, 0.24) 78.1% 79%, transparent 79.2%);
+      radial-gradient(circle at 12% 18%, rgba(26, 37, 92, 0.12) 0 0.08rem, transparent 0.1rem),
+      radial-gradient(circle at 76% 32%, rgba(26, 37, 92, 0.11) 0 0.07rem, transparent 0.09rem),
+      radial-gradient(circle at 44% 74%, rgba(77, 59, 18, 0.12) 0 0.08rem, transparent 0.1rem),
+      linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 34%);
+    background-size: 4.2rem 4.2rem, 5.1rem 5.1rem, 3.7rem 3.7rem, auto;
     mix-blend-mode: multiply;
     z-index: 1;
   }
@@ -731,37 +822,66 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-stone-layer {
-    display: grid;
-    gap: 0.38rem;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
     inset: 0;
-    padding: 0.55rem;
+    overflow: hidden;
     position: absolute;
+    z-index: 0;
   }
 
-  .prayer-stone-layer span {
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 42%),
-      linear-gradient(180deg, rgba(242, 201, 76, 0.08), rgba(26, 37, 92, 0.15));
-    border: 1px solid rgba(26, 37, 92, 0.16);
-    border-radius: 0.35rem;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.44),
-      inset 0 -18px 30px rgba(26, 37, 92, 0.1),
-      0 1px 0 rgba(255, 255, 255, 0.24);
-    min-height: 5.8rem;
-    opacity: calc(0.72 + (var(--stone) % 4) * 0.06);
-    transform: translateY(calc((var(--stone) % 3) * 0.18rem));
+  .prayer-wall-sketch {
+    display: block;
+    height: 100%;
+    width: 100%;
   }
 
-  .prayer-stone-layer span:nth-child(6n + 1),
-  .prayer-stone-layer span:nth-child(6n + 4) {
-    transform: translateX(-1.3rem);
+  .prayer-wall-sketch__wash {
+    fill: rgba(234, 227, 208, 0.54);
   }
 
-  .prayer-stone-layer span:nth-child(6n + 3),
-  .prayer-stone-layer span:nth-child(6n + 6) {
-    transform: translateX(1.1rem);
+  .prayer-wall-sketch__stones rect {
+    fill: #d9d5c4;
+    stroke: rgba(26, 37, 92, 0.22);
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__stones rect:nth-child(4n + 2) {
+    fill: #cfd9d1;
+  }
+
+  .prayer-wall-sketch__stones rect:nth-child(5n + 1) {
+    fill: #e3dbc4;
+  }
+
+  .prayer-wall-sketch__shade path,
+  .prayer-wall-sketch__hatch path {
+    fill: none;
+    stroke: rgba(26, 37, 92, 0.14);
+    stroke-linecap: round;
+    stroke-width: 1.8;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__cracks path {
+    fill: none;
+    stroke: rgba(7, 17, 28, 0.28);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__holes circle {
+    fill: rgba(7, 17, 28, 0.26);
+  }
+
+  .prayer-wall-sketch__plants path {
+    fill: rgba(40, 166, 189, 0.22);
+    stroke: rgba(26, 37, 92, 0.28);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-light {
@@ -798,7 +918,8 @@ const i18n = JSON.stringify(c.js);
     left: clamp(calc(var(--note-width) / 2 + 0.65rem), var(--x), calc(100% - (var(--note-width) / 2 + 0.65rem)));
     max-width: calc(100% - 2rem);
     min-height: 2.35rem;
-    overflow: hidden;
+    isolation: isolate;
+    overflow: visible;
     padding: 0.5rem 0.75rem 0.45rem 1.35rem;
     position: absolute;
     top: var(--y);
@@ -830,6 +951,7 @@ const i18n = JSON.stringify(c.js);
     position: absolute;
     top: 0.24rem;
     width: 0.62rem;
+    z-index: 1;
   }
 
   .prayer-note::after {
@@ -842,6 +964,7 @@ const i18n = JSON.stringify(c.js);
     top: 50%;
     transform: translate(-100%, -50%);
     width: 1rem;
+    z-index: -1;
   }
 
   .prayer-note:hover,
@@ -866,20 +989,23 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note__pin {
-    background: rgba(242, 201, 76, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.72);
+    background: rgba(7, 17, 28, 0.28);
     border-radius: 999px;
-    box-shadow: 0 8px 18px rgba(77, 59, 18, 0.2);
-    height: 0.28rem;
-    right: 0.75rem;
+    box-shadow: 0 5px 12px rgba(7, 17, 28, 0.18);
+    height: 0.2rem;
+    left: -0.62rem;
     position: absolute;
-    top: 0.48rem;
-    width: 1.1rem;
+    right: -0.42rem;
+    top: 50%;
+    transform: translateY(-50%) rotate(-1deg);
+    z-index: -1;
   }
 
   .prayer-note header {
     margin: 0;
     min-width: 0;
+    position: relative;
+    z-index: 2;
   }
 
   .prayer-note h3 {
@@ -931,20 +1057,45 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-detail {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
-      rgba(7, 17, 28, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 1rem;
-    bottom: 1rem;
-    box-shadow: 0 24px 60px rgba(7, 17, 28, 0.34);
-    color: white;
+      radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.72), transparent 8rem),
+      linear-gradient(100deg, rgba(125, 94, 35, 0.16), transparent 18%, transparent 84%, rgba(125, 94, 35, 0.12)),
+      linear-gradient(180deg, #fff9e8, #f3e8c8);
+    border: 1px solid rgba(125, 94, 35, 0.2);
+    border-radius: 0.8rem 0.8rem 1.2rem 1.2rem;
+    box-shadow:
+      0 22px 46px rgba(7, 17, 28, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.74);
+    color: var(--prayer-navy);
     left: auto;
+    max-height: calc(100% - 2rem);
     max-width: calc(100% - 2rem);
-    padding: 1rem;
+    padding: 1.25rem 1.15rem 1rem;
     position: absolute;
     right: 1rem;
+    top: 50%;
+    transform: translateY(-50%) rotate(-0.45deg);
+    transform-origin: 92% 0;
     width: min(25rem, 44%);
     z-index: 7;
+  }
+
+  .prayer-wall-detail:not([hidden]) {
+    animation: prayer-detail-unfold 280ms cubic-bezier(.2, .8, .2, 1) both;
+  }
+
+  .prayer-wall-detail::before {
+    background:
+      linear-gradient(90deg, rgba(125, 94, 35, 0.18), rgba(255, 255, 255, 0.4), rgba(125, 94, 35, 0.12)),
+      #f8edcf;
+    border: 1px solid rgba(125, 94, 35, 0.18);
+    border-radius: 999px;
+    box-shadow: 0 7px 18px rgba(77, 59, 18, 0.16);
+    content: "";
+    height: 0.72rem;
+    left: 1rem;
+    position: absolute;
+    right: 3.4rem;
+    top: -0.38rem;
   }
 
   .prayer-wall-detail[hidden] {
@@ -953,10 +1104,10 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-detail__close {
     align-items: center;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(26, 37, 92, 0.08);
+    border: 1px solid rgba(26, 37, 92, 0.14);
     border-radius: 999px;
-    color: white;
+    color: var(--prayer-navy);
     display: inline-flex;
     font-size: 1.2rem;
     height: 2rem;
@@ -968,7 +1119,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-detail > span {
-    color: var(--prayer-gold);
+    color: #9b7622;
     display: block;
     font-size: 0.68rem;
     font-weight: 900;
@@ -980,7 +1131,7 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-detail h3,
   .prayer-wall-detail h4 {
-    color: white;
+    color: var(--prayer-navy);
     font-size: 1.28rem;
     font-weight: 900;
     line-height: 1.08;
@@ -989,7 +1140,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-detail small {
-    color: rgba(255, 255, 255, 0.58);
+    color: rgba(26, 37, 92, 0.54);
     display: block;
     font-size: 0.68rem;
     font-weight: 900;
@@ -999,7 +1150,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-detail p {
-    color: rgba(255, 255, 255, 0.82);
+    color: rgba(11, 17, 32, 0.75);
     font-size: 0.9rem;
     line-height: 1.52;
     margin-top: 0.8rem;
@@ -1016,16 +1167,16 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-detail strong {
-    color: rgba(255, 255, 255, 0.72);
+    color: rgba(26, 37, 92, 0.62);
     font-size: 0.75rem;
     font-weight: 900;
     white-space: nowrap;
   }
 
   .prayer-wall-detail footer button {
-    background: var(--prayer-gold);
+    background: var(--prayer-navy);
     border-radius: 999px;
-    color: var(--prayer-navy);
+    color: white;
     font-size: 0.72rem;
     font-weight: 900;
     min-height: 2rem;
@@ -1373,6 +1524,17 @@ const i18n = JSON.stringify(c.js);
     }
   }
 
+  @keyframes prayer-detail-unfold {
+    0% {
+      opacity: 0;
+      transform: translateY(calc(-50% + 0.45rem)) rotate(-0.45deg) scaleY(0.86);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) rotate(-0.45deg) scaleY(1);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     [data-prayer-reveal],
     .prayer-note.is-new {
@@ -1469,15 +1631,6 @@ const i18n = JSON.stringify(c.js);
       min-height: 33rem;
     }
 
-    .prayer-stone-layer {
-      gap: 0.28rem;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .prayer-stone-layer span {
-      min-height: 4.9rem;
-    }
-
     .prayer-note {
       --note-width: 5.65rem;
       min-height: 2.2rem;
@@ -1504,10 +1657,10 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-wall-detail {
-      bottom: 0.75rem;
       left: 0.75rem;
       max-width: calc(100% - 1.5rem);
       right: 0.75rem;
+      top: 52%;
       width: auto;
     }
 
