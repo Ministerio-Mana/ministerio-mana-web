@@ -1,31 +1,1050 @@
 ---
-const prayers = [
-  { name: 'Ana', city: 'Medellín', request: 'Por salvación de mi familia' },
-  { name: 'Luis', city: 'Bogotá', request: 'Por dirección en el trabajo' },
-  { name: 'María', city: 'Miami', request: 'Por sanidad y fortaleza' },
+import TurnstileWidget from '@components/TurnstileWidget.astro';
+
+interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props as Props;
+const showTurnstile = !import.meta.env.DEV;
+const stones = Array.from({ length: compact ? 30 : 58 }, (_, index) => index);
+const samplePrayers = [
+  {
+    id: 'sample-ana',
+    first_name: 'Ana',
+    city: 'Medellín',
+    country: 'CO',
+    request_text: 'Por paz en mi casa y dirección para tomar una decisión familiar.',
+    prayers_count: 18,
+    created_at: '2026-01-04T10:00:00.000Z',
+  },
+  {
+    id: 'sample-david',
+    first_name: 'David',
+    city: 'Bogotá',
+    country: 'CO',
+    request_text: 'Por sanidad, fortaleza y una fe firme durante este proceso.',
+    prayers_count: 31,
+    created_at: '2026-01-03T10:00:00.000Z',
+  },
+  {
+    id: 'sample-maria',
+    first_name: 'María',
+    city: 'Miami',
+    country: 'US',
+    request_text: 'Por salvación en mi familia y reconciliación entre hermanos.',
+    prayers_count: 24,
+    created_at: '2026-01-02T10:00:00.000Z',
+  },
+  {
+    id: 'sample-lina',
+    first_name: 'Lina',
+    city: 'Cali',
+    country: 'CO',
+    request_text: 'Por provisión para estudiar y servir con un corazón limpio.',
+    prayers_count: 12,
+    created_at: '2026-01-01T10:00:00.000Z',
+  },
 ];
 ---
 
-<section class="space-y-4">
-  <h2 class="h2">Muro de oración</h2>
-  <p class="text-sm text-slate-600">
-    Ora por estas personas y marca cuando hayas orado. No mostramos apellidos ni datos sensibles.
-  </p>
-  <div class="grid gap-4 md:grid-cols-2">
-    {prayers.map((p) => (
-      <article class="rounded-2xl border border-slate-100 bg-white p-4 space-y-2 shadow-sm">
-        <p class="font-semibold text-slate-900">
-          {p.name} <span class="text-xs text-slate-500">({p.city})</span>
-        </p>
-        <p class="text-sm text-slate-700">{p.request}</p>
-        <button
-          type="button"
-          class="mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50"
-          onclick="alert('Gracias por orar 🙏')"
-        >
-          Oré por esta persona
-        </button>
-      </article>
-    ))}
-  </div>
+<section
+  class:list={['prayer-wall-experience', compact && 'prayer-wall-experience--compact']}
+  data-prayer-wall
+  data-prayer-samples={JSON.stringify(samplePrayers)}
+>
+  {compact ? (
+    <div class="prayer-compact">
+      <div class="prayer-compact__header">
+        <div>
+          <p class="prayer-kicker">Intercesión</p>
+          <h3>Oramos por personas reales</h3>
+        </div>
+        <div class="prayer-count-pill">
+          <span data-prayer-total>0</span>
+          <small>peticiones</small>
+        </div>
+      </div>
+
+      <div class="prayer-wall-stage prayer-wall-stage--compact" data-wall-stage>
+        <div class="prayer-stone-layer" aria-hidden="true">
+          {stones.map((stone) => <span style={`--stone:${stone};`} />)}
+        </div>
+        <div class="prayer-note-layer" data-prayer-list></div>
+        <p class="prayer-empty" data-prayer-empty>Cargando peticiones...</p>
+      </div>
+    </div>
+  ) : (
+    <>
+      <section class="prayer-hero" data-prayer-reveal>
+        <div class="prayer-hero__image" aria-hidden="true">
+          <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" />
+        </div>
+        <div class="prayer-hero__veil" aria-hidden="true"></div>
+
+        <div class="prayer-hero__inner container-tight">
+          <div class="prayer-hero__copy">
+            <p class="prayer-kicker">Muro de oración</p>
+            <h1>Un lugar para levantar peticiones juntos</h1>
+            <p>
+              Escribe una petición con sencillez. La iglesia la recibe como una carga compartida y se une para orar por esa vida.
+            </p>
+            <div class="prayer-hero__actions">
+              <a href="#peticion" class="prayer-action prayer-action--primary">Escribir petición</a>
+              <a href="#muro" class="prayer-action prayer-action--ghost">Ver el muro</a>
+            </div>
+          </div>
+
+          <aside class="prayer-verse" aria-label="Base bíblica">
+            <span>Santiago 5:16</span>
+            <blockquote>La oración eficaz del justo puede mucho.</blockquote>
+            <p>Una petición no queda sola; queda en medio de una familia que intercede.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="muro" class="prayer-main">
+        <div class="prayer-main__intro container-tight" data-prayer-reveal>
+          <p class="prayer-kicker">Intercesión viva</p>
+          <h2>Las cargas se ponen en el muro y la iglesia responde en oración</h2>
+        </div>
+
+        <div class="prayer-main__grid container-tight">
+          <div class="prayer-wall-panel" data-prayer-reveal>
+            <div class="prayer-wall-panel__bar">
+              <div>
+                <span data-prayer-total>0</span>
+                <small>peticiones activas</small>
+              </div>
+              <div>
+                <span data-prayer-count>0</span>
+                <small>oraciones registradas</small>
+              </div>
+              <button type="button" data-refresh-prayers aria-label="Actualizar muro">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M20 6v5h-5M4 18v-5h5" />
+                  <path d="M18.2 9A7 7 0 0 0 6.3 6.7L4 9m1.8 6A7 7 0 0 0 17.7 17.3L20 15" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="prayer-wall-stage" data-wall-stage>
+              <div class="prayer-stone-layer" aria-hidden="true">
+                {stones.map((stone) => <span style={`--stone:${stone};`} />)}
+              </div>
+              <div class="prayer-wall-light" aria-hidden="true"></div>
+              <div class="prayer-note-layer" data-prayer-list></div>
+              <p class="prayer-empty" data-prayer-empty>Cargando peticiones...</p>
+            </div>
+          </div>
+
+          <form id="peticion" class="prayer-form" method="post" action="/api/prayer/submit" data-prayer-form data-prayer-reveal>
+            <div>
+              <p class="prayer-kicker">Nueva petición</p>
+              <h2>Deja tu carga en el muro</h2>
+              <p>
+                Publicaremos solo tu primer nombre, ciudad y petición. Evita escribir apellidos, teléfonos, correos o datos sensibles.
+              </p>
+            </div>
+
+            <div class="prayer-field">
+              <label for="prayer-name">Primer nombre</label>
+              <input id="prayer-name" name="firstName" type="text" maxlength="60" autocomplete="given-name" required placeholder="Ej. Carlos" />
+            </div>
+
+            <div class="prayer-field">
+              <label for="prayer-request">Petición</label>
+              <textarea id="prayer-request" name="requestText" maxlength="280" required placeholder="Escribe una petición concreta por la que podamos orar"></textarea>
+            </div>
+
+            <div class="prayer-form__row">
+              <div class="prayer-field">
+                <label for="prayer-city">Ciudad</label>
+                <input id="prayer-city" name="city" type="text" maxlength="80" autocomplete="address-level2" placeholder="Medellín" />
+              </div>
+
+              <div class="prayer-field">
+                <label for="prayer-country">País</label>
+                <select id="prayer-country" name="country" autocomplete="country">
+                  <option value="">País</option>
+                  <option value="CO">Colombia</option>
+                  <option value="US">Estados Unidos</option>
+                  <option value="VE">Venezuela</option>
+                  <option value="EC">Ecuador</option>
+                  <option value="PE">Perú</option>
+                  <option value="MX">México</option>
+                  <option value="AR">Argentina</option>
+                  <option value="CL">Chile</option>
+                  <option value="ES">España</option>
+                </select>
+              </div>
+            </div>
+
+            {showTurnstile && <TurnstileWidget appearance="always" theme="dark" />}
+
+            <button class="prayer-submit" type="submit" data-prayer-submit>
+              Subir petición al muro
+            </button>
+            <p class="prayer-status" data-prayer-status aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="prayer-rhythm">
+        <div class="container-tight prayer-rhythm__inner">
+          <div data-prayer-reveal>
+            <p class="prayer-kicker">Acuerdo</p>
+            <h2>Una cultura de oración constante</h2>
+          </div>
+
+          <div class="prayer-rhythm__steps" data-prayer-reveal>
+            <article>
+              <span>01</span>
+              <h3>Recibimos</h3>
+              <p>La petición entra con sobriedad, sin exponer información privada.</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Intercedemos</h3>
+              <p>Cada persona puede marcar que oró y sumar fe alrededor de esa carga.</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Permanecemos</h3>
+              <p>El muro queda abierto para que la iglesia vuelva a orar durante la semana.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </>
+  )}
 </section>
+
+<script>
+  import '@scripts/prayer-wall.js';
+</script>
+
+<style is:global>
+  .prayer-wall-experience {
+    --prayer-navy: #1A255C;
+    --prayer-night: #07111c;
+    --prayer-ink: #0B1120;
+    --prayer-teal: #28A6BD;
+    --prayer-gold: #F2C94C;
+    --prayer-paper: #fff8e5;
+    --prayer-stone: #d8dfdf;
+    background: #f5efeb;
+    color: var(--prayer-navy);
+    isolation: isolate;
+  }
+
+  .prayer-wall-experience h1,
+  .prayer-wall-experience h2,
+  .prayer-wall-experience h3,
+  .prayer-wall-experience p {
+    letter-spacing: 0;
+  }
+
+  .prayer-kicker {
+    color: var(--prayer-gold);
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.22em !important;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .prayer-hero {
+    min-height: 100svh;
+    overflow: hidden;
+    position: relative;
+    background: var(--prayer-night);
+    color: white;
+  }
+
+  .prayer-hero__image,
+  .prayer-hero__veil {
+    position: absolute;
+    inset: 0;
+  }
+
+  .prayer-hero__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.58;
+    transform: scale(1.03);
+  }
+
+  .prayer-hero__veil {
+    background:
+      linear-gradient(105deg, rgba(7, 17, 28, 0.98) 0%, rgba(7, 17, 28, 0.88) 48%, rgba(26, 37, 92, 0.55) 100%),
+      linear-gradient(180deg, rgba(7, 17, 28, 0.04), rgba(7, 17, 28, 0.78));
+  }
+
+  .prayer-hero__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(18rem, 0.7fr);
+    gap: 3rem;
+    min-height: 100svh;
+    align-items: center;
+    padding-top: 7.5rem;
+    padding-bottom: 5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .prayer-hero__copy {
+    max-width: 48rem;
+  }
+
+  .prayer-hero h1 {
+    color: white;
+    font-size: 4.55rem;
+    font-weight: 900;
+    line-height: 0.95;
+    margin-top: 1rem;
+    max-width: 48rem;
+    text-wrap: balance;
+  }
+
+  .prayer-hero__copy > p:not(.prayer-kicker) {
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 1.15rem;
+    font-weight: 300;
+    line-height: 1.75;
+    margin-top: 1.25rem;
+    max-width: 40rem;
+  }
+
+  .prayer-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-top: 2rem;
+  }
+
+  .prayer-action {
+    align-items: center;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 0.92rem;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 3.25rem;
+    padding: 0.95rem 1.35rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-action--primary {
+    background: linear-gradient(135deg, var(--prayer-teal), #3f58a1);
+    box-shadow: 0 26px 70px rgba(40, 166, 189, 0.28);
+    color: white;
+  }
+
+  .prayer-action--ghost {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.09);
+    color: white;
+  }
+
+  .prayer-verse {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(0, 0, 0, 0.32);
+    border-radius: 1.25rem;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+    padding: 2rem;
+    backdrop-filter: blur(16px);
+  }
+
+  .prayer-verse span {
+    color: var(--prayer-gold);
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .prayer-verse blockquote {
+    color: white;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1.12;
+    margin-top: 1rem;
+  }
+
+  .prayer-verse p {
+    border-left: 2px solid rgba(40, 166, 189, 0.8);
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-top: 1.25rem;
+    padding-left: 1rem;
+  }
+
+  .prayer-main {
+    background:
+      linear-gradient(180deg, #f5efeb 0%, #edf6f4 50%, #f5efeb 100%);
+    padding: 6rem 0;
+    position: relative;
+  }
+
+  .prayer-main__intro {
+    margin-bottom: 2rem;
+  }
+
+  .prayer-main__intro h2 {
+    color: var(--prayer-navy);
+    font-size: 3.4rem;
+    font-weight: 900;
+    line-height: 1.02;
+    margin-top: 0.65rem;
+    max-width: 48rem;
+  }
+
+  .prayer-main__grid {
+    align-items: start;
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr);
+  }
+
+  .prayer-wall-panel,
+  .prayer-form,
+  .prayer-compact {
+    border: 1px solid rgba(26, 37, 92, 0.12);
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 1.35rem;
+    box-shadow: 0 24px 80px rgba(26, 37, 92, 0.14);
+    overflow: hidden;
+  }
+
+  .prayer-wall-panel__bar {
+    align-items: center;
+    background: linear-gradient(135deg, rgba(26, 37, 92, 0.98), rgba(40, 166, 189, 0.86));
+    color: white;
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: 1fr 1fr auto;
+    padding: 1rem;
+  }
+
+  .prayer-wall-panel__bar div {
+    min-width: 0;
+  }
+
+  .prayer-wall-panel__bar span,
+  .prayer-count-pill span {
+    color: white;
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .prayer-wall-panel__bar small,
+  .prayer-count-pill small {
+    color: rgba(255, 255, 255, 0.74);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-top: 0.3rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-wall-panel__bar button {
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    color: white;
+    display: inline-flex;
+    height: 2.7rem;
+    justify-content: center;
+    width: 2.7rem;
+  }
+
+  .prayer-wall-panel__bar svg {
+    height: 1.15rem;
+    width: 1.15rem;
+  }
+
+  .prayer-wall-panel__bar path {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .prayer-wall-stage {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 36%),
+      linear-gradient(180deg, #d7dfdf, #bfc9c9);
+    height: 42rem;
+    max-height: 72svh;
+    min-height: 32rem;
+    overflow: hidden;
+    perspective: 1000px;
+    position: relative;
+    touch-action: pan-y;
+  }
+
+  .prayer-wall-stage--compact {
+    height: 27rem;
+    min-height: 25rem;
+  }
+
+  .prayer-stone-layer {
+    display: grid;
+    gap: 0.38rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    inset: 0;
+    padding: 0.55rem;
+    position: absolute;
+  }
+
+  .prayer-stone-layer span {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 42%),
+      linear-gradient(180deg, rgba(26, 37, 92, 0.08), rgba(26, 37, 92, 0.16));
+    border: 1px solid rgba(26, 37, 92, 0.13);
+    border-radius: 0.45rem;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.44),
+      inset 0 -12px 24px rgba(26, 37, 92, 0.08);
+    min-height: 5.8rem;
+    opacity: calc(0.72 + (var(--stone) % 4) * 0.06);
+    transform: translateY(calc((var(--stone) % 3) * 0.18rem));
+  }
+
+  .prayer-stone-layer span:nth-child(6n + 1),
+  .prayer-stone-layer span:nth-child(6n + 4) {
+    transform: translateX(-1.3rem);
+  }
+
+  .prayer-stone-layer span:nth-child(6n + 3),
+  .prayer-stone-layer span:nth-child(6n + 6) {
+    transform: translateX(1.1rem);
+  }
+
+  .prayer-wall-light {
+    background:
+      linear-gradient(90deg, rgba(7, 17, 28, 0.24), transparent 22%, transparent 78%, rgba(7, 17, 28, 0.24)),
+      linear-gradient(180deg, rgba(255, 248, 229, 0.28), transparent 32%, rgba(7, 17, 28, 0.16));
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 1;
+  }
+
+  .prayer-note-layer {
+    inset: 0;
+    position: absolute;
+    transform: translate3d(var(--wall-pan-x, 0), var(--wall-pan-y, 0), 0);
+    transition: transform 280ms ease;
+    z-index: 2;
+  }
+
+  .prayer-note {
+    --note-width: 14.5rem;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
+      var(--prayer-paper);
+    border: 1px solid rgba(77, 59, 18, 0.12);
+    border-radius: 0.5rem;
+    box-shadow:
+      0 22px 42px rgba(26, 37, 92, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    cursor: grab;
+    left: var(--x);
+    max-width: calc(100% - 2rem);
+    min-height: 11.25rem;
+    padding: 1rem;
+    position: absolute;
+    top: var(--y);
+    transform:
+      translate(-50%, -50%)
+      rotate(var(--r))
+      rotateX(var(--tilt-y, 0deg))
+      rotateY(var(--tilt-x, 0deg));
+    transform-style: preserve-3d;
+    transition: transform 180ms ease, box-shadow 180ms ease, opacity 240ms ease;
+    width: var(--note-width);
+  }
+
+  .prayer-note:hover,
+  .prayer-note:focus-within {
+    box-shadow:
+      0 30px 62px rgba(26, 37, 92, 0.28),
+      0 0 0 1px rgba(242, 201, 76, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    z-index: 4;
+  }
+
+  .prayer-note.is-new {
+    animation: prayer-note-land 620ms cubic-bezier(.2, .8, .2, 1) both;
+  }
+
+  .prayer-note__pin {
+    background: var(--prayer-gold);
+    border: 2px solid rgba(255, 255, 255, 0.65);
+    border-radius: 999px;
+    box-shadow: 0 6px 16px rgba(77, 59, 18, 0.22);
+    height: 0.8rem;
+    left: 50%;
+    position: absolute;
+    top: 0.45rem;
+    transform: translateX(-50%);
+    width: 0.8rem;
+  }
+
+  .prayer-note header {
+    margin-top: 0.35rem;
+  }
+
+  .prayer-note h3 {
+    color: var(--prayer-navy);
+    font-size: 1.05rem;
+    font-weight: 900;
+    line-height: 1.15;
+    margin: 0;
+  }
+
+  .prayer-note small {
+    color: rgba(26, 37, 92, 0.58);
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-note p {
+    color: rgba(11, 17, 32, 0.76);
+    font-size: 0.88rem;
+    line-height: 1.48;
+    margin-top: 0.8rem;
+  }
+
+  .prayer-note footer {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+
+  .prayer-note__count {
+    color: rgba(26, 37, 92, 0.62);
+    font-size: 0.72rem;
+    font-weight: 900;
+  }
+
+  .prayer-note button {
+    background: var(--prayer-navy);
+    border-radius: 999px;
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 900;
+    min-height: 2rem;
+    padding: 0.45rem 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-note button[disabled] {
+    background: rgba(26, 37, 92, 0.4);
+    cursor: default;
+  }
+
+  .prayer-empty {
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(26, 37, 92, 0.1);
+    border-radius: 999px;
+    color: rgba(26, 37, 92, 0.62);
+    font-size: 0.88rem;
+    font-weight: 800;
+    left: 50%;
+    padding: 0.7rem 1rem;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+  }
+
+  .prayer-empty[hidden] {
+    display: none;
+  }
+
+  .prayer-form {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
+      var(--prayer-ink);
+    color: white;
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    position: sticky;
+    top: 6rem;
+  }
+
+  .prayer-form h2 {
+    color: white;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1.05;
+    margin-top: 0.45rem;
+  }
+
+  .prayer-form p:not(.prayer-kicker):not(.prayer-status) {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    line-height: 1.58;
+    margin-top: 0.55rem;
+  }
+
+  .prayer-form__row {
+    display: grid;
+    gap: 0.8rem;
+    grid-template-columns: minmax(0, 1fr) 9.5rem;
+  }
+
+  .prayer-field {
+    display: grid;
+    gap: 0.42rem;
+  }
+
+  .prayer-field label {
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .prayer-field input,
+  .prayer-field textarea,
+  .prayer-field select {
+    appearance: none;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0.72rem;
+    color: white;
+    font: inherit;
+    min-height: 3rem;
+    outline: none;
+    padding: 0.85rem 0.95rem;
+    width: 100%;
+  }
+
+  .prayer-field textarea {
+    min-height: 8.75rem;
+    resize: vertical;
+  }
+
+  .prayer-field input::placeholder,
+  .prayer-field textarea::placeholder {
+    color: rgba(255, 255, 255, 0.38);
+  }
+
+  .prayer-field select {
+    color-scheme: dark;
+  }
+
+  .prayer-field input:focus,
+  .prayer-field textarea:focus,
+  .prayer-field select:focus {
+    border-color: rgba(242, 201, 76, 0.82);
+    box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.18);
+  }
+
+  .prayer-submit {
+    align-items: center;
+    background: linear-gradient(135deg, var(--prayer-teal), #3f58a1);
+    border-radius: 999px;
+    color: white;
+    display: inline-flex;
+    font-size: 0.88rem;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 3.15rem;
+    padding: 0.9rem 1.2rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-submit:disabled {
+    opacity: 0.58;
+  }
+
+  .prayer-status {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    min-height: 1.2rem;
+  }
+
+  .prayer-status.is-error {
+    color: #fecaca;
+    font-weight: 800;
+  }
+
+  .prayer-status.is-success {
+    color: #bbf7d0;
+    font-weight: 800;
+  }
+
+  .prayer-rhythm {
+    background: var(--prayer-night);
+    color: white;
+    padding: 5.5rem 0;
+  }
+
+  .prayer-rhythm__inner {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .prayer-rhythm h2 {
+    color: white;
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1.04;
+    margin-top: 0.55rem;
+    max-width: 38rem;
+  }
+
+  .prayer-rhythm__steps {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .prayer-rhythm__steps article {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 0.85rem;
+    padding: 1.25rem;
+  }
+
+  .prayer-rhythm__steps span {
+    color: var(--prayer-gold);
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+
+  .prayer-rhythm__steps h3 {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 900;
+    margin-top: 0.75rem;
+  }
+
+  .prayer-rhythm__steps p {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    margin-top: 0.45rem;
+  }
+
+  .prayer-compact {
+    padding: 1rem;
+  }
+
+  .prayer-compact__header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .prayer-compact h3 {
+    color: var(--prayer-navy);
+    font-size: 1.35rem;
+    font-weight: 900;
+    margin-top: 0.25rem;
+  }
+
+  .prayer-count-pill {
+    background: var(--prayer-navy);
+    border-radius: 0.85rem;
+    min-width: 6.6rem;
+    padding: 0.85rem;
+    text-align: center;
+  }
+
+  .prayer-wall-experience--compact .prayer-note {
+    --note-width: 12.6rem;
+    min-height: 10rem;
+  }
+
+  .prayer-wall-experience--compact .prayer-note:nth-child(n + 7) {
+    display: none;
+  }
+
+  [data-prayer-reveal] {
+    opacity: 0;
+    transform: translateY(1.35rem);
+    transition: opacity 680ms ease, transform 680ms ease;
+  }
+
+  [data-prayer-reveal].is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @keyframes prayer-note-land {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) translateY(-2rem) scale(1.08) rotate(var(--r));
+    }
+    72% {
+      opacity: 1;
+      transform: translate(-50%, -50%) translateY(0.25rem) scale(0.98) rotate(var(--r));
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%) translateY(0) scale(1) rotate(var(--r));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-prayer-reveal],
+    .prayer-note,
+    .prayer-note.is-new {
+      animation: none;
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .prayer-hero__inner,
+    .prayer-main__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .prayer-hero__inner {
+      gap: 1.6rem;
+      padding-top: 6.5rem;
+    }
+
+    .prayer-hero h1 {
+      font-size: 3.35rem;
+    }
+
+    .prayer-verse {
+      max-width: 34rem;
+    }
+
+    .prayer-form {
+      position: relative;
+      top: auto;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .prayer-hero {
+      min-height: 94svh;
+    }
+
+    .prayer-hero__inner {
+      min-height: 94svh;
+      padding-bottom: 3rem;
+      padding-top: 5.8rem;
+    }
+
+    .prayer-hero h1 {
+      font-size: 2.42rem;
+      line-height: 1;
+    }
+
+    .prayer-hero__copy > p:not(.prayer-kicker) {
+      font-size: 0.98rem;
+      line-height: 1.58;
+    }
+
+    .prayer-action {
+      min-height: 3rem;
+      width: 100%;
+    }
+
+    .prayer-verse {
+      padding: 1.1rem;
+    }
+
+    .prayer-verse blockquote {
+      font-size: 1.35rem;
+    }
+
+    .prayer-main {
+      padding: 4rem 0;
+    }
+
+    .prayer-main__intro h2,
+    .prayer-rhythm h2 {
+      font-size: 2rem;
+      line-height: 1.08;
+    }
+
+    .prayer-wall-panel__bar {
+      grid-template-columns: 1fr auto;
+    }
+
+    .prayer-wall-panel__bar div:nth-child(2) {
+      display: none;
+    }
+
+    .prayer-wall-stage {
+      height: 33rem;
+      max-height: none;
+      min-height: 33rem;
+    }
+
+    .prayer-stone-layer {
+      gap: 0.28rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .prayer-stone-layer span {
+      min-height: 4.9rem;
+    }
+
+    .prayer-note {
+      --note-width: 12.2rem;
+      min-height: 10.2rem;
+      padding: 0.82rem;
+    }
+
+    .prayer-note p {
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .prayer-form {
+      padding: 1rem;
+    }
+
+    .prayer-form h2 {
+      font-size: 1.55rem;
+    }
+
+    .prayer-form__row,
+    .prayer-rhythm__steps {
+      grid-template-columns: 1fr;
+    }
+
+    .prayer-compact__header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .prayer-count-pill {
+      text-align: left;
+      width: 100%;
+    }
+  }
+</style>

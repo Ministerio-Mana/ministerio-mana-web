@@ -4,12 +4,14 @@
 create table if not exists prayer_requests (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
+  request_text text,
   city text,
   country text,
   prayers_count int not null default 0,
   approved boolean not null default true,
   created_at timestamptz default now()
 );
+alter table prayer_requests add column if not exists request_text text;
 alter table prayer_requests enable row level security;
 drop policy if exists "read_public" on prayer_requests;
 create policy "read_public" on prayer_requests for select using (approved = true);
