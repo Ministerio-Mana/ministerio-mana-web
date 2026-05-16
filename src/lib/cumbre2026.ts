@@ -5,9 +5,10 @@ export type CountryGroup = 'CO' | 'INT';
 export type Currency = 'COP' | 'USD';
 export type PackageType = 'lodging' | 'no_lodging' | 'child_0_7' | 'child_7_13';
 
-export const CUMBRE_LODGING_CAPACITY = 195;
+export const CUMBRE_LODGING_CAPACITY = 15;
+export const CUMBRE_LODGING_REOPENED_AT = '2026-05-15T19:14:00-05:00';
 export const CUMBRE_LODGING_LIMITED_MESSAGE =
-  'Hay cupos limitados con hospedaje dentro del evento. Cuando se agoten, la inscripcion seguira disponible sin alojamiento.';
+  'Hay 15 cupos adicionales con hospedaje dentro del evento. Cuando se agoten, la inscripcion seguira disponible sin alojamiento.';
 export const CUMBRE_LODGING_CLOSED_MESSAGE =
   'Los cupos con hospedaje ya estan agotados. La inscripcion sigue disponible sin alojamiento.';
 

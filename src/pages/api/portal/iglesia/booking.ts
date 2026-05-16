@@ -12,7 +12,7 @@ import {
   buildPaymentReference,
   type PackageType,
 } from '@lib/cumbre2026';
-import { checkLodgingCapacity } from '@lib/cumbreLodgingCapacity';
+import { checkLodgingCapacity, isReopenedLodgingCreatedAt } from '@lib/cumbreLodgingCapacity';
 import {
   buildInstallmentSchedule,
   getInstallmentDeadline,
@@ -952,11 +952,31 @@ export const PUT: APIRoute = async ({ request }) => {
   const canRecordPhysicalPayment = true;
   const { data: existingParticipantsForBooking } = await supabaseAdmin
     .from('cumbre_participants')
-    .select('id, package_type')
+    .select('id, package_type, created_at')
     .eq('booking_id', bookingId);
   const existingLodgingParticipantIds = new Set(
     (existingParticipantsForBooking || [])
       .filter((participant) => participant?.package_type === 'lodging')
+      .map((participant) => String(participant.id)),
+  );
+  const existingParticipantCreatedAtById = new Map(
+    (existingParticipantsForBooking || [])
+      .map((participant) => [String(participant.id), participant?.created_at || null]),
+  );
+  const existingReopenedLodgingParticipantIds = new Set(
+    (existingParticipantsForBooking || [])
+      .filter((participant) => (
+        participant?.package_type === 'lodging'
+        && isReopenedLodgingCreatedAt(participant?.created_at)
+      ))
+      .map((participant) => String(participant.id)),
+  );
+  const existingLegacyLodgingParticipantIds = new Set(
+    (existingParticipantsForBooking || [])
+      .filter((participant) => (
+        participant?.package_type === 'lodging'
+        && !isReopenedLodgingCreatedAt(participant?.created_at)
+      ))
       .map((participant) => String(participant.id)),
   );
 
@@ -1166,12 +1186,16 @@ export const PUT: APIRoute = async ({ request }) => {
         safe,
         extra: participant ?? {},
         preservesExistingLodging: packageType === 'lodging' && existingLodgingParticipantIds.has(participantId),
+        isLegacyLodging: packageType === 'lodging' && existingLegacyLodgingParticipantIds.has(participantId),
+        originalCreatedAt: existingParticipantCreatedAtById.get(participantId) || null,
       };
     })
     .filter(Boolean) as {
       safe: NonNullable<ReturnType<typeof sanitizeParticipant>>;
       extra: any;
       preservesExistingLodging: boolean;
+      isLegacyLodging: boolean;
+      originalCreatedAt: string | null;
     }[];
 
   if (!participants.length) {
@@ -1179,7 +1203,8 @@ export const PUT: APIRoute = async ({ request }) => {
   }
   const lodgingCapacity = await checkLodgingCapacity({
     participants: participants.map((participant) => participant.safe),
-    currentBookingLodgingCount: existingLodgingParticipantIds.size,
+    currentBookingLodgingCount: existingReopenedLodgingParticipantIds.size,
+    legacyLodgingCount: participants.filter((participant) => participant.isLegacyLodging).length,
   });
   if (!lodgingCapacity.ok) {
     return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), { status: 409 });
@@ -1259,6 +1284,7 @@ export const PUT: APIRoute = async ({ request }) => {
     gender: sanitizePlainText(participant.extra?.gender ?? '', 20) || null,
     diet_type: sanitizePlainText(participant.extra?.menu ?? participant.extra?.menuType ?? participant.extra?.diet_type ?? '', 40) || null,
     email: normalizeEmail(participant.extra?.email) || null,
+    created_at: participant.isLegacyLodging ? participant.originalCreatedAt : undefined,
   }));
 
   const { error: participantError } = await supabaseAdmin

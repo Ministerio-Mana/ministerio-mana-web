@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import {
   CUMBRE_LODGING_CAPACITY,
+  CUMBRE_LODGING_REOPENED_AT,
   buildLodgingCapacityMessage,
   countRequestedLodging,
   getRemainingLodgingSlots,
@@ -24,6 +25,16 @@ export type LodgingCapacityCheck = LodgingCapacityStatus & {
   message?: string;
 };
 
+export function getLodgingReopenedAt(): string {
+  return process.env.CUMBRE_LODGING_REOPENED_AT || CUMBRE_LODGING_REOPENED_AT;
+}
+
+export function isReopenedLodgingCreatedAt(createdAt: string | null | undefined): boolean {
+  const createdTime = Date.parse(createdAt || '');
+  const reopenedTime = Date.parse(getLodgingReopenedAt());
+  return Number.isFinite(createdTime) && Number.isFinite(reopenedTime) && createdTime >= reopenedTime;
+}
+
 export async function getLodgingCapacityStatus(): Promise<LodgingCapacityStatus> {
   if (!supabaseAdmin) {
     throw new Error('Supabase no configurado');
@@ -32,7 +43,8 @@ export async function getLodgingCapacityStatus(): Promise<LodgingCapacityStatus>
   const { count, error } = await supabaseAdmin
     .from('cumbre_participants')
     .select('id', { count: 'exact', head: true })
-    .eq('package_type', 'lodging');
+    .eq('package_type', 'lodging')
+    .gte('created_at', getLodgingReopenedAt());
 
   if (error) {
     throw error;
@@ -51,8 +63,9 @@ export async function getLodgingCapacityStatus(): Promise<LodgingCapacityStatus>
 export async function checkLodgingCapacity(params: {
   participants: ParticipantLike[];
   currentBookingLodgingCount?: number;
+  legacyLodgingCount?: number;
 }): Promise<LodgingCapacityCheck> {
-  const requested = countRequestedLodging(params.participants);
+  const requested = Math.max(countRequestedLodging(params.participants) - Math.max(params.legacyLodgingCount ?? 0, 0), 0);
   const status = await getLodgingCapacityStatus();
   const currentBookingLodgingCount = Math.max(params.currentBookingLodgingCount ?? 0, 0);
   const effectiveUsed = Math.max(status.used - currentBookingLodgingCount, 0);

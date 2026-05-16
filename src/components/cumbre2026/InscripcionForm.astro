@@ -111,9 +111,9 @@ const formatTestAmount = (value, currency) =>
          </div>
 
          <div class="rounded-2xl border border-brand-gold/30 bg-brand-gold/10 p-5 text-sm text-white/80">
-            <p class="font-bold text-brand-gold">Hospedaje con cupos limitados</p>
+            <p class="font-bold text-brand-gold">15 cupos nuevos con hospedaje</p>
             <p class="mt-1">
-               Se habilitaron cupos adicionales con hospedaje dentro del evento. Cuando se agoten, la inscripción
+               Se habilitaron 15 cupos adicionales con hospedaje dentro del evento. Cuando se agoten, la inscripción
                seguirá abierta sin alojamiento y cada asistente deberá gestionar su hospedaje por fuera.
             </p>
          </div>
@@ -238,7 +238,7 @@ const formatTestAmount = (value, currency) =>
                      <option value="no_lodging">Sin alojamiento (evento + alimentación)</option>
                      <option value="lodging">Con alojamiento (evento + alimentación)</option>
                   </select>
-                  <p class="text-xs text-slate-400 mt-1" data-lodging-note>Cupos limitados con hospedaje. Si se agotan, podrás continuar sin alojamiento.</p>
+                  <p class="text-xs text-slate-400 mt-1" data-lodging-note>15 cupos adicionales con hospedaje. Si se agotan, podrás continuar sin alojamiento.</p>
                </div>
          </div>
 
@@ -297,7 +297,7 @@ const formatTestAmount = (value, currency) =>
                       <option value="lodging" class="text-black">Con alojamiento (evento + alimentación)</option>
                    </select>
                    <p class="text-xs text-white/40 mt-1 pl-1" data-lodging-note>
-                      * Cupos con hospedaje limitados. Niños hasta 13 años se calculan automáticamente.
+                      * 15 cupos adicionales con hospedaje. Niños hasta 13 años se calculan automáticamente.
                    </p>
                </div>
 
@@ -835,8 +835,8 @@ const formatTestAmount = (value, currency) =>
        const available = this.lodgingStatus?.available !== false;
        const remaining = Number(this.lodgingStatus?.remaining ?? 0);
        const openMessage = remaining > 0
-          ? `Cupos limitados con hospedaje: quedan ${remaining}. Si se agotan, podrás continuar sin alojamiento.`
-          : 'Cupos limitados con hospedaje. Si se agotan, podrás continuar sin alojamiento.';
+          ? `15 cupos adicionales con hospedaje: quedan ${remaining}. Si se agotan, podrás continuar sin alojamiento.`
+          : '15 cupos adicionales con hospedaje. Si se agotan, podrás continuar sin alojamiento.';
        const closedMessage = 'Los cupos con hospedaje ya están agotados. Puedes continuar sin alojamiento.';
 
        this.dom.lodgingOptions?.forEach((option) => {
