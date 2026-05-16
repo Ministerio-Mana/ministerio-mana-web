@@ -67,6 +67,7 @@ class DonationWidget {
         this.currency = country === 'CO' ? 'COP' : 'USD';
         this.frequency = 'monthly';
         this.amount = 0;
+        this.amountMode = 'idle';
         this.isSubmitting = false;
         this.donorInfoVisible = false;
         this.accessToken = getSupabaseAccessToken();
@@ -91,6 +92,11 @@ class DonationWidget {
         this.dom = {
             freqBtns: this.el.querySelectorAll('.freq-btn'),
             currencySelect: this.el.querySelector('.currency-select'),
+            customControl: this.el.querySelector('.custom-amount-control'),
+            quickControl: this.el.querySelector('.quick-amount-control'),
+            methodState: this.el.querySelector('.amount-method-state'),
+            methodText: this.el.querySelector('.amount-method-text'),
+            methodReset: this.el.querySelector('.amount-method-reset'),
             amountsGrid: this.el.querySelector('.amounts-grid'),
             customInput: this.el.querySelector('.custom-amount-input'),
             cta: this.el.querySelector('.donate-cta'),
@@ -130,6 +136,7 @@ class DonationWidget {
         this.dom.currencySelect?.addEventListener('change', (e) => {
             this.currency = e.target.value;
             this.amount = 0;
+            this.amountMode = 'idle';
             this.dom.customInput.value = '';
             this.renderAmounts();
             this.updateUI();
@@ -139,6 +146,7 @@ class DonationWidget {
         // Custom Amount Input
         this.dom.customInput.addEventListener('input', (e) => {
             this.amount = this.parseAmountInput(e.target.value);
+            this.amountMode = this.amount > 0 ? 'custom' : 'idle';
             if (this.currency === 'COP') {
                 e.target.value = this.amount > 0 ? this.amount.toLocaleString('es-CO') : '';
             }
@@ -149,6 +157,8 @@ class DonationWidget {
 
         // CTA Click
         this.dom.cta.addEventListener('click', () => this.handleCTAClick());
+
+        this.dom.methodReset?.addEventListener('click', () => this.resetAmountMethod());
     }
 
     configureAccountLinks() {
@@ -197,6 +207,7 @@ class DonationWidget {
 
             btn.addEventListener('click', () => {
                 this.amount = opt.value;
+                this.amountMode = 'quick';
                 this.dom.customInput.value = '';
                 this.highlightAmount(btn);
                 this.updateUI();
@@ -205,6 +216,19 @@ class DonationWidget {
 
             this.dom.amountsGrid.appendChild(btn);
         });
+    }
+
+    resetAmountMethod() {
+        this.amount = 0;
+        this.amountMode = 'idle';
+        this.donorInfoVisible = false;
+        this.dom.customInput.value = '';
+        this.dom.donorSection?.classList.add('hidden');
+        this.hideAccountGate();
+        if (this.dom.ctaText) this.dom.ctaText.textContent = 'Donar Ahora';
+        this.highlightAmount(null);
+        this.updateUI();
+        this.publishAmountChange();
     }
 
     parseAmountInput(raw) {
@@ -252,6 +276,23 @@ class DonationWidget {
         }));
     }
 
+    updateAmountControls() {
+        const mode = this.amountMode || 'idle';
+        const config = CONFIG[this.currency];
+
+        this.dom.customControl?.classList.toggle('hidden', mode === 'quick');
+        this.dom.quickControl?.classList.toggle('hidden', mode === 'custom');
+        this.dom.methodState?.classList.toggle('hidden', mode === 'idle');
+
+        if (!this.dom.methodText || mode === 'idle') return;
+
+        if (mode === 'quick') {
+            this.dom.methodText.textContent = `Monto rápido seleccionado: ${config.format(this.amount)}.`;
+        } else {
+            this.dom.methodText.textContent = `Donación escrita: ${config.format(this.amount)}.`;
+        }
+    }
+
     updateUI() {
         // Update Frequency Buttons with scribble style
         this.dom.freqBtns.forEach(btn => {
@@ -276,6 +317,7 @@ class DonationWidget {
             this.dom.customInput.placeholder = config.placeholder;
             this.dom.customInput.inputMode = this.currency === 'COP' ? 'numeric' : 'decimal';
         }
+        this.updateAmountControls();
         this.updateDocumentFields();
 
         // Update CTA state

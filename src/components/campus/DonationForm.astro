@@ -47,24 +47,35 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
       </div>
 
       <!-- Custom Amount — organic border -->
-      <div class="mb-4 text-center">
-        <p class="amount-title text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Escribe tu donación</p>
-        <p class="currency-context mt-1 text-[10px] font-intro-reg text-gray-500">{initialCurrency.context}</p>
+      <div class="custom-amount-control">
+        <div class="mb-4 text-center">
+          <p class="amount-title text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Escribe tu donación</p>
+          <p class="currency-context mt-1 text-[10px] font-intro-reg text-gray-500">{initialCurrency.context}</p>
+        </div>
+        <div class="relative mb-2 group-input select-organic p-2">
+          <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
+          <input type="text"
+                 inputmode="decimal"
+                 class="custom-amount-input w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
+                 placeholder={initialCurrency.placeholder}>
+          <span class="currency-code sr-only">{initialCurrency.code}</span>
+        </div>
+        <p class="amount-min-label mb-5 text-center text-[10px] font-intro-reg text-gray-400">{initialCurrency.minLabel}</p>
       </div>
-      <div class="relative mb-2 group-input select-organic p-2">
-        <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
-        <input type="text"
-               inputmode="decimal"
-               class="custom-amount-input w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
-               placeholder={initialCurrency.placeholder}>
-        <span class="currency-code sr-only">{initialCurrency.code}</span>
+
+      <div class="amount-method-state hidden mb-5 rounded-xl border border-[#001B3A]/15 bg-[#F3F0E6] px-4 py-3 text-center">
+        <p class="amount-method-text font-intro-reg text-xs leading-relaxed text-[#001B3A]/75"></p>
+        <button type="button" class="amount-method-reset mt-2 font-intro text-[10px] uppercase tracking-widest text-[#001B3A] underline decoration-brand-teal/60 underline-offset-4">
+          Cambiar monto
+        </button>
       </div>
-      <p class="amount-min-label mb-5 text-center text-[10px] font-intro-reg text-gray-400">{initialCurrency.minLabel}</p>
 
       <!-- Predefined Amounts -->
-      <p class="quick-amount-label block text-[10px] font-intro uppercase text-gray-400 mb-2 tracking-widest text-center">Escoge un monto rápido</p>
-      <div class="amounts-grid grid grid-cols-3 gap-3 mb-6">
-        <!-- JS populates this -->
+      <div class="quick-amount-control mb-6">
+        <p class="quick-amount-label block text-[10px] font-intro uppercase text-gray-400 mb-2 tracking-widest text-center">Escoge un monto rápido</p>
+        <div class="amounts-grid grid grid-cols-3 gap-3">
+          <!-- JS populates this -->
+        </div>
       </div>
 
       <!-- Donor Info (inline, shown in same form) -->
