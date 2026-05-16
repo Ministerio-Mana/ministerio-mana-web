@@ -31,6 +31,30 @@ const wallCracks = [
   'M214 365 C203 392 224 419 212 452 C202 484 130 503 122 535',
   'M581 365 C571 394 594 421 580 452 C566 480 512 506 506 536',
 ];
+const wallScars = [
+  'M58 64 C92 58 116 62 142 54',
+  'M190 70 C232 58 276 72 312 61',
+  'M392 72 C424 62 452 70 470 61',
+  'M706 62 C744 50 790 61 828 50',
+  'M42 150 C70 143 92 151 118 145',
+  'M304 148 C338 139 392 151 432 142',
+  'M532 152 C566 140 596 151 614 144',
+  'M738 146 C776 136 808 150 842 140',
+  'M62 240 C98 226 134 240 160 230',
+  'M228 236 C260 226 310 240 346 230',
+  'M410 246 C442 232 474 244 488 236',
+  'M750 240 C786 228 842 242 866 232',
+  'M70 330 C98 318 138 330 164 320',
+  'M380 336 C420 322 474 338 502 326',
+  'M588 330 C628 316 666 334 694 322',
+  'M812 336 C852 322 904 338 934 326',
+  'M148 412 C184 400 228 416 256 402',
+  'M424 414 C462 400 512 416 548 402',
+  'M630 414 C672 398 718 418 742 404',
+  'M118 580 C156 562 204 582 236 566',
+  'M452 580 C500 560 548 582 584 564',
+  'M756 580 C802 560 858 580 902 560',
+];
 const wallCrevices = [
   'M198 102 C220 95 247 104 266 102',
   'M455 102 C503 94 557 106 624 100',
@@ -39,6 +63,21 @@ const wallCrevices = [
   'M504 278 C552 270 627 282 692 277',
   'M214 452 C248 444 286 452 328 451',
   'M506 452 C574 443 650 454 732 451',
+];
+const wallPaperSlips: Array<[number, number, number, number, number, number]> = [
+  [182, 95, 34, 10, -8, 0], [216, 97, 26, 9, 6, 1], [244, 94, 20, 12, -18, 0],
+  [452, 94, 32, 10, 8, 0], [486, 96, 44, 8, -4, 2], [532, 94, 28, 12, 14, 0], [568, 96, 40, 9, -8, 1],
+  [704, 178, 26, 11, -16, 0], [732, 180, 38, 8, 3, 1], [774, 179, 24, 12, 18, 0], [804, 181, 36, 9, -5, 2], [844, 178, 28, 11, 12, 0],
+  [124, 268, 30, 12, -9, 0], [158, 271, 44, 9, 5, 1], [205, 268, 22, 13, -18, 0], [232, 271, 36, 9, 14, 2], [276, 268, 38, 10, -6, 0],
+  [500, 269, 24, 13, 11, 0], [526, 271, 42, 8, -3, 1], [572, 268, 30, 12, 18, 0], [606, 271, 40, 9, -8, 2], [652, 269, 30, 12, 8, 0],
+  [220, 443, 36, 11, -12, 0], [260, 446, 22, 13, 16, 1], [288, 443, 34, 10, 3, 0],
+  [508, 443, 28, 12, -15, 0], [540, 446, 46, 8, 6, 2], [590, 443, 24, 13, 19, 0], [620, 446, 40, 9, -6, 1], [666, 443, 38, 10, 10, 0],
+  [90, 126, 12, 34, 6, 0], [92, 162, 10, 28, -7, 1],
+  [260, 132, 11, 30, -8, 2], [262, 166, 10, 26, 5, 0],
+  [498, 206, 12, 36, 8, 1], [500, 246, 10, 30, -5, 0],
+  [706, 210, 12, 38, -9, 0], [692, 252, 34, 9, 8, 1],
+  [210, 388, 11, 30, 6, 0], [198, 424, 38, 9, -4, 2],
+  [576, 389, 12, 34, -7, 1], [560, 424, 36, 9, 5, 0],
 ];
 const wallHoles = [
   [84, 73, 3], [254, 60, 2], [420, 78, 2], [602, 56, 3], [744, 78, 2], [884, 60, 2],
@@ -59,11 +98,45 @@ const wallPlants = [
   'M150 494 C132 479 134 458 154 446 C151 470 169 480 150 494 Z',
   'M154 448 C173 463 176 484 154 502',
 ];
+const wallCaperBranches = [
+  'M610 105 C560 78 510 84 472 112',
+  'M612 108 C568 118 530 142 492 166',
+  'M616 106 C660 74 713 78 762 106',
+  'M618 112 C670 118 720 138 778 162',
+  'M610 116 C585 146 562 174 548 208',
+  'M632 116 C658 148 674 176 682 213',
+  'M584 94 C546 68 507 64 466 78',
+  'M655 94 C706 62 748 70 796 90',
+  'M598 128 C548 134 503 156 462 190',
+  'M645 130 C688 140 730 164 770 200',
+  'M612 104 C610 151 604 184 590 225',
+];
+const wallCaperLeaves: Array<[number, number, number, number, number, number]> = [
+  [474, 88, 18, 7, -24, 0.54], [501, 78, 16, 7, 18, 0.48], [526, 92, 19, 8, -12, 0.54],
+  [552, 76, 18, 7, -28, 0.52], [578, 92, 20, 8, 17, 0.58], [604, 82, 19, 8, -8, 0.56],
+  [632, 88, 21, 8, 14, 0.58], [660, 74, 18, 7, -18, 0.52], [688, 88, 21, 8, 22, 0.56],
+  [718, 82, 18, 7, -24, 0.5], [750, 96, 19, 8, 16, 0.52], [780, 94, 17, 7, -10, 0.44],
+  [492, 121, 20, 8, 18, 0.58], [520, 114, 22, 8, -18, 0.62], [548, 128, 18, 7, 27, 0.58],
+  [578, 119, 22, 9, -9, 0.64], [608, 132, 24, 9, 18, 0.68], [638, 120, 22, 9, -17, 0.64],
+  [666, 132, 24, 9, 13, 0.66], [696, 120, 21, 8, -20, 0.6], [724, 134, 22, 9, 19, 0.56],
+  [754, 124, 19, 8, -12, 0.5], [462, 158, 19, 8, -16, 0.48], [494, 154, 22, 9, 12, 0.58],
+  [526, 166, 22, 9, -24, 0.62], [558, 154, 24, 9, 18, 0.68], [590, 170, 25, 10, -14, 0.68],
+  [624, 158, 24, 10, 20, 0.7], [656, 172, 24, 9, -18, 0.66], [688, 160, 22, 9, 16, 0.62],
+  [720, 174, 21, 8, -12, 0.58], [752, 164, 18, 8, 22, 0.5], [532, 202, 18, 8, 26, 0.42],
+  [566, 206, 21, 8, -15, 0.52], [602, 216, 23, 9, 18, 0.56], [638, 204, 21, 8, -24, 0.52],
+  [674, 214, 19, 8, 14, 0.46],
+];
 const wallCaperFlowers = [
-  [242, 82, 1],
-  [577, 73, 0.92],
-  [742, 158, 0.84],
-  [492, 315, 0.78],
+  [506, 99, 0.62],
+  [552, 142, 0.74],
+  [598, 98, 0.7],
+  [646, 152, 0.76],
+  [690, 104, 0.68],
+  [734, 144, 0.62],
+  [604, 196, 0.56],
+  [668, 200, 0.52],
+  [242, 82, 0.72],
+  [492, 315, 0.62],
 ];
 const copy = {
   es: {
@@ -302,14 +375,34 @@ const i18n = JSON.stringify(c.js);
                 <path d={`M${x + 16} ${y + height - 18} C${x + width * 0.38} ${y + height - 3} ${x + width * 0.72} ${y + height - 28} ${x + width - 18} ${y + height - 12}`} />
               ))}
             </g>
+            <g class="prayer-wall-sketch__scars">
+              {wallScars.map((d) => <path d={d} />)}
+            </g>
             <g class="prayer-wall-sketch__crevices">
               {wallCrevices.map((d) => <path d={d} />)}
+            </g>
+            <g class="prayer-wall-sketch__paper-slips">
+              {wallPaperSlips.map(([x, y, width, height, rotate, tone]) => (
+                <g class={`prayer-wall-sketch__paper-slip prayer-wall-sketch__paper-slip--${tone}`} transform={`translate(${x} ${y}) rotate(${rotate})`}>
+                  <path class="paper-slip__shadow" d={`M2 3 L${width + 1} 1 L${width - 1} ${height + 3} L0 ${height + 2} Z`} />
+                  <path class="paper-slip__sheet" d={`M0 2 C${width * 0.28} -1 ${width * 0.68} 4 ${width} 1 L${width - 2} ${height} C${width * 0.62} ${height - 2} ${width * 0.3} ${height + 3} 1 ${height} Z`} />
+                  <path class="paper-slip__fold" d={`M${width * 0.24} 2 C${width * 0.34} ${height * 0.46} ${width * 0.22} ${height * 0.72} ${width * 0.08} ${height}`} />
+                  <path class="paper-slip__crease" d={`M${width * 0.48} ${height * 0.38} C${width * 0.62} ${height * 0.25} ${width * 0.72} ${height * 0.45} ${width * 0.86} ${height * 0.3}`} />
+                </g>
+              ))}
             </g>
             <g class="prayer-wall-sketch__cracks">
               {wallCracks.map((d) => <path d={d} />)}
             </g>
             <g class="prayer-wall-sketch__holes">
               {wallHoles.map(([cx, cy, radius]) => <circle cx={cx} cy={cy} r={radius} />)}
+            </g>
+            <g class="prayer-wall-sketch__caper-bush">
+              <path class="bush-mass" d="M462 124 C478 72 542 44 612 58 C678 36 760 56 800 110 C820 156 770 201 704 206 C640 238 548 220 506 184 C454 178 430 154 462 124 Z" />
+              {wallCaperBranches.map((d) => <path class="branch" d={d} />)}
+              {wallCaperLeaves.map(([cx, cy, rx, ry, rotate, opacity]) => (
+                <ellipse class="leaf" cx={cx} cy={cy} rx={rx} ry={ry} opacity={opacity} transform={`rotate(${rotate} ${cx} ${cy})`} />
+              ))}
             </g>
             <g class="prayer-wall-sketch__plants">
               {wallPlants.map((d) => <path d={d} />)}
@@ -423,14 +516,34 @@ const i18n = JSON.stringify(c.js);
                       <path d={`M${x + 16} ${y + height - 18} C${x + width * 0.38} ${y + height - 3} ${x + width * 0.72} ${y + height - 28} ${x + width - 18} ${y + height - 12}`} />
                     ))}
                   </g>
+                  <g class="prayer-wall-sketch__scars">
+                    {wallScars.map((d) => <path d={d} />)}
+                  </g>
                   <g class="prayer-wall-sketch__crevices">
                     {wallCrevices.map((d) => <path d={d} />)}
+                  </g>
+                  <g class="prayer-wall-sketch__paper-slips">
+                    {wallPaperSlips.map(([x, y, width, height, rotate, tone]) => (
+                      <g class={`prayer-wall-sketch__paper-slip prayer-wall-sketch__paper-slip--${tone}`} transform={`translate(${x} ${y}) rotate(${rotate})`}>
+                        <path class="paper-slip__shadow" d={`M2 3 L${width + 1} 1 L${width - 1} ${height + 3} L0 ${height + 2} Z`} />
+                        <path class="paper-slip__sheet" d={`M0 2 C${width * 0.28} -1 ${width * 0.68} 4 ${width} 1 L${width - 2} ${height} C${width * 0.62} ${height - 2} ${width * 0.3} ${height + 3} 1 ${height} Z`} />
+                        <path class="paper-slip__fold" d={`M${width * 0.24} 2 C${width * 0.34} ${height * 0.46} ${width * 0.22} ${height * 0.72} ${width * 0.08} ${height}`} />
+                        <path class="paper-slip__crease" d={`M${width * 0.48} ${height * 0.38} C${width * 0.62} ${height * 0.25} ${width * 0.72} ${height * 0.45} ${width * 0.86} ${height * 0.3}`} />
+                      </g>
+                    ))}
                   </g>
                   <g class="prayer-wall-sketch__cracks">
                     {wallCracks.map((d) => <path d={d} />)}
                   </g>
                   <g class="prayer-wall-sketch__holes">
                     {wallHoles.map(([cx, cy, radius]) => <circle cx={cx} cy={cy} r={radius} />)}
+                  </g>
+                  <g class="prayer-wall-sketch__caper-bush">
+                    <path class="bush-mass" d="M462 124 C478 72 542 44 612 58 C678 36 760 56 800 110 C820 156 770 201 704 206 C640 238 548 220 506 184 C454 178 430 154 462 124 Z" />
+                    {wallCaperBranches.map((d) => <path class="branch" d={d} />)}
+                    {wallCaperLeaves.map(([cx, cy, rx, ry, rotate, opacity]) => (
+                      <ellipse class="leaf" cx={cx} cy={cy} rx={rx} ry={ry} opacity={opacity} transform={`rotate(${rotate} ${cx} ${cy})`} />
+                    ))}
                   </g>
                   <g class="prayer-wall-sketch__plants">
                     {wallPlants.map((d) => <path d={d} />)}
@@ -918,8 +1031,8 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-sketch__stones rect {
     fill: #d9d5c4;
-    stroke: rgba(26, 37, 92, 0.22);
-    stroke-width: 1.5;
+    stroke: rgba(89, 68, 32, 0.24);
+    stroke-width: 1.65;
     vector-effect: non-scaling-stroke;
   }
 
@@ -940,11 +1053,53 @@ const i18n = JSON.stringify(c.js);
     vector-effect: non-scaling-stroke;
   }
 
+  .prayer-wall-sketch__scars path {
+    fill: none;
+    stroke: rgba(74, 55, 29, 0.22);
+    stroke-linecap: round;
+    stroke-width: 1.4;
+    vector-effect: non-scaling-stroke;
+  }
+
   .prayer-wall-sketch__crevices path {
     fill: none;
-    stroke: rgba(7, 17, 28, 0.3);
+    stroke: rgba(56, 39, 22, 0.54);
     stroke-linecap: round;
-    stroke-width: 5.6;
+    stroke-width: 8.8;
+    filter: drop-shadow(0 3px 0 rgba(255, 248, 229, 0.2));
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__paper-slip {
+    opacity: 0.86;
+  }
+
+  .prayer-wall-sketch__paper-slip .paper-slip__shadow {
+    fill: rgba(38, 31, 24, 0.24);
+  }
+
+  .prayer-wall-sketch__paper-slip .paper-slip__sheet {
+    fill: rgba(255, 250, 238, 0.9);
+    stroke: rgba(72, 54, 30, 0.32);
+    stroke-linejoin: round;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__paper-slip--1 .paper-slip__sheet {
+    fill: rgba(233, 238, 244, 0.86);
+  }
+
+  .prayer-wall-sketch__paper-slip--2 .paper-slip__sheet {
+    fill: rgba(245, 232, 218, 0.9);
+  }
+
+  .prayer-wall-sketch__paper-slip .paper-slip__fold,
+  .prayer-wall-sketch__paper-slip .paper-slip__crease {
+    fill: none;
+    stroke: rgba(32, 45, 99, 0.22);
+    stroke-linecap: round;
+    stroke-width: 0.9;
     vector-effect: non-scaling-stroke;
   }
 
@@ -959,6 +1114,28 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-sketch__holes circle {
     fill: rgba(7, 17, 28, 0.26);
+  }
+
+  .prayer-wall-sketch__caper-bush .bush-mass {
+    fill: rgba(35, 91, 72, 0.16);
+    stroke: rgba(35, 91, 72, 0.16);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__caper-bush .branch {
+    fill: none;
+    stroke: rgba(29, 83, 67, 0.44);
+    stroke-linecap: round;
+    stroke-width: 1.6;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .prayer-wall-sketch__caper-bush .leaf {
+    fill: rgba(42, 107, 82, 0.54);
+    stroke: rgba(26, 61, 52, 0.28);
+    stroke-width: 0.9;
+    vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__plants path {
@@ -1040,31 +1217,33 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note::before {
     background:
-      linear-gradient(90deg, rgba(7, 17, 28, 0.18), rgba(7, 17, 28, 0.52), rgba(7, 17, 28, 0.18));
-    border-radius: 48% 52% 44% 56%;
+      linear-gradient(90deg, rgba(255, 248, 229, 0.16), transparent 15% 84%, rgba(255, 248, 229, 0.12)),
+      linear-gradient(90deg, rgba(35, 24, 14, 0.18), rgba(35, 24, 14, 0.62), rgba(35, 24, 14, 0.2));
+    border-radius: 44% 56% 42% 58%;
     box-shadow:
       0 5px 14px rgba(7, 17, 28, 0.24),
-      inset 0 0 0 1px rgba(7, 17, 28, 0.18);
+      inset 0 2px 0 rgba(255, 248, 229, 0.16),
+      inset 0 -2px 0 rgba(35, 24, 14, 0.2);
     content: "";
-    height: 0.62rem;
-    left: 0.42rem;
+    height: 0.8rem;
+    left: 0.22rem;
     position: absolute;
-    top: 2.3rem;
+    top: 2.18rem;
     transform: rotate(var(--r));
-    width: 5.1rem;
+    width: 5.75rem;
     z-index: 0;
   }
 
   .prayer-note::after {
-    background: rgba(7, 17, 28, 0.3);
+    background: rgba(255, 248, 229, 0.22);
     border-radius: 999px;
     content: "";
-    height: 0.24rem;
-    left: 0.08rem;
+    height: 0.18rem;
+    left: 0.4rem;
     position: absolute;
-    top: 2.64rem;
+    top: 2.1rem;
     transform: rotate(var(--r));
-    width: 0.9rem;
+    width: 4.9rem;
     z-index: 1;
   }
 
@@ -1134,13 +1313,13 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note__paper {
     display: block;
-    height: 3.05rem;
-    left: calc(var(--paper-left) - 0.72rem);
+    height: 3.35rem;
+    left: calc(var(--paper-left) - 0.86rem);
     pointer-events: none;
     position: absolute;
-    top: calc(var(--paper-top) - 0.42rem);
+    top: calc(var(--paper-top) - 0.56rem);
     transform: rotate(var(--r));
-    width: 5.45rem;
+    width: 5.95rem;
     z-index: 3;
   }
 
@@ -1151,11 +1330,30 @@ const i18n = JSON.stringify(c.js);
     width: 100%;
   }
 
+  .prayer-note__slot-shadow {
+    fill: none;
+    stroke: rgba(35, 24, 14, 0.32);
+    stroke-linecap: round;
+    stroke-width: 13;
+  }
+
+  .prayer-note__stone-lip {
+    fill: none;
+    stroke: rgba(255, 248, 229, 0.24);
+    stroke-linecap: round;
+    stroke-width: 5;
+  }
+
   .prayer-note__crevice {
     fill: none;
-    stroke: rgba(7, 17, 28, 0.42);
+    stroke: rgba(36, 26, 17, 0.62);
     stroke-linecap: round;
-    stroke-width: 7.2;
+    stroke-linejoin: round;
+    stroke-width: 8.6;
+  }
+
+  .prayer-note__crevice--vertical {
+    stroke-width: 9.8;
   }
 
   .prayer-note__paper-body {
@@ -1173,8 +1371,16 @@ const i18n = JSON.stringify(c.js);
     fill: #fffaf0;
   }
 
+  .prayer-note__paper-body--blue {
+    fill: #e8eef7;
+  }
+
+  .prayer-note__paper-body--pink {
+    fill: #f5dfdf;
+  }
+
   .prayer-note__paper-shadow {
-    fill: rgba(7, 17, 28, 0.16);
+    fill: rgba(7, 17, 28, 0.22);
   }
 
   .prayer-note__paper-fold,
