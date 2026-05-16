@@ -62,13 +62,16 @@ class MultiDonationFlow {
     constructor(container) {
         this.el = container;
         this.missionaries = JSON.parse(container.dataset.missionaries || '[]');
+        this.initialSlug = container.dataset.initialMissionary || '';
+        this.initialName = container.dataset.initialMissionaryName || '';
+        this.hasInitial = this.initialSlug && this.missionaries.some((m) => m.slug === this.initialSlug);
         // Auto-detect currency from server-side geolocation
         const country = (container.dataset.country || 'CO').toUpperCase();
         const defaultCurrency = country === 'CO' ? 'COP' : 'USD';
         this.state = {
             step: 1,
             count: 0,
-            selected: [],
+            selected: this.baseSelection(),
             currency: defaultCurrency,
             frequency: 'monthly',
             amount: 0,
@@ -80,6 +83,32 @@ class MultiDonationFlow {
         // Sync the select element with auto-detected currency
         const currSelect = this.el.querySelector('#multi-currency');
         if (currSelect) currSelect.value = defaultCurrency;
+    }
+
+    baseSelection() {
+        return this.hasInitial ? [this.initialSlug] : [];
+    }
+
+    selectedTargetLabel() {
+        const total = this.state.count || 0;
+        const selected = this.state.selected.length;
+        return total > 0 ? `${selected}/${total}` : '0/0';
+    }
+
+    syncChipState() {
+        this.el.querySelectorAll('.missionary-chip').forEach(chip => {
+            const slug = chip.dataset.slug;
+            const selected = this.state.selected.includes(slug);
+            const locked = this.hasInitial && slug === this.initialSlug;
+            chip.classList.toggle('selected', selected);
+            chip.classList.toggle('locked', locked);
+            chip.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            if (locked) {
+                chip.setAttribute('aria-disabled', 'true');
+            } else {
+                chip.removeAttribute('aria-disabled');
+            }
+        });
     }
 
     init() {
@@ -121,13 +150,15 @@ class MultiDonationFlow {
         this.el.querySelectorAll('.count-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.state.count = parseInt(btn.dataset.count);
-                this.state.selected = [];
+                this.state.selected = this.baseSelection();
 
                 if (this.state.count === this.missionaries.length) {
                     this.state.selected = this.missionaries.map(m => m.slug);
+                    this.syncChipState();
                     this.goToStep(3);
                     this.renderAmounts();
                 } else {
+                    this.syncChipState();
                     this.updateStep2UI();
                     this.goToStep(2);
                 }
@@ -160,37 +191,35 @@ class MultiDonationFlow {
 
     toggleChip(chip) {
         const slug = chip.dataset.slug;
+        if (this.hasInitial && slug === this.initialSlug) return;
         const idx = this.state.selected.indexOf(slug);
 
         if (idx >= 0) {
             this.state.selected.splice(idx, 1);
-            chip.classList.remove('selected');
         } else if (this.state.selected.length < this.state.count) {
             this.state.selected.push(slug);
-            chip.classList.add('selected');
         }
+        this.syncChipState();
         this.updateStep2UI();
     }
 
     selectRandom() {
-        this.state.selected = [];
-        this.el.querySelectorAll('.missionary-chip').forEach(c => c.classList.remove('selected'));
+        this.state.selected = this.baseSelection();
 
-        const shuffled = [...this.missionaries].sort(() => Math.random() - 0.5);
-        const picked = shuffled.slice(0, this.state.count);
-        this.state.selected = picked.map(m => m.slug);
+        const needed = Math.max(0, this.state.count - this.state.selected.length);
+        const shuffled = [...this.missionaries]
+            .filter(m => !this.state.selected.includes(m.slug))
+            .sort(() => Math.random() - 0.5);
+        const picked = shuffled.slice(0, needed);
+        this.state.selected = [...this.state.selected, ...picked.map(m => m.slug)];
 
-        this.el.querySelectorAll('.missionary-chip').forEach(chip => {
-            if (this.state.selected.includes(chip.dataset.slug)) {
-                chip.classList.add('selected');
-            }
-        });
+        this.syncChipState();
         this.updateStep2UI();
     }
 
     updateStep2UI() {
         const countDisplay = this.el.querySelector('.selected-count');
-        if (countDisplay) countDisplay.textContent = this.state.count;
+        if (countDisplay) countDisplay.textContent = this.selectedTargetLabel();
 
         const confirmBtn = this.el.querySelector('#confirm-selection-btn');
         if (confirmBtn) {
@@ -428,13 +457,19 @@ class MultiDonationFlow {
         container.innerHTML = this.state.selected.map(slug => {
             const m = this.missionaries.find(x => x.slug === slug);
             if (!m) return '';
+            const photo = m.foto
+                ? `<img src="${m.foto}" alt="${m.nombre}" class="w-full h-full object-cover">`
+                : `<span class="text-white font-intro text-sm">${m.nombre.charAt(0)}</span>`;
+            const lockedLabel = this.hasInitial && slug === this.initialSlug
+                ? '<span class="ml-2 rounded-full bg-[#FACC15] px-2 py-1 text-[8px] font-intro uppercase tracking-widest text-[#001B3A]">QR</span>'
+                : '';
             return `
                 <div class="flex items-center justify-between bg-[#001B3A]/20 rounded-xl p-4 mb-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-[#001B3A] flex items-center justify-center text-white font-intro text-sm">
-                            ${m.nombre.charAt(0)}
+                        <div class="w-12 h-12 rounded-2xl border-2 border-[#001B3A] bg-[#001B3A] overflow-hidden flex items-center justify-center">
+                            ${photo}
                         </div>
-                        <span class="font-intro text-white text-base uppercase">${m.nombre}</span>
+                        <span class="font-intro text-white text-base uppercase">${m.nombre}${lockedLabel}</span>
                     </div>
                     <span class="font-intro text-[#001B3A] text-lg">${config.format(amount)}</span>
                 </div>
@@ -590,7 +625,10 @@ class MultiDonationFlow {
 // Initialize
 function initMultiDonation() {
     const el = document.getElementById('multi-donation-flow');
-    if (el) new MultiDonationFlow(el);
+    if (el && !el._multiDonationInit) {
+        el._multiDonationInit = true;
+        new MultiDonationFlow(el);
+    }
 }
 
 if (document.readyState === 'loading') {

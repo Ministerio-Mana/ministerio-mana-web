@@ -1,0 +1,178 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import DonationForm from '@components/campus/DonationForm.astro';
+import MultiDonationFlow from '@components/campus/MultiDonationFlow.astro';
+import { MISIONEROS } from '@data/misioneros';
+
+const { slug } = Astro.params;
+const misionero = MISIONEROS.find((item) => item.slug === slug);
+if (!misionero) throw new Error('Misionero no encontrado');
+
+const firstName = misionero.nombre.split(' ')[0];
+const title = `${misionero.nombre} | Socio Campus Maná`;
+const description = `Siembra en la misión de ${misionero.nombre} con Campus Maná.`;
+const image = misionero.foto || '/images/campus/misioneros/GRUPO-COMPLETO.jpg';
+const country = Astro.request.headers.get('x-vercel-ip-country') || Astro.locals?.geo?.country || 'CO';
+const hasPlayableVideo = Boolean(misionero.video && !misionero.video.includes('VIDEO_ID_'));
+---
+
+<BaseLayout {title} {description} {image} hideHeader={false} hideFooter={false}>
+  <style is:global>
+    @font-face {
+      font-family: 'Intro';
+      src: url('/fonts/intro/Intro-Black.woff2') format('woff2');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Intro';
+      src: url('/fonts/intro/Intro-Regular.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Summer Loving';
+      src: url('/fonts/SUMMER%20FONT/Summer%20Loving%20Regular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    .font-intro { font-family: 'Intro', sans-serif; font-weight: 900; }
+    .font-intro-reg { font-family: 'Intro', sans-serif; font-weight: 400; }
+    .font-summer { font-family: 'Summer Loving', cursive; }
+    .btn-scribble {
+      position: relative;
+      z-index: 10;
+      display: inline-block;
+      transition: transform 0.2s, background-color 0.3s, color 0.3s;
+    }
+    .btn-scribble::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border: 2.5px solid currentColor;
+      border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+      z-index: -1;
+      opacity: 0.7;
+      transition: all 0.4s ease;
+    }
+    .btn-scribble:hover::before {
+      border-radius: 15px 255px 15px 255px / 255px 15px 255px 15px;
+      transform: scale(1.06);
+      opacity: 1;
+    }
+    .border-organic {
+      border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    }
+  </style>
+
+  <script src="../../../scripts/campus-donation.js"></script>
+
+  <section class="relative overflow-hidden bg-[#001B3A] text-white">
+    <div class="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]"></div>
+    <div class="container-tight relative z-10 grid min-h-[88vh] items-center gap-10 px-4 py-20 lg:grid-cols-[1fr_430px]">
+      <div>
+        <p class="font-intro text-xs uppercase tracking-[0.28em] text-[#2DD4BF]">Socios de la Gran Comisión</p>
+        <div class="mt-8">
+          <span class="font-summer block -rotate-2 text-[#2DD4BF]" style="font-size: clamp(5rem, 11vw, 9rem);">Siembra con</span>
+          <h1 class="font-intro -mt-8 max-w-4xl uppercase leading-[0.9] text-white" style="font-size: clamp(4rem, 9vw, 8rem);">
+            {firstName}
+          </h1>
+        </div>
+        <p class="mt-6 max-w-2xl text-lg leading-relaxed text-white/85 md:text-2xl">
+          Tu apoyo ayuda a que {misionero.nombre} siga llevando el evangelio y discipulando estudiantes en la universidad.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-4">
+          <a href="#sembrar" class="btn-scribble bg-[#2DD4BF] px-8 py-4 font-intro text-base uppercase tracking-widest text-[#001B3A]">
+            Sembrar ahora
+          </a>
+          <a href="#sumar" class="btn-scribble bg-[#001B3A] px-8 py-4 font-intro text-base uppercase tracking-widest text-white">
+            Sumar más misioneros
+          </a>
+        </div>
+      </div>
+
+      <aside id="sembrar" class="scroll-mt-24">
+        <div class="relative">
+          <div class="absolute inset-0 rotate-2 rounded-[2rem] bg-[#2DD4BF]"></div>
+          <div class="relative overflow-hidden border-organic border-2 border-[#001B3A] bg-white p-2 shadow-2xl">
+            <div class="relative h-72 overflow-hidden border-organic bg-[#001B3A]">
+              {hasPlayableVideo ? (
+                <iframe
+                  class="h-full w-full"
+                  src={misionero.video}
+                  title={misionero.nombre}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                ></iframe>
+              ) : misionero.foto ? (
+                <img src={misionero.foto} alt={misionero.nombre} class="h-full w-full object-cover" loading="eager" />
+              ) : (
+                <div class="flex h-full w-full items-center justify-center">
+                  <span class="font-intro text-white/30">Campus Maná</span>
+                </div>
+              )}
+              <div class="absolute bottom-4 left-4 right-4 border-organic border-2 border-[#001B3A] bg-yellow-400 px-4 py-3 shadow-lg">
+                <h2 class="font-intro text-xl uppercase text-[#001B3A]">{misionero.nombre}</h2>
+                <p class="font-intro-reg text-xs uppercase tracking-widest text-[#001B3A]/70">{misionero.rol || 'Misionero Campus'}</p>
+              </div>
+            </div>
+            <div class="p-4">
+              <DonationForm
+                missionaryName={firstName}
+                slug={misionero.slug}
+                country={country}
+              />
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="bg-[#F3F0E6] py-20">
+    <div class="container-tight grid gap-10 px-4 text-[#001B3A] lg:grid-cols-[0.95fr_1.05fr]">
+      <div>
+        <span class="font-summer block -rotate-3 text-[#2DD4BF]" style="font-size: clamp(4.5rem, 10vw, 8rem);">Nuestra</span>
+        <h2 class="font-intro -mt-5 uppercase leading-none" style="font-size: clamp(3.8rem, 8vw, 6.5rem);">MISIÓN</h2>
+        <p class="mt-8 max-w-xl font-intro-reg text-lg leading-relaxed">
+          La universidad es un campo misionero estratégico. Campus Maná acompaña estudiantes, forma discípulos y crea comunidad alrededor de Jesús.
+        </p>
+      </div>
+      <div class="relative overflow-hidden border-organic border-2 border-[#001B3A] bg-[#001B3A] shadow-[10px_10px_0_#2DD4BF]">
+        <img
+          src="/images/campus/misioneros/GRUPO-COMPLETO.jpg"
+          alt="Equipo Campus Maná"
+          class="h-full min-h-[260px] w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-20">
+    <div class="container-tight px-4 text-[#001B3A]">
+      <div class="max-w-3xl">
+        <p class="font-intro text-xs uppercase tracking-[0.24em] text-[#2DD4BF]">Campus Maná</p>
+        <h2 class="mt-4 font-intro text-4xl uppercase leading-tight md:text-6xl">
+          Llevando el evangelio a la academia
+        </h2>
+        <p class="mt-6 font-intro-reg text-lg leading-relaxed text-[#001B3A]/75">
+          Tu siembra sostiene conversaciones, discipulado, grupos de crecimiento y presencia misionera en los espacios donde se forman los líderes del mañana.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div id="sumar" class="scroll-mt-20">
+    <MultiDonationFlow
+      country={country}
+      initialMissionarySlug={misionero.slug}
+      initialMissionaryName={misionero.nombre}
+    />
+  </div>
+  <script src="../../../scripts/campus-multi-donation.js"></script>
+</BaseLayout>

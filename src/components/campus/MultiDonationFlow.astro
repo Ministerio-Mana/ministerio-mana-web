@@ -1,9 +1,29 @@
 ---
 import { MISIONEROS } from '@data/misioneros';
 import SowingIcon from '@components/icons/SowingIcon.astro';
-interface Props { country?: string; }
-const { country = 'CO' } = Astro.props;
+interface Props {
+    country?: string;
+    initialMissionarySlug?: string;
+    initialMissionaryName?: string;
+}
+const { country = 'CO', initialMissionarySlug = '', initialMissionaryName = '' } = Astro.props;
 const totalMissionaries = MISIONEROS.length;
+const hasInitialMissionary = Boolean(initialMissionarySlug);
+const initialCurrency = String(country).toUpperCase() === 'CO'
+    ? {
+        code: 'COP',
+        context: 'Monto en pesos colombianos (COP)',
+        placeholder: '50.000',
+        minLabel: 'Mínimo $5.000 COP',
+        provider: 'Wompi',
+    }
+    : {
+        code: 'USD',
+        context: 'Monto en dólares (USD)',
+        placeholder: '25',
+        minLabel: 'Mínimo $5 USD',
+        provider: 'Stripe',
+    };
 ---
 
 <section id="multi-donation" class="py-24 bg-brand-teal relative overflow-hidden">
@@ -12,19 +32,28 @@ const totalMissionaries = MISIONEROS.length;
     <div class="container-tight px-4 relative z-10"
          id="multi-donation-flow"
          data-country={country}
-         data-missionaries={JSON.stringify(MISIONEROS.map(m => ({ slug: m.slug, nombre: m.nombre })))}>
+         data-initial-missionary={initialMissionarySlug}
+         data-initial-missionary-name={initialMissionaryName}
+         data-missionaries={JSON.stringify(MISIONEROS.map(m => ({
+            slug: m.slug,
+            nombre: m.nombre,
+            rol: m.rol,
+            foto: m.foto,
+         })))}>
 
         <!-- ===== STEP 1: ¿Quieres sembrar en varios? ===== -->
         <div class="flow-step active" data-step="1">
             <div class="text-center mb-12">
                 <span class="font-summer text-white block mb-[-8px] transform -rotate-2" style="font-size: clamp(3.7rem, 12vw, 8rem);">¿Quieres sembrar</span>
                 <h2 class="font-intro text-[#001B3A] uppercase" style="font-size: clamp(2.35rem, 10vw, 6rem);">
-                    EN VARIOS MISIONEROS?
+                    {hasInitialMissionary ? 'EN MÁS MISIONEROS?' : 'EN VARIOS MISIONEROS?'}
                 </h2>
             </div>
 
             <p class="text-center text-white/90 font-intro-reg text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
-                Selecciona cuántos misioneros Campus quieres apoyar y elige a quiénes sembrar.
+                {hasInitialMissionary
+                    ? `Ya incluimos a ${initialMissionaryName || 'este misionero'} por este QR. Puedes sumar más misioneros a la misma siembra.`
+                    : 'Selecciona cuántos misioneros Campus quieres apoyar y elige a quiénes sembrar.'}
             </p>
 
             <div class="flex flex-wrap justify-center gap-4 md:gap-6">
@@ -51,7 +80,10 @@ const totalMissionaries = MISIONEROS.length;
                     TUS MISIONEROS
                 </h2>
                 <p class="text-white/90 font-intro-reg text-lg mt-4">
-                    Elige <span class="selected-count font-intro text-[#001B3A]">2</span> misioneros Campus
+                    Seleccionados: <span class="selected-count font-intro text-[#001B3A]">0/2</span>
+                </p>
+                <p class={`initial-missionary-note ${hasInitialMissionary ? '' : 'hidden'} text-white/75 font-intro-reg text-sm mt-2`}>
+                    <span class="font-intro text-[#001B3A]">{initialMissionaryName}</span> ya está incluido por el QR.
                 </p>
             </div>
 
@@ -62,15 +94,28 @@ const totalMissionaries = MISIONEROS.length;
                 </button>
             </div>
 
-            <!-- Missionary chips -->
-            <div class="flex flex-wrap justify-center gap-4 mb-12" id="missionary-chips">
+            <!-- Missionary cards -->
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-12" id="missionary-chips">
                 {MISIONEROS.map((m) => (
                     <button type="button"
-                        class="missionary-chip px-6 py-4 font-intro text-base md:text-lg uppercase tracking-wide transition-all duration-300 cursor-pointer select-none"
+                        class={`missionary-chip ${m.slug === initialMissionarySlug ? 'locked' : ''} p-3 text-left transition-all duration-300 cursor-pointer select-none`}
                         data-slug={m.slug}
                         data-name={m.nombre}>
-                        <span class="name">{m.nombre}</span>
-                        <span class="check-mark ml-2 hidden">✓</span>
+                        <span class="flex items-center gap-3">
+                            <span class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border-2 border-[#001B3A] bg-[#001B3A]">
+                                {m.foto ? (
+                                    <img src={m.foto} alt={m.nombre} class="h-full w-full object-cover" loading="lazy" />
+                                ) : (
+                                    <span class="flex h-full w-full items-center justify-center text-xs text-white/40">CM</span>
+                                )}
+                            </span>
+                            <span class="min-w-0">
+                                <span class="name block font-intro text-sm uppercase tracking-wide text-white">{m.nombre}</span>
+                                <span class="block font-intro-reg text-[11px] text-white/65">{m.rol || 'Misionero Campus'}</span>
+                                <span class="locked-label mt-1 hidden font-intro text-[9px] uppercase tracking-widest text-[#FACC15]">Incluido por QR</span>
+                            </span>
+                            <span class="check-mark ml-auto hidden h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2DD4BF] font-intro text-[#001B3A]">✓</span>
+                        </span>
                     </button>
                 ))}
             </div>
@@ -104,7 +149,7 @@ const totalMissionaries = MISIONEROS.length;
                 <!-- Custom input -->
                 <div class="mb-4 text-center">
                     <p class="text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Escribe tu donación</p>
-                    <p id="multi-currency-context" class="mt-1 text-[10px] font-intro-reg text-white/75">Monto en pesos colombianos (COP)</p>
+                    <p id="multi-currency-context" class="mt-1 text-[10px] font-intro-reg text-white/75">{initialCurrency.context}</p>
                 </div>
                 <div class="relative mb-2 select-organic p-2 bg-white max-w-xs mx-auto">
                     <span class="multi-currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
@@ -112,10 +157,10 @@ const totalMissionaries = MISIONEROS.length;
                            inputmode="decimal"
                            id="multi-custom-amount"
                            class="w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
-                           placeholder="50.000">
-                    <span id="multi-currency-code" class="sr-only">COP</span>
+                           placeholder={initialCurrency.placeholder}>
+                    <span id="multi-currency-code" class="sr-only">{initialCurrency.code}</span>
                 </div>
-                <p id="multi-amount-min-label" class="mb-5 text-center text-[10px] font-intro-reg text-white/65">Mínimo $5.000 COP</p>
+                <p id="multi-amount-min-label" class="mb-5 text-center text-[10px] font-intro-reg text-white/65">{initialCurrency.minLabel}</p>
 
                 <!-- Amount buttons -->
                 <p class="block text-[10px] font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Escoge un monto rápido</p>
@@ -236,7 +281,7 @@ const totalMissionaries = MISIONEROS.length;
 
             <p class="text-center text-white/50 font-intro-reg text-[10px] mt-4 flex items-center justify-center gap-1">
                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                Pago seguro procesado por <span id="provider-label" class="font-intro">Wompi / Stripe</span>
+                Pago seguro procesado por <span id="provider-label" class="font-intro">{initialCurrency.provider}</span>
             </p>
             <p class="mt-2 text-center text-white/55 font-intro-reg text-[10px]">
                 Al donar aceptas los <a href="/donaciones/terminos-suscripciones" class="font-intro text-[#001B3A] underline decoration-white/60 underline-offset-2">terminos de donaciones y suscripciones</a>.
@@ -265,12 +310,13 @@ const totalMissionaries = MISIONEROS.length;
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Missionary chip — organic unselected */
+    /* Missionary card — organic unselected */
     .missionary-chip {
-        background: transparent;
+        background: rgba(255, 255, 255, 0.08);
         color: white;
         border: 2px solid rgba(255,255,255,0.4);
-        border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        border-radius: 24px 10px 22px 12px / 12px 22px 10px 24px;
+        min-height: 92px;
     }
     .missionary-chip:hover {
         border-color: white;
@@ -280,11 +326,17 @@ const totalMissionaries = MISIONEROS.length;
         background: #001B3A;
         color: #2DD4BF;
         border-color: #001B3A;
-        transform: scale(1.05);
+        transform: translateY(-2px);
         box-shadow: 0 4px 15px rgba(0,27,58,0.4);
     }
+    .missionary-chip.locked {
+        cursor: default;
+    }
+    .missionary-chip.locked .locked-label {
+        display: block;
+    }
     .missionary-chip.selected .check-mark {
-        display: inline;
+        display: inline-flex;
     }
 
     /* Scribble Button in multi-flow context */
