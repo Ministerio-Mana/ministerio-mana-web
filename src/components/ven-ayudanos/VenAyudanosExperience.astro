@@ -1,0 +1,654 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import TurnstileWidget from '@components/TurnstileWidget.astro';
+import venAyudanosScript from '@scripts/ven-ayudanos.js?url';
+import { helpOptions, ministries, ministryOrder, type MinistryKey } from '@data/venAyudanos';
+
+interface Props {
+  selected?: MinistryKey | null;
+}
+
+const { selected = null } = Astro.props as Props;
+const selectedMinistry = selected ? ministries[selected] : null;
+const initialKey: MinistryKey = selected ?? 'mana';
+const activeMinistry = ministries[initialKey];
+const pageTitle = selectedMinistry
+  ? `${selectedMinistry.headline} | Ven y Ayúdanos`
+  : 'Ven y Ayúdanos | Ministerio Maná';
+const pageDescription = selectedMinistry
+  ? selectedMinistry.subheadline
+  : 'Una experiencia de respuesta para servir, aportar, crear, acompañar, orar, apadrinar o sembrar en Ministerio Maná.';
+---
+
+<CumbreLayout
+  title={pageTitle}
+  description={pageDescription}
+  image="/images/cumbre/fishermen-sunset.jpg"
+  imageAlt="Ven y Ayúdanos - Ministerio Maná"
+  imageWidth={1200}
+  imageHeight={630}
+  imageType="image/jpeg"
+  flush
+  showEventBadge={false}
+>
+  <main
+    class="ven-help-experience bg-[#07111c] text-white"
+    data-ven-ayudanos
+    data-initial-ministry={initialKey}
+    style={`--active-accent:${activeMinistry.accent}; --active-glow:${activeMinistry.glow};`}
+  >
+    <section class="ven-help-story" data-cumbre-story data-cumbre-static-mobile="true" style="--panel-count: 5;">
+      <section class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#07111c] text-white" data-cumbre-panel data-panel-theme="dark">
+        <div class="absolute inset-0" data-panel-bg>
+          <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover" />
+          <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(7,17,28,0.98)_0%,rgba(7,17,28,0.86)_48%,rgba(7,17,28,0.42)_100%)]"></div>
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_76%_18%,rgba(40,166,189,0.28),transparent_34%),radial-gradient(circle_at_26%_82%,rgba(242,201,76,0.16),transparent_32%)]"></div>
+        </div>
+
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+          <div class="grid w-full items-center gap-10 lg:grid-cols-[1.08fr_0.92fr]">
+            <div class="max-w-4xl space-y-7">
+              <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 backdrop-blur-sm" data-reveal>
+                <span class="h-2 w-2 rounded-full bg-brand-gold"></span>
+                <span class="text-xs font-black uppercase tracking-[0.24em] text-white/90">Cumbre Mundial · Ministerio Maná</span>
+              </div>
+
+              <img
+                src="/images/cumbre/logo-ministerio-mana-blanco.svg"
+                alt="Ministerio Maná"
+                class="h-14 w-auto md:h-16"
+                data-reveal
+              />
+
+              <div class="space-y-3">
+                {selectedMinistry && (
+                  <p class="text-sm font-black uppercase tracking-[0.28em] text-brand-gold" data-reveal>
+                    Ven y ayúdanos · {selectedMinistry.name}
+                  </p>
+                )}
+                <h1 class="max-w-5xl text-5xl font-black leading-[0.9] tracking-normal text-white drop-shadow-[0_12px_28px_rgba(0,0,0,0.6)] md:text-7xl lg:text-8xl" data-split-title>
+                  {selectedMinistry ? selectedMinistry.headline : 'VEN Y AYÚDANOS'}
+                </h1>
+              </div>
+
+              <div class="max-w-2xl space-y-4" data-reveal>
+                <p class="text-2xl font-black leading-tight text-brand-gold md:text-3xl">
+                  Hay una red esperando tus manos.
+                </p>
+                <p class="text-lg font-light leading-relaxed text-white/86 md:text-xl">
+                  {selectedMinistry
+                    ? selectedMinistry.subheadline
+                    : 'Una misión. Muchos ministerios. Muchas formas de responder. Elige dónde quieres servir, aportar, crear, acompañar, orar, apadrinar o sembrar.'}
+                </p>
+              </div>
+
+              <div class="flex flex-col gap-3 sm:flex-row" data-reveal>
+                <a href="#primer-paso" class="mana-btn justify-center px-8 py-4 text-sm uppercase tracking-[0.16em] shadow-[0_0_40px_-10px_var(--mana-teal)]" data-scroll-form>
+                  Responder al llamado
+                </a>
+                <a href="#elige-red" class="mana-btn-ghost justify-center border-white/25 bg-white/10 px-8 py-4 text-sm uppercase tracking-[0.16em] text-white hover:bg-white/20 hover:text-white">
+                  Ver ministerios
+                </a>
+              </div>
+            </div>
+
+            <aside class="relative hidden overflow-hidden rounded-[2rem] border border-white/15 bg-black/35 p-7 shadow-2xl shadow-black/25 backdrop-blur-xl md:block md:p-9" data-reveal>
+              <div class="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--active-accent),rgba(255,255,255,0.18))]"></div>
+              <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Responde al llamado</p>
+              <div class="mt-6 space-y-5">
+                <p class="text-3xl font-black leading-tight text-white">
+                  No todos ayudan igual. Pero todos pueden responder.
+                </p>
+                <p class="border-l-2 border-[var(--active-accent)] pl-5 text-base leading-relaxed text-white/76">
+                  Esta cumbre no termina cuando salimos del auditorio. Comienza cuando ponemos nuestras manos, ideas y recursos al servicio de la misión.
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                  {['Servir', 'Crear', 'Orar', 'Sembrar'].map((item) => (
+                    <span class="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/84">{item}</span>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#101827] text-white" data-cumbre-panel data-panel-theme="dark">
+        <div class="absolute inset-0" data-panel-bg>
+          <img src="/images/cumbre/fishermen-sunset.jpg" alt="" class="h-full w-full object-cover opacity-45" />
+          <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,28,0.98),rgba(26,37,92,0.88)_58%,rgba(16,24,39,0.76))]"></div>
+          <div class="ven-net-lines absolute inset-0 opacity-25"></div>
+        </div>
+
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+          <div class="grid w-full items-center gap-12 lg:grid-cols-[0.88fr_1.12fr]">
+            <article class="relative hidden overflow-hidden rounded-[2rem] border border-white/14 bg-black/34 p-8 shadow-2xl shadow-black/25 backdrop-blur-xl lg:block" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Hechos 16:9</p>
+              <blockquote class="mt-6 text-4xl font-black leading-tight text-white">
+                “Ven y ayúdanos.”
+              </blockquote>
+              <p class="mt-6 border-l-2 border-brand-teal pl-5 text-base leading-relaxed text-white/74">
+                El llamado no se responde solo con dinero. También se responde con presencia, obediencia, creatividad, oración, servicio y puertas abiertas.
+              </p>
+            </article>
+
+            <div class="max-w-4xl space-y-6">
+              <p class="font-display text-2xl font-light tracking-[0.2em] text-brand-gold/90" data-reveal>
+                El llamado
+              </p>
+              <h2 class="text-4xl font-black leading-[0.94] text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)] md:text-6xl" data-split-title>
+                Una misión. Muchas formas de responder.
+              </h2>
+              <div class="space-y-4 border-l-2 border-brand-teal/60 pl-6" data-reveal>
+                <p class="text-lg font-light leading-relaxed text-white/86">
+                  En cada ministerio hay personas por alcanzar, discípulos por formar, familias por acompañar y generaciones por levantar.
+                </p>
+                <p class="text-base leading-relaxed text-white/74">
+                  Tu ayuda puede ser tiempo, ideas, talentos, oración, servicio, generosidad o una conexión que abra camino.
+                </p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-3" data-reveal>
+                {['La red se sostiene juntos', 'Tus manos tienen lugar', 'Un sí puede abrir camino'].map((item) => (
+                  <p class="rounded-2xl border border-white/12 bg-white/8 p-4 text-sm font-semibold leading-snug text-white/84 backdrop-blur-sm">{item}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="elige-red" class="cumbre-panel ven-select-panel isolate min-h-screen overflow-hidden bg-[#edf6f4] text-brand-dark" data-cumbre-panel data-panel-theme="light">
+        <div class="absolute inset-0" data-panel-bg>
+          <div class="absolute inset-0 bg-[linear-gradient(125deg,rgba(255,255,255,0.94),rgba(237,246,244,0.9)_48%,rgba(40,166,189,0.18))]"></div>
+          <div class="ven-soft-grid absolute inset-0 opacity-[0.09]"></div>
+          <div class="absolute right-[-16%] top-[-12%] h-[620px] w-[620px] rounded-full bg-brand-teal/20 blur-[110px]"></div>
+          <div class="absolute bottom-[-18%] left-[-10%] h-[540px] w-[540px] rounded-full bg-brand-gold/18 blur-[120px]"></div>
+        </div>
+
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+          <div class="grid w-full items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+            <div class="space-y-6">
+              <div class="space-y-4" data-reveal>
+                <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Elige tu red</p>
+                <h2 class="text-4xl font-black leading-tight text-brand-dark md:text-5xl" data-split-title>
+                  Dónde quieres poner tus manos
+                </h2>
+                <p class="text-lg leading-relaxed text-slate-700">
+                  Toca un área y mira cómo puedes responder. Campus conserva su landing actual.
+                </p>
+              </div>
+
+              <div class="grid gap-3 sm:grid-cols-2" data-reveal>
+                {ministryOrder.map((key) => {
+                  const ministry = ministries[key];
+                  const active = key === initialKey;
+                  return (
+                    <button
+                      type="button"
+                      class="ven-ministry-card rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-xl shadow-brand-dark/8 backdrop-blur-md transition"
+                      data-ministry-card={key}
+                      aria-pressed={active ? 'true' : 'false'}
+                      style={`--card-accent:${ministry.accent}; --card-glow:${ministry.glow};`}
+                    >
+                      <span class="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{ministry.eyebrow}</span>
+                      <span class="mt-2 block text-xl font-black leading-tight text-brand-dark">{ministry.shortName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div class="relative min-h-[29rem]" data-reveal>
+              {ministryOrder.map((key) => {
+                const ministry = ministries[key];
+                const active = key === initialKey;
+                return (
+                  <article
+                    class="ven-ministry-panel absolute inset-0 overflow-hidden rounded-[2rem] border border-white/80 bg-white/88 p-6 shadow-2xl shadow-brand-dark/14 backdrop-blur-md md:p-8"
+                    data-ministry-panel={key}
+                    data-active={active ? 'true' : 'false'}
+                    style={`--panel-accent:${ministry.accent}; --panel-glow:${ministry.glow};`}
+                  >
+                    <div class="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,var(--panel-accent),rgba(26,37,92,0.08))]"></div>
+                    <div class="relative z-10 flex h-full flex-col">
+                      <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-medium/70">{ministry.name}</p>
+                      <h3 class="mt-3 text-3xl font-black leading-tight text-brand-dark md:text-4xl">{ministry.headline}</h3>
+                      <p class="mt-4 text-base leading-relaxed text-slate-700">{ministry.body}</p>
+                      <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                        {ministry.actions.map((action) => (
+                          <span class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold leading-snug text-slate-700">{action}</span>
+                        ))}
+                      </div>
+                      <div class="mt-auto pt-8">
+                        {ministry.external ? (
+                          <a href={ministry.href} class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto">
+                            {ministry.cta}
+                          </a>
+                        ) : (
+                          <a href="#primer-paso" class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto" data-ministry-form={key}>
+                            {ministry.cta}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel ven-help-options-panel isolate min-h-screen overflow-hidden bg-[#f7f2e7] text-brand-dark" data-cumbre-panel data-panel-theme="light">
+        <div class="absolute inset-0" data-panel-bg>
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(242,201,76,0.28),transparent_34%),radial-gradient(circle_at_78%_28%,rgba(40,166,189,0.18),transparent_30%)]"></div>
+          <div class="ven-soft-grid absolute inset-0 opacity-[0.08]"></div>
+        </div>
+
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+          <div class="w-full space-y-10">
+            <div class="max-w-3xl space-y-4" data-reveal>
+              <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Formas de ayudar</p>
+              <h2 class="text-5xl font-black leading-tight text-brand-dark md:text-6xl" data-split-title>
+                Tu ayuda puede tomar muchas formas
+              </h2>
+              <p class="text-xl leading-relaxed text-slate-700">
+                No tienes que hacerlo todo. Solo empieza con un sí.
+              </p>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-reveal>
+              {helpOptions.map((option) => (
+                <article class="rounded-2xl border border-white/70 bg-white/82 p-5 shadow-2xl shadow-brand-dark/10 backdrop-blur-md">
+                  <p class="text-lg font-black leading-tight text-brand-dark">{option.label}</p>
+                  <p class="mt-3 text-sm leading-relaxed text-slate-600">{option.text}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#101827] text-white" data-cumbre-panel data-panel-theme="dark">
+        <div class="absolute inset-0" data-panel-bg>
+          <div class="absolute inset-0 bg-gradient-to-br from-[#1A255C] via-[#293C74] to-[#101827]"></div>
+          <div class="absolute right-[-12%] top-[-18%] h-[760px] w-[760px] rounded-full bg-brand-teal/20 blur-[110px] mix-blend-screen"></div>
+          <div class="absolute bottom-[-20%] left-[-10%] h-[620px] w-[620px] rounded-full bg-brand-gold/16 blur-[120px] mix-blend-screen"></div>
+        </div>
+
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center justify-center px-6 py-24 text-center md:px-10" data-panel-inner>
+          <div class="mx-auto max-w-4xl space-y-7">
+            <img src="/images/cumbre/titulo-cumbre.svg" alt="Cumbre Mundial" class="mx-auto h-14 w-auto md:h-20" data-reveal />
+            <p class="text-xs font-black uppercase tracking-[0.3em] text-brand-gold" data-reveal>Da el primer paso</p>
+            <h2 class="text-4xl font-black leading-tight text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.5)] md:text-6xl" data-split-title>
+              Tu sí puede abrir camino para alguien más
+            </h2>
+            <p class="mx-auto max-w-2xl text-lg leading-relaxed text-white/78" data-reveal>
+              Déjanos tus datos y un líder podrá conversar contigo para descubrir cómo tus manos pueden ayudar.
+            </p>
+            <div class="flex flex-col justify-center gap-3 sm:flex-row" data-reveal>
+              <a href="#primer-paso" class="mana-btn justify-center px-8 py-4 text-sm uppercase tracking-[0.16em]" data-scroll-form>
+                Responder al llamado
+              </a>
+              <a href="/donaciones/" class="mana-btn-ghost justify-center border-white/25 bg-white/10 px-8 py-4 text-sm uppercase tracking-[0.16em] text-white hover:bg-white/20 hover:text-white">
+                Sembrar económicamente
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="primer-paso" class="relative overflow-hidden bg-[#07111c] px-5 py-20 text-white md:px-8 md:py-28">
+      <div class="absolute inset-0">
+        <img src="/images/cumbre/fishermen-sunset.jpg" alt="" class="h-full w-full object-cover opacity-20" />
+        <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,17,28,0.98),rgba(7,17,28,0.9))]"></div>
+        <div class="ven-net-lines absolute inset-0 opacity-20"></div>
+      </div>
+
+      <div class="container-tight relative z-10">
+        <div class="grid gap-10 lg:grid-cols-[0.78fr_1.22fr]">
+          <div class="space-y-6">
+            <p class="text-xs font-black uppercase tracking-[0.28em] text-brand-gold">Primer paso</p>
+            <h2 class="text-4xl font-black leading-tight text-white md:text-6xl">Da tu primer paso</h2>
+            <p class="text-lg leading-relaxed text-white/78">
+              Esto no es un compromiso definitivo. Es una conversación para descubrir dónde puedes servir, aportar, crear, acompañar, orar, apadrinar o sembrar.
+            </p>
+            <div class="rounded-[2rem] border border-white/12 bg-white/8 p-6 backdrop-blur-md">
+              <p class="text-2xl font-black leading-tight text-white">No todos ayudan igual.</p>
+              <p class="mt-2 text-lg font-black leading-tight text-brand-gold">Pero todos pueden responder.</p>
+            </div>
+          </div>
+
+          <div class="rounded-[2rem] border border-white/14 bg-black/35 p-5 shadow-2xl shadow-black/25 backdrop-blur-xl md:p-8">
+            <form
+              id="ven-ayudanos-form"
+              class="space-y-6"
+              action="/api/ven-ayudanos/responder"
+              method="post"
+              data-help-form
+            >
+              <input type="hidden" name="origin" data-hidden-origin />
+              <input type="hidden" name="place" data-hidden-place />
+              <input type="hidden" name="utmSource" data-hidden-utm-source />
+              <input type="hidden" name="utmMedium" data-hidden-utm-medium />
+              <input type="hidden" name="utmCampaign" data-hidden-utm-campaign />
+              <input type="hidden" name="qr" data-hidden-qr />
+              <input type="hidden" name="path" data-hidden-path />
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <label class="space-y-2">
+                  <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Nombre</span>
+                  <input name="fullName" required autocomplete="name" class="ven-input" placeholder="Nombre completo" />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">WhatsApp</span>
+                  <input name="whatsapp" required inputmode="tel" autocomplete="tel" class="ven-input" placeholder="+57 300 000 0000" />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Correo</span>
+                  <input name="email" type="email" autocomplete="email" class="ven-input" placeholder="correo@ejemplo.com" />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Ciudad</span>
+                  <input name="city" autocomplete="address-level2" class="ven-input" placeholder="Ciudad" />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Iglesia / sede</span>
+                  <input name="church" class="ven-input" placeholder="Iglesia o sede" />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Ministerio de interés</span>
+                  <select name="ministry" required class="ven-input" data-ministry-select>
+                    <option value="no-estoy-seguro" selected={!selected}>No estoy seguro</option>
+                    {ministryOrder.map((key) => (
+                      <option value={key} selected={key === selected}>{ministries[key].name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <fieldset class="space-y-3">
+                <legend class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Puedo aportar con</legend>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {helpOptions.map((option) => (
+                    <label class="ven-check">
+                      <input type="checkbox" name="helpTypes" value={option.key} />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <label class="block space-y-2">
+                <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Cuéntanos brevemente cómo te gustaría ayudar</span>
+                <textarea name="message" rows="4" class="ven-input min-h-32 resize-y" placeholder="Escribe una idea, disponibilidad, talento o área donde quieres servir."></textarea>
+              </label>
+
+              <label class="block space-y-2">
+                <span class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Disponibilidad</span>
+                <select name="availability" class="ven-input">
+                  <option value="no-estoy-seguro">No estoy seguro</option>
+                  <option value="semanal">Semanal</option>
+                  <option value="mensual">Mensual</option>
+                  <option value="eventos-especiales">Eventos especiales</option>
+                </select>
+              </label>
+
+              <TurnstileWidget appearance="always" theme="dark" />
+
+              <div class="space-y-4">
+                <button type="submit" class="mana-btn w-full justify-center px-8 py-4 text-sm uppercase tracking-[0.16em]" data-submit-button>
+                  Responder al llamado
+                </button>
+                <p class="hidden rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-semibold text-white/80" data-form-status></p>
+              </div>
+            </form>
+
+            <div class="hidden space-y-5" data-success-panel>
+              <div class="rounded-[2rem] border border-brand-gold/30 bg-brand-gold/10 p-6">
+                <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Gracias por responder</p>
+                <h3 class="mt-3 text-3xl font-black leading-tight text-white">Tu sí puede abrir camino para alguien más.</h3>
+                <p class="mt-3 text-white/76">Un líder del ministerio se comunicará contigo pronto.</p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-3">
+                <button type="button" class="mana-btn-ghost justify-center border-white/20 bg-white/10 text-sm text-white hover:bg-white/20 hover:text-white" data-share-page>
+                  Compartir
+                </button>
+                <a href="#elige-red" class="mana-btn-ghost justify-center border-white/20 bg-white/10 text-sm text-white hover:bg-white/20 hover:text-white">
+                  Ministerios
+                </a>
+                <a href="/donaciones/" class="mana-btn justify-center text-sm">
+                  Sembrar
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <a href="#primer-paso" class="ven-mobile-cta mana-btn fixed bottom-4 left-4 right-4 z-50 justify-center py-4 text-sm uppercase tracking-[0.16em] md:hidden" data-scroll-form>
+      Responder al llamado
+    </a>
+  </main>
+
+  <script>
+    import '@scripts/cumbre-welcome-story.js';
+  </script>
+  <script type="module" src={venAyudanosScript}></script>
+</CumbreLayout>
+
+<style is:global>
+  .ven-help-experience {
+    --active-accent: #f2c94c;
+    --active-glow: rgba(242, 201, 76, 0.25);
+  }
+
+  .ven-help-story {
+    background: #07111c;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ven-help-experience .cumbre-panel {
+    position: absolute;
+    inset: 0;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    clip-path: inset(100% 0% 0% 0%);
+    will-change: clip-path, transform;
+  }
+
+  .ven-help-experience .cumbre-panel:first-child,
+  .ven-help-experience .cumbre-panel.is-visible {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .ven-help-experience .cumbre-panel.is-active {
+    pointer-events: auto;
+  }
+
+  .ven-help-experience .cumbre-panel a,
+  .ven-help-experience .cumbre-panel button {
+    pointer-events: auto;
+  }
+
+  .ven-help-experience .cumbre-panel [data-panel-bg] {
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .ven-help-experience .cumbre-panel-inner {
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+  }
+
+  .ven-help-experience .cumbre-panel [data-reveal] {
+    will-change: transform, opacity;
+  }
+
+  .ven-help-experience .cumbre-panel [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .ven-help-experience .cumbre-panel [data-split-title] .split-word > span {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  .ven-help-experience .ven-select-panel .cumbre-panel-inner,
+  .ven-help-experience .ven-help-options-panel .cumbre-panel-inner {
+    align-items: flex-start;
+    padding-top: clamp(6.5rem, 12vh, 8rem);
+    padding-bottom: 5rem;
+  }
+
+  .ven-soft-grid {
+    background-image:
+      linear-gradient(rgba(26, 37, 92, 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26, 37, 92, 0.22) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .ven-net-lines {
+    background-image:
+      repeating-linear-gradient(28deg, transparent 0 48px, rgba(255,255,255,0.12) 49px, transparent 50px),
+      repeating-linear-gradient(152deg, transparent 0 52px, rgba(242,201,76,0.12) 53px, transparent 54px);
+    mask-image: radial-gradient(circle at 50% 50%, black, transparent 78%);
+  }
+
+  .ven-ministry-card[aria-pressed='true'] {
+    border-color: color-mix(in srgb, var(--card-accent) 58%, white);
+    box-shadow: 0 22px 50px var(--card-glow);
+    transform: translateY(-2px);
+  }
+
+  .ven-ministry-card[aria-pressed='true'] span:last-child {
+    color: var(--card-accent);
+  }
+
+  .ven-ministry-panel {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(18px) scale(0.98);
+    transition: opacity 260ms ease, transform 260ms ease;
+  }
+
+  .ven-ministry-panel[data-active='true'] {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  .ven-input {
+    width: 100%;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    padding: 0.9rem 1rem;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .ven-input::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+  }
+
+  .ven-input:focus {
+    border-color: var(--active-accent);
+    background: rgba(255, 255, 255, 0.11);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--active-accent) 22%, transparent);
+  }
+
+  .ven-input option {
+    color: #0b1120;
+  }
+
+  .ven-check {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.07);
+    padding: 0.75rem 0.85rem;
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.86rem;
+    font-weight: 800;
+  }
+
+  .ven-check input {
+    height: 1rem;
+    width: 1rem;
+    border-radius: 0.3rem;
+    color: var(--active-accent);
+  }
+
+  .ven-mobile-cta {
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  }
+
+  @media (max-width: 767px) {
+    .ven-help-story {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .ven-help-experience .cumbre-panel {
+      position: relative;
+      height: auto;
+      min-height: 100svh;
+      clip-path: none !important;
+      pointer-events: auto;
+    }
+
+    .ven-help-experience .cumbre-panel-inner {
+      align-items: flex-start;
+      height: auto;
+      min-height: 100svh;
+      padding-top: 7rem;
+      padding-bottom: 7rem;
+    }
+
+    .ven-ministry-panel {
+      position: relative;
+      min-height: auto;
+      display: none;
+    }
+
+    .ven-ministry-panel[data-active='true'] {
+      display: block;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ven-help-story {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .ven-help-experience .cumbre-panel {
+      position: relative;
+      height: auto;
+      min-height: 100svh;
+      clip-path: none !important;
+      pointer-events: auto;
+    }
+
+    .ven-help-experience .cumbre-panel-inner {
+      height: auto;
+      min-height: 100svh;
+    }
+  }
+</style>

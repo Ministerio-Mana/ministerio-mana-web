@@ -246,7 +246,9 @@ function setupStory() {
   document.documentElement.dataset.cumbreWelcomeStory = 'true';
   story.style.setProperty('--panel-count', String(panels.length));
 
-  if (prefersReducedMotion) {
+  const useStaticPanels = prefersReducedMotion || (story.dataset.cumbreStaticMobile === 'true' && !desktopQuery.matches);
+
+  if (useStaticPanels) {
     revealStaticPanels(panels);
     window.__cumbreWelcomeCleanup = () => {
       viewportCleanup?.();

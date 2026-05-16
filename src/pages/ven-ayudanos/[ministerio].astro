@@ -1,0 +1,18 @@
+---
+import VenAyudanosExperience from '@components/ven-ayudanos/VenAyudanosExperience.astro';
+import { routedMinistryKeys, type RoutedMinistryKey } from '@data/venAyudanos';
+
+export const prerender = false;
+
+const slug = Astro.params.ministerio?.toLowerCase();
+
+if (slug === 'campus') {
+  return Astro.redirect(`/campus/${Astro.url.search}`);
+}
+
+if (!slug || !routedMinistryKeys.includes(slug as RoutedMinistryKey)) {
+  return Astro.redirect('/ven-ayudanos');
+}
+---
+
+<VenAyudanosExperience selected={slug as RoutedMinistryKey} />
