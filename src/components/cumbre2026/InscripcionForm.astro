@@ -111,10 +111,9 @@ const formatTestAmount = (value, currency) =>
          </div>
 
          <div class="rounded-2xl border border-brand-gold/30 bg-brand-gold/10 p-5 text-sm text-white/80">
-            <p class="font-bold text-brand-gold">15 cupos nuevos con hospedaje</p>
-            <p class="mt-1">
-               Se habilitaron 15 cupos adicionales con hospedaje dentro del evento. Cuando se agoten, la inscripción
-               seguirá abierta sin alojamiento y cada asistente deberá gestionar su hospedaje por fuera.
+            <p id="lodging-alert-title" class="font-bold text-brand-gold">Cupos con hospedaje</p>
+            <p id="lodging-alert-text" class="mt-1">
+               Consultando disponibilidad de hospedaje...
             </p>
          </div>
 
@@ -238,7 +237,7 @@ const formatTestAmount = (value, currency) =>
                      <option value="no_lodging">Sin alojamiento (evento + alimentación)</option>
                      <option value="lodging">Con alojamiento (evento + alimentación)</option>
                   </select>
-                  <p class="text-xs text-slate-400 mt-1" data-lodging-note>15 cupos adicionales con hospedaje. Si se agotan, podrás continuar sin alojamiento.</p>
+                  <p class="text-xs text-slate-400 mt-1" data-lodging-note>La disponibilidad de hospedaje se actualiza automáticamente.</p>
                </div>
          </div>
 
@@ -297,7 +296,7 @@ const formatTestAmount = (value, currency) =>
                       <option value="lodging" class="text-black">Con alojamiento (evento + alimentación)</option>
                    </select>
                    <p class="text-xs text-white/40 mt-1 pl-1" data-lodging-note>
-                      * 15 cupos adicionales con hospedaje. Niños hasta 13 años se calculan automáticamente.
+                      * La disponibilidad de hospedaje se actualiza automáticamente. Niños hasta 13 años se calculan automáticamente.
                    </p>
                </div>
 
@@ -542,7 +541,7 @@ const formatTestAmount = (value, currency) =>
             </div>
             
             <p class="text-xs text-white/50">
-               El hospedaje dentro del evento ya no está disponible. La reserva cubre asistencia y alimentación según la tarifa seleccionada.
+               <span id="payment-lodging-note">Si eliges con alojamiento, el cupo se confirma al completar el proceso. Si se agotan antes de finalizar, podrás continuar sin alojamiento.</span>
                <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4">Ver condiciones comerciales</a>.
             </p>
 
@@ -725,6 +724,9 @@ const formatTestAmount = (value, currency) =>
           depositDueDate: document.getElementById('deposit-due-date'),
           depositAmount: document.getElementById('deposit-amount'),
           depositDeadlineLabel: document.getElementById('deposit-deadline-label'),
+          lodgingAlertTitle: document.getElementById('lodging-alert-title'),
+          lodgingAlertText: document.getElementById('lodging-alert-text'),
+          paymentLodgingNote: document.getElementById('payment-lodging-note'),
           lodgingNotes: document.querySelectorAll('[data-lodging-note]'),
           lodgingOptions: document.querySelectorAll('option[value="lodging"]'),
           form: document.getElementById('booking-form'),
@@ -831,13 +833,39 @@ const formatTestAmount = (value, currency) =>
        }
     },
 
+    getLodgingSlotLabel(remaining) {
+       return remaining === 1 ? 'cupo' : 'cupos';
+    },
+
     applyLodgingAvailability() {
        const available = this.lodgingStatus?.available !== false;
        const remaining = Number(this.lodgingStatus?.remaining ?? 0);
-       const openMessage = remaining > 0
-          ? `15 cupos adicionales con hospedaje: quedan ${remaining}. Si se agotan, podrás continuar sin alojamiento.`
-          : '15 cupos adicionales con hospedaje. Si se agotan, podrás continuar sin alojamiento.';
-       const closedMessage = 'Los cupos con hospedaje ya están agotados. Puedes continuar sin alojamiento.';
+       const hasRemainingCount = Number.isFinite(remaining) && remaining > 0;
+       const slotLabel = this.getLodgingSlotLabel(remaining);
+       const openMessage = hasRemainingCount
+          ? `Quedan ${remaining} ${slotLabel} con hospedaje. Cuando se agoten, podrás continuar sin alojamiento y gestionar tu hospedaje por fuera.`
+          : 'Hay cupos con hospedaje disponibles. Cuando se agoten, podrás continuar sin alojamiento y gestionar tu hospedaje por fuera.';
+       const closedMessage = 'Los cupos con hospedaje ya están agotados. Puedes continuar sin alojamiento; cada asistente deberá gestionar su hospedaje por fuera.';
+
+       if (this.dom.lodgingAlertTitle) {
+          this.dom.lodgingAlertTitle.textContent = available
+             ? (hasRemainingCount ? `Quedan ${remaining} ${slotLabel} con hospedaje` : 'Cupos con hospedaje')
+             : 'Hospedaje agotado';
+       }
+       if (this.dom.lodgingAlertText) {
+          this.dom.lodgingAlertText.textContent = available
+             ? (hasRemainingCount
+                ? `En este momento quedan ${remaining} ${slotLabel} con hospedaje. Cuando se agoten, la inscripción con hospedaje se cerrará y seguirá abierta sin alojamiento. Cada asistente deberá gestionar su hospedaje por fuera.`
+                : openMessage)
+             : 'Los cupos con hospedaje ya están agotados. Puedes asistir a la Cumbre sin alojamiento incluido; cada asistente deberá gestionar su hospedaje por fuera.';
+       }
+       if (this.dom.paymentLodgingNote) {
+          this.dom.paymentLodgingNote.textContent = available
+             ? (hasRemainingCount
+                ? `Quedan ${remaining} ${slotLabel} con hospedaje. Si eliges con alojamiento, el cupo se confirma al completar el proceso.`
+                : 'Si eliges con alojamiento, el cupo se confirma al completar el proceso. Si se agotan antes de finalizar, podrás continuar sin alojamiento.')
+             : 'El hospedaje dentro del evento ya no está disponible. Puedes asistir a la Cumbre sin alojamiento incluido y gestionar tu hospedaje por fuera.';
+       }
 
        this.dom.lodgingOptions?.forEach((option) => {
           option.disabled = !available;
