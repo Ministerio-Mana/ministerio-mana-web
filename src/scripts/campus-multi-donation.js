@@ -76,6 +76,8 @@ class MultiDonationFlow {
             frequency: 'monthly',
             amount: 0,
             allocations: {},
+            allocationMode: 'idle',
+            quickAmount: 0,
         };
         this.isSubmitting = false;
         this.accessToken = getSupabaseAccessToken();
@@ -135,6 +137,9 @@ class MultiDonationFlow {
     resetAllocations() {
         this.state.allocations = {};
         this.state.amount = 0;
+        this.state.allocationMode = 'idle';
+        this.state.quickAmount = 0;
+        this.updateAmountControls();
     }
 
     pruneAllocations() {
@@ -155,6 +160,56 @@ class MultiDonationFlow {
         this.syncAllocationInputs();
         this.updateSummary();
         this.updateStep3Confirm();
+    }
+
+    setAllocationMode(mode, detail = {}) {
+        this.state.allocationMode = mode;
+        if (mode === 'quick') {
+            this.state.quickAmount = this.roundAmount(detail.amount || this.state.quickAmount || 0);
+        } else if (mode !== 'quick') {
+            this.state.quickAmount = 0;
+        }
+        this.updateAmountControls();
+    }
+
+    resetAllocationMethod() {
+        this.state.allocations = {};
+        this.state.amount = 0;
+        this.state.allocationMode = 'idle';
+        this.state.quickAmount = 0;
+
+        const totalInput = this.el.querySelector('#multi-total-amount');
+        if (totalInput) totalInput.value = '';
+        this.highlightAmountBtn(null);
+        this.syncAllocationInputs();
+        this.updateSummary();
+        this.updateStep3Confirm();
+        this.updateAmountControls();
+    }
+
+    updateAmountControls() {
+        const mode = this.state.allocationMode || 'idle';
+        const config = AMOUNT_CONFIG[this.state.currency];
+        const totalControl = this.el.querySelector('#multi-total-control');
+        const quickControl = this.el.querySelector('#multi-quick-control');
+        const methodState = this.el.querySelector('#multi-method-state');
+        const methodText = this.el.querySelector('#multi-method-state-text');
+        const manualHelp = this.el.querySelector('#multi-manual-help');
+
+        totalControl?.classList.toggle('hidden', mode === 'quick' || mode === 'manual');
+        quickControl?.classList.toggle('hidden', mode !== 'idle');
+        methodState?.classList.toggle('hidden', mode === 'idle');
+        manualHelp?.classList.toggle('hidden', mode !== 'idle');
+
+        if (!methodText || mode === 'idle') return;
+
+        if (mode === 'total') {
+            methodText.textContent = 'Estamos repartiendo tu presupuesto total. Puedes ajustar cualquier misionero abajo.';
+        } else if (mode === 'quick') {
+            methodText.textContent = `Mismo monto para cada misionero: ${config.format(this.state.quickAmount)}. Puedes ajustar cualquier valor abajo.`;
+        } else {
+            methodText.textContent = 'Montos personalizados por misionero. El total se calcula automáticamente abajo.';
+        }
     }
 
     splitTotalAmount(total) {
@@ -202,8 +257,27 @@ class MultiDonationFlow {
         this.bindStep3();
         this.bindStep4();
         this.bindBackButtons();
+        this.bindInitialAmountSync();
         this.configureAccountLinks();
         this.loadPortalProfile();
+    }
+
+    bindInitialAmountSync() {
+        if (!this.hasInitial) return;
+        window.addEventListener('campus:donation-amount-change', (event) => {
+            const detail = event.detail || {};
+            if (detail.slug !== this.initialSlug || detail.currency !== this.state.currency) return;
+            if (this.state.step !== 3 || !this.state.selected.includes(this.initialSlug)) return;
+            if (this.state.allocationMode !== 'idle' && this.state.allocationMode !== 'manual') return;
+
+            const amount = this.roundAmount(detail.amount || 0);
+            if (amount <= 0) return;
+            this.state.allocations[this.initialSlug] = amount;
+            this.setAllocationMode('manual');
+            this.syncAllocationInputs();
+            this.updateSummary();
+            this.updateStep3Confirm();
+        });
     }
 
     // === NAVIGATION ===
@@ -356,8 +430,14 @@ class MultiDonationFlow {
                     e.target.value = total > 0 ? Math.round(total).toLocaleString('es-CO') : '';
                 }
                 this.highlightAmountBtn(null);
+                this.setAllocationMode(total > 0 ? 'total' : 'idle');
                 this.splitTotalAmount(total);
             });
+        }
+
+        const methodReset = this.el.querySelector('#multi-method-reset');
+        if (methodReset) {
+            methodReset.addEventListener('click', () => this.resetAllocationMethod());
         }
 
         const confirmBtn = this.el.querySelector('#confirm-amount-btn');
@@ -376,9 +456,23 @@ class MultiDonationFlow {
         this.pruneAllocations();
         const totalInput = this.el.querySelector('#multi-total-amount');
         if (totalInput) totalInput.value = '';
+        this.applyInitialAmountHint();
         this.renderAllocationRows();
         this.updateSummary();
         this.updateStep3Confirm();
+        this.updateAmountControls();
+    }
+
+    applyInitialAmountHint() {
+        if (!this.hasInitial || this.state.allocationMode !== 'idle') return;
+
+        const widget = document.querySelector(`.donation-widget[data-slug="${this.initialSlug}"]`);
+        const amount = this.roundAmount(widget?.dataset?.currentAmount || 0);
+        const currency = widget?.dataset?.currentCurrency || this.state.currency;
+        if (amount <= 0 || currency !== this.state.currency) return;
+
+        this.state.allocations[this.initialSlug] = amount;
+        this.setAllocationMode('manual');
     }
 
     renderAllocationRows() {
@@ -399,8 +493,10 @@ class MultiDonationFlow {
                     <div class="min-w-0">
                         <p class="font-intro text-sm uppercase text-white leading-tight">${m.nombre}</p>
                         <p class="font-intro-reg text-[10px] text-white/60">${m.rol || 'Misionero Campus'}</p>
+                        <p class="mt-0.5 font-intro-reg text-[10px] text-white/75">Escribe su monto</p>
                     </div>
                     <label class="relative w-32 max-w-[36vw]">
+                        <span class="sr-only">Cuánto quieres sembrar en ${m.nombre}</span>
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 font-intro text-sm text-brand-teal">${config.symbol}</span>
                         <input
                             type="text"
@@ -408,7 +504,8 @@ class MultiDonationFlow {
                             class="multi-allocation-input w-full rounded-xl border-2 border-[#001B3A] bg-white py-2 pl-7 pr-3 text-right font-intro text-sm text-[#001B3A] focus:outline-none"
                             data-slug="${m.slug}"
                             value="${this.formatInputAmount(amount)}"
-                            aria-label="Monto para ${m.nombre}">
+                            placeholder="Monto"
+                            aria-label="Cuánto quieres sembrar en ${m.nombre}">
                     </label>
                 </div>
             `;
@@ -417,10 +514,15 @@ class MultiDonationFlow {
         list.querySelectorAll('.multi-allocation-input').forEach((input) => {
             input.addEventListener('input', (e) => {
                 const slug = e.target.dataset.slug;
-                this.state.allocations[slug] = this.roundAmount(this.parseAmountInput(e.target.value));
+                const amount = this.roundAmount(this.parseAmountInput(e.target.value));
+                this.state.allocations[slug] = amount;
+                if (this.state.currency === 'COP') {
+                    e.target.value = amount > 0 ? Math.round(amount).toLocaleString('es-CO') : '';
+                }
                 const totalInput = this.el.querySelector('#multi-total-amount');
                 if (totalInput) totalInput.value = '';
                 this.highlightAmountBtn(null);
+                this.setAllocationMode(this.getTotalAmount() > 0 ? 'manual' : 'idle');
                 this.updateSummary();
                 this.updateStep3Confirm();
             });
@@ -447,6 +549,7 @@ class MultiDonationFlow {
                 const totalInput = this.el.querySelector('#multi-total-amount');
                 if (totalInput) totalInput.value = '';
                 this.highlightAmountBtn(btn);
+                this.setAllocationMode('quick', { amount: opt.value });
                 this.setSameAmount(opt.value);
             });
 

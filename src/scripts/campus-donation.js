@@ -84,6 +84,7 @@ class DonationWidget {
         this.configureAccountLinks();
         this.loadPortalProfile();
         this.updateUI();
+        this.publishAmountChange();
     }
 
     cacheElements() {
@@ -132,6 +133,7 @@ class DonationWidget {
             this.dom.customInput.value = '';
             this.renderAmounts();
             this.updateUI();
+            this.publishAmountChange();
         });
 
         // Custom Amount Input
@@ -142,6 +144,7 @@ class DonationWidget {
             }
             this.highlightAmount(null);
             this.updateUI();
+            this.publishAmountChange();
         });
 
         // CTA Click
@@ -197,6 +200,7 @@ class DonationWidget {
                 this.dom.customInput.value = '';
                 this.highlightAmount(btn);
                 this.updateUI();
+                this.publishAmountChange();
             });
 
             this.dom.amountsGrid.appendChild(btn);
@@ -234,6 +238,18 @@ class DonationWidget {
                 btn.style.color = '#001B3A';
             }
         });
+    }
+
+    publishAmountChange() {
+        this.el.dataset.currentAmount = this.amount > 0 ? String(this.amount) : '';
+        this.el.dataset.currentCurrency = this.currency;
+        window.dispatchEvent(new CustomEvent('campus:donation-amount-change', {
+            detail: {
+                slug: this.slug,
+                amount: this.amount,
+                currency: this.currency,
+            },
+        }));
     }
 
     updateUI() {

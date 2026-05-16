@@ -152,28 +152,43 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
                 </div>
 
                 <!-- Total budget input -->
-                <div class="mb-4 text-center">
-                    <p class="text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Tengo este presupuesto total para Campus</p>
-                    <p id="multi-currency-context" class="mt-1 text-[10px] font-intro-reg text-white/75">{initialCurrency.context}</p>
+                <div id="multi-total-control" class="mb-5">
+                    <div class="mb-4 text-center">
+                        <p class="text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Tengo este presupuesto total para Campus</p>
+                        <p id="multi-currency-context" class="mt-1 text-[10px] font-intro-reg text-white/75">{initialCurrency.context}</p>
+                    </div>
+                    <div class="relative mb-2 select-organic p-2 bg-white max-w-xs mx-auto">
+                        <span class="multi-currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
+                        <input type="text"
+                               inputmode="decimal"
+                               id="multi-total-amount"
+                               class="w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
+                               placeholder={initialCurrency.placeholder}>
+                        <span id="multi-currency-code" class="sr-only">{initialCurrency.code}</span>
+                    </div>
+                    <p id="multi-amount-min-label" class="mb-2 text-center text-[10px] font-intro-reg text-white/65">{initialCurrency.minLabel}</p>
+                    <p class="text-center text-[10px] font-intro-reg text-white/75">
+                        Lo dividimos en partes iguales. Luego puedes ajustar cada misionero.
+                    </p>
                 </div>
-                <div class="relative mb-2 select-organic p-2 bg-white max-w-xs mx-auto">
-                    <span class="multi-currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
-                    <input type="text"
-                           inputmode="decimal"
-                           id="multi-total-amount"
-                           class="w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
-                           placeholder={initialCurrency.placeholder}>
-                    <span id="multi-currency-code" class="sr-only">{initialCurrency.code}</span>
+
+                <div id="multi-method-state" class="hidden mb-5 rounded-2xl border border-white/25 bg-white/15 px-4 py-3 text-center">
+                    <p id="multi-method-state-text" class="font-intro-reg text-xs leading-relaxed text-white"></p>
+                    <button type="button" id="multi-method-reset" class="mt-2 font-intro text-[10px] uppercase tracking-widest text-[#001B3A] underline decoration-white/60 underline-offset-4">
+                        Cambiar forma de calcular
+                    </button>
                 </div>
-                <p id="multi-amount-min-label" class="mb-2 text-center text-[10px] font-intro-reg text-white/65">{initialCurrency.minLabel}</p>
-                <p class="mb-5 text-center text-[10px] font-intro-reg text-white/75">
-                    Si escribes un presupuesto total, lo dividimos en partes iguales. Luego puedes ajustar cada misionero.
+
+                <p id="multi-manual-help" class="mb-5 text-center text-[10px] font-intro-reg text-white/75">
+                    También puedes escribir directamente cuánto quieres sembrar en cada misionero.
                 </p>
 
                 <!-- Amount buttons -->
-                <p class="block text-[10px] font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Mismo monto rápido para cada misionero</p>
-                <div class="grid grid-cols-3 gap-3 mb-6" id="multi-amounts-grid">
-                    <!-- JS populates -->
+                <div id="multi-quick-control" class="mb-6">
+                    <p class="block text-[10px] font-intro uppercase text-white/70 mb-2 tracking-widest text-center">Mismo monto rápido para cada misionero</p>
+                    <div class="grid grid-cols-3 gap-3" id="multi-amounts-grid">
+                        <!-- JS populates -->
+                    </div>
                 </div>
 
                 <div class="mb-6 rounded-2xl bg-[#001B3A]/15 p-4">
