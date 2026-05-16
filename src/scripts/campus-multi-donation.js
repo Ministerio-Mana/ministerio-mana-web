@@ -78,6 +78,7 @@ class MultiDonationFlow {
             allocations: {},
             allocationMode: 'idle',
             quickAmount: 0,
+            budgetTotal: 0,
         };
         this.isSubmitting = false;
         this.accessToken = getSupabaseAccessToken();
@@ -139,6 +140,7 @@ class MultiDonationFlow {
         this.state.amount = 0;
         this.state.allocationMode = 'idle';
         this.state.quickAmount = 0;
+        this.state.budgetTotal = 0;
         this.updateAmountControls();
     }
 
@@ -166,8 +168,13 @@ class MultiDonationFlow {
         this.state.allocationMode = mode;
         if (mode === 'quick') {
             this.state.quickAmount = this.roundAmount(detail.amount || this.state.quickAmount || 0);
+            this.state.budgetTotal = 0;
+        } else if (mode === 'total') {
+            this.state.budgetTotal = this.roundAmount(detail.total || this.state.budgetTotal || 0);
+            this.state.quickAmount = 0;
         } else if (mode !== 'quick') {
             this.state.quickAmount = 0;
+            this.state.budgetTotal = 0;
         }
         this.updateAmountControls();
     }
@@ -177,6 +184,7 @@ class MultiDonationFlow {
         this.state.amount = 0;
         this.state.allocationMode = 'idle';
         this.state.quickAmount = 0;
+        this.state.budgetTotal = 0;
 
         const totalInput = this.el.querySelector('#multi-total-amount');
         if (totalInput) totalInput.value = '';
@@ -204,7 +212,8 @@ class MultiDonationFlow {
         if (!methodText || mode === 'idle') return;
 
         if (mode === 'total') {
-            methodText.textContent = 'Estamos repartiendo tu presupuesto total. Puedes ajustar cualquier misionero abajo.';
+            const budget = this.state.budgetTotal > 0 ? `: ${config.format(this.state.budgetTotal)}.` : '.';
+            methodText.textContent = `Presupuesto fijo${budget} Si ajustas un misionero, el restante se reparte entre los demás.`;
         } else if (mode === 'quick') {
             methodText.textContent = `Mismo monto para cada misionero: ${config.format(this.state.quickAmount)}. Puedes ajustar cualquier valor abajo.`;
         } else {
@@ -218,11 +227,39 @@ class MultiDonationFlow {
         if (!selected.length) return;
 
         const totalMinor = Math.max(0, Math.round(Number(total || 0) * factor));
+        this.state.budgetTotal = totalMinor / factor;
         const base = Math.floor(totalMinor / selected.length);
         const remainder = totalMinor % selected.length;
         selected.forEach((slug, index) => {
             this.state.allocations[slug] = (base + (index < remainder ? 1 : 0)) / factor;
         });
+        this.syncAllocationInputs();
+        this.updateSummary();
+        this.updateStep3Confirm();
+    }
+
+    rebalanceBudgetAllocation(editedSlug, editedValue) {
+        const factor = this.amountFactor();
+        const selected = [...this.state.selected];
+        if (!selected.length) return;
+
+        const totalMinor = Math.max(0, Math.round(Number(this.state.budgetTotal || 0) * factor));
+        const editedMinor = Math.min(
+            totalMinor,
+            Math.max(0, Math.round(Number(editedValue || 0) * factor)),
+        );
+        const otherSlugs = selected.filter((slug) => slug !== editedSlug);
+        this.state.allocations[editedSlug] = editedMinor / factor;
+
+        if (otherSlugs.length > 0) {
+            const remainingMinor = Math.max(0, totalMinor - editedMinor);
+            const base = Math.floor(remainingMinor / otherSlugs.length);
+            const remainder = remainingMinor % otherSlugs.length;
+            otherSlugs.forEach((slug, index) => {
+                this.state.allocations[slug] = (base + (index < remainder ? 1 : 0)) / factor;
+            });
+        }
+
         this.syncAllocationInputs();
         this.updateSummary();
         this.updateStep3Confirm();
@@ -430,7 +467,7 @@ class MultiDonationFlow {
                     e.target.value = total > 0 ? Math.round(total).toLocaleString('es-CO') : '';
                 }
                 this.highlightAmountBtn(null);
-                this.setAllocationMode(total > 0 ? 'total' : 'idle');
+                this.setAllocationMode(total > 0 ? 'total' : 'idle', { total });
                 this.splitTotalAmount(total);
             });
         }
@@ -515,10 +552,16 @@ class MultiDonationFlow {
             input.addEventListener('input', (e) => {
                 const slug = e.target.dataset.slug;
                 const amount = this.roundAmount(this.parseAmountInput(e.target.value));
+                if (this.state.allocationMode === 'total' && this.state.budgetTotal > 0) {
+                    this.rebalanceBudgetAllocation(slug, amount);
+                    return;
+                }
+
                 this.state.allocations[slug] = amount;
                 if (this.state.currency === 'COP') {
                     e.target.value = amount > 0 ? Math.round(amount).toLocaleString('es-CO') : '';
                 }
+
                 const totalInput = this.el.querySelector('#multi-total-amount');
                 if (totalInput) totalInput.value = '';
                 this.highlightAmountBtn(null);
