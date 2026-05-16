@@ -1,18 +1,2180 @@
 ---
-export const prerender = false;
 import BaseLayout from '@layouts/BaseLayout.astro';
-import ManaPinnedStory from '@components/home/ManaPinnedStory.astro';
+
+const cspNonce = Astro.locals?.cspNonce;
+
+const values = [
+  {
+    icon: 'book',
+    title: 'Escritura',
+    text: 'Enseñamos la Palabra de Dios como fundamento de fe y práctica.',
+  },
+  {
+    icon: 'heart',
+    title: 'Dependencia',
+    text: 'Procuramos depender de Dios a través de hábitos de vida piadosos y la interdependencia de los otros para madurar.',
+  },
+  {
+    icon: 'serve',
+    title: 'Servicio',
+    text: 'Desafiamos a servir a Dios en el liderazgo para el uso de los dones en los ministerios.',
+  },
+  {
+    icon: 'send',
+    title: 'Proclamación',
+    text: 'Proclamamos nuestra fe para dar a conocer a Dios a través de grupos y plantación de iglesias.',
+  },
+  {
+    icon: 'flame',
+    title: 'Adoración',
+    text: 'Propiciamos ambientes de adoración y de consagración a Dios.',
+  },
+];
+
+const fronts = [
+  {
+    title: 'Devocional Maná',
+    text: '5 audios cada semana y agenda devocional.',
+    logo: '/assets/home-ministerio/front-devocional-mana.png',
+  },
+  {
+    title: 'Escuela Bíblica',
+    text: '5 cursos discipulares.',
+    logo: '/assets/home-ministerio/front-escuela-biblica.png',
+  },
+  {
+    title: 'Iglesias Maná',
+    text: '22 sedes y misiones en 22 ciudades.',
+    logo: '/assets/home-ministerio/front-mana-logo.jpg',
+  },
+];
+
+const objectives = [
+  {
+    number: '01',
+    icon: 'globe',
+    title: 'Llevar el evangelio',
+    text: 'hasta lo último de la tierra.',
+  },
+  {
+    number: '02',
+    icon: 'people',
+    title: 'Discipular',
+    text: 'a quienes han nacido de nuevo hasta la madurez.',
+  },
+  {
+    number: '03',
+    icon: 'learn',
+    title: 'Capacitar',
+    text: 'a los hijos de Dios en el uso de sus dones.',
+  },
+];
+
+const foodItems = [
+  '21 Hábitos que Sanan',
+  'Mi Casa',
+  'Dos para Ser Uno',
+  'Nacidos para Multiplicarnos',
+  'Escogidos para Servir',
+];
+
+const audioBars = [48, 62, 76, 58, 88, 72, 50, 66, 34, 54, 84, 44, 68, 82, 52, 74, 92, 64, 86, 100, 70, 56, 80, 46, 60];
+
+const sceneCount = 11;
 ---
 
 <BaseLayout
-  title="Borrador Home Ministerio Maná"
-  description="Borrador narrativo del nuevo home de Ministerio Maná, construido con HTML, CSS y animaciones scroll-driven."
-  disableSmoothScroll={true}
+  title="Ministerio Maná"
+  description="Una iglesia que enseña las Escrituras, edifica vidas y forma discípulos para impactar su entorno cercano y el mundo."
   hideHeader={true}
   hideFooter={true}
-  noindex={true}
+  disableSmoothScroll={true}
 >
-  <main class="overflow-x-hidden">
-    <ManaPinnedStory />
-  </main>
+  <div class="mana-home" data-mana-story style={`--scene-count: ${sceneCount}`}>
+    <div class="story-stage" aria-live="polite">
+      <div class="story-frame" aria-hidden="true">
+        <span class="corner-block corner-block--top"></span>
+        <span class="corner-line corner-line--bottom"></span>
+        <span class="corner-line corner-line--left"></span>
+      </div>
+
+      <div class="story-progress" aria-hidden="true">
+        {Array.from({ length: sceneCount }).map((_, index) => (
+          <span class={index === 0 ? 'is-active' : ''} data-story-dot></span>
+        ))}
+      </div>
+
+      <section class="story-scene story-scene--hero is-active" data-story-scene>
+        <div class="hero-layout">
+          <div class="hero-copy">
+            <img class="brand-mark" src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" />
+            <p class="script-line">Es momento de</p>
+            <h1 class="hero-title">
+              <span class="outline-word">Orar</span>
+              <span class="solid-word">Agradecer</span>
+            </h1>
+            <p class="hero-text">Una iglesia que enseña las Escrituras, edifica vidas y forma discípulos para impactar su entorno cercano y el mundo.</p>
+            <div class="button-row">
+              <a href="#historia" class="story-button story-button--primary">Comenzar historia</a>
+              <a href="/eventos/cumbre-mundial-2026/" class="story-button story-button--ghost">Volver a Cumbre</a>
+            </div>
+          </div>
+          <div class="hero-echo" aria-hidden="true">
+            <span>Orar</span>
+            <span>Agradecer</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--mission" data-story-scene>
+        <div class="identity-grid">
+          <div class="identity-heading">
+            <div class="emblem emblem--large">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762" />
+              </svg>
+            </div>
+            <p class="script-line">Nuestra</p>
+            <h2 class="section-title"><span>Misión</span></h2>
+          </div>
+          <div class="text-stack">
+            <article class="copy-panel copy-panel--strong">
+              <span class="panel-number">01</span>
+              <p>Somos una iglesia que enseña las Escrituras, edificando las vidas de los hijos de Dios a través de hábitos espirituales que los lleven a conocer, amar y obedecer a Dios, con un alto grado de compromiso en el servicio ministerial para dar cumplimiento al plan de Dios.</p>
+            </article>
+            <article class="copy-panel">
+              <span class="panel-number">02</span>
+              <p>Formamos hombres y mujeres de Dios que guiados por el Espíritu Santo lleguen a ser sus instrumentos en el establecimiento de grupos pequeños e iglesias locales que impacten su entorno cercano y el mundo.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--vision" data-story-scene>
+        <div class="vision-layout">
+          <div class="identity-heading">
+            <div class="emblem">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </div>
+            <p class="script-line">Nuestra</p>
+            <h2 class="section-title"><span>Visión</span></h2>
+          </div>
+          <p class="vision-year-back" aria-hidden="true">2030</p>
+          <div class="vision-copy">
+            <p><strong>Ser una iglesia bíblica, cristocéntrica y relevante en su entorno,</strong> con presencia nacional e internacional en el 2030.</p>
+            <p>Una iglesia que discipula a quienes han nacido de nuevo, que predica el evangelio como un estilo de vida a través de todos los medios posibles, enseñando a amar a Dios genuinamente y a servir a su prójimo, en obediencia al mandato de cumplir la Gran Comisión a todos los términos de la tierra.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="historia" class="story-scene story-scene--history" data-story-scene>
+        <div class="history-showcase">
+          <div class="history-copy">
+            <p class="small-kicker">Origen</p>
+            <h2 class="history-statement">La Iglesia Ministerio Maná surge en <strong>2016</strong></h2>
+            <p>Tras la llegada a Medellín de los pastores <strong>Carlos Ríos</strong> y su esposa <strong>Gloria Cano</strong> desde Londres.</p>
+            <svg class="history-callout" viewBox="0 0 560 96" aria-hidden="true">
+              <path d="M18 72H396L514 16"></path>
+              <circle cx="18" cy="72" r="12"></circle>
+            </svg>
+          </div>
+          <div class="history-map-shell" role="img" aria-label="Mapa de Londres a Medellín">
+            <img class="history-map-art" src="/assets/home-ministerio/history-map.svg" alt="" loading="lazy" />
+            <span class="history-brand-badge">
+              <img class="history-brand" src="/assets/home-ministerio/mana-logo-white.svg" alt="Maná" loading="lazy" />
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--devotional" data-story-scene>
+        <div class="devotional-layout">
+          <img class="devotional-map-bg" src="/assets/home-ministerio/devotional-map.svg" alt="" loading="lazy" aria-hidden="true" />
+          <div class="devotional-lockup" aria-hidden="true">
+            <div class="audio-wave audio-wave--left">
+              {audioBars.map((height, index) => (
+                <span style={`--bar-h: ${height}px; --bar-i: ${index}`}></span>
+              ))}
+            </div>
+            <div class="devotional-logo-frame">
+              <img class="devotional-logo" src="/assets/home-ministerio/devocional-logo.svg" alt="" loading="lazy" />
+            </div>
+            <div class="audio-wave audio-wave--right">
+              {audioBars.map((height, index) => (
+                <span style={`--bar-h: ${height}px; --bar-i: ${index}`}></span>
+              ))}
+            </div>
+          </div>
+          <div class="devotional-copy">
+            <p>10 años antes de llegar a Medellín, el pastor Carlos inició un podcast desde Londres llamado <strong>“Devocional Maná”</strong>, que le permitió llegar a sus feligreses en lugares apartados.</p>
+            <p>Este devocional en audio llegó a reproducirse entre los familiares, amigos y compañeros de trabajo de la feligresía.</p>
+            <a class="devotional-youtube" href="https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag" target="_blank" rel="noopener noreferrer" aria-label="Ver Devocional Maná en YouTube">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-2C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 2A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 2C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-2A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58Z" />
+                <path d="m10 15 5.2-3L10 9Z" />
+              </svg>
+              <span>Ver en YouTube</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--values" data-story-scene>
+        <div class="values-layout">
+          <div class="identity-heading">
+            <div class="emblem">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21V7" />
+                <path d="m16 12 2 2 4-4" />
+                <path d="M22 6V4a1 1 0 0 0-1-1h-5a4 4 0 0 0-4 4 4 4 0 0 0-4-4H3a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6a1 1 0 0 0 1-1v-1.3" />
+              </svg>
+            </div>
+            <p class="script-line">Principios y</p>
+            <h2 class="section-title"><span>Valores</span></h2>
+          </div>
+          <div class="values-board">
+            {values.map((item, index) => (
+              <article class={`value-node value-node--${index + 1}`}>
+                <span class="value-number">{String(index + 1).padStart(2, '0')}</span>
+                <span class="value-icon">
+                  {item.icon === 'book' && (
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V7" /><path d="m16 12 2 2 4-4" /><path d="M22 6V4a1 1 0 0 0-1-1h-5a4 4 0 0 0-4 4 4 4 0 0 0-4-4H3a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h6a3 3 0 0 1 3 3 3 3 0 0 1 3-3h6a1 1 0 0 0 1-1v-1.3" /></svg>
+                  )}
+                  {item.icon === 'heart' && (
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 14h2a2 2 0 0 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16" /><path d="m14.5 13.4 5-4.7C20.2 8 21 6.9 21 5.8A2.8 2.8 0 0 0 16.2 4a.3.3 0 0 1-.4 0A2.8 2.8 0 0 0 11 5.8c0 1.2.8 2.2 1.5 2.9L16 12" /><path d="m2 15 6 6" /><path d="m7 16 1.6-1.4c.3-.4.8-.6 1.4-.6h4" /></svg>
+                  )}
+                  {item.icon === 'serve' && (
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 12h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 14" /><path d="m7 18 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.8-2.9l-4.2 3.9" /><path d="m2 13 6 6" /></svg>
+                  )}
+                  {item.icon === 'send' && (
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.7 3.1a.5.5 0 0 0-.7.6l2.9 7.6a2 2 0 0 1 0 1.4L3 20.3a.5.5 0 0 0 .7.6l18-8.5a.5.5 0 0 0 0-.9Z" /><path d="M6 12h16" /></svg>
+                  )}
+                  {item.icon === 'flame' && (
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A4.5 4.5 0 0 0 12 22a5 5 0 0 0 5-5c0-4-4-5.5-4-9 0-1.3.5-2.5 1.5-3.5C10.5 5.8 7 9.1 7 13a6 6 0 0 0 1.5 1.5Z" /><path d="M12 16c-.8.8-1 1.6-1 2.3A1.9 1.9 0 0 0 12.9 20 2.1 2.1 0 0 0 15 17.9c0-1.6-1.5-2.2-1.5-3.6" /></svg>
+                  )}
+                </span>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--fronts" data-story-scene>
+        <div class="fronts-layout">
+          <div class="fronts-title">
+            <p>Oficializamos el nombre <strong>“Ministerio Maná”</strong>, contando con</p>
+            <div class="fronts-number"><span>3</span><p>Grandes frentes de acción</p></div>
+            <img class="fronts-line-art" src="/assets/home-ministerio/bible-lines-teal.svg" alt="" loading="lazy" />
+          </div>
+          <div class="fronts-orbit">
+            {fronts.map((front, index) => (
+              <article class={`front-medallion front-medallion--${index + 1}`}>
+                <span class="front-logo" aria-hidden="true">
+                  <img src={front.logo} alt="" loading="lazy" />
+                </span>
+                <div class="front-copy">
+                  <h3>{front.title}</h3>
+                  <p>{front.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--objectives" data-story-scene>
+        <div class="objectives-layout">
+          <div class="identity-heading">
+            <div class="emblem">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="5.5" />
+                <circle cx="12" cy="12" r="1.8" />
+              </svg>
+            </div>
+            <p class="script-line">Nuestros</p>
+            <h2 class="section-title"><span>Objetivos</span></h2>
+          </div>
+          <div class="objective-stack">
+            {objectives.map((objective) => (
+              <article class="objective-step">
+                <span class="objective-number">{objective.number}</span>
+                <span class="objective-icon" aria-hidden="true">
+                  {objective.icon === 'globe' && (
+                    <svg viewBox="0 0 24 24"><path d="M21.5 15H17a2 2 0 0 0-2 2v4.5" /><path d="M7 3.3V5a3 3 0 0 0 3 3 2 2 0 0 1 2 2c0 1.1.9 2 2 2s2-.9 2-2 .9-2 2-2h3.2" /><path d="M11 21.9V18a2 2 0 0 0-2-2 2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.1" /><circle cx="12" cy="12" r="10" /></svg>
+                  )}
+                  {objective.icon === 'people' && (
+                    <svg viewBox="0 0 24 24"><path d="M18 21a8 8 0 0 0-16 0" /><circle cx="10" cy="8" r="5" /><path d="M22 20c0-3.4-2-6.5-4-8a5 5 0 0 0-.5-8.3" /></svg>
+                  )}
+                  {objective.icon === 'learn' && (
+                    <svg viewBox="0 0 24 24"><path d="M21.4 10.9a1 1 0 0 0 0-1.8l-8.6-3.9a2 2 0 0 0-1.7 0L2.6 9.1a1 1 0 0 0 0 1.8l8.6 3.9a2 2 0 0 0 1.7 0Z" /><path d="M22 10v6" /><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" /></svg>
+                  )}
+                </span>
+                <div>
+                  <h3>{objective.title}</h3>
+                  <p>{objective.text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--food" data-story-scene>
+        <div class="food-layout">
+          <div>
+            <p class="script-line">Alimento</p>
+            <h2 class="section-title"><span>Espiritual</span></h2>
+          </div>
+          <div class="food-grid">
+            {foodItems.map((item) => (
+              <span>{item}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--churches" data-story-scene>
+        <div class="churches-layout">
+          <div class="church-map-panel" aria-hidden="true">
+            <img class="church-map" src="/assets/home-ministerio/church-map.svg" alt="" loading="lazy" />
+          </div>
+          <div class="church-copy">
+            <p class="script-line">Nuestras</p>
+            <h2 class="section-title"><span>Iglesias</span></h2>
+            <div class="stat-grid">
+              <article><strong>22</strong><span>Sedes y misiones</span></article>
+              <article><strong>5</strong><span>Países / regiones</span></article>
+              <article><strong>22</strong><span>Ciudades</span></article>
+            </div>
+            <p>Tenemos presencia en Colombia, Ecuador, México y Europa, con sedes y misiones ubicadas en 22 ciudades. Cada punto representa una sede o misión; la ubicación exacta vive en el mapa completo de iglesias.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="story-scene story-scene--final" data-story-scene>
+        <div class="final-layout">
+          <img class="final-logo" src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" />
+          <p class="script-line">Ministerio Maná</p>
+          <h2>Conocer, amar, obedecer y servir.</h2>
+          <p>Ministerio Maná existe para enseñar las Escrituras, formar discípulos y servir a Dios con una fe que se vive en comunidad.</p>
+          <p>Una iglesia bíblica, cristocéntrica y relevante para esta generación.</p>
+          <div class="button-row button-row--center">
+            <a href="/devocional/" class="story-button story-button--primary">Devocional Maná</a>
+            <a href="/escuela-biblica/" class="story-button story-button--ghost">Escuela Bíblica</a>
+            <a href="/iglesias/" class="story-button story-button--ghost">Encontrar iglesia</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 </BaseLayout>
+
+<script nonce={cspNonce}>
+  (() => {
+    const root = document.querySelector('[data-mana-story]');
+    if (!root) return;
+
+    const scenes = Array.from(root.querySelectorAll('[data-story-scene]'));
+    const dots = Array.from(root.querySelectorAll('[data-story-dot]'));
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let ticking = false;
+
+    const setActive = (activeIndex) => {
+      scenes.forEach((scene, index) => {
+        const active = index === activeIndex;
+        scene.classList.toggle('is-active', active);
+        scene.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+      dots.forEach((dot, index) => dot.classList.toggle('is-active', index === activeIndex));
+    };
+
+    const update = () => {
+      ticking = false;
+      if (prefersReduced) {
+        setActive(0);
+        return;
+      }
+
+      const rect = root.getBoundingClientRect();
+      const total = Math.max(1, root.offsetHeight - window.innerHeight);
+      const scrolled = Math.min(Math.max(-rect.top, 0), total);
+      const progress = scrolled / total;
+      const activeIndex = Math.min(scenes.length - 1, Math.round(progress * (scenes.length - 1)));
+
+      root.style.setProperty('--story-progress', String(progress));
+      setActive(activeIndex);
+    };
+
+    const requestUpdate = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+    document.addEventListener('astro:page-load', update);
+    update();
+  })();
+</script>
+
+<style>
+  @font-face {
+    font-family: "Summer Loving";
+    src: url("/fonts/SUMMER FONT/Summer Loving Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .mana-home {
+    --home-ink: #111936;
+    --home-navy: #202d63;
+    --home-navy-2: #263b76;
+    --home-teal: #3fa7bb;
+    --home-teal-dark: #25839a;
+    --home-ice: #d8e8f0;
+    --home-warm: #f5efeb;
+    --home-line: rgba(216, 232, 240, 0.28);
+    position: relative;
+    min-height: calc(var(--scene-count) * 100svh);
+    overflow: visible;
+    background: var(--home-navy);
+    color: white;
+    font-family: "Intro", system-ui, sans-serif;
+  }
+
+  .mana-home *,
+  .mana-home *::before,
+  .mana-home *::after {
+    box-sizing: border-box;
+  }
+
+  .mana-home :is(h1, h2, h3, p, a, span, strong) {
+    letter-spacing: 0;
+  }
+
+  .story-stage {
+    position: sticky;
+    top: 0;
+    min-height: 100svh;
+    overflow: hidden;
+    isolation: isolate;
+    background:
+      linear-gradient(90deg, rgba(22, 31, 71, 0.72) 0 1px, transparent 1px) 0 0 / clamp(72px, 9vw, 130px) 100%,
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 22%),
+      var(--home-navy);
+  }
+
+  .story-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .corner-block {
+    position: absolute;
+    width: min(24vw, 300px);
+    aspect-ratio: 1;
+    background: var(--home-teal);
+    opacity: 0.92;
+  }
+
+  .corner-block--top {
+    top: 0;
+    right: 0;
+    border-bottom-left-radius: 100%;
+  }
+
+  .corner-line {
+    position: absolute;
+    border-color: rgba(63, 167, 187, 0.82);
+    opacity: 0.8;
+  }
+
+  .corner-line--bottom {
+    left: clamp(24px, 5vw, 72px);
+    right: clamp(24px, 5vw, 72px);
+    bottom: clamp(22px, 3vw, 46px);
+    border-bottom: 1px solid var(--home-line);
+  }
+
+  .corner-line--left {
+    left: -12vmin;
+    bottom: -12vmin;
+    width: 28vmin;
+    aspect-ratio: 1;
+    border: 2px solid rgba(63, 167, 187, 0.72);
+    border-radius: 50%;
+  }
+
+  .story-progress {
+    position: absolute;
+    top: 50%;
+    right: clamp(16px, 3vw, 34px);
+    z-index: 6;
+    display: grid;
+    gap: 9px;
+    transform: translateY(-50%);
+  }
+
+  .story-progress span {
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.54);
+    border-radius: 999px;
+    background: transparent;
+    transition: background 180ms ease, transform 180ms ease, border-color 180ms ease;
+  }
+
+  .story-progress span.is-active {
+    background: var(--home-teal);
+    border-color: var(--home-teal);
+    transform: scale(1.45);
+  }
+
+  .story-scene {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    min-height: 100svh;
+    padding: clamp(34px, 6vw, 92px) clamp(20px, 6vw, 92px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(4px);
+    transition: opacity 420ms ease, transform 420ms ease, filter 420ms ease;
+  }
+
+  .story-scene.is-active {
+    z-index: 4;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+    filter: none;
+  }
+
+  .story-scene::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px) 0 0 / 18px 18px,
+      linear-gradient(135deg, rgba(63, 167, 187, 0.08), transparent 42%);
+    opacity: 0.55;
+  }
+
+  .story-scene--vision,
+  .story-scene--devotional {
+    background: linear-gradient(135deg, #24396f 0%, #1f2c62 58%, #19244f 100%);
+  }
+
+  .story-scene--history,
+  .story-scene--food {
+    background: linear-gradient(135deg, #f8f3ef 0%, #edf4f6 58%, #d8e8f0 100%);
+    color: var(--home-ink);
+  }
+
+  .story-scene--history::before,
+  .story-scene--food::before {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(32, 45, 99, 0.08) 0 1px, transparent 1px) 0 0 / 18px 18px,
+      linear-gradient(135deg, rgba(63, 167, 187, 0.18), transparent 48%);
+    opacity: 0.45;
+  }
+
+  .story-scene--fronts {
+    background: linear-gradient(135deg, #1d2859 0%, #293c74 52%, #1c295b 100%);
+  }
+
+  .story-scene--churches {
+    background: linear-gradient(135deg, #f8f3ef 0%, #edf4f6 56%, #d8e8f0 100%);
+    color: var(--home-ink);
+  }
+
+  .story-scene--churches::before {
+    background:
+      radial-gradient(circle at 20% 30%, rgba(32, 45, 99, 0.08) 0 1px, transparent 1px) 0 0 / 18px 18px,
+      linear-gradient(135deg, rgba(63, 167, 187, 0.18), transparent 48%);
+    opacity: 0.45;
+  }
+
+  .hero-layout,
+  .identity-grid,
+  .vision-layout,
+  .history-showcase,
+  .map-layout,
+  .devotional-layout,
+  .values-layout,
+  .fronts-layout,
+  .objectives-layout,
+  .food-layout,
+  .churches-layout,
+  .final-layout {
+    width: min(1180px, 100%);
+    margin: auto;
+  }
+
+  .hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+    align-items: center;
+    gap: clamp(32px, 6vw, 86px);
+  }
+
+  .hero-copy {
+    max-width: 680px;
+  }
+
+  .brand-mark {
+    width: clamp(78px, 8vw, 118px);
+    height: auto;
+    margin-bottom: clamp(18px, 3vw, 30px);
+  }
+
+  .script-line {
+    margin: 0 0 -0.08em;
+    color: white;
+    font-family: "Summer Loving", cursive;
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    line-height: 0.86;
+    text-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
+  }
+
+  .hero-title,
+  .section-title {
+    display: block;
+    margin: 0;
+    color: white;
+    font-family: "Intro", system-ui, sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 0.9;
+    text-wrap: balance;
+  }
+
+  .mana-home .section-title::before {
+    content: none;
+    display: none;
+  }
+
+  .hero-title {
+    display: grid;
+    gap: 0.02em;
+  }
+
+  .outline-word {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--home-teal);
+    font-size: clamp(3.2rem, 8vw, 8.5rem);
+  }
+
+  .solid-word {
+    color: white;
+    font-size: clamp(3rem, 8.3vw, 8.8rem);
+  }
+
+  .hero-text,
+  .story-copy p,
+  .vision-copy p,
+  .devotional-copy p,
+  .church-copy p,
+  .final-layout p {
+    max-width: 760px;
+    margin: clamp(18px, 3vw, 30px) 0 0;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: clamp(1rem, 1.55vw, 1.45rem);
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+
+  .hero-echo {
+    display: grid;
+    gap: 0.1em;
+    color: transparent;
+    font-weight: 800;
+    text-transform: uppercase;
+    opacity: 0.2;
+    -webkit-text-stroke: 2px rgba(63, 167, 187, 0.62);
+  }
+
+  .hero-echo span:first-child {
+    font-size: clamp(5rem, 14vw, 13rem);
+    line-height: 0.8;
+  }
+
+  .hero-echo span:last-child {
+    justify-self: end;
+    color: rgba(255, 255, 255, 0.13);
+    -webkit-text-stroke: 0;
+    font-size: clamp(2.5rem, 7vw, 6.2rem);
+    line-height: 0.85;
+  }
+
+  .button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: clamp(24px, 3vw, 36px);
+  }
+
+  .button-row--center {
+    justify-content: center;
+  }
+
+  .story-button {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 13px 21px;
+    color: white;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+
+  .story-button:hover,
+  .story-button:focus-visible {
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .story-button--primary {
+    border: 1px solid rgba(63, 167, 187, 0.9);
+    background: var(--home-teal);
+  }
+
+  .story-button--ghost {
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .identity-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(420px, 1.2fr);
+    align-items: center;
+    gap: clamp(28px, 7vw, 92px);
+  }
+
+  .identity-heading {
+    position: relative;
+  }
+
+  .identity-heading::after,
+  .fronts-title::after,
+  .food-layout::after {
+    content: attr(data-ghost);
+    position: absolute;
+    left: -0.08em;
+    bottom: -0.18em;
+    color: transparent;
+    font-size: clamp(5rem, 14vw, 12rem);
+    font-weight: 800;
+    line-height: 0.8;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+  }
+
+  .section-title {
+    font-size: clamp(3.3rem, 8vw, 8rem);
+    color: var(--home-teal);
+  }
+
+  .section-title--white {
+    color: white;
+  }
+
+  .emblem {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    width: clamp(86px, 10vw, 128px);
+    aspect-ratio: 1;
+    margin-bottom: clamp(22px, 3vw, 34px);
+    place-items: center;
+    border: 3px solid var(--home-teal);
+    border-radius: 50%;
+    background: var(--home-warm);
+    color: var(--home-ink);
+    box-shadow: 0 0 0 12px rgba(63, 167, 187, 0.1), 0 22px 60px rgba(0, 0, 0, 0.22);
+  }
+
+  .emblem::before {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    z-index: -1;
+    border: 1px solid rgba(63, 167, 187, 0.35);
+    border-radius: inherit;
+  }
+
+  .emblem--large {
+    width: clamp(104px, 11vw, 148px);
+  }
+
+  .emblem svg,
+  .value-icon svg {
+    width: 46%;
+    height: 46%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .text-stack {
+    display: grid;
+    gap: 18px;
+  }
+
+  .copy-panel {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: clamp(22px, 3vw, 34px);
+    box-shadow: 0 28px 70px rgba(9, 16, 39, 0.28);
+  }
+
+  .copy-panel--strong {
+    background: rgba(255, 255, 255, 0.11);
+  }
+
+  .copy-panel p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: clamp(1rem, 1.6vw, 1.28rem);
+    font-weight: 600;
+    line-height: 1.55;
+  }
+
+  .panel-number {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    color: rgba(255, 255, 255, 0.08);
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .vision-layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(280px, 0.82fr) minmax(460px, 1.18fr);
+    align-items: center;
+    gap: clamp(32px, 6vw, 84px);
+  }
+
+  .vision-layout > :not(.vision-year-back) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .vision-layout > .vision-year-back {
+    position: absolute;
+    top: 50%;
+    right: clamp(-22px, 2vw, 24px);
+    z-index: 0;
+    margin: 0;
+    color: transparent;
+    font-size: clamp(8rem, 22vw, 18rem);
+    font-weight: 800;
+    line-height: 0.75;
+    opacity: 0.72;
+    transform: translateY(-47%);
+    -webkit-text-stroke: 2px rgba(63, 167, 187, 0.54);
+    pointer-events: none;
+  }
+
+  .vision-copy {
+    max-width: 760px;
+    border-left: 3px solid rgba(63, 167, 187, 0.82);
+    border-radius: 8px;
+    background: rgba(12, 19, 49, 0.24);
+    padding: clamp(22px, 3.5vw, 40px);
+    text-align: left;
+    box-shadow: 0 28px 70px rgba(9, 16, 39, 0.24);
+  }
+
+  .year-mark {
+    margin: 0 0 clamp(18px, 3vw, 30px);
+    color: transparent;
+    font-size: clamp(5rem, 15vw, 13rem);
+    font-weight: 800;
+    line-height: 0.8;
+    -webkit-text-stroke: 2px rgba(63, 167, 187, 0.72);
+  }
+
+  .vision-copy p:not(.year-mark) {
+    margin-inline: auto;
+    font-size: clamp(1.02rem, 1.42vw, 1.34rem);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .vision-copy strong {
+    color: white;
+    font-weight: 800;
+  }
+
+  .history-showcase {
+    display: grid;
+    grid-template-columns: minmax(420px, 0.95fr) minmax(480px, 1.05fr);
+    align-items: center;
+    gap: clamp(28px, 5vw, 68px);
+  }
+
+  .small-kicker {
+    margin: 0 0 8px;
+    color: var(--home-teal-dark);
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .history-copy {
+    position: relative;
+    z-index: 1;
+  }
+
+  .history-statement {
+    margin: 0;
+    color: var(--home-navy);
+    font-size: clamp(2.8rem, 5vw, 5.25rem);
+    font-weight: 800;
+    line-height: 0.94;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .history-statement strong {
+    display: block;
+    color: transparent;
+    font-size: clamp(5.2rem, 10vw, 9.1rem);
+    line-height: 0.82;
+    -webkit-text-stroke: 2px var(--home-teal-dark);
+  }
+
+  .history-copy p:not(.small-kicker) {
+    max-width: 560px;
+    margin: clamp(14px, 2.4vw, 24px) 0 0;
+    color: rgba(17, 25, 54, 0.76);
+    font-size: clamp(1rem, 1.25vw, 1.18rem);
+    line-height: 1.48;
+    text-wrap: pretty;
+  }
+
+  .history-copy strong {
+    color: var(--home-navy);
+    font-weight: 800;
+  }
+
+  .history-callout {
+    display: block;
+    width: min(100%, 560px);
+    height: auto;
+    margin-top: clamp(16px, 3vw, 34px);
+    overflow: visible;
+  }
+
+  .history-callout path {
+    fill: none;
+    stroke: var(--home-teal-dark);
+    stroke-linecap: round;
+    stroke-width: 3;
+    opacity: 0.78;
+  }
+
+  .history-callout circle {
+    fill: white;
+    stroke: var(--home-teal-dark);
+    stroke-width: 4;
+    filter: drop-shadow(0 12px 20px rgba(32, 45, 99, 0.16));
+  }
+
+  .history-map-shell {
+    position: relative;
+    display: grid;
+    min-height: clamp(320px, 42vw, 560px);
+    align-items: center;
+    isolation: isolate;
+  }
+
+  .history-map-shell::before {
+    content: "";
+    position: absolute;
+    inset: 7% 3% 8% -4%;
+    z-index: -1;
+    border: 1px solid rgba(32, 45, 99, 0.08);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 32px 86px rgba(32, 45, 99, 0.1);
+  }
+
+  .history-map-art,
+  .church-map {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .history-map-art {
+    width: min(980px, 116%);
+    max-width: none;
+    margin-left: clamp(-44px, -4vw, -14px);
+    opacity: 0.98;
+    filter: drop-shadow(0 30px 48px rgba(32, 45, 99, 0.16));
+  }
+
+  .history-brand-badge {
+    position: absolute;
+    right: clamp(18px, 5vw, 70px);
+    bottom: clamp(22px, 5vw, 64px);
+    display: grid;
+    width: clamp(118px, 12vw, 168px);
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    background: var(--home-navy);
+    padding: clamp(14px, 1.6vw, 22px);
+    box-shadow: 0 24px 56px rgba(32, 45, 99, 0.2);
+    overflow: hidden;
+  }
+
+  .history-brand {
+    display: block;
+    width: 82%;
+    max-height: 82%;
+    object-fit: contain;
+  }
+
+  .church-map-panel {
+    pointer-events: none;
+  }
+
+  .church-map {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .devotional-layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(520px, 1.15fr) minmax(360px, 0.85fr);
+    align-items: center;
+    gap: clamp(36px, 7vw, 90px);
+    isolation: isolate;
+  }
+
+  .devotional-map-bg {
+    position: absolute;
+    left: clamp(-130px, -9vw, -54px);
+    top: 50%;
+    z-index: -1;
+    width: min(850px, 66vw);
+    height: auto;
+    opacity: 0.34;
+    transform: translateY(-50%);
+    filter: drop-shadow(0 28px 50px rgba(3, 8, 27, 0.24));
+  }
+
+  .devotional-lockup {
+    display: grid;
+    grid-template-columns: minmax(116px, 1fr) minmax(220px, 330px) minmax(116px, 1fr);
+    min-height: clamp(300px, 38vw, 430px);
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 2.2vw, 28px);
+    opacity: 1;
+  }
+
+  .audio-wave {
+    display: flex;
+    min-width: clamp(96px, 11vw, 160px);
+    align-items: center;
+    justify-content: flex-end;
+    gap: clamp(3px, 0.55vw, 7px);
+    overflow: hidden;
+  }
+
+  .audio-wave--right {
+    justify-content: flex-start;
+    transform: scaleX(-1);
+  }
+
+  .audio-wave span {
+    flex: 0 0 clamp(3px, 0.45vw, 7px);
+    width: clamp(3px, 0.45vw, 7px);
+    height: var(--bar-h);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), var(--home-teal));
+    opacity: 0.72;
+    box-shadow: 0 0 26px rgba(63, 167, 187, 0.36);
+    transform-origin: center;
+    animation: mana-audio-wave 1.65s ease-in-out infinite;
+    animation-delay: calc(var(--bar-i) * -70ms);
+  }
+
+  .audio-wave span:nth-child(3n) {
+    opacity: 0.5;
+  }
+
+  .audio-wave span:nth-child(4n) {
+    opacity: 0.88;
+  }
+
+  .devotional-logo-frame {
+    display: grid;
+    width: min(100%, 330px);
+    aspect-ratio: 1;
+    place-items: center;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .devotional-logo {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.28));
+  }
+
+  @keyframes mana-audio-wave {
+    0%,
+    100% {
+      opacity: 0.42;
+      transform: scaleY(0.58);
+    }
+
+    50% {
+      opacity: 0.95;
+      transform: scaleY(1);
+    }
+  }
+
+  .devotional-copy .section-title {
+    text-transform: none;
+  }
+
+  .devotional-copy strong {
+    color: white;
+  }
+
+  .devotional-youtube {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: clamp(22px, 3vw, 34px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: #ff0033;
+    padding: 13px 18px;
+    color: white;
+    font-size: 0.98rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    box-shadow: 0 20px 48px rgba(8, 14, 36, 0.22);
+    transition: transform 180ms ease, background 180ms ease;
+  }
+
+  .devotional-youtube:hover,
+  .devotional-youtube:focus-visible {
+    color: white;
+    background: #e6002d;
+    transform: translateY(-2px);
+  }
+
+  .devotional-youtube svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+  }
+
+  .devotional-youtube svg path:last-child {
+    fill: var(--home-navy);
+  }
+
+  .values-layout {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.72fr) minmax(540px, 1.28fr);
+    align-items: center;
+    gap: clamp(30px, 6vw, 88px);
+  }
+
+  .values-board {
+    position: relative;
+    display: grid;
+    gap: clamp(8px, 1.1vw, 13px);
+    padding-block: clamp(4px, 1vw, 16px);
+  }
+
+  .values-board::before {
+    content: "";
+    position: absolute;
+    top: 38px;
+    bottom: 38px;
+    left: 82px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(63, 167, 187, 0.74), transparent);
+  }
+
+  .value-node {
+    position: relative;
+    display: grid;
+    grid-template-columns: 54px 58px minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(12px, 2vw, 20px);
+    min-height: clamp(82px, 8.6vw, 104px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    padding: clamp(10px, 1.5vw, 16px) 0;
+  }
+
+  .value-node--2,
+  .value-node--4 {
+    transform: translateX(clamp(18px, 3vw, 44px));
+  }
+
+  .value-node--3 {
+    transform: translateX(clamp(34px, 5vw, 76px));
+  }
+
+  .value-node--5 {
+    transform: translateX(clamp(10px, 2vw, 32px));
+  }
+
+  .value-number {
+    color: rgba(255, 255, 255, 0.22);
+    font-size: clamp(1.45rem, 3vw, 2.7rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .value-icon {
+    display: grid;
+    width: 56px;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid rgba(63, 167, 187, 0.86);
+    border-radius: 50%;
+    color: var(--home-ink);
+    background: var(--home-warm);
+    box-shadow: 0 0 0 9px rgba(63, 167, 187, 0.08);
+  }
+
+  .value-icon svg {
+    width: 52%;
+    height: 52%;
+  }
+
+  .value-node h3 {
+    margin: 0 0 4px;
+    color: white;
+    font-size: clamp(1.05rem, 1.65vw, 1.45rem);
+    font-weight: 800;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .value-node p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(0.95rem, 1.22vw, 1.1rem);
+    font-weight: 650;
+    line-height: 1.34;
+    text-wrap: pretty;
+  }
+
+  .fronts-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.88fr) minmax(520px, 1.12fr);
+    align-items: center;
+    gap: clamp(34px, 7vw, 92px);
+  }
+
+  .fronts-title {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .fronts-title > p {
+    max-width: 520px;
+    margin: 0 0 clamp(24px, 4vw, 42px);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: clamp(1.35rem, 3vw, 2.6rem);
+    font-weight: 500;
+    line-height: 1.18;
+    text-wrap: balance;
+  }
+
+  .fronts-title strong {
+    color: white;
+    font-weight: 800;
+  }
+
+  .fronts-number {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(16px, 3vw, 28px);
+  }
+
+  .fronts-number span {
+    color: var(--home-teal);
+    font-size: clamp(5.5rem, 12vw, 11rem);
+    font-weight: 800;
+    line-height: 0.8;
+  }
+
+  .fronts-number p {
+    margin: 0;
+    color: white;
+    font-size: clamp(2rem, 4.5vw, 4.8rem);
+    font-weight: 800;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  .fronts-line-art {
+    display: block;
+    width: min(340px, 74%);
+    height: auto;
+    margin-top: clamp(20px, 4vw, 42px);
+    opacity: 0.86;
+  }
+
+  .fronts-orbit {
+    position: relative;
+    display: grid;
+    gap: clamp(16px, 2.6vw, 28px);
+    padding-block: clamp(8px, 1.6vw, 18px);
+    isolation: isolate;
+  }
+
+  .fronts-orbit::before {
+    content: "";
+    position: absolute;
+    top: 8%;
+    bottom: 8%;
+    left: 62px;
+    z-index: -1;
+    width: min(46vw, 430px);
+    border: 1px solid rgba(63, 167, 187, 0.28);
+    border-right: 0;
+    border-radius: 999px 0 0 999px;
+  }
+
+  .front-medallion {
+    position: relative;
+    display: grid;
+    grid-template-columns: 118px minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(18px, 3vw, 30px);
+    min-height: 126px;
+  }
+
+  .front-medallion--2 {
+    margin-left: clamp(34px, 6vw, 86px);
+  }
+
+  .front-medallion--3 {
+    margin-left: clamp(8px, 2.6vw, 40px);
+  }
+
+  .front-logo {
+    display: grid;
+    width: 118px;
+    min-width: 0;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 2px solid rgba(255, 255, 255, 0.68);
+    border-radius: 50%;
+    background: transparent;
+    overflow: hidden;
+    box-shadow: 0 24px 58px rgba(5, 11, 31, 0.28);
+  }
+
+  .front-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+
+  .front-copy {
+    padding: clamp(4px, 1vw, 10px) 0;
+  }
+
+  .front-copy h3,
+  .objective-step h3 {
+    margin: 0;
+    color: white;
+    font-size: clamp(1.5rem, 2.8vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .front-copy p,
+  .objective-step p {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    line-height: 1.28;
+  }
+
+  .objectives-layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(300px, 0.78fr) minmax(520px, 1.22fr);
+    align-items: center;
+    gap: clamp(28px, 6vw, 84px);
+  }
+
+  .story-scene--objectives .section-title {
+    font-size: clamp(3rem, 5.4vw, 5.4rem);
+  }
+
+  .objective-stack {
+    display: grid;
+    gap: clamp(12px, 2vw, 20px);
+  }
+
+  .objective-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 74px 62px minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(14px, 2.5vw, 24px);
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    padding: clamp(17px, 2.2vw, 25px) 0;
+  }
+
+  .objective-step:last-child {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .objective-step::before {
+    content: "";
+    position: absolute;
+    left: 101px;
+    top: 50%;
+    width: 10px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--home-teal);
+    box-shadow: 0 0 0 8px rgba(63, 167, 187, 0.1);
+    transform: translate(-50%, -50%);
+  }
+
+  .objective-number {
+    color: var(--home-teal);
+    font-size: clamp(2.2rem, 4.4vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .objective-icon {
+    display: grid;
+    width: 54px;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid rgba(63, 167, 187, 0.68);
+    border-radius: 50%;
+    color: var(--home-ink);
+    background: var(--home-warm);
+    box-shadow: 0 0 0 9px rgba(63, 167, 187, 0.08);
+  }
+
+  .objective-icon svg {
+    width: 54%;
+    height: 54%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .food-layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(min(40vw, 500px), 0.95fr) minmax(min(44vw, 520px), 1.05fr);
+    align-items: center;
+    gap: clamp(34px, 7vw, 86px);
+  }
+
+  .story-scene--food .script-line {
+    color: var(--home-teal-dark);
+    text-shadow: none;
+  }
+
+  .story-scene--food .section-title {
+    color: var(--home-navy);
+    font-size: clamp(3rem, 6.2vw, 5.9rem);
+  }
+
+  .food-grid {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .food-grid span {
+    position: relative;
+    border: 1px solid rgba(32, 45, 99, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.64);
+    padding: 15px 18px;
+    color: var(--home-navy);
+    font-size: clamp(1rem, 1.8vw, 1.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    box-shadow: 0 16px 44px rgba(32, 45, 99, 0.08);
+  }
+
+  .churches-layout {
+    position: relative;
+    display: grid;
+    min-height: min(720px, 78svh);
+    grid-template-columns: minmax(500px, 1.18fr) minmax(320px, 0.82fr);
+    align-items: center;
+    gap: clamp(24px, 5vw, 70px);
+  }
+
+  .church-map-panel {
+    position: absolute;
+    inset: clamp(-54px, -4vw, -20px) clamp(-42px, -4vw, -18px);
+    z-index: 0;
+    display: grid;
+    align-items: center;
+    justify-items: start;
+    opacity: 0.92;
+  }
+
+  .church-map {
+    width: min(1100px, 112vw);
+    max-width: none;
+    margin-left: clamp(-120px, -7vw, -36px);
+    filter: drop-shadow(0 26px 42px rgba(32, 45, 99, 0.14));
+  }
+
+  .church-copy {
+    position: relative;
+    z-index: 1;
+    grid-column: 2;
+    max-width: 520px;
+    justify-self: end;
+    border: 1px solid rgba(32, 45, 99, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.68);
+    padding: clamp(22px, 3vw, 36px);
+    box-shadow: 0 26px 64px rgba(32, 45, 99, 0.12);
+    backdrop-filter: blur(10px);
+  }
+
+  .story-scene--churches .script-line {
+    color: var(--home-teal-dark);
+    text-shadow: none;
+  }
+
+  .story-scene--churches .section-title {
+    color: var(--home-navy);
+    font-size: clamp(3.4rem, 7vw, 7rem);
+  }
+
+  .story-scene--churches .church-copy p {
+    color: rgba(17, 25, 54, 0.76);
+  }
+
+  .church-points circle {
+    fill: var(--home-teal);
+    stroke: rgba(255, 255, 255, 0.95);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 8px rgba(63, 167, 187, 0.62));
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: clamp(20px, 3vw, 30px) 0;
+  }
+
+  .stat-grid article {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 15px;
+  }
+
+  .stat-grid strong {
+    display: block;
+    color: var(--home-teal);
+    font-size: clamp(2.3rem, 4vw, 4rem);
+    line-height: 0.9;
+  }
+
+  .stat-grid span {
+    display: block;
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .story-scene--churches .stat-grid article {
+    border-color: rgba(32, 45, 99, 0.14);
+    background: rgba(32, 45, 99, 0.06);
+  }
+
+  .story-scene--churches .stat-grid span {
+    color: rgba(17, 25, 54, 0.68);
+  }
+
+  .final-layout {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .final-logo {
+    width: clamp(132px, 16vw, 228px);
+    height: auto;
+    margin-bottom: clamp(20px, 3vw, 34px);
+  }
+
+  .final-layout h2 {
+    max-width: 900px;
+    margin: 0;
+    color: white;
+    font-size: clamp(2.6rem, 6.7vw, 7.3rem);
+    font-weight: 800;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .final-layout p {
+    margin-inline: auto;
+  }
+
+  @media (max-width: 980px) {
+    .story-progress {
+      display: none;
+    }
+
+    .hero-layout,
+    .identity-grid,
+    .vision-layout,
+    .history-showcase,
+    .map-layout,
+    .devotional-layout,
+    .values-layout,
+    .fronts-layout,
+    .objectives-layout,
+    .food-layout,
+    .churches-layout {
+      grid-template-columns: 1fr;
+      gap: clamp(22px, 4vh, 36px);
+    }
+
+    .hero-echo {
+      display: none;
+    }
+
+    .history-map-shell,
+    .church-map-panel {
+      max-width: 680px;
+      margin-inline: auto;
+    }
+
+    .history-showcase {
+      text-align: center;
+    }
+
+    .history-copy p:not(.small-kicker),
+    .history-callout {
+      margin-inline: auto;
+    }
+
+    .history-map-art {
+      width: 100%;
+      max-width: 680px;
+      margin-inline: auto;
+    }
+
+    .history-brand-badge {
+      right: 6%;
+      bottom: 8%;
+    }
+
+    .value-node,
+    .value-node--2,
+    .value-node--3,
+    .value-node--4,
+    .value-node--5,
+    .front-medallion,
+    .front-medallion--2,
+    .front-medallion--3 {
+      transform: none;
+      margin-left: 0;
+    }
+
+    .devotional-layout {
+      justify-items: center;
+      text-align: center;
+    }
+
+    .devotional-lockup {
+      width: min(100%, 680px);
+      min-height: 220px;
+    }
+
+    .churches-layout {
+      min-height: auto;
+      text-align: center;
+    }
+
+    .church-map-panel {
+      position: relative;
+      inset: auto;
+      order: 2;
+      width: min(100%, 680px);
+      opacity: 0.78;
+    }
+
+    .church-map {
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .church-copy {
+      order: -1;
+      grid-column: auto;
+      justify-self: center;
+      max-width: 680px;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .mana-home {
+      min-height: calc(var(--scene-count) * 100svh);
+    }
+
+    .story-scene {
+      align-content: center;
+      padding: 34px 20px 42px;
+    }
+
+    .corner-block {
+      width: 114px;
+    }
+
+    .brand-mark {
+      width: 86px;
+      margin-bottom: 20px;
+    }
+
+    .script-line {
+      font-size: clamp(2.05rem, 13vw, 3.4rem);
+    }
+
+    .outline-word {
+      font-size: clamp(3rem, 17vw, 4.1rem);
+      -webkit-text-stroke-width: 1.4px;
+    }
+
+    .solid-word {
+      font-size: clamp(2.55rem, 14vw, 3.6rem);
+    }
+
+    .hero-text {
+      font-size: 1rem;
+    }
+
+    .button-row,
+    .button-row--center {
+      display: grid;
+      grid-template-columns: 1fr;
+      width: 100%;
+    }
+
+    .story-button {
+      width: 100%;
+    }
+
+    .emblem,
+    .emblem--large {
+      width: 88px;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-size: clamp(3rem, 15vw, 4.2rem);
+    }
+
+    .identity-heading {
+      text-align: left;
+    }
+
+    .text-stack {
+      gap: 12px;
+    }
+
+    .copy-panel {
+      padding: 17px;
+    }
+
+    .copy-panel p {
+      font-size: 0.95rem;
+      line-height: 1.43;
+    }
+
+    .panel-number {
+      display: none;
+    }
+
+    .vision-copy {
+      text-align: left;
+    }
+
+    .year-mark {
+      font-size: clamp(4.8rem, 25vw, 6.2rem);
+      margin-bottom: 14px;
+    }
+
+    .vision-copy p:not(.year-mark) {
+      font-size: 1rem;
+      line-height: 1.46;
+      text-align: left;
+    }
+
+    .history-statement {
+      font-size: clamp(2.8rem, 12.5vw, 4.15rem);
+      text-align: center;
+    }
+
+    .history-statement strong {
+      font-size: clamp(5rem, 25vw, 7rem);
+      -webkit-text-stroke-width: 1.45px;
+    }
+
+    .history-copy {
+      text-align: center;
+    }
+
+    .history-copy p:not(.small-kicker) {
+      margin-inline: auto;
+      font-size: 1rem;
+    }
+
+    .history-callout {
+      display: none;
+    }
+
+    .history-map-shell {
+      min-height: 220px;
+    }
+
+    .history-map-shell::before {
+      inset: 12% 3% 8%;
+    }
+
+    .history-brand-badge {
+      width: 86px;
+      padding: 8px;
+    }
+
+    .history-map-shell,
+    .church-map-panel {
+      padding: 0;
+      background: transparent;
+    }
+
+    .history-map-art,
+    .church-map {
+      margin-inline: auto;
+      max-width: 460px;
+    }
+
+    .devotional-copy p {
+      margin-top: 18px;
+      font-size: 1rem;
+      line-height: 1.48;
+    }
+
+    .devotional-map-bg {
+      left: 50%;
+      width: 560px;
+      opacity: 0.22;
+      transform: translate(-50%, -50%);
+    }
+
+    .devotional-lockup {
+      grid-template-columns: minmax(48px, 62px) minmax(150px, 185px) minmax(48px, 62px);
+      min-height: auto;
+      justify-items: center;
+      gap: 7px;
+    }
+
+    .devotional-logo-frame {
+      width: min(100%, 185px);
+    }
+
+    .audio-wave {
+      min-width: 54px;
+      gap: 2px;
+      max-width: 62px;
+      overflow: hidden;
+    }
+
+    .audio-wave span {
+      width: 3px;
+      height: clamp(24px, var(--bar-h), 58px);
+    }
+
+    .values-layout {
+      align-content: center;
+    }
+
+    .values-board {
+      gap: 0;
+    }
+
+    .values-board::before {
+      left: 56px;
+      top: 26px;
+      bottom: 26px;
+    }
+
+    .value-node {
+      grid-template-columns: 36px 42px minmax(0, 1fr);
+      gap: 12px;
+      min-height: 72px;
+      padding: 10px 0;
+    }
+
+    .value-icon {
+      width: 38px;
+      box-shadow: none;
+    }
+
+    .value-number {
+      font-size: 1.2rem;
+    }
+
+    .value-node h3 {
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+    }
+
+    .value-node p {
+      font-size: 0.96rem;
+      line-height: 1.27;
+    }
+
+    .fronts-title > p {
+      font-size: 1.35rem;
+    }
+
+    .fronts-number {
+      grid-template-columns: 86px minmax(0, 1fr);
+    }
+
+    .fronts-number span {
+      font-size: 5.6rem;
+    }
+
+    .fronts-number p {
+      font-size: 2.1rem;
+    }
+
+    .fronts-line-art {
+      width: min(260px, 80%);
+      margin-top: 18px;
+    }
+
+    .fronts-orbit {
+      gap: 12px;
+    }
+
+    .fronts-orbit::before {
+      left: 38px;
+      width: 72%;
+    }
+
+    .front-medallion {
+      grid-template-columns: 76px minmax(0, 1fr);
+      min-height: 88px;
+      gap: 14px;
+    }
+
+    .front-logo {
+      width: 74px;
+    }
+
+    .front-copy h3,
+    .objective-step h3 {
+      font-size: 1.42rem;
+    }
+
+    .front-copy p,
+    .objective-step p {
+      font-size: 0.96rem;
+    }
+
+    .objective-step {
+      grid-template-columns: 42px 38px minmax(0, 1fr);
+      gap: 11px;
+      padding: 14px 0;
+    }
+
+    .objective-step::before {
+      left: 63px;
+      width: 7px;
+      box-shadow: 0 0 0 6px rgba(63, 167, 187, 0.1);
+    }
+
+    .objective-number {
+      font-size: 2rem;
+    }
+
+    .objective-icon {
+      width: 36px;
+    }
+
+    .food-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .food-grid span {
+      padding: 13px 14px;
+      font-size: 1rem;
+    }
+
+    .stat-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .stat-grid article {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .stat-grid strong {
+      font-size: 2rem;
+    }
+
+    .stat-grid span {
+      margin-top: 0;
+      text-align: right;
+    }
+
+    .church-copy p {
+      font-size: 0.96rem;
+      line-height: 1.45;
+    }
+
+    .final-logo {
+      width: clamp(126px, 40vw, 164px);
+      margin-bottom: 18px;
+    }
+
+    .final-layout .script-line {
+      font-size: clamp(2rem, 11vw, 3.1rem);
+    }
+
+    .final-layout h2 {
+      max-width: 10.5ch;
+      font-size: clamp(2.3rem, 12vw, 3.25rem);
+      overflow-wrap: normal;
+    }
+
+    .final-layout p {
+      max-width: 31ch;
+      margin-top: 16px;
+      font-size: 0.98rem;
+      line-height: 1.45;
+    }
+  }
+
+  @media (max-height: 720px) and (min-width: 701px) {
+    .story-scene {
+      padding-block: 28px;
+    }
+
+    .brand-mark,
+    .emblem,
+    .emblem--large,
+    .final-logo {
+      transform: scale(0.82);
+      transform-origin: left center;
+      margin-bottom: 12px;
+    }
+
+    .hero-text,
+    .story-copy p,
+    .vision-copy p,
+    .devotional-copy p,
+    .church-copy p,
+    .final-layout p {
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mana-home {
+      min-height: auto;
+      overflow: visible;
+    }
+
+    .story-stage {
+      position: relative;
+      overflow: visible;
+    }
+
+    .story-scene {
+      position: relative;
+      min-height: auto;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      filter: none;
+    }
+  }
+</style>
