@@ -1,35 +1,35 @@
 const DESKTOP_SLOTS = [
-  [14, 15, -2.4],
-  [38, 15, 1.8],
-  [63, 15, -1.2],
-  [86, 15, 2.1],
-  [24, 31, 1.3],
-  [50, 31, -2.1],
-  [76, 31, 1.7],
-  [14, 47, 2.3],
-  [38, 47, -1.6],
-  [63, 47, 2.2],
-  [86, 47, -1.4],
-  [24, 63, -1.2],
-  [50, 63, 1.6],
-  [76, 63, -2],
-  [38, 79, 1.8],
-  [63, 79, -1.5],
+  [18, 20, -7],
+  [42, 20, 4],
+  [66, 21, -5],
+  [84, 22, 6],
+  [30, 35, 5],
+  [49, 37, -4],
+  [80, 43, 3],
+  [17, 51, 6],
+  [41, 52, -5],
+  [64, 52, 4],
+  [85, 53, -3],
+  [28, 68, -4],
+  [53, 68, 5],
+  [73, 69, -5],
+  [39, 84, 4],
+  [62, 84, -4],
 ];
 
 const MOBILE_SLOTS = [
-  [26, 15, -2],
-  [74, 15, 1.6],
-  [26, 31, 1.8],
-  [74, 31, -1.4],
-  [26, 47, -1.6],
-  [74, 47, 2],
-  [26, 63, 1.3],
-  [74, 63, -2.1],
+  [23, 18, -6],
+  [70, 19, 5],
+  [29, 35, 4],
+  [73, 36, -5],
+  [22, 53, 5],
+  [68, 54, -4],
+  [32, 72, -5],
+  [72, 73, 5],
 ];
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const mobileWallQuery = window.matchMedia('(max-width: 767px)');
+const compactWallQuery = window.matchMedia('(max-width: 1023px)');
 
 function getI18n(root) {
   try {
@@ -48,12 +48,12 @@ function isCompact(root) {
 }
 
 function getSlotPositions(root) {
-  return mobileWallQuery.matches ? MOBILE_SLOTS : DESKTOP_SLOTS;
+  return compactWallQuery.matches ? MOBILE_SLOTS : DESKTOP_SLOTS;
 }
 
 function getPageSize(root) {
-  if (isCompact(root)) return 6;
-  return mobileWallQuery.matches ? 8 : 12;
+  if (isCompact(root)) return 5;
+  return compactWallQuery.matches ? 6 : 9;
 }
 
 function formatPager(root, current, total) {
@@ -204,10 +204,25 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   note.style.setProperty('--x', `${position[0]}%`);
   note.style.setProperty('--y', `${position[1]}%`);
   note.style.setProperty('--r', `${position[2]}deg`);
+  note.dataset.labelSide = position[0] > (compactWallQuery.matches ? 58 : 62) ? 'left' : 'right';
 
   const pin = document.createElement('span');
   pin.className = 'prayer-note__pin';
   pin.setAttribute('aria-hidden', 'true');
+
+  const paper = document.createElement('span');
+  paper.className = 'prayer-note__paper';
+  paper.setAttribute('aria-hidden', 'true');
+  paper.innerHTML = `
+    <svg viewBox="0 0 78 54" focusable="false">
+      <path class="prayer-note__paper-shadow" d="M10 12 C24 7 42 13 67 9 L72 36 C54 31 38 40 12 35 Z" />
+      <path class="prayer-note__paper-body" d="M8 10 C24 5 42 11 68 7 L73 35 C54 31 39 40 10 34 Z" />
+      <path class="prayer-note__paper-fold" d="M15 13 C25 22 24 28 13 34" />
+      <path class="prayer-note__paper-fold" d="M58 8 C52 18 55 27 70 35" />
+      <path class="prayer-note__paper-line" d="M24 18 C35 15 44 17 57 14" />
+      <path class="prayer-note__paper-line" d="M22 26 C36 23 48 26 61 22" />
+    </svg>
+  `;
 
   const header = document.createElement('header');
   const title = document.createElement('h3');
@@ -260,7 +275,7 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   });
 
   footer.append(count, button);
-  note.append(pin, header, request, footer);
+  note.append(pin, paper, header, request, footer);
   return note;
 }
 
@@ -345,10 +360,10 @@ function setupPagination(root) {
   });
 
   const rerender = () => renderPrayers(root, root.__prayerRows || []);
-  if (mobileWallQuery.addEventListener) {
-    mobileWallQuery.addEventListener('change', rerender);
+  if (compactWallQuery.addEventListener) {
+    compactWallQuery.addEventListener('change', rerender);
   } else {
-    mobileWallQuery.addListener?.(rerender);
+    compactWallQuery.addListener?.(rerender);
   }
 }
 

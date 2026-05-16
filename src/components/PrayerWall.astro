@@ -31,6 +31,15 @@ const wallCracks = [
   'M214 365 C203 392 224 419 212 452 C202 484 130 503 122 535',
   'M581 365 C571 394 594 421 580 452 C566 480 512 506 506 536',
 ];
+const wallCrevices = [
+  'M198 102 C220 95 247 104 266 102',
+  'M455 102 C503 94 557 106 624 100',
+  'M704 187 C748 180 811 190 878 187',
+  'M126 278 C188 270 262 282 344 278',
+  'M504 278 C552 270 627 282 692 277',
+  'M214 452 C248 444 286 452 328 451',
+  'M506 452 C574 443 650 454 732 451',
+];
 const wallHoles = [
   [84, 73, 3], [254, 60, 2], [420, 78, 2], [602, 56, 3], [744, 78, 2], [884, 60, 2],
   [58, 160, 2], [206, 139, 3], [386, 155, 2], [562, 134, 2], [786, 152, 3],
@@ -39,11 +48,16 @@ const wallHoles = [
   [166, 422, 2], [310, 404, 3], [530, 424, 2], [704, 404, 2], [900, 422, 3],
 ];
 const wallPlants = [
-  'M66 508 C56 486 62 466 84 454 C78 476 88 492 66 508 Z',
-  'M82 454 C92 470 92 492 72 510',
-  'M772 258 C750 244 748 222 764 204 C770 228 788 238 772 258 Z',
-  'M763 206 C782 218 790 242 777 264',
-  'M874 516 C856 500 858 480 878 468 C874 490 892 500 874 516 Z',
+  'M233 121 C220 103 226 88 244 78 C240 99 250 111 233 121 Z',
+  'M244 80 C255 96 253 114 236 128',
+  'M568 111 C552 94 556 78 576 68 C573 91 586 101 568 111 Z',
+  'M576 70 C590 86 589 106 572 120',
+  'M745 201 C724 188 724 169 742 154 C748 177 765 187 745 201 Z',
+  'M742 156 C762 169 771 190 752 209',
+  'M487 358 C470 343 472 324 492 312 C489 334 506 344 487 358 Z',
+  'M492 313 C510 327 515 348 493 366',
+  'M150 494 C132 479 134 458 154 446 C151 470 169 480 150 494 Z',
+  'M154 448 C173 463 176 484 154 502',
 ];
 const copy = {
   es: {
@@ -52,21 +66,21 @@ const copy = {
     requests: 'peticiones',
     loading: 'Cargando peticiones...',
     heroKicker: 'Muro de oración',
-    heroTitle: 'Un lugar para levantar peticiones juntos',
-    heroBody: 'Escribe una petición con sencillez. La iglesia la recibe como una carga compartida y la pone delante de Dios en oración.',
+    heroTitle: 'Un lugar para orar y agradecer juntos',
+    heroBody: 'Escribe una petición o agradecimiento con sencillez. La iglesia lo recibe y lo pone delante de Dios en oración.',
     writeRequest: 'Escribir petición',
     seeWall: 'Ver el muro',
     verseLabel: 'Base bíblica',
     verseRef: 'Santiago 5:16',
     verse: 'La oración eficaz del justo puede mucho.',
-    verseBody: 'Una petición no queda sola; queda en medio de una familia que intercede.',
+    verseBody: 'Una petición no queda sola; queda en medio de una familia que intercede y da gracias.',
     liveKicker: 'Intercesión viva',
-    liveTitle: 'Las cargas se insertan en el muro y la iglesia responde en oración',
+    liveTitle: 'Las peticiones se guardan en el muro y la iglesia responde en oración',
     activeRequests: 'peticiones activas',
     registeredPrayers: 'oraciones registradas',
     refreshLabel: 'Actualizar muro',
     newKicker: 'Nueva petición',
-    formTitle: 'Deja tu carga en el muro',
+    formTitle: 'Deja tu petición',
     formHelp: 'Puedes enviarla privada para intercesión o pedir que sea pública. Las públicas pasan por revisión antes de aparecer en el muro.',
     visibilityLegend: 'Privacidad',
     privateLabel: 'Privada para intercesión',
@@ -75,8 +89,8 @@ const copy = {
     publicHelp: 'Un administrador la revisa antes de publicarla.',
     firstName: 'Primer nombre',
     firstNamePlaceholder: 'Ej. Carlos',
-    request: 'Petición',
-    requestPlaceholder: 'Escribe una petición concreta por la que podamos orar',
+    request: 'Petición o agradecimiento',
+    requestPlaceholder: 'Escribe aquello por lo que quieres que oremos o demos gracias',
     city: 'Ciudad',
     cityPlaceholder: 'Medellín',
     country: 'País',
@@ -88,7 +102,7 @@ const copy = {
     steps: [
       ['01', 'Recibimos', 'La petición entra protegida y queda pendiente si pidió aparecer en público.'],
       ['02', 'Discernimos', 'El equipo revisa lo público antes de llevarlo al muro visible.'],
-      ['03', 'Intercedemos', 'La iglesia ora por las cargas publicadas y el ministerio acompaña las privadas.']
+      ['03', 'Intercedemos', 'La iglesia ora por las peticiones publicadas y el ministerio acompaña las privadas.']
     ],
     samples: [
       ['sample-ana', 'Ana', 'Medellín', 'CO', 'Por paz en mi casa y dirección para tomar una decisión familiar.', 18, '2026-01-04T10:00:00.000Z'],
@@ -146,21 +160,21 @@ const copy = {
     requests: 'requests',
     loading: 'Loading requests...',
     heroKicker: 'Prayer wall',
-    heroTitle: 'A place to lift requests together',
-    heroBody: 'Write a request simply. The church receives it as a shared burden and brings it before God in prayer.',
+    heroTitle: 'A place to pray and give thanks together',
+    heroBody: 'Write a request or thanksgiving simply. The church receives it and brings it before God in prayer.',
     writeRequest: 'Write a request',
     seeWall: 'See the wall',
     verseLabel: 'Biblical foundation',
     verseRef: 'James 5:16',
     verse: 'The prayer of a righteous person has great power.',
-    verseBody: 'A request does not stand alone; it rests in the middle of a family that intercedes.',
+    verseBody: 'A request does not stand alone; it rests in the middle of a family that intercedes and gives thanks.',
     liveKicker: 'Living intercession',
-    liveTitle: 'Burdens are tucked into the wall and the church responds in prayer',
+    liveTitle: 'Requests are tucked into the wall and the church responds in prayer',
     activeRequests: 'active requests',
     registeredPrayers: 'recorded prayers',
     refreshLabel: 'Refresh wall',
     newKicker: 'New request',
-    formTitle: 'Leave your burden on the wall',
+    formTitle: 'Leave your request',
     formHelp: 'You can send it privately for intercession or ask for it to be public. Public requests are reviewed before appearing on the wall.',
     visibilityLegend: 'Privacy',
     privateLabel: 'Private for intercession',
@@ -169,8 +183,8 @@ const copy = {
     publicHelp: 'An administrator reviews it before publishing.',
     firstName: 'First name',
     firstNamePlaceholder: 'Ex. Carlos',
-    request: 'Request',
-    requestPlaceholder: 'Write a specific request we can pray for',
+    request: 'Request or thanksgiving',
+    requestPlaceholder: 'Write what you want us to pray for or give thanks for',
     city: 'City',
     cityPlaceholder: 'Medellin',
     country: 'Country',
@@ -182,7 +196,7 @@ const copy = {
     steps: [
       ['01', 'We receive', 'The request enters protected and stays pending if it asked to appear publicly.'],
       ['02', 'We discern', 'The team reviews public requests before bringing them onto the visible wall.'],
-      ['03', 'We intercede', 'The church prays for published burdens and the ministry accompanies private ones.']
+      ['03', 'We intercede', 'The church prays for published requests and the ministry accompanies private ones.']
     ],
     samples: [
       ['sample-ana', 'Ana', 'Medellin', 'CO', 'For peace in my home and direction to make a family decision.', 18, '2026-01-04T10:00:00.000Z'],
@@ -281,6 +295,9 @@ const i18n = JSON.stringify(c.js);
               {wallStones.filter((_, index) => index % 3 === 0).map(([x, y, width, height]) => (
                 <path d={`M${x + 16} ${y + height - 18} C${x + width * 0.38} ${y + height - 3} ${x + width * 0.72} ${y + height - 28} ${x + width - 18} ${y + height - 12}`} />
               ))}
+            </g>
+            <g class="prayer-wall-sketch__crevices">
+              {wallCrevices.map((d) => <path d={d} />)}
             </g>
             <g class="prayer-wall-sketch__cracks">
               {wallCracks.map((d) => <path d={d} />)}
@@ -386,6 +403,9 @@ const i18n = JSON.stringify(c.js);
                     {wallStones.filter((_, index) => index % 3 === 0).map(([x, y, width, height]) => (
                       <path d={`M${x + 16} ${y + height - 18} C${x + width * 0.38} ${y + height - 3} ${x + width * 0.72} ${y + height - 28} ${x + width - 18} ${y + height - 12}`} />
                     ))}
+                  </g>
+                  <g class="prayer-wall-sketch__crevices">
+                    {wallCrevices.map((d) => <path d={d} />)}
                   </g>
                   <g class="prayer-wall-sketch__cracks">
                     {wallCracks.map((d) => <path d={d} />)}
@@ -524,14 +544,15 @@ const i18n = JSON.stringify(c.js);
 
 <style is:global>
   .prayer-wall-experience {
-    --prayer-navy: #1A255C;
-    --prayer-night: #07111c;
-    --prayer-ink: #0B1120;
-    --prayer-teal: #28A6BD;
+    --prayer-navy: #202d63;
+    --prayer-night: #111936;
+    --prayer-ink: #0f1838;
+    --prayer-teal: #3fa7bb;
     --prayer-gold: #F2C94C;
     --prayer-paper: #fff8e5;
     --prayer-stone: #d8dfdf;
-    background: #f5efeb;
+    --prayer-warm: #f5efeb;
+    background: var(--prayer-night);
     color: var(--prayer-navy);
     isolation: isolate;
   }
@@ -556,8 +577,25 @@ const i18n = JSON.stringify(c.js);
     min-height: 100svh;
     overflow: hidden;
     position: relative;
-    background: var(--prayer-night);
+    background:
+      linear-gradient(90deg, rgba(216, 232, 240, 0.12) 0 1px, transparent 1px) 0 0 / clamp(72px, 9vw, 130px) 100%,
+      radial-gradient(circle at 78% 16%, rgba(63, 167, 187, 0.24), transparent 18rem),
+      linear-gradient(135deg, #202d63 0%, #17214c 58%, #111936 100%);
     color: white;
+  }
+
+  .prayer-hero::before {
+    background: var(--prayer-teal);
+    border-bottom-left-radius: 100%;
+    content: "";
+    height: min(24vw, 300px);
+    opacity: 0.9;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: min(24vw, 300px);
+    z-index: 0;
   }
 
   .prayer-hero__image,
@@ -570,14 +608,16 @@ const i18n = JSON.stringify(c.js);
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.58;
+    filter: grayscale(1) contrast(1.08);
+    mix-blend-mode: soft-light;
+    opacity: 0.12;
     transform: scale(1.03);
   }
 
   .prayer-hero__veil {
     background:
-      linear-gradient(105deg, rgba(7, 17, 28, 0.98) 0%, rgba(7, 17, 28, 0.88) 48%, rgba(26, 37, 92, 0.55) 100%),
-      linear-gradient(180deg, rgba(7, 17, 28, 0.04), rgba(7, 17, 28, 0.78));
+      radial-gradient(circle at 24% 34%, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px) 0 0 / 18px 18px,
+      linear-gradient(105deg, rgba(17, 25, 54, 0.9) 0%, rgba(17, 25, 54, 0.76) 48%, rgba(32, 45, 99, 0.62) 100%);
   }
 
   .prayer-hero__inner {
@@ -624,7 +664,7 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-action {
     align-items: center;
-    border-radius: 999px;
+    border-radius: 8px;
     display: inline-flex;
     font-size: 0.92rem;
     font-weight: 900;
@@ -635,21 +675,22 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-action--primary {
-    background: linear-gradient(135deg, var(--prayer-teal), #3f58a1);
-    box-shadow: 0 26px 70px rgba(40, 166, 189, 0.28);
+    background: var(--prayer-teal);
+    border: 1px solid rgba(63, 167, 187, 0.9);
+    box-shadow: 0 26px 70px rgba(63, 167, 187, 0.28);
     color: white;
   }
 
   .prayer-action--ghost {
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.04);
     color: white;
   }
 
   .prayer-verse {
     border: 1px solid rgba(255, 255, 255, 0.16);
     background: rgba(0, 0, 0, 0.32);
-    border-radius: 1.25rem;
+    border-radius: 8px;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
     padding: 2rem;
     backdrop-filter: blur(16px);
@@ -683,7 +724,9 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-main {
     background:
-      linear-gradient(180deg, #f5efeb 0%, #edf6f4 50%, #f5efeb 100%);
+      linear-gradient(90deg, rgba(216, 232, 240, 0.11) 0 1px, transparent 1px) 0 0 / clamp(72px, 9vw, 130px) 100%,
+      radial-gradient(circle at 90% 8%, rgba(63, 167, 187, 0.16), transparent 18rem),
+      linear-gradient(135deg, #19244f 0%, #24396f 52%, #111936 100%);
     padding: 6rem 0;
     position: relative;
   }
@@ -693,7 +736,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-main__intro h2 {
-    color: var(--prayer-navy);
+    color: white;
     font-size: 3.4rem;
     font-weight: 900;
     line-height: 1.02;
@@ -711,16 +754,16 @@ const i18n = JSON.stringify(c.js);
   .prayer-wall-panel,
   .prayer-form,
   .prayer-compact {
-    border: 1px solid rgba(26, 37, 92, 0.12);
-    background: rgba(255, 255, 255, 0.82);
-    border-radius: 1.35rem;
-    box-shadow: 0 24px 80px rgba(26, 37, 92, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    box-shadow: 0 28px 70px rgba(9, 16, 39, 0.28);
     overflow: hidden;
   }
 
   .prayer-wall-panel__bar {
     align-items: center;
-    background: linear-gradient(135deg, rgba(26, 37, 92, 0.98), rgba(40, 166, 189, 0.86));
+    background: rgba(17, 25, 54, 0.82);
     color: white;
     display: grid;
     gap: 0.8rem;
@@ -811,8 +854,8 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-stage::after {
     background:
-      linear-gradient(90deg, rgba(7, 17, 28, 0.26), transparent 22%, transparent 78%, rgba(7, 17, 28, 0.22)),
-      linear-gradient(180deg, rgba(255, 248, 229, 0.2), transparent 35%, rgba(7, 17, 28, 0.2));
+      linear-gradient(90deg, rgba(7, 17, 28, 0.12), transparent 22%, transparent 78%, rgba(7, 17, 28, 0.1)),
+      linear-gradient(180deg, rgba(255, 248, 229, 0.24), transparent 35%, rgba(7, 17, 28, 0.08));
     z-index: 2;
   }
 
@@ -862,6 +905,14 @@ const i18n = JSON.stringify(c.js);
     vector-effect: non-scaling-stroke;
   }
 
+  .prayer-wall-sketch__crevices path {
+    fill: none;
+    stroke: rgba(7, 17, 28, 0.3);
+    stroke-linecap: round;
+    stroke-width: 5.6;
+    vector-effect: non-scaling-stroke;
+  }
+
   .prayer-wall-sketch__cracks path {
     fill: none;
     stroke: rgba(7, 17, 28, 0.28);
@@ -876,8 +927,8 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-sketch__plants path {
-    fill: rgba(40, 166, 189, 0.22);
-    stroke: rgba(26, 37, 92, 0.28);
+    fill: rgba(45, 113, 88, 0.34);
+    stroke: rgba(26, 37, 92, 0.34);
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 1.8;
@@ -903,24 +954,21 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note {
-    --note-width: 6.9rem;
-    background:
-      linear-gradient(90deg, rgba(125, 94, 35, 0.22), transparent 10%, transparent 88%, rgba(125, 94, 35, 0.12)),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0)),
-      var(--prayer-paper);
-    border: 1px solid rgba(77, 59, 18, 0.16);
-    border-radius: 999px 0.5rem 0.5rem 999px;
-    box-shadow:
-      0 10px 18px rgba(26, 37, 92, 0.16),
-      -8px 7px 12px rgba(33, 43, 54, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    --note-width: 8.4rem;
+    --paper-left: 1.15rem;
+    --paper-top: 1.72rem;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
     cursor: pointer;
     left: clamp(calc(var(--note-width) / 2 + 0.65rem), var(--x), calc(100% - (var(--note-width) / 2 + 0.65rem)));
+    height: 4.65rem;
     max-width: calc(100% - 2rem);
-    min-height: 2.35rem;
+    min-height: 4.65rem;
     isolation: isolate;
     overflow: visible;
-    padding: 0.5rem 0.75rem 0.45rem 1.35rem;
+    padding: 0;
     position: absolute;
     top: var(--y);
     transform:
@@ -930,58 +978,62 @@ const i18n = JSON.stringify(c.js);
       rotateY(var(--tilt-x, 0deg));
     transform-style: preserve-3d;
     transition:
-      box-shadow 180ms ease,
       transform 180ms ease,
       opacity 180ms ease;
     width: var(--note-width);
   }
 
   .prayer-note::before {
-    background:
-      linear-gradient(90deg, rgba(255, 255, 255, 0.58), rgba(125, 94, 35, 0.18)),
-      var(--prayer-paper);
-    border: 1px solid rgba(77, 59, 18, 0.16);
+    background: rgba(7, 17, 28, 0.34);
     border-radius: 999px;
-    bottom: 0.24rem;
-    box-shadow:
-      inset -4px 0 8px rgba(77, 59, 18, 0.14),
-      2px 0 6px rgba(77, 59, 18, 0.12);
+    box-shadow: 0 5px 14px rgba(7, 17, 28, 0.24);
     content: "";
-    left: 0.3rem;
+    height: 0.36rem;
+    left: 0.82rem;
     position: absolute;
-    top: 0.24rem;
-    width: 0.62rem;
-    z-index: 1;
+    top: 2.82rem;
+    transform: rotate(var(--r));
+    width: 4.15rem;
+    z-index: -1;
   }
 
   .prayer-note::after {
-    background: rgba(7, 17, 28, 0.32);
-    border-radius: 999px;
+    background:
+      radial-gradient(circle at 20% 40%, rgba(255, 255, 255, 0.74), transparent 0.95rem),
+      linear-gradient(90deg, rgba(77, 59, 18, 0.16), transparent 35%, rgba(77, 59, 18, 0.13)),
+      #fff8e5;
+    border: 1px solid rgba(77, 59, 18, 0.2);
+    clip-path: polygon(4% 18%, 38% 5%, 96% 10%, 90% 88%, 56% 78%, 8% 92%);
     content: "";
-    height: 0.22rem;
-    left: 0.12rem;
+    filter: drop-shadow(0 12px 12px rgba(7, 17, 28, 0.22));
+    height: 2.1rem;
+    left: var(--paper-left);
     position: absolute;
-    top: 50%;
-    transform: translate(-100%, -50%);
-    width: 1rem;
-    z-index: -1;
+    top: var(--paper-top);
+    transform: rotate(var(--r));
+    width: 3.95rem;
+    z-index: 1;
   }
 
   .prayer-note:hover,
   .prayer-note:focus,
   .prayer-note:focus-within,
   .prayer-note.is-open {
-    box-shadow:
-      0 18px 34px rgba(26, 37, 92, 0.28),
-      0 0 0 2px rgba(242, 201, 76, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.78);
     transform:
       translate(-50%, -50%)
       rotate(var(--r))
       rotateX(var(--tilt-y, 0deg))
       rotateY(var(--tilt-x, 0deg))
-      scale(1.08);
+      scale(1.06);
     z-index: 4;
+  }
+
+  .prayer-note:hover header,
+  .prayer-note:focus header,
+  .prayer-note:focus-within header,
+  .prayer-note.is-open header {
+    border-color: rgba(242, 201, 76, 0.86);
+    box-shadow: 0 0 0 2px rgba(242, 201, 76, 0.26);
   }
 
   .prayer-note.is-new {
@@ -989,34 +1041,119 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note__pin {
-    background: rgba(7, 17, 28, 0.28);
+    background: rgba(32, 45, 99, 0.56);
     border-radius: 999px;
-    box-shadow: 0 5px 12px rgba(7, 17, 28, 0.18);
-    height: 0.2rem;
-    left: -0.62rem;
+    height: 1px;
+    left: 4.52rem;
     position: absolute;
-    right: -0.42rem;
+    top: 1.44rem;
+    transform: rotate(-18deg);
+    transform-origin: left center;
+    width: 2.1rem;
+    z-index: 2;
+  }
+
+  .prayer-note__pin::after {
+    background: var(--prayer-teal);
+    border: 2px solid rgba(255, 248, 229, 0.9);
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(7, 17, 28, 0.22);
+    content: "";
+    height: 0.48rem;
+    position: absolute;
+    right: -0.18rem;
     top: 50%;
-    transform: translateY(-50%) rotate(-1deg);
-    z-index: -1;
+    transform: translateY(-50%);
+    width: 0.48rem;
+  }
+
+  .prayer-note[data-label-side="left"] .prayer-note__pin {
+    left: auto;
+    right: 4.52rem;
+    transform: rotate(18deg);
+    transform-origin: right center;
+  }
+
+  .prayer-note[data-label-side="left"] .prayer-note__pin::after {
+    left: -0.18rem;
+    right: auto;
+  }
+
+  .prayer-note__paper {
+    display: block;
+    height: 2.32rem;
+    left: calc(var(--paper-left) - 0.18rem);
+    pointer-events: none;
+    position: absolute;
+    top: calc(var(--paper-top) - 0.12rem);
+    transform: rotate(var(--r));
+    width: 4.32rem;
+    z-index: 3;
+  }
+
+  .prayer-note__paper svg {
+    display: block;
+    height: 100%;
+    overflow: visible;
+    width: 100%;
+  }
+
+  .prayer-note__paper-body {
+    fill: #fff8e5;
+    stroke: rgba(32, 45, 99, 0.34);
+    stroke-linejoin: round;
+    stroke-width: 1.35;
+  }
+
+  .prayer-note__paper-shadow {
+    fill: rgba(7, 17, 28, 0.16);
+  }
+
+  .prayer-note__paper-fold,
+  .prayer-note__paper-line {
+    fill: none;
+    stroke: rgba(125, 94, 35, 0.34);
+    stroke-linecap: round;
+    stroke-width: 1.25;
+  }
+
+  .prayer-note__paper-line {
+    stroke: rgba(32, 45, 99, 0.2);
   }
 
   .prayer-note header {
+    background:
+      linear-gradient(90deg, rgba(125, 94, 35, 0.12), transparent 44%),
+      rgba(255, 248, 229, 0.94);
+    border: 1px solid rgba(32, 45, 99, 0.28);
+    border-radius: 8px;
+    box-shadow: 0 12px 24px rgba(7, 17, 28, 0.16);
+    left: 5.86rem;
     margin: 0;
     min-width: 0;
-    position: relative;
-    z-index: 2;
+    padding: 0.42rem 0.54rem 0.38rem;
+    position: absolute;
+    top: 0.05rem;
+    width: max-content;
+    z-index: 4;
+  }
+
+  .prayer-note[data-label-side="left"] header {
+    left: auto;
+    right: 5.86rem;
+    text-align: right;
   }
 
   .prayer-note h3 {
     color: var(--prayer-navy);
-    font-size: 0.72rem;
+    font-size: 0.64rem;
     font-weight: 900;
     line-height: 1.15;
     margin: 0;
-    max-width: calc(100% - 1.45rem);
+    max-width: 4.9rem;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
@@ -1209,8 +1346,8 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-pager {
     align-items: center;
-    background: rgba(255, 255, 255, 0.84);
-    border-top: 1px solid rgba(26, 37, 92, 0.1);
+    background: rgba(17, 25, 54, 0.82);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
     display: flex;
     gap: 0.8rem;
     justify-content: space-between;
@@ -1222,9 +1359,9 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-pager button {
-    border: 1px solid rgba(26, 37, 92, 0.14);
-    border-radius: 999px;
-    color: var(--prayer-navy);
+    border: 1px solid rgba(216, 232, 240, 0.26);
+    border-radius: 8px;
+    color: white;
     font-size: 0.74rem;
     font-weight: 900;
     min-height: 2.35rem;
@@ -1238,7 +1375,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-pager span {
-    color: rgba(26, 37, 92, 0.64);
+    color: rgba(255, 255, 255, 0.7);
     font-size: 0.78rem;
     font-weight: 900;
     text-align: center;
@@ -1247,8 +1384,9 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-form {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0)),
-      var(--prayer-ink);
+      radial-gradient(circle at 90% 0%, rgba(63, 167, 187, 0.18), transparent 12rem),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
+      rgba(17, 25, 54, 0.86);
     color: white;
     display: grid;
     gap: 1rem;
@@ -1296,7 +1434,7 @@ const i18n = JSON.stringify(c.js);
     appearance: none;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 0.72rem;
+    border-radius: 8px;
     color: white;
     font: inherit;
     min-height: 3rem;
@@ -1346,7 +1484,7 @@ const i18n = JSON.stringify(c.js);
     align-items: flex-start;
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 0.82rem;
+    border-radius: 8px;
     cursor: pointer;
     display: grid;
     gap: 0.65rem;
@@ -1379,8 +1517,9 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-submit {
     align-items: center;
-    background: linear-gradient(135deg, var(--prayer-teal), #3f58a1);
-    border-radius: 999px;
+    background: var(--prayer-teal);
+    border: 1px solid rgba(63, 167, 187, 0.9);
+    border-radius: 8px;
     color: white;
     display: inline-flex;
     font-size: 0.88rem;
@@ -1494,8 +1633,9 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-experience--compact .prayer-note {
-    --note-width: 5.9rem;
-    min-height: 2.25rem;
+    --note-width: 7.6rem;
+    height: 4.35rem;
+    min-height: 4.35rem;
   }
 
   [data-prayer-reveal] {
@@ -1632,9 +1772,11 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-note {
-      --note-width: 5.65rem;
-      min-height: 2.2rem;
-      padding: 0.46rem 0.58rem 0.42rem 1.2rem;
+      --note-width: 7.25rem;
+      --paper-left: 1rem;
+      --paper-top: 1.8rem;
+      height: 4.4rem;
+      min-height: 4.4rem;
     }
 
     .prayer-note p {
@@ -1648,8 +1790,27 @@ const i18n = JSON.stringify(c.js);
       width: var(--note-width);
     }
 
+    .prayer-note header {
+      left: 4.72rem;
+      padding: 0.38rem 0.46rem 0.34rem;
+    }
+
+    .prayer-note[data-label-side="left"] header {
+      right: 4.72rem;
+    }
+
+    .prayer-note__pin {
+      left: 3.82rem;
+      width: 1.4rem;
+    }
+
+    .prayer-note[data-label-side="left"] .prayer-note__pin {
+      right: 3.82rem;
+    }
+
     .prayer-note h3 {
-      font-size: 0.64rem;
+      font-size: 0.6rem;
+      max-width: 4.9rem;
     }
 
     .prayer-note small {
