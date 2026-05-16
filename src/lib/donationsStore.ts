@@ -278,3 +278,18 @@ export async function getDonationByReference(provider: string, reference: string
   }
   return data as DonationRecord | null;
 }
+
+export async function getDonationById(donationId: string): Promise<DonationRecord | null> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('donations')
+    .select('*')
+    .eq('id', donationId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[donations] lookup by id error', error);
+    return null;
+  }
+  return data as DonationRecord | null;
+}

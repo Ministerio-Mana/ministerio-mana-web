@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import crypto from 'node:crypto';
 import { createWompiPaymentSource, verifyWompiWebhook } from '@lib/wompi';
+import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { parseReferenceBookingId, parseReferencePlanId } from '@lib/cumbre2026';
@@ -22,7 +23,6 @@ import {
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { sendWhatsappMessage } from '@lib/whatsapp';
-import { updateDonationByReference } from '@lib/donationsStore';
 
 export const prerender = false;
 
@@ -143,6 +143,15 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const bookingId = parseReferenceBookingId(reference);
     const planId = parseReferencePlanId(reference);
+
+    if (!bookingId && !planId) {
+      await processWompiDonationTransaction({ event, transaction });
+      return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const wompiStatus = String(transaction?.status ?? 'PENDING').toUpperCase();
     const normalizedStatus = wompiStatus === 'APPROVED'
       ? 'APPROVED'
@@ -151,23 +160,6 @@ export const POST: APIRoute = async ({ request }) => {
         : 'PENDING';
     const providerTxId = txId ? String(txId) : null;
     const paymentMethodType = transaction?.payment_method?.type ?? transaction?.payment_method_type ?? null;
-
-    if (!bookingId && !planId) {
-      if (reference) {
-        await updateDonationByReference({
-          provider: 'wompi',
-          reference,
-          status: normalizedStatus,
-          providerTxId,
-          paymentMethod: paymentMethodType ? String(paymentMethodType) : null,
-          rawEvent: event,
-        });
-      }
-      return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
 
     const amount = amountInCents ? Number(amountInCents) / 100 : 0;
     const normalizedCurrency = transaction?.currency || 'COP';

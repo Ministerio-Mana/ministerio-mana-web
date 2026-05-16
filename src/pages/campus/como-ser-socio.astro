@@ -37,28 +37,28 @@ const singleSteps = [
     text: 'Para ser socio, deja seleccionada la opción Mensual. Si solo quiere dar una vez, puede escoger “Única vez”.',
     image: '/images/campus/tutorial/04-marcar-mensual.jpg',
     caption: 'La opción Mensual es la que convierte el apoyo en recurrente.',
-    marker: { x: 35, y: 46, label: 'Mensual' },
+    marker: { x: 34, y: 50, label: 'Mensual' },
   },
   {
     title: 'Escoge el monto',
-    text: 'No hay que escoger moneda: la página muestra los montos automáticamente según el país. Toca un monto sugerido o escribe otro valor en “Otro...”.',
+    text: 'No hay que escoger moneda: la página muestra pesos colombianos o dólares automáticamente según el país. Primero escribe la donación; si prefiere, puede tocar un monto rápido.',
     image: '/images/campus/tutorial/05-escoger-monto.jpg',
-    caption: 'Puede elegir un valor sugerido o escribir uno diferente.',
-    marker: { x: 50, y: 57, label: 'Elige monto' },
+    caption: 'El campo principal permite escribir la donación. Los montos rápidos quedan como ayuda.',
+    marker: { x: 50, y: 47, label: 'Escribe' },
   },
   {
-    title: 'Toca “Donar Ahora”',
-    text: 'La página pedirá los datos básicos: nombre completo, correo y teléfono o WhatsApp.',
+    title: 'Inicia sesión o crea cuenta',
+    text: 'Si eligió apoyo mensual, la página pedirá iniciar sesión o crear una cuenta. Eso permite pausar, reactivar o cancelar la siembra desde el portal.',
     image: '/images/campus/tutorial/06-tocar-donar.jpg',
-    caption: 'Después de tocar el botón aparecen los campos de datos.',
-    marker: { x: 50, y: 73, label: 'Donar ahora' },
+    caption: 'Para la opción mensual, la cuenta es necesaria.',
+    marker: { x: 50, y: 67, label: 'Cuenta' },
   },
   {
-    title: 'Confirma con “Sembrar Ahora”',
-    text: 'Después de escribir los datos, toca “Sembrar Ahora”. La página abrirá el pago seguro.',
+    title: 'Completa los datos',
+    text: 'Para pagos en Colombia con Wompi, escribe también el tipo y número de identificación. Si ya inició sesión y el perfil tiene esos datos, aparecerán listos.',
     image: '/images/campus/tutorial/07-sembrar-ahora.jpg',
-    caption: 'Revisa que los datos estén bien antes de continuar.',
-    marker: { x: 50, y: 64, label: 'Sembrar ahora' },
+    caption: 'La identificación es requerida cuando el pago entra por Wompi en Colombia.',
+    marker: { x: 50, y: 74, label: 'Identificación' },
   },
   {
     title: 'Termina el pago',
@@ -73,8 +73,8 @@ const manySteps = [
   'Baja hasta la sección “¿Quieres sembrar en varios misioneros?”.',
   'Escoge cuántos misioneros quieres apoyar: 2, 3, 4 o todos.',
   'Selecciona los nombres o usa “Al azar”. Luego toca “Continuar”.',
-  'Elige mensualidad y monto por cada misionero. La moneda se ajusta sola.',
-  'Revisa el resumen, escribe tus datos y toca “Sembrar Ahora”.',
+  'Elige mensualidad y escribe la donación por cada misionero. La moneda se ajusta sola.',
+  'Revisa el resumen. Si es mensual, inicia sesión o crea cuenta; si entra por Wompi, completa identificación.',
 ];
 
 const helpItems = [
@@ -84,6 +84,7 @@ const helpItems = [
   'Tarjeta, cuenta o medio de pago listo.',
   'Cinco minutos tranquilos para completar el proceso.',
   'No hay que cambiar la moneda: el sitio la ajusta automáticamente.',
+  'Para una siembra mensual, la persona debe iniciar sesión o crear cuenta.',
 ];
 ---
 
@@ -167,7 +168,7 @@ const helpItems = [
                   src={step.image}
                   alt={`Pantallazo del paso ${index + 1}: ${step.title}`}
                   class="w-full rounded-md object-contain shadow-sm"
-                  loading="lazy"
+                  loading="eager"
                 />
                 <span class="tap-marker" style={`--marker-x: ${step.marker.x}%; --marker-y: ${step.marker.y}%;`}>
                   <span class="tap-marker__target" aria-hidden="true">
@@ -236,7 +237,7 @@ const helpItems = [
 
       <div class="rounded-lg border border-white/15 bg-white/10 p-6">
         <p class="text-lg leading-relaxed text-white/80">
-          “Vamos a abrir la página de Campus Maná. Primero escogemos el misionero que quieres apoyar. Como quieres ser socio, dejamos marcada la opción mensual. La página acomoda la moneda automáticamente; nosotros solo escogemos el monto, escribimos tus datos y al final te lleva a un pago seguro. Cuando termine, guardamos el comprobante.”
+          “Vamos a abrir la página de Campus Maná. Primero escogemos el misionero que quieres apoyar. Como quieres ser socio, dejamos marcada la opción mensual. La página acomoda la moneda automáticamente; si estás en Colombia aparece en pesos y si estás fuera aparece en dólares. Escribimos tu donación. Si es mensual, entramos o creamos tu cuenta para que puedas pausar o reactivar después. Luego completamos los datos que falten y el pago seguro. Cuando termine, guardamos el comprobante.”
         </p>
       </div>
     </div>
@@ -270,7 +271,15 @@ const helpItems = [
 
 <style>
   .tutorial-shot {
+    aspect-ratio: 360 / 829;
     position: relative;
+  }
+
+  .tutorial-shot > img {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
   }
 
   .tap-marker {

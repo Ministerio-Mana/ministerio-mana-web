@@ -2,7 +2,11 @@
 const AMOUNT_CONFIG = {
     COP: {
         symbol: '$',
-        min: 10000,
+        code: 'COP',
+        min: 5000,
+        context: 'Monto en pesos colombianos (COP)',
+        placeholder: '50.000',
+        minLabel: 'Mínimo $5.000 COP',
         options: [
             { label: '$50.000', value: 50000 },
             { label: '$100.000', value: 100000 },
@@ -13,7 +17,11 @@ const AMOUNT_CONFIG = {
     },
     USD: {
         symbol: '$',
-        min: 10,
+        code: 'USD',
+        min: 5,
+        context: 'Monto en dólares (USD)',
+        placeholder: '25',
+        minLabel: 'Mínimo $5 USD',
         options: [
             { label: '$25 USD', value: 25 },
             { label: '$50 USD', value: 50 },
@@ -23,6 +31,32 @@ const AMOUNT_CONFIG = {
         provider: 'Stripe'
     }
 };
+
+function getSupabaseAccessToken() {
+    try {
+        const key = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'));
+        if (!key) return null;
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const session = JSON.parse(raw);
+        return session?.access_token || null;
+    } catch (err) {
+        return null;
+    }
+}
+
+function getReturnPath() {
+    return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function buildPortalUrl(path) {
+    return `${path}?next=${encodeURIComponent(getReturnPath())}`;
+}
+
+function setValueIfEmpty(el, value) {
+    if (!el || !value || el.value) return;
+    el.value = value;
+}
 
 class MultiDonationFlow {
     constructor(container) {
@@ -40,6 +74,8 @@ class MultiDonationFlow {
             amount: 0,
         };
         this.isSubmitting = false;
+        this.accessToken = getSupabaseAccessToken();
+        this.portalProfile = null;
         this.init();
         // Sync the select element with auto-detected currency
         const currSelect = this.el.querySelector('#multi-currency');
@@ -52,6 +88,8 @@ class MultiDonationFlow {
         this.bindStep3();
         this.bindStep4();
         this.bindBackButtons();
+        this.configureAccountLinks();
+        this.loadPortalProfile();
     }
 
     // === NAVIGATION ===
@@ -174,6 +212,7 @@ class MultiDonationFlow {
                 if (customInput) customInput.value = '';
                 this.renderAmounts();
                 this.updateSummary();
+                this.updateStep4AuthState();
             });
         }
 
@@ -185,13 +224,17 @@ class MultiDonationFlow {
                     b.style.backgroundColor = isSel ? '#001B3A' : 'transparent';
                     b.style.color = isSel ? '#fff' : 'rgba(255,255,255,0.5)';
                 });
+                this.updateStep4AuthState();
             });
         });
 
         const customInput = this.el.querySelector('#multi-custom-amount');
         if (customInput) {
             customInput.addEventListener('input', (e) => {
-                this.state.amount = Number(e.target.value);
+                this.state.amount = this.parseAmountInput(e.target.value);
+                if (this.state.currency === 'COP') {
+                    e.target.value = this.state.amount > 0 ? this.state.amount.toLocaleString('es-CO') : '';
+                }
                 this.highlightAmountBtn(null);
                 this.updateSummary();
                 this.updateStep3Confirm();
@@ -201,7 +244,8 @@ class MultiDonationFlow {
         const confirmBtn = this.el.querySelector('#confirm-amount-btn');
         if (confirmBtn) {
             confirmBtn.addEventListener('click', () => {
-                if (this.state.amount > 0) {
+                const config = AMOUNT_CONFIG[this.state.currency];
+                if (this.state.amount >= config.min) {
                     this.renderStep4();
                     this.goToStep(4);
                 }
@@ -236,6 +280,37 @@ class MultiDonationFlow {
 
         const sym = this.el.querySelector('.multi-currency-symbol');
         if (sym) sym.textContent = config.symbol;
+        const code = this.el.querySelector('#multi-currency-code');
+        if (code) code.textContent = config.code;
+        const context = this.el.querySelector('#multi-currency-context');
+        if (context) context.textContent = config.context;
+        const minLabel = this.el.querySelector('#multi-amount-min-label');
+        if (minLabel) minLabel.textContent = config.minLabel;
+        const customInput = this.el.querySelector('#multi-custom-amount');
+        if (customInput) {
+            customInput.placeholder = config.placeholder;
+            customInput.inputMode = this.state.currency === 'COP' ? 'numeric' : 'decimal';
+        }
+    }
+
+    parseAmountInput(raw) {
+        const value = String(raw || '').trim();
+        if (!value) return 0;
+
+        if (this.state.currency === 'COP') {
+            const digits = value.replace(/[^\d]/g, '');
+            const amount = Number(digits);
+            return Number.isFinite(amount) ? amount : 0;
+        }
+
+        let normalized = value.replace(/[^0-9.,]/g, '');
+        if (normalized.includes(',') && !normalized.includes('.')) {
+            normalized = normalized.replace(',', '.');
+        } else {
+            normalized = normalized.replace(/,/g, '');
+        }
+        const amount = Number(normalized);
+        return Number.isFinite(amount) ? amount : 0;
     }
 
     highlightAmountBtn(selectedBtn) {
@@ -272,7 +347,8 @@ class MultiDonationFlow {
     updateStep3Confirm() {
         const confirmBtn = this.el.querySelector('#confirm-amount-btn');
         if (confirmBtn) {
-            const ready = this.state.amount > 0;
+            const config = AMOUNT_CONFIG[this.state.currency];
+            const ready = this.state.amount >= config.min;
             confirmBtn.classList.toggle('opacity-50', !ready);
             confirmBtn.classList.toggle('pointer-events-none', !ready);
         }
@@ -285,6 +361,60 @@ class MultiDonationFlow {
         if (payBtn) {
             payBtn.addEventListener('click', () => this.handlePayment());
         }
+    }
+
+    configureAccountLinks() {
+        const login = this.el.querySelector('#multi-login-link');
+        const register = this.el.querySelector('#multi-register-link');
+        if (login) login.href = buildPortalUrl('/portal/ingresar');
+        if (register) register.href = buildPortalUrl('/portal/registro');
+    }
+
+    async loadPortalProfile() {
+        if (!this.accessToken) return;
+        try {
+            const res = await fetch('/api/portal/session', {
+                headers: { Authorization: `Bearer ${this.accessToken}` },
+                credentials: 'include',
+            });
+            const payload = await res.json().catch(() => null);
+            if (!res.ok || !payload?.ok) return;
+            this.portalProfile = payload.profile || null;
+            this.prefillFromProfile(this.portalProfile);
+        } catch (err) {
+            console.warn('[multi-donation] No se pudo precargar el perfil');
+        }
+    }
+
+    prefillFromProfile(profile) {
+        if (!profile) return;
+        setValueIfEmpty(this.el.querySelector('#donor-name'), profile.full_name);
+        setValueIfEmpty(this.el.querySelector('#donor-email'), profile.email);
+        setValueIfEmpty(this.el.querySelector('#donor-phone'), profile.phone);
+        setValueIfEmpty(this.el.querySelector('#donor-city'), profile.city);
+        const docType = this.el.querySelector('#donor-document-type');
+        if (docType && !docType.value && profile.document_type) {
+            docType.value = profile.document_type;
+        }
+        setValueIfEmpty(this.el.querySelector('#donor-document-number'), profile.document_number);
+    }
+
+    updateStep4AuthState() {
+        const accountGate = this.el.querySelector('#multi-account-gate');
+        const donorFields = this.el.querySelectorAll('.multi-donor-field');
+        const payBtn = this.el.querySelector('#pay-btn');
+        const documentFields = this.el.querySelector('#multi-document-fields');
+        const docType = this.el.querySelector('#donor-document-type');
+        const docNumber = this.el.querySelector('#donor-document-number');
+        const accountRequired = this.state.frequency === 'monthly' && !this.accessToken;
+        const documentRequired = this.state.currency === 'COP';
+
+        accountGate?.classList.toggle('hidden', !accountRequired);
+        donorFields.forEach((field) => field.classList.toggle('hidden', accountRequired));
+        payBtn?.classList.toggle('is-hidden', accountRequired);
+        documentFields?.classList.toggle('hidden', accountRequired || !documentRequired);
+        if (docType) docType.required = documentRequired && !accountRequired;
+        if (docNumber) docNumber.required = documentRequired && !accountRequired;
     }
 
     renderStep4() {
@@ -333,6 +463,8 @@ class MultiDonationFlow {
 
         // Hide error
         this.hideError();
+        this.prefillFromProfile(this.portalProfile);
+        this.updateStep4AuthState();
     }
 
     showError(message) {
@@ -357,6 +489,14 @@ class MultiDonationFlow {
         const email = this.el.querySelector('#donor-email')?.value?.trim();
         const phone = this.el.querySelector('#donor-phone')?.value?.trim() || '';
         const city = this.el.querySelector('#donor-city')?.value?.trim() || '';
+        const documentType = this.el.querySelector('#donor-document-type')?.value?.trim() || '';
+        const documentNumber = this.el.querySelector('#donor-document-number')?.value?.trim() || '';
+        const config = AMOUNT_CONFIG[this.state.currency];
+
+        if (this.state.amount < config.min) {
+            this.showError(`El monto mínimo es ${config.format(config.min)}`);
+            return;
+        }
 
         if (!fullName) {
             this.showError('Por favor ingresa tu nombre completo');
@@ -366,23 +506,43 @@ class MultiDonationFlow {
             this.showError('Por favor ingresa un correo válido');
             return;
         }
+        if (this.state.currency === 'COP') {
+            if (!documentType) {
+                this.showError('Selecciona el tipo de identificación');
+                return;
+            }
+            if (!documentNumber) {
+                this.showError('Ingresa el número de identificación');
+                return;
+            }
+        }
+        if (this.state.frequency === 'monthly' && !this.accessToken) {
+            this.updateStep4AuthState();
+            this.showError('Para una siembra mensual necesitas iniciar sesión o crear una cuenta.');
+            return;
+        }
 
         // Disable button
         this.isSubmitting = true;
         const payBtn = this.el.querySelector('#pay-btn');
-        const originalText = payBtn?.textContent;
+        const payLabel = payBtn?.querySelector('span');
+        const originalText = payLabel?.textContent || 'SEMBRAR AHORA';
         if (payBtn) {
-            payBtn.textContent = 'PROCESANDO...';
+            if (payLabel) payLabel.textContent = 'PROCESANDO...';
             payBtn.classList.add('opacity-50', 'pointer-events-none');
         }
 
         try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            };
+            if (this.accessToken) {
+                headers.Authorization = `Bearer ${this.accessToken}`;
+            }
             const response = await fetch('/api/campus/checkout', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     missionaries: this.state.selected,
                     amount: this.state.amount,
@@ -392,12 +552,17 @@ class MultiDonationFlow {
                     email,
                     phone,
                     city,
+                    documentType,
+                    documentNumber,
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok || !data.ok) {
+                if (data.requiresAccount) {
+                    this.updateStep4AuthState();
+                }
                 this.showError(data.error || 'Error procesando el pago. Intenta de nuevo.');
                 return;
             }
@@ -415,7 +580,7 @@ class MultiDonationFlow {
         } finally {
             this.isSubmitting = false;
             if (payBtn) {
-                payBtn.textContent = originalText;
+                if (payLabel) payLabel.textContent = originalText;
                 payBtn.classList.remove('opacity-50', 'pointer-events-none');
             }
         }

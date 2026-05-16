@@ -75,6 +75,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   let donations: any[] = [];
   let donationSubscriptions: any[] = [];
+  let campusSubscriptions: any[] = [];
   try {
     const { data: donationsData, error: donationsError } = await supabaseAdmin
       .from('donations')
@@ -97,6 +98,24 @@ export const GET: APIRoute = async ({ request }) => {
     if (!subsError) donationSubscriptions = subsData ?? [];
   } catch (err) {
     console.error('[cuenta.resumen] donation subscriptions error', err);
+  }
+
+  try {
+    const campusQuery = user?.id
+      ? supabaseAdmin
+          .from('campus_donation_subscriptions')
+          .select('*, allocations:campus_donation_subscription_allocations(*)')
+          .eq('user_id', user.id)
+      : supabaseAdmin
+          .from('campus_donation_subscriptions')
+          .select('*, allocations:campus_donation_subscription_allocations(*)')
+          .eq('donor_email', email);
+    const { data: campusSubsData, error: campusSubsError } = await campusQuery
+      .order('created_at', { ascending: false })
+      .limit(80);
+    if (!campusSubsError) campusSubscriptions = campusSubsData ?? [];
+  } catch (err) {
+    console.error('[cuenta.resumen] campus subscriptions error', err);
   }
 
   let events: any[] = [];
@@ -135,6 +154,7 @@ export const GET: APIRoute = async ({ request }) => {
     payments,
     donations,
     donationSubscriptions,
+    campusSubscriptions,
     events,
   }), {
     status: 200,

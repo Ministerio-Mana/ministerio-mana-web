@@ -1,5 +1,6 @@
 ---
 import TurnstileWidget from '@components/TurnstileWidget.astro';
+import SowingIcon from '@components/icons/SowingIcon.astro';
 
 type Gateway = 'wompi' | 'stripe';
 
@@ -322,7 +323,8 @@ const copPerUsd: number | null =
                    px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/20
                    hover:brightness-105 transition"
           >
-            Donar con Wompi
+            <span>Donar con Wompi</span>
+            <SowingIcon class="ml-2 h-5 w-5" />
           </button>
 
           <p class="mt-2 text-[11px] text-slate-400">
@@ -580,7 +582,8 @@ const copPerUsd: number | null =
                    px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20
                    hover:brightness-105 transition"
           >
-            Donar con tarjeta internacional
+            <span>Donar con tarjeta internacional</span>
+            <SowingIcon class="ml-2 h-5 w-5" />
           </button>
 
           <p class="mt-2 text-[11px] text-slate-400">

@@ -20,8 +20,18 @@ import {
   recordInstallmentReminder,
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
-import { updateDonationById, updateDonationByReference } from '@lib/donationsStore';
+import {
+  createDonation,
+  getDonationByReference,
+  updateDonationById,
+  updateDonationByReference,
+} from '@lib/donationsStore';
 import { sendWhatsappMessage } from '@lib/whatsapp';
+import {
+  getCampusSubscriptionByProviderSubscription,
+  resolveStripePeriod,
+  updateCampusSubscriptionById,
+} from '@lib/campusSubscriptions';
 
 export const prerender = false;
 
@@ -231,6 +241,22 @@ async function processEvent(event: Stripe.Event): Promise<void> {
           });
         }
       }
+
+      const campusSubscriptionId = session.metadata?.campus_subscription_id;
+      if (campusSubscriptionId && session.subscription) {
+        const subscription = await stripe.subscriptions.retrieve(String(session.subscription)).catch(() => null);
+        const period = resolveStripePeriod(subscription);
+        await updateCampusSubscriptionById(campusSubscriptionId, {
+          status: session.payment_status === 'paid' ? 'ACTIVE' : 'INCOMPLETE',
+          provider_subscription_id: String(session.subscription),
+          provider_customer_id: session.customer ? String(session.customer) : null,
+          current_period_start: period.currentPeriodStart,
+          current_period_end: period.currentPeriodEnd,
+          next_charge_at: period.nextChargeAt,
+          last_charge_status: session.payment_status === 'paid' ? 'APPROVED' : 'PENDING',
+          raw_provider_data: session,
+        });
+      }
       break;
     }
     case 'invoice.paid': {
@@ -238,7 +264,75 @@ async function processEvent(event: Stripe.Event): Promise<void> {
       const subscriptionId = invoice.subscription ? String(invoice.subscription) : null;
       if (!subscriptionId) break;
       const plan = await getPlanByProviderSubscription(subscriptionId);
-      if (!plan) break;
+      if (!plan) {
+        const campusSubscription = await getCampusSubscriptionByProviderSubscription('stripe', subscriptionId);
+        if (!campusSubscription) break;
+
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId).catch(() => null);
+        const period = resolveStripePeriod(subscription);
+        const billingReason = String((invoice as any).billing_reason || '');
+        const amount = invoice.amount_paid ? invoice.amount_paid / 100 : 0;
+        const currency = invoice.currency?.toUpperCase() || campusSubscription.currency || 'USD';
+        const providerTxId = invoice.payment_intent ? String(invoice.payment_intent) : invoice.id;
+        const reference = invoice.id;
+
+        if (billingReason !== 'subscription_create') {
+          const existingDonation = await getDonationByReference('stripe', reference);
+          if (!existingDonation && amount > 0) {
+            const allocations = campusSubscription.allocations || [];
+            const missionaryName = allocations.length === 1
+              ? allocations[0].missionary_name
+              : allocations.map((allocation: any) => allocation.missionary_name).filter(Boolean).join(', ');
+            const projectName = allocations.length
+              ? `campus-multi:${allocations.map((allocation: any) => allocation.missionary_slug).join(',')}`
+              : 'Campus Maná';
+            const donation = await createDonation({
+              provider: 'stripe',
+              status: 'APPROVED',
+              amount,
+              currency,
+              reference,
+              provider_tx_id: providerTxId,
+              payment_method: 'card',
+              donation_type: 'campus',
+              project_name: projectName,
+              event_name: 'Campus Maná',
+              campus: 'Campus Maná',
+              church: '',
+              church_city: campusSubscription.donor_city || '',
+              donor_name: campusSubscription.donor_name || '',
+              donor_email: campusSubscription.donor_email,
+              donor_phone: campusSubscription.donor_phone || '',
+              donor_document_type: campusSubscription.donor_document_type || '',
+              donor_document_number: campusSubscription.donor_document_number || '',
+              is_recurring: true,
+              donor_country: campusSubscription.donor_country || '',
+              donor_city: campusSubscription.donor_city || '',
+              donation_description: 'Siembra mensual Campus Mana',
+              need_certificate: false,
+              source: 'campus-recurring-stripe',
+              cumbre_booking_id: null,
+              missionary_id: allocations.length === 1 ? allocations[0].missionary_id || null : null,
+              missionary_name: missionaryName || null,
+              raw_event: invoice,
+            });
+            await updateCampusSubscriptionById(campusSubscription.id, {
+              last_donation_id: donation.id,
+            });
+          }
+        }
+
+        await updateCampusSubscriptionById(campusSubscription.id, {
+          status: 'ACTIVE',
+          current_period_start: period.currentPeriodStart,
+          current_period_end: period.currentPeriodEnd,
+          next_charge_at: period.nextChargeAt,
+          last_charge_status: 'APPROVED',
+          last_charge_error: null,
+          raw_provider_data: invoice,
+        });
+        break;
+      }
 
       const installment = await getNextPendingInstallment(plan.id);
       if (!installment) break;
@@ -308,7 +402,18 @@ async function processEvent(event: Stripe.Event): Promise<void> {
       const subscriptionId = invoice.subscription ? String(invoice.subscription) : null;
       if (!subscriptionId) break;
       const plan = await getPlanByProviderSubscription(subscriptionId);
-      if (!plan) break;
+      if (!plan) {
+        const campusSubscription = await getCampusSubscriptionByProviderSubscription('stripe', subscriptionId);
+        if (campusSubscription) {
+          await updateCampusSubscriptionById(campusSubscription.id, {
+            status: 'PAYMENT_FAILED',
+            last_charge_status: 'FAILED',
+            last_charge_error: invoice.last_finalization_error?.message || 'Stripe invoice payment failed',
+            raw_provider_data: invoice,
+          });
+        }
+        break;
+      }
 
       const installment = await getNextPendingInstallment(plan.id);
       if (!installment) break;

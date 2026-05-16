@@ -2,12 +2,17 @@ import type { APIRoute } from 'astro';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { sanitizeDescription, validateCopAmount, validateUsdAmount } from '@lib/donations';
 import { resolveBaseUrl } from '@lib/url';
-import { createStripeDonationSession, createStripeInstallmentSession } from '@lib/stripe';
+import { createStripeCustomer, createStripeDonationSession, createStripeInstallmentSession } from '@lib/stripe';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { MISIONEROS } from '@data/misioneros';
+import { getUserFromRequest } from '@lib/supabaseAuth';
+import { ensureUserProfile } from '@lib/portalAuth';
+import { DOCUMENT_TYPES_ANY, normalizeDocumentType } from '@lib/donationInput';
+import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
+import { createCampusSubscription } from '@lib/campusSubscriptions';
 
 export const prerender = false;
 
@@ -18,6 +23,11 @@ function normalizeMissionaryName(value: string): string {
         .replace(/\s+/g, ' ')
         .trim()
         .toLowerCase();
+}
+
+function asText(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return typeof value === 'string' ? value : String(value);
 }
 
 /**
@@ -73,7 +83,41 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             email,
             phone,
             city,
+            documentType,
+            documentNumber,
         } = body;
+        const isRecurring = frequency === 'monthly';
+        const user = await getUserFromRequest(request);
+
+        if (isRecurring && !user?.email) {
+            return json({
+                ok: false,
+                requiresAccount: true,
+                error: 'Para una siembra mensual necesitas iniciar sesión o crear una cuenta.',
+            }, 401);
+        }
+
+        const profile = user ? await ensureUserProfile(user) : null;
+        const donorFullName = sanitizePlainText(
+            asText(fullName || profile?.full_name || (user?.user_metadata as any)?.full_name || ''),
+            120,
+        );
+        const donorEmail = (
+            user?.email
+            || email
+            || profile?.email
+            || ''
+        ).toString().trim().toLowerCase();
+        const donorPhone = sanitizePlainText(asText(phone || profile?.phone || ''), 30);
+        const donorCity = sanitizePlainText(asText(city || profile?.city || ''), 80);
+        const donorDocumentType = normalizeDocumentType(
+            asText(documentType || profile?.document_type || ''),
+            DOCUMENT_TYPES_ANY,
+        ) || '';
+        const donorDocumentNumber = sanitizePlainText(
+            asText(documentNumber || profile?.document_number || ''),
+            40,
+        );
 
         // Validate required fields
         if (!Array.isArray(missionaries) || missionaries.length === 0) {
@@ -85,11 +129,29 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         if (!['COP', 'USD'].includes(currency)) {
             return json({ ok: false, error: 'Moneda no soportada' }, 400);
         }
-        if (!fullName?.trim()) {
+        if (!donorFullName) {
             return json({ ok: false, error: 'Nombre requerido' }, 400);
         }
-        if (!email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!donorEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donorEmail)) {
             return json({ ok: false, error: 'Email inválido' }, 400);
+        }
+        if (currency === 'COP') {
+            if (!donorDocumentType) {
+                return json({ ok: false, error: 'Tipo de identificación requerido para pagos en Colombia' }, 400);
+            }
+            if (!donorDocumentNumber) {
+                return json({ ok: false, error: 'Número de identificación requerido para pagos en Colombia' }, 400);
+            }
+        }
+        const blocked = [
+            donorFullName,
+            donorEmail,
+            donorPhone,
+            donorCity,
+            donorDocumentNumber,
+        ].some((value) => containsBlockedSequence(value));
+        if (blocked) {
+            return json({ ok: false, error: 'Datos inválidos' }, 400);
         }
 
         // Validate missionary slugs
@@ -106,7 +168,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         });
 
         const totalAmount = amount * selectedSlugs.length;
-        const isRecurring = frequency === 'monthly';
 
         const selectedMissionaries = selectedSlugs.map((slug, index) => ({
             slug,
@@ -147,8 +208,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         const baseUrl = resolveBaseUrl(request);
         const reference = buildDonationReference({ domain: 'CAMPUS' });
 
+        if (user?.id && supabaseAdmin) {
+            const profileUpdates: Record<string, any> = {
+                updated_at: new Date().toISOString(),
+            };
+            if (donorFullName) profileUpdates.full_name = donorFullName;
+            if (donorPhone) profileUpdates.phone = donorPhone;
+            if (donorCity) profileUpdates.city = donorCity;
+            if (currency === 'COP') profileUpdates.country = 'CO';
+            if (donorDocumentType) profileUpdates.document_type = donorDocumentType;
+            if (donorDocumentNumber) profileUpdates.document_number = donorDocumentNumber;
+
+            await supabaseAdmin
+                .from('user_profiles')
+                .update(profileUpdates)
+                .eq('user_id', user.id);
+        }
+
         // Store donation record
-        await createDonation({
+        const donation = await createDonation({
             provider: currency === 'COP' ? 'wompi' : 'stripe',
             status: 'PENDING',
             amount: totalAmount,
@@ -160,16 +238,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             project_name: `campus-multi:${selectedSlugs.join(',')}`,
             event_name: 'Campus Maná',
             campus: 'Campus Maná',
-            church: '',
-            church_city: city?.trim() || '',
-            donor_name: fullName.trim(),
-            donor_email: email.trim().toLowerCase(),
-            donor_phone: phone?.trim() || '',
-            donor_document_type: '',
-            donor_document_number: '',
+            church: profile?.church_name || '',
+            church_city: donorCity,
+            donor_name: donorFullName,
+            donor_email: donorEmail,
+            donor_phone: donorPhone,
+            donor_document_type: donorDocumentType,
+            donor_document_number: donorDocumentNumber,
             is_recurring: isRecurring,
-            donor_country: currency === 'COP' ? 'CO' : '',
-            donor_city: city?.trim() || '',
+            donor_country: currency === 'COP' ? 'CO' : (profile?.country || ''),
+            donor_city: donorCity,
             donation_description: description,
             need_certificate: false,
             source: 'campus-multi-donation',
@@ -186,10 +264,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 amountPerMissionary: amount,
                 totalAmount,
                 frequency,
+                userId: user?.id || null,
             },
         });
 
         let checkoutUrl: string;
+        let campusSubscriptionId = '';
+        let stripeCustomerId = '';
 
         if (currency === 'COP') {
             // Wompi checkout
@@ -211,19 +292,55 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 description,
                 redirectUrl: redirect.toString(),
                 reference,
-                email: email.trim().toLowerCase(),
+                email: donorEmail,
                 customerData: {
-                    'full-name': fullName.trim(),
-                    'phone-number': phone?.trim() || '',
+                    country: 'CO',
+                    city: donorCity,
+                    'full-name': donorFullName,
+                    'phone-number': donorPhone,
+                    'legal-id': donorDocumentNumber,
+                    'legal-id-type': donorDocumentType,
                 },
             });
 
             checkoutUrl = url;
 
+            if (isRecurring && user?.id) {
+                const subscription = await createCampusSubscription({
+                    userId: user.id,
+                    status: 'PENDING_SETUP',
+                    provider: 'wompi',
+                    amount: totalAmount,
+                    currency: 'COP',
+                    donorName: donorFullName,
+                    donorEmail,
+                    donorPhone,
+                    donorDocumentType,
+                    donorDocumentNumber,
+                    donorCity,
+                    donorCountry: 'CO',
+                    providerReference: reference,
+                    lastDonationId: donation.id,
+                    metadata: {
+                        source: 'campus-checkout',
+                        note: 'Wompi requires tokenized payment source before automatic monthly charges.',
+                    },
+                    allocations: selectedMissionaries.map((missionary) => ({
+                        missionary_slug: missionary.slug,
+                        missionary_name: missionary.name,
+                        missionary_id: missionary.userId,
+                        amount,
+                        currency: 'COP',
+                    })),
+                });
+                campusSubscriptionId = subscription.id;
+            }
+
             void logPaymentEvent('wompi', 'campus-multi.created', reference, {
                 amount: totalAmount,
                 currency: 'COP',
                 missionaries: selectedSlugs,
+                campus_subscription_id: campusSubscriptionId || null,
             });
 
         } else {
@@ -240,12 +357,51 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             const metadata = {
                 source: 'campus-multi-donation',
                 donation_reference: reference,
+                donation_id: donation.id,
                 missionaries: selectedSlugs.join(','),
                 amount_per_missionary: String(amount),
+                portal_user_id: user?.id || '',
             };
 
             let session;
             if (isRecurring) {
+                const customer = await createStripeCustomer({
+                    email: donorEmail,
+                    name: donorFullName,
+                    metadata: {
+                        portal_user_id: user?.id || '',
+                        source: 'campus-monthly',
+                    },
+                });
+                stripeCustomerId = customer.id;
+                const subscription = await createCampusSubscription({
+                    userId: user!.id,
+                    status: 'PENDING',
+                    provider: 'stripe',
+                    amount: totalAmount,
+                    currency: 'USD',
+                    donorName: donorFullName,
+                    donorEmail,
+                    donorPhone,
+                    donorDocumentType,
+                    donorDocumentNumber,
+                    donorCity,
+                    donorCountry: profile?.country || '',
+                    providerCustomerId: stripeCustomerId,
+                    providerReference: reference,
+                    lastDonationId: donation.id,
+                    metadata: {
+                        source: 'campus-checkout',
+                    },
+                    allocations: selectedMissionaries.map((missionary) => ({
+                        missionary_slug: missionary.slug,
+                        missionary_name: missionary.name,
+                        missionary_id: missionary.userId,
+                        amount,
+                        currency: 'USD',
+                    })),
+                });
+                campusSubscriptionId = subscription.id;
                 session = await createStripeInstallmentSession({
                     amount: totalAmount,
                     currency: 'USD',
@@ -254,8 +410,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                     intervalCount: 1,
                     successUrl,
                     cancelUrl,
-                    metadata,
-                    customerEmail: email.trim().toLowerCase(),
+                    metadata: {
+                        ...metadata,
+                        campus_subscription_id: campusSubscriptionId,
+                    },
+                    customerId: stripeCustomerId,
                 });
             } else {
                 session = await createStripeDonationSession({
@@ -265,7 +424,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                     successUrl,
                     cancelUrl,
                     metadata,
-                    customerEmail: email.trim().toLowerCase(),
+                    customerEmail: donorEmail,
                 });
             }
 
@@ -280,10 +439,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 currency: 'USD',
                 missionaries: selectedSlugs,
                 session_id: session.id,
+                campus_subscription_id: campusSubscriptionId || null,
             });
         }
 
-        return json({ ok: true, url: checkoutUrl, reference });
+        return json({ ok: true, url: checkoutUrl, reference, campusSubscriptionId: campusSubscriptionId || null });
 
     } catch (error: any) {
         console.error('[campus.checkout] error', error);

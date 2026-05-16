@@ -28,6 +28,24 @@ function isAlreadyRegisteredError(error: any): boolean {
     );
 }
 
+function resolveSafeActivationRedirect(request: Request, rawRedirectTo?: string): string {
+    const origin = new URL(request.url).origin;
+    const fallback = `${origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+    if (!rawRedirectTo) return fallback;
+    try {
+        const url = new URL(rawRedirectTo, origin);
+        if (url.origin !== origin) return fallback;
+        if (url.pathname !== '/portal/activar') return fallback;
+        const next = url.searchParams.get('next') || '/portal';
+        if (!next.startsWith('/') || next.startsWith('//')) {
+            url.searchParams.set('next', '/portal');
+        }
+        return url.toString();
+    } catch {
+        return fallback;
+    }
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!supabaseAdmin) {
         return new Response(JSON.stringify({ ok: false, error: 'Server configuration error' }), { status: 500 });
@@ -43,8 +61,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         }
 
         const body = await request.json();
-        const { email, password, firstName, lastName, turnstileToken } = body;
+        const { email, password, firstName, lastName, turnstileToken, redirectTo } = body;
         const userAgent = request.headers.get('user-agent') || '';
+        const safeRedirectTo = resolveSafeActivationRedirect(request, redirectTo);
 
         if (!email || !password || !firstName || !lastName) {
             return new Response(JSON.stringify({ ok: false, error: 'Faltan campos requeridos' }), { status: 400 });
@@ -109,11 +128,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
         if (authError) {
             if (isAlreadyRegisteredError(authError)) {
-                const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
                 const linkResult = await sendAuthLink({
                     kind: 'recovery',
                     email,
-                    redirectTo,
+                    redirectTo: safeRedirectTo,
                 });
                 const linkSent = Boolean(linkResult.ok);
                 return new Response(JSON.stringify({
@@ -156,7 +174,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             const emailResult = await sendAuthLink({
                 kind: 'magiclink',
                 email: email,
-                redirectTo: `${baseUrl}/portal`
+                redirectTo: safeRedirectTo,
             });
 
             if (!emailResult.ok) {
