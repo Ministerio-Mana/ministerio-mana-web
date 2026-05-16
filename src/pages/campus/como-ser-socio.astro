@@ -19,21 +19,6 @@ const checklistItems = [
   'Cuenta para siembra mensual.',
 ];
 
-const qrGuideItems = [
-  {
-    title: 'Si llegó por QR',
-    text: 'No tiene que buscar el equipo. El QR ya lo llevó directo al misionero de la camiseta.',
-  },
-  {
-    title: 'Empieza desde la decisión',
-    text: 'Revisa si será mensual o única vez, escribe la donación y toca “Donar Ahora”.',
-  },
-  {
-    title: 'Si quiere sumar más',
-    text: 'Puede bajar a la opción de varios misioneros y escoger otros nombres antes de pagar.',
-  },
-];
-
 const singleSteps = [
   {
     title: 'Abre Campus Maná',
@@ -207,21 +192,22 @@ const supportItems = [
       <img
         src={image}
         alt="Equipo de misioneros Campus Maná"
-        class="h-full w-full object-cover opacity-24"
+        class="h-full w-full object-cover opacity-60"
         loading="eager"
       />
-      <div class="absolute inset-0 bg-[#001B3A]/82"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-[#001B3A]/96 via-[#001B3A]/84 to-[#001B3A]/94"></div>
+      <div class="absolute inset-y-0 left-0 w-full bg-gradient-to-r from-[#001B3A]/96 via-[#001B3A]/76 to-[#001B3A]/50"></div>
     </div>
 
     <div class="container-tight relative z-10 flex min-h-[78vh] items-center px-4 py-24">
-      <div class="max-w-4xl">
+      <div class="tutorial-hero-copy max-w-4xl">
         <p class="inline-flex border-organic bg-[#FACC15] px-4 py-2 font-intro text-xs uppercase tracking-[0.16em] text-[#001B3A]">
           Tutorial para acompañar
         </p>
-        <span class="font-summer mt-8 block -rotate-2 text-[#2DD4BF] text-7xl md:text-8xl">
+        <span class="font-summer mt-7 block -rotate-2 text-6xl leading-none text-[#2DD4BF] sm:text-7xl md:text-8xl">
           Paso a paso
         </span>
-        <h1 class="font-intro -mt-5 max-w-4xl text-5xl uppercase leading-none text-white md:text-7xl">
+        <h1 class="font-intro mt-1 max-w-4xl text-4xl uppercase leading-[0.98] text-white sm:text-5xl md:text-7xl">
           Socios de la Gran Comisión
         </h1>
         <p class="mt-6 max-w-2xl font-intro-reg text-lg leading-relaxed text-white/82 md:text-xl">
@@ -231,13 +217,10 @@ const supportItems = [
           <a href="#un-misionero" class="tutorial-action bg-[#2DD4BF] text-[#001B3A]">
             Ruta normal
           </a>
-          <a href="#varios-misioneros" class="tutorial-action border border-white/70 bg-white/10 text-white">
+          <a href="#varios-misioneros" class="tutorial-action border border-[#2DD4BF] bg-[#001B3A]/95 text-white">
             Varios misioneros
           </a>
-          <a href="#qr-cumbre" class="tutorial-action border border-white/30 bg-[#001B3A] text-white">
-            QR Cumbre
-          </a>
-          <a href={campusPath} class="tutorial-action border border-white/30 bg-[#001B3A] text-white">
+          <a href={campusPath} class="tutorial-action bg-[#FACC15] text-[#001B3A]">
             Ir a Campus
           </a>
         </div>
@@ -258,31 +241,6 @@ const supportItems = [
       <p class="mt-5 max-w-3xl font-intro-reg text-sm leading-relaxed text-[#001B3A]/70">
         No expliques todo de una sola vez. Primero confirma a quién quiere apoyar, luego el monto, después la cuenta si es mensual y por último el pago.
       </p>
-    </div>
-  </section>
-
-  <section id="qr-cumbre" class="qr-band scroll-mt-24 bg-[#F3F0E6] pb-16">
-    <div class="container-tight px-4">
-      <div class="qr-guide">
-        <div>
-          <p class="section-eyebrow">Ruta rápida de Cumbre</p>
-          <h2>Cuando la persona escanea un QR</h2>
-          <p>
-            Esta parte no es otro tutorial largo. Es una guía corta para la campaña de las camisetas: el QR ya abre un misionero específico, así que la persona puede seguir desde el monto y el botón de donar.
-          </p>
-        </div>
-        <div class="qr-guide-list">
-          {qrGuideItems.map((item, index) => (
-            <article class="qr-guide-item">
-              <span>{index + 1}</span>
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
     </div>
   </section>
 
@@ -326,7 +284,7 @@ const supportItems = [
     </div>
   </section>
 
-  <section id="varios-misioneros" class="scroll-mt-24 bg-[#001B3A] py-16 text-white md:py-24">
+  <section id="varios-misioneros" class="multi-tutorial-section scroll-mt-24 bg-[#001B3A] py-16 text-white md:py-24">
     <div class="container-tight px-4">
       <div class="tutorial-section-heading tutorial-section-heading--dark">
         <p class="section-eyebrow section-eyebrow--teal">Ruta completa</p>
@@ -414,6 +372,10 @@ const supportItems = [
   </section>
 
   <script>
+    if (window.location.hash === '#qr-cumbre') {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
     const getHeaderOffset = () => {
       const header = document.querySelector('header');
       return header ? header.getBoundingClientRect().height + 18 : 18;
@@ -422,7 +384,12 @@ const supportItems = [
     const moveToSection = (hash, behavior = 'smooth') => {
       if (!hash || hash === '#') return;
       const target = document.querySelector(hash);
-      if (!target) return;
+      if (!target) {
+        if (hash === '#qr-cumbre') {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+        return;
+      }
       const root = document.scrollingElement || document.documentElement;
       const top = target.getBoundingClientRect().top + window.scrollY - getHeaderOffset();
 
@@ -461,8 +428,6 @@ const supportItems = [
   .border-organic,
   .tutorial-action,
   .preflight-item,
-  .qr-guide,
-  .qr-guide-item,
   .tutorial-card,
   .tutorial-shot-frame,
   .support-card,
@@ -486,6 +451,12 @@ const supportItems = [
 
   .tutorial-action:hover {
     transform: translateY(-2px);
+  }
+
+  .tutorial-hero-copy h1,
+  .tutorial-hero-copy p,
+  .tutorial-hero-copy span {
+    text-shadow: 0 4px 22px rgba(0, 9, 28, 0.68);
   }
 
   .preflight-item {
@@ -512,84 +483,6 @@ const supportItems = [
     height: 1.85rem;
     justify-content: center;
     width: 1.85rem;
-  }
-
-  .qr-band {
-    margin-top: -1px;
-  }
-
-  .qr-guide {
-    background: #fff;
-    border: 2px solid #001B3A;
-    box-shadow: 7px 7px 0 #FACC15;
-    color: #001B3A;
-    display: grid;
-    gap: 1.5rem;
-    padding: 1.2rem;
-  }
-
-  .qr-guide h2 {
-    font-family: 'Intro', sans-serif;
-    font-size: 2rem;
-    font-weight: 900;
-    line-height: 1.05;
-    text-transform: uppercase;
-  }
-
-  .qr-guide > div > p:last-child {
-    color: rgba(0, 27, 58, 0.72);
-    font-family: 'Intro', sans-serif;
-    font-size: 0.98rem;
-    font-weight: 400;
-    line-height: 1.65;
-    margin-top: 1rem;
-  }
-
-  .qr-guide-list {
-    display: grid;
-    gap: 0.8rem;
-  }
-
-  .qr-guide-item {
-    align-items: start;
-    background: #F3F0E6;
-    border: 2px solid rgba(0, 27, 58, 0.14);
-    display: grid;
-    gap: 0.85rem;
-    grid-template-columns: auto 1fr;
-    padding: 1rem;
-  }
-
-  .qr-guide-item span {
-    align-items: center;
-    background: #2DD4BF;
-    border: 2px solid #001B3A;
-    border-radius: 999px;
-    color: #001B3A;
-    display: inline-flex;
-    font-family: 'Intro', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 900;
-    height: 2rem;
-    justify-content: center;
-    width: 2rem;
-  }
-
-  .qr-guide-item h3 {
-    font-family: 'Intro', sans-serif;
-    font-size: 1rem;
-    font-weight: 900;
-    line-height: 1.2;
-    text-transform: uppercase;
-  }
-
-  .qr-guide-item p {
-    color: rgba(0, 27, 58, 0.72);
-    font-family: 'Intro', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 400;
-    line-height: 1.55;
-    margin-top: 0.35rem;
   }
 
   .tutorial-section-heading {
@@ -635,6 +528,21 @@ const supportItems = [
 
   .section-eyebrow--teal {
     color: #FACC15;
+  }
+
+  .multi-tutorial-section {
+    background:
+      radial-gradient(circle at top right, rgba(45, 212, 191, 0.18), transparent 34rem),
+      linear-gradient(180deg, #001B3A 0%, #000F25 100%);
+  }
+
+  .multi-tutorial-section .tutorial-section-heading h2 {
+    color: #fff;
+    text-shadow: 0 3px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  .multi-tutorial-section .tutorial-section-heading p:last-child {
+    color: rgba(255, 255, 255, 0.86);
   }
 
   .tutorial-steps {
@@ -871,11 +779,6 @@ const supportItems = [
   }
 
   @media (min-width: 768px) {
-    .qr-guide {
-      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-      padding: 1.6rem;
-    }
-
     .tutorial-card {
       grid-template-columns: minmax(0, 0.88fr) minmax(17rem, 1fr);
       padding: 1.2rem;
