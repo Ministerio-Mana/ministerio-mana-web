@@ -27,8 +27,8 @@ const gateway = isWompi
       min: 5000,
       step: 1000,
       placeholder: 'Ej. 100000',
-      button: 'Donar con Wompi',
-      secure: 'Pago seguro en Colombia con Wompi. No almacenamos datos de tarjeta.',
+      button: 'Donar',
+      secure: 'Pago seguro. No almacenamos datos de tarjeta.',
       presets: [50000, 100000, 200000, 500000],
     }
   : {
@@ -40,8 +40,8 @@ const gateway = isWompi
       min: 5,
       step: 1,
       placeholder: 'Ex. 50',
-      button: 'Donar con Stripe',
-      secure: 'Pagos internacionales seguros con Stripe. No almacenamos datos de tarjeta.',
+      button: 'Donar',
+      secure: 'Pago seguro internacional. No almacenamos datos de tarjeta.',
       presets: [25, 50, 100, 250],
     };
 
@@ -85,21 +85,6 @@ function formatPreset(value: number): string {
           para que más personas conozcan a Cristo.
         </p>
 
-        <div class="donation-route" aria-label="Ruta de pago detectada">
-          <div>
-            <span>Ruta</span>
-            <strong>{isWompi ? 'Colombia' : 'Internacional'}</strong>
-          </div>
-          <div>
-            <span>Pasarela</span>
-            <strong>{gateway.name}</strong>
-          </div>
-          <div>
-            <span>Moneda</span>
-            <strong>{gateway.currency}</strong>
-          </div>
-        </div>
-
         <p class="donation-note">
           {isWompi
             ? 'En Colombia procesamos la donación por Wompi y pedimos identificación para conciliación contable y soportes tributarios.'
@@ -113,17 +98,17 @@ function formatPreset(value: number): string {
         class="donation-form"
         data-donation-form
         data-login-url="/portal/ingresar?next=/donaciones/&reason=recurring-donation"
+        novalidate
       >
         <div class="donation-form__header">
           <div class="donation-form__route">
-            <span>{isWompi ? 'Donación en Colombia' : 'International giving'}</span>
-            <strong>{countryCode}</strong>
+            <span>{isWompi ? 'Donación en Colombia' : 'Donación internacional'}</span>
           </div>
-          <h2>{isWompi ? 'Dona en pesos colombianos' : 'Give from outside Colombia'}</h2>
+          <h2>Haz tu donación</h2>
           <p>
             {isWompi
-              ? 'La ruta se ajusta automáticamente para recibir tu donación en COP.'
-              : 'The route is adjusted automatically for international giving in USD.'}
+              ? 'Recibimos tu donación en pesos colombianos y cuidamos la información necesaria para el soporte contable.'
+              : 'Recibimos tu donación internacional en dólares y registramos el soporte administrativo correspondiente.'}
           </p>
           {copPerUsd && (
             <p class="donation-rate">
@@ -132,193 +117,218 @@ function formatPreset(value: number): string {
           )}
         </div>
 
-        <div class="donation-section-label">
-          <span>01</span>
-          <strong>Tu donación</strong>
-        </div>
+        <ol class="donation-progress" aria-label="Progreso de donación">
+          <li class="is-active" data-step-indicator="1" aria-current="step">
+            <span>1</span>
+            <strong>Donación</strong>
+          </li>
+          <li data-step-indicator="2">
+            <span>2</span>
+            <strong>Datos</strong>
+          </li>
+        </ol>
 
-        <div class="donation-field donation-field--full">
-          <label for="donation-type">Tipo de donación</label>
-          <select id="donation-type" name="donationType" required>
-            <option value="" disabled selected>Selecciona</option>
-            <option value="diezmos">Diezmos</option>
-            <option value="ofrendas">Ofrendas</option>
-            <option value="misiones">Misiones</option>
-            <option value="campus">Campus Maná</option>
-            <option value="evento">Eventos</option>
-            <option value="peregrinaciones">Peregrinaciones</option>
-            <option value="general">General</option>
-          </select>
-        </div>
-
-        <div class="donation-field donation-field--full">
-          <label for="amount">{gateway.amountLabel}</label>
-          <div class="donation-presets">
-            {gateway.presets.map((value) => (
-              <button type="button" data-amount-preset={value}>{formatPreset(value)}</button>
-            ))}
+        <div class="donation-step is-active" data-donation-step="1">
+          <div class="donation-section-label">
+            <span>01</span>
+            <strong>Tu donación</strong>
           </div>
-          <input
-            id="amount"
-            type="number"
-            name="amount"
-            min={gateway.min}
-            step={gateway.step}
-            required
-            placeholder={gateway.placeholder}
-            inputmode="numeric"
-          />
-        </div>
 
-        <fieldset class="donation-recurrence">
-          <legend>Frecuencia</legend>
-          <label>
-            <input type="radio" name="isRecurring" value="false" checked data-recurrence-radio />
-            <span>Una sola vez</span>
-          </label>
-          <label>
-            <input type="radio" name="isRecurring" value="true" data-recurrence-radio />
-            <span>Recurrente</span>
-          </label>
-        </fieldset>
-
-        <div class="donation-field donation-field--full donation-frequency" data-frequency-wrap hidden>
-          <label for="frequency">Cada cuánto quieres donar</label>
-          <select id="frequency" name="frequency" disabled>
-            <option value="monthly" selected>Cada mes</option>
-            <option value="biweekly">Quincenal</option>
-            <option value="every_two_months">Cada dos meses</option>
-            <option value="semiannual">Cada semestre</option>
-            <option value="annual">Cada año</option>
-          </select>
-          <p data-recurring-note>
-            Para donar recurrentemente necesitas una cuenta en Maná. Desde el portal podrás pausar,
-            reactivar, cancelar o actualizar tu método de pago.
-          </p>
-        </div>
-
-        <div class="donation-grid">
-          <div class="donation-field">
-            <label for="church">Iglesia o comunidad</label>
-            <input id="church" type="text" name="church" placeholder="Ministerio Maná Virtual" />
+          <div class="donation-field donation-field--full">
+            <label for="donation-type">Tipo de donación</label>
+            <select id="donation-type" name="donationType" required>
+              <option value="" disabled selected>Selecciona</option>
+              <option value="diezmos">Diezmos</option>
+              <option value="ofrendas">Ofrendas</option>
+              <option value="misiones">Misiones</option>
+              <option value="campus">Campus Maná</option>
+              <option value="evento">Eventos</option>
+              <option value="peregrinaciones">Peregrinaciones</option>
+              <option value="general">General</option>
+            </select>
           </div>
-          <div class="donation-field">
-            <label for="project-name">Destino / proyecto</label>
-            <input id="project-name" type="text" name="projectName" required value="Ministerio Maná" placeholder="Ministerio Maná" />
-          </div>
-        </div>
 
-        <div class="donation-field donation-field--full">
-          <label for="description">Nota o propósito</label>
-          <input id="description" type="text" name="description" placeholder="Ej. Misiones, Campus, ofrenda familiar..." />
-        </div>
-
-        <div class="donation-section-label">
-          <span>02</span>
-          <strong>Tus datos</strong>
-        </div>
-
-        <div class="donation-grid">
-          <div class="donation-field">
-            <label for="full-name">Nombre completo</label>
-            <input id="full-name" type="text" name="fullName" required placeholder="Nombre y apellido" autocomplete="name" />
-          </div>
-          <div class="donation-field">
-            <label for="email">Correo</label>
-            <input id="email" type="email" name="email" required placeholder="tucorreo@email.com" autocomplete="email" />
-          </div>
-        </div>
-
-        <div class="donation-grid">
-          <div class="donation-field">
-            <label for="phone">Teléfono / WhatsApp</label>
-            <input id="phone" type="tel" name="phone" required placeholder={isWompi ? '3000000000' : '+1 555 000 0000'} autocomplete="tel" />
-          </div>
-          <div class="donation-field">
-            <label for="city">Ciudad</label>
-            <input id="city" type="text" name="city" required placeholder="Ciudad" autocomplete="address-level2" />
-          </div>
-        </div>
-
-        {isWompi ? (
-          <div class="donation-panel">
-            <div class="donation-panel__heading">
-              <strong>Información requerida en Colombia</strong>
-              <span>DIAN y conciliación</span>
+          <div class="donation-field donation-field--full">
+            <label for="amount">{gateway.amountLabel}</label>
+            <div class="donation-presets">
+              {gateway.presets.map((value) => (
+                <button type="button" data-amount-preset={value}>{formatPreset(value)}</button>
+              ))}
             </div>
-            <div class="donation-grid">
-              <div class="donation-field">
-                <label for="person-type">Tipo de persona</label>
-                <select id="person-type" name="personType" required>
-                  <option value="natural" selected>Persona natural</option>
-                  <option value="juridica">Persona jurídica</option>
-                </select>
-              </div>
-              <div class="donation-field">
-                <label for="document-type">Tipo de identificación</label>
-                <select id="document-type" name="documentType" required>
-                  <option value="" disabled selected>Selecciona</option>
-                  <option value="CC">Cédula de ciudadanía</option>
-                  <option value="CE">Cédula de extranjería</option>
-                  <option value="NIT">NIT</option>
-                  <option value="TI">Tarjeta de identidad</option>
-                  <option value="PAS">Pasaporte</option>
-                </select>
-              </div>
-            </div>
-            <div class="donation-field donation-field--full">
-              <label for="document-number">Número de identificación</label>
-              <input id="document-number" type="text" name="documentNumber" required placeholder="Documento o NIT" autocomplete="off" />
-            </div>
-            <p>
-              Estos datos nos permiten registrar la donación, conciliar Wompi y preparar soportes
-              contables o tributarios solicitados en Colombia. Los tratamos según nuestra política de privacidad.
+            <input
+              id="amount"
+              type="number"
+              name="amount"
+              min={gateway.min}
+              step={gateway.step}
+              required
+              placeholder={gateway.placeholder}
+              inputmode="numeric"
+            />
+          </div>
+
+          <fieldset class="donation-recurrence">
+            <legend>Frecuencia</legend>
+            <label>
+              <input type="radio" name="isRecurring" value="false" checked data-recurrence-radio />
+              <span>Una sola vez</span>
+            </label>
+            <label>
+              <input type="radio" name="isRecurring" value="true" data-recurrence-radio />
+              <span>Recurrente</span>
+            </label>
+          </fieldset>
+
+          <div class="donation-field donation-field--full donation-frequency" data-frequency-wrap hidden>
+            <label for="frequency">Cada cuánto quieres donar</label>
+            <select id="frequency" name="frequency" disabled>
+              <option value="monthly" selected>Cada mes</option>
+              <option value="biweekly">Quincenal</option>
+              <option value="every_two_months">Cada dos meses</option>
+              <option value="semiannual">Cada semestre</option>
+              <option value="annual">Cada año</option>
+            </select>
+            <p data-recurring-note>
+              Para donar recurrentemente necesitas una cuenta en Maná. Desde el portal podrás pausar,
+              reactivar, cancelar o actualizar tu método de pago.
             </p>
           </div>
-        ) : (
-          <div class="donation-grid">
-            <div class="donation-field">
-              <label for="document-type">Identificación (opcional)</label>
-              <select id="document-type" name="documentType">
-                <option value="" selected>Selecciona</option>
-                <option value="PAS">Pasaporte</option>
-                <option value="NID">ID nacional</option>
-                <option value="DL">Licencia de conducir</option>
-                <option value="OTRO">Otro</option>
-              </select>
-            </div>
-            <div class="donation-field">
-              <label for="document-number">Número (opcional)</label>
-              <input id="document-number" type="text" name="documentNumber" placeholder="Documento" autocomplete="off" />
-            </div>
-          </div>
-        )}
 
-        <div class="donation-terms">
-          <label>
-            <input type="checkbox" name="needCertificate" value="true" />
-            <span>Necesito que esta donación quede marcada para certificado o soporte tributario.</span>
-          </label>
-          <p>
-            Al donar aceptas los <a href="/donaciones/terminos-suscripciones">términos de donaciones y suscripciones</a>
-            y la <a href="/privacidad">política de privacidad</a>.
-          </p>
+          <details class="donation-optional">
+            <summary>Destino y nota</summary>
+            <div class="donation-grid">
+              <div class="donation-field">
+                <label for="church">Iglesia o comunidad</label>
+                <input id="church" type="text" name="church" placeholder="Ministerio Maná Virtual" />
+              </div>
+              <div class="donation-field">
+                <label for="project-name">Destino / proyecto</label>
+                <input id="project-name" type="text" name="projectName" required value="Ministerio Maná" placeholder="Ministerio Maná" />
+              </div>
+            </div>
+
+            <div class="donation-field donation-field--full">
+              <label for="description">Nota o propósito</label>
+              <input id="description" type="text" name="description" placeholder="Ej. Misiones, Campus, ofrenda familiar..." />
+            </div>
+          </details>
+
+          <div class="donation-actions donation-actions--single">
+            <button type="button" class="donation-next" data-step-next>Continuar</button>
+          </div>
         </div>
 
-        <input type="hidden" name="currency" value={gateway.currency} />
-        <input type="hidden" name="source" value={gateway.source} />
-        <input type="hidden" name="country" value={isWompi ? 'CO' : countryCode} />
-        <input type="hidden" name="campus" value="" />
-        <input type="hidden" name="eventName" value="Donaciones Maná" />
+        <div class="donation-step" data-donation-step="2" hidden>
+          <div class="donation-section-label">
+            <span>02</span>
+            <strong>Tus datos</strong>
+          </div>
 
-        <TurnstileWidget appearance="always" theme="auto" />
+          <div class="donation-grid">
+            <div class="donation-field">
+              <label for="full-name">Nombre completo</label>
+              <input id="full-name" type="text" name="fullName" required placeholder="Nombre y apellido" autocomplete="name" />
+            </div>
+            <div class="donation-field">
+              <label for="email">Correo</label>
+              <input id="email" type="email" name="email" required placeholder="tucorreo@email.com" autocomplete="email" />
+            </div>
+          </div>
 
-        <button type="submit" class="donation-submit">
-          <span>{gateway.button}</span>
-          <SowingIcon class="h-5 w-5" />
-        </button>
-        <p class="donation-secure">{gateway.secure}</p>
-        <p class="donation-status" data-donation-status aria-live="polite"></p>
+          <div class="donation-grid">
+            <div class="donation-field">
+              <label for="phone">Teléfono / WhatsApp</label>
+              <input id="phone" type="tel" name="phone" required placeholder={isWompi ? '3000000000' : '+1 555 000 0000'} autocomplete="tel" />
+            </div>
+            <div class="donation-field">
+              <label for="city">Ciudad</label>
+              <input id="city" type="text" name="city" required placeholder="Ciudad" autocomplete="address-level2" />
+            </div>
+          </div>
+
+          {isWompi ? (
+            <div class="donation-panel">
+              <div class="donation-panel__heading">
+                <strong>Información requerida en Colombia</strong>
+                <span>DIAN y conciliación</span>
+              </div>
+              <div class="donation-grid">
+                <div class="donation-field">
+                  <label for="person-type">Tipo de persona</label>
+                  <select id="person-type" name="personType" required>
+                    <option value="natural" selected>Persona natural</option>
+                    <option value="juridica">Persona jurídica</option>
+                  </select>
+                </div>
+                <div class="donation-field">
+                  <label for="document-type">Tipo de identificación</label>
+                  <select id="document-type" name="documentType" required>
+                    <option value="" disabled selected>Selecciona</option>
+                    <option value="CC">Cédula de ciudadanía</option>
+                    <option value="CE">Cédula de extranjería</option>
+                    <option value="NIT">NIT</option>
+                    <option value="TI">Tarjeta de identidad</option>
+                    <option value="PAS">Pasaporte</option>
+                  </select>
+                </div>
+              </div>
+              <div class="donation-field donation-field--full">
+                <label for="document-number">Número de identificación</label>
+                <input id="document-number" type="text" name="documentNumber" required placeholder="Documento o NIT" autocomplete="off" />
+              </div>
+              <p>
+                Estos datos nos permiten registrar la donación, conciliar Wompi y preparar soportes
+                contables o tributarios solicitados en Colombia. Los tratamos según nuestra política de privacidad.
+              </p>
+            </div>
+          ) : (
+            <div class="donation-grid">
+              <div class="donation-field">
+                <label for="document-type">Identificación (opcional)</label>
+                <select id="document-type" name="documentType">
+                  <option value="" selected>Selecciona</option>
+                  <option value="PAS">Pasaporte</option>
+                  <option value="NID">ID nacional</option>
+                  <option value="DL">Licencia de conducir</option>
+                  <option value="OTRO">Otro</option>
+                </select>
+              </div>
+              <div class="donation-field">
+                <label for="document-number">Número (opcional)</label>
+                <input id="document-number" type="text" name="documentNumber" placeholder="Documento" autocomplete="off" />
+              </div>
+            </div>
+          )}
+
+          <div class="donation-terms">
+            <label>
+              <input type="checkbox" name="needCertificate" value="true" />
+              <span>Necesito que esta donación quede marcada para certificado o soporte tributario.</span>
+            </label>
+            <p>
+              Al donar aceptas los <a href="/donaciones/terminos-suscripciones">términos de donaciones y suscripciones</a>
+              y la <a href="/privacidad">política de privacidad</a>.
+            </p>
+          </div>
+
+          <input type="hidden" name="currency" value={gateway.currency} />
+          <input type="hidden" name="source" value={gateway.source} />
+          <input type="hidden" name="country" value={isWompi ? 'CO' : countryCode} />
+          <input type="hidden" name="campus" value="" />
+          <input type="hidden" name="eventName" value="Donaciones Maná" />
+
+          <TurnstileWidget appearance="always" theme="auto" />
+
+          <div class="donation-actions">
+            <button type="button" class="donation-back" data-step-back>Volver</button>
+            <button type="submit" class="donation-submit">
+              <span>{gateway.button}</span>
+              <SowingIcon class="h-5 w-5" />
+            </button>
+          </div>
+          <p class="donation-secure">{gateway.secure}</p>
+          <p class="donation-status" data-donation-status aria-live="polite"></p>
+        </div>
       </form>
     </div>
   </div>
@@ -326,8 +336,8 @@ function formatPreset(value: number): string {
   <div class="donation-context">
     <div class="container-tight donation-context__grid">
       <article>
-        <span>Ruta automática</span>
-        <p>{isWompi ? 'Colombia entra por Wompi en COP.' : 'El exterior entra por Stripe en USD.'}</p>
+        <span>Una sola vez</span>
+        <p>Elige un valor, completa tus datos y confirma la donación.</p>
       </article>
       <article>
         <span>Recurrentes</span>
@@ -335,13 +345,21 @@ function formatPreset(value: number): string {
       </article>
       <article>
         <span>Soporte</span>
-        <p>{isWompi ? 'Los datos de identificación ayudan a contabilidad y DIAN.' : 'Stripe confirma el pago y Maná registra el soporte.'}</p>
+        <p>{isWompi ? 'En Colombia pedimos identificación para soportes contables y tributarios.' : 'Registramos la confirmación de pago para soporte administrativo.'}</p>
       </article>
     </div>
   </div>
 </section>
 
 <style is:inline>
+  @font-face {
+    font-family: "Summer Loving";
+    src: url("/fonts/SUMMER%20FONT/Summer%20Loving%20Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
   .donation-shell {
     background: #07111c;
     color: white;
@@ -441,12 +459,13 @@ function formatPreset(value: number): string {
   }
 
   .donation-script {
-    margin: 0 0 0.55rem;
+    margin: 0 0 -0.35rem;
     color: rgb(var(--mana-gold));
-    font-family: var(--font-display, Georgia, serif);
-    font-size: 2rem;
-    font-weight: 300;
-    line-height: 1;
+    font-family: "Summer Loving", cursive;
+    font-size: 4.8rem;
+    font-weight: 400;
+    line-height: 0.74;
+    transform: rotate(-2deg);
   }
 
   .donation-title {
@@ -475,27 +494,6 @@ function formatPreset(value: number): string {
     line-height: 1.65;
   }
 
-  .donation-route {
-    display: grid;
-    max-width: 640px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0;
-    margin-top: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(0, 0, 0, 0.28);
-    backdrop-filter: blur(16px);
-  }
-
-  .donation-route div {
-    min-width: 0;
-    padding: 1rem;
-  }
-
-  .donation-route div + div {
-    border-left: 1px solid rgba(255, 255, 255, 0.16);
-  }
-
-  .donation-route span,
   .donation-form__route span,
   .donation-context span,
   .donation-section-label span,
@@ -506,20 +504,9 @@ function formatPreset(value: number): string {
     text-transform: uppercase;
   }
 
-  .donation-route span {
-    color: rgba(255, 255, 255, 0.56);
-  }
-
-  .donation-route strong {
-    display: block;
-    margin-top: 0.18rem;
-    color: white;
-    font-size: 1.05rem;
-  }
-
   .donation-note {
     max-width: 620px;
-    margin: 1.1rem 0 0;
+    margin: 1.6rem 0 0;
     border-left: 2px solid rgb(var(--mana-teal));
     padding-left: 1rem;
     color: rgba(255, 255, 255, 0.74);
@@ -529,6 +516,7 @@ function formatPreset(value: number): string {
 
   .donation-form {
     align-self: center;
+    scroll-margin-top: 5.75rem;
     border: 1px solid rgba(242, 201, 76, 0.34);
     border-radius: 8px;
     background: rgba(248, 245, 235, 0.96);
@@ -547,21 +535,56 @@ function formatPreset(value: number): string {
   .donation-form__route {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
     margin-bottom: 0.75rem;
-    color: rgba(var(--mana-navy), 0.62);
+    color: rgb(var(--mana-teal));
   }
 
-  .donation-form__route strong {
+  .donation-progress {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0 0 1rem;
+    padding: 0;
+    border: 1px solid rgba(var(--mana-navy), 0.12);
+    background: rgba(var(--mana-navy), 0.12);
+    list-style: none;
+  }
+
+  .donation-progress li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.68);
+    color: rgba(var(--mana-navy), 0.58);
+    padding: 0.75rem;
+  }
+
+  .donation-progress li.is-active {
+    background: rgba(var(--mana-teal), 0.1);
+    color: rgb(var(--mana-navy));
+  }
+
+  .donation-progress li span {
     display: inline-flex;
-    min-width: 2.75rem;
+    height: 1.65rem;
+    min-width: 1.65rem;
+    align-items: center;
     justify-content: center;
-    border: 1px solid rgba(var(--mana-teal), 0.4);
-    border-radius: 6px;
-    background: rgba(var(--mana-teal), 0.11);
-    color: rgb(var(--mana-teal));
-    padding: 0.25rem 0.55rem;
+    border-radius: 50%;
+    background: rgba(var(--mana-navy), 0.12);
+    color: rgb(var(--mana-navy));
+    font-size: 0.78rem;
+    font-weight: 900;
+  }
+
+  .donation-progress li.is-active span {
+    background: rgb(var(--mana-gold));
+  }
+
+  .donation-progress strong {
+    min-width: 0;
+    font-size: 0.82rem;
   }
 
   .donation-form__header h2 {
@@ -581,6 +604,10 @@ function formatPreset(value: number): string {
   .donation-rate {
     color: rgba(var(--mana-navy), 0.58);
     font-size: 0.78rem;
+  }
+
+  .donation-step[hidden] {
+    display: none;
   }
 
   .donation-section-label {
@@ -724,6 +751,31 @@ function formatPreset(value: number): string {
     padding: 0.9rem;
   }
 
+  .donation-optional {
+    margin: 0.95rem 0 0;
+    border: 1px solid rgba(var(--mana-navy), 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.48);
+  }
+
+  .donation-optional summary {
+    cursor: pointer;
+    color: rgb(var(--mana-navy));
+    font-size: 0.86rem;
+    font-weight: 850;
+    list-style-position: inside;
+    padding: 0.9rem 1rem;
+  }
+
+  .donation-optional[open] {
+    padding: 0 1rem 1rem;
+  }
+
+  .donation-optional[open] summary {
+    margin: 0 -1rem 0.9rem;
+    border-bottom: 1px solid rgba(var(--mana-navy), 0.1);
+  }
+
   .donation-panel {
     margin: 0.2rem 0 0.95rem;
     border: 1px solid rgba(var(--mana-teal), 0.26);
@@ -801,6 +853,55 @@ function formatPreset(value: number): string {
 
   .donation-submit svg {
     flex: 0 0 auto;
+  }
+
+  .donation-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .donation-actions .donation-submit {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .donation-actions--single .donation-next {
+    width: 100%;
+  }
+
+  .donation-next,
+  .donation-back {
+    display: inline-flex;
+    min-height: 3.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0.95rem 1.2rem;
+    transition: transform 160ms ease, filter 160ms ease, border-color 160ms ease;
+  }
+
+  .donation-next {
+    border: 0;
+    background: linear-gradient(135deg, rgb(var(--mana-teal)), rgb(var(--mana-navy)));
+    color: white;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .donation-back {
+    flex: 0 0 auto;
+    border: 1px solid rgba(var(--mana-navy), 0.18);
+    background: rgba(255, 255, 255, 0.72);
+    color: rgb(var(--mana-navy));
+  }
+
+  .donation-next:hover,
+  .donation-next:focus-visible,
+  .donation-back:hover,
+  .donation-back:focus-visible {
+    transform: translateY(-1px);
   }
 
   .donation-submit:hover,
@@ -905,7 +1006,7 @@ function formatPreset(value: number): string {
     }
 
     .donation-script {
-      font-size: 1.55rem;
+      font-size: 3.8rem;
     }
 
     .donation-title {
@@ -917,14 +1018,8 @@ function formatPreset(value: number): string {
       font-size: 1rem;
     }
 
-    .donation-route,
     .donation-context__grid {
       grid-template-columns: 1fr;
-    }
-
-    .donation-route div + div {
-      border-top: 1px solid rgba(255, 255, 255, 0.16);
-      border-left: 0;
     }
 
     .donation-story {
@@ -952,6 +1047,15 @@ function formatPreset(value: number): string {
     .donation-panel__heading {
       display: grid;
       gap: 0.25rem;
+    }
+
+    .donation-actions {
+      flex-direction: column;
+    }
+
+    .donation-back,
+    .donation-actions .donation-submit {
+      width: 100%;
     }
   }
 </style>
@@ -1076,6 +1180,54 @@ function formatPreset(value: number): string {
     }
   }
 
+  function getStepControls(panel) {
+    return Array.from(panel?.querySelectorAll('input, select, textarea') || []).filter((control) => {
+      if (control.disabled) return false;
+      if (control.type === 'hidden') return false;
+      return true;
+    });
+  }
+
+  function validateDonationPanel(panel) {
+    const controls = getStepControls(panel);
+    for (const control of controls) {
+      if (typeof control.checkValidity !== 'function') continue;
+      if (control.checkValidity()) continue;
+      const details = control.closest('details');
+      if (details) details.open = true;
+      control.reportValidity?.();
+      return false;
+    }
+    return true;
+  }
+
+  function setDonationStep(form, step, shouldFocus = true) {
+    const targetStep = String(step);
+    form.querySelectorAll('[data-donation-step]').forEach((panel) => {
+      const isActive = panel.getAttribute('data-donation-step') === targetStep;
+      panel.hidden = !isActive;
+      panel.classList.toggle('is-active', isActive);
+    });
+    form.querySelectorAll('[data-step-indicator]').forEach((item) => {
+      const isActive = item.getAttribute('data-step-indicator') === targetStep;
+      item.classList.toggle('is-active', isActive);
+      if (isActive) {
+        item.setAttribute('aria-current', 'step');
+      } else {
+        item.removeAttribute('aria-current');
+      }
+    });
+    form.dataset.currentStep = targetStep;
+
+    if (!shouldFocus) return;
+    form.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    requestAnimationFrame(() => {
+      const activePanel = form.querySelector(`[data-donation-step="${targetStep}"]`);
+      const focusTarget = activePanel?.querySelector('input:not([type="hidden"]), select, button, textarea');
+      focusTarget?.focus?.({ preventScroll: true });
+    });
+  }
+
   let portalProfileCache = null;
   prefillFromPortalProfile().then((profile) => {
     portalProfileCache = profile;
@@ -1084,6 +1236,17 @@ function formatPreset(value: number): string {
   donationForms.forEach((form) => {
     ensureVirtualChurch(form);
     syncFrequency(form);
+    setDonationStep(form, 1, false);
+
+    form.querySelector('[data-step-next]')?.addEventListener('click', () => {
+      const firstStep = form.querySelector('[data-donation-step="1"]');
+      if (!validateDonationPanel(firstStep)) return;
+      setDonationStep(form, 2);
+    });
+
+    form.querySelector('[data-step-back]')?.addEventListener('click', () => {
+      setDonationStep(form, 1);
+    });
 
     form.querySelectorAll('[data-recurrence-radio]').forEach((radio) => {
       radio.addEventListener('change', () => syncFrequency(form));
@@ -1102,6 +1265,17 @@ function formatPreset(value: number): string {
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       ensureVirtualChurch(form);
+
+      const firstStep = form.querySelector('[data-donation-step="1"]');
+      const secondStep = form.querySelector('[data-donation-step="2"]');
+      if (firstStep && !validateDonationPanel(firstStep)) {
+        setDonationStep(form, 1);
+        return;
+      }
+      if (secondStep && !validateDonationPanel(secondStep)) {
+        setDonationStep(form, 2);
+        return;
+      }
 
       const status = form.querySelector('[data-donation-status]');
       const submit = form.querySelector('button[type="submit"]');
