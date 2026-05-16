@@ -9,10 +9,10 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
-  CUMBRE_LODGING_CLOSED_MESSAGE,
   buildPaymentReference,
   type PackageType,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import {
   buildInstallmentSchedule,
   getInstallmentDeadline,
@@ -1177,8 +1177,12 @@ export const PUT: APIRoute = async ({ request }) => {
   if (!participants.length) {
     return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
   }
-  if (participants.some((participant) => participant.safe.packageType === 'lodging' && !participant.preservesExistingLodging)) {
-    return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), { status: 409 });
+  const lodgingCapacity = await checkLodgingCapacity({
+    participants: participants.map((participant) => participant.safe),
+    currentBookingLodgingCount: existingLodgingParticipantIds.size,
+  });
+  if (!lodgingCapacity.ok) {
+    return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), { status: 409 });
   }
 
   let countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);

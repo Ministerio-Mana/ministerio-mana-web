@@ -9,11 +9,10 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
-  hasUnavailableLodging,
-  CUMBRE_LODGING_CLOSED_MESSAGE,
   generateAccessToken,
   hashToken,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { resolveBaseUrl } from '@lib/url';
@@ -188,13 +187,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
-    if (hasUnavailableLodging(safeParticipants)) {
-      return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), {
-        status: 409,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-
     const totalAmount = calculateTotals(currency, safeParticipants);
     const threshold = depositThreshold(totalAmount);
     const rawIdempotencyKey = buildIdempotencyKey({
@@ -204,6 +196,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const idempotencyKey = rawIdempotencyKey && isSafeTokenCandidate(rawIdempotencyKey)
       ? rawIdempotencyKey
       : null;
+
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
 
     if (idempotencyKey) {
       const existing = await findIdempotentBooking(idempotencyKey);
@@ -224,16 +223,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       }
     }
 
-    const token = idempotencyKey
-      ? { token: idempotencyKey, hash: hashToken(idempotencyKey) }
-      : generateAccessToken();
-
-    if (!supabaseAdmin) {
-      return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
-        status: 500,
+    const lodgingCapacity = await checkLodgingCapacity({ participants: safeParticipants });
+    if (!lodgingCapacity.ok) {
+      return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }
+
+    const token = idempotencyKey
+      ? { token: idempotencyKey, hash: hashToken(idempotencyKey) }
+      : generateAccessToken();
 
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('cumbre_bookings')
@@ -315,6 +315,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       await cleanupCumbreBooking(booking.id);
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar participantes' }), {
         status: 500,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const writtenCapacity = await checkWrittenLodgingCapacity(booking.id);
+    if (!writtenCapacity.ok) {
+      await cleanupCumbreBooking(booking.id);
+      return new Response(JSON.stringify({ ok: false, error: writtenCapacity.message }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }

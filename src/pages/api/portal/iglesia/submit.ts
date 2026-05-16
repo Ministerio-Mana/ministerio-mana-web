@@ -8,12 +8,11 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
-  hasUnavailableLodging,
-  CUMBRE_LODGING_CLOSED_MESSAGE,
   buildPaymentReference,
   generateAccessToken,
   type PackageType,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
@@ -184,7 +183,10 @@ export const POST: APIRoute = async ({ request }) => {
     const parsed = Array.isArray(payload.participants) ? payload.participants : [];
     const participants = parsed
       .map((entry: any) => {
-        const packageType = packageTypeFromInput(entry?.age, entry?.lodging);
+        const packageType = packageTypeFromInput(
+          entry?.age,
+          entry?.packageType ?? entry?.package_type ?? entry?.lodging,
+        );
         return {
           safe: sanitizeParticipant({
             fullName: entry?.fullName ?? '',
@@ -202,13 +204,6 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
-    if (hasUnavailableLodging(participants.map((p: any) => p.safe))) {
-      return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), {
-        status: 409,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-
     const currency = currencyForGroup(countryGroup);
     const totalAmount = calculateTotals(currency, participants.map((p: any) => p.safe));
     const threshold = depositThreshold(totalAmount);
@@ -287,6 +282,16 @@ export const POST: APIRoute = async ({ request }) => {
         idempotent: true,
       }), {
         status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const lodgingCapacity = await checkLodgingCapacity({
+      participants: participants.map((p: any) => p.safe),
+    });
+    if (!lodgingCapacity.ok) {
+      return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }
@@ -428,6 +433,15 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (participantError) {
       throw new Error('No se pudo guardar participantes');
+    }
+
+    const writtenCapacity = await checkWrittenLodgingCapacity(booking.id);
+    if (!writtenCapacity.ok) {
+      await cleanupCumbreBooking(booking.id);
+      return new Response(JSON.stringify({ ok: false, error: writtenCapacity.message }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' },
+      });
     }
 
     try {

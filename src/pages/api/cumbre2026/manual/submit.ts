@@ -7,12 +7,11 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
-  hasUnavailableLodging,
-  CUMBRE_LODGING_CLOSED_MESSAGE,
   buildPaymentReference,
   generateAccessToken,
   type PackageType,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
@@ -199,13 +198,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
-    if (hasUnavailableLodging(participants)) {
-      return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), {
-        status: 409,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-
     if (currencyOverride) {
       countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
     }
@@ -314,6 +306,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
+    const lodgingCapacity = await checkLodgingCapacity({ participants });
+    if (!lodgingCapacity.ok) {
+      return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const tokenPair = generateAccessToken();
 
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -379,6 +379,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     if (participantError) {
       throw new Error('No se pudo guardar participantes');
+    }
+
+    const writtenCapacity = await checkWrittenLodgingCapacity(booking.id);
+    if (!writtenCapacity.ok) {
+      await cleanupCumbreBooking(booking.id);
+      return new Response(JSON.stringify({ ok: false, error: writtenCapacity.message }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' },
+      });
     }
 
     let planId: string | null = null;

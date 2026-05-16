@@ -1688,7 +1688,7 @@ function buildParticipantRow(data = {}) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <select data-field="lodging" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
         <option value="no">Sin alojamiento</option>
-        <option value="yes" disabled>Con alojamiento (agotado)</option>
+        <option value="yes">Con alojamiento</option>
       </select>
       <select data-field="menuType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
         <option value="">Tipo de menú</option>
@@ -1717,6 +1717,12 @@ function buildParticipantRow(data = {}) {
       </div>
     </div>
   `;
+  const lodgingSelect = row.querySelector('[data-field="lodging"]');
+  if (lodgingSelect) {
+    lodgingSelect.value = data.packageType === 'lodging' || data.package_type === 'lodging' || data.lodging === 'yes'
+      ? 'yes'
+      : 'no';
+  }
   const removeBtn = row.querySelector('[data-action="remove"]');
   removeBtn.addEventListener('click', () => {
     row.remove();
@@ -1734,8 +1740,8 @@ function collectParticipants() {
     participants.push({
       fullName: getValue('fullName'),
       age: ageValue,
-      lodging: 'no',
-      packageType: 'no_lodging',
+      lodging: getValue('lodging') === 'yes' ? 'yes' : 'no',
+      packageType: getValue('lodging') === 'yes' && ageValue > 10 ? 'lodging' : 'no_lodging',
       menuType: getValue('menuType'),
       relationship: getValue('relationship'),
       documentType: getValue('documentType'),

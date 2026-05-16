@@ -5,7 +5,9 @@ export type CountryGroup = 'CO' | 'INT';
 export type Currency = 'COP' | 'USD';
 export type PackageType = 'lodging' | 'no_lodging' | 'child_0_7' | 'child_7_13';
 
-export const CUMBRE_LODGING_AVAILABLE = false;
+export const CUMBRE_LODGING_CAPACITY = 195;
+export const CUMBRE_LODGING_LIMITED_MESSAGE =
+  'Hay cupos limitados con hospedaje dentro del evento. Cuando se agoten, la inscripcion seguira disponible sin alojamiento.';
 export const CUMBRE_LODGING_CLOSED_MESSAGE =
   'Los cupos con hospedaje ya estan agotados. La inscripcion sigue disponible sin alojamiento.';
 
@@ -80,8 +82,21 @@ export function calculateTotals(currency: Currency, participants: SanitizedParti
   return participants.reduce((sum, participant) => sum + getPrice(currency, participant.packageType), 0);
 }
 
-export function hasUnavailableLodging(participants: Array<{ packageType?: string | null }>): boolean {
-  return !CUMBRE_LODGING_AVAILABLE && participants.some((participant) => participant.packageType === 'lodging');
+export function countRequestedLodging(participants: Array<{ packageType?: string | null; package_type?: string | null }>): number {
+  return participants.filter((participant) => (
+    participant.packageType === 'lodging' || participant.package_type === 'lodging'
+  )).length;
+}
+
+export function getRemainingLodgingSlots(usedSlots: number): number {
+  return Math.max(CUMBRE_LODGING_CAPACITY - Math.max(usedSlots, 0), 0);
+}
+
+export function buildLodgingCapacityMessage(remainingSlots: number): string {
+  if (remainingSlots > 0) {
+    return `Solo quedan ${remainingSlots} cupo${remainingSlots === 1 ? '' : 's'} con hospedaje. Ajusta la cantidad o selecciona sin alojamiento.`;
+  }
+  return CUMBRE_LODGING_CLOSED_MESSAGE;
 }
 
 export function depositThreshold(totalAmount: number): number {

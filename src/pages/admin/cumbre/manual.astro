@@ -86,7 +86,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
                 <div>
                   <h3 class="text-sm font-bold text-[#293C74]">Participantes</h3>
-                  <p class="mt-1 text-xs text-slate-500">Hospedaje agotado: las nuevas reservas manuales se crean sin alojamiento.</p>
+                  <p class="mt-1 text-xs text-slate-500">Hospedaje habilitado con cupos limitados; el servidor bloquea nuevas reservas al llegar al límite.</p>
                 </div>
                 <button type="button" id="add-participant" class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90 transition">Agregar participante</button>
               </div>
@@ -95,6 +95,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                 <input id="p-age" type="number" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Edad" />
                 <select id="p-lodging" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm">
                   <option value="no">Sin alojamiento</option>
+                  <option value="yes">Con alojamiento</option>
                 </select>
                 <input id="p-rel" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Relación" />
               </div>
@@ -264,7 +265,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     const getPackageType = (age, lodging) => {
       if (age <= 4) return 'child_0_7';
       if (age <= 10) return 'child_7_13';
-      return 'no_lodging';
+      return lodging === 'yes' ? 'lodging' : 'no_lodging';
     };
 
     const getSelectedCurrency = () => normalizeCurrency(currencySelect?.value);
@@ -377,16 +378,17 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     document.getElementById('add-participant')?.addEventListener('click', () => {
       const name = document.getElementById('p-name').value.trim();
       const age = Number(document.getElementById('p-age').value || 0);
-      const lodging = 'no';
+      const lodging = document.getElementById('p-lodging').value;
       const relationship = document.getElementById('p-rel').value.trim();
       if (!name) return;
       participants.push({ fullName: name, age, lodging, relationship });
       input.value = JSON.stringify(participants);
       list.innerHTML = participants
-        .map((p) => `<li>${p.fullName} • ${p.age || '-'} • Sin alojamiento</li>`)
+        .map((p) => `<li>${p.fullName} • ${p.age || '-'} • ${getPackageType(p.age || 0, p.lodging) === 'lodging' ? 'Con alojamiento' : 'Sin alojamiento'}</li>`)
         .join('');
       document.getElementById('p-name').value = '';
       document.getElementById('p-age').value = '';
+      document.getElementById('p-lodging').value = 'no';
       document.getElementById('p-rel').value = '';
       paymentAmountTouched = false;
       syncPaymentAmount(true);

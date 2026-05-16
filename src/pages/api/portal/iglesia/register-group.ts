@@ -8,12 +8,11 @@ import {
     sanitizeParticipant,
     calculateTotals,
     depositThreshold,
-    hasUnavailableLodging,
-    CUMBRE_LODGING_CLOSED_MESSAGE,
     buildPaymentReference,
     generateAccessToken,
     type PackageType,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { applyManualPaymentToPlan, countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
@@ -389,10 +388,6 @@ export const POST: APIRoute = async ({ request }) => {
     if (!participants.length) {
         return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
     }
-    if (hasUnavailableLodging(participants.map((p) => p.safe))) {
-        return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), { status: 409 });
-    }
-
     let countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);
     if (currencyOverride) {
         countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
@@ -489,6 +484,13 @@ export const POST: APIRoute = async ({ request }) => {
         );
     }
 
+    const lodgingCapacity = await checkLodgingCapacity({
+        participants: participants.map((p) => p.safe),
+    });
+    if (!lodgingCapacity.ok) {
+        return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), { status: 409 });
+    }
+
     const tokenPair = generateAccessToken();
 
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -561,6 +563,12 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (participantError) {
             throw new Error('No se pudo guardar participantes');
+        }
+
+        const writtenCapacity = await checkWrittenLodgingCapacity(booking.id);
+        if (!writtenCapacity.ok) {
+            await cleanupCumbreBooking(booking.id);
+            return new Response(JSON.stringify({ ok: false, error: writtenCapacity.message }), { status: 409 });
         }
 
         let planId: string | null = null;
