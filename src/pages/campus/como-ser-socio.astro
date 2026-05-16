@@ -10,171 +10,306 @@ const whatsappText = encodeURIComponent(
   `Hola, quiero compartirte el paso a paso para ser socio de la Gran Comisión de Campus Maná: ${tutorialUrl}`
 );
 
-const singleSteps = [
+const checklistItems = [
+  'Nombre completo.',
+  'Correo que sí revise.',
+  'Teléfono o WhatsApp.',
+  'Medio de pago listo.',
+  'Cinco minutos tranquilos.',
+  'Cuenta para siembra mensual.',
+];
+
+const qrGuideItems = [
   {
-    title: 'Entra a la página',
-    text: 'Abre el enlace ministeriomana.org/campus. Si estás en el celular, espera unos segundos hasta que carguen las fotos. Toca “Apoyar ahora”.',
-    image: '/images/campus/tutorial/01-abrir-campus.jpg',
-    caption: 'Así se ve el inicio de Campus Maná en celular.',
-    marker: { x: 50, y: 76, label: 'Toca aquí' },
+    title: 'Si llegó por QR',
+    text: 'No tiene que buscar el equipo. El QR ya lo llevó directo al misionero de la camiseta.',
   },
   {
-    title: 'Busca “Nuestro equipo”',
-    text: 'Baja en la página hasta ver las tarjetas de los misioneros Campus.',
+    title: 'Empieza desde la decisión',
+    text: 'Revisa si será mensual o única vez, escribe la donación y toca “Donar Ahora”.',
+  },
+  {
+    title: 'Si quiere sumar más',
+    text: 'Puede bajar a la opción de varios misioneros y escoger otros nombres antes de pagar.',
+  },
+];
+
+const singleSteps = [
+  {
+    title: 'Abre Campus Maná',
+    text: 'Entra a ministeriomana.org/campus. En celular, espera unos segundos a que carguen las fotos y toca “Apoyar ahora”.',
+    image: '/images/campus/tutorial/01-abrir-campus.jpg',
+    caption: 'Inicio de Campus Maná.',
+    marker: { x: 50, y: 76, label: 'Apoyar' },
+  },
+  {
+    title: 'Baja hasta el equipo',
+    text: 'Busca el título “Nuestro equipo”. Ahí aparecen las tarjetas de los misioneros Campus.',
     image: '/images/campus/tutorial/02-buscar-equipo.jpg',
-    caption: 'Busca el título “Nuestro equipo”.',
+    caption: 'La sección del equipo está debajo de la misión.',
     marker: { x: 52, y: 23, label: 'Equipo' },
   },
   {
-    title: 'Elige a quién apoyar',
-    text: 'En la tarjeta del misionero, revisa el nombre y ubica el formulario que dice “Tu apoyo ayuda a la extensión del Reino”.',
+    title: 'Escoge un misionero',
+    text: 'Revisa el nombre del misionero y ubica su formulario. Cada tarjeta tiene su propio botón para donar.',
     image: '/images/campus/tutorial/03-elegir-misionero.jpg',
     caption: 'Cada misionero tiene su propia tarjeta.',
-    marker: { x: 30, y: 56, label: 'Elige' },
+    marker: { x: 30, y: 56, label: 'Escoge' },
   },
   {
-    title: 'Marca “Mensual”',
-    text: 'Para ser socio, deja seleccionada la opción Mensual. Si la persona solo quiere sembrar una vez, puede tocar “Única vez”.',
+    title: 'Deja “Mensual”',
+    text: 'Para ser socio, deja marcada la opción “Mensual”. Si la persona solo quiere sembrar una vez, toca “Única vez”.',
     image: '/images/campus/tutorial/04-marcar-mensual.jpg',
-    caption: 'La opción Mensual es la que convierte el apoyo en recurrente.',
+    caption: 'Mensual crea una siembra recurrente.',
     marker: { x: 34, y: 50, label: 'Mensual' },
   },
   {
     title: 'Escribe la donación',
-    text: 'Lo más claro es escribir el valor que la persona quiere sembrar. La página muestra pesos colombianos o dólares automáticamente. Si usa un monto rápido, el campo de escritura se oculta; si quiere cambiar, toca “Cambiar monto”.',
+    text: 'Escribe el valor que la persona quiere sembrar. El sitio muestra pesos colombianos o dólares automáticamente. Si toca un monto rápido, se oculta el campo escrito; para volver, toca “Cambiar monto”.',
     image: '/images/campus/tutorial/05-escoger-monto.jpg',
-    caption: 'Cuando escribe la donación, los montos rápidos desaparecen para evitar confusión.',
+    caption: 'Al escribir, los montos rápidos desaparecen para no confundir.',
     marker: { x: 50, y: 42, label: 'Monto' },
   },
   {
     title: 'Toca “Donar Ahora”',
-    text: 'Si eligió apoyo mensual, el sitio pedirá iniciar sesión o crear una cuenta. Esto es necesario para que después la persona pueda pausar, reactivar o cancelar su siembra.',
-    image: '/images/campus/tutorial/06-tocar-donar.jpg',
-    caption: 'Para la opción mensual, la cuenta es necesaria.',
-    marker: { x: 50, y: 62, label: 'Cuenta' },
+    text: 'Cuando el botón esté activo, tócalo una sola vez. No hay que tocar varias veces ni cambiar de pantalla.',
+    image: '/images/campus/tutorial/06-donar-ahora.jpg',
+    caption: 'El botón se activa cuando ya hay un monto válido.',
+    marker: { x: 50, y: 68, label: 'Donar' },
+  },
+  {
+    title: 'Inicia sesión o crea cuenta',
+    text: 'Si la siembra es mensual, el sitio pide cuenta. Eso permite que la persona pueda pausar, reactivar o cancelar después desde el portal.',
+    image: '/images/campus/tutorial/07-cuenta-requerida.jpg',
+    caption: 'La cuenta es necesaria para siembras mensuales.',
+    marker: { x: 50, y: 63, label: 'Cuenta' },
   },
   {
     title: 'Completa datos si aparecen',
-    text: 'En donación única, o cuando falten datos del perfil, completa nombre, correo, teléfono y ciudad. En Colombia, Wompi pide tipo y número de identificación.',
-    image: '/images/campus/tutorial/07-sembrar-ahora.jpg',
-    caption: 'La identificación es requerida cuando el pago se procesa en Colombia por Wompi.',
+    text: 'Si el sitio pide datos, llena nombre, correo, teléfono y ciudad. En Colombia, Wompi también pide tipo y número de identificación.',
+    image: '/images/campus/tutorial/08-datos-pago.jpg',
+    caption: 'La identificación aplica para pagos procesados en Colombia.',
     marker: { x: 50, y: 64, label: 'Datos' },
   },
   {
-    title: 'Termina el pago',
-    text: 'Completa el pago seguro. La página acomoda la moneda automáticamente según el país. Guarda el comprobante.',
+    title: 'Finaliza el pago',
+    text: 'Completa el pago seguro. Cuando aparezca la confirmación, guarda el comprobante o toma una captura.',
     image: '/images/campus/tutorial/08-pago-seguro.jpg',
-    caption: 'Al finalizar, debe aparecer una confirmación del proceso.',
-    marker: { x: 50, y: 37, label: 'Confirmación' },
+    caption: 'La pantalla de gracias confirma que el proceso quedó enviado.',
+    marker: { x: 50, y: 37, label: 'Listo' },
   },
 ];
 
-const manySteps = [
-  'Baja hasta la sección “¿Quieres sembrar en varios misioneros?”.',
-  'Escoge cuántos misioneros quieres apoyar: 2, 3, 4, 5 o todos.',
-  'Selecciona los nombres o usa “Al azar”. Luego toca “Continuar”.',
-  'Elige mensualidad. Luego decide si quieres escribir un presupuesto total, usar el mismo monto rápido para cada misionero o ajustar cada monto manualmente.',
-  'Si escribes un presupuesto total, el sitio lo divide entre los misioneros y te deja ajustar la siembra de cada uno.',
-  'Revisa el resumen. Si es mensual, inicia sesión o crea cuenta; si el pago entra por Wompi, completa identificación cuando el sitio la pida.',
+const multiSteps = [
+  {
+    title: 'Escoge cuántos misioneros',
+    text: 'Baja a “¿Quieres sembrar en varios misioneros?”. Elige 2, 3, 4, 5 o todos.',
+    image: '/images/campus/tutorial/09-varios-cantidad.jpg',
+    caption: 'Primero se elige la cantidad de misioneros.',
+    marker: { x: 50, y: 64, label: 'Cantidad' },
+  },
+  {
+    title: 'Selecciona nombres o “Al azar”',
+    text: 'Toca los misioneros que la persona quiera apoyar. Si no sabe a quién escoger, puede usar “Al azar”.',
+    image: '/images/campus/tutorial/10-varios-seleccionar.jpg',
+    caption: 'Los seleccionados quedan marcados con un círculo verde.',
+    marker: { x: 87, y: 22, label: 'Marcado' },
+  },
+  {
+    title: 'Opción 1: presupuesto total',
+    text: 'Si la persona dice “tengo este total para Campus”, escribe ese presupuesto. El sitio lo divide entre los misioneros; si bajas a uno, lo que sobra se reparte entre los demás.',
+    image: '/images/campus/tutorial/11-varios-presupuesto.jpg',
+    caption: 'El presupuesto total se reparte automáticamente.',
+    marker: { x: 50, y: 42, label: 'Total' },
+  },
+  {
+    title: 'Opción 2: mismo monto rápido',
+    text: 'Si quiere dar el mismo valor a cada misionero, toca un monto rápido. Luego puede ajustar cualquier misionero si quiere cambiar algo.',
+    image: '/images/campus/tutorial/12-varios-monto-rapido.jpg',
+    caption: 'El mismo monto queda aplicado a todos los seleccionados.',
+    marker: { x: 50, y: 18, label: 'Igual' },
+  },
+  {
+    title: 'Opción 3: monto manual',
+    text: 'Si quiere dar valores diferentes, escribe directamente cuánto sembrar en cada misionero. El total se calcula abajo.',
+    image: '/images/campus/tutorial/13-varios-manual.jpg',
+    caption: 'Cada misionero puede tener un monto diferente.',
+    marker: { x: 74, y: 36, label: 'Ajusta' },
+  },
+  {
+    title: 'Revisa el resumen',
+    text: 'Antes de pagar, revisa nombres, montos y total. Si es mensual, el sitio pedirá iniciar sesión o crear cuenta.',
+    image: '/images/campus/tutorial/14-varios-resumen.jpg',
+    caption: 'El resumen muestra cuánto va para cada misionero.',
+    marker: { x: 50, y: 56, label: 'Resumen' },
+  },
 ];
 
-const helpItems = [
-  'Nombre completo de la persona.',
-  'Correo electrónico que sí pueda revisar.',
-  'Teléfono o WhatsApp.',
-  'Tarjeta, cuenta o medio de pago listo.',
-  'Cinco minutos tranquilos para completar el proceso.',
-  'No hay que cambiar la moneda: el sitio la ajusta automáticamente.',
-  'Para una siembra mensual, la persona debe iniciar sesión o crear cuenta.',
-  'Si viene por un QR de la Cumbre, puede iniciar directo en un misionero; desde ahí sigue la misma lógica de monto y cuenta.',
+const coachLines = [
+  'Primero escogemos a quién quieres apoyar.',
+  'Si quieres que sea mensual, dejamos “Mensual”.',
+  'Ahora escribe cuánto quieres sembrar. Si prefieres un botón rápido, lo tocamos.',
+  'Si el sitio pide cuenta, la creamos o iniciamos sesión para que después puedas manejar tu siembra.',
+  'Si apoyas a varios, puedes repartir un presupuesto total, poner el mismo monto a todos o escribir un valor diferente para cada uno.',
+  'Antes de pagar, revisamos nombres, montos y total.',
+];
+
+const supportItems = [
+  {
+    title: 'El botón no se activa',
+    text: 'Revisa que el monto esté escrito o seleccionado y que sea mayor al mínimo.',
+  },
+  {
+    title: 'Desaparece una opción',
+    text: 'Es normal. El sitio oculta opciones para que la persona no haga dos cosas al tiempo. Toca “Cambiar monto” para volver.',
+  },
+  {
+    title: 'Pide identificación',
+    text: 'En Colombia, Wompi pide tipo y número de identificación para procesar el pago.',
+  },
+  {
+    title: 'El pago no carga',
+    text: 'Espera unos segundos, revisa conexión y toca el botón una sola vez.',
+  },
 ];
 ---
 
 <BaseLayout {title} {description} {image}>
-  <section class="relative overflow-hidden bg-[#001B3A] text-white">
+  <style is:global>
+    @font-face {
+      font-family: 'Intro';
+      src: url('/fonts/intro/Intro-Black.woff2') format('woff2');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Intro';
+      src: url('/fonts/intro/Intro-Regular.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Summer Loving';
+      src: url('/fonts/SUMMER%20FONT/Summer%20Loving%20Regular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    .font-intro { font-family: 'Intro', sans-serif; font-weight: 900; }
+    .font-intro-reg { font-family: 'Intro', sans-serif; font-weight: 400; }
+    .font-summer { font-family: 'Summer Loving', cursive; }
+  </style>
+
+  <section class="tutorial-hero relative overflow-hidden bg-[#001B3A] text-white">
     <div class="absolute inset-0">
       <img
         src={image}
         alt="Equipo de misioneros Campus Maná"
-        class="h-full w-full object-cover opacity-28"
+        class="h-full w-full object-cover opacity-24"
         loading="eager"
       />
-      <div class="absolute inset-0 bg-[#001B3A]/80"></div>
+      <div class="absolute inset-0 bg-[#001B3A]/82"></div>
     </div>
 
-    <div class="container-tight relative z-10 grid min-h-[72vh] items-center gap-10 pb-16 pt-28 md:grid-cols-[1.08fr_0.92fr] md:py-20">
-      <div>
-        <p class="mb-4 inline-flex rounded-md bg-[#FACC15] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#001B3A]">
-          Tutorial sencillo
+    <div class="container-tight relative z-10 flex min-h-[78vh] items-center px-4 py-24">
+      <div class="max-w-4xl">
+        <p class="inline-flex border-organic bg-[#FACC15] px-4 py-2 font-intro text-xs uppercase tracking-[0.16em] text-[#001B3A]">
+          Tutorial para acompañar
         </p>
-        <h1 class="max-w-3xl text-3xl font-black leading-tight text-white sm:text-4xl md:text-6xl">
-          Cómo ser socio de la Gran Comisión
+        <span class="font-summer mt-8 block -rotate-2 text-[#2DD4BF] text-7xl md:text-8xl">
+          Paso a paso
+        </span>
+        <h1 class="font-intro -mt-5 max-w-4xl text-5xl uppercase leading-none text-white md:text-7xl">
+          Socios de la Gran Comisión
         </h1>
-        <p class="mt-5 max-w-2xl text-lg leading-relaxed text-white/80 md:text-xl">
-          Una guía corta para acompañar a una persona paso a paso mientras apoya mensualmente a los misioneros de Campus Maná.
+        <p class="mt-6 max-w-2xl font-intro-reg text-lg leading-relaxed text-white/82 md:text-xl">
+          Una guía clara para ayudar a una persona a sembrar en Campus Maná sin enredarse con botones, cuentas o montos.
         </p>
         <div class="mt-8 flex flex-wrap gap-3">
-          <a href="#paso-a-paso" class="inline-flex items-center justify-center rounded-md bg-[#2DD4BF] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#001B3A] transition hover:-translate-y-0.5 hover:bg-white">
-            Ver pasos
+          <a href="#un-misionero" class="tutorial-action bg-[#2DD4BF] text-[#001B3A]">
+            Ruta normal
           </a>
-          <a href={campusPath} class="inline-flex items-center justify-center rounded-md border border-white/70 bg-white/10 px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-white hover:text-[#001B3A]">
+          <a href="#varios-misioneros" class="tutorial-action border border-white/70 bg-white/10 text-white">
+            Varios misioneros
+          </a>
+          <a href="#qr-cumbre" class="tutorial-action border border-white/30 bg-[#001B3A] text-white">
+            QR Cumbre
+          </a>
+          <a href={campusPath} class="tutorial-action border border-white/30 bg-[#001B3A] text-white">
             Ir a Campus
           </a>
         </div>
       </div>
-
-      <aside class="rounded-lg border border-white/20 bg-white/95 p-6 text-[#001B3A] shadow-2xl shadow-black/20">
-        <h2 class="text-2xl font-black text-[#001B3A]">Antes de comenzar</h2>
-        <p class="mt-2 text-sm text-[#001B3A]/70">
-          Ten esto a mano para que el proceso sea rápido:
-        </p>
-        <ul class="mt-5 space-y-3">
-          {helpItems.map((item) => (
-            <li class="flex gap-3 text-sm font-semibold text-[#001B3A]/80">
-              <span class="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-[#2DD4BF] text-xs font-black text-[#001B3A]">✓</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </aside>
     </div>
   </section>
 
-  <section id="paso-a-paso" class="scroll-mt-24 bg-[#F3F0E6] py-16">
-    <div class="container-tight">
-      <div class="max-w-3xl">
-        <p class="section-title">Forma recomendada</p>
-        <h2 class="mt-4 text-3xl font-black text-[#001B3A] md:text-4xl">
-          Para ser socio mensual de un misionero
-        </h2>
-        <p class="mt-4 text-lg text-[#001B3A]/70">
-          Esta es la explicación más fácil para una persona que no usa mucho internet. Acompáñala sin afán y revisa cada pantalla antes de tocar el siguiente botón.
-        </p>
-        <div class="mt-6 rounded-lg border border-[#001B3A]/10 bg-white p-4 shadow-sm">
-          <p class="text-sm font-semibold leading-relaxed text-[#001B3A]/75">
-            En la Cumbre, si alguien escanea el QR de un misionero, puede entrar directo a esa página. No hay que explicarle algo distinto: desde ahí sigue la misma lógica de mensualidad, monto, cuenta y pago seguro.
+  <section class="bg-[#F3F0E6] py-10">
+    <div class="container-tight px-4">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {checklistItems.map((item) => (
+          <div class="preflight-item">
+            <span class="preflight-check">✓</span>
+            <span>{item}</span>
+          </div>
+        ))}
+      </div>
+      <p class="mt-5 max-w-3xl font-intro-reg text-sm leading-relaxed text-[#001B3A]/70">
+        No expliques todo de una sola vez. Primero confirma a quién quiere apoyar, luego el monto, después la cuenta si es mensual y por último el pago.
+      </p>
+    </div>
+  </section>
+
+  <section id="qr-cumbre" class="qr-band scroll-mt-24 bg-[#F3F0E6] pb-16">
+    <div class="container-tight px-4">
+      <div class="qr-guide">
+        <div>
+          <p class="section-eyebrow">Ruta rápida de Cumbre</p>
+          <h2>Cuando la persona escanea un QR</h2>
+          <p>
+            Esta parte no es otro tutorial largo. Es una guía corta para la campaña de las camisetas: el QR ya abre un misionero específico, así que la persona puede seguir desde el monto y el botón de donar.
           </p>
         </div>
+        <div class="qr-guide-list">
+          {qrGuideItems.map((item, index) => (
+            <article class="qr-guide-item">
+              <span>{index + 1}</span>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="un-misionero" class="scroll-mt-24 bg-white py-16 md:py-24">
+    <div class="container-tight px-4">
+      <div class="tutorial-section-heading">
+        <p class="section-eyebrow">Ruta normal desde Campus</p>
+        <h2>Para apoyar a un misionero</h2>
+        <p>
+          Esta es la ruta más simple cuando la persona entra a la página de Campus y quiere apoyar a un misionero específico. Lee cada pantalla antes de avanzar.
+        </p>
       </div>
 
-      <div class="mt-10 grid gap-4 md:grid-cols-2">
+      <div class="tutorial-steps">
         {singleSteps.map((step, index) => (
-          <article class="rounded-lg border border-[#001B3A]/10 bg-white p-4 shadow-sm md:p-5">
-            <div class="flex items-start gap-4">
-              <span class="flex h-10 w-10 flex-none items-center justify-center rounded-md bg-[#001B3A] text-base font-black text-white">
-                {index + 1}
-              </span>
-              <div>
-                <h3 class="text-xl font-black text-[#001B3A]">{step.title}</h3>
-                <p class="mt-2 text-base text-[#001B3A]/70">{step.text}</p>
-              </div>
+          <article class="tutorial-card">
+            <div class="tutorial-copy">
+              <span class="step-badge">Paso {index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+              <small>{step.caption}</small>
             </div>
-            <figure class="mt-5 rounded-lg border border-[#001B3A]/10 bg-[#F3F0E6] p-2 md:p-3">
-              <div class="tutorial-shot mx-auto w-full max-w-[340px]">
+            <figure class="tutorial-shot-frame">
+              <div class="tutorial-shot">
                 <img
                   src={step.image}
                   alt={`Pantallazo del paso ${index + 1}: ${step.title}`}
-                  class="w-full rounded-md object-contain shadow-sm"
                   loading="eager"
                 />
                 <span class="tap-marker" style={`--marker-x: ${step.marker.x}%; --marker-y: ${step.marker.y}%;`}>
@@ -184,108 +319,420 @@ const helpItems = [
                   <span class="tap-marker__label">{step.marker.label}</span>
                 </span>
               </div>
-              <figcaption class="mt-3 text-center text-xs font-semibold uppercase tracking-[0.08em] text-[#001B3A]/60">
-                {step.caption}
-              </figcaption>
             </figure>
           </article>
         ))}
       </div>
+    </div>
+  </section>
 
+  <section id="varios-misioneros" class="scroll-mt-24 bg-[#001B3A] py-16 text-white md:py-24">
+    <div class="container-tight px-4">
+      <div class="tutorial-section-heading tutorial-section-heading--dark">
+        <p class="section-eyebrow section-eyebrow--teal">Ruta completa</p>
+        <h2>Para apoyar a varios misioneros</h2>
+        <p>
+          Aquí hay más libertad. La persona puede escoger nombres, usar “Al azar”, repartir un presupuesto total, dar el mismo monto a todos o ajustar montos diferentes.
+        </p>
+      </div>
+
+      <div class="tutorial-steps tutorial-steps--dark">
+        {multiSteps.map((step, index) => (
+          <article class="tutorial-card tutorial-card--dark">
+            <div class="tutorial-copy">
+              <span class="step-badge step-badge--yellow">Paso {index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+              <small>{step.caption}</small>
+            </div>
+            <figure class="tutorial-shot-frame tutorial-shot-frame--dark">
+              <div class="tutorial-shot">
+                <img
+                  src={step.image}
+                  alt={`Pantallazo de varios misioneros ${index + 1}: ${step.title}`}
+                  loading="eager"
+                />
+                <span class="tap-marker" style={`--marker-x: ${step.marker.x}%; --marker-y: ${step.marker.y}%;`}>
+                  <span class="tap-marker__target" aria-hidden="true">
+                    <span class="tap-marker__dot"></span>
+                  </span>
+                  <span class="tap-marker__label">{step.marker.label}</span>
+                </span>
+              </div>
+            </figure>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-[#F3F0E6] py-16 md:py-24">
+    <div class="container-tight px-4">
+      <div class="grid gap-8 lg:grid-cols-[0.88fr_1.12fr]">
+        <div class="tutorial-section-heading m-0">
+          <p class="section-eyebrow">Guion coquito</p>
+          <h2>Explícalo sin palabras raras</h2>
+          <p>
+            Úsalo como una conversación. La idea es que la persona sepa qué está pasando en cada paso.
+          </p>
+        </div>
+        <div class="script-list">
+          {coachLines.map((line, index) => (
+            <div class="script-line">
+              <span>{index + 1}</span>
+              <p>{line}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white py-16 md:py-24">
+    <div class="container-tight px-4">
+      <div class="tutorial-section-heading">
+        <p class="section-eyebrow">Si algo se ve diferente</p>
+        <h2>Ayudas rápidas</h2>
+      </div>
+      <div class="support-grid">
+        {supportItems.map((item) => (
+          <article class="support-card">
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </article>
+        ))}
+      </div>
       <div class="mt-10 flex flex-wrap gap-3">
-        <a href={`${campusPath}#misioneros`} class="inline-flex items-center justify-center rounded-md bg-[#001B3A] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5 hover:bg-[#2DD4BF] hover:text-[#001B3A]">
-          Empezar ahora
+        <a href={`${campusPath}#misioneros`} class="tutorial-action bg-[#001B3A] text-white">
+          Empezar en Campus
         </a>
-        <a href={`https://wa.me/?text=${whatsappText}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-md border border-[#001B3A]/20 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#001B3A] transition hover:-translate-y-0.5 hover:border-[#2DD4BF]">
+        <a href={`https://wa.me/?text=${whatsappText}`} target="_blank" rel="noopener noreferrer" class="tutorial-action border border-[#001B3A]/20 bg-[#F3F0E6] text-[#001B3A]">
           Compartir por WhatsApp
         </a>
       </div>
     </div>
   </section>
 
-  <section class="bg-white py-16">
-    <div class="container-tight grid gap-10 md:grid-cols-[0.9fr_1.1fr]">
-      <div>
-        <p class="section-title">También se puede</p>
-        <h2 class="mt-4 text-3xl font-black text-[#001B3A] md:text-4xl">
-          Apoyar a varios misioneros
-        </h2>
-        <p class="mt-4 text-lg text-[#001B3A]/70">
-          Úsalo cuando una persona quiera sembrar un monto por cada misionero Campus que seleccione.
-        </p>
-        <a href={`${campusPath}#multi-donation`} class="mt-7 inline-flex items-center justify-center rounded-md bg-[#2DD4BF] px-6 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#001B3A] transition hover:-translate-y-0.5 hover:bg-[#001B3A] hover:text-white">
-          Ir a varios misioneros
-        </a>
-      </div>
+  <script>
+    const getHeaderOffset = () => {
+      const header = document.querySelector('header');
+      return header ? header.getBoundingClientRect().height + 18 : 18;
+    };
 
-      <ol class="space-y-4">
-        {manySteps.map((item, index) => (
-          <li class="rounded-lg border border-[#001B3A]/10 bg-[#F3F0E6] p-5">
-            <div class="flex gap-4">
-              <span class="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-[#FACC15] text-sm font-black text-[#001B3A]">
-                {index + 1}
-              </span>
-              <p class="font-semibold text-[#001B3A]/80">{item}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  </section>
+    const moveToSection = (hash, behavior = 'smooth') => {
+      if (!hash || hash === '#') return;
+      const target = document.querySelector(hash);
+      if (!target) return;
+      const root = document.scrollingElement || document.documentElement;
+      const top = target.getBoundingClientRect().top + window.scrollY - getHeaderOffset();
 
-  <section class="bg-[#001B3A] py-16 text-white">
-    <div class="container-tight grid gap-8 md:grid-cols-2">
-      <div>
-        <p class="text-xs font-black uppercase tracking-[0.16em] text-[#2DD4BF]">Guion para explicarlo</p>
-        <h2 class="mt-4 text-3xl font-black text-white md:text-4xl">
-          Léelo así, sin palabras técnicas
-        </h2>
-      </div>
+      if (typeof root.scrollTo === 'function') {
+        root.scrollTo({ top, behavior });
+      } else {
+        root.scrollTop = top;
+      }
+    };
 
-      <div class="rounded-lg border border-white/15 bg-white/10 p-6">
-        <p class="text-lg leading-relaxed text-white/80">
-          “Vamos a abrir la página de Campus Maná. Primero escogemos el misionero que quieres apoyar. Como quieres ser socio, dejamos marcada la opción mensual. La página acomoda la moneda automáticamente; si estás en Colombia aparece en pesos y si estás fuera aparece en dólares. Escribimos tu donación. Si prefieres uno de los montos rápidos, lo tocamos y listo; si quieres cambiar, tocamos ‘Cambiar monto’. Como es mensual, entramos o creamos tu cuenta para que puedas pausar o reactivar después. Luego completamos los datos que falten y el pago seguro. Cuando termine, guardamos el comprobante.”
-        </p>
-      </div>
-    </div>
-  </section>
+    document.addEventListener('click', (event) => {
+      const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null;
+      const hash = link?.getAttribute('href');
+      if (!hash) return;
 
-  <section class="bg-[#F3F0E6] py-16">
-    <div class="container-tight">
-      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
-          <h3 class="text-xl font-black text-[#001B3A]">Si no aparece el botón</h3>
-          <p class="mt-3 text-[#001B3A]/70">
-            Revisa que haya un monto seleccionado o escrito. El botón se activa después de elegir el valor.
-          </p>
-        </article>
-        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
-          <h3 class="text-xl font-black text-[#001B3A]">Si desaparece una opción</h3>
-          <p class="mt-3 text-[#001B3A]/70">
-            Es normal. Al escribir una donación se ocultan los montos rápidos; al escoger un monto rápido se oculta el campo escrito. Para volver, toca “Cambiar monto”.
-          </p>
-        </article>
-        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
-          <h3 class="text-xl font-black text-[#001B3A]">Si sale un error</h3>
-          <p class="mt-3 text-[#001B3A]/70">
-            Verifica que el nombre esté completo y que el correo tenga arroba y punto.
-          </p>
-        </article>
-        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
-          <h3 class="text-xl font-black text-[#001B3A]">Si el pago no carga</h3>
-          <p class="mt-3 text-[#001B3A]/70">
-            Espera unos segundos, revisa la conexión y vuelve a tocar “Sembrar Ahora” solo una vez.
-          </p>
-        </article>
-      </div>
-    </div>
-  </section>
+      event.preventDefault();
+      history.pushState(null, '', hash);
+      moveToSection(hash);
+    });
+
+    const settleHash = () => {
+      if (!window.location.hash) return;
+      [0, 250, 900, 1800].forEach((delay) => {
+        window.setTimeout(() => {
+          requestAnimationFrame(() => moveToSection(window.location.hash, 'auto'));
+        }, delay);
+      });
+    };
+
+    settleHash();
+    window.addEventListener('load', settleHash);
+  </script>
 </BaseLayout>
 
 <style>
+  .border-organic,
+  .tutorial-action,
+  .preflight-item,
+  .qr-guide,
+  .qr-guide-item,
+  .tutorial-card,
+  .tutorial-shot-frame,
+  .support-card,
+  .script-line {
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  }
+
+  .tutorial-action {
+    align-items: center;
+    display: inline-flex;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 900;
+    justify-content: center;
+    letter-spacing: 0.12em;
+    min-height: 3.15rem;
+    padding: 0.9rem 1.25rem;
+    text-transform: uppercase;
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .tutorial-action:hover {
+    transform: translateY(-2px);
+  }
+
+  .preflight-item {
+    align-items: center;
+    background: #fff;
+    border: 2px solid rgba(0, 27, 58, 0.12);
+    color: #001B3A;
+    display: flex;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 900;
+    gap: 0.8rem;
+    min-height: 4rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .preflight-check {
+    align-items: center;
+    background: #2DD4BF;
+    border: 2px solid #001B3A;
+    border-radius: 999px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 1.85rem;
+    justify-content: center;
+    width: 1.85rem;
+  }
+
+  .qr-band {
+    margin-top: -1px;
+  }
+
+  .qr-guide {
+    background: #fff;
+    border: 2px solid #001B3A;
+    box-shadow: 7px 7px 0 #FACC15;
+    color: #001B3A;
+    display: grid;
+    gap: 1.5rem;
+    padding: 1.2rem;
+  }
+
+  .qr-guide h2 {
+    font-family: 'Intro', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .qr-guide > div > p:last-child {
+    color: rgba(0, 27, 58, 0.72);
+    font-family: 'Intro', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 400;
+    line-height: 1.65;
+    margin-top: 1rem;
+  }
+
+  .qr-guide-list {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .qr-guide-item {
+    align-items: start;
+    background: #F3F0E6;
+    border: 2px solid rgba(0, 27, 58, 0.14);
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: auto 1fr;
+    padding: 1rem;
+  }
+
+  .qr-guide-item span {
+    align-items: center;
+    background: #2DD4BF;
+    border: 2px solid #001B3A;
+    border-radius: 999px;
+    color: #001B3A;
+    display: inline-flex;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 900;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+  }
+
+  .qr-guide-item h3 {
+    font-family: 'Intro', sans-serif;
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .qr-guide-item p {
+    color: rgba(0, 27, 58, 0.72);
+    font-family: 'Intro', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.55;
+    margin-top: 0.35rem;
+  }
+
+  .tutorial-section-heading {
+    color: #001B3A;
+    margin: 0 auto 2.5rem;
+    max-width: 52rem;
+  }
+
+  .tutorial-section-heading h2 {
+    font-family: 'Intro', sans-serif;
+    font-size: 2.25rem;
+    font-weight: 900;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .tutorial-section-heading p:last-child {
+    color: rgba(0, 27, 58, 0.72);
+    font-family: 'Intro', sans-serif;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.75;
+    margin-top: 1rem;
+  }
+
+  .tutorial-section-heading--dark {
+    color: #fff;
+  }
+
+  .tutorial-section-heading--dark p:last-child {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .section-eyebrow {
+    color: #2DD4BF;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    margin-bottom: 0.9rem;
+    text-transform: uppercase;
+  }
+
+  .section-eyebrow--teal {
+    color: #FACC15;
+  }
+
+  .tutorial-steps {
+    display: grid;
+    gap: 1.3rem;
+  }
+
+  .tutorial-card {
+    align-items: stretch;
+    background: #F3F0E6;
+    border: 2px solid #001B3A;
+    box-shadow: 7px 7px 0 #2DD4BF;
+    display: grid;
+    gap: 1rem;
+    overflow: hidden;
+    padding: 1rem;
+  }
+
+  .tutorial-card--dark {
+    background: rgba(243, 240, 230, 0.96);
+    box-shadow: 7px 7px 0 #FACC15;
+  }
+
+  .tutorial-copy {
+    color: #001B3A;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0.5rem;
+  }
+
+  .step-badge {
+    align-self: flex-start;
+    background: #001B3A;
+    color: #fff;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    padding: 0.48rem 0.62rem;
+    text-transform: uppercase;
+  }
+
+  .step-badge--yellow {
+    background: #FACC15;
+    color: #001B3A;
+  }
+
+  .tutorial-copy h3 {
+    font-family: 'Intro', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1.1;
+    margin-top: 1rem;
+    text-transform: uppercase;
+  }
+
+  .tutorial-copy p {
+    color: rgba(0, 27, 58, 0.74);
+    font-family: 'Intro', sans-serif;
+    font-size: 0.98rem;
+    font-weight: 400;
+    line-height: 1.7;
+    margin-top: 0.9rem;
+  }
+
+  .tutorial-copy small {
+    color: rgba(0, 27, 58, 0.55);
+    display: block;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1.5;
+    margin-top: 1rem;
+    text-transform: uppercase;
+  }
+
+  .tutorial-shot-frame {
+    align-items: center;
+    background: #001B3A;
+    border: 2px solid #001B3A;
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    overflow: hidden;
+    padding: 0.55rem;
+  }
+
+  .tutorial-shot-frame--dark {
+    background: #2DD4BF;
+  }
+
   .tutorial-shot {
     aspect-ratio: 360 / 829;
+    max-width: 22rem;
     position: relative;
+    width: 100%;
   }
 
   .tutorial-shot > img {
@@ -315,9 +762,9 @@ const helpItems = [
     border-radius: 999px;
     box-shadow: 0 10px 22px rgba(0, 27, 58, 0.22), 0 0 0 0 rgba(45, 212, 191, 0.28);
     display: flex;
-    height: 2.8rem;
+    height: 2.65rem;
     justify-content: center;
-    width: 2.8rem;
+    width: 2.65rem;
     animation: tapGlow 2.4s ease-in-out infinite;
   }
 
@@ -325,8 +772,8 @@ const helpItems = [
     background: #2DD4BF;
     border: 3px solid #001B3A;
     border-radius: 999px;
-    height: 1.15rem;
-    width: 1.15rem;
+    height: 1.05rem;
+    width: 1.05rem;
   }
 
   .tap-marker__label {
@@ -334,13 +781,82 @@ const helpItems = [
     border: 2px solid #FACC15;
     border-radius: 999px;
     color: #fff;
-    font-size: 0.62rem;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.58rem;
     font-weight: 900;
     letter-spacing: 0.06em;
     line-height: 1;
-    padding: 0.42rem 0.58rem;
+    padding: 0.4rem 0.55rem;
     text-transform: uppercase;
     white-space: nowrap;
+  }
+
+  .script-list {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .script-line {
+    align-items: start;
+    background: #fff;
+    border: 2px solid rgba(0, 27, 58, 0.12);
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: auto 1fr;
+    padding: 1rem;
+  }
+
+  .script-line span {
+    align-items: center;
+    background: #2DD4BF;
+    border: 2px solid #001B3A;
+    border-radius: 999px;
+    color: #001B3A;
+    display: inline-flex;
+    font-family: 'Intro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 900;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+  }
+
+  .script-line p {
+    color: rgba(0, 27, 58, 0.78);
+    font-family: 'Intro', sans-serif;
+    font-size: 0.96rem;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .support-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .support-card {
+    background: #F3F0E6;
+    border: 2px solid #001B3A;
+    box-shadow: 5px 5px 0 #2DD4BF;
+    color: #001B3A;
+    padding: 1.2rem;
+  }
+
+  .support-card h3 {
+    font-family: 'Intro', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+  }
+
+  .support-card p {
+    color: rgba(0, 27, 58, 0.72);
+    font-family: 'Intro', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    line-height: 1.6;
+    margin-top: 0.75rem;
   }
 
   @keyframes tapGlow {
@@ -354,26 +870,60 @@ const helpItems = [
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .tap-marker__target {
-      animation: none;
+  @media (min-width: 768px) {
+    .qr-guide {
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+      padding: 1.6rem;
+    }
+
+    .tutorial-card {
+      grid-template-columns: minmax(0, 0.88fr) minmax(17rem, 1fr);
+      padding: 1.2rem;
+    }
+
+    .tutorial-card:nth-child(even) .tutorial-copy {
+      order: 2;
+    }
+
+    .support-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .support-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 420px) {
+    .tutorial-section-heading h2 {
+      font-size: 1.85rem;
+    }
+
+    .tutorial-copy h3 {
+      font-size: 1.28rem;
+    }
+
     .tap-marker__target {
-      height: 2.35rem;
-      width: 2.35rem;
+      height: 2.25rem;
+      width: 2.25rem;
     }
 
     .tap-marker__dot {
-      height: 0.95rem;
-      width: 0.95rem;
+      height: 0.9rem;
+      width: 0.9rem;
     }
 
     .tap-marker__label {
-      font-size: 0.55rem;
-      padding: 0.36rem 0.5rem;
+      font-size: 0.52rem;
+      padding: 0.34rem 0.48rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tap-marker__target {
+      animation: none;
     }
   }
 </style>
