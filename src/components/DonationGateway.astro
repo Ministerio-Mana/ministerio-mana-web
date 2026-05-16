@@ -106,7 +106,7 @@ function formatPreset(value: number): string {
         data-donation-form
         data-gateway={preferred}
         data-mission-wompi-url="/donaciones/?type=misiones"
-        data-login-url="/portal/ingresar?next=/donaciones/&reason=recurring-donation"
+        data-login-url="/portal/ingresar?next=/donaciones/%3Frecurring%3D1&reason=recurring-donation"
         novalidate
       >
         <div class="donation-form__header">
@@ -1106,6 +1106,49 @@ function formatPreset(value: number): string {
     frequency.disabled = !recurring;
   }
 
+  function buildRecurringLoginUrl(form) {
+    const nextUrl = new URL(window.location.href);
+    const donationType = form.querySelector('select[name="donationType"]')?.value || '';
+    const amount = form.querySelector('input[name="amount"]')?.value || '';
+    const frequency = form.querySelector('select[name="frequency"]')?.value || '';
+    nextUrl.searchParams.set('recurring', '1');
+    if (donationType) nextUrl.searchParams.set('type', donationType);
+    if (amount) nextUrl.searchParams.set('amount', amount);
+    if (frequency) nextUrl.searchParams.set('frequency', frequency);
+
+    const loginUrl = new URL(form.dataset.loginUrl || '/portal/ingresar', window.location.origin);
+    loginUrl.searchParams.set('next', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+    loginUrl.searchParams.set('reason', 'recurring-donation');
+    return `${loginUrl.pathname}${loginUrl.search}`;
+  }
+
+  function applyDonationIntentFromUrl(form) {
+    const params = new URLSearchParams(window.location.search);
+    const recurring = params.get('recurring');
+    if (recurring === '1' || recurring === 'true') {
+      const recurringRadio = form.querySelector('input[name="isRecurring"][value="true"]');
+      if (recurringRadio) recurringRadio.checked = true;
+    }
+
+    const requestedType = params.get('type');
+    if (requestedType && ['diezmos', 'ofrendas', 'misiones'].includes(requestedType)) {
+      const typeSelect = form.querySelector('select[name="donationType"]');
+      if (typeSelect) typeSelect.value = requestedType;
+    }
+
+    const requestedAmount = params.get('amount');
+    if (requestedAmount && Number(requestedAmount) > 0) {
+      const amountInput = form.querySelector('input[name="amount"]');
+      if (amountInput) amountInput.value = requestedAmount;
+    }
+
+    const requestedFrequency = params.get('frequency');
+    if (requestedFrequency && ['biweekly', 'monthly', 'every_two_months', 'semiannual', 'annual'].includes(requestedFrequency)) {
+      const frequencySelect = form.querySelector('select[name="frequency"]');
+      if (frequencySelect) frequencySelect.value = requestedFrequency;
+    }
+  }
+
   function resolveValue(form, selector, fallback) {
     const el = form?.querySelector(selector);
     const value = el?.value?.trim();
@@ -1261,6 +1304,7 @@ function formatPreset(value: number): string {
   });
 
   donationForms.forEach((form) => {
+    applyDonationIntentFromUrl(form);
     ensureVirtualChurch(form);
     syncFrequency(form);
     syncDonationProject(form);
@@ -1317,7 +1361,7 @@ function formatPreset(value: number): string {
       const token = getSupabaseAccessToken();
 
       if (isRecurring && !token) {
-        window.location.href = form.dataset.loginUrl || '/portal/ingresar?next=/donaciones/';
+        window.location.href = buildRecurringLoginUrl(form);
         return;
       }
 

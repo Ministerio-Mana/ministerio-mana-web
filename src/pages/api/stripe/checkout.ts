@@ -33,9 +33,18 @@ function buildReturnUrl(baseUrl: string, params: Record<string, string>): string
   return url.toString();
 }
 
-function buildLoginRedirect(baseUrl: string): string {
+function buildLoginRedirect(baseUrl: string, params: {
+  donationType?: string;
+  amount?: number;
+  frequency?: string;
+} = {}): string {
   const url = new URL(`${baseUrl}/portal/ingresar`);
-  url.searchParams.set('next', '/donaciones/');
+  const next = new URL(`${baseUrl}/donaciones/`);
+  next.searchParams.set('recurring', '1');
+  if (params.donationType) next.searchParams.set('type', params.donationType);
+  if (params.amount) next.searchParams.set('amount', String(params.amount));
+  if (params.frequency) next.searchParams.set('frequency', params.frequency);
+  url.searchParams.set('next', `${next.pathname}${next.search}`);
   url.searchParams.set('reason', 'recurring-donation');
   return url.toString();
 }
@@ -148,14 +157,27 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         return new Response(JSON.stringify({
           ok: false,
           requiresAccount: true,
-          redirect: buildLoginRedirect(baseUrl),
+          redirect: buildLoginRedirect(baseUrl, {
+            donationType: donorInfo.donationType,
+            amount: amountUsd,
+            frequency: frequencyConfig.value,
+          }),
           error: 'Para una donacion recurrente necesitas iniciar sesion o crear una cuenta.',
         }), {
           status: 401,
           headers: { 'content-type': 'application/json' },
         });
       }
-      return new Response(null, { status: 303, headers: { location: buildLoginRedirect(baseUrl) } });
+      return new Response(null, {
+        status: 303,
+        headers: {
+          location: buildLoginRedirect(baseUrl, {
+            donationType: donorInfo.donationType,
+            amount: amountUsd,
+            frequency: frequencyConfig.value,
+          }),
+        },
+      });
     }
 
     const profile = user ? await ensureUserProfile(user) : null;

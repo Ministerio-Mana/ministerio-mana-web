@@ -19,6 +19,17 @@ function getSafeNextPath() {
     return next;
 }
 
+function syncLoginLink() {
+    const params = new URLSearchParams(window.location.search);
+    const reason = params.get('reason') || '';
+    const loginLink = document.querySelector('a[href^="/portal/ingresar"]');
+    if (!loginLink) return;
+    const url = new URL('/portal/ingresar', window.location.origin);
+    url.searchParams.set('next', getSafeNextPath());
+    if (reason) url.searchParams.set('reason', reason);
+    loginLink.href = `${url.pathname}${url.search}`;
+}
+
 function resetTurnstile() {
     if (window.turnstile && typeof window.turnstile.reset === 'function') {
         window.turnstile.reset();
@@ -62,6 +73,8 @@ if (starsContainer) {
         });
     }
 }
+
+syncLoginLink();
 
 form?.addEventListener('submit', async (e) => {
     e.preventDefault();

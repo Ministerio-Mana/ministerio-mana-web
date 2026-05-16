@@ -36,6 +36,28 @@ const statusWrapper = document.getElementById('login-status-wrapper');
 
 const TURNSTILE_RENDER_WAIT_MS = 3000;
 
+function getSafeNextPath() {
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next') || '/portal';
+  if (!next.startsWith('/') || next.startsWith('//')) return '/portal';
+  return next;
+}
+
+function buildActivationRedirectTo() {
+  return `${window.location.origin}/portal/activar?next=${encodeURIComponent(getSafeNextPath())}`;
+}
+
+function syncReturnLinks() {
+  const params = new URLSearchParams(window.location.search);
+  const reason = params.get('reason') || '';
+  const registerLink = document.querySelector('a[href^="/portal/registro"]');
+  if (!registerLink) return;
+  const registerUrl = new URL('/portal/registro', window.location.origin);
+  registerUrl.searchParams.set('next', getSafeNextPath());
+  if (reason) registerUrl.searchParams.set('reason', reason);
+  registerLink.href = `${registerUrl.pathname}${registerUrl.search}`;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -251,7 +273,7 @@ async function startOAuth(provider, label, btn) {
   showStatus(`Redirigiendo a ${label}...`, 'loading');
 
   try {
-    const redirectTo = `${window.location.origin}/portal`;
+    const redirectTo = new URL(getSafeNextPath(), window.location.origin).toString();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo },
@@ -286,7 +308,7 @@ try {
 supabase?.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session) {
     showStatus('¡Sesión iniciada! Entrando...', 'success');
-    window.location.href = '/portal';
+    window.location.href = getSafeNextPath();
   }
 });
 
@@ -338,7 +360,7 @@ magicForm?.addEventListener('submit', async (e) => {
   }
 
   try {
-    const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+    const redirectTo = buildActivationRedirectTo();
     const res = await fetch('/api/auth/send-link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -409,7 +431,7 @@ passwordForm?.addEventListener('submit', async (e) => {
     }
 
     showStatus('Acceso correcto. Entrando...', 'success');
-    window.location.href = '/portal';
+    window.location.href = getSafeNextPath();
   } catch (err) {
     console.error(err);
     void reportPortalLoginError('portal.ingresar.password', err, { hasCaptcha: Boolean(captcha?.token) });
@@ -437,7 +459,7 @@ async function tryApiLogin(email, password, token) {
 
   showStatus('Acceso administrativo correcto. Entrando...', 'success');
   // Force reload to ensure cookie is picked up
-  setTimeout(() => window.location.href = '/portal', 500);
+  setTimeout(() => window.location.href = getSafeNextPath(), 500);
 }
 
 passkeyBtn?.addEventListener('click', async () => {
@@ -462,7 +484,7 @@ passkeyBtn?.addEventListener('click', async () => {
     const { data, error } = await supabase.auth.signInWithSSO({
       domain: 'ministeriomana.com',
       options: {
-        redirectTo: `${window.location.origin}/portal`,
+        redirectTo: new URL(getSafeNextPath(), window.location.origin).toString(),
       },
     });
 
@@ -477,3 +499,5 @@ passkeyBtn?.addEventListener('click', async () => {
     }, 3000);
   }
 });
+
+syncReturnLinks();
