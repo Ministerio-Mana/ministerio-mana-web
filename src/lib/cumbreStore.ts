@@ -348,6 +348,82 @@ export async function updateInstallment(installmentId: string, updates: Partial<
   }
 }
 
+export async function cancelPendingInstallmentsForPlan(planId: string): Promise<number> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_installments')
+    .update({
+      status: 'CANCELLED',
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('plan_id', planId)
+    .in('status', ['PENDING', 'FAILED'])
+    .select('id');
+
+  if (error) {
+    console.error('[cumbre.installments] pending cancel error', error);
+    return 0;
+  }
+
+  return data?.length ?? 0;
+}
+
+export async function completePaymentPlan(planId: string, params?: {
+  totalAmount?: number;
+  amountPaid?: number;
+  currency?: string;
+}): Promise<{ cancelledInstallments: number }> {
+  const cancelledInstallments = await cancelPendingInstallmentsForPlan(planId);
+  const updates: Partial<PaymentPlanRecord> = {
+    status: 'COMPLETED',
+    auto_debit: false,
+    next_due_date: null,
+    installment_amount: 0,
+  };
+
+  if (params?.totalAmount !== undefined) {
+    updates.total_amount = params.totalAmount;
+  }
+  if (params?.amountPaid !== undefined) {
+    updates.amount_paid = params.amountPaid;
+  }
+  if (params?.currency) {
+    updates.currency = params.currency;
+  }
+
+  await updatePaymentPlan(planId, updates);
+  return { cancelledInstallments };
+}
+
+export async function closePaymentPlan(planId: string, params?: {
+  status?: 'COMPLETED' | 'CANCELLED';
+  totalAmount?: number;
+  amountPaid?: number;
+  currency?: string;
+}): Promise<{ cancelledInstallments: number }> {
+  const cancelledInstallments = await cancelPendingInstallmentsForPlan(planId);
+  const updates: Partial<PaymentPlanRecord> = {
+    status: params?.status ?? 'CANCELLED',
+    auto_debit: false,
+    next_due_date: null,
+    installment_amount: 0,
+  };
+
+  if (params?.totalAmount !== undefined) {
+    updates.total_amount = params.totalAmount;
+  }
+  if (params?.amountPaid !== undefined) {
+    updates.amount_paid = params.amountPaid;
+  }
+  if (params?.currency) {
+    updates.currency = params.currency;
+  }
+
+  await updatePaymentPlan(planId, updates);
+  return { cancelledInstallments };
+}
+
 export async function getInstallmentByReference(reference: string): Promise<InstallmentRecord | null> {
   const supabase = ensureSupabase();
   const { data, error } = await supabase

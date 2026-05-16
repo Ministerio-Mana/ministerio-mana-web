@@ -78,6 +78,23 @@ create table if not exists public.portal_admin_selections (
   updated_at timestamptz default now()
 );
 
+-- Endurecimiento de tablas sensibles expuestas en el schema public.
+-- Las operaciones del portal pasan por APIs server-side con service_role.
+alter table public.user_profiles enable row level security;
+alter table public.churches enable row level security;
+alter table public.church_memberships enable row level security;
+alter table public.portal_admin_selections enable row level security;
+
+revoke all on table public.user_profiles from anon, authenticated;
+revoke all on table public.churches from anon, authenticated;
+revoke all on table public.church_memberships from anon, authenticated;
+revoke all on table public.portal_admin_selections from anon, authenticated;
+
+grant all on table public.user_profiles to service_role;
+grant all on table public.churches to service_role;
+grant all on table public.church_memberships to service_role;
+grant all on table public.portal_admin_selections to service_role;
+
 -- Link de reservas manuales con portal iglesias
 alter table cumbre_bookings
   add column if not exists source text;

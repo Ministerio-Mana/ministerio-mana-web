@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { logSecurityEvent } from '@lib/securityEvents';
-import { depositThreshold } from '@lib/cumbre2026';
+import { depositThreshold, hashToken } from '@lib/cumbre2026';
 import { buildDepositSchedule, getInstallmentDeadline, isValidDateOnly } from '@lib/cumbreInstallments';
 import { createPaymentPlan, getBookingById, getPlanByBookingId } from '@lib/cumbreStore';
 
@@ -12,6 +13,12 @@ function parseLocalDate(value: Date): string {
   const month = String(value.getMonth() + 1).padStart(2, '0');
   const day = String(value.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -37,8 +44,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const bookingId = (payload.bookingId || '').toString();
-  if (!bookingId) {
-    return new Response(JSON.stringify({ ok: false, error: 'bookingId requerido' }), {
+  const token = (payload.token || '').toString();
+  if (!bookingId || !token) {
+    return new Response(JSON.stringify({ ok: false, error: 'Parametros incompletos' }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
@@ -63,6 +71,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!booking) {
       return new Response(JSON.stringify({ ok: false, error: 'Reserva no encontrada' }), {
         status: 404,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const tokenHash = hashToken(token);
+    if (!safeEqual(tokenHash, booking.token_hash || '')) {
+      void logSecurityEvent({
+        type: 'webhook_invalid',
+        identifier: 'cumbre.installments.deposit',
+        ip: clientAddress,
+        detail: 'Token invalido',
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Token invalido' }), {
+        status: 403,
         headers: { 'content-type': 'application/json' },
       });
     }

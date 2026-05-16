@@ -28,6 +28,7 @@ const pricing = isColombia
     };
 
 const priceRows = [
+  { label: 'Asistencia + alimentación + alojamiento', key: 'lodging' },
   { label: 'Asistencia + alimentación (sin alojamiento)', key: 'no_lodging' },
   { label: 'Niños 0 a 4 años', key: 'child_0_7' },
   { label: 'Niños 5 a 10 años', key: 'child_7_13' },
@@ -110,10 +111,9 @@ const formatTestAmount = (value, currency) =>
          </div>
 
          <div class="rounded-2xl border border-brand-gold/30 bg-brand-gold/10 p-5 text-sm text-white/80">
-            <p class="font-bold text-brand-gold">Hospedaje agotado</p>
-            <p class="mt-1">
-               Ya no hay cupos de hospedaje dentro del evento. La inscripción continúa abierta sin alojamiento;
-               cada asistente debe gestionar su hospedaje por fuera.
+            <p id="lodging-alert-title" class="font-bold text-brand-gold">Cupos con hospedaje</p>
+            <p id="lodging-alert-text" class="mt-1">
+               Consultando disponibilidad de hospedaje...
             </p>
          </div>
 
@@ -135,7 +135,7 @@ const formatTestAmount = (value, currency) =>
                <p>
                  Niños 0 a 4 años: incluye material de trabajo. No incluye alimentación.
                  Niños 5 a 10 años: incluye alimentación con menú infantil.
-                 <a href="/eventos/cumbre-mundial-2026/condiciones" class="underline hover:text-white">Ver condiciones comerciales</a>.
+                 <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4">Ver condiciones comerciales</a>.
                </p>
             </div>
          </div>
@@ -235,8 +235,9 @@ const formatTestAmount = (value, currency) =>
                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tipo de asistencia</label>
                   <select name="leader_package" id="leader-package" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-brand-dark outline-none focus:border-brand-navy focus:ring-1 focus:ring-brand-navy transition-all">
                      <option value="no_lodging">Sin alojamiento (evento + alimentación)</option>
+                     <option value="lodging">Con alojamiento (evento + alimentación)</option>
                   </select>
-                  <p class="text-xs text-slate-400 mt-1">Los cupos con hospedaje ya están agotados.</p>
+                  <p class="text-xs text-slate-400 mt-1" data-lodging-note>La disponibilidad de hospedaje se actualiza automáticamente.</p>
                </div>
          </div>
 
@@ -292,9 +293,10 @@ const formatTestAmount = (value, currency) =>
                    <label class="text-xs font-bold text-white/60 uppercase tracking-wider">Tipo de asistencia</label>
                    <select id="input-lodging" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
                       <option value="no_lodging" class="text-black">Sin alojamiento (evento + alimentación)</option>
+                      <option value="lodging" class="text-black">Con alojamiento (evento + alimentación)</option>
                    </select>
-                   <p class="text-xs text-white/40 mt-1 pl-1">
-                      * Hospedaje agotado. Niños hasta 13 años se calculan automáticamente.
+                   <p class="text-xs text-white/40 mt-1 pl-1" data-lodging-note>
+                      * La disponibilidad de hospedaje se actualiza automáticamente. Niños hasta 13 años se calculan automáticamente.
                    </p>
                </div>
 
@@ -539,8 +541,8 @@ const formatTestAmount = (value, currency) =>
             </div>
             
             <p class="text-xs text-white/50">
-               El hospedaje dentro del evento ya no está disponible. La reserva cubre asistencia y alimentación según la tarifa seleccionada.
-               <a href="/eventos/cumbre-mundial-2026/condiciones" class="underline hover:text-white">Ver condiciones comerciales</a>.
+               <span id="payment-lodging-note">Si eliges con alojamiento, el cupo se confirma al completar el proceso. Si se agotan antes de finalizar, podrás continuar sin alojamiento.</span>
+               <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4">Ver condiciones comerciales</a>.
             </p>
 
             <div class="bg-brand-medium/20 rounded-lg p-3 text-xs text-white/80 flex gap-2 items-start border border-brand-medium/20">
@@ -647,6 +649,7 @@ const formatTestAmount = (value, currency) =>
     leaderId: 'leader',
     leaderOptOut: false,
     isSolo: false,
+    lodgingStatus: null,
     installmentPreview: null,
     idempotencyKey: null,
     lastBookingSignature: null,
@@ -677,6 +680,7 @@ const formatTestAmount = (value, currency) =>
        this.updateGroupMode();
        this.updateAddPersonControls();
        this.updatePaymentUI();
+       this.refreshLodgingAvailability();
     },
 
     cacheDOM() {
@@ -720,6 +724,11 @@ const formatTestAmount = (value, currency) =>
           depositDueDate: document.getElementById('deposit-due-date'),
           depositAmount: document.getElementById('deposit-amount'),
           depositDeadlineLabel: document.getElementById('deposit-deadline-label'),
+          lodgingAlertTitle: document.getElementById('lodging-alert-title'),
+          lodgingAlertText: document.getElementById('lodging-alert-text'),
+          paymentLodgingNote: document.getElementById('payment-lodging-note'),
+          lodgingNotes: document.querySelectorAll('[data-lodging-note]'),
+          lodgingOptions: document.querySelectorAll('option[value="lodging"]'),
           form: document.getElementById('booking-form'),
           errorMsg: document.getElementById('error-msg'),
           sideSubtotal: document.getElementById('side-subtotal'),
@@ -809,6 +818,83 @@ const formatTestAmount = (value, currency) =>
        if (this.dom.validationOverlay) {
           this.dom.validationOverlay.addEventListener('click', () => this.hideValidationModal());
        }
+    },
+
+    async refreshLodgingAvailability() {
+       try {
+          const response = await fetch('/api/cumbre2026/lodging/status', { cache: 'no-store' });
+          if (!response.ok) return;
+          const data = await response.json();
+          if (!data?.ok) return;
+          this.lodgingStatus = data;
+          this.applyLodgingAvailability();
+       } catch (error) {
+          console.warn('[cumbre] No se pudo consultar disponibilidad de hospedaje', error);
+       }
+    },
+
+    getLodgingSlotLabel(remaining) {
+       return remaining === 1 ? 'cupo' : 'cupos';
+    },
+
+    applyLodgingAvailability() {
+       const available = this.lodgingStatus?.available !== false;
+       const remaining = Number(this.lodgingStatus?.remaining ?? 0);
+       const hasRemainingCount = Number.isFinite(remaining) && remaining > 0;
+       const slotLabel = this.getLodgingSlotLabel(remaining);
+       const openMessage = hasRemainingCount
+          ? `Quedan ${remaining} ${slotLabel} con hospedaje. Cuando se agoten, podrás continuar sin alojamiento y gestionar tu hospedaje por fuera.`
+          : 'Hay cupos con hospedaje disponibles. Cuando se agoten, podrás continuar sin alojamiento y gestionar tu hospedaje por fuera.';
+       const closedMessage = 'Los cupos con hospedaje ya están agotados. Puedes continuar sin alojamiento; cada asistente deberá gestionar su hospedaje por fuera.';
+
+       if (this.dom.lodgingAlertTitle) {
+          this.dom.lodgingAlertTitle.textContent = available
+             ? (hasRemainingCount ? `Quedan ${remaining} ${slotLabel} con hospedaje` : 'Cupos con hospedaje')
+             : 'Hospedaje agotado';
+       }
+       if (this.dom.lodgingAlertText) {
+          this.dom.lodgingAlertText.textContent = available
+             ? (hasRemainingCount
+                ? `En este momento quedan ${remaining} ${slotLabel} con hospedaje. Cuando se agoten, la inscripción con hospedaje se cerrará y seguirá abierta sin alojamiento. Cada asistente deberá gestionar su hospedaje por fuera.`
+                : openMessage)
+             : 'Los cupos con hospedaje ya están agotados. Puedes asistir a la Cumbre sin alojamiento incluido; cada asistente deberá gestionar su hospedaje por fuera.';
+       }
+       if (this.dom.paymentLodgingNote) {
+          this.dom.paymentLodgingNote.textContent = available
+             ? (hasRemainingCount
+                ? `Quedan ${remaining} ${slotLabel} con hospedaje. Si eliges con alojamiento, el cupo se confirma al completar el proceso.`
+                : 'Si eliges con alojamiento, el cupo se confirma al completar el proceso. Si se agotan antes de finalizar, podrás continuar sin alojamiento.')
+             : 'El hospedaje dentro del evento ya no está disponible. Puedes asistir a la Cumbre sin alojamiento incluido y gestionar tu hospedaje por fuera.';
+       }
+
+       this.dom.lodgingOptions?.forEach((option) => {
+          option.disabled = !available;
+          option.textContent = available
+             ? 'Con alojamiento (evento + alimentación)'
+             : 'Con alojamiento (agotado)';
+       });
+       this.dom.lodgingNotes?.forEach((note) => {
+          note.textContent = available ? openMessage : closedMessage;
+       });
+
+       if (!available) {
+          if (this.dom.leaderPackage?.value === 'lodging') {
+             this.dom.leaderPackage.value = 'no_lodging';
+          }
+          if (this.dom.inputLodging?.value === 'lodging') {
+             this.dom.inputLodging.value = 'no_lodging';
+          }
+          this.participants.forEach((participant) => {
+             if (participant.packageType === 'lodging') {
+                participant.packageType = 'no_lodging';
+             }
+          });
+       }
+
+       this.updateLeaderPackage();
+       this.updateAddPersonControls();
+       this.renderList();
+       this.updateTotals();
     },
 
     async sendLeaderAuthLink() {
@@ -923,7 +1009,9 @@ const formatTestAmount = (value, currency) =>
     },
 
     getLeaderPackageType() {
-       return 'no_lodging';
+       const value = this.dom.leaderPackage?.value || 'no_lodging';
+       if (this.lodgingStatus?.available === false && value === 'lodging') return 'no_lodging';
+       return value === 'lodging' ? 'lodging' : 'no_lodging';
     },
 
     ensureLeaderParticipant() {
@@ -1291,17 +1379,22 @@ const formatTestAmount = (value, currency) =>
     getPackageTypeFromAge(age, lodgingChoice) {
        if (age <= 4) return 'child_0_7';
        if (age <= 10) return 'child_7_13';
-       return 'no_lodging';
+       if (this.lodgingStatus?.available === false) return 'no_lodging';
+       return lodgingChoice === 'lodging' ? 'lodging' : 'no_lodging';
     },
 
     updateAddPersonControls() {
        const age = this.parseAge(this.dom.inputAge?.value || '');
        const isChild = typeof age === 'number' && age <= 10;
+       const lodgingClosed = this.lodgingStatus?.available === false;
        if (this.dom.inputLodging) {
-          this.dom.inputLodging.disabled = isChild;
+          if (lodgingClosed && this.dom.inputLodging.value === 'lodging') {
+             this.dom.inputLodging.value = 'no_lodging';
+          }
+          this.dom.inputLodging.disabled = isChild || lodgingClosed;
           const container = this.dom.inputLodging.parentElement;
           if (container) {
-             container.classList.toggle('opacity-60', isChild);
+             container.classList.toggle('opacity-60', isChild || lodgingClosed);
           }
        }
     },
@@ -1366,6 +1459,7 @@ const formatTestAmount = (value, currency) =>
        });
        this.dom.inputName.value = '';
        if (this.dom.inputAge) this.dom.inputAge.value = '';
+       this.updateAddPersonControls();
        this.renderList();
        this.updateTotals();
     },

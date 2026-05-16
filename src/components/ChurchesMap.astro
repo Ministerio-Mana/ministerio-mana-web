@@ -1,56 +1,77 @@
 ---
+const { variant = 'default', showPanControls = false } = Astro.props;
+const isAmbient = variant === 'ambient';
 ---
 
-<div class="relative w-full h-[620px] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none z-0">
+<div
+  class={`churches-map-root churches-map-root--${variant} relative w-full h-[620px] bg-brand-void rounded-3xl overflow-hidden border border-white/10 shadow-2xl group select-none z-0`}
+  data-map-variant={variant}
+>
   <div id="churches-map-canvas" class="absolute inset-0 w-full h-full z-0"></div>
 
-  <div class="absolute top-5 left-5 pointer-events-none z-[1000]">
-    <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50 max-w-[260px]">
-      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-1">Mapa global</p>
-      <p class="text-xs text-white/80 font-intro-reg">Visualiza sedes por país y abre ubicación exacta en Google Maps.</p>
-    </div>
-  </div>
-
-  <div class="absolute top-5 right-5 z-[1000] w-[min(560px,calc(100%-2.5rem))]">
-    <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
-      <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-2">Enfocar mapa</p>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <label class="space-y-1">
-          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Continente</span>
-          <select
-            id="map-continent-control"
-            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
-          >
-            <option value="">Todos</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">País</span>
-          <select
-            id="map-country-control"
-            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
-          >
-            <option value="">Todos</option>
-          </select>
-        </label>
-        <label class="space-y-1">
-          <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Ciudad</span>
-          <select
-            id="map-city-control"
-            class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
-          >
-            <option value="">Todas</option>
-          </select>
-        </label>
+  {!isAmbient && (
+    <div class="absolute top-5 left-5 pointer-events-none z-[1000]">
+      <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50 max-w-[260px]">
+        <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-1">Mapa global</p>
+        <p class="text-xs text-white/80 font-intro-reg">Visualiza sedes por país y abre ubicación exacta en Google Maps.</p>
       </div>
     </div>
-  </div>
+  )}
 
-  <div class="absolute bottom-5 left-5 z-[1000] pointer-events-none">
-    <div class="bg-brand-navy/80 backdrop-blur px-3 py-2 rounded-xl border border-white/10 shadow-lg shadow-brand-void/40">
-      <p class="text-[10px] text-white/70 font-intro tracking-wide">Tip: toca una sede para ver WhatsApp y “Cómo llegar”.</p>
+  {!isAmbient && (
+    <div class="absolute top-5 right-5 z-[1000] w-[min(560px,calc(100%-2.5rem))]">
+      <div class="bg-brand-navy/85 backdrop-blur px-4 py-3 rounded-2xl border border-white/10 shadow-lg shadow-brand-void/50">
+        <p class="text-[10px] font-intro tracking-widest text-brand-teal uppercase mb-2">Enfocar mapa</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <label class="space-y-1">
+            <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Continente</span>
+            <select
+              id="map-continent-control"
+              class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+            >
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="space-y-1">
+            <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">País</span>
+            <select
+              id="map-country-control"
+              class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+            >
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="space-y-1">
+            <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Ciudad</span>
+            <select
+              id="map-city-control"
+              class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+            >
+              <option value="">Todas</option>
+            </select>
+          </label>
+        </div>
+      </div>
     </div>
-  </div>
+  )}
+
+  {!isAmbient && (
+    <div class="absolute bottom-5 left-5 z-[1000] pointer-events-none">
+      <div class="bg-brand-navy/80 backdrop-blur px-3 py-2 rounded-xl border border-white/10 shadow-lg shadow-brand-void/40">
+        <p class="text-[10px] text-white/70 font-intro tracking-wide">Tip: toca una sede para ver WhatsApp y “Cómo llegar”.</p>
+      </div>
+    </div>
+  )}
+
+  {isAmbient && showPanControls && (
+    <div class="mana-map-pan-controls" data-map-pan-controls aria-label="Mover mapa">
+      <button type="button" data-map-pan="up" aria-label="Mover mapa arriba"><span aria-hidden="true">↑</span></button>
+      <button type="button" data-map-pan="left" aria-label="Mover mapa a la izquierda"><span aria-hidden="true">←</span></button>
+      <button type="button" data-map-pan="reset" aria-label="Recentrar mapa"><span aria-hidden="true">•</span></button>
+      <button type="button" data-map-pan="right" aria-label="Mover mapa a la derecha"><span aria-hidden="true">→</span></button>
+      <button type="button" data-map-pan="down" aria-label="Mover mapa abajo"><span aria-hidden="true">↓</span></button>
+    </div>
+  )}
 </div>
 
 <link
@@ -123,6 +144,8 @@
     if (mapNode.dataset.ready === '1') return;
     mapNode.dataset.ready = '1';
 
+    const mapVariant = mapNode.closest('.churches-map-root')?.dataset.mapVariant || 'default';
+    const isAmbientMap = mapVariant === 'ambient';
     const map = L.map(MAP_ID, {
       center: [15, -10],
       zoom: 2,
@@ -130,15 +153,26 @@
       maxZoom: 18,
       zoomControl: false,
       attributionControl: false,
+      dragging: !isAmbientMap,
+      scrollWheelZoom: !isAmbientMap,
+      doubleClickZoom: !isAmbientMap,
+      boxZoom: !isAmbientMap,
+      keyboard: !isAmbientMap,
+      tap: !isAmbientMap,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const tileLayerUrl = isAmbientMap
+      ? 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    L.tileLayer(tileLayerUrl, {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-      className: 'dark-mode-tiles',
+      attribution: isAmbientMap ? '&copy; OpenStreetMap contributors &copy; CARTO' : '&copy; OpenStreetMap contributors',
+      className: isAmbientMap ? 'teal-map-tiles' : 'dark-mode-tiles',
     }).addTo(map);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    if (!isAmbientMap) {
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+    }
 
     const markerIcon = L.divIcon({
       className: 'mana-map-pin',
@@ -303,7 +337,7 @@
       }
 
       if (globalBounds?.isValid()) {
-        map.fitBounds(globalBounds, { padding: [56, 56], maxZoom: 4 });
+        map.fitBounds(globalBounds, { padding: isAmbientMap ? [18, 18] : [56, 56], maxZoom: isAmbientMap ? 3 : 4 });
       }
       if (emit) emitMapFocus();
     };
@@ -346,6 +380,26 @@
       isSyncingFromNav = false;
     });
 
+    mapNode.closest('.churches-map-root')?.querySelectorAll('[data-map-pan]')?.forEach((button) => {
+      button.addEventListener('click', () => {
+        const direction = button.dataset.mapPan;
+        if (direction === 'reset') {
+          focusSelection({ emit: false });
+          return;
+        }
+
+        const step = 118;
+        const vectors = {
+          up: [0, -step],
+          down: [0, step],
+          left: [-step, 0],
+          right: [step, 0],
+        };
+        const vector = vectors[direction] || [0, 0];
+        map.panBy(vector, { animate: true, duration: 0.32 });
+      });
+    });
+
     refreshMapControls();
     focusSelection({ emit: false });
 
@@ -363,6 +417,79 @@
 
   .dark-mode-tiles {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  }
+
+  .teal-map-tiles {
+    filter: grayscale(1) sepia(1) saturate(4.4) hue-rotate(132deg) brightness(0.86) contrast(1.5);
+  }
+
+  .mana-map-pan-controls {
+    position: absolute;
+    right: clamp(34px, 5vw, 78px);
+    bottom: clamp(34px, 5vh, 84px);
+    z-index: 1000;
+    display: grid;
+    grid-template-columns: repeat(3, 34px);
+    grid-template-rows: repeat(3, 34px);
+    gap: 6px;
+    pointer-events: auto;
+    opacity: 0.88;
+  }
+
+  .mana-map-pan-controls button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(36, 63, 120, 0.64);
+    color: #fff;
+    font-family: 'Intro', system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1;
+    box-shadow: 0 12px 32px rgba(5, 17, 48, 0.24);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition:
+      transform 180ms ease,
+      border-color 180ms ease,
+      background 180ms ease,
+      color 180ms ease;
+  }
+
+  .mana-map-pan-controls button:hover,
+  .mana-map-pan-controls button:focus-visible {
+    border-color: rgba(45, 212, 191, 0.72);
+    background: rgba(45, 212, 191, 0.74);
+    transform: translateY(-1px);
+    outline: none;
+  }
+
+  .mana-map-pan-controls [data-map-pan="up"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .mana-map-pan-controls [data-map-pan="left"] {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .mana-map-pan-controls [data-map-pan="reset"] {
+    grid-column: 2;
+    grid-row: 2;
+    color: #2dd4bf;
+  }
+
+  .mana-map-pan-controls [data-map-pan="right"] {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .mana-map-pan-controls [data-map-pan="down"] {
+    grid-column: 2;
+    grid-row: 3;
   }
 
   .leaflet-bar {

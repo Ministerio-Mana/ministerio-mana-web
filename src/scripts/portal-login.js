@@ -43,6 +43,13 @@ const submitBtn = document.getElementById('btn-submit');
 const passwordBtn = document.getElementById('btn-submit-password');
 let lastAction = 'otp';
 
+function getSafeNextPath() {
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get('next') || '/portal';
+  if (!next.startsWith('/') || next.startsWith('//')) return '/portal';
+  return next;
+}
+
 function getTurnstileToken() {
   const widget = document.querySelector('.cf-turnstile');
   if (!widget) return '';
@@ -95,11 +102,11 @@ form?.addEventListener('submit', async (event) => {
       statusIcon.classList.replace('bg-brand-teal', 'bg-green-400');
       statusIcon.classList.remove('animate-ping');
       statusEl.textContent = 'Acceso concedido. Entrando...';
-      window.location.href = '/portal';
+      window.location.href = getSafeNextPath();
       return;
     }
 
-    const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent('/portal')}`;
+    const redirectTo = `${window.location.origin}/portal/activar?next=${encodeURIComponent(getSafeNextPath())}`;
     const captchaToken = getTurnstileToken();
     const res = await fetch('/api/auth/send-link', {
       method: 'POST',

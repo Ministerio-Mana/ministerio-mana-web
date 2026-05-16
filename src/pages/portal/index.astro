@@ -145,8 +145,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div>
-                    <h2 class="text-lg font-bold text-[#293C74]">Campus Maná</h2>
-                    <p class="text-xs text-slate-500">Apoyos mensuales a misioneros y equipos Campus.</p>
+                    <h2 class="text-lg font-bold text-[#293C74]">Mis siembras Campus</h2>
+                    <p class="text-xs text-slate-500">Pausa, reactiva o cancela tus apoyos mensuales a misioneros Campus.</p>
                   </div>
                   <a id="campus-cta" href="/campus" hidden class="inline-flex items-center gap-2 rounded-full border border-brand-teal/40 text-brand-teal px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-brand-teal/10 transition">
                     Apoyar campus
@@ -154,7 +154,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
                 <div id="campus-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 <div id="campus-empty" class="hidden p-10 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
-                  <p class="text-slate-500">Muy pronto podrás apoyar misioneros Campus desde aquí.</p>
+                  <p class="text-slate-500">Aún no tienes siembras Campus registradas.</p>
                 </div>
               </div>
 
@@ -503,70 +503,96 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pendientes</p>
                           <p class="text-2xl font-bold text-yellow-500" id="stat-church-pending">0</p>
                       </div>
-                       <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('church-bookings-search').focus()">
+                       <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('church-participants-search')?.focus()">
                           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Acción</p>
                           <p class="text-xs font-bold text-[#293C74] mt-2">Buscar Inscrito</p>
                       </div>
                   </div>
 
-                   <!-- Bookings Tablet Card -->
-                   <div class="bg-white border border-slate-100 rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden min-h-[500px]">
-                      <div class="px-8 py-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                         <h3 class="text-lg font-bold text-[#293C74]">Inscritos Recientes</h3>
-                         
-                         <div class="flex w-full md:w-auto flex-wrap md:flex-nowrap items-center gap-3">
-                             <div class="relative flex-1 md:flex-initial min-w-[220px]">
-                               <input id="church-bookings-search" type="search" class="w-full md:w-64 bg-slate-50 border-none rounded-xl pl-9 pr-4 py-2 text-[#293C74] placeholder-slate-400 focus:ring-0 text-xs font-medium transition-all md:focus:w-72" placeholder="Buscar nombre, email o ref...">
-                               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                             </div>
-                             
-                             <button id="church-export-btn" class="shrink-0 p-2 text-slate-400 hover:text-brand-teal hover:bg-brand-teal/10 rounded-lg transition-colors" title="Exportar Excel">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                             </button>
-                         </div>
-                      </div>
-                      
-                      <div class="p-0">
-                        <!-- Filters Bar -->
-                        <div id="church-bookings-filters" class="px-8 py-3 bg-slate-50/50 border-b border-slate-50 flex flex-col gap-3">
-                          <div class="flex items-center gap-2 overflow-x-auto pb-1">
-                              <button data-filter="all" class="church-bookings-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-[#293C74] text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">Todos</button>
-                              <button data-filter="paid" class="church-bookings-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">Pagados</button>
-                              <button data-filter="pending" class="church-bookings-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">Pendientes</button>
-                              <input type="hidden" id="church-bookings-status" value="all" />
+                   <!-- Unified Participant Table -->
+                   <div class="bg-white border border-slate-100 rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden">
+                      <div class="px-8 py-6 border-b border-slate-50 flex flex-col gap-4">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                          <div>
+                            <h3 class="text-lg font-bold text-[#293C74]">Inscritos y Participantes</h3>
+                            <p class="text-xs text-slate-500 mt-1">Listado principal con pagos recientes, alojamiento, alimentación, origen y alertas.</p>
                           </div>
-                          <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                            <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                              Orden
-                              <select id="church-bookings-sort" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
-                                <option value="recent_desc">Más recientes</option>
-                                <option value="recent_asc">Más antiguos</option>
-                                <option value="paid_desc">Mayor pagado</option>
-                                <option value="total_desc">Mayor total</option>
-                                <option value="pending_desc">Mayor pendiente</option>
-                                <option value="next_due_asc">Próxima cuota</option>
-                              </select>
-                            </label>
-                            <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                              Ver
-                              <select id="church-bookings-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
-                                <option value="10">10</option>
-                                <option value="20" selected>20</option>
-                                <option value="40">40</option>
-                              </select>
-                            </label>
-                            <span id="church-bookings-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 resultados</span>
+                          <div class="flex flex-wrap items-center gap-3">
+                            <span id="church-participants-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 resultados</span>
+                            <button id="church-export-btn" class="shrink-0 p-2 text-slate-400 hover:text-brand-teal hover:bg-brand-teal/10 rounded-lg transition-colors" title="Exportar Excel">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            </button>
+                            <button id="church-audit-btn" class="hidden shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-100 transition-colors text-[11px] font-bold uppercase tracking-widest" title="Descargar auditoría de paquetes">
+                              Auditoría
+                            </button>
                           </div>
                         </div>
-
-                        <div class="p-6">
-                            <p id="church-export-status" class="text-xs text-slate-500 mb-2"></p>
-                            <div id="church-bookings-empty" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
-                              <p class="text-sm text-slate-600">No hay registros para mostrar.</p>
+                        <p id="church-export-status" class="text-xs text-slate-500 min-h-[1rem]"></p>
+                        <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
+                          <div class="relative">
+                            <input id="church-participants-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74] text-xs font-medium" placeholder="Buscar nombre, documento, email, ciudad, país o iglesia...">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                          </div>
+                          <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                            <div id="church-participants-view-toggle" class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                              <button type="button" data-view="cards" class="church-participants-view-btn rounded-md bg-[#293C74] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+                                Tarjetas
+                              </button>
+                              <button type="button" data-view="table" class="church-participants-view-btn rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#293C74]">
+                                Tabla
+                              </button>
                             </div>
-                            <div id="church-bookings-list" class="hidden space-y-0 divide-y divide-slate-50"></div>
-                            <div id="church-bookings-pagination" class="hidden mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
+                            <select id="church-participants-sort" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="recent_payment_desc">Más recientes</option>
+                              <option value="name_asc">Nombre A-Z</option>
+                              <option value="created_desc">Fecha de registro</option>
+                              <option value="lodging_asc">Alojamiento</option>
+                              <option value="menu_asc">Menú</option>
+                              <option value="paid_desc">Mayor pagado</option>
+                              <option value="pending_desc">Mayor pendiente</option>
+                            </select>
+                            <select id="church-participants-payment" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Pagos</option>
+                              <option value="full">Completos</option>
+                              <option value="pending">Con saldo</option>
+                              <option value="recent">Con pago reciente</option>
+                            </select>
+                            <select id="church-participants-lodging" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Alojamiento</option>
+                              <option value="Con alojamiento">Con alojamiento</option>
+                              <option value="Sin alojamiento">Sin alojamiento</option>
+                              <option value="Nino 0-4">Niños 0-4</option>
+                              <option value="Nino 5-10">Niños 5-10</option>
+                            </select>
+                            <select id="church-participants-menu" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Menú</option>
+                              <option value="TRADICIONAL">Tradicional</option>
+                              <option value="VEGETARIANO">Vegetariano</option>
+                              <option value="INFANTIL">Infantil</option>
+                              <option value="SIN ALIMENTACION">Sin alimentación</option>
+                            </select>
+                            <select id="church-participants-alert" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="">Alertas</option>
+                              <option value="with">Con alerta</option>
+                              <option value="corrected">Corregidos en export</option>
+                              <option value="review">Por revisar</option>
+                            </select>
+                            <select id="church-participants-page-size" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                              <option value="10" selected>10</option>
+                              <option value="20">20</option>
+                              <option value="40">40</option>
+                            </select>
+                          </div>
                         </div>
+                      </div>
+                      <div class="p-6">
+                        <div id="church-participants-empty" class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
+                          <p class="text-sm text-slate-600">No hay participantes para mostrar.</p>
+                        </div>
+                        <div id="church-participants-table-wrap" class="hidden">
+                          <div id="church-participants-table" class="space-y-3"></div>
+                        </div>
+                        <div id="church-participants-pagination" class="hidden mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
                       </div>
                    </div>
 

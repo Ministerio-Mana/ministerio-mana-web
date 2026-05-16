@@ -124,7 +124,7 @@ main {
 
   a:hover,
   a:focus-visible {
-    color: var(--mana-teal);
+    color: rgb(var(--mana-teal));
   }
 }
 

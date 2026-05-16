@@ -19,6 +19,10 @@
     {
       "path": "/api/donations/subscriptions/run",
       "schedule": "45 13 * * *"
+    },
+    {
+      "path": "/api/campus/subscriptions/run",
+      "schedule": "30 13 * * *"
     }
   ]
 }

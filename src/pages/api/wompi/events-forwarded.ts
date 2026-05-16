@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import crypto from 'node:crypto';
 import { createWompiPaymentSource, verifyWompiWebhook } from '@lib/wompi';
+import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { parseReferenceBookingId, parseReferencePlanId } from '@lib/cumbre2026';
@@ -51,7 +52,7 @@ function sha256Hex(payload: string): string {
 export const POST: APIRoute = async ({ request }) => {
   const payload = await request.text();
   const internalSignature = request.headers.get('x-internal-signature');
-  const wompiSignature = request.headers.get('x-wompi-signature');
+  const wompiSignature = request.headers.get('x-event-checksum') || request.headers.get('x-wompi-signature');
 
   const internalOk = validInternalSignature(payload, internalSignature);
   let wompiOk = false;
@@ -144,6 +145,7 @@ export const POST: APIRoute = async ({ request }) => {
     const planId = parseReferencePlanId(reference);
 
     if (!bookingId && !planId) {
+      await processWompiDonationTransaction({ event, transaction });
       return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
         status: 200,
         headers: { 'content-type': 'application/json' },
@@ -156,10 +158,11 @@ export const POST: APIRoute = async ({ request }) => {
       : WOMPI_FAILED_STATUSES.has(wompiStatus)
         ? 'FAILED'
         : 'PENDING';
-    const amount = amountInCents ? Number(amountInCents) / 100 : 0;
-    const normalizedCurrency = transaction?.currency || 'COP';
     const providerTxId = txId ? String(txId) : null;
     const paymentMethodType = transaction?.payment_method?.type ?? transaction?.payment_method_type ?? null;
+
+    const amount = amountInCents ? Number(amountInCents) / 100 : 0;
+    const normalizedCurrency = transaction?.currency || 'COP';
     const paymentMethodToken = transaction?.payment_method?.token ?? null;
     const paymentSourceId = transaction?.payment_source_id ?? null;
 

@@ -26,3 +26,12 @@ create index if not exists mm_wompi_event_inbox_reference_idx
 
 create index if not exists mm_wompi_event_inbox_tx_id_idx
   on public.mm_wompi_event_inbox (tx_id);
+
+-- Raw payment webhooks must only be accessed by trusted server-side code.
+alter table public.mm_wompi_event_inbox enable row level security;
+
+revoke all on table public.mm_wompi_event_inbox from anon;
+revoke all on table public.mm_wompi_event_inbox from authenticated;
+revoke all on table public.mm_wompi_event_inbox from public;
+
+grant all on table public.mm_wompi_event_inbox to service_role;

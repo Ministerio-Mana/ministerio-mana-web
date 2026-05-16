@@ -96,10 +96,14 @@ export async function ensureUserProfile(user: User): Promise<UserProfile | null>
   }
 
   if (existing) {
-    if (shouldBeSuperadmin && existing.role !== 'superadmin') {
+    const nextRole: PortalRole | null = shouldBeSuperadmin && existing.role !== 'superadmin'
+      ? 'superadmin'
+      : (!shouldBeSuperadmin && existing.role === 'superadmin' ? 'user' : null);
+
+    if (nextRole) {
       const { data, error } = await supabaseAdmin
         .from('user_profiles')
-        .update({ role: 'superadmin', updated_at: new Date().toISOString() })
+        .update({ role: nextRole, updated_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .select('*')
         .single();
@@ -163,10 +167,15 @@ export function isAdminRole(role?: string | null): boolean {
   return role === 'admin' || role === 'superadmin';
 }
 
+function isApprovedChurchMembershipStatus(status?: string | null): boolean {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'approved' || normalized === 'active';
+}
+
 export function getActiveChurchMembership(memberships: UserMembership[] = []): UserMembership | null {
   const active = memberships.filter((m) =>
     ['church_admin', 'church_member'].includes(String(m?.role || ''))
-    && String(m?.status || '').toLowerCase() !== 'pending',
+    && isApprovedChurchMembershipStatus(m?.status),
   );
   const adminMembership = active.find((m) => m?.role === 'church_admin');
   if (adminMembership) return adminMembership;
@@ -199,5 +208,5 @@ export function resolveEffectivePortalRole(profileRole?: string | null, membersh
 
 export function resolveEffectiveChurchId(profileChurchId?: string | null, memberships: UserMembership[] = []): string | null {
   const activeMembership = getActiveChurchMembership(memberships);
-  return profileChurchId || activeMembership?.church?.id || null;
+  return activeMembership?.church?.id || profileChurchId || null;
 }

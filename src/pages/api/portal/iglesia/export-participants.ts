@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
+import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
 
 export const prerender = false;
 
@@ -37,6 +38,7 @@ const HEADER_LABELS: Record<string, string> = {
   email: 'email',
   alimentacion: 'alimentacion',
   tipo_alojamiento: 'tipo_alojamiento',
+  alerta_paquete: 'alerta_paquete',
   iglesia_final: 'iglesia_final',
   iglesia_catalogo: 'iglesia_catalogo',
   iglesia_escrita: 'iglesia_escrita',
@@ -340,6 +342,7 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
     'email',
     'alimentacion',
     'tipo_alojamiento',
+    'alerta_paquete',
     'iglesia_final',
     'iglesia_catalogo',
     'iglesia_escrita',
@@ -385,6 +388,7 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
     const churchName = booking?.church?.name || '';
     const churchInput = booking?.contact_church || '';
     const iglesiaFinal = resolveChurchFinal(booking);
+    const packageResolution = resolveParticipantPackagesForExport(booking, list);
 
     for (const participant of list) {
       const docType = participant.document_type || booking?.contact_document_type || '';
@@ -393,7 +397,8 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
       const gender = participant.gender || '';
       const nationality = participant.nationality || booking?.contact_country || '';
       const diet = formatDietLabel(participant.diet_type);
-      const lodging = formatLodgingLabel(participant.package_type);
+      const packageInfo = packageResolution.get(String(participant.id || ''));
+      const lodging = formatLodgingLabel(packageInfo?.packageType ?? participant.package_type);
 
       records.push({
         participante_nombre: participant.full_name ?? '',
@@ -410,6 +415,7 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
         email: participant.email ?? booking?.contact_email ?? '',
         alimentacion: diet,
         tipo_alojamiento: lodging,
+        alerta_paquete: packageInfo?.issue || '',
         iglesia_final: iglesiaFinal,
         iglesia_catalogo: churchName,
         iglesia_escrita: churchInput,

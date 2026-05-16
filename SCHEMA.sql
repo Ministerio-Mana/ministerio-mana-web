@@ -4,15 +4,46 @@
 create table if not exists prayer_requests (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
+  request_text text,
   city text,
   country text,
   prayers_count int not null default 0,
-  approved boolean not null default true,
+  approved boolean not null default false,
+  visibility text not null default 'private',
+  moderation_status text not null default 'pending',
+  flagged boolean not null default false,
+  reviewed_by text,
+  reviewed_at timestamptz,
+  admin_note text,
+  updated_at timestamptz default now(),
   created_at timestamptz default now()
 );
+alter table prayer_requests add column if not exists request_text text;
+alter table prayer_requests add column if not exists visibility text not null default 'private';
+alter table prayer_requests add column if not exists moderation_status text not null default 'pending';
+alter table prayer_requests add column if not exists flagged boolean not null default false;
+alter table prayer_requests add column if not exists reviewed_by text;
+alter table prayer_requests add column if not exists reviewed_at timestamptz;
+alter table prayer_requests add column if not exists admin_note text;
+alter table prayer_requests add column if not exists updated_at timestamptz default now();
+alter table prayer_requests alter column approved set default false;
+alter table prayer_requests drop constraint if exists prayer_requests_visibility_check;
+alter table prayer_requests add constraint prayer_requests_visibility_check
+  check (visibility in ('private', 'public'));
+alter table prayer_requests drop constraint if exists prayer_requests_moderation_status_check;
+alter table prayer_requests add constraint prayer_requests_moderation_status_check
+  check (moderation_status in ('pending', 'flagged', 'approved', 'rejected', 'private'));
+create index if not exists prayer_requests_public_wall_idx
+  on prayer_requests (created_at desc)
+  where approved = true and visibility = 'public' and moderation_status = 'approved';
+create index if not exists prayer_requests_intercession_idx
+  on prayer_requests (created_at desc)
+  where visibility = 'private' or moderation_status in ('pending', 'flagged');
 alter table prayer_requests enable row level security;
 drop policy if exists "read_public" on prayer_requests;
-create policy "read_public" on prayer_requests for select using (approved = true);
+create policy "read_public" on prayer_requests for select using (
+  approved = true and visibility = 'public' and moderation_status = 'approved'
+);
 
 -- 2) Campus Reto (increments per event; aggregate by week_start)
 create table if not exists campus_reto (
@@ -65,6 +96,23 @@ create table if not exists donation_events (
   payload jsonb not null,
   created_at timestamptz default now()
 );
+
+-- Internal audit/payment tables: service role only.
+alter table public.security_throttle enable row level security;
+alter table public.security_events enable row level security;
+alter table public.donation_events enable row level security;
+
+drop policy if exists "read_public" on public.security_throttle;
+drop policy if exists "read_public" on public.security_events;
+drop policy if exists "read_public" on public.donation_events;
+
+revoke all on table public.security_throttle from anon, authenticated, public;
+revoke all on table public.security_events from anon, authenticated, public;
+revoke all on table public.donation_events from anon, authenticated, public;
+
+grant all on table public.security_throttle to service_role;
+grant all on table public.security_events to service_role;
+grant all on table public.donation_events to service_role;
 
 -- 7) Cumbre Mundial 2026
 create table if not exists cumbre_bookings (

@@ -8,18 +8,16 @@ import {
   sanitizeParticipant,
   calculateTotals,
   depositThreshold,
-  hasUnavailableLodging,
-  CUMBRE_LODGING_CLOSED_MESSAGE,
   buildPaymentReference,
   generateAccessToken,
   type PackageType,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals, applyManualPaymentToPlan } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createDonation } from '@lib/donationsStore';
-import { resolveBaseUrl } from '@lib/url';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
@@ -39,7 +37,8 @@ function normalizeFrequency(raw: string | null | undefined): InstallmentFrequenc
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
   const ageValue = String(ageRaw ?? '').trim();
   const age = ageValue ? Number(ageValue) : null;
-  const lodging = String(lodgingRaw || '').toLowerCase() === 'yes';
+  const lodgingValue = String(lodgingRaw ?? '').trim().toLowerCase();
+  const lodging = lodgingRaw === true || ['yes', 'si', 'sí', 'lodging', 'con alojamiento', 'con_alojamiento', 'with_lodging'].includes(lodgingValue);
   if (Number.isFinite(age)) {
     if ((age as number) <= 4) return 'child_0_7';
     if ((age as number) <= 10) return 'child_7_13';
@@ -184,7 +183,10 @@ export const POST: APIRoute = async ({ request }) => {
     const parsed = Array.isArray(payload.participants) ? payload.participants : [];
     const participants = parsed
       .map((entry: any) => {
-        const packageType = packageTypeFromInput(entry?.age, entry?.lodging);
+        const packageType = packageTypeFromInput(
+          entry?.age,
+          entry?.packageType ?? entry?.package_type ?? entry?.lodging,
+        );
         return {
           safe: sanitizeParticipant({
             fullName: entry?.fullName ?? '',
@@ -202,13 +204,6 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
-    if (hasUnavailableLodging(participants.map((p: any) => p.safe))) {
-      return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), {
-        status: 409,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-
     const currency = currencyForGroup(countryGroup);
     const totalAmount = calculateTotals(currency, participants.map((p: any) => p.safe));
     const threshold = depositThreshold(totalAmount);
@@ -287,6 +282,16 @@ export const POST: APIRoute = async ({ request }) => {
         idempotent: true,
       }), {
         status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const lodgingCapacity = await checkLodgingCapacity({
+      participants: participants.map((p: any) => p.safe),
+    });
+    if (!lodgingCapacity.ok) {
+      return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), {
+        status: 409,
         headers: { 'content-type': 'application/json' },
       });
     }
@@ -430,8 +435,21 @@ export const POST: APIRoute = async ({ request }) => {
       throw new Error('No se pudo guardar participantes');
     }
 
+    const writtenCapacity = await checkWrittenLodgingCapacity(booking.id);
+    if (!writtenCapacity.ok) {
+      await cleanupCumbreBooking(booking.id);
+      return new Response(JSON.stringify({ ok: false, error: writtenCapacity.message }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     try {
-      const baseUrl = resolveBaseUrl(request);
+      const configuredBaseUrl = import.meta.env?.PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL;
+      if (!configuredBaseUrl) {
+        throw new Error('PUBLIC_SITE_URL no está configurado');
+      }
+      const baseUrl = configuredBaseUrl.replace(/\/+$/, '');
       const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
       const existingUser = await findAuthUserByEmail(email);
       if (!existingUser) {

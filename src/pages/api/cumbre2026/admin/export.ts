@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { getPrice, isValidPackageType } from '@lib/cumbre2026';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
 
 export const prerender = false;
 
@@ -259,6 +260,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     'participant_first_name',
     'participant_last_name',
     'participant_package_label',
+    'participant_package_issue',
     'participant_price',
     'participant_role',
     'participant_diet_label',
@@ -349,6 +351,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
     const primaryId = primaryParticipantByBooking.get(bookingId);
     const participantTotal = bookingParticipants.length;
+    const packageResolution = resolveParticipantPackagesForExport(booking, bookingParticipants);
 
     const baseCells = [
       csvEscape(bookingId),
@@ -381,15 +384,17 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
     for (const participant of bookingParticipants) {
       const { firstName, lastName } = splitName(participant?.full_name);
-      const packageLabel = formatPackageLabel(participant?.package_type);
+      const packageInfo = packageResolution.get(String(participant.id || ''));
+      const resolvedPackageType = packageInfo?.packageType ?? participant?.package_type;
+      const packageLabel = formatPackageLabel(resolvedPackageType);
       const dietLabel = formatDietLabel(participant?.diet_type);
       const participantRole = resolveParticipantRole(participant, booking, primaryId, participantTotal);
-      const participantPrice = getParticipantPrice(booking?.currency, participant?.package_type);
+      const participantPrice = getParticipantPrice(booking?.currency, resolvedPackageType);
 
       const participantCells = [
         csvEscape(participant.id),
         csvEscape(participant.full_name),
-        csvEscape(participant.package_type),
+        csvEscape(resolvedPackageType),
         csvEscape(participant.relationship),
         csvEscape(participant.birthdate),
         csvEscape(participant.gender),
@@ -404,6 +409,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
         csvEscape(firstName),
         csvEscape(lastName),
         csvEscape(packageLabel),
+        csvEscape(packageInfo?.issue || ''),
         csvEscape(participantPrice),
         csvEscape(participantRole),
         csvEscape(dietLabel),

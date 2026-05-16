@@ -19,6 +19,11 @@ const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#96;');
 const safeText = (value, fallback = '') => escapeHtml(value ?? fallback);
 const safeAttr = (value, fallback = '') => escapeAttr(value ?? fallback);
 
+function isApprovedChurchMembershipStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'approved' || normalized === 'active';
+}
+
 async function clearStaleServiceWorkersOnce() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return false;
   if (sessionStorage.getItem('portal_sw_cleared') === '1') return false;
@@ -109,6 +114,19 @@ const churchBookingsSort = document.getElementById('church-bookings-sort');
 const churchBookingsPageSize = document.getElementById('church-bookings-page-size');
 const churchBookingsCount = document.getElementById('church-bookings-count');
 const churchBookingsPagination = document.getElementById('church-bookings-pagination');
+const churchParticipantsSearch = document.getElementById('church-participants-search');
+const churchParticipantsViewToggle = document.getElementById('church-participants-view-toggle');
+const churchParticipantsSort = document.getElementById('church-participants-sort');
+const churchParticipantsPayment = document.getElementById('church-participants-payment');
+const churchParticipantsLodging = document.getElementById('church-participants-lodging');
+const churchParticipantsMenu = document.getElementById('church-participants-menu');
+const churchParticipantsAlert = document.getElementById('church-participants-alert');
+const churchParticipantsPageSize = document.getElementById('church-participants-page-size');
+const churchParticipantsResultCount = document.getElementById('church-participants-count');
+const churchParticipantsEmpty = document.getElementById('church-participants-empty');
+const churchParticipantsTableWrap = document.getElementById('church-participants-table-wrap');
+const churchParticipantsTable = document.getElementById('church-participants-table');
+const churchParticipantsPagination = document.getElementById('church-participants-pagination');
 const churchPaymentsEmpty = document.getElementById('church-payments-empty');
 const churchPaymentsList = document.getElementById('church-payments-list');
 const churchPaymentsSearch = document.getElementById('church-payments-search');
@@ -121,6 +139,7 @@ const churchPaymentsPageSize = document.getElementById('church-payments-page-siz
 const churchPaymentsCount = document.getElementById('church-payments-count');
 const churchPaymentsPagination = document.getElementById('church-payments-pagination');
 const churchExportBtn = document.getElementById('church-export-btn');
+const churchAuditBtn = document.getElementById('church-audit-btn');
 const churchExportStatus = document.getElementById('church-export-status');
 const churchInstallmentsEmpty = document.getElementById('church-installments-empty');
 const churchInstallmentsList = document.getElementById('church-installments-list');
@@ -699,6 +718,9 @@ let selectorCountryFilter = '';
 let selectorSearchFilter = '';
 let churchBookingsData = [];
 let churchBookingsPage = 1;
+let churchParticipantsData = [];
+let churchParticipantsPage = 1;
+let churchParticipantsViewMode = 'cards';
 let churchMembersData = [];
 let churchPaymentsData = [];
 let churchPaymentsPage = 1;
@@ -713,6 +735,7 @@ const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
 const MAX_SELECTOR_OPTIONS_WITHOUT_COUNTRY = 28;
 const DEFAULT_CHURCH_BOOKINGS_PAGE_SIZE = 20;
+const DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE = 10;
 const DEFAULT_CHURCH_PAYMENTS_PAGE_SIZE = 10;
 const DEFAULT_CHURCH_INSTALLMENTS_PAGE_SIZE = 10;
 const DEFAULT_ADMIN_FOLLOWUPS_PAGE_SIZE = 12;
@@ -1323,6 +1346,7 @@ async function loadDashboardData(authResult) {
     portalIsAdmin = portalRole === 'admin' || portalRole === 'superadmin';
     portalIsSuperadmin = portalRole === 'superadmin';
     portalIsCountryPastor = portalRole === 'national_pastor';
+    churchAuditBtn?.classList.toggle('hidden', !portalIsAdmin);
 
     dlog('[DEBUG] Data loaded. Profile:', portalProfile);
 
@@ -1331,6 +1355,7 @@ async function loadDashboardData(authResult) {
     const navLinkFinances = document.getElementById('nav-link-finances'); // Finanzas
     const navLinkUsers = document.getElementById('nav-link-users'); // Usuarios
     const navLinkCampus = document.getElementById('nav-link-campus'); // Campus
+    const navLinkDonations = document.getElementById('nav-link-donations'); // Donaciones
     const navLinkRegions = document.getElementById('nav-link-regions'); // Regiones
     const tabIglesia = document.getElementById('tab-iglesia'); // The actual tab content
 
@@ -1339,6 +1364,7 @@ async function loadDashboardData(authResult) {
     if (navLinkFinances) navLinkFinances.style.display = 'none';
     if (navLinkUsers) navLinkUsers.style.display = 'none';
     if (navLinkCampus) navLinkCampus.style.display = 'none';
+    if (navLinkDonations) navLinkDonations.style.display = 'none';
     if (navLinkRegions) navLinkRegions.style.display = 'none';
 
     const myRole = portalProfile?.role || 'user';
@@ -1400,6 +1426,10 @@ async function loadDashboardData(authResult) {
         navLinkFinances.style.display = 'flex';
       }
 
+      if (financeRoles.includes(myRole) && navLinkDonations) {
+        navLinkDonations.style.display = 'flex';
+      }
+
       if (regionsRoles.includes(myRole) && navLinkRegions) {
         navLinkRegions.style.display = 'flex';
       }
@@ -1408,7 +1438,8 @@ async function loadDashboardData(authResult) {
     // -------------------------------------
 
     const hasChurchRole = portalMemberships.some(
-      (membership) => ['church_admin', 'church_member'].includes(membership?.role) && membership?.status !== 'pending',
+      (membership) => ['church_admin', 'church_member'].includes(membership?.role)
+        && isApprovedChurchMembershipStatus(membership?.status),
     );
     const hasChurchAccess = portalIsAdmin
       || hasChurchRole
@@ -1433,6 +1464,9 @@ async function loadDashboardData(authResult) {
     const donationSubscriptions = Array.isArray(payload.donationSubscriptions) ? payload.donationSubscriptions.filter(Boolean) : [];
     const donationRecurringSubscriptions = Array.isArray(payload.donationRecurringSubscriptions)
       ? payload.donationRecurringSubscriptions.filter(Boolean)
+      : [];
+    const campusSubscriptions = Array.isArray(payload.campusSubscriptions)
+      ? payload.campusSubscriptions.filter(Boolean)
       : [];
     const events = Array.isArray(payload.events) ? payload.events.filter(Boolean) : [];
 
@@ -1535,7 +1569,7 @@ async function loadDashboardData(authResult) {
     runSafe('renderPayments', () => renderPayments(paymentsForTable));
     runSafe('renderSummaryEvents', () => renderSummaryEvents(bookings, plans, installments));
     runSafe('renderGivingSummary', () => renderGivingSummary(donations, donationSubscriptions, donationRecurringSubscriptions));
-    runSafe('renderCampusSummary', () => renderCampusSummary(donations, donationSubscriptions));
+    runSafe('renderCampusSummary', () => renderCampusSummary(donations, donationSubscriptions, campusSubscriptions));
     runSafe('renderLocalEvents', () => renderLocalEvents(events));
     runSafe('renderMemberships', () => renderMemberships(portalMemberships));
     runSafe('setupInviteAccess', () => setupInviteAccess());
@@ -1574,6 +1608,7 @@ async function loadDashboardData(authResult) {
         console.error('Error cargando selector de iglesias:', err);
       }
       backgroundTasks.push(loadChurchBookings(headers));
+      backgroundTasks.push(loadChurchParticipants(headers));
       backgroundTasks.push(loadChurchPayments(headers));
       backgroundTasks.push(loadChurchInstallments(headers));
       backgroundTasks.push(loadChurchMembers(headers));
@@ -1659,7 +1694,7 @@ function buildParticipantRow(data = {}) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <select data-field="lodging" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
         <option value="no">Sin alojamiento</option>
-        <option value="yes" disabled>Con alojamiento (agotado)</option>
+        <option value="yes">Con alojamiento</option>
       </select>
       <select data-field="menuType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
         <option value="">Tipo de menú</option>
@@ -1688,6 +1723,12 @@ function buildParticipantRow(data = {}) {
       </div>
     </div>
   `;
+  const lodgingSelect = row.querySelector('[data-field="lodging"]');
+  if (lodgingSelect) {
+    lodgingSelect.value = data.packageType === 'lodging' || data.package_type === 'lodging' || data.lodging === 'yes'
+      ? 'yes'
+      : 'no';
+  }
   const removeBtn = row.querySelector('[data-action="remove"]');
   removeBtn.addEventListener('click', () => {
     row.remove();
@@ -1701,11 +1742,12 @@ function collectParticipants() {
   rows.forEach((row) => {
     const getValue = (field) => row.querySelector(`[data-field="${field}"]`)?.value?.toString().trim() || '';
     const ageValue = Number(getValue('age') || 0);
+    const lodgingValue = getValue('lodging');
     participants.push({
       fullName: getValue('fullName'),
       age: ageValue,
-      lodging: 'no',
-      packageType: 'no_lodging',
+      lodging: getValue('lodging') === 'yes' ? 'yes' : 'no',
+      packageType: getValue('lodging') === 'yes' && ageValue > 10 ? 'lodging' : 'no_lodging',
       menuType: getValue('menuType'),
       relationship: getValue('relationship'),
       documentType: getValue('documentType'),
@@ -1911,6 +1953,7 @@ if (churchSelectorInput) {
 
       await Promise.all([
         loadChurchBookings(portalAuthHeaders),
+        loadChurchParticipants(portalAuthHeaders),
         loadChurchInstallments(portalAuthHeaders),
         loadChurchPayments(portalAuthHeaders),
         loadChurchMembers(portalAuthHeaders),
@@ -2374,6 +2417,517 @@ function updateChurchBookingsView(options = {}) {
   const meta = buildChurchBookingsMeta();
   const filtered = filterChurchBookings(churchBookingsData, meta);
   renderChurchBookings(filtered, meta);
+}
+
+function filterChurchParticipants(list) {
+  const query = normalizeGeoToken(churchParticipantsSearch?.value || '');
+  const payment = churchParticipantsPayment?.value || '';
+  const lodging = churchParticipantsLodging?.value || '';
+  const menu = churchParticipantsMenu?.value || '';
+  const alert = churchParticipantsAlert?.value || '';
+
+  return (list || []).filter((item) => {
+    const searchable = [
+      item.participant_name,
+      item.titular_reserva,
+      item.responsable_grupo,
+      item.document_type,
+      item.document_number,
+      item.email,
+      item.phone,
+      item.nationality,
+      item.city,
+      item.church_final,
+      item.church_catalog,
+      item.church_input,
+      item.booking_ref,
+      item.booking_id,
+      item.payment_type,
+      item.booking_status,
+      item.last_payment_at,
+      item.next_due_date,
+    ].filter(Boolean).map(normalizeGeoToken).join(' ');
+
+    if (query && !searchable.includes(query)) return false;
+    if (payment === 'full' && !item.is_paid_full) return false;
+    if (payment === 'pending' && Number(item.pending_amount || 0) <= 0) return false;
+    if (payment === 'recent' && !item.last_payment_at) return false;
+    if (lodging && item.package_label !== lodging) return false;
+    if (menu && item.diet_label !== menu) return false;
+    if (alert === 'with' && !item.package_issue) return false;
+    if (alert === 'corrected' && item.package_issue !== 'CORREGIDO_EN_EXPORT_POR_TOTAL') return false;
+    if (alert === 'review' && (!item.package_issue || item.package_issue === 'CORREGIDO_EN_EXPORT_POR_TOTAL')) return false;
+    return true;
+  });
+}
+
+function getChurchParticipantsPageSize() {
+  const raw = Number(churchParticipantsPageSize?.value || DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE);
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_CHURCH_PARTICIPANTS_PAGE_SIZE;
+  return raw;
+}
+
+function getChurchParticipantsViewMode() {
+  return churchParticipantsViewMode === 'table' ? 'table' : 'cards';
+}
+
+function setChurchParticipantsViewMode(mode) {
+  churchParticipantsViewMode = mode === 'table' ? 'table' : 'cards';
+  churchParticipantsViewToggle?.querySelectorAll('.church-participants-view-btn').forEach((btn) => {
+    const isActive = btn.dataset.view === churchParticipantsViewMode;
+    btn.classList.toggle('bg-[#293C74]', isActive);
+    btn.classList.toggle('text-white', isActive);
+    btn.classList.toggle('shadow-sm', isActive);
+    btn.classList.toggle('text-slate-500', !isActive);
+  });
+}
+
+function getParticipantActivityTime(item) {
+  const lastPayment = toDate(item?.last_payment_at)?.getTime() || 0;
+  const created = toDate(item?.created_at)?.getTime() || 0;
+  return lastPayment || created;
+}
+
+function getChurchParticipantsSortOption() {
+  return churchParticipantsSort?.value || 'recent_payment_desc';
+}
+
+function sortChurchParticipants(list) {
+  const items = [...(list || [])];
+  const sortOption = getChurchParticipantsSortOption();
+  items.sort((a, b) => {
+    const activityA = getParticipantActivityTime(a);
+    const activityB = getParticipantActivityTime(b);
+    const createdA = toDate(a?.created_at)?.getTime() || 0;
+    const createdB = toDate(b?.created_at)?.getTime() || 0;
+    const paidA = Number(a?.total_paid || 0);
+    const paidB = Number(b?.total_paid || 0);
+    const pendingA = Number(a?.pending_amount || 0);
+    const pendingB = Number(b?.pending_amount || 0);
+    const nameA = String(a?.participant_name || '').localeCompare(String(b?.participant_name || ''), 'es');
+    const lodgingA = String(a?.package_label || '').localeCompare(String(b?.package_label || ''), 'es');
+    const menuA = String(a?.diet_label || '').localeCompare(String(b?.diet_label || ''), 'es');
+
+    if (sortOption === 'name_asc') return nameA;
+    if (sortOption === 'created_desc') return createdB - createdA || nameA;
+    if (sortOption === 'lodging_asc') return lodgingA || nameA;
+    if (sortOption === 'menu_asc') return menuA || nameA;
+    if (sortOption === 'paid_desc') return paidB - paidA || activityB - activityA;
+    if (sortOption === 'pending_desc') return pendingB - pendingA || activityB - activityA;
+    return activityB - activityA || nameA;
+  });
+  return items;
+}
+
+function paginateChurchParticipants(list) {
+  const safeList = list || [];
+  const pageSize = getChurchParticipantsPageSize();
+  const total = safeList.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (churchParticipantsPage > totalPages) churchParticipantsPage = totalPages;
+  if (churchParticipantsPage < 1) churchParticipantsPage = 1;
+  const start = (churchParticipantsPage - 1) * pageSize;
+  const end = Math.min(start + pageSize, total);
+  return {
+    items: safeList.slice(start, end),
+    total,
+    pageSize,
+    totalPages,
+    page: churchParticipantsPage,
+    start,
+    end,
+  };
+}
+
+function getParticipantPackageBadge(item) {
+  const label = item?.package_label || '-';
+  const className = label === 'Con alojamiento'
+    ? 'bg-[#293C74]/10 text-[#293C74] border-[#293C74]/10'
+    : label === 'Sin alojamiento'
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+      : 'bg-sky-50 text-sky-700 border-sky-100';
+  return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}">${safeText(label)}</span>`;
+}
+
+function getParticipantAlertBadge(issue) {
+  if (!issue) {
+    return '<span class="text-[11px] text-slate-400">-</span>';
+  }
+  const isCorrected = issue === 'CORREGIDO_EN_EXPORT_POR_TOTAL';
+  const className = isCorrected
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    : 'bg-amber-50 text-amber-700 border-amber-100';
+  const label = isCorrected ? 'Corregido export' : 'Revisar';
+  return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}" title="${safeAttr(issue)}">${safeText(label)}</span>`;
+}
+
+function getParticipantPaymentBadge(item) {
+  const isFull = Boolean(item?.is_paid_full);
+  const className = isFull
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    : 'bg-amber-50 text-amber-700 border-amber-100';
+  const label = isFull ? 'Completo' : 'Con saldo';
+  return `<span class="inline-flex px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest ${className}">${safeText(label)}</span>`;
+}
+
+function getParticipantPaymentMethodBadge(item) {
+  const label = item?.payment_type || 'Online';
+  const isPhysical = normalizeGeoToken(label).includes('fisico');
+  const className = isPhysical
+    ? 'bg-slate-100 text-slate-600 border-slate-200'
+    : 'bg-purple-50 text-purple-700 border-purple-100';
+  const icon = isPhysical
+    ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>';
+  return `<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${className}">${icon}${safeText(label)}</span>`;
+}
+
+function getParticipantMenuBadge(item) {
+  const label = item?.diet_label || '-';
+  return `<span class="inline-flex px-2 py-1 rounded-md border border-slate-200 bg-white text-slate-600 text-[10px] font-bold uppercase tracking-widest">${safeText(label)}</span>`;
+}
+
+function renderChurchParticipantsPagination(meta) {
+  if (!churchParticipantsPagination) return;
+  if (!meta || meta.total <= 0) {
+    churchParticipantsPagination.innerHTML = '';
+    churchParticipantsPagination.classList.add('hidden');
+    return;
+  }
+
+  const canPrev = meta.page > 1;
+  const canNext = meta.page < meta.totalPages;
+  const safeStart = meta.start + 1;
+  const safeEnd = meta.end;
+  churchParticipantsPagination.innerHTML = `
+    <span class="font-medium text-slate-500">Mostrando ${safeStart}-${safeEnd} de ${meta.total}</span>
+    <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+      <button type="button" class="church-participants-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+        Anterior
+      </button>
+      <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
+      <button type="button" class="church-participants-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+        Siguiente
+      </button>
+    </div>
+  `;
+  churchParticipantsPagination.classList.remove('hidden');
+
+  churchParticipantsPagination.querySelectorAll('.church-participants-page-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const next = Number(btn.dataset.page || 0);
+      if (!Number.isFinite(next) || next < 1 || next > meta.totalPages) return;
+      churchParticipantsPage = next;
+      updateChurchParticipantsView();
+    });
+  });
+}
+
+function renderChurchParticipantsTableRows(items) {
+  const rows = (items || []).map((item) => {
+    const safeBookingId = safeAttr(item.booking_id || '');
+    const participantCountLabel = Number(item.participant_count || 0) > 1
+      ? `${item.participant_count} inscritos`
+      : 'Individual';
+    const groupOwner = item.responsable_grupo || item.titular_reserva || 'Responsable';
+    const groupLabel = Number(item.participant_count || 0) > 1
+      ? item.is_payment_owner
+        ? `Responsable del grupo · ${participantCountLabel}`
+        : `Pertenece al grupo de ${groupOwner} · ${participantCountLabel}`
+      : participantCountLabel;
+    const docLabel = [item.document_type, item.document_number].filter(Boolean).join(' ') || '-';
+    const ageLabel = item.age != null ? `${item.age} años` : 'Edad n/d';
+    const originLabel = [item.city, item.nationality].filter(Boolean).join(' · ') || '-';
+    const churchLabel = item.church_final || item.church_input || '-';
+    const contactLine = [item.email, item.phone].filter(Boolean).join(' · ') || 'Sin contacto';
+    const totalPaidLabel = formatCurrency(item.total_paid, item.currency);
+    const totalAmountLabel = formatCurrency(item.total_amount, item.currency);
+    const pendingAmount = Number(item.pending_amount || 0);
+    const pendingLabel = pendingAmount > 0 ? formatCurrency(pendingAmount, item.currency) : 'Sin saldo';
+    const lastPaymentLabel = item.last_payment_at
+      ? `${formatCurrency(item.last_payment_amount, item.last_payment_currency || item.currency)} · ${formatDate(item.last_payment_at)}`
+      : 'Sin abono aprobado';
+    const nextDueLabel = item.next_due_date
+      ? `${formatCurrency(item.next_due_amount, item.next_due_currency || item.currency)} · ${formatDate(item.next_due_date)}`
+      : pendingAmount > 0
+        ? `${formatCurrency(pendingAmount, item.currency)} · Sin fecha`
+        : '—';
+    const registeredLabel = item.created_at ? formatDateTime(item.created_at) : '-';
+    const packageOriginal = item.package_original_type && item.package_original_type !== item.package_type
+      ? `Original: ${item.package_original_type}`
+      : '';
+
+    return `
+      <tr class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70">
+        <td class="min-w-[190px] px-4 py-3 align-top">
+          <p class="text-sm font-black text-[#293C74]">#${safeText(item.booking_ref || '')}</p>
+          <p class="text-[11px] font-semibold text-slate-500">${safeText(item.reserva_tipo || '')} · ${safeText(participantCountLabel)}</p>
+          <p class="mt-1 text-[11px] text-slate-500">Titular: ${safeText(item.titular_reserva || '-')}</p>
+          <p class="text-[11px] text-slate-500">Responsable: ${safeText(item.responsable_grupo || '-')}</p>
+        </td>
+        <td class="min-w-[240px] px-4 py-3 align-top">
+          <p class="text-sm font-bold text-slate-800">${safeText(item.participant_name || '-')}</p>
+          <p class="mt-1 text-[11px] font-semibold text-brand-teal">${safeText(groupLabel)}</p>
+          <p class="text-[11px] text-slate-500">${safeText(item.relationship || 'Sin relación registrada')}</p>
+        </td>
+        <td class="min-w-[160px] px-4 py-3 align-top">
+          <p class="text-xs font-bold text-slate-700">${safeText(docLabel)}</p>
+          <p class="text-[11px] text-slate-500">${safeText(ageLabel)}${item.birthdate ? ` · ${safeText(item.birthdate)}` : ''}</p>
+          <p class="text-[11px] text-slate-500">${safeText(item.gender || 'Sin género')}</p>
+        </td>
+        <td class="min-w-[240px] px-4 py-3 align-top">
+          <p class="break-all text-xs font-semibold text-slate-700">${safeText(item.email || '-')}</p>
+          <p class="break-words text-[11px] text-slate-500">${safeText(item.phone || '-')}</p>
+        </td>
+        <td class="min-w-[230px] px-4 py-3 align-top">
+          <p class="break-words text-xs font-semibold text-slate-700">${safeText(originLabel)}</p>
+          <p class="break-words text-[11px] text-slate-500">${safeText(churchLabel)}</p>
+          <p class="text-[11px] text-slate-500">${safeText(item.registration_type || '')}</p>
+        </td>
+        <td class="min-w-[190px] px-4 py-3 align-top">
+          <div class="flex flex-wrap gap-1.5">
+            ${getParticipantPackageBadge(item)}
+            ${getParticipantMenuBadge(item)}
+          </div>
+          ${packageOriginal ? `<p class="mt-1 text-[11px] text-slate-400">${safeText(packageOriginal)}</p>` : ''}
+        </td>
+        <td class="min-w-[190px] px-4 py-3 align-top">
+          <div class="flex flex-wrap gap-1.5">
+            ${getParticipantPaymentBadge(item)}
+            ${getParticipantPaymentMethodBadge(item)}
+          </div>
+          <p class="mt-2 text-[11px] text-slate-600"><span class="font-bold">Pagado:</span> ${safeText(totalPaidLabel)}</p>
+          <p class="text-[11px] text-slate-600"><span class="font-bold">Total:</span> ${safeText(totalAmountLabel)}</p>
+          <p class="text-[11px] text-slate-600"><span class="font-bold">Saldo:</span> ${safeText(pendingLabel)}</p>
+          <p class="text-[11px] text-slate-400">${safeText(item.booking_status || '')}</p>
+        </td>
+        <td class="min-w-[220px] px-4 py-3 align-top">
+          <p class="text-[11px] text-slate-600"><span class="font-bold uppercase tracking-widest text-slate-400">Último:</span> ${safeText(lastPaymentLabel)}</p>
+          <p class="mt-1 text-[11px] text-slate-600"><span class="font-bold uppercase tracking-widest text-slate-400">Próximo:</span> ${safeText(nextDueLabel)}</p>
+          <p class="mt-1 text-[11px] text-slate-600"><span class="font-bold uppercase tracking-widest text-slate-400">Registro:</span> ${safeText(registeredLabel)}</p>
+        </td>
+        <td class="min-w-[150px] px-4 py-3 align-top">
+          ${getParticipantAlertBadge(item.package_issue)}
+          ${item.package_issue ? `<p class="mt-1 break-words text-[10px] text-slate-400">${safeText(item.package_issue)}</p>` : ''}
+        </td>
+        <td class="min-w-[150px] px-4 py-3 align-top">
+          <div class="flex flex-col gap-2">
+            <button type="button" class="btn-view-participant-booking px-3 py-2 rounded-lg border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+              Ver detalle
+            </button>
+            <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+              Editar perfil
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="overflow-x-auto rounded-2xl border border-slate-100">
+      <table class="min-w-[1900px] w-full text-left">
+        <thead class="bg-slate-50">
+          <tr class="border-b border-slate-100 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            <th class="px-4 py-3">Reserva</th>
+            <th class="px-4 py-3">Participante y grupo</th>
+            <th class="px-4 py-3">Documento</th>
+            <th class="px-4 py-3">Contacto</th>
+            <th class="px-4 py-3">Origen / Iglesia</th>
+            <th class="px-4 py-3">Alojamiento / Menú</th>
+            <th class="px-4 py-3">Pago</th>
+            <th class="px-4 py-3">Fechas</th>
+            <th class="px-4 py-3">Alerta</th>
+            <th class="px-4 py-3">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white">${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderChurchParticipants(list) {
+  if (!churchParticipantsTable || !churchParticipantsEmpty || !churchParticipantsTableWrap) return;
+  churchParticipantsTable.innerHTML = '';
+  if (churchParticipantsResultCount) {
+    churchParticipantsResultCount.textContent = '0 resultados';
+  }
+  if (churchParticipantsPagination) {
+    churchParticipantsPagination.innerHTML = '';
+    churchParticipantsPagination.classList.add('hidden');
+  }
+
+  if (!list.length) {
+    churchParticipantsEmpty.classList.remove('hidden');
+    churchParticipantsTableWrap.classList.add('hidden');
+    return;
+  }
+
+  churchParticipantsEmpty.classList.add('hidden');
+  churchParticipantsTableWrap.classList.remove('hidden');
+  const sortedList = sortChurchParticipants(list);
+  const paginated = paginateChurchParticipants(sortedList);
+  if (churchParticipantsResultCount) {
+    churchParticipantsResultCount.textContent = `${paginated.total} resultado${paginated.total === 1 ? '' : 's'}`;
+  }
+
+  const viewMode = getChurchParticipantsViewMode();
+  if (viewMode === 'table') {
+    churchParticipantsTable.className = '';
+    churchParticipantsTable.innerHTML = renderChurchParticipantsTableRows(paginated.items);
+    churchParticipantsTable.querySelectorAll('.btn-view-participant-booking').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const bookingId = btn.dataset.bookingId;
+        if (bookingId) openBookingInspectorModal(bookingId);
+      });
+    });
+
+    churchParticipantsTable.querySelectorAll('.btn-edit-participant-booking').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const bookingId = btn.dataset.bookingId;
+        if (bookingId) openEditBookingModal(bookingId);
+      });
+    });
+
+    renderChurchParticipantsPagination(paginated);
+    return;
+  }
+
+  churchParticipantsTable.className = 'space-y-3';
+  churchParticipantsTable.innerHTML = paginated.items.map((item) => {
+    const safeBookingId = safeAttr(item.booking_id || '');
+    const ageLabel = item.age != null ? `${item.age} años` : 'Edad n/d';
+    const docLabel = [item.document_type, item.document_number].filter(Boolean).join(' ') || '-';
+    const originLabel = [item.city, item.nationality].filter(Boolean).join(' · ') || '-';
+    const churchLabel = item.church_final || item.church_input || '-';
+    const totalPaidLabel = formatCurrency(item.total_paid, item.currency);
+    const totalAmountLabel = formatCurrency(item.total_amount, item.currency);
+    const pendingAmount = Number(item.pending_amount || 0);
+    const pendingLabel = Number(item.pending_amount || 0) > 0
+      ? `Pendiente ${formatCurrency(item.pending_amount, item.currency)}`
+      : 'Sin saldo';
+    const lastPaymentLabel = item.last_payment_at
+      ? `${formatCurrency(item.last_payment_amount, item.last_payment_currency || item.currency)} · ${formatDate(item.last_payment_at)}`
+      : 'Sin abono aprobado';
+    const nextDueLabel = item.next_due_date
+      ? `${formatCurrency(item.next_due_amount, item.next_due_currency || item.currency)} · ${formatDate(item.next_due_date)}`
+      : pendingAmount > 0
+        ? `${formatCurrency(pendingAmount, item.currency)} · Sin fecha`
+        : '—';
+    const registeredLabel = item.created_at ? formatDateTime(item.created_at) : '-';
+    const participantCountLabel = Number(item.participant_count || 0) > 1
+      ? `${item.participant_count} inscritos`
+      : 'Individual';
+    const groupOwner = item.responsable_grupo || item.titular_reserva || 'Responsable';
+    const groupLabel = Number(item.participant_count || 0) > 1
+      ? item.is_payment_owner
+        ? `Responsable del grupo · ${participantCountLabel}`
+        : `Pertenece al grupo de ${groupOwner} · ${participantCountLabel}`
+      : participantCountLabel;
+    const groupBadgeClass = item.is_payment_owner
+      ? 'bg-brand-teal/10 text-brand-teal border-brand-teal/20'
+      : 'bg-slate-50 text-slate-600 border-slate-200';
+    const alertBadge = item.package_issue ? getParticipantAlertBadge(item.package_issue) : '';
+    const contactLine = [item.email, item.phone].filter(Boolean).join(' · ') || 'Sin contacto';
+    return `
+      <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_180px]">
+          <div class="min-w-0">
+            <p class="mb-1 break-words text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">${safeText(churchLabel)}</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="shrink-0 text-base md:text-lg font-black text-[#293C74]">#${safeText(item.booking_ref || '')}</p>
+              <span class="text-slate-300">•</span>
+              <p class="min-w-0 break-words text-sm md:text-base font-bold text-slate-700">${safeText(item.participant_name || '-')}</p>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center gap-1.5">
+              ${getParticipantPaymentBadge(item)}
+              ${getParticipantPaymentMethodBadge(item)}
+              ${getParticipantPackageBadge(item)}
+              ${getParticipantMenuBadge(item)}
+              ${alertBadge}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 rounded-xl bg-slate-50/70 p-3 text-left xl:grid-cols-1 xl:text-right">
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Pagado</p>
+              <p class="break-words text-sm font-black text-brand-teal">${safeText(totalPaidLabel)}</p>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Total</p>
+              <p class="break-words text-sm font-black text-[#293C74]">${safeText(totalAmountLabel)}</p>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Saldo</p>
+              <p class="break-words text-[11px] font-semibold text-slate-500">${safeText(pendingLabel)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-1 gap-2 border-t border-slate-100 pt-3 text-xs sm:grid-cols-3">
+          <p class="min-w-0 text-slate-600">
+            <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Último abono</span>
+            <span class="block break-words font-semibold">${safeText(lastPaymentLabel)}</span>
+          </p>
+          <p class="min-w-0 text-slate-600">
+            <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Próximo abono</span>
+            <span class="block break-words font-semibold">${safeText(nextDueLabel)}</span>
+          </p>
+          <p class="min-w-0 text-slate-600">
+            <span class="block text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">Registro</span>
+            <span class="block break-words font-semibold">${safeText(registeredLabel)}</span>
+          </p>
+        </div>
+
+        <div class="mt-3 grid gap-3 border-t border-slate-100 pt-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+          <div class="min-w-0">
+            <div class="inline-flex max-w-full items-center rounded-lg border px-2.5 py-1.5 text-[11px] font-bold ${groupBadgeClass}" title="${safeAttr(groupLabel)}">
+              <span class="truncate">${safeText(groupLabel)}</span>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+              <span class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Doc:</span> <span class="break-words font-semibold text-slate-700">${safeText(docLabel)}</span></span>
+              <span class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Origen:</span> <span class="break-words font-semibold text-slate-700">${safeText(originLabel)}</span></span>
+              <span class="min-w-0"><span class="font-bold text-slate-400 uppercase tracking-widest">Contacto:</span> <span class="break-all font-semibold text-slate-700">${safeText(contactLine)}</span></span>
+              <span class="min-w-0 break-words text-slate-400">${safeText(ageLabel)}${item.gender ? ` · ${safeText(item.gender)}` : ''} · ${safeText(item.registration_type || '')}</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2 sm:flex-row xl:justify-end">
+            <button type="button" class="btn-view-participant-booking px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+              Ver detalle
+            </button>
+            <button type="button" class="btn-edit-participant-booking px-4 py-2.5 rounded-xl border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+              Editar perfil
+            </button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  churchParticipantsTable.querySelectorAll('.btn-view-participant-booking').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const bookingId = btn.dataset.bookingId;
+      if (bookingId) openBookingInspectorModal(bookingId);
+    });
+  });
+
+  churchParticipantsTable.querySelectorAll('.btn-edit-participant-booking').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const bookingId = btn.dataset.bookingId;
+      if (bookingId) openEditBookingModal(bookingId);
+    });
+  });
+
+  renderChurchParticipantsPagination(paginated);
+}
+
+function updateChurchParticipantsView(options = {}) {
+  if (options.resetPage) {
+    churchParticipantsPage = 1;
+  }
+  renderChurchParticipants(filterChurchParticipants(churchParticipantsData));
 }
 
 function updateChurchPaymentsView(options = {}) {
@@ -2918,12 +3472,15 @@ async function sendChurchInstallmentReminder(installmentId) {
 }
 
 async function loadChurchBookings(headers = {}) {
-  if (!churchBookingsList || !churchBookingsEmpty) return;
   ensureAllChurchesSelection();
   if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
-    churchBookingsEmpty.textContent = 'Selecciona una iglesia para ver los registros.';
-    churchBookingsEmpty.classList.remove('hidden');
-    churchBookingsList.classList.add('hidden');
+    if (churchBookingsEmpty && churchBookingsList) {
+      churchBookingsEmpty.textContent = 'Selecciona una iglesia para ver los registros.';
+      churchBookingsEmpty.classList.remove('hidden');
+      churchBookingsList.classList.add('hidden');
+    }
+    churchBookingsData = [];
+    updateChurchStats();
     return;
   }
   try {
@@ -2936,8 +3493,36 @@ async function loadChurchBookings(headers = {}) {
     churchBookingsData = payload.bookings || [];
     updateChurchBookingsView({ resetPage: true });
     updateChurchInstallmentsView({ resetPage: true });
+    updateChurchStats();
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function loadChurchParticipants(headers = {}) {
+  if (!churchParticipantsTable || !churchParticipantsEmpty || !churchParticipantsTableWrap) return;
+  ensureAllChurchesSelection();
+  if (portalIsAdmin && !portalSelectedChurchId && !portalIsCustomChurch) {
+    churchParticipantsEmpty.textContent = 'Selecciona una iglesia para ver participantes.';
+    churchParticipantsEmpty.classList.remove('hidden');
+    churchParticipantsTableWrap.classList.add('hidden');
+    return;
+  }
+  try {
+    const url = new URL('/api/portal/iglesia/participants', window.location.origin);
+    const resolvedId = resolveSelectedChurchId();
+    if (resolvedId) url.searchParams.set('churchId', resolvedId);
+    const res = await fetch(url.toString(), { headers, credentials: 'include' });
+    const payload = await res.json();
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'No se pudo cargar');
+    churchParticipantsData = payload.participants || [];
+    updateChurchParticipantsView({ resetPage: true });
+  } catch (err) {
+    console.error(err);
+    churchParticipantsData = [];
+    churchParticipantsEmpty.textContent = err?.message || 'No se pudo cargar participantes.';
+    churchParticipantsEmpty.classList.remove('hidden');
+    churchParticipantsTableWrap.classList.add('hidden');
   }
 }
 
@@ -3101,6 +3686,41 @@ async function exportChurchBookings() {
   } catch (err) {
     console.error(err);
     churchExportStatus.textContent = err?.message || 'No se pudo exportar.';
+  }
+}
+
+async function exportCumbrePackageAudit() {
+  if (!churchAuditBtn || !churchExportStatus) return;
+  if (!portalIsAdmin) {
+    churchExportStatus.textContent = 'Solo administradores pueden descargar la auditoría.';
+    return;
+  }
+  churchAuditBtn.disabled = true;
+  churchExportStatus.textContent = 'Generando auditoría de paquetes...';
+  try {
+    const url = new URL('/api/portal/admin/cumbre/package-audit', window.location.origin);
+    url.searchParams.set('format', 'csv');
+    url.searchParams.set('scope', 'participants');
+    const res = await fetch(url.toString(), { headers: portalAuthHeaders, credentials: 'include' });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.error || 'No se pudo descargar auditoría');
+    }
+    const blob = await res.blob();
+    const filename = res.headers.get('content-disposition')?.split('filename=')?.[1]?.replace(/"/g, '') || 'cumbre-package-audit-participants.csv';
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(link.href);
+    link.remove();
+    churchExportStatus.textContent = 'Auditoría descargada. Revisa primero antes de corregir datos.';
+  } catch (err) {
+    console.error(err);
+    churchExportStatus.textContent = err?.message || 'No se pudo descargar auditoría.';
+  } finally {
+    churchAuditBtn.disabled = false;
   }
 }
 
@@ -4337,17 +4957,52 @@ function renderGivingSummary(donations, subscriptions, recurringSubscriptions = 
   });
 }
 
-function renderCampusSummary(donations, subscriptions) {
+function resolveCampusSubscriptionSchedule(item) {
+  const status = (item.status || '').toString().toUpperCase();
+  if (status === 'PENDING_SETUP') {
+    return item.provider === 'wompi'
+      ? 'Pendiente: activacion de cobro automatico Wompi'
+      : 'Pendiente de confirmacion';
+  }
+  if (status === 'PENDING') {
+    return 'Cobro en proceso de confirmacion';
+  }
+  if (status === 'PAUSED') {
+    return item.pause_until
+      ? `Pausado hasta ${formatDate(item.pause_until)}`
+      : 'Pausado hasta reactivar';
+  }
+  if (status === 'PAYMENT_FAILED') {
+    return 'Pago fallido: revisa el metodo de pago';
+  }
+  if (item.next_charge_at) return `Proximo cobro: ${formatDate(item.next_charge_at)}`;
+  if (item.current_period_end) return `Periodo actual hasta ${formatDate(item.current_period_end)}`;
+  return 'Mensual';
+}
+
+function resolveCampusProviderLabel(item) {
+  const provider = (item.provider || '').toString().toLowerCase();
+  if (provider === 'stripe') return 'Procesado por Stripe';
+  if (provider === 'wompi') return 'Procesado por Wompi';
+  return 'Procesador pendiente';
+}
+
+function renderCampusSummary(donations, subscriptions, campusSubscriptions = []) {
   if (!campusGivingList || !campusGivingEmpty) return;
   campusGivingList.innerHTML = '';
 
-  const recurring = (subscriptions || []).filter((item) => {
+  const realRecurring = (campusSubscriptions || []).filter((item) => {
+    const status = (item.status || 'ACTIVE').toString().toUpperCase();
+    return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status);
+  });
+  const reminderRecurring = (subscriptions || []).filter((item) => {
     const status = (item.status || 'ACTIVE').toString().toUpperCase();
     return !['CANCELLED', 'ENDED', 'DISABLED'].includes(status) && isCampusDonation(item);
   });
   const oneTime = (donations || []).filter((item) => !item.is_recurring && isCampusDonation(item));
   const items = [
-    ...recurring.map((item) => ({ ...item, _type: 'recurring' })),
+    ...realRecurring.map((item) => ({ ...item, _type: 'campus-subscription' })),
+    ...reminderRecurring.map((item) => ({ ...item, _type: 'recurring-reminder' })),
     ...oneTime.slice(0, 6).map((item) => ({ ...item, _type: 'one-time' })),
   ];
 
@@ -4363,14 +5018,24 @@ function renderCampusSummary(donations, subscriptions) {
 
   items.forEach((item) => {
     const amount = formatCurrency(item.amount || 0, item.currency || 'COP');
-    const schedule = item._type === 'recurring'
-      ? (item.next_reminder_date ? `Próximo: ${formatDate(item.next_reminder_date)}` : 'Próximo: Sin fecha')
+    const isRealSubscription = item._type === 'campus-subscription';
+    const allocations = Array.isArray(item.allocations) ? item.allocations : [];
+    const missionaryNames = allocations.map((allocation) => allocation.missionary_name).filter(Boolean);
+    const schedule = isRealSubscription
+      ? resolveCampusSubscriptionSchedule(item)
+      : item._type === 'recurring-reminder'
+        ? (item.next_reminder_date ? `Próximo recordatorio: ${formatDate(item.next_reminder_date)}` : 'Próximo recordatorio: Sin fecha')
       : (item.created_at ? `Último aporte: ${formatDate(item.created_at)}` : 'Último aporte');
-    const context = item.campus || item.project_name || item.event_name || 'Apoyo Campus';
-    const status = (item.status || (item._type === 'recurring' ? 'ACTIVE' : 'APPROVED')).toString().toUpperCase();
+    const context = missionaryNames.length
+      ? missionaryNames.join(', ')
+      : item.campus || item.project_name || item.event_name || 'Apoyo Campus';
+    const status = (item.status || (isRealSubscription || item._type === 'recurring-reminder' ? 'ACTIVE' : 'APPROVED')).toString().toUpperCase();
     const statusMap = {
       ACTIVE: { label: 'Activo', className: 'bg-emerald-100 text-emerald-700' },
       PAUSED: { label: 'Pausado', className: 'bg-amber-100 text-amber-700' },
+      PENDING_SETUP: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
+      INCOMPLETE: { label: 'Incompleto', className: 'bg-amber-100 text-amber-700' },
+      PAYMENT_FAILED: { label: 'Pago fallido', className: 'bg-rose-100 text-rose-700' },
       CANCELLED: { label: 'Cancelado', className: 'bg-slate-100 text-slate-600' },
       ENDED: { label: 'Finalizado', className: 'bg-slate-100 text-slate-600' },
       DISABLED: { label: 'Desactivado', className: 'bg-slate-100 text-slate-600' },
@@ -4378,10 +5043,11 @@ function renderCampusSummary(donations, subscriptions) {
       PENDING: { label: 'Pendiente', className: 'bg-amber-100 text-amber-700' },
     };
     const statusInfo = statusMap[status] || { label: status, className: 'bg-slate-100 text-slate-600' };
-    const canManage = item._type === 'recurring' && item.id;
+    const canManageReminder = item._type === 'recurring-reminder' && item.id;
+    const canManageReal = isRealSubscription && item.id;
     const isPaused = status === 'PAUSED';
     const primaryAction = isPaused ? 'resume' : 'pause';
-    const primaryLabel = isPaused ? 'Reanudar' : 'Pausar';
+    const primaryLabel = isPaused ? 'Reactivar' : 'Pausar temporada';
     const safeContext = safeText(context);
     const safeSchedule = safeText(schedule);
     const safeAmount = safeText(amount);
@@ -4389,6 +5055,8 @@ function renderCampusSummary(donations, subscriptions) {
     const safePrimaryLabel = safeText(primaryLabel);
     const safeSubscriptionId = safeAttr(item.id || '');
     const safeNextReminderDate = safeAttr((item.next_reminder_date || '').toString());
+    const safeProvider = safeText(resolveCampusProviderLabel(item));
+    const canOpenProviderPortal = isRealSubscription && item.provider === 'stripe' && item.provider_customer_id;
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-white p-4 shadow-sm';
@@ -4398,13 +5066,37 @@ function renderCampusSummary(donations, subscriptions) {
           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Campus</p>
           <p class="text-sm font-bold text-[#293C74] mt-1">${safeContext}</p>
           <p class="text-xs text-slate-500 mt-1">${safeSchedule}</p>
+          ${isRealSubscription ? `<p class="text-[11px] text-slate-400 mt-1">${safeProvider}</p>` : ''}
         </div>
         <div class="text-right">
           <p class="text-sm font-bold text-brand-teal">${safeAmount}</p>
           <span class="inline-flex mt-2 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusInfo.className}">${safeStatusLabel}</span>
         </div>
       </div>
-      ${canManage ? `
+      ${canManageReal ? `
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button type="button"
+            class="campus-subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            data-campus-subscription-id="${safeSubscriptionId}"
+            data-campus-subscription-action="${primaryAction}">
+            ${safePrimaryLabel}
+          </button>
+          ${canOpenProviderPortal ? `
+            <button type="button"
+              class="campus-subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+              data-campus-subscription-id="${safeSubscriptionId}"
+              data-campus-subscription-action="manage">
+              Metodo de pago
+            </button>
+          ` : ''}
+          <button type="button"
+            class="campus-subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            data-campus-subscription-id="${safeSubscriptionId}"
+            data-campus-subscription-action="cancel">
+            Cancelar
+          </button>
+        </div>
+      ` : canManageReminder ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
             class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -4539,7 +5231,11 @@ async function handleDonationSubscriptionAction(button) {
       portalAccountPayload?.donationSubscriptions || [],
       portalAccountPayload?.donationRecurringSubscriptions || [],
     );
-    renderCampusSummary(portalAccountPayload?.donations || [], portalAccountPayload?.donationSubscriptions || []);
+    renderCampusSummary(
+      portalAccountPayload?.donations || [],
+      portalAccountPayload?.donationSubscriptions || [],
+      portalAccountPayload?.campusSubscriptions || [],
+    );
     const successMessages = {
       pause: 'Tu aporte quedó pausado.',
       resume: 'Tu aporte quedó reactivado.',
@@ -4641,6 +5337,91 @@ async function handleGivingRecurringAction(button) {
   }
 }
 
+async function handleCampusSubscriptionAction(button) {
+  const subscriptionId = button.getAttribute('data-campus-subscription-id');
+  const action = button.getAttribute('data-campus-subscription-action');
+  if (!subscriptionId || !action) return;
+
+  let pauseUntil = '';
+  if (action === 'pause') {
+    const requestedDate = window.prompt(
+      'Pausar hasta (YYYY-MM-DD). Deja vacio para pausar hasta que la reactives manualmente.',
+      '',
+    );
+    if (requestedDate === null) return;
+    pauseUntil = requestedDate.trim();
+    if (pauseUntil && !isValidDateOnlyInput(pauseUntil)) {
+      showPortalAlert('Usa el formato YYYY-MM-DD o deja el campo vacio.');
+      return;
+    }
+  }
+
+  if (action === 'cancel') {
+    const confirmed = await showPortalConfirm(
+      'Esto cancela los cobros futuros de esta siembra. Los pagos ya procesados no se devuelven automaticamente y se revisan caso por caso.',
+      {
+        title: 'Cancelar siembra Campus',
+        confirmLabel: 'Cancelar futuros cobros',
+        tone: 'danger',
+      },
+    );
+    if (!confirmed) return;
+  }
+
+  const originalText = button.textContent;
+  button.textContent = 'Procesando...';
+  button.disabled = true;
+
+  try {
+    const res = await fetch('/api/portal/campus/subscriptions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...portalAuthHeaders },
+      credentials: 'include',
+      body: JSON.stringify({
+        id: subscriptionId,
+        action,
+        ...(pauseUntil ? { pauseUntil } : {}),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar');
+
+    if (action === 'manage' && data.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    if (portalAccountPayload?.campusSubscriptions) {
+      const idx = portalAccountPayload.campusSubscriptions.findIndex((item) => item.id === subscriptionId);
+      if (idx !== -1) {
+        portalAccountPayload.campusSubscriptions[idx] = {
+          ...portalAccountPayload.campusSubscriptions[idx],
+          ...(data.subscription || {}),
+        };
+      }
+    }
+
+    renderCampusSummary(
+      portalAccountPayload?.donations || [],
+      portalAccountPayload?.donationSubscriptions || [],
+      portalAccountPayload?.campusSubscriptions || [],
+    );
+
+    const successMessages = {
+      pause: 'Tu siembra Campus quedo pausada.',
+      resume: 'Tu siembra Campus quedo reactivada.',
+      cancel: 'Tu siembra Campus fue cancelada para cobros futuros.',
+    };
+    showPortalAlert(successMessages[action] || 'Actualizado correctamente.', { title: 'Listo' });
+  } catch (err) {
+    console.error(err);
+    showPortalAlert(err.message || 'No se pudo actualizar la siembra Campus.');
+  } finally {
+    button.textContent = originalText;
+    button.disabled = false;
+  }
+}
+
 function toggleChurchField(value) {
   if (value === 'local') {
     profileChurchWrapper?.classList.remove('hidden');
@@ -4691,7 +5472,8 @@ function renderMemberships(memberships) {
         : (membership.role || '—');
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-100 bg-slate-50/80 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3';
-    const statusLabel = membership.status === 'approved' ? 'Aprobado' : membership.status === 'rejected' ? 'Rechazado' : 'Pendiente';
+    const isApprovedMembership = isApprovedChurchMembershipStatus(membership.status);
+    const statusLabel = isApprovedMembership ? 'Aprobado' : membership.status === 'rejected' ? 'Rechazado' : 'Pendiente';
     const safeRoleLabel = safeText(roleLabel);
     const safeStatusLabel = safeText(statusLabel);
     const safeChurchName = safeText(membership.church?.name || 'Iglesia sin nombre');
@@ -4705,7 +5487,7 @@ function renderMemberships(memberships) {
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-white border border-slate-200 text-slate-500 whitespace-nowrap">${safeRoleLabel}</span>
-        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${membership.status === 'approved' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'} whitespace-nowrap">${safeStatusLabel}</span>
+        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${isApprovedMembership ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'} whitespace-nowrap">${safeStatusLabel}</span>
       </div>
     `;
     churchMembershipsList.appendChild(card);
@@ -5251,6 +6033,33 @@ churchBookingsSort?.addEventListener('change', () => {
 churchBookingsPageSize?.addEventListener('change', () => {
   updateChurchBookingsView({ resetPage: true });
 });
+churchParticipantsSearch?.addEventListener('input', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsViewToggle?.addEventListener('click', (event) => {
+  const target = event.target.closest('.church-participants-view-btn');
+  if (!target) return;
+  setChurchParticipantsViewMode(target.dataset.view || 'cards');
+  updateChurchParticipantsView();
+});
+churchParticipantsSort?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsPayment?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsLodging?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsMenu?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsAlert?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
+churchParticipantsPageSize?.addEventListener('change', () => {
+  updateChurchParticipantsView({ resetPage: true });
+});
 churchPaymentsSearch?.addEventListener('input', () => {
   updateChurchPaymentsView({ resetPage: true });
 });
@@ -5292,6 +6101,9 @@ churchMembersRole?.addEventListener('change', () => {
 });
 churchExportBtn?.addEventListener('click', () => {
   void exportChurchBookings();
+});
+churchAuditBtn?.addEventListener('click', () => {
+  void exportCumbrePackageAudit();
 });
 
 
@@ -5373,6 +6185,13 @@ document.addEventListener('click', (event) => {
   if (!button) return;
   event.preventDefault();
   void handleGivingRecurringAction(button);
+});
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('.campus-subscription-action');
+  if (!button) return;
+  event.preventDefault();
+  void handleCampusSubscriptionAction(button);
 });
 
 document.addEventListener('click', (event) => {

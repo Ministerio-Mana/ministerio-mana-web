@@ -1,8 +1,11 @@
-
 const CONFIG = {
     COP: {
         symbol: '$',
-        min: 10000,
+        code: 'COP',
+        min: 5000,
+        context: 'Monto en pesos colombianos (COP)',
+        placeholder: '50.000',
+        minLabel: 'Mínimo $5.000 COP',
         options: [
             { label: '$50.000', value: 50000 },
             { label: '$100.000', value: 100000 },
@@ -13,7 +16,11 @@ const CONFIG = {
     },
     USD: {
         symbol: '$',
-        min: 10,
+        code: 'USD',
+        min: 5,
+        context: 'Monto en dólares (USD)',
+        placeholder: '25',
+        minLabel: 'Mínimo $5 USD',
         options: [
             { label: '$25 USD', value: 25 },
             { label: '$50 USD', value: 50 },
@@ -23,6 +30,32 @@ const CONFIG = {
         provider: 'Stripe'
     }
 };
+
+function getSupabaseAccessToken() {
+    try {
+        const key = Object.keys(localStorage).find((k) => k.startsWith('sb-') && k.endsWith('-auth-token'));
+        if (!key) return null;
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const session = JSON.parse(raw);
+        return session?.access_token || null;
+    } catch (err) {
+        return null;
+    }
+}
+
+function getReturnPath() {
+    return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function buildPortalUrl(path) {
+    return `${path}?next=${encodeURIComponent(getReturnPath())}`;
+}
+
+function setValueIfEmpty(el, value) {
+    if (!el || !value || el.value) return;
+    el.value = value;
+}
 
 class DonationWidget {
     constructor(element) {
@@ -34,8 +67,11 @@ class DonationWidget {
         this.currency = country === 'CO' ? 'COP' : 'USD';
         this.frequency = 'monthly';
         this.amount = 0;
+        this.amountMode = 'idle';
         this.isSubmitting = false;
         this.donorInfoVisible = false;
+        this.accessToken = getSupabaseAccessToken();
+        this.portalProfile = null;
 
         this.init();
     }
@@ -44,28 +80,43 @@ class DonationWidget {
         this.cacheElements();
         this.bindEvents();
         this.renderAmounts();
-        // Select middle option by default
-        const middleBtn = this.dom.amountsGrid.children[1];
-        if (middleBtn) middleBtn.click();
         // Sync currency select with geo default
         if (this.dom.currencySelect) this.dom.currencySelect.value = this.currency;
+        this.configureAccountLinks();
+        this.loadPortalProfile();
         this.updateUI();
+        this.publishAmountChange();
     }
 
     cacheElements() {
         this.dom = {
             freqBtns: this.el.querySelectorAll('.freq-btn'),
             currencySelect: this.el.querySelector('.currency-select'),
+            customControl: this.el.querySelector('.custom-amount-control'),
+            quickControl: this.el.querySelector('.quick-amount-control'),
+            methodState: this.el.querySelector('.amount-method-state'),
+            methodText: this.el.querySelector('.amount-method-text'),
+            methodReset: this.el.querySelector('.amount-method-reset'),
             amountsGrid: this.el.querySelector('.amounts-grid'),
             customInput: this.el.querySelector('.custom-amount-input'),
             cta: this.el.querySelector('.donate-cta'),
             ctaText: this.el.querySelector('.cta-text'),
             currencySymbol: this.el.querySelector('.currency-symbol'),
+            currencyCode: this.el.querySelector('.currency-code'),
+            currencyContext: this.el.querySelector('.currency-context'),
+            amountMinLabel: this.el.querySelector('.amount-min-label'),
             providerName: this.el.querySelectorAll('.provider-name'),
             donorSection: this.el.querySelector('.donor-info-section'),
             donorName: this.el.querySelector('.donor-name-input'),
             donorEmail: this.el.querySelector('.donor-email-input'),
             donorPhone: this.el.querySelector('.donor-phone-input'),
+            donorCity: this.el.querySelector('.donor-city-input'),
+            donorDocumentType: this.el.querySelector('.donor-document-type-input'),
+            donorDocumentNumber: this.el.querySelector('.donor-document-number-input'),
+            documentFields: this.el.querySelector('.campus-document-fields'),
+            accountGate: this.el.querySelector('.monthly-account-gate'),
+            accountLoginLink: this.el.querySelector('.account-login-link'),
+            accountRegisterLink: this.el.querySelector('.account-register-link'),
             errorContainer: this.el.querySelector('.donation-error'),
         };
     }
@@ -75,6 +126,7 @@ class DonationWidget {
         this.dom.freqBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 this.frequency = btn.dataset.freq;
+                if (this.frequency !== 'monthly') this.hideAccountGate();
                 this.updateUI();
             });
         });
@@ -84,20 +136,62 @@ class DonationWidget {
         this.dom.currencySelect?.addEventListener('change', (e) => {
             this.currency = e.target.value;
             this.amount = 0;
+            this.amountMode = 'idle';
             this.dom.customInput.value = '';
             this.renderAmounts();
             this.updateUI();
+            this.publishAmountChange();
         });
 
         // Custom Amount Input
         this.dom.customInput.addEventListener('input', (e) => {
-            this.amount = Number(e.target.value);
+            this.amount = this.parseAmountInput(e.target.value);
+            this.amountMode = this.amount > 0 ? 'custom' : 'idle';
+            if (this.currency === 'COP') {
+                e.target.value = this.amount > 0 ? this.amount.toLocaleString('es-CO') : '';
+            }
             this.highlightAmount(null);
             this.updateUI();
+            this.publishAmountChange();
         });
 
         // CTA Click
         this.dom.cta.addEventListener('click', () => this.handleCTAClick());
+
+        this.dom.methodReset?.addEventListener('click', () => this.resetAmountMethod());
+    }
+
+    configureAccountLinks() {
+        if (this.dom.accountLoginLink) this.dom.accountLoginLink.href = buildPortalUrl('/portal/ingresar');
+        if (this.dom.accountRegisterLink) this.dom.accountRegisterLink.href = buildPortalUrl('/portal/registro');
+    }
+
+    async loadPortalProfile() {
+        if (!this.accessToken) return;
+        try {
+            const res = await fetch('/api/portal/session', {
+                headers: { Authorization: `Bearer ${this.accessToken}` },
+                credentials: 'include',
+            });
+            const payload = await res.json().catch(() => null);
+            if (!res.ok || !payload?.ok) return;
+            this.portalProfile = payload.profile || null;
+            this.prefillFromProfile(this.portalProfile);
+        } catch (err) {
+            console.warn('[donation-widget] No se pudo precargar el perfil');
+        }
+    }
+
+    prefillFromProfile(profile) {
+        if (!profile) return;
+        setValueIfEmpty(this.dom.donorName, profile.full_name);
+        setValueIfEmpty(this.dom.donorEmail, profile.email);
+        setValueIfEmpty(this.dom.donorPhone, profile.phone);
+        setValueIfEmpty(this.dom.donorCity, profile.city);
+        if (this.dom.donorDocumentType && !this.dom.donorDocumentType.value && profile.document_type) {
+            this.dom.donorDocumentType.value = profile.document_type;
+        }
+        setValueIfEmpty(this.dom.donorDocumentNumber, profile.document_number);
     }
 
     renderAmounts() {
@@ -113,13 +207,48 @@ class DonationWidget {
 
             btn.addEventListener('click', () => {
                 this.amount = opt.value;
+                this.amountMode = 'quick';
                 this.dom.customInput.value = '';
                 this.highlightAmount(btn);
                 this.updateUI();
+                this.publishAmountChange();
             });
 
             this.dom.amountsGrid.appendChild(btn);
         });
+    }
+
+    resetAmountMethod() {
+        this.amount = 0;
+        this.amountMode = 'idle';
+        this.donorInfoVisible = false;
+        this.dom.customInput.value = '';
+        this.dom.donorSection?.classList.add('hidden');
+        this.hideAccountGate();
+        if (this.dom.ctaText) this.dom.ctaText.textContent = 'Donar Ahora';
+        this.highlightAmount(null);
+        this.updateUI();
+        this.publishAmountChange();
+    }
+
+    parseAmountInput(raw) {
+        const value = String(raw || '').trim();
+        if (!value) return 0;
+
+        if (this.currency === 'COP') {
+            const digits = value.replace(/[^\d]/g, '');
+            const amount = Number(digits);
+            return Number.isFinite(amount) ? amount : 0;
+        }
+
+        let normalized = value.replace(/[^0-9.,]/g, '');
+        if (normalized.includes(',') && !normalized.includes('.')) {
+            normalized = normalized.replace(',', '.');
+        } else {
+            normalized = normalized.replace(/,/g, '');
+        }
+        const amount = Number(normalized);
+        return Number.isFinite(amount) ? amount : 0;
     }
 
     highlightAmount(selectedBtn) {
@@ -133,6 +262,35 @@ class DonationWidget {
                 btn.style.color = '#001B3A';
             }
         });
+    }
+
+    publishAmountChange() {
+        this.el.dataset.currentAmount = this.amount > 0 ? String(this.amount) : '';
+        this.el.dataset.currentCurrency = this.currency;
+        window.dispatchEvent(new CustomEvent('campus:donation-amount-change', {
+            detail: {
+                slug: this.slug,
+                amount: this.amount,
+                currency: this.currency,
+            },
+        }));
+    }
+
+    updateAmountControls() {
+        const mode = this.amountMode || 'idle';
+        const config = CONFIG[this.currency];
+
+        this.dom.customControl?.classList.toggle('hidden', mode === 'quick');
+        this.dom.quickControl?.classList.toggle('hidden', mode === 'custom');
+        this.dom.methodState?.classList.toggle('hidden', mode === 'idle');
+
+        if (!this.dom.methodText || mode === 'idle') return;
+
+        if (mode === 'quick') {
+            this.dom.methodText.textContent = `Monto rápido seleccionado: ${config.format(this.amount)}.`;
+        } else {
+            this.dom.methodText.textContent = `Donación escrita: ${config.format(this.amount)}.`;
+        }
     }
 
     updateUI() {
@@ -152,9 +310,18 @@ class DonationWidget {
         const config = CONFIG[this.currency];
         this.dom.providerName.forEach(el => el.textContent = config.provider);
         if (this.dom.currencySymbol) this.dom.currencySymbol.textContent = config.symbol;
+        if (this.dom.currencyCode) this.dom.currencyCode.textContent = config.code;
+        if (this.dom.currencyContext) this.dom.currencyContext.textContent = config.context;
+        if (this.dom.amountMinLabel) this.dom.amountMinLabel.textContent = config.minLabel;
+        if (this.dom.customInput) {
+            this.dom.customInput.placeholder = config.placeholder;
+            this.dom.customInput.inputMode = this.currency === 'COP' ? 'numeric' : 'decimal';
+        }
+        this.updateAmountControls();
+        this.updateDocumentFields();
 
         // Update CTA state
-        const hasAmount = this.amount > 0;
+        const hasAmount = this.amount >= config.min;
         if (this.donorInfoVisible) {
             // CTA is in "submit" mode — always enabled
             this.dom.cta.classList.remove('opacity-50', 'pointer-events-none');
@@ -164,10 +331,37 @@ class DonationWidget {
         }
     }
 
+    updateDocumentFields() {
+        const requiresDocument = this.currency === 'COP';
+        this.dom.documentFields?.classList.toggle('hidden', !requiresDocument);
+        if (this.dom.donorDocumentType) this.dom.donorDocumentType.required = requiresDocument;
+        if (this.dom.donorDocumentNumber) this.dom.donorDocumentNumber.required = requiresDocument;
+    }
+
+    showAccountGate() {
+        this.dom.accountGate?.classList.remove('hidden');
+        this.dom.donorSection?.classList.add('hidden');
+        this.dom.cta?.classList.add('is-hidden');
+        this.donorInfoVisible = false;
+        if (this.dom.ctaText) this.dom.ctaText.textContent = 'Donar Ahora';
+        this.updateUI();
+    }
+
+    hideAccountGate() {
+        this.dom.accountGate?.classList.add('hidden');
+        this.dom.cta?.classList.remove('is-hidden');
+    }
+
     handleCTAClick() {
+        const config = CONFIG[this.currency];
         if (!this.donorInfoVisible) {
             // First click: show donor info section
-            if (this.amount <= 0) return;
+            if (this.amount < config.min) return;
+            if (this.frequency === 'monthly' && !this.accessToken) {
+                this.showAccountGate();
+                return;
+            }
+            this.hideAccountGate();
             this.donorInfoVisible = true;
             this.dom.donorSection.classList.remove('hidden');
             this.dom.ctaText.textContent = 'Sembrar Ahora';
@@ -199,6 +393,15 @@ class DonationWidget {
         const fullName = this.dom.donorName?.value?.trim();
         const email = this.dom.donorEmail?.value?.trim();
         const phone = this.dom.donorPhone?.value?.trim() || '';
+        const city = this.dom.donorCity?.value?.trim() || '';
+        const documentType = this.dom.donorDocumentType?.value?.trim() || '';
+        const documentNumber = this.dom.donorDocumentNumber?.value?.trim() || '';
+        const config = CONFIG[this.currency];
+
+        if (this.amount < config.min) {
+            this.showError(`El monto mínimo es ${config.format(config.min)}`);
+            return;
+        }
 
         if (!fullName) {
             this.showError('Ingresa tu nombre completo');
@@ -210,6 +413,22 @@ class DonationWidget {
             this.dom.donorEmail?.focus();
             return;
         }
+        if (this.currency === 'COP') {
+            if (!documentType) {
+                this.showError('Selecciona el tipo de identificación');
+                this.dom.donorDocumentType?.focus();
+                return;
+            }
+            if (!documentNumber) {
+                this.showError('Ingresa el número de identificación');
+                this.dom.donorDocumentNumber?.focus();
+                return;
+            }
+        }
+        if (this.frequency === 'monthly' && !this.accessToken) {
+            this.showAccountGate();
+            return;
+        }
 
         this.isSubmitting = true;
         const originalText = this.dom.ctaText.textContent;
@@ -217,12 +436,17 @@ class DonationWidget {
         this.dom.cta.classList.add('opacity-50', 'pointer-events-none');
 
         try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            };
+            if (this.accessToken) {
+                headers.Authorization = `Bearer ${this.accessToken}`;
+            }
+
             const response = await fetch('/api/campus/checkout', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     missionaries: [this.slug],
                     amount: this.amount,
@@ -231,12 +455,18 @@ class DonationWidget {
                     fullName,
                     email,
                     phone,
+                    city,
+                    documentType,
+                    documentNumber,
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok || !data.ok) {
+                if (data.requiresAccount) {
+                    this.showAccountGate();
+                }
                 this.showError(data.error || 'Error procesando el pago');
                 return;
             }

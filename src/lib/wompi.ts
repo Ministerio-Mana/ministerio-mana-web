@@ -170,6 +170,29 @@ export async function createWompiCharge(params: {
     : null;
 }
 
+export async function getWompiTransaction(transactionId: string): Promise<any | null> {
+  const normalizedId = String(transactionId || '').trim();
+  if (!normalizedId) return null;
+
+  const publicKey = getPublicKey();
+  const apiBase = env('WOMPI_API_BASE') ?? DEFAULT_API_BASE;
+  const res = await fetch(`${apiBase}/transactions/${encodeURIComponent(normalizedId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${publicKey}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`Wompi transaction lookup failed: ${res.status} ${detail}`);
+  }
+
+  const payload = await res.json();
+  return payload?.data || null;
+}
+
 export async function createWompiPaymentSource(params: {
   token: string;
   customerEmail: string;
@@ -248,13 +271,65 @@ function parseSignatureHeader(header: string | null): ParsedSignature | null {
   return { timestamp, signature, properties };
 }
 
+function getNestedValue(source: unknown, path: string): unknown {
+  const parts = String(path || '').split('.').filter(Boolean);
+  let current: any = source;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== 'object') return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+function normalizeChecksum(value: unknown): string {
+  return String(value || '').trim().toLowerCase();
+}
+
+function verifyWompiEventChecksum(event: any, checksumHeader: string | null): boolean {
+  const secret = getWebhookSecret();
+  const properties = Array.isArray(event?.signature?.properties) ? event.signature.properties : [];
+  const timestamp = event?.timestamp;
+  const checksum = normalizeChecksum(checksumHeader || event?.signature?.checksum);
+
+  if (!properties.length || !timestamp || !checksum) {
+    throw new Error('Firma Wompi inválida');
+  }
+
+  const values = properties.map((property: string) => {
+    const value = getNestedValue(event?.data, property);
+    return value === null || value === undefined ? '' : String(value);
+  });
+  const signedData = `${values.join('')}${timestamp}${secret}`;
+  const expected = crypto.createHash('sha256').update(signedData).digest('hex');
+
+  if (expected.length !== checksum.length) {
+    void logSecurityEvent({
+      type: 'webhook_invalid',
+      detail: 'Longitud checksum Wompi inesperada',
+      meta: { expectedLength: expected.length, receivedLength: checksum.length },
+    });
+    return false;
+  }
+
+  const ok = crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(checksum, 'hex'));
+  if (!ok) {
+    void logSecurityEvent({
+      type: 'webhook_invalid',
+      detail: 'Checksum Wompi inválido',
+    });
+  }
+  return ok;
+}
+
 export function verifyWompiWebhook(payload: string, signatureHeader: string | null): boolean {
+  const event = JSON.parse(payload);
+  if (event?.signature?.checksum || signatureHeader?.trim()?.length === 64) {
+    return verifyWompiEventChecksum(event, signatureHeader);
+  }
+
   const parsed = parseSignatureHeader(signatureHeader);
   if (!parsed) throw new Error('X-Wompi-Signature inválido');
   const secret = getWebhookSecret();
-
-  // Según la documentación de Wompi, el string se arma concatenando timestamp + payload
-  // y se firma con HMAC SHA256 usando el webhook secret.
   const signedData = `${parsed.timestamp}${payload}`;
   const expected = crypto.createHmac('sha256', secret).update(signedData).digest('hex');
   const received = parsed.signature.toLowerCase();
@@ -271,7 +346,6 @@ export function verifyWompiWebhook(payload: string, signatureHeader: string | nu
     void logSecurityEvent({
       type: 'webhook_invalid',
       detail: 'Firma Wompi inválida',
-      meta: { expected, received: parsed.signature },
     });
   }
   return ok;

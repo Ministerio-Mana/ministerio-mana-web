@@ -12,6 +12,13 @@ const starsContainer = document.getElementById('stars-container');
 const passwordInput = document.getElementById('reg-password');
 const toggleBtn = document.getElementById('toggle-password-reg');
 
+function getSafeNextPath() {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next') || '/portal';
+    if (!next.startsWith('/') || next.startsWith('//')) return '/portal';
+    return next;
+}
+
 function resetTurnstile() {
     if (window.turnstile && typeof window.turnstile.reset === 'function') {
         window.turnstile.reset();
@@ -80,7 +87,14 @@ form?.addEventListener('submit', async (e) => {
         const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, firstName, lastName, turnstileToken: captcha.token })
+            body: JSON.stringify({
+                email,
+                password,
+                firstName,
+                lastName,
+                turnstileToken: captcha.token,
+                redirectTo: `${window.location.origin}/portal/activar?next=${encodeURIComponent(getSafeNextPath())}`,
+            })
         });
 
         const data = await res.json();
@@ -108,7 +122,7 @@ form?.addEventListener('submit', async (e) => {
         }
         btnSubmit.textContent = 'Ir a Login';
         btnSubmit.disabled = false;
-        btnSubmit.onclick = () => window.location.href = '/portal/ingresar';
+        btnSubmit.onclick = () => window.location.href = `/portal/ingresar?next=${encodeURIComponent(getSafeNextPath())}`;
 
     } catch (err) {
         console.error('Registration error:', err);

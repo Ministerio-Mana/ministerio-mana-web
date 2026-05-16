@@ -45,3 +45,7 @@ create index if not exists cumbre_bookings_source_idx
 
 create unique index if not exists cumbre_bookings_idempotency_key_idx
   on public.cumbre_bookings(idempotency_key);
+
+alter table public.cumbre_bookings enable row level security;
+
+revoke all on public.cumbre_bookings from anon, authenticated;

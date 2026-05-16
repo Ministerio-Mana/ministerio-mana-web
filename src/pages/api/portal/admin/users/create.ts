@@ -18,6 +18,7 @@ import {
   needsChurchForRole,
   needsCountryForRole,
 } from '@lib/portalRbac';
+import { resolveBaseUrl } from '@lib/url';
 
 const MANAGEMENT_ALLOWED_ROLES: PortalChurchRole[] = [
   'superadmin',
@@ -38,6 +39,14 @@ function sameCountry(left?: string | null, right?: string | null): boolean {
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
+  }
+
+  let baseUrl: string;
+  try {
+    baseUrl = resolveBaseUrl(request);
+  } catch (error) {
+    console.warn('[create-user] Invalid host for base URL:', error);
+    return new Response(JSON.stringify({ ok: false, error: 'Host no permitido' }), { status: 400 });
   }
 
   const access = await getPortalChurchAccessContext(request, {
@@ -186,9 +195,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
       const churchRegionId = String(churchInfo.region_id || '').trim() || null;
       const inRegionScope = churchRegionId ? access.allowedRegionIds.includes(churchRegionId) : false;
-      const inCountryFallback = creatorScopedCountry ? sameCountry(churchInfo.country, creatorScopedCountry) : false;
 
-      if (!inRegionScope && !inCountryFallback) {
+      if (!inRegionScope) {
         return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta iglesia.' }), { status: 403 });
       }
 
@@ -304,7 +312,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const emailResult = await sendAuthLink({
       kind: 'magiclink',
       email: email,
-      redirectTo: `${new URL(request.url).origin}/portal`,
+      redirectTo: `${baseUrl}/portal`,
     });
 
     if (!emailResult.ok) {

@@ -26,8 +26,13 @@ interface ImportMetaEnv {
   readonly STRIPE_SUCCESS_URL?: string;
   readonly STRIPE_CANCEL_URL?: string;
   readonly WOMPI_PUBLIC_KEY?: string;
+  readonly WOMPI_PRIVATE_KEY?: string;
   readonly WOMPI_INTEGRITY_KEY?: string;
   readonly WOMPI_WEBHOOK_SECRET?: string;
+  readonly WOMPI_API_BASE?: string;
+  readonly WOMPI_CHECKOUT_URL?: string;
+  readonly CAMPUS_CRON_SECRET?: string;
+  readonly CRON_SECRET?: string;
   readonly PUBLIC_SITE_URL?: string;
   readonly FX_API_KEY?: string;
 }

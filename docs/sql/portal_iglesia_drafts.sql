@@ -4,3 +4,7 @@ create table if not exists public.portal_iglesia_drafts (
   payload jsonb not null,
   updated_at timestamptz not null default now()
 );
+
+alter table public.portal_iglesia_drafts enable row level security;
+
+revoke all on public.portal_iglesia_drafts from anon, authenticated;

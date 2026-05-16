@@ -8,12 +8,11 @@ import {
     sanitizeParticipant,
     calculateTotals,
     depositThreshold,
-    hasUnavailableLodging,
-    CUMBRE_LODGING_CLOSED_MESSAGE,
     buildPaymentReference,
     generateAccessToken,
     type PackageType,
 } from '@lib/cumbre2026';
+import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { buildDepositSchedule, buildInstallmentSchedule, getInstallmentDeadline, isValidDateOnly, type InstallmentFrequency } from '@lib/cumbreInstallments';
 import { applyManualPaymentToPlan, countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals } from '@lib/cumbreStore';
 import { normalizeCityName, normalizeChurchName, normalizeCountryRegion } from '@lib/normalization';
@@ -107,10 +106,15 @@ function resolveParticipantAge(participant: any): number | null {
     return ageFromBirthdate(participant?.birthdate);
 }
 
+function isNoLodgingChoice(raw: unknown): boolean {
+    if (raw === false) return true;
+    const value = String(raw ?? '').trim().toLowerCase();
+    return ['no_lodging', 'no', 'false', '0', 'sin alojamiento', 'sin_alojamiento', 'without_lodging'].includes(value);
+}
+
 function packageTypeFromAge(ageRaw: unknown, lodgingRaw: unknown): PackageType {
     const age = Number(ageRaw);
-    const lodgingValue = String(lodgingRaw || '').trim().toLowerCase();
-    const lodging = !['no_lodging', 'no', 'sin alojamiento', 'sin_alojamiento', 'without_lodging'].includes(lodgingValue);
+    const lodging = !isNoLodgingChoice(lodgingRaw);
     if (Number.isFinite(age)) {
         if (age <= 4) return 'child_0_7';
         if (age <= 10) return 'child_7_13';
@@ -118,20 +122,29 @@ function packageTypeFromAge(ageRaw: unknown, lodgingRaw: unknown): PackageType {
     return lodging ? 'lodging' : 'no_lodging';
 }
 
-async function findIdempotentBooking(idempotencyKey: string | null, expectedParticipants: number) {
-    if (!supabaseAdmin || !idempotencyKey) return null;
-    const { data: booking, error } = await supabaseAdmin
+async function findIdempotentBooking(params: {
+    idempotencyKey: string | null;
+    expectedParticipants: number;
+    churchId: string | null;
+}) {
+    if (!supabaseAdmin || !params.idempotencyKey) return null;
+    let query = supabaseAdmin
         .from('cumbre_bookings')
         .select('id')
-        .eq('idempotency_key', idempotencyKey)
-        .maybeSingle();
+        .eq('idempotency_key', params.idempotencyKey);
+    if (params.churchId) {
+        query = query.eq('church_id', params.churchId);
+    } else {
+        query = query.is('church_id', null);
+    }
+    const { data: booking, error } = await query.maybeSingle();
     if (error || !booking?.id) return null;
     const { count, error: countError } = await supabaseAdmin
         .from('cumbre_participants')
         .select('id', { count: 'exact', head: true })
         .eq('booking_id', booking.id);
     if (countError) return null;
-    if ((count ?? 0) >= expectedParticipants) {
+    if ((count ?? 0) >= params.expectedParticipants) {
         return booking;
     }
     await cleanupCumbreBooking(booking.id);
@@ -375,10 +388,6 @@ export const POST: APIRoute = async ({ request }) => {
     if (!participants.length) {
         return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
     }
-    if (hasUnavailableLodging(participants.map((p) => p.safe))) {
-        return new Response(JSON.stringify({ ok: false, error: CUMBRE_LODGING_CLOSED_MESSAGE }), { status: 409 });
-    }
-
     let countryGroup = resolveCountryGroup(body.country_group ?? body.countryGroup, contactCountry);
     if (currencyOverride) {
         countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
@@ -458,7 +467,11 @@ export const POST: APIRoute = async ({ request }) => {
         fallbackSeed: idempotencySeed,
     });
 
-    const existingBooking = await findIdempotentBooking(idempotencyKey, participants.length);
+    const existingBooking = await findIdempotentBooking({
+        idempotencyKey,
+        expectedParticipants: participants.length,
+        churchId: resolvedChurchId,
+    });
     if (existingBooking) {
         return new Response(
             JSON.stringify({
@@ -469,6 +482,13 @@ export const POST: APIRoute = async ({ request }) => {
             }),
             { status: 200 }
         );
+    }
+
+    const lodgingCapacity = await checkLodgingCapacity({
+        participants: participants.map((p) => p.safe),
+    });
+    if (!lodgingCapacity.ok) {
+        return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), { status: 409 });
     }
 
     const tokenPair = generateAccessToken();
@@ -502,7 +522,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (bookingError || !booking) {
         if (idempotencyKey) {
-            const existing = await findIdempotentBooking(idempotencyKey, participants.length);
+            const existing = await findIdempotentBooking({
+                idempotencyKey,
+                expectedParticipants: participants.length,
+                churchId: resolvedChurchId,
+            });
             if (existing) {
                 return new Response(
                     JSON.stringify({
@@ -539,6 +563,12 @@ export const POST: APIRoute = async ({ request }) => {
 
         if (participantError) {
             throw new Error('No se pudo guardar participantes');
+        }
+
+        const writtenCapacity = await checkWrittenLodgingCapacity(booking.id);
+        if (!writtenCapacity.ok) {
+            await cleanupCumbreBooking(booking.id);
+            return new Response(JSON.stringify({ ok: false, error: writtenCapacity.message }), { status: 409 });
         }
 
         let planId: string | null = null;

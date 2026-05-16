@@ -131,7 +131,7 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
                     <img
                         src="/images/campus/misioneros/GRUPO-COMPLETO.jpg"
                         alt="Equipo completo de Campus Maná"
-                        class="w-full aspect-[16/9] md:aspect-[21/9] object-cover"
+                        class="w-full aspect-[16/9] object-cover object-center"
                         loading="lazy"
                     />
                     <span class="absolute bottom-3 right-4 md:bottom-4 md:right-6 bg-[#2DD4BF] px-3 py-1 text-[10px] md:text-xs font-intro uppercase tracking-[0.12em] text-[#001B3A] border-organic border border-[#001B3A] shadow-sm">
@@ -215,7 +215,7 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
             
             <div class="relative z-10 bg-white overflow-hidden p-2 h-full flex flex-col glow-hover border-organic border-2 border-[#001B3A]">
                 <!-- Video/Image Header -->
-                <div class="relative h-56 bg-[#001B3A] overflow-hidden border-organic">
+                <div class="relative aspect-video bg-[#001B3A] overflow-hidden border-organic">
                     {showVideo ? (
                       <iframe
                         src={m.video}
@@ -237,11 +237,9 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
                         <span class="font-intro text-white/30 text-lg uppercase">Campus Maná</span>
                       </div>
                     )}
-                    
-                    <!-- Name Tag (organic border) -->
-                    <div class="absolute -bottom-4 -left-2 bg-yellow-400 px-5 py-2 transform -rotate-2 shadow-md z-20 border-organic border-2 border-[#001B3A]">
-                        <h3 class="font-intro text-[#001B3A] text-lg md:text-xl uppercase">{m.nombre}</h3>
-                    </div>
+                </div>
+                <div class="mt-2 bg-yellow-400 px-5 py-2 transform -rotate-1 shadow-md z-20 border-organic border-2 border-[#001B3A]">
+                    <h3 class="font-intro text-[#001B3A] text-lg md:text-xl uppercase">{m.nombre}</h3>
                 </div>
 
                 <div class="p-5 pt-8 flex-1 flex flex-col">

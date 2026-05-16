@@ -21,25 +21,6 @@ function acceptsJson(request: Request): boolean {
   return accept.includes('application/json');
 }
 
-function env(key: string): string | undefined {
-  return import.meta.env?.[key] ?? process.env?.[key];
-}
-
-function isTestModeAllowed(runtimeEnv: string): boolean {
-  if (runtimeEnv === 'production') return false;
-  const flag = env('CUMBRE_TEST_MODE') ?? env('PUBLIC_CUMBRE_TEST_MODE');
-  return flag === 'true';
-}
-
-function getTestAmount(currency: string): number {
-  const raw = currency === 'COP'
-    ? env('CUMBRE_TEST_AMOUNT_COP') ?? env('PUBLIC_CUMBRE_TEST_AMOUNT_COP')
-    : env('CUMBRE_TEST_AMOUNT_USD') ?? env('PUBLIC_CUMBRE_TEST_AMOUNT_USD');
-  const fallback = currency === 'COP' ? 5000 : 1;
-  const value = Number(raw ?? fallback);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   const contentType = request.headers.get('content-type') || '';
   let payload: any = {};
@@ -74,7 +55,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const runtimeEnv =
     import.meta.env?.VERCEL_ENV ?? process.env?.VERCEL_ENV ?? process.env?.NODE_ENV ?? 'development';
-  const allowTestMode = isTestModeAllowed(runtimeEnv);
   const enforceTurnstile = runtimeEnv === 'production';
   const turnstileConfigured = enforceTurnstile && Boolean(
     import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
@@ -150,12 +130,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const kind = (payload.paymentKind || 'custom').toString();
-    const testMode = Boolean(payload.testMode) && allowTestMode;
     let amount = Number(payload.amount || 0);
     if (!amount || kind === 'full') amount = remaining;
-    if (testMode) {
-      amount = getTestAmount(booking.currency);
-    }
     if (!Number.isFinite(amount) || amount <= 0) {
       return new Response(JSON.stringify({ ok: false, error: 'Monto invalido' }), {
         status: 400,
