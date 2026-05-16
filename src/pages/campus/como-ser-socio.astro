@@ -34,31 +34,31 @@ const singleSteps = [
   },
   {
     title: 'Marca “Mensual”',
-    text: 'Para ser socio, deja seleccionada la opción Mensual. Si solo quiere dar una vez, puede escoger “Única vez”.',
+    text: 'Para ser socio, deja seleccionada la opción Mensual. Si la persona solo quiere sembrar una vez, puede tocar “Única vez”.',
     image: '/images/campus/tutorial/04-marcar-mensual.jpg',
     caption: 'La opción Mensual es la que convierte el apoyo en recurrente.',
     marker: { x: 34, y: 50, label: 'Mensual' },
   },
   {
-    title: 'Escoge el monto',
-    text: 'No hay que escoger moneda: la página muestra pesos colombianos o dólares automáticamente según el país. Primero escribe la donación; si prefiere, puede tocar un monto rápido.',
+    title: 'Escribe la donación',
+    text: 'Lo más claro es escribir el valor que la persona quiere sembrar. La página muestra pesos colombianos o dólares automáticamente. Si usa un monto rápido, el campo de escritura se oculta; si quiere cambiar, toca “Cambiar monto”.',
     image: '/images/campus/tutorial/05-escoger-monto.jpg',
-    caption: 'El campo principal permite escribir la donación. Los montos rápidos quedan como ayuda.',
-    marker: { x: 50, y: 47, label: 'Escribe' },
+    caption: 'Cuando escribe la donación, los montos rápidos desaparecen para evitar confusión.',
+    marker: { x: 50, y: 42, label: 'Monto' },
   },
   {
-    title: 'Inicia sesión o crea cuenta',
-    text: 'Si eligió apoyo mensual, la página pedirá iniciar sesión o crear una cuenta. Eso permite pausar, reactivar o cancelar la siembra desde el portal.',
+    title: 'Toca “Donar Ahora”',
+    text: 'Si eligió apoyo mensual, el sitio pedirá iniciar sesión o crear una cuenta. Esto es necesario para que después la persona pueda pausar, reactivar o cancelar su siembra.',
     image: '/images/campus/tutorial/06-tocar-donar.jpg',
     caption: 'Para la opción mensual, la cuenta es necesaria.',
-    marker: { x: 50, y: 67, label: 'Cuenta' },
+    marker: { x: 50, y: 62, label: 'Cuenta' },
   },
   {
-    title: 'Completa los datos',
-    text: 'Para pagos en Colombia con Wompi, escribe también el tipo y número de identificación. Si ya inició sesión y el perfil tiene esos datos, aparecerán listos.',
+    title: 'Completa datos si aparecen',
+    text: 'En donación única, o cuando falten datos del perfil, completa nombre, correo, teléfono y ciudad. En Colombia, Wompi pide tipo y número de identificación.',
     image: '/images/campus/tutorial/07-sembrar-ahora.jpg',
-    caption: 'La identificación es requerida cuando el pago entra por Wompi en Colombia.',
-    marker: { x: 50, y: 74, label: 'Identificación' },
+    caption: 'La identificación es requerida cuando el pago se procesa en Colombia por Wompi.',
+    marker: { x: 50, y: 64, label: 'Datos' },
   },
   {
     title: 'Termina el pago',
@@ -73,8 +73,9 @@ const manySteps = [
   'Baja hasta la sección “¿Quieres sembrar en varios misioneros?”.',
   'Escoge cuántos misioneros quieres apoyar: 2, 3, 4, 5 o todos.',
   'Selecciona los nombres o usa “Al azar”. Luego toca “Continuar”.',
-  'Elige mensualidad y escribe la donación por cada misionero. La moneda se ajusta sola.',
-  'Revisa el resumen. Si es mensual, inicia sesión o crea cuenta; si entra por Wompi, completa identificación.',
+  'Elige mensualidad. Luego decide si quieres escribir un presupuesto total, usar el mismo monto rápido para cada misionero o ajustar cada monto manualmente.',
+  'Si escribes un presupuesto total, el sitio lo divide entre los misioneros y te deja ajustar la siembra de cada uno.',
+  'Revisa el resumen. Si es mensual, inicia sesión o crea cuenta; si el pago entra por Wompi, completa identificación cuando el sitio la pida.',
 ];
 
 const helpItems = [
@@ -85,6 +86,7 @@ const helpItems = [
   'Cinco minutos tranquilos para completar el proceso.',
   'No hay que cambiar la moneda: el sitio la ajusta automáticamente.',
   'Para una siembra mensual, la persona debe iniciar sesión o crear cuenta.',
+  'Si viene por un QR de la Cumbre, puede iniciar directo en un misionero; desde ahí sigue la misma lógica de monto y cuenta.',
 ];
 ---
 
@@ -148,6 +150,11 @@ const helpItems = [
         <p class="mt-4 text-lg text-[#001B3A]/70">
           Esta es la explicación más fácil para una persona que no usa mucho internet. Acompáñala sin afán y revisa cada pantalla antes de tocar el siguiente botón.
         </p>
+        <div class="mt-6 rounded-lg border border-[#001B3A]/10 bg-white p-4 shadow-sm">
+          <p class="text-sm font-semibold leading-relaxed text-[#001B3A]/75">
+            En la Cumbre, si alguien escanea el QR de un misionero, puede entrar directo a esa página. No hay que explicarle algo distinto: desde ahí sigue la misma lógica de mensualidad, monto, cuenta y pago seguro.
+          </p>
+        </div>
       </div>
 
       <div class="mt-10 grid gap-4 md:grid-cols-2">
@@ -237,7 +244,7 @@ const helpItems = [
 
       <div class="rounded-lg border border-white/15 bg-white/10 p-6">
         <p class="text-lg leading-relaxed text-white/80">
-          “Vamos a abrir la página de Campus Maná. Primero escogemos el misionero que quieres apoyar. Como quieres ser socio, dejamos marcada la opción mensual. La página acomoda la moneda automáticamente; si estás en Colombia aparece en pesos y si estás fuera aparece en dólares. Escribimos tu donación. Si es mensual, entramos o creamos tu cuenta para que puedas pausar o reactivar después. Luego completamos los datos que falten y el pago seguro. Cuando termine, guardamos el comprobante.”
+          “Vamos a abrir la página de Campus Maná. Primero escogemos el misionero que quieres apoyar. Como quieres ser socio, dejamos marcada la opción mensual. La página acomoda la moneda automáticamente; si estás en Colombia aparece en pesos y si estás fuera aparece en dólares. Escribimos tu donación. Si prefieres uno de los montos rápidos, lo tocamos y listo; si quieres cambiar, tocamos ‘Cambiar monto’. Como es mensual, entramos o creamos tu cuenta para que puedas pausar o reactivar después. Luego completamos los datos que falten y el pago seguro. Cuando termine, guardamos el comprobante.”
         </p>
       </div>
     </div>
@@ -245,11 +252,17 @@ const helpItems = [
 
   <section class="bg-[#F3F0E6] py-16">
     <div class="container-tight">
-      <div class="grid gap-6 md:grid-cols-3">
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
           <h3 class="text-xl font-black text-[#001B3A]">Si no aparece el botón</h3>
           <p class="mt-3 text-[#001B3A]/70">
             Revisa que haya un monto seleccionado o escrito. El botón se activa después de elegir el valor.
+          </p>
+        </article>
+        <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
+          <h3 class="text-xl font-black text-[#001B3A]">Si desaparece una opción</h3>
+          <p class="mt-3 text-[#001B3A]/70">
+            Es normal. Al escribir una donación se ocultan los montos rápidos; al escoger un monto rápido se oculta el campo escrito. Para volver, toca “Cambiar monto”.
           </p>
         </article>
         <article class="rounded-lg border border-[#001B3A]/10 bg-white p-6">
