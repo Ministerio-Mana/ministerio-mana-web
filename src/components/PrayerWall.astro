@@ -1212,34 +1212,24 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note::before {
-    background:
-      linear-gradient(90deg, rgba(255, 248, 229, 0.16), transparent 15% 84%, rgba(255, 248, 229, 0.12)),
-      linear-gradient(90deg, rgba(35, 24, 14, 0.18), rgba(35, 24, 14, 0.62), rgba(35, 24, 14, 0.2));
-    border-radius: 44% 56% 42% 58%;
-    box-shadow:
-      0 5px 14px rgba(7, 17, 28, 0.24),
-      inset 0 2px 0 rgba(255, 248, 229, 0.16),
-      inset 0 -2px 0 rgba(35, 24, 14, 0.2);
     content: "";
-    height: 0.8rem;
-    left: 0.22rem;
+    display: none;
+    height: 0;
+    left: 0;
     position: absolute;
-    top: 2.18rem;
-    transform: rotate(var(--r));
-    width: 5.75rem;
+    top: 0;
+    width: 0;
     z-index: 0;
   }
 
   .prayer-note::after {
-    background: rgba(255, 248, 229, 0.22);
-    border-radius: 999px;
     content: "";
-    height: 0.18rem;
-    left: 0.4rem;
+    display: none;
+    height: 0;
+    left: 0;
     position: absolute;
-    top: 2.1rem;
-    transform: rotate(var(--r));
-    width: 4.9rem;
+    top: 0;
+    width: 0;
     z-index: 1;
   }
 
@@ -1324,32 +1314,6 @@ const i18n = JSON.stringify(c.js);
     height: 100%;
     overflow: visible;
     width: 100%;
-  }
-
-  .prayer-note__slot-shadow {
-    fill: none;
-    stroke: rgba(35, 24, 14, 0.32);
-    stroke-linecap: round;
-    stroke-width: 13;
-  }
-
-  .prayer-note__stone-lip {
-    fill: none;
-    stroke: rgba(255, 248, 229, 0.24);
-    stroke-linecap: round;
-    stroke-width: 5;
-  }
-
-  .prayer-note__crevice {
-    fill: none;
-    stroke: rgba(36, 26, 17, 0.62);
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 8.6;
-  }
-
-  .prayer-note__crevice--vertical {
-    stroke-width: 9.8;
   }
 
   .prayer-note__paper-body {

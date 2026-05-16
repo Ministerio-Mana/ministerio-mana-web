@@ -1,39 +1,36 @@
 const DESKTOP_SLOTS = [
-  [24, 17, -7],
-  [58, 16, 4],
-  [82, 30, -5],
-  [10, 35, 6],
-  [38, 35, -4],
-  [24, 52, 5],
-  [62, 52, -4],
-  [28, 73, 6],
-  [64, 73, -5],
-  [52, 43, 4],
-  [74, 38, -3],
-  [20, 66, -4],
-  [58, 66, 5],
-  [10, 38, -5],
-  [70, 23, 4],
-  [38, 73, -4],
+  [24, 17, -7, 0],
+  [58, 16, 4, 3],
+  [82, 30, -5, 2],
+  [10, 27, 6, 1],
+  [52, 33, -4, 1],
+  [28, 45, 5, 0],
+  [70, 45, -4, 3],
+  [28, 73, 6, 3],
+  [64, 73, -5, 0],
+  [52, 43, 4, 1],
+  [74, 38, -3, 1],
+  [22, 66, -4, 1],
+  [60, 66, 5, 1],
+  [16, 25, -5, 1],
+  [70, 23, 4, 1],
+  [38, 73, -4, 3],
 ];
 
 const MOBILE_SLOTS = [
-  [23, 17, -6],
-  [72, 17, 5],
-  [14, 38, -5],
-  [58, 39, 4],
-  [24, 60, -4],
-  [62, 72, 5],
-  [64, 73, -4],
-  [16, 25, 5],
+  [24, 17, -6, 0],
+  [58, 16, 5, 3],
+  [82, 30, -5, 2],
+  [10, 35, 4, 1],
+  [24, 45, -4, 0],
+  [62, 45, 5, 3],
+  [28, 73, -4, 3],
+  [64, 73, 5, 0],
 ];
 
 const NOTE_PAPERS = [
   `
     <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__slot-shadow" d="M8 49 C28 37 44 41 63 33 C82 24 105 27 120 18" />
-      <path class="prayer-note__stone-lip" d="M9 40 C30 31 47 34 64 27 C84 19 105 21 121 14" />
-      <path class="prayer-note__crevice" d="M9 49 C31 38 48 42 64 34 C84 25 105 27 121 20" />
       <path class="prayer-note__paper-shadow" d="M16 46 L46 38 L51 51 L18 58 Z" />
       <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M14 43 C25 38 36 42 47 36 L53 49 C38 48 28 56 15 55 Z" />
       <path class="prayer-note__paper-fold" d="M24 43 C31 48 30 52 18 55" />
@@ -48,9 +45,6 @@ const NOTE_PAPERS = [
   `,
   `
     <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__slot-shadow" d="M52 8 C42 23 48 37 42 50 C36 64 45 76 35 82" />
-      <path class="prayer-note__stone-lip" d="M42 7 C35 22 42 35 36 49 C30 63 38 75 29 82" />
-      <path class="prayer-note__crevice prayer-note__crevice--vertical" d="M54 8 C45 23 50 38 44 51 C38 65 46 76 37 82" />
       <path class="prayer-note__paper-shadow" d="M40 15 L58 12 L61 36 L38 40 Z" />
       <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M38 13 C46 9 54 15 60 11 L62 35 C52 31 44 41 37 37 Z" />
       <path class="prayer-note__paper-fold" d="M44 15 C52 21 51 27 39 37" />
@@ -65,9 +59,6 @@ const NOTE_PAPERS = [
   `,
   `
     <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__slot-shadow" d="M10 42 C31 34 51 40 67 36 C79 34 82 48 95 48 C108 48 114 40 122 31" />
-      <path class="prayer-note__stone-lip" d="M9 34 C30 26 50 31 66 29 C80 28 82 41 96 42 C108 43 114 35 122 25" />
-      <path class="prayer-note__crevice" d="M10 43 C31 35 51 40 67 36 C80 34 83 48 96 48 C108 48 114 40 122 31" />
       <path class="prayer-note__paper-shadow" d="M16 36 L46 31 L50 48 L17 51 Z" />
       <path class="prayer-note__paper-body" d="M14 34 C25 30 36 35 47 29 L51 46 C38 43 29 53 15 49 Z" />
       <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M42 32 C52 27 62 34 72 29 L76 47 C64 44 55 52 43 49 Z" />
@@ -79,9 +70,6 @@ const NOTE_PAPERS = [
   `,
   `
     <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__slot-shadow" d="M7 54 C26 50 43 52 60 48 C76 44 93 50 121 39" />
-      <path class="prayer-note__stone-lip" d="M8 45 C26 42 43 43 60 39 C77 35 95 41 121 31" />
-      <path class="prayer-note__crevice" d="M7 55 C28 50 45 52 61 48 C78 44 96 50 121 39" />
       <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M12 45 C23 40 33 48 43 42 L47 57 C35 54 26 62 13 58 Z" />
       <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M33 42 C45 38 55 45 66 39 L70 58 C57 54 48 63 34 59 Z" />
       <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M56 39 C68 35 80 43 91 36 L95 56 C82 52 72 62 57 58 Z" />
@@ -272,6 +260,7 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   note.style.setProperty('--y', `${position[1]}%`);
   note.style.setProperty('--r', `${position[2]}deg`);
   note.dataset.labelSide = position[0] > (compactWallQuery.matches ? 58 : 62) ? 'left' : 'right';
+  const paperType = Number.isFinite(Number(position[3])) ? Number(position[3]) : index % NOTE_PAPERS.length;
 
   const pin = document.createElement('span');
   pin.className = 'prayer-note__pin';
@@ -280,7 +269,7 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   const paper = document.createElement('span');
   paper.className = 'prayer-note__paper';
   paper.setAttribute('aria-hidden', 'true');
-  paper.innerHTML = NOTE_PAPERS[index % NOTE_PAPERS.length];
+  paper.innerHTML = NOTE_PAPERS[paperType % NOTE_PAPERS.length];
 
   const header = document.createElement('header');
   const title = document.createElement('h3');
