@@ -16,14 +16,29 @@ function isProduction(): boolean {
   return runtimeEnv === 'production';
 }
 
+function getCronSecrets(): string[] {
+  return [
+    env('DONATION_REMINDER_CRON_SECRET'),
+    env('CRON_SECRET'),
+  ].filter((value): value is string => Boolean(value));
+}
+
 function validateCron(request: Request): boolean {
-  const secret = env('DONATION_REMINDER_CRON_SECRET');
-  if (!secret) return !isProduction();
+  const secrets = getCronSecrets();
+  if (!secrets.length) return !isProduction();
+
   const header = request.headers.get('x-cron-secret');
-  if (header && header === secret) return true;
+  if (header && secrets.includes(header)) return true;
+
+  const authorization = request.headers.get('authorization');
+  if (authorization?.startsWith('Bearer ')) {
+    const bearerToken = authorization.slice('Bearer '.length).trim();
+    if (secrets.includes(bearerToken)) return true;
+  }
+
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
-  return Boolean(token && token === secret);
+  return Boolean(token && secrets.includes(token));
 }
 
 function getBogotaDateString(date = new Date()): string {
@@ -33,16 +48,6 @@ function getBogotaDateString(date = new Date()): string {
     month: '2-digit',
     day: '2-digit',
   }).format(date);
-}
-
-function addMonths(dateString: string, months: number): string {
-  const date = new Date(`${dateString}T00:00:00-05:00`);
-  const day = date.getDate();
-  date.setMonth(date.getMonth() + months);
-  if (date.getDate() < day) {
-    date.setDate(0);
-  }
-  return getBogotaDateString(date);
 }
 
 function formatCurrency(amount: number, currency: string): string {
@@ -213,8 +218,7 @@ async function handleRun(request: Request): Promise<Response> {
     }
 
     if (sentAny) {
-      const nextDate = addMonths(reminder.next_reminder_date || today, 1);
-      await updateDonationReminder({ id: reminder.id, nextReminderDate: nextDate });
+      await updateDonationReminder({ id: reminder.id, status: 'ENDED' });
     } else {
       errors += 1;
     }

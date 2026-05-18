@@ -20,11 +20,12 @@ export const prerender = false;
     <div id="reminder-card" class="hidden max-w-2xl mx-auto rounded-3xl border border-slate-200 bg-white p-6 text-left shadow-sm">
       <h2 class="text-lg font-bold text-[#293C74] mb-2">Recordatorio de diezmo mensual</h2>
       <p class="text-sm text-slate-600 mb-4">
-        Actívalo solo si tu aporte fue manual (PSE/Nequi/transferencia). Este mensaje se envía con tu consentimiento.
+        Actívalo solo si tu aporte fue manual (PSE/Nequi/transferencia). Enviaremos un solo recordatorio con tu consentimiento.
       </p>
       <form id="reminder-form" class="space-y-4">
         <input type="hidden" name="provider" id="reminder-provider" />
         <input type="hidden" name="reference" id="reminder-reference" />
+        <input type="hidden" name="months" value="1" />
 
         <div class="flex flex-wrap gap-4">
           <label class="flex items-center gap-2 text-sm text-slate-600">
@@ -37,17 +38,8 @@ export const prerender = false;
           </label>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Duración del recordatorio</label>
-          <select name="months" class="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400">
-            <option value="3" selected>3 meses</option>
-            <option value="6">6 meses</option>
-            <option value="12">12 meses</option>
-          </select>
-        </div>
-
         <p class="text-[11px] text-slate-500">
-          Este recordatorio se enviará bajo tu consentimiento, para ayudarte a recordar tu diezmo en las fechas indicadas.
+          Este recordatorio se enviará una sola vez en la próxima fecha programada.
         </p>
 
         <button type="submit" class="w-full rounded-full px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 via-sky-600 to-teal-500 shadow">
@@ -115,7 +107,7 @@ export const prerender = false;
 
     const channels = Array.from(reminderForm.querySelectorAll('input[name="channels"]:checked'))
       .map((input) => input.value);
-    const months = reminderForm.querySelector('select[name="months"]')?.value || '3';
+    const months = reminderForm.querySelector('input[name="months"]')?.value || '1';
 
     try {
       const res = await fetch('/api/donations/reminders/opt-in', {

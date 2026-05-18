@@ -13,7 +13,7 @@
   ],
   "crons": [
     {
-      "path": "/api/donations/reminders/run?token=f44f0b15fad0789fcf94d985108a30cc1851f42b9efe4d59b81a6aef66605aca",
+      "path": "/api/donations/reminders/run",
       "schedule": "0 14 * * *"
     },
     {
