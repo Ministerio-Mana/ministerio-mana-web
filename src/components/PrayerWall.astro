@@ -142,6 +142,9 @@ const copy = {
     loading: 'Cargando peticiones...',
     heroKicker: 'Muro de oración',
     heroTitle: 'Un lugar para orar y agradecer juntos',
+    heroScript: 'Presenta',
+    heroOutline: 'tu petición',
+    heroSolid: 'y oramos contigo',
     heroBody: 'Escribe una petición o agradecimiento con sencillez. La iglesia lo recibe y lo pone delante de Dios en oración.',
     writeRequest: 'Escribir petición',
     seeWall: 'Ver el muro',
@@ -151,11 +154,18 @@ const copy = {
     verseBody: 'Una petición no queda sola; queda en medio de una familia que intercede y da gracias.',
     liveKicker: 'Intercesión viva',
     liveTitle: 'Las peticiones se guardan en el muro y la iglesia responde en oración',
+    liveScript: 'Intercedemos',
+    liveOutline: 'el muro',
+    liveSolid: 'responde en oración',
+    liveBody: 'Cada papelito representa una historia real. Puedes abrir una petición, orar por ella y acompañarla con fe.',
     activeRequests: 'peticiones activas',
     registeredPrayers: 'oraciones registradas',
     refreshLabel: 'Actualizar muro',
     newKicker: 'Nueva petición',
     formTitle: 'Deja tu petición',
+    formScript: 'Escribe',
+    formOutline: 'tu petición',
+    formSolid: 'con confianza',
     formHelp: 'Puedes enviarla privada para intercesión o pedir que sea pública. Las públicas pasan por revisión antes de aparecer en el muro.',
     visibilityLegend: 'Privacidad',
     privateLabel: 'Privada para intercesión',
@@ -236,6 +246,9 @@ const copy = {
     loading: 'Loading requests...',
     heroKicker: 'Prayer wall',
     heroTitle: 'A place to pray and give thanks together',
+    heroScript: 'Leave',
+    heroOutline: 'your request',
+    heroSolid: 'and we pray with you',
     heroBody: 'Write a request or thanksgiving simply. The church receives it and brings it before God in prayer.',
     writeRequest: 'Write a request',
     seeWall: 'See the wall',
@@ -245,11 +258,18 @@ const copy = {
     verseBody: 'A request does not stand alone; it rests in the middle of a family that intercedes and gives thanks.',
     liveKicker: 'Living intercession',
     liveTitle: 'Requests are tucked into the wall and the church responds in prayer',
+    liveScript: 'We intercede',
+    liveOutline: 'the wall',
+    liveSolid: 'responds in prayer',
+    liveBody: 'Each paper carries a real story. Open a request, pray for it, and accompany it with faith.',
     activeRequests: 'active requests',
     registeredPrayers: 'recorded prayers',
     refreshLabel: 'Refresh wall',
     newKicker: 'New request',
     formTitle: 'Leave your request',
+    formScript: 'Write',
+    formOutline: 'your request',
+    formSolid: 'with confidence',
     formHelp: 'You can send it privately for intercession or ask for it to be public. Public requests are reviewed before appearing on the wall.',
     visibilityLegend: 'Privacy',
     privateLabel: 'Private for intercession',
@@ -454,9 +474,14 @@ const i18n = JSON.stringify(c.js);
 
         <div class="prayer-hero__inner container-tight">
           <div class="prayer-hero__copy">
-            <p class="prayer-kicker">{c.heroKicker}</p>
-            <h1>{c.heroTitle}</h1>
-            <p>
+            <div class="prayer-display-title prayer-display-title--hero">
+              <span class="prayer-display-title__script">{c.heroScript}</span>
+              <h1 aria-label={c.heroTitle}>
+                <span class="prayer-display-title__outline">{c.heroOutline}</span>
+                <span class="prayer-display-title__solid">{c.heroSolid}</span>
+              </h1>
+            </div>
+            <p class="prayer-hero__body">
               {c.heroBody}
             </p>
             <div class="prayer-hero__actions">
@@ -475,8 +500,14 @@ const i18n = JSON.stringify(c.js);
 
       <section id="muro" class="prayer-main">
         <div class="prayer-main__intro container-tight" data-prayer-reveal>
-          <p class="prayer-kicker">{c.liveKicker}</p>
-          <h2>{c.liveTitle}</h2>
+          <div class="prayer-display-title prayer-display-title--section">
+            <span class="prayer-display-title__script">{c.liveScript}</span>
+            <h2 aria-label={c.liveTitle}>
+              <span class="prayer-display-title__outline">{c.liveOutline}</span>
+              <span class="prayer-display-title__solid">{c.liveSolid}</span>
+            </h2>
+          </div>
+          <p class="prayer-main__copy">{c.liveBody}</p>
         </div>
 
         <div class="prayer-main__grid container-tight">
@@ -588,9 +619,14 @@ const i18n = JSON.stringify(c.js);
           </div>
 
           <form id="peticion" class="prayer-form" method="post" action="/api/prayer/submit" data-prayer-form data-prayer-reveal>
-            <div>
-              <p class="prayer-kicker">{c.newKicker}</p>
-              <h2>{c.formTitle}</h2>
+            <div class="prayer-form__heading">
+              <div class="prayer-display-title prayer-display-title--form">
+                <span class="prayer-display-title__script">{c.formScript}</span>
+                <h2 aria-label={c.formTitle}>
+                  <span class="prayer-display-title__outline">{c.formOutline}</span>
+                  <span class="prayer-display-title__solid">{c.formSolid}</span>
+                </h2>
+              </div>
               <p>
                 {c.formHelp}
               </p>
@@ -684,6 +720,14 @@ const i18n = JSON.stringify(c.js);
 </script>
 
 <style is:global>
+  @font-face {
+    font-family: "Summer Loving";
+    src: url("/fonts/SUMMER FONT/Summer Loving Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
   .prayer-wall-experience {
     --prayer-navy: #202d63;
     --prayer-night: #111936;
@@ -713,6 +757,91 @@ const i18n = JSON.stringify(c.js);
     letter-spacing: 0.22em !important;
     line-height: 1.2;
     text-transform: uppercase;
+  }
+
+  .prayer-display-title {
+    --display-script-size: 4.6rem;
+    --display-outline-size: 5.55rem;
+    --display-solid-size: 5.15rem;
+    --display-outline-color: rgba(255, 255, 255, 0.88);
+    --display-script-color: var(--prayer-gold);
+    --display-stroke: 1.6px;
+    max-width: 56rem;
+    position: relative;
+  }
+
+  .prayer-display-title__script {
+    color: var(--display-script-color);
+    display: block;
+    font-family: "Summer Loving", cursive;
+    font-size: var(--display-script-size);
+    line-height: 0.82;
+    margin: 0 0 -0.1em;
+    position: relative;
+    text-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+    transform: rotate(-3deg);
+    transform-origin: left bottom;
+    z-index: 1;
+  }
+
+  .prayer-display-title h1,
+  .prayer-display-title h2 {
+    color: white;
+    display: grid;
+    font-family: "Intro", system-ui, sans-serif;
+    font-weight: 900;
+    gap: 0.02em;
+    letter-spacing: 0;
+    line-height: 0.87;
+    margin: 0;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .prayer-display-title__outline,
+  .prayer-display-title__solid {
+    display: block;
+  }
+
+  .prayer-display-title__outline {
+    color: transparent;
+    font-size: var(--display-outline-size);
+    -webkit-text-stroke: var(--display-stroke) var(--display-outline-color);
+    text-stroke: var(--display-stroke) var(--display-outline-color);
+  }
+
+  .prayer-display-title__solid {
+    color: white;
+    font-size: var(--display-solid-size);
+  }
+
+  .prayer-display-title--hero {
+    margin-top: 0.25rem;
+  }
+
+  .prayer-display-title--section {
+    --display-script-size: 3.6rem;
+    --display-outline-size: 4.45rem;
+    --display-solid-size: 4.05rem;
+    --display-outline-color: rgba(216, 232, 240, 0.82);
+    max-width: 52rem;
+  }
+
+  .prayer-display-title--form {
+    --display-script-size: 2.45rem;
+    --display-outline-size: 2.35rem;
+    --display-solid-size: 2.05rem;
+    --display-outline-color: rgba(216, 232, 240, 0.74);
+    --display-stroke: 1.1px;
+  }
+
+  .prayer-display-title--form .prayer-display-title__script {
+    color: #ffe073;
+    margin-bottom: -0.06em;
+  }
+
+  .prayer-display-title--form h2 {
+    line-height: 0.92;
   }
 
   .prayer-hero {
@@ -778,24 +907,15 @@ const i18n = JSON.stringify(c.js);
     max-width: 48rem;
   }
 
-  .prayer-hero h1 {
-    color: white;
-    font-size: 4.55rem;
-    font-weight: 900;
-    line-height: 0.95;
-    margin-top: 1rem;
-    max-width: 48rem;
-    text-transform: uppercase;
-    text-wrap: balance;
-  }
-
-  .prayer-hero__copy > p:not(.prayer-kicker) {
+  .prayer-hero__body {
+    border-left: 2px solid rgba(63, 167, 187, 0.9);
     color: rgba(255, 255, 255, 0.84);
     font-size: 1.15rem;
     font-weight: 300;
     line-height: 1.75;
-    margin-top: 1.25rem;
+    margin-top: 1.6rem;
     max-width: 40rem;
+    padding-left: 1.1rem;
   }
 
   .prayer-hero__actions {
@@ -878,14 +998,14 @@ const i18n = JSON.stringify(c.js);
     margin-bottom: 2rem;
   }
 
-  .prayer-main__intro h2 {
-    color: white;
-    font-size: 3.4rem;
-    font-weight: 900;
-    line-height: 1.02;
-    margin-top: 0.65rem;
-    max-width: 48rem;
-    text-transform: uppercase;
+  .prayer-main__copy {
+    border-left: 2px solid rgba(63, 167, 187, 0.82);
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 1rem;
+    line-height: 1.65;
+    margin-top: 1.25rem;
+    max-width: 43rem;
+    padding-left: 1rem;
   }
 
   .prayer-main__grid {
@@ -1657,12 +1777,9 @@ const i18n = JSON.stringify(c.js);
     top: 6rem;
   }
 
-  .prayer-form h2 {
-    color: white;
-    font-size: 2rem;
-    font-weight: 900;
-    line-height: 1.05;
-    margin-top: 0.45rem;
+  .prayer-form__heading {
+    display: grid;
+    gap: 0.75rem;
   }
 
   .prayer-form p:not(.prayer-kicker):not(.prayer-status) {
@@ -1961,8 +2078,16 @@ const i18n = JSON.stringify(c.js);
       padding-top: 6.5rem;
     }
 
-    .prayer-hero h1 {
-      font-size: 3.35rem;
+    .prayer-display-title--hero {
+      --display-script-size: 3.8rem;
+      --display-outline-size: 4.45rem;
+      --display-solid-size: 3.95rem;
+    }
+
+    .prayer-display-title--section {
+      --display-script-size: 3.1rem;
+      --display-outline-size: 3.65rem;
+      --display-solid-size: 3.25rem;
     }
 
     .prayer-verse {
@@ -1986,14 +2111,28 @@ const i18n = JSON.stringify(c.js);
       padding-top: 5.8rem;
     }
 
-    .prayer-hero h1 {
-      font-size: 2.42rem;
-      line-height: 1;
+    .prayer-display-title--hero {
+      --display-script-size: 2.65rem;
+      --display-outline-size: 3rem;
+      --display-solid-size: 2.55rem;
     }
 
-    .prayer-hero__copy > p:not(.prayer-kicker) {
+    .prayer-display-title--section {
+      --display-script-size: 2.35rem;
+      --display-outline-size: 2.55rem;
+      --display-solid-size: 2.2rem;
+    }
+
+    .prayer-display-title--form {
+      --display-script-size: 2.05rem;
+      --display-outline-size: 1.85rem;
+      --display-solid-size: 1.65rem;
+    }
+
+    .prayer-hero__body {
       font-size: 0.98rem;
       line-height: 1.58;
+      margin-top: 1.15rem;
     }
 
     .prayer-action {
@@ -2013,10 +2152,14 @@ const i18n = JSON.stringify(c.js);
       padding: 4rem 0;
     }
 
-    .prayer-main__intro h2,
     .prayer-rhythm h2 {
       font-size: 2rem;
       line-height: 1.08;
+    }
+
+    .prayer-main__copy {
+      font-size: 0.94rem;
+      line-height: 1.58;
     }
 
     .prayer-wall-panel__bar {
@@ -2125,10 +2268,6 @@ const i18n = JSON.stringify(c.js);
 
     .prayer-form {
       padding: 1rem;
-    }
-
-    .prayer-form h2 {
-      font-size: 1.55rem;
     }
 
     .prayer-form__row,
