@@ -174,7 +174,7 @@ async function loadPrayers() {
   canReview = Boolean(payload.permissions?.canReview);
   if (roleNoteEl) {
     roleNoteEl.textContent = canReview
-      ? 'Puedes revisar y autorizar peticiones públicas.'
+      ? 'Puedes revisar peticiones públicas. Las privadas quedan solo para oración.'
       : 'Puedes leer las peticiones recibidas para interceder.';
   }
   renderRows(Array.isArray(payload.rows) ? payload.rows : []);

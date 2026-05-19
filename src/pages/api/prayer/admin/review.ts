@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   });
   if (!guard.ok) return json({ ok: false, error: guard.error || 'No autorizado' }, guard.status);
   if (!canReviewPrayerModeration(guard.role)) {
-    return json({ ok: false, error: 'Solo admin o superadmin puede autorizar publicaciones' }, 403);
+    return json({ ok: false, error: 'No tienes permisos para revisar peticiones públicas' }, 403);
   }
 
   const body = await request.json().catch(() => null);
@@ -68,8 +68,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
   if (!current.data) return json({ ok: false, error: 'Petición no encontrada' }, 404);
 
-  if (decision === 'approve' && current.data.visibility !== 'public') {
-    return json({ ok: false, error: 'Una petición privada no se puede publicar sin cambiar su privacidad.' }, 400);
+  if (current.data.visibility !== 'public') {
+    return json({ ok: false, error: 'Las peticiones privadas son solo para intercesión.' }, 400);
+  }
+
+  if (!['pending', 'flagged'].includes(String(current.data.moderation_status || ''))) {
+    return json({ ok: false, error: 'Esta petición ya fue revisada.' }, 400);
   }
 
   const updates: Record<string, any> = {

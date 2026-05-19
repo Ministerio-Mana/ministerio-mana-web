@@ -20,7 +20,7 @@ export type PortalPrayerGuardResult = {
 };
 
 const PRAYER_ACCESS_ROLES = new Set(['superadmin', 'admin', 'intercessor']);
-const PRAYER_REVIEW_ROLES = new Set(['superadmin', 'admin']);
+const PRAYER_REVIEW_ROLES = new Set(['superadmin', 'admin', 'intercessor']);
 
 export function canAccessPrayerPanel(role?: string | null): boolean {
   return PRAYER_ACCESS_ROLES.has(String(role || ''));
