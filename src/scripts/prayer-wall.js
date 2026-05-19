@@ -467,58 +467,120 @@ function setupWallDrag(stage) {
   stage.addEventListener('pointercancel', release);
 }
 
+function selectedVisibility(form) {
+  const checked = form.querySelector('input[name="visibility"]:checked');
+  return checked?.value === 'public' ? 'public' : 'private';
+}
+
+function setVisibility(form, visibility) {
+  const input = form.querySelector(`input[name="visibility"][value="${visibility}"]`);
+  if (input instanceof HTMLInputElement) {
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+function updateConfirmModal(root, form) {
+  const modal = root.querySelector('[data-prayer-confirm]');
+  if (!modal) return;
+
+  const visibility = selectedVisibility(form);
+  const title = modal.querySelector('[data-prayer-confirm-title]');
+  const body = modal.querySelector('[data-prayer-confirm-body]');
+  const switchButton = modal.querySelector('[data-prayer-confirm-switch]');
+
+  if (title) title.textContent = visibility === 'public' ? text(root, 'confirmPublicTitle') : text(root, 'confirmPrivateTitle');
+  if (body) body.textContent = visibility === 'public' ? text(root, 'confirmPublicBody') : text(root, 'confirmPrivateBody');
+  if (switchButton) switchButton.textContent = visibility === 'public' ? text(root, 'switchToPrivate') : text(root, 'switchToPublic');
+}
+
+function openConfirmModal(root, form) {
+  const modal = root.querySelector('[data-prayer-confirm]');
+  if (!modal) return false;
+  updateConfirmModal(root, form);
+  modal.hidden = false;
+  modal.querySelector('[data-prayer-confirm-send]')?.focus();
+  return true;
+}
+
+function closeConfirmModal(root) {
+  const modal = root.querySelector('[data-prayer-confirm]');
+  if (modal) modal.hidden = true;
+}
+
+async function sendPrayerForm(root, form, submit) {
+  const formData = new FormData(form);
+  submit?.setAttribute('disabled', 'true');
+  setStatus(root, text(root, 'submitting'));
+
+  try {
+    const response = await fetch(form.action || '/api/prayer/submit', {
+      method: 'POST',
+      body: formData,
+      headers: { accept: 'application/json' },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.ok === false) {
+      throw new Error(data.error || text(root, 'submitError'));
+    }
+
+    const row = data.row ? normalizePrayer(root, data.row) : null;
+    const isPublicApproved = row?.visibility === 'public' && row?.approved && row?.moderation_status === 'approved';
+    if (isPublicApproved) {
+      root.__prayerPage = 0;
+      const rows = [row, ...(root.__prayerRows || [])].slice(0, 200);
+      root.__prayerRows = rows;
+      renderPrayers(root, rows, row.id);
+    } else {
+      renderPrayers(root, root.__prayerRows || []);
+    }
+    form.reset();
+    closeConfirmModal(root);
+    if (root.querySelector('.cf-turnstile') && window.turnstile?.reset) {
+      try {
+        window.turnstile.reset();
+      } catch {
+        // The widget can be absent in local dev while the global script exists.
+      }
+    }
+    const requestedVisibility = String(data.visibility || formData.get('visibility') || 'private');
+    setStatus(
+      root,
+      requestedVisibility === 'public' ? text(root, 'successPublicPending') : text(root, 'successPrivate'),
+      'success',
+    );
+  } catch (error) {
+    setStatus(root, error?.message || text(root, 'submitErrorRetry'), 'error');
+  } finally {
+    submit?.removeAttribute('disabled');
+  }
+}
+
 function setupForm(root) {
   const form = root.querySelector('[data-prayer-form]');
   if (!form) return;
 
   const submit = root.querySelector('[data-prayer-submit]');
+  const confirm = root.querySelector('[data-prayer-confirm]');
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const formData = new FormData(form);
-    submit?.setAttribute('disabled', 'true');
-    setStatus(root, text(root, 'submitting'));
+    if (submit?.hasAttribute('disabled')) return;
+    if (openConfirmModal(root, form)) return;
+    await sendPrayerForm(root, form, submit);
+  });
 
-    try {
-      const response = await fetch(form.action || '/api/prayer/submit', {
-        method: 'POST',
-        body: formData,
-        headers: { accept: 'application/json' },
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.ok === false) {
-        throw new Error(data.error || text(root, 'submitError'));
-      }
+  confirm?.querySelectorAll('[data-prayer-confirm-cancel]').forEach((button) => {
+    button.addEventListener('click', () => closeConfirmModal(root));
+  });
 
-      const row = data.row ? normalizePrayer(root, data.row) : null;
-      const isPublicApproved = row?.visibility === 'public' && row?.approved && row?.moderation_status === 'approved';
-      if (isPublicApproved) {
-        root.__prayerPage = 0;
-        const rows = [row, ...(root.__prayerRows || [])].slice(0, 200);
-        root.__prayerRows = rows;
-        renderPrayers(root, rows, row.id);
-      } else {
-        renderPrayers(root, root.__prayerRows || []);
-      }
-      form.reset();
-      if (root.querySelector('.cf-turnstile') && window.turnstile?.reset) {
-        try {
-          window.turnstile.reset();
-        } catch {
-          // The widget can be absent in local dev while the global script exists.
-        }
-      }
-      const requestedVisibility = String(data.visibility || formData.get('visibility') || 'private');
-      setStatus(
-        root,
-        requestedVisibility === 'public' ? text(root, 'successPublicPending') : text(root, 'successPrivate'),
-        'success',
-      );
-    } catch (error) {
-      setStatus(root, error?.message || text(root, 'submitErrorRetry'), 'error');
-    } finally {
-      submit?.removeAttribute('disabled');
-    }
+  confirm?.querySelector('[data-prayer-confirm-switch]')?.addEventListener('click', () => {
+    setVisibility(form, selectedVisibility(form) === 'public' ? 'private' : 'public');
+    updateConfirmModal(root, form);
+  });
+
+  confirm?.querySelector('[data-prayer-confirm-send]')?.addEventListener('click', async () => {
+    await sendPrayerForm(root, form, submit);
   });
 }
 

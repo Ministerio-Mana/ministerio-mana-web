@@ -1357,6 +1357,7 @@ async function loadDashboardData(authResult) {
     const navLinkCampus = document.getElementById('nav-link-campus'); // Campus
     const navLinkDonations = document.getElementById('nav-link-donations'); // Donaciones
     const navLinkRegions = document.getElementById('nav-link-regions'); // Regiones
+    const navLinkPrayers = document.getElementById('nav-link-prayers'); // Peticiones
     const tabIglesia = document.getElementById('tab-iglesia'); // The actual tab content
 
     // Default: Hide ALL restricted links (regular users see none of these)
@@ -1366,6 +1367,7 @@ async function loadDashboardData(authResult) {
     if (navLinkCampus) navLinkCampus.style.display = 'none';
     if (navLinkDonations) navLinkDonations.style.display = 'none';
     if (navLinkRegions) navLinkRegions.style.display = 'none';
+    if (navLinkPrayers) navLinkPrayers.style.display = 'none';
 
     const myRole = portalProfile?.role || 'user';
     const membershipRoles = portalMemberships.map((m) => m?.role).filter(Boolean);
@@ -1408,6 +1410,7 @@ async function loadDashboardData(authResult) {
     // Finanzas: ONLY Superadmin and Admin
     const financeRoles = ['superadmin', 'admin'];
     const regionsRoles = ['superadmin', 'admin'];
+    const prayerRoles = ['superadmin', 'admin', 'intercessor'];
 
     if (myRole) {
       if (eventManagementRoles.includes(myRole) && navLinkEventManagement) {
@@ -1432,6 +1435,10 @@ async function loadDashboardData(authResult) {
 
       if (regionsRoles.includes(myRole) && navLinkRegions) {
         navLinkRegions.style.display = 'flex';
+      }
+
+      if (prayerRoles.includes(myRole) && navLinkPrayers) {
+        navLinkPrayers.style.display = 'flex';
       }
     }
 

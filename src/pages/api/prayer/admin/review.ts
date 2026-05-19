@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { enforcePortalAdminGuard } from '@lib/portalAdminGuard';
+import { enforcePortalPrayerGuard, canReviewPrayerModeration } from '@lib/portalPrayerGuard';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { sanitizePlainText } from '@lib/validation';
 
@@ -36,12 +36,15 @@ function isMissingModerationColumn(error: any): boolean {
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) return json({ ok: false, error: 'Supabase no configurado' }, 500);
 
-  const guard = await enforcePortalAdminGuard({
+  const guard = await enforcePortalPrayerGuard({
     request,
     clientAddress,
     identifier: 'prayer.admin.review',
   });
   if (!guard.ok) return json({ ok: false, error: guard.error || 'No autorizado' }, guard.status);
+  if (!canReviewPrayerModeration(guard.role)) {
+    return json({ ok: false, error: 'Solo admin o superadmin puede autorizar publicaciones' }, 403);
+  }
 
   const body = await request.json().catch(() => null);
   const id = String(body?.id || '').trim();

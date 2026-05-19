@@ -60,7 +60,9 @@ async function notifyIntercession(params: {
   visibility: 'private' | 'public';
   moderationStatus: string;
 }): Promise<void> {
-  const to = env('PRAYER_INTERCESSION_EMAIL') || env('INTERCESSION_EMAIL');
+  const to = params.visibility === 'public'
+    ? env('PRAYER_REVIEW_EMAIL') || env('PRAYER_ADMIN_EMAIL') || env('PRAYER_INTERCESSION_EMAIL') || env('INTERCESSION_EMAIL')
+    : env('PRAYER_INTERCESSION_EMAIL') || env('INTERCESSION_EMAIL');
   if (!to || !isSendgridEnabled()) return;
 
   const location = [params.city, params.country].filter(Boolean).join(', ') || 'Sin ubicación';
@@ -159,7 +161,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const cityClean = city ? city.replace(/[^\p{L}\p{N}\s\.,-]+/gu, '').trim() : null;
     const countryCode = safeCountry(country) ?? null;
     const flagged = hasPublicModerationFlag(`${firstName} ${requestText} ${cityClean || ''}`);
-    const moderationStatus = flagged ? 'flagged' : 'pending';
+    const moderationStatus = visibility === 'private' ? 'private' : (flagged ? 'flagged' : 'pending');
     const payload = {
       first_name: firstName,
       request_text: requestText,
@@ -219,16 +221,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       return json({ ok: false, error: error.message }, 500);
     }
 
-    if (visibility === 'private') {
-      await notifyIntercession({
-        firstName,
-        requestText,
-        city: cityClean,
-        country: countryCode,
-        visibility,
-        moderationStatus,
-      });
-    }
+    await notifyIntercession({
+      firstName,
+      requestText,
+      city: cityClean,
+      country: countryCode,
+      visibility,
+      moderationStatus,
+    });
 
     return json({ ok: true, visibility, moderation_status: moderationStatus, row: data });
   } catch (error: any) {

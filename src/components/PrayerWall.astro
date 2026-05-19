@@ -225,6 +225,14 @@ const copy = {
       success: 'Recibimos tu petición. Vamos a orar contigo.',
       successPrivate: 'Recibimos tu petición privada. El Ministerio de Intercesión la tendrá presente.',
       successPublicPending: 'Recibimos tu petición. Un administrador la revisará antes de publicarla en el muro.',
+      confirmPrivateTitle: 'Confirmar petición privada',
+      confirmPrivateBody: 'Elegiste enviar esta petición privada. No aparecerá en el muro público; la recibirá el equipo de intercesión para orar por ti.',
+      confirmPublicTitle: 'Confirmar petición pública',
+      confirmPublicBody: 'Elegiste pedir que esta petición sea pública. Primero pasará por revisión y solo aparecerá en el muro si un administrador la aprueba.',
+      switchToPublic: 'Cambiar a pública',
+      switchToPrivate: 'Cambiar a privada',
+      confirmSend: 'Confirmar envío',
+      confirmCancel: 'Volver al formulario',
       submitErrorRetry: 'No pudimos registrar la petición. Intenta de nuevo.',
       countries: {
         AR: 'Argentina',
@@ -329,6 +337,14 @@ const copy = {
       success: 'We received your request. We will pray with you.',
       successPrivate: 'We received your private request. The Intercession Ministry will keep it in prayer.',
       successPublicPending: 'We received your request. An administrator will review it before it appears on the wall.',
+      confirmPrivateTitle: 'Confirm private request',
+      confirmPrivateBody: 'You chose to send this request privately. It will not appear on the public wall; the intercession team will receive it and pray for you.',
+      confirmPublicTitle: 'Confirm public request',
+      confirmPublicBody: 'You chose to ask for this request to be public. It will be reviewed first and will only appear on the wall if an administrator approves it.',
+      switchToPublic: 'Change to public',
+      switchToPrivate: 'Change to private',
+      confirmSend: 'Confirm submission',
+      confirmCancel: 'Back to form',
       submitErrorRetry: 'We could not register the request. Try again.',
       countries: {
         AR: 'Argentina',
@@ -690,6 +706,20 @@ const i18n = JSON.stringify(c.js);
             </button>
             <p class="prayer-status" data-prayer-status aria-live="polite"></p>
           </form>
+
+          <div class="prayer-confirm" data-prayer-confirm hidden>
+            <div class="prayer-confirm__panel" role="dialog" aria-modal="true" aria-labelledby="prayer-confirm-title">
+              <button type="button" class="prayer-confirm__close" data-prayer-confirm-cancel aria-label={c.js.close}>×</button>
+              <span data-prayer-confirm-eyebrow>{c.visibilityLegend}</span>
+              <h3 id="prayer-confirm-title" data-prayer-confirm-title></h3>
+              <p data-prayer-confirm-body></p>
+              <div class="prayer-confirm__actions">
+                <button type="button" class="prayer-confirm__switch" data-prayer-confirm-switch></button>
+                <button type="button" class="prayer-confirm__send" data-prayer-confirm-send>{c.js.confirmSend}</button>
+              </div>
+              <button type="button" class="prayer-confirm__back" data-prayer-confirm-cancel>{c.js.confirmCancel}</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1913,6 +1943,117 @@ const i18n = JSON.stringify(c.js);
     opacity: 0.58;
   }
 
+  .prayer-confirm[hidden] {
+    display: none;
+  }
+
+  .prayer-confirm {
+    align-items: center;
+    background: rgba(8, 12, 28, 0.64);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    position: fixed;
+    z-index: 70;
+  }
+
+  .prayer-confirm__panel {
+    background:
+      radial-gradient(circle at 92% 0%, rgba(63, 167, 187, 0.2), transparent 11rem),
+      #111936;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    box-shadow: 0 30px 100px rgba(0, 0, 0, 0.42);
+    color: white;
+    max-width: 28rem;
+    padding: 1.45rem;
+    position: relative;
+    width: min(100%, 28rem);
+  }
+
+  .prayer-confirm__close {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    color: white;
+    display: inline-flex;
+    font-size: 1.1rem;
+    height: 2rem;
+    justify-content: center;
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    width: 2rem;
+  }
+
+  .prayer-confirm span {
+    color: var(--prayer-gold);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    margin-bottom: 0.7rem;
+    padding-right: 2.4rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-confirm h3 {
+    color: white;
+    font-size: 1.45rem;
+    font-weight: 900;
+    line-height: 1.05;
+    margin: 0;
+    padding-right: 2.4rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-confirm p {
+    border-left: 2px solid rgba(63, 167, 187, 0.88);
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 0.93rem;
+    line-height: 1.58;
+    margin-top: 1rem;
+    padding-left: 0.9rem;
+  }
+
+  .prayer-confirm__actions {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 1.25rem;
+  }
+
+  .prayer-confirm__switch,
+  .prayer-confirm__send,
+  .prayer-confirm__back {
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 900;
+    min-height: 2.8rem;
+    padding: 0.72rem 0.9rem;
+    text-transform: uppercase;
+  }
+
+  .prayer-confirm__switch,
+  .prayer-confirm__back {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .prayer-confirm__send {
+    background: var(--prayer-teal);
+    border: 1px solid rgba(63, 167, 187, 0.9);
+    color: white;
+  }
+
+  .prayer-confirm__back {
+    margin-top: 0.65rem;
+    width: 100%;
+  }
+
   .prayer-status {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.85rem;
@@ -2268,6 +2409,14 @@ const i18n = JSON.stringify(c.js);
 
     .prayer-form {
       padding: 1rem;
+    }
+
+    .prayer-confirm__actions {
+      grid-template-columns: 1fr;
+    }
+
+    .prayer-confirm__panel {
+      padding: 1.2rem;
     }
 
     .prayer-form__row,

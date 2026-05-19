@@ -40,6 +40,7 @@ const navLinkCampus = document.getElementById('nav-link-campus');
 const navLinkFinances = document.getElementById('nav-link-finances');
 const navLinkDonations = document.getElementById('nav-link-donations');
 const navLinkRegions = document.getElementById('nav-link-regions');
+const navLinkPrayers = document.getElementById('nav-link-prayers');
 
 let currentUserRole = 'user';
 let currentUserId = '';
@@ -64,6 +65,7 @@ const roleTranslations = {
     'regional_pastor': 'Pastor Regional',
     'regional_collaborator': 'Colaborador Regional',
     'campus_missionary': 'Misionero Campus',
+    'intercessor': 'Intercesor',
     'pastor': 'Pastor Local',
     'local_collaborator': 'Colaborador Local',
     'leader': 'Líder (Legacy)',
@@ -78,6 +80,7 @@ const roleOrder = [
     'regional_pastor',
     'regional_collaborator',
     'campus_missionary',
+    'intercessor',
     'pastor',
     'local_collaborator',
     'leader',
@@ -102,6 +105,7 @@ const scopeCategoryLabels = {
     regional: 'Regional',
     church: 'Iglesia',
     campus: 'Campus',
+    intercession: 'Intercesión',
     assistant: 'Asistente',
 };
 
@@ -141,6 +145,7 @@ function getScopeCategory(user) {
     if (role === 'regional_pastor' || role === 'regional_collaborator') return 'regional';
     if (role === 'pastor' || role === 'local_collaborator' || role === 'leader') return 'church';
     if (role === 'campus_missionary') return 'campus';
+    if (role === 'intercessor') return 'intercession';
     return 'assistant';
 }
 
@@ -190,6 +195,7 @@ function applySidebarPermissions(role, memberships = []) {
     const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
     const financeRoles = ['superadmin', 'admin'];
     const regionsRoles = ['superadmin', 'admin'];
+    const prayerRoles = ['superadmin', 'admin', 'intercessor'];
 
     if (navLinkEvents) navLinkEvents.style.display = eventManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkUsers) navLinkUsers.style.display = userManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
@@ -197,6 +203,7 @@ function applySidebarPermissions(role, memberships = []) {
     if (navLinkFinances) navLinkFinances.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkDonations) navLinkDonations.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
     if (navLinkRegions) navLinkRegions.style.display = regionsRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkPrayers) navLinkPrayers.style.display = prayerRoles.includes(effectiveRole) ? 'flex' : 'none';
     return effectiveRole;
 }
 
@@ -569,6 +576,7 @@ function applyFilters() {
 
 function roleBadgeClass(role) {
     if (role === 'admin' || role === 'superadmin') return 'bg-purple-100 text-purple-700';
+    if (role === 'intercessor') return 'bg-rose-100 text-rose-700';
     if (role === 'pastor' || role === 'national_pastor' || role === 'regional_pastor') return 'bg-blue-100 text-blue-700';
     if (role === 'local_collaborator' || role === 'national_collaborator' || role === 'regional_collaborator') return 'bg-teal-100 text-teal-700';
     return 'bg-slate-100 text-slate-600';

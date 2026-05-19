@@ -12,6 +12,7 @@ export type PortalRole =
   | 'pastor'
   | 'local_collaborator'
   | 'campus_missionary'
+  | 'intercessor'
   | 'leader';
 export type ChurchRole = 'church_admin' | 'church_member';
 export type EffectiveManagementRole =
@@ -194,6 +195,7 @@ export function resolveEffectivePortalRole(profileRole?: string | null, membersh
     'regional_collaborator',
     'pastor',
     'local_collaborator',
+    'intercessor',
     'leader',
   ].includes(role)) {
     return role;

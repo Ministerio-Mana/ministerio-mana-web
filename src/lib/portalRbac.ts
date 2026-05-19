@@ -13,6 +13,7 @@ export type PortalCapabilities = {
   can_register_people: boolean;
   can_access_finances: boolean;
   can_access_campus: boolean;
+  can_access_prayers: boolean;
 };
 
 export const KNOWN_PORTAL_ROLES: PortalRole[] = [
@@ -24,6 +25,7 @@ export const KNOWN_PORTAL_ROLES: PortalRole[] = [
   'national_collaborator',
   'national_pastor',
   'campus_missionary',
+  'intercessor',
   'leader',
   'admin',
   'superadmin',
@@ -39,6 +41,7 @@ const BASE_USER_CAPABILITIES: PortalCapabilities = {
   can_register_people: false,
   can_access_finances: false,
   can_access_campus: false,
+  can_access_prayers: false,
 };
 
 const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
@@ -89,6 +92,10 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     ...BASE_USER_CAPABILITIES,
     can_access_campus: true,
   },
+  intercessor: {
+    ...BASE_USER_CAPABILITIES,
+    can_access_prayers: true,
+  },
   leader: {
     ...BASE_USER_CAPABILITIES,
     can_manage_users: true,
@@ -105,6 +112,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_register_people: true,
     can_access_finances: true,
     can_access_campus: true,
+    can_access_prayers: true,
   },
   superadmin: {
     can_manage_users: true,
@@ -116,6 +124,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_register_people: true,
     can_access_finances: true,
     can_access_campus: true,
+    can_access_prayers: true,
   },
 };
 
@@ -130,6 +139,7 @@ const ROLE_SCOPE: Record<string, PortalScope> = {
   local_collaborator: 'church',
   leader: 'church',
   campus_missionary: 'self',
+  intercessor: 'global',
   user: 'self',
 };
 
@@ -142,6 +152,7 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
     'regional_pastor',
     'regional_collaborator',
     'campus_missionary',
+    'intercessor',
     'pastor',
     'local_collaborator',
     'leader',
@@ -153,6 +164,7 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
     'regional_pastor',
     'regional_collaborator',
     'campus_missionary',
+    'intercessor',
     'pastor',
     'local_collaborator',
     'leader',
