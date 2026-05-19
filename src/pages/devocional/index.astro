@@ -3,8 +3,17 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 
 const devotionalYoutubeChannelUrl = 'https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag';
 const devotionalUploadsPlaylistId = 'UUC85JrvTKq9dfCcgxQQU_Ag';
+const devotionalSpotifyShowUrl = 'https://open.spotify.com/show/4SbbhNxkSXrh0qyEwJK7lO';
 const devotionalWhatsappUrl = 'https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M';
-const devotionalEmbedUrl = `https://www.youtube.com/embed/videoseries?list=${devotionalUploadsPlaylistId}&rel=0&modestbranding=1&playsinline=1`;
+const devotionalEmbedParams = new URLSearchParams({
+  list: devotionalUploadsPlaylistId,
+  rel: '0',
+  modestbranding: '1',
+  playsinline: '1',
+  origin: Astro.url.origin,
+  widget_referrer: Astro.url.origin,
+});
+const devotionalEmbedUrl = `https://www.youtube.com/embed/videoseries?${devotionalEmbedParams.toString()}`;
 ---
 
 <BaseLayout title="Devocional Maná — con el Ps. Carlos Ríos" description="Devocional en YouTube de lunes a viernes con el Pastor Carlos Ríos.">
@@ -37,6 +46,7 @@ const devotionalEmbedUrl = `https://www.youtube.com/embed/videoseries?list=${dev
             title="Devocional Maná en YouTube"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"
           ></iframe>
         </div>
       </div>
@@ -53,7 +63,7 @@ const devotionalEmbedUrl = `https://www.youtube.com/embed/videoseries?list=${dev
         <strong>Agenda Devocional</strong>
         <small>Guía diaria para escribir, meditar y orar.</small>
       </a>
-      <a href="https://open.spotify.com" target="_blank" rel="noreferrer">
+      <a href={devotionalSpotifyShowUrl} target="_blank" rel="noreferrer">
         <span>03</span>
         <strong>Spotify</strong>
         <small>Escucha recursos de audio durante la semana.</small>

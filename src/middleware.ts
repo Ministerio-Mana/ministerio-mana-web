@@ -17,6 +17,8 @@ const SCRIPT_SRC_BASE = [
   'https://challenges.cloudflare.com',
   'https://js.stripe.com',
   'https://checkout.wompi.co',
+  'https://embed-cdn.spotifycdn.com',
+  'https://open.spotify.com',
   'https://unpkg.com',
   'https://www.youtube.com',
   'https://s.ytimg.com',
@@ -24,6 +26,7 @@ const SCRIPT_SRC_BASE = [
 
 const FRAME_SRC = [
   "'self'",
+  'https://open.spotify.com',
   'https://www.youtube.com',
   'https://www.youtube-nocookie.com',
   'https://player.vimeo.com',
@@ -215,6 +218,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     'https://checkout.stripe.com',
     'https://checkout.wompi.co',
     'https://js.stripe.com',
+    'https://open.spotify.com',
     'https://www.youtube.com',
     'https://www.youtube-nocookie.com',
     'https://*.googlevideo.com',
@@ -242,7 +246,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     "default-src 'self'",
     `script-src ${scriptSrc.join(' ')}`,
     "style-src 'self' 'unsafe-inline' https://unpkg.com",
-    "img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://i.ytimg.com",
+    "img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://*.spotifycdn.com https://i.scdn.co https://mosaic.scdn.co https://i.ytimg.com",
     "font-src 'self' data:",
     `connect-src ${connectSrc.join(' ')}`,
     "media-src 'self' blob: https://*.googlevideo.com",
