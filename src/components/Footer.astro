@@ -5,7 +5,7 @@ const locale = normalizeLocale(Astro.props.locale ?? Astro.cookies.get('lang')?.
 const devotionalWhatsappUrl = 'https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M';
 const devotionalYoutubeChannelUrl = 'https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag';
 const devotionalSpotifyShowUrl = 'https://open.spotify.com/show/4SbbhNxkSXrh0qyEwJK7lO';
-const devotionalSpotifyUri = 'spotify:show:4SbbhNxkSXrh0qyEwJK7lO';
+const devotionalSpotifyEmbedUrl = 'https://open.spotify.com/embed/show/4SbbhNxkSXrh0qyEwJK7lO?utm_source=generator&theme=0';
 const devotionalCoverFallback = '/assets/home-ministerio/front-devocional-mana.png';
 
 type SpotifyShow = {
@@ -106,13 +106,8 @@ const devotionalShow = await getSpotifyShow();
       <section
         class="relative overflow-hidden rounded-lg border border-white/10 bg-[#0d1430]/95 p-3.5 shadow-xl shadow-black/20 md:p-4"
         aria-label={t(locale, 'footer_player_aria')}
-        data-spotify-player
-        data-spotify-uri={devotionalSpotifyUri}
-        data-play-label={t(locale, 'footer_player_play')}
-        data-pause-label={t(locale, 'footer_player_pause')}
-        data-playing="false"
       >
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] xl:grid-cols-[7.5rem_minmax(0,1fr)_9rem] xl:items-center">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] xl:grid-cols-[7.5rem_minmax(0,1fr)_9rem] xl:items-start">
           <a href={devotionalSpotifyShowUrl} target="_blank" rel="noopener noreferrer" class="mana-devotional-thumb" aria-label={devotionalShow.title}>
             <img src={devotionalShow.image} alt="" loading="lazy" decoding="async" />
           </a>
@@ -125,11 +120,10 @@ const devotionalShow = await getSpotifyShow();
             <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-300 md:text-sm">{devotionalShow.description}</p>
 
             <div class="mt-2.5 flex flex-wrap items-center gap-2">
-              <button type="button" class="mana-player-play" aria-label={t(locale, 'footer_player_play')} data-spotify-toggle>
-                <svg viewBox="0 0 24 24" class="h-5 w-5 mana-player-play-icon" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7L8 5Z" /></svg>
-                <svg viewBox="0 0 24 24" class="hidden h-5 w-5 mana-player-pause-icon" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>
-                <span data-spotify-toggle-label>{t(locale, 'footer_player_play')}</span>
-              </button>
+              <a href={devotionalSpotifyShowUrl} target="_blank" rel="noopener noreferrer" class="mana-player-play">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7L8 5Z" /></svg>
+                <span>{t(locale, 'footer_player_play')}</span>
+              </a>
 
               <div class="mana-wave ml-1" aria-hidden="true">
                 <span></span>
@@ -154,7 +148,13 @@ const devotionalShow = await getSpotifyShow();
             </a>
           </div>
 
-          <div class="mana-spotify-embed-host" data-spotify-embed aria-hidden="true"></div>
+          <iframe
+            class="mana-spotify-frame"
+            src={devotionalSpotifyEmbedUrl}
+            title={t(locale, 'footer_player_iframe_title')}
+            loading="lazy"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          ></iframe>
         </div>
       </section>
     </div>
@@ -370,31 +370,15 @@ const devotionalShow = await getSpotifyShow();
     min-width: 4.3rem;
   }
 
-  .mana-spotify-embed-host {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    opacity: 0.01;
-    pointer-events: none;
-    inset: auto 0 0 auto;
-  }
-
-  .mana-spotify-embed-host iframe {
-    width: 1px !important;
-    height: 1px !important;
+  .mana-spotify-frame {
+    display: block;
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 9.5rem;
+    min-width: 0;
     border: 0;
-  }
-
-  :global([data-spotify-player] iframe[src*="open.spotify.com"]) {
-    position: absolute !important;
-    inset: auto 0 0 auto !important;
-    width: 1px !important;
-    height: 1px !important;
-    overflow: hidden !important;
-    border: 0 !important;
-    opacity: 0.01 !important;
-    pointer-events: none !important;
+    border-radius: 0.65rem;
+    background: #0b1025;
   }
 
   .mana-player-icon:hover,
@@ -430,22 +414,13 @@ const devotionalShow = await getSpotifyShow();
   .mana-wave span:nth-child(4) { height: 1.5rem; animation-delay: 300ms; background: #28A6BD; }
   .mana-wave span:nth-child(5) { height: 0.8rem; animation-delay: 400ms; }
 
-  [data-spotify-player][data-playing="true"] .mana-wave span,
-  [data-spotify-player][data-playing="true"] .mana-progress {
+  .mana-wave span,
+  .mana-progress {
     animation-play-state: running;
-  }
-
-  [data-spotify-player][data-playing="true"] .mana-player-play-icon {
-    display: none;
-  }
-
-  [data-spotify-player][data-playing="true"] .mana-player-pause-icon {
-    display: block;
   }
 
   .mana-progress {
     animation: mana-progress 36s linear infinite;
-    animation-play-state: paused;
   }
 
   @keyframes mana-wave {

@@ -2,18 +2,103 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 
 const devotionalYoutubeChannelUrl = 'https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag';
-const devotionalUploadsPlaylistId = 'UUC85JrvTKq9dfCcgxQQU_Ag';
+const devotionalYoutubeVideosUrl = `${devotionalYoutubeChannelUrl}/videos`;
+const devotionalRssUrl = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCC85JrvTKq9dfCcgxQQU_Ag';
 const devotionalSpotifyShowUrl = 'https://open.spotify.com/show/4SbbhNxkSXrh0qyEwJK7lO';
 const devotionalWhatsappUrl = 'https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M';
+const fallbackDevotionalVideo: DevotionalVideo = {
+  title: 'Devocional Maná en YouTube',
+  videoId: '2Xw3LVxU1dM',
+};
+
+type DevotionalVideo = {
+  title: string;
+  videoId: string;
+};
+
+function decodeXml(value = '') {
+  return value
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickXml(source: string, pattern: RegExp) {
+  return source.match(pattern)?.[1] ?? '';
+}
+
+async function fetchWithTimeout(url: string, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getLatestDevotionalVideo(): Promise<DevotionalVideo | null> {
+  const cacheKey = '__manaDevotionalPageVideo';
+  const globalCache = globalThis as typeof globalThis & {
+    [cacheKey]?: { ts: number; data: DevotionalVideo };
+  };
+  const cached = globalCache[cacheKey];
+  if (cached && Date.now() - cached.ts < 1000 * 60 * 15) return cached.data;
+
+  try {
+    const response = await fetchWithTimeout(devotionalRssUrl, 1800);
+    if (response.ok) {
+      const xml = await response.text();
+      const entry = xml.match(/<entry\b[\s\S]*?<\/entry>/)?.[0] ?? '';
+      const videoId = decodeXml(pickXml(entry, /<yt:videoId>([\s\S]*?)<\/yt:videoId>/));
+      if (videoId) {
+        const title = decodeXml(pickXml(entry, /<title>([\s\S]*?)<\/title>/)) || fallbackDevotionalVideo.title;
+        const data = { title, videoId };
+        globalCache[cacheKey] = { ts: Date.now(), data };
+        return data;
+      }
+    }
+  } catch {
+    // Fall through to the channel page scrape.
+  }
+
+  try {
+    const response = await fetchWithTimeout(devotionalYoutubeVideosUrl, 4200);
+    if (!response.ok) return fallbackDevotionalVideo;
+    const html = await response.text();
+    const videoId =
+      html.match(/"videoId":"([^"]+)"/)?.[1] ||
+      html.match(/\/watch\?v=([A-Za-z0-9_-]{11})/)?.[1] ||
+      '';
+    if (!videoId) return fallbackDevotionalVideo;
+    const title =
+      decodeXml(html.match(new RegExp(`"videoId":"${videoId}"[\\s\\S]{0,900}?"title":\\{"runs":\\[\\{"text":"([^"]+)"`))?.[1] ?? '') ||
+      fallbackDevotionalVideo.title;
+    const data = { title, videoId };
+    globalCache[cacheKey] = { ts: Date.now(), data };
+    return data;
+  } catch {
+    return fallbackDevotionalVideo;
+  }
+}
+
+const latestDevotionalVideo = await getLatestDevotionalVideo();
 const devotionalEmbedParams = new URLSearchParams({
-  list: devotionalUploadsPlaylistId,
   rel: '0',
   modestbranding: '1',
   playsinline: '1',
   origin: Astro.url.origin,
   widget_referrer: Astro.url.origin,
 });
-const devotionalEmbedUrl = `https://www.youtube.com/embed/videoseries?${devotionalEmbedParams.toString()}`;
+const devotionalEmbedPath = latestDevotionalVideo?.videoId ?? fallbackDevotionalVideo.videoId;
+const devotionalEmbedUrl = `https://www.youtube.com/embed/${devotionalEmbedPath}?${devotionalEmbedParams.toString()}`;
 ---
 
 <BaseLayout title="Devocional Maná — con el Ps. Carlos Ríos" description="Devocional en YouTube de lunes a viernes con el Pastor Carlos Ríos.">
@@ -43,7 +128,7 @@ const devotionalEmbedUrl = `https://www.youtube.com/embed/videoseries?${devotion
         <div class="devotional-video">
           <iframe
             src={devotionalEmbedUrl}
-            title="Devocional Maná en YouTube"
+            title={latestDevotionalVideo?.title ?? 'Devocional Maná en YouTube'}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
             referrerpolicy="strict-origin-when-cross-origin"
