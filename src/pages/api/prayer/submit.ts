@@ -52,6 +52,101 @@ function escapeHtml(value: string | null | undefined): string {
     .replace(/'/g, '&#039;');
 }
 
+function getPublicBaseUrl(): string {
+  const raw =
+    env('PUBLIC_SITE_URL') ||
+    env('SITE_URL') ||
+    env('VERCEL_PROJECT_PRODUCTION_URL') ||
+    env('VERCEL_URL') ||
+    'https://ministeriomana.org';
+  const normalized = raw.startsWith('http') ? raw : `https://${raw}`;
+  try {
+    const url = new URL(normalized);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return 'https://ministeriomana.org';
+  }
+}
+
+function buildPortalPrayersUrl(): string {
+  return new URL('/portal/peticiones', getPublicBaseUrl()).toString();
+}
+
+function visibilityLabel(value: 'private' | 'public'): string {
+  return value === 'public' ? 'Pública' : 'Privada';
+}
+
+function moderationLabel(value: string): string {
+  const labels: Record<string, string> = {
+    private: 'Privada para intercesión',
+    pending: 'Pendiente de revisión',
+    flagged: 'Marcada para revisión',
+    approved: 'Publicada',
+    rejected: 'Rechazada',
+  };
+  return labels[value] || value || 'Sin estado';
+}
+
+function buildPrayerEmailHtml(params: {
+  subject: string;
+  firstName: string;
+  requestText: string;
+  location: string;
+  visibility: 'private' | 'public';
+  moderationStatus: string;
+  portalUrl: string;
+}): string {
+  const actionLabel = params.visibility === 'public' ? 'Revisar petición' : 'Abrir bandeja';
+  const intro = params.visibility === 'public'
+    ? 'Hay una nueva petición pública pendiente antes de aparecer en el muro.'
+    : 'Hay una nueva petición privada para acompañar en oración.';
+
+  return `
+    <div style="margin:0;padding:0;background:#f6f8fb;font-family:Arial,sans-serif;color:#0b1120;">
+      <div style="max-width:640px;margin:0 auto;padding:32px 20px;">
+        <div style="background:#ffffff;border:1px solid #e6ebf2;border-radius:24px;overflow:hidden;">
+          <div style="padding:28px 28px 20px;border-bottom:1px solid #edf1f6;">
+            <p style="margin:0 0 10px;color:#0f7184;font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;">Peticiones Maná</p>
+            <h1 style="margin:0;color:#293C74;font-size:26px;line-height:1.15;font-weight:900;">${escapeHtml(params.subject)}</h1>
+            <p style="margin:14px 0 0;color:#516078;font-size:15px;line-height:1.6;">${escapeHtml(intro)}</p>
+          </div>
+
+          <div style="padding:24px 28px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:22px;">
+              <tr>
+                <td style="padding:10px 0;color:#6b7280;font-size:13px;font-weight:700;">Nombre</td>
+                <td style="padding:10px 0;color:#111827;font-size:14px;text-align:right;font-weight:800;">${escapeHtml(params.firstName)}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 0;color:#6b7280;font-size:13px;font-weight:700;border-top:1px solid #eef2f7;">Ubicación</td>
+                <td style="padding:10px 0;color:#111827;font-size:14px;text-align:right;border-top:1px solid #eef2f7;">${escapeHtml(params.location)}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 0;color:#6b7280;font-size:13px;font-weight:700;border-top:1px solid #eef2f7;">Privacidad</td>
+                <td style="padding:10px 0;color:#111827;font-size:14px;text-align:right;border-top:1px solid #eef2f7;">${escapeHtml(visibilityLabel(params.visibility))}</td>
+              </tr>
+              <tr>
+                <td style="padding:10px 0;color:#6b7280;font-size:13px;font-weight:700;border-top:1px solid #eef2f7;">Estado</td>
+                <td style="padding:10px 0;color:#111827;font-size:14px;text-align:right;border-top:1px solid #eef2f7;">${escapeHtml(moderationLabel(params.moderationStatus))}</td>
+              </tr>
+            </table>
+
+            <div style="background:#f8fafc;border:1px solid #e8eef5;border-radius:18px;padding:18px 20px;">
+              <p style="margin:0;color:#293C74;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;">Petición</p>
+              <p style="margin:10px 0 0;color:#334155;font-size:15px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(params.requestText)}</p>
+            </div>
+
+            <div style="margin-top:24px;">
+              <a href="${escapeHtml(params.portalUrl)}" style="display:inline-block;background:#293C74;color:#ffffff;text-decoration:none;border-radius:999px;padding:13px 20px;font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;">${escapeHtml(actionLabel)}</a>
+              <p style="margin:14px 0 0;color:#64748b;font-size:12px;line-height:1.55;">El enlace abre el portal y requiere iniciar sesión con permisos de administración o intercesión.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function notifyIntercession(params: {
   firstName: string;
   requestText: string;
@@ -69,29 +164,31 @@ async function notifyIntercession(params: {
   const subject = params.visibility === 'private'
     ? 'Nueva petición privada de intercesión'
     : 'Nueva petición pública pendiente de revisión';
+  const portalUrl = buildPortalPrayersUrl();
 
   try {
     await sendSendgridEmail({
       to,
       subject,
-      html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.55;color:#0B1120;">
-          <h2 style="margin:0 0 12px;color:#1A255C;">${escapeHtml(subject)}</h2>
-          <p><strong>Nombre:</strong> ${escapeHtml(params.firstName)}</p>
-          <p><strong>Ubicación:</strong> ${escapeHtml(location)}</p>
-          <p><strong>Privacidad:</strong> ${escapeHtml(params.visibility)}</p>
-          <p><strong>Estado:</strong> ${escapeHtml(params.moderationStatus)}</p>
-          <p style="white-space:pre-wrap;">${escapeHtml(params.requestText)}</p>
-        </div>
-      `,
+      html: buildPrayerEmailHtml({
+        subject,
+        firstName: params.firstName,
+        requestText: params.requestText,
+        location,
+        visibility: params.visibility,
+        moderationStatus: params.moderationStatus,
+        portalUrl,
+      }),
       text: [
         subject,
         `Nombre: ${params.firstName}`,
         `Ubicación: ${location}`,
-        `Privacidad: ${params.visibility}`,
-        `Estado: ${params.moderationStatus}`,
+        `Privacidad: ${visibilityLabel(params.visibility)}`,
+        `Estado: ${moderationLabel(params.moderationStatus)}`,
         '',
         params.requestText,
+        '',
+        `Abrir portal: ${portalUrl}`,
       ].join('\n'),
     });
   } catch (error: any) {
