@@ -5,6 +5,7 @@ import Footer from '@components/Footer.astro';
 import { ClientRouter } from 'astro:transitions';
 import '../styles/global.css';
 import appModalScript from '../scripts/app-modal.js?url';
+import devotionalFooterPlayerScript from '../scripts/devotional-footer-player.js?url';
 
 const {
   title,
@@ -136,6 +137,7 @@ const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.s
       });
     </script>
     )}
+    <script src={devotionalFooterPlayerScript} nonce={cspNonce} defer></script>
     <script type="module" src={appModalScript} nonce={cspNonce}></script>
   </body>
 </html>
