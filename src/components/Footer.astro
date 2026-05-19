@@ -164,7 +164,7 @@ const devotionalEmbedParams = new URLSearchParams({
   iv_load_policy: '3',
 });
 const devotionalEmbedPath = latestDevotional.videoId ? latestDevotional.videoId : 'videoseries';
-const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalEmbedPath}?${devotionalEmbedParams.toString()}`;
+const devotionalEmbedUrl = `https://www.youtube.com/embed/${devotionalEmbedPath}?${devotionalEmbedParams.toString()}`;
 ---
 
 <footer id="site-footer" data-astro-transition-persist="site-footer" class="relative z-20 bg-[#11182f] text-white">
@@ -210,20 +210,18 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
         data-play-label={t(locale, 'footer_player_play')}
         data-pause-label={t(locale, 'footer_player_pause')}
       >
-        <iframe
-          class="mana-devotional-source"
-          src={devotionalEmbedUrl}
-          title={t(locale, 'footer_player_iframe_title')}
-          allow="autoplay; encrypted-media; picture-in-picture; web-share"
-          allowfullscreen
-          data-devotional-frame
-          data-devotional-initial-video={latestDevotional.videoId}
-        ></iframe>
-
-        <div class="grid grid-cols-[104px_minmax(0,1fr)] gap-3 sm:grid-cols-[128px_minmax(0,1fr)] xl:grid-cols-[138px_minmax(0,1fr)_132px] xl:items-center">
-          <a href={latestDevotional.url} target="_blank" rel="noopener noreferrer" class="mana-devotional-thumb" aria-label={latestDevotional.title} data-devotional-link>
-            <img src={latestDevotional.image} alt="" loading="lazy" decoding="async" data-devotional-image />
-          </a>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_132px] xl:items-center">
+          <div class="mana-devotional-thumb">
+            <iframe
+              class="mana-devotional-source"
+              src={devotionalEmbedUrl}
+              title={t(locale, 'footer_player_iframe_title')}
+              allow="autoplay; encrypted-media; picture-in-picture; web-share"
+              allowfullscreen
+              data-devotional-frame
+              data-devotional-initial-video={latestDevotional.videoId}
+            ></iframe>
+          </div>
 
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
@@ -437,40 +435,24 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
 
   .mana-devotional-source {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 220px;
-    height: 220px;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
     border: 0;
-    opacity: 0.001;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .mana-devotional-thumb {
     position: relative;
     display: block;
     width: 100%;
-    min-height: 5.25rem;
-    aspect-ratio: 16 / 10;
+    min-height: 7.75rem;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0.55rem;
     background: #101a44;
-  }
-
-  .mana-devotional-thumb::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 30%, rgba(16, 26, 68, 0.72) 100%);
-  }
-
-  .mana-devotional-thumb img {
-    width: 100%;
-    height: 100%;
-    min-height: 5.25rem;
-    object-fit: cover;
-    display: block;
   }
 
   .mana-player-icon,
@@ -648,9 +630,8 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
       font-size: clamp(2rem, 12vw, 3rem);
     }
 
-    .mana-devotional-thumb,
-    .mana-devotional-thumb img {
-      min-height: 4.65rem;
+    .mana-devotional-thumb {
+      min-height: 10rem;
     }
 
     .mana-player-icon,

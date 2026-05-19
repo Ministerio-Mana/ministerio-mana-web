@@ -18,6 +18,8 @@ const SCRIPT_SRC_BASE = [
   'https://js.stripe.com',
   'https://checkout.wompi.co',
   'https://unpkg.com',
+  'https://www.youtube.com',
+  'https://s.ytimg.com',
 ];
 
 const FRAME_SRC = [
@@ -213,6 +215,9 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     'https://checkout.stripe.com',
     'https://checkout.wompi.co',
     'https://js.stripe.com',
+    'https://www.youtube.com',
+    'https://www.youtube-nocookie.com',
+    'https://*.googlevideo.com',
   ];
   const frameSrc = [...FRAME_SRC];
   if (IS_VERCEL_PREVIEW) {
@@ -240,6 +245,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     "img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://i.ytimg.com",
     "font-src 'self' data:",
     `connect-src ${connectSrc.join(' ')}`,
+    "media-src 'self' blob: https://*.googlevideo.com",
     `frame-src ${frameSrc.join(' ')}`,
     "frame-ancestors 'self'",
     "form-action 'self' https://checkout.stripe.com https://checkout.wompi.co",

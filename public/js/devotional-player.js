@@ -8,24 +8,45 @@
     currentIndex: 0,
   };
   const apiPlayers = new WeakMap();
+  const readyApiPlayers = new WeakMap();
 
   function loadYouTubeApi() {
     if (window.YT?.Player) return Promise.resolve(window.YT);
     if (window.__manaYouTubeApiPromise) return window.__manaYouTubeApiPromise;
 
-    window.__manaYouTubeApiPromise = new Promise((resolve) => {
+    window.__manaYouTubeApiPromise = new Promise((resolve, reject) => {
       const previousReady = window.onYouTubeIframeAPIReady;
+      const staleScripts = document.querySelectorAll('script[data-mana-youtube-api], script[src="https://www.youtube.com/iframe_api"]');
+      let settled = false;
+      const timeout = window.setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        window.__manaYouTubeApiPromise = null;
+        reject(new Error('YouTube iframe API timed out'));
+      }, 6000);
+
       window.onYouTubeIframeAPIReady = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
         if (typeof previousReady === 'function') previousReady();
         resolve(window.YT);
       };
 
-      if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-        const script = document.createElement('script');
-        script.src = 'https://www.youtube.com/iframe_api';
-        script.async = true;
-        document.head.appendChild(script);
-      }
+      staleScripts.forEach((script) => script.remove());
+
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      script.dataset.manaYoutubeApi = 'true';
+      script.onerror = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        window.__manaYouTubeApiPromise = null;
+        reject(new Error('YouTube iframe API failed to load'));
+      };
+      document.head.appendChild(script);
     });
 
     return window.__manaYouTubeApiPromise;
@@ -42,23 +63,6 @@
       }),
       targetOrigin,
     );
-  }
-
-  function requestFrameAutoplay(frame, videoId) {
-    if (!frame?.src) return;
-    try {
-      const url = new URL(frame.src);
-      const desiredPath = videoId ? `/embed/${videoId}` : url.pathname;
-      const shouldReload = url.pathname !== desiredPath || url.searchParams.get('autoplay') !== '1';
-      url.pathname = desiredPath;
-      url.searchParams.set('autoplay', '1');
-      url.searchParams.set('mute', '0');
-      url.searchParams.set('playsinline', '1');
-      url.searchParams.set('enablejsapi', '1');
-      if (shouldReload) frame.src = url.toString();
-    } catch {
-      // Keep the postMessage path as the fallback when URL parsing is unavailable.
-    }
   }
 
   function getTracks(player) {
@@ -87,11 +91,17 @@
   }
 
   function applyAudioPostMessages(frame, videoId) {
-    requestFrameAutoplay(frame, videoId);
     if (videoId) sendCommand(frame, 'loadVideoById', [videoId]);
     sendCommand(frame, 'unMute');
     sendCommand(frame, 'setVolume', [100]);
     sendCommand(frame, 'playVideo');
+  }
+
+  function retryAudioPostMessages(frame, videoId) {
+    applyAudioPostMessages(frame, videoId);
+    [250, 750, 1500].forEach((delay) => {
+      window.setTimeout(() => applyAudioPostMessages(frame, videoId), delay);
+    });
   }
 
   function getApiPlayer(player) {
@@ -99,28 +109,36 @@
     if (existing) return existing;
 
     const frame = player.querySelector(FRAME_SELECTOR);
-    const promise = loadYouTubeApi().then(
-      (YT) =>
-        new Promise((resolve) => {
+    const promise = loadYouTubeApi()
+      .then(
+        (YT) =>
+          new Promise((resolve) => {
           const apiPlayer = new YT.Player(frame, {
             events: {
               onReady: () => {
+                readyApiPlayers.set(player, apiPlayer);
                 setPlayerReady(player, true);
                 resolve(apiPlayer);
               },
               onStateChange: (event) => {
+                player.dataset.youtubeState = String(event.data);
                 if (event.data === YT.PlayerState.PLAYING) setPlaying(player, true);
                 if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
                   setPlaying(player, false);
                 }
               },
-              onError: () => {
+              onError: (event) => {
+                player.dataset.youtubeError = String(event.data);
                 setPlaying(player, false);
               },
             },
           });
         }),
-    );
+      )
+      .catch(() => {
+        setPlayerReady(player, false);
+        return null;
+      });
 
     apiPlayers.set(player, promise);
     return promise;
@@ -161,16 +179,36 @@
 
   function playVideo(player, videoId = STATE.currentVideoId) {
     const frame = player.querySelector(FRAME_SELECTOR);
-    applyAudioPostMessages(frame, videoId);
     setPlaying(player, true);
 
-    getApiPlayer(player).then((apiPlayer) => {
-      if (videoId && apiPlayer.getVideoData?.()?.video_id !== videoId) {
-        apiPlayer.loadVideoById(videoId);
+    const readyApiPlayer = readyApiPlayers.get(player);
+    if (readyApiPlayer) {
+      const activeVideoId = readyApiPlayer.getVideoData?.()?.video_id || '';
+      readyApiPlayer.unMute?.();
+      readyApiPlayer.setVolume?.(100);
+      if (videoId && activeVideoId !== videoId) {
+        readyApiPlayer.loadVideoById(videoId);
+      } else {
+        readyApiPlayer.playVideo?.();
       }
+      window.setTimeout(() => {
+        readyApiPlayer.unMute?.();
+        readyApiPlayer.setVolume?.(100);
+        readyApiPlayer.playVideo?.();
+      }, 250);
+      return;
+    }
+
+    retryAudioPostMessages(frame, videoId);
+    getApiPlayer(player).then((apiPlayer) => {
+      if (!apiPlayer) return;
       apiPlayer.unMute?.();
       apiPlayer.setVolume?.(100);
-      apiPlayer.playVideo?.();
+      if (videoId && apiPlayer.getVideoData?.()?.video_id !== videoId) {
+        apiPlayer.loadVideoById(videoId);
+      } else {
+        apiPlayer.playVideo?.();
+      }
 
       window.setTimeout(() => {
         apiPlayer.unMute?.();
@@ -184,7 +222,7 @@
     const frame = player.querySelector(FRAME_SELECTOR);
     sendCommand(frame, 'pauseVideo');
     setPlaying(player, false);
-    getApiPlayer(player).then((apiPlayer) => apiPlayer.pauseVideo?.());
+    getApiPlayer(player).then((apiPlayer) => apiPlayer?.pauseVideo?.());
   }
 
   function loadTrack(player, control, autoplay = true) {
@@ -213,7 +251,7 @@
       STATE.currentVideoId;
 
     frame?.addEventListener('load', () => {
-      if (STATE.playing) applyAudioPostMessages(frame, STATE.currentVideoId);
+      if (STATE.playing) retryAudioPostMessages(frame, STATE.currentVideoId);
     });
 
     getApiPlayer(player);
