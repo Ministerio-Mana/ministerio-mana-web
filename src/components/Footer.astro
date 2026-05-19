@@ -743,12 +743,17 @@ const latestDevotional = latestDevotionals[0] ?? {
     50% { width: 100%; }
   }
 
-  @media (min-width: 768px) and (max-width: 1023px) {
+  @media (min-width: 641px) and (max-width: 1179px) {
     .mana-footer-devotional-row {
-      grid-template-columns: minmax(13.5rem, 0.72fr) minmax(0, 1.28fr);
-      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.05rem;
       padding-top: 0.95rem;
       padding-bottom: 0.95rem;
+    }
+
+    .mana-footer-hero {
+      max-width: none;
+      gap: 0.9rem;
     }
 
     .mana-footer-title span {
@@ -761,7 +766,29 @@ const latestDevotional = latestDevotionals[0] ?? {
     }
 
     .mana-player-inner {
-      grid-template-columns: 6.5rem minmax(0, 1fr);
+      grid-template-columns: 7.25rem minmax(0, 1fr) max-content;
+      grid-template-rows: auto auto;
+      column-gap: 0.85rem;
+    }
+
+    .mana-devotional-thumb {
+      grid-row: 1 / 3;
+    }
+
+    .mana-player-copy {
+      align-self: end;
+    }
+
+    .mana-player-controls {
+      grid-column: 3;
+      grid-row: 1 / 3;
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+    }
+
+    .mana-player-progress-track {
+      grid-column: 2;
+      grid-row: 2;
     }
 
     .mana-wave {
