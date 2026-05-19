@@ -84,6 +84,10 @@ function selectVideo(option) {
   if (title) title.textContent = option.getAttribute('data-video-title') || '';
   if (description) description.textContent = option.getAttribute('data-video-description') || '';
   if (thumb) thumb.setAttribute('src', option.getAttribute('data-video-image') || '');
+  player.querySelectorAll('[data-youtube-option][data-current="true"]').forEach((currentOption) => {
+    currentOption.removeAttribute('data-current');
+  });
+  option.setAttribute('data-current', 'true');
 
   closePlaylist(player);
   playVideo(player);

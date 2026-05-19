@@ -71,6 +71,14 @@ function descriptionFromTitle(title: string) {
   return shortText(`Una palabra para meditar sobre ${topic} y volver a Dios durante el día.`, 118);
 }
 
+function cleanDevotionalTitle(title = '') {
+  const cleaned = title
+    .replace(/^Devocional\s*[|│-]\s*/i, '')
+    .replace(/^Reto\s*#?\d+:\s*/i, '')
+    .trim();
+  return cleaned || title;
+}
+
 async function fetchWithTimeout(url: string, timeoutMs: number) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -253,7 +261,7 @@ const latestDevotional = latestDevotionals[0] ?? {
           </div>
 
           <div class="mana-player-copy min-w-0">
-            <h3 data-youtube-title class="mana-player-title">{latestDevotional.title}</h3>
+            <h3 data-youtube-title class="mana-player-title">{cleanDevotionalTitle(latestDevotional.title)}</h3>
             <p data-youtube-description class="mana-player-description">{latestDevotional.description}</p>
 
           </div>
@@ -303,15 +311,16 @@ const latestDevotional = latestDevotionals[0] ?? {
                 class="mana-playlist-item"
                 data-youtube-option
                 data-video-id={video.videoId}
-                data-video-title={video.title}
+                data-video-title={cleanDevotionalTitle(video.title)}
                 data-video-description={video.description}
                 data-video-image={video.image}
-                aria-label={video.title}
+                data-current={index === 0 ? 'true' : undefined}
+                aria-label={cleanDevotionalTitle(video.title)}
               >
                 <img src={video.image} alt="" loading="lazy" decoding="async" />
                 <span>
                   <small>{String(index + 1).padStart(2, '0')}</small>
-                  <strong>{video.title}</strong>
+                  <strong>{cleanDevotionalTitle(video.title)}</strong>
                 </span>
               </button>
             ))}
@@ -425,6 +434,10 @@ const latestDevotional = latestDevotionals[0] ?? {
 
   .mana-footer-player-card {
     min-width: 0;
+    overflow: hidden;
+    border-color: rgba(125, 231, 244, 0.16);
+    background: linear-gradient(180deg, rgba(18, 27, 58, 0.98), rgba(10, 16, 36, 0.98));
+    box-shadow: 0 1.15rem 2.5rem rgba(0, 0, 0, 0.22);
   }
 
   .mana-footer-title {
@@ -472,7 +485,7 @@ const latestDevotional = latestDevotionals[0] ?? {
   .mana-player-inner {
     display: grid;
     grid-template-columns: 7.35rem minmax(0, 1fr);
-    gap: 0.58rem 0.78rem;
+    gap: 0.62rem 0.85rem;
     align-items: center;
   }
 
@@ -485,7 +498,7 @@ const latestDevotional = latestDevotionals[0] ?? {
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0.55rem;
-    background: #101a44;
+    background: #101934;
     box-shadow: 0 0.75rem 1.4rem rgba(0, 0, 0, 0.14);
   }
 
@@ -507,7 +520,7 @@ const latestDevotional = latestDevotionals[0] ?? {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
     margin: 0;
-    color: white;
+    color: #f8fafc;
     font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
     font-size: 0.92rem;
     font-weight: 900;
@@ -520,7 +533,7 @@ const latestDevotional = latestDevotionals[0] ?? {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
     margin: 0;
-    color: rgb(203 213 225);
+    color: rgba(226, 232, 240, 0.86);
     font-size: 0.75rem;
     line-height: 1.35;
   }
@@ -528,9 +541,9 @@ const latestDevotional = latestDevotionals[0] ?? {
   .mana-player-controls {
     display: flex;
     grid-column: 2;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.48rem;
   }
 
   .mana-player-progress-track {
@@ -538,7 +551,7 @@ const latestDevotional = latestDevotionals[0] ?? {
     height: 0.125rem;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(226, 232, 240, 0.12);
   }
 
   .mana-player-icon,
@@ -559,26 +572,28 @@ const latestDevotional = latestDevotionals[0] ?? {
   }
 
   .mana-player-play {
-    width: 2.2rem;
-    min-width: 2.2rem;
-    height: 2.05rem;
+    width: 2.25rem;
+    min-width: 2.25rem;
+    height: 2.25rem;
     border-radius: 0.5rem;
     background: #28A6BD;
     padding: 0;
     font-size: 0.75rem;
     font-weight: 800;
+    box-shadow: 0 0.65rem 1.2rem rgba(40, 166, 189, 0.18);
   }
 
   .mana-player-link {
     display: inline-flex;
-    height: 2.05rem;
+    height: 2.25rem;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(226, 232, 240, 0.15);
     border-radius: 0.5rem;
     min-width: 0;
-    padding: 0 0.68rem;
-    color: #fde68a;
+    background: rgba(255, 255, 255, 0.035);
+    padding: 0 0.72rem;
+    color: #eef7fb;
     font-size: 0.7rem;
     font-weight: 800;
     line-height: 1;
@@ -601,7 +616,8 @@ const latestDevotional = latestDevotionals[0] ?? {
   }
 
   .mana-player-link:hover {
-    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(40, 166, 189, 0.55);
+    background: rgba(40, 166, 189, 0.12);
     color: white;
   }
 
@@ -630,27 +646,29 @@ const latestDevotional = latestDevotionals[0] ?? {
     margin-top: 0.65rem;
     max-height: min(20rem, calc(100vh - 9rem));
     overflow: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(125, 231, 244, 0.14);
     border-radius: 0.6rem;
-    background: rgba(5, 10, 27, 0.96);
-    padding: 0.45rem;
+    background: linear-gradient(180deg, rgba(15, 22, 48, 0.98), rgba(9, 14, 32, 0.98));
+    padding: 0.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .mana-playlist-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.45rem;
+    gap: 0.5rem;
   }
 
   .mana-playlist-item {
     display: grid;
-    grid-template-columns: 3.6rem minmax(0, 1fr);
+    grid-template-columns: 4rem minmax(0, 1fr);
     gap: 0.55rem;
     align-items: center;
     min-width: 0;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 3.25rem;
+    border: 1px solid rgba(226, 232, 240, 0.1);
     border-radius: 0.45rem;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(255, 255, 255, 0.065);
     padding: 0.35rem;
     color: white;
     text-align: left;
@@ -660,6 +678,11 @@ const latestDevotional = latestDevotionals[0] ?? {
   .mana-playlist-item:hover {
     border-color: rgba(40, 166, 189, 0.55);
     background: rgba(40, 166, 189, 0.12);
+  }
+
+  .mana-playlist-item[data-current="true"] {
+    border-color: rgba(40, 166, 189, 0.7);
+    background: rgba(40, 166, 189, 0.16);
   }
 
   .mana-playlist-item img {
@@ -687,6 +710,7 @@ const latestDevotional = latestDevotionals[0] ?? {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     margin-top: 0.18rem;
+    color: #f8fafc;
     font-size: 0.72rem;
     font-weight: 800;
     line-height: 1.16;
@@ -697,7 +721,7 @@ const latestDevotional = latestDevotionals[0] ?? {
     height: 1.5rem;
     align-items: center;
     gap: 0.1875rem;
-    margin-left: auto;
+    margin-left: 0.25rem;
   }
 
   .mana-wave span {
@@ -791,10 +815,6 @@ const latestDevotional = latestDevotionals[0] ?? {
       grid-row: 2;
     }
 
-    .mana-wave {
-      display: none;
-    }
-
     .mana-player-link {
       padding: 0 0.54rem;
     }
@@ -871,7 +891,7 @@ const latestDevotional = latestDevotionals[0] ?? {
 
     .mana-player-icon,
     .mana-player-play {
-      height: 2.05rem;
+      height: 2.15rem;
     }
 
     .mana-player-icon {
@@ -881,10 +901,6 @@ const latestDevotional = latestDevotionals[0] ?? {
     .mana-player-link {
       padding: 0 0.58rem;
       font-size: 0.66rem;
-    }
-
-    .mana-wave {
-      display: none;
     }
 
     .mana-player-title {
