@@ -4,28 +4,57 @@ import { normalizeLocale, t } from '@i18n/locales';
 const locale = normalizeLocale(Astro.props.locale ?? Astro.cookies.get('lang')?.value);
 const devotionalWhatsappUrl = 'https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M';
 const devotionalYoutubeChannelUrl = 'https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag';
-const devotionalSpotifyShowUrl = 'https://open.spotify.com/show/4SbbhNxkSXrh0qyEwJK7lO';
-const devotionalSpotifyEmbedUrl = 'https://open.spotify.com/embed/show/4SbbhNxkSXrh0qyEwJK7lO?utm_source=generator&theme=0';
+const devotionalYoutubeVideosUrl = `${devotionalYoutubeChannelUrl}/videos`;
+const devotionalRssUrl = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCC85JrvTKq9dfCcgxQQU_Ag';
 const devotionalCoverFallback = '/assets/home-ministerio/front-devocional-mana.png';
 
-type SpotifyShow = {
+type DevotionalVideo = {
   title: string;
   description: string;
+  videoId: string;
   image: string;
   url: string;
 };
 
-const fallbackDevotional: SpotifyShow = {
+const fallbackDevotional: DevotionalVideo = {
   title: t(locale, 'footer_player_title_fallback'),
   description: t(locale, 'footer_player_body_fallback'),
+  videoId: '2Xw3LVxU1dM',
   image: devotionalCoverFallback,
-  url: devotionalSpotifyShowUrl,
+  url: 'https://www.youtube.com/watch?v=2Xw3LVxU1dM',
 };
+
+function decodeXml(value = '') {
+  return value
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickXml(source: string, pattern: RegExp) {
+  return source.match(pattern)?.[1] ?? '';
+}
 
 function shortText(value: string, max = 132) {
   if (value.length <= max) return value;
   const clipped = value.slice(0, max).replace(/\s+\S*$/, '').trim();
   return `${clipped}...`;
+}
+
+function descriptionFromTitle(title: string) {
+  const topic = title
+    .replace(/^Devocional\s*[│|-]\s*/i, '')
+    .replace(/^Reto\s*#?\d+:\s*/i, '')
+    .trim();
+  if (!topic || topic === title) return fallbackDevotional.description;
+  return shortText(`Una palabra para meditar sobre ${topic} y volver a Dios durante el día.`, 118);
 }
 
 async function fetchWithTimeout(url: string, timeoutMs: number) {
@@ -38,34 +67,90 @@ async function fetchWithTimeout(url: string, timeoutMs: number) {
   }
 }
 
-async function getSpotifyShow(): Promise<SpotifyShow> {
-  const globalCache = globalThis as typeof globalThis & {
-    __manaSpotifyDevotionalShows?: Record<string, { ts: number; data: SpotifyShow }>;
-  };
-  const cache = (globalCache.__manaSpotifyDevotionalShows ??= {});
-  const cached = cache[locale];
-  if (cached && Date.now() - cached.ts < 1000 * 60 * 60) return cached.data;
-
+async function getVideoFromOembed(videoId: string): Promise<DevotionalVideo | null> {
   try {
-    const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(devotionalSpotifyShowUrl)}`;
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}&format=json`;
     const response = await fetchWithTimeout(oembedUrl, 1500);
-    if (!response.ok) return fallbackDevotional;
+    if (!response.ok) return null;
     const data = await response.json();
     const title = typeof data?.title === 'string' ? data.title : fallbackDevotional.title;
-    const show = {
+    return {
       title,
-      description: shortText(t(locale, 'footer_player_body_fallback'), 136),
-      image: typeof data?.thumbnail_url === 'string' ? data.thumbnail_url : fallbackDevotional.image,
-      url: devotionalSpotifyShowUrl,
+      description: descriptionFromTitle(title),
+      videoId,
+      image: typeof data?.thumbnail_url === 'string' ? data.thumbnail_url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
     };
-    cache[locale] = { ts: Date.now(), data: show };
-    return show;
   } catch {
-    return fallbackDevotional;
+    return null;
   }
 }
 
-const devotionalShow = await getSpotifyShow();
+async function getLatestFromRss(): Promise<DevotionalVideo | null> {
+  try {
+    const response = await fetchWithTimeout(devotionalRssUrl, 1800);
+    if (!response.ok) return null;
+
+    const xml = await response.text();
+    const entry = xml.match(/<entry\b[\s\S]*?<\/entry>/)?.[0] ?? '';
+    const videoId = decodeXml(pickXml(entry, /<yt:videoId>([\s\S]*?)<\/yt:videoId>/));
+    if (!videoId) return null;
+
+    const title = decodeXml(pickXml(entry, /<title>([\s\S]*?)<\/title>/)) || fallbackDevotional.title;
+    const description =
+      shortText(decodeXml(pickXml(entry, /<media:description>([\s\S]*?)<\/media:description>/)), 118) ||
+      descriptionFromTitle(title);
+
+    return {
+      title,
+      description,
+      videoId,
+      image: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestFromVideosPage(): Promise<DevotionalVideo | null> {
+  try {
+    const response = await fetchWithTimeout(devotionalYoutubeVideosUrl, 4200);
+    if (!response.ok) return null;
+    const html = await response.text();
+    const videoId =
+      html.match(/"videoId":"([^"]+)"/)?.[1] ||
+      html.match(/\/watch\?v=([A-Za-z0-9_-]{11})/)?.[1] ||
+      '';
+    if (!videoId) return null;
+    return await getVideoFromOembed(videoId) ?? {
+      ...fallbackDevotional,
+      videoId,
+      image: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestDevotional(): Promise<DevotionalVideo> {
+  const globalCache = globalThis as typeof globalThis & {
+    __manaYoutubeFooterVideos?: Record<string, { ts: number; data: DevotionalVideo }>;
+  };
+  const cache = (globalCache.__manaYoutubeFooterVideos ??= {});
+  const cached = cache[locale];
+  if (cached && Date.now() - cached.ts < 1000 * 60 * 15) return cached.data;
+
+  const data = await getLatestFromRss() ?? await getLatestFromVideosPage() ?? {
+    ...fallbackDevotional,
+    image: `https://i.ytimg.com/vi/${fallbackDevotional.videoId}/hqdefault.jpg`,
+  };
+  cache[locale] = { ts: Date.now(), data };
+  return data;
+}
+
+const latestDevotional = await getLatestDevotional();
 ---
 
 <footer id="site-footer" data-astro-transition-persist="site-footer" class="relative z-20 bg-[#11182f] text-white">
@@ -107,20 +192,23 @@ const devotionalShow = await getSpotifyShow();
         class="relative overflow-hidden rounded-lg border border-white/10 bg-[#0d1430]/95 p-3.5 shadow-xl shadow-black/20 md:p-4"
         aria-label={t(locale, 'footer_player_aria')}
       >
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] xl:grid-cols-[7.5rem_minmax(0,1fr)_9rem] xl:items-start">
-          <a href={devotionalSpotifyShowUrl} target="_blank" rel="noopener noreferrer" class="mana-devotional-thumb" aria-label={devotionalShow.title}>
-            <img src={devotionalShow.image} alt="" loading="lazy" decoding="async" />
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[9rem_minmax(0,1fr)] xl:grid-cols-[9rem_minmax(0,1fr)_9rem] xl:items-center">
+          <a href={latestDevotional.url} target="_blank" rel="noopener noreferrer" class="mana-devotional-thumb" aria-label={latestDevotional.title}>
+            <img src={latestDevotional.image} alt="" loading="lazy" decoding="async" />
+            <span class="mana-devotional-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7L8 5Z" /></svg>
+            </span>
           </a>
 
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase text-[#9ee7f4]">{t(locale, 'footer_player_source')}</span>
             </div>
-            <h3 class="mt-2 line-clamp-2 text-sm font-display font-black leading-tight text-white md:line-clamp-1 md:text-base">{devotionalShow.title}</h3>
-            <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-300 md:text-sm">{devotionalShow.description}</p>
+            <h3 class="mt-2 line-clamp-2 text-sm font-display font-black leading-tight text-white md:line-clamp-1 md:text-base">{latestDevotional.title}</h3>
+            <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-300 md:text-sm">{latestDevotional.description}</p>
 
             <div class="mt-2.5 flex flex-wrap items-center gap-2">
-              <a href={devotionalSpotifyShowUrl} target="_blank" rel="noopener noreferrer" class="mana-player-play">
+              <a href={latestDevotional.url} target="_blank" rel="noopener noreferrer" class="mana-player-play">
                 <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7L8 5Z" /></svg>
                 <span>{t(locale, 'footer_player_play')}</span>
               </a>
@@ -140,21 +228,13 @@ const devotionalShow = await getSpotifyShow();
           </div>
 
           <div class="mana-player-actions">
-            <a href={devotionalSpotifyShowUrl} target="_blank" rel="noopener noreferrer" class="mana-player-link">
-              Spotify
+            <a href={latestDevotional.url} target="_blank" rel="noopener noreferrer" class="mana-player-link">
+              {t(locale, 'footer_player_latest')}
             </a>
             <a href={devotionalYoutubeChannelUrl} target="_blank" rel="noopener noreferrer" class="mana-player-link">
               YouTube
             </a>
           </div>
-
-          <iframe
-            class="mana-spotify-frame"
-            src={devotionalSpotifyEmbedUrl}
-            title={t(locale, 'footer_player_iframe_title')}
-            loading="lazy"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          ></iframe>
         </div>
       </section>
     </div>
@@ -299,8 +379,8 @@ const devotionalShow = await getSpotifyShow();
   .mana-devotional-thumb {
     position: relative;
     display: block;
-    width: 7.5rem;
-    aspect-ratio: 1 / 1;
+    width: 9rem;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0.55rem;
@@ -313,6 +393,26 @@ const devotionalShow = await getSpotifyShow();
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .mana-devotional-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: white;
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.46));
+    transition: background 180ms ease;
+  }
+
+  .mana-devotional-play svg {
+    width: 2rem;
+    height: 2rem;
+    filter: drop-shadow(0 0.5rem 1rem rgba(0, 0, 0, 0.32));
+  }
+
+  .mana-devotional-thumb:hover .mana-devotional-play {
+    background: radial-gradient(circle, rgba(40, 166, 189, 0.34), rgba(15, 23, 42, 0.52));
   }
 
   .mana-player-icon,
@@ -370,17 +470,6 @@ const devotionalShow = await getSpotifyShow();
     min-width: 4.3rem;
   }
 
-  .mana-spotify-frame {
-    display: block;
-    grid-column: 1 / -1;
-    width: 100%;
-    height: 9.5rem;
-    min-width: 0;
-    border: 0;
-    border-radius: 0.65rem;
-    background: #0b1025;
-  }
-
   .mana-player-icon:hover,
   .mana-player-play:hover,
   .mana-player-link:hover {
@@ -435,7 +524,7 @@ const devotionalShow = await getSpotifyShow();
 
   @media (max-width: 640px) {
     .mana-devotional-thumb {
-      width: 4.75rem;
+      width: 100%;
       align-self: start;
     }
 
