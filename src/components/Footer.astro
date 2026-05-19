@@ -1,56 +1,317 @@
+---
+import { normalizeLocale, t } from '@i18n/locales';
 
-<footer class="relative mt-24 bg-[#293C74] text-white overflow-hidden">
-  <!-- Decorators -->
-  <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#28A6BD] to-transparent opacity-50"></div>
-  <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-[#28A6BD] rounded-full mix-blend-multiply filter blur-[100px] opacity-10 pointer-events-none"></div>
-  <div class="absolute -top-24 -left-24 w-96 h-96 bg-amber-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-5 pointer-events-none"></div>
+const locale = normalizeLocale(Astro.props.locale ?? Astro.cookies.get('lang')?.value);
+const devotionalWhatsappUrl = 'https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M';
+const devotionalYoutubeChannelUrl = 'https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag';
+const devotionalYoutubeVideosUrl = `${devotionalYoutubeChannelUrl}/videos`;
+const devotionalUploadsPlaylistId = 'UUC85JrvTKq9dfCcgxQQU_Ag';
+const devotionalRssUrl = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCC85JrvTKq9dfCcgxQQU_Ag';
 
-  <!-- Devocional / Comunidad -->
-  <div class="relative z-10 border-b border-white/10 bg-[#243567]">
-    <div class="container mx-auto px-6 py-12 md:flex md:items-center md:justify-between gap-8">
-      <div class="mb-8 md:mb-0 max-w-lg">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <p class="text-xs font-bold uppercase tracking-widest text-amber-200/80">Devocional Maná</p>
+type DevotionalVideo = {
+  title: string;
+  description: string;
+  videoId: string;
+  image: string;
+  url: string;
+};
+
+const fallbackDevotional: DevotionalVideo = {
+  title: t(locale, 'footer_player_title_fallback'),
+  description: t(locale, 'footer_player_body_fallback'),
+  videoId: '',
+  image: '/assets/home-ministerio/front-devocional-mana.png',
+  url: devotionalYoutubeChannelUrl,
+};
+
+function decodeXml(value = '') {
+  return value
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickXml(source: string, pattern: RegExp) {
+  return source.match(pattern)?.[1] ?? '';
+}
+
+function shortText(value: string, max = 132) {
+  if (value.length <= max) return value;
+  const clipped = value.slice(0, max).replace(/\s+\S*$/, '').trim();
+  return `${clipped}...`;
+}
+
+function descriptionFromTitle(title: string) {
+  const topic = title
+    .replace(/^Devocional\s*[│|-]\s*/i, '')
+    .replace(/^Reto\s*#?\d+:\s*/i, '')
+    .trim();
+  if (!topic || topic === title) return fallbackDevotional.description;
+  return shortText(`Una palabra para meditar sobre ${topic} y volver a Dios durante el día.`, 118);
+}
+
+async function fetchWithTimeout(url: string, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getVideoFromOembed(videoId: string): Promise<DevotionalVideo | null> {
+  try {
+    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    const response = await fetchWithTimeout(url, 1500);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const title = typeof data?.title === 'string' ? data.title : fallbackDevotional.title;
+    return {
+      title,
+      description: descriptionFromTitle(title),
+      videoId,
+      image: typeof data?.thumbnail_url === 'string' ? data.thumbnail_url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestFromRss(): Promise<DevotionalVideo | null> {
+  try {
+    const response = await fetchWithTimeout(devotionalRssUrl, 1300);
+    if (!response.ok) return null;
+
+    const xml = await response.text();
+    const entry = xml.match(/<entry\b[\s\S]*?<\/entry>/)?.[0] ?? '';
+    const videoId = decodeXml(pickXml(entry, /<yt:videoId>([\s\S]*?)<\/yt:videoId>/));
+    if (!videoId) return null;
+
+    const title = decodeXml(pickXml(entry, /<title>([\s\S]*?)<\/title>/)) || fallbackDevotional.title;
+    const description =
+      shortText(decodeXml(pickXml(entry, /<media:description>([\s\S]*?)<\/media:description>/))) ||
+      fallbackDevotional.description;
+
+    return {
+      title,
+      description,
+      videoId,
+      image: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestFromVideosPage(): Promise<DevotionalVideo[]> {
+  try {
+    const response = await fetchWithTimeout(devotionalYoutubeVideosUrl, 4200);
+    if (!response.ok) return [];
+    const html = await response.text();
+    const videoIds = Array.from(html.matchAll(/"videoId":"([^"]+)"/g))
+      .map((match) => match[1])
+      .filter((videoId, index, list) => videoId && list.indexOf(videoId) === index)
+      .slice(0, 4);
+
+    const videos = await Promise.all(videoIds.map((videoId) => getVideoFromOembed(videoId)));
+    return videos.filter(Boolean) as DevotionalVideo[];
+  } catch {
+    return [];
+  }
+}
+
+async function getDevotionalPlaylist(): Promise<DevotionalVideo[]> {
+  const cacheKey = '__manaDevotionalPlaylist';
+  const globalCache = globalThis as typeof globalThis & {
+    [cacheKey]?: { ts: number; data: DevotionalVideo[] };
+  };
+  const cached = globalCache[cacheKey];
+  if (cached && Date.now() - cached.ts < 1000 * 60 * 15) return cached.data;
+
+  const videosPageData = await getLatestFromVideosPage();
+  if (videosPageData.length) {
+    globalCache[cacheKey] = { ts: Date.now(), data: videosPageData };
+    return videosPageData;
+  }
+
+  const rssData = await getLatestFromRss();
+  const data = rssData ? [rssData] : [fallbackDevotional];
+  if (rssData) globalCache[cacheKey] = { ts: Date.now(), data };
+  return data;
+}
+
+const devotionalPlaylist = await getDevotionalPlaylist();
+const latestDevotional = devotionalPlaylist[0] ?? fallbackDevotional;
+const visiblePlaylist = devotionalPlaylist.filter((video) => video.videoId);
+const devotionalEmbedParams = new URLSearchParams({
+  list: devotionalUploadsPlaylistId,
+  rel: '0',
+  modestbranding: '1',
+  playsinline: '1',
+  controls: '0',
+  enablejsapi: '1',
+  origin: Astro.url.origin,
+  iv_load_policy: '3',
+});
+const devotionalEmbedPath = latestDevotional.videoId ? latestDevotional.videoId : 'videoseries';
+const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalEmbedPath}?${devotionalEmbedParams.toString()}`;
+---
+
+<footer id="site-footer" data-astro-transition-persist="site-footer" class="relative z-20 bg-[#11182f] text-white">
+  <div class="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-transparent via-[#28A6BD] to-transparent opacity-50"></div>
+
+  <div class="relative z-10 border-y border-white/10 bg-[#121a35]">
+    <div class="container mx-auto grid gap-5 px-6 py-5 lg:grid-cols-[minmax(250px,0.72fr)_minmax(470px,1.28fr)] lg:items-stretch lg:py-6">
+      <div class="flex max-w-lg flex-col justify-between gap-4">
+        <div>
+          <div class="mana-footer-title">
+            <span>{t(locale, 'footer_devotional_script')}</span>
+            <strong>{t(locale, 'footer_devotional_outline')}</strong>
+            <em>{t(locale, 'footer_devotional_solid')}</em>
+          </div>
+          <p class="mt-2 max-w-sm text-[13px] leading-relaxed text-slate-300">{t(locale, 'footer_devotional_text')}</p>
         </div>
-        <h2 class="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">Recibe el alimento espiritual diario</h2>
-        <p class="mt-2 text-slate-300 text-sm leading-relaxed">Acompáñanos y escucha la palabra de Dios con nosotros.</p>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <a
+            href={devotionalWhatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex h-10 items-center justify-center rounded-lg bg-[#28A6BD] px-5 text-sm font-bold text-white shadow-lg shadow-cyan-950/20 transition-all hover:-translate-y-0.5 hover:bg-[#32b5cc] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {t(locale, 'footer_join')}
+          </a>
+          <a
+            href={devotionalYoutubeChannelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex h-10 items-center justify-center rounded-lg border border-white/15 px-5 text-sm font-bold text-amber-100 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white"
+          >
+            {t(locale, 'footer_youtube_channel')}
+          </a>
+        </div>
       </div>
-      
-      <div class="flex-1 max-w-md w-full flex flex-col sm:flex-row sm:items-center gap-3">
-        <a
-          href="https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-2xl bg-[#28A6BD] hover:bg-[#32b5cc] text-white font-bold text-sm shadow-lg shadow-cyan-900/20 transition-all"
-        >
-          <span>Unirse a comunidad</span>
-        </a>
-        <a
-          href="https://whatsapp.com/channel/0029VaABvlHGzzKb3f53TQ3M"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-xs text-amber-100/80 hover:text-white transition-colors"
-        >
-          Canal Devocional Maná
-        </a>
-      </div>
+
+      <section
+        class="relative overflow-visible rounded-lg border border-white/10 bg-[#0d1430]/95 p-3 shadow-xl shadow-black/20 md:p-3.5"
+        aria-label={t(locale, 'footer_player_aria')}
+        data-devotional-player
+        data-playing="false"
+        data-play-label={t(locale, 'footer_player_play')}
+        data-pause-label={t(locale, 'footer_player_pause')}
+      >
+        <iframe
+          class="mana-devotional-source"
+          src={devotionalEmbedUrl}
+          title={t(locale, 'footer_player_iframe_title')}
+          allow="autoplay; encrypted-media; picture-in-picture; web-share"
+          allowfullscreen
+          data-devotional-frame
+          data-devotional-initial-video={latestDevotional.videoId}
+        ></iframe>
+
+        <div class="grid grid-cols-[76px_minmax(0,1fr)] gap-3 sm:grid-cols-[96px_minmax(0,1fr)] xl:grid-cols-[96px_minmax(0,1fr)_128px] xl:items-center">
+          <a href={latestDevotional.url} target="_blank" rel="noopener noreferrer" class="mana-devotional-thumb" aria-label={latestDevotional.title} data-devotional-link>
+            <img src={latestDevotional.image} alt="" loading="lazy" decoding="async" data-devotional-image />
+          </a>
+
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase text-[#9ee7f4]">{t(locale, 'footer_player_source')}</span>
+              <span class="text-[11px] font-bold uppercase text-amber-100">{t(locale, 'footer_playlist_label')}</span>
+            </div>
+            <h3 class="mt-2 line-clamp-2 text-sm font-display font-black leading-tight text-white md:line-clamp-1 md:text-base" data-devotional-title>{latestDevotional.title}</h3>
+            <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-300 md:text-sm" data-devotional-description>{latestDevotional.description}</p>
+
+            <div class="mt-2.5 flex flex-wrap items-center gap-2">
+              <button type="button" class="mana-player-icon" aria-label={t(locale, 'footer_player_previous')} data-devotional-step="-1">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true"><path fill="currentColor" d="M7 6h2v12H7V6Zm3.5 6 8.5 6V6l-8.5 6Z" /></svg>
+              </button>
+              <button type="button" class="mana-player-play" aria-label={t(locale, 'footer_player_play')} data-devotional-toggle>
+                <svg viewBox="0 0 24 24" class="h-5 w-5 mana-player-play-icon" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7L8 5Z" /></svg>
+                <svg viewBox="0 0 24 24" class="hidden h-5 w-5 mana-player-pause-icon" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" /></svg>
+                <span data-devotional-toggle-label>{t(locale, 'footer_player_play')}</span>
+              </button>
+              <button type="button" class="mana-player-icon" aria-label={t(locale, 'footer_player_next')} data-devotional-step="1">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true"><path fill="currentColor" d="M15 6h2v12h-2V6ZM5 18l8.5-6L5 6v12Z" /></svg>
+              </button>
+
+              <div class="mana-wave ml-1" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+
+            <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+              <div class="mana-progress h-full w-1/3 rounded-full bg-gradient-to-r from-[#28A6BD] via-amber-300 to-[#28A6BD]"></div>
+            </div>
+          </div>
+
+          <details class="mana-playlist group col-span-2 xl:col-span-1">
+            <summary class="flex h-9 cursor-pointer list-none items-center justify-center rounded-lg border border-white/15 px-3 text-[11px] font-bold uppercase text-amber-100 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white">
+              {t(locale, 'footer_playlist_label')}
+            </summary>
+            <div class="mana-playlist-panel mt-3 space-y-2 rounded-lg border border-white/10 bg-[#101936] p-2 xl:absolute xl:bottom-[calc(100%-0.5rem)] xl:right-3.5 xl:z-20 xl:mt-0 xl:w-[min(22rem,calc(100vw-3rem))]">
+              {visiblePlaylist.length ? (
+                visiblePlaylist.map((video, index) => (
+                  <button
+                    type="button"
+                    class="mana-playlist-track"
+                    aria-current={index === 0 ? 'true' : undefined}
+                    data-devotional-command="loadVideoById"
+                    data-devotional-video={video.videoId}
+                    data-devotional-track-title={video.title}
+                    data-devotional-track-description={video.description}
+                    data-devotional-track-image={video.image}
+                    data-devotional-track-url={video.url}
+                  >
+                    <img src={video.image} alt="" loading="lazy" decoding="async" />
+                    <span>
+                      <strong>{video.title}</strong>
+                      <small>{video.description}</small>
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <a href={devotionalYoutubeChannelUrl} target="_blank" rel="noopener noreferrer" class="mana-playlist-action">
+                  {t(locale, 'footer_youtube_channel')}
+                </a>
+              )}
+              <a href={devotionalYoutubeChannelUrl} target="_blank" rel="noopener noreferrer" class="mana-playlist-action">
+                {t(locale, 'footer_youtube_channel')}
+              </a>
+            </div>
+          </details>
+        </div>
+      </section>
     </div>
   </div>
 
   <!-- Main Footer Content -->
   <div class="hidden relative z-10 container mx-auto px-6 py-16">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8">
-      
       <!-- Brand Column -->
       <div class="lg:col-span-4 space-y-6">
         <div class="inline-flex items-center gap-3">
           <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="h-10 w-auto brightness-200" />
         </div>
         <p class="text-sm text-slate-300 leading-relaxed max-w-xs">
-          Somos una comunidad dedicada a compartir recursos, fe y esperanza. Creemos en el poder transformador del amor de Dios para restaurar vidas y ciudades.
+          {t(locale, 'home_community_text')}
         </p>
-        
+
         <div class="flex items-center gap-4 pt-4">
           <a href="#" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/20">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"></path></svg>
@@ -66,28 +327,28 @@
 
       <!-- Links Columns -->
       <div class="lg:col-span-2 space-y-4">
-        <h3 class="font-display font-bold text-white text-lg">Explora</h3>
+        <h3 class="font-display font-bold text-white text-lg">{t(locale, 'footer_explore')}</h3>
         <ul class="space-y-3">
-          <li><a href="/ministerio/" class="text-slate-400 hover:text-white transition-colors text-sm">Ministerio</a></li>
-          <li><a href="/campus/" class="text-slate-400 hover:text-white transition-colors text-sm">Todos los Campus</a></li>
-          <li><a href="/escuela-biblica/" class="text-slate-400 hover:text-white transition-colors text-sm">Escuela Bíblica</a></li>
-          <li><a href="/iglesias/" class="text-slate-400 hover:text-white transition-colors text-sm">Red de Iglesias</a></li>
+          <li><a href="/ministerio/" class="text-slate-400 hover:text-white transition-colors text-sm">{t(locale, 'nav_ministry')}</a></li>
+          <li><a href="/campus/" class="text-slate-400 hover:text-white transition-colors text-sm">{t(locale, 'footer_all_campus')}</a></li>
+          <li><a href="/escuela-biblica/" class="text-slate-400 hover:text-white transition-colors text-sm">{t(locale, 'nav_school')}</a></li>
+          <li><a href="/iglesias/" class="text-slate-400 hover:text-white transition-colors text-sm">{t(locale, 'footer_church_network')}</a></li>
         </ul>
       </div>
 
       <div class="lg:col-span-2 space-y-4">
-        <h3 class="font-display font-bold text-white text-lg">Participa</h3>
+        <h3 class="font-display font-bold text-white text-lg">{t(locale, 'footer_participate')}</h3>
         <ul class="space-y-3">
-          <li><a href="/eventos/" class="text-slate-400 hover:text-white transition-colors text-sm">Agenda de Eventos</a></li>
-          <li><a href="/devocional/" class="text-slate-400 hover:text-white transition-colors text-sm">Devocional</a></li>
+          <li><a href="/eventos/" class="text-slate-400 hover:text-white transition-colors text-sm">{t(locale, 'footer_events_agenda')}</a></li>
+          <li><a href="/devocional/" class="text-slate-400 hover:text-white transition-colors text-sm">{t(locale, 'nav_devotional')}</a></li>
           <li><a href="/mujeres/" class="text-slate-400 hover:text-white transition-colors text-sm">Mujeres Maná</a></li>
-          <li><a href="/donaciones/" class="text-amber-400/80 hover:text-amber-300 transition-colors text-sm font-bold">Donaciones</a></li>
+          <li><a href="/donaciones/" class="text-amber-400/80 hover:text-amber-300 transition-colors text-sm font-bold">{t(locale, 'nav_donate')}</a></li>
         </ul>
       </div>
 
       <!-- Contact Column -->
       <div class="lg:col-span-4 space-y-4">
-        <h3 class="font-display font-bold text-white text-lg">Contáctanos</h3>
+        <h3 class="font-display font-bold text-white text-lg">{t(locale, 'footer_contact')}</h3>
         <ul class="space-y-3">
           <li>
             <a href="mailto:info@ministeriomana.org" class="group flex items-center gap-3 text-slate-400 hover:text-white transition-colors text-sm">
@@ -99,10 +360,10 @@
           </li>
           <li>
             <div class="group flex items-center gap-3 text-slate-400 text-sm">
-               <span class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+              <span class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-               </span>
-               Main Campus: 123 Church St, City, Country
+              </span>
+              Main Campus: 123 Church St, City, Country
             </div>
           </li>
         </ul>
@@ -114,12 +375,297 @@
   <div class="hidden border-t border-white/5 bg-[#243567]/50 backdrop-blur-sm">
     <div class="container mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
       <p class="text-xs text-slate-500">
-        © {new Date().getFullYear()} Ministerio Maná. Todos los derechos reservados.
+        © {new Date().getFullYear()} Ministerio Maná. {t(locale, 'footer_rights')}
       </p>
       <div class="flex gap-6">
-        <a href="/privacidad" class="text-xs text-slate-500 hover:text-white transition-colors">Política de Privacidad</a>
-        <a href="/terminos" class="text-xs text-slate-500 hover:text-white transition-colors">Términos de Uso</a>
+        <a href="/privacidad" class="text-xs text-slate-500 hover:text-white transition-colors">{t(locale, 'footer_privacy')}</a>
+        <a href="/terminos" class="text-xs text-slate-500 hover:text-white transition-colors">{t(locale, 'footer_terms')}</a>
       </div>
     </div>
   </div>
 </footer>
+
+<style>
+  @font-face {
+    font-family: "Summer Loving";
+    src: url("/fonts/SUMMER%20FONT/Summer%20Loving%20Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .mana-footer-title {
+    position: relative;
+    display: inline-grid;
+    color: white;
+    line-height: 0.82;
+  }
+
+  .mana-footer-title span {
+    position: relative;
+    z-index: 2;
+    margin: 0 0 -0.48rem 0.1rem;
+    color: #f2c94c;
+    font-family: "Summer Loving", cursive;
+    font-size: clamp(2.1rem, 4vw, 3.6rem);
+    font-weight: 400;
+    line-height: 0.82;
+    transform: rotate(-4deg);
+    transform-origin: left center;
+  }
+
+  .mana-footer-title strong,
+  .mana-footer-title em {
+    display: block;
+    margin: 0;
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    font-size: clamp(1.85rem, 3.4vw, 3.4rem);
+    font-style: normal;
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 0.86;
+    text-transform: uppercase;
+  }
+
+  .mana-footer-title strong {
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.76);
+  }
+
+  .mana-footer-title em {
+    color: white;
+  }
+
+  .mana-devotional-source {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 220px;
+    height: 220px;
+    border: 0;
+    opacity: 0.001;
+    pointer-events: none;
+  }
+
+  .mana-devotional-thumb {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 3.75rem;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.55rem;
+    background: #101a44;
+  }
+
+  .mana-devotional-thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(16, 26, 68, 0.72) 100%);
+  }
+
+  .mana-devotional-thumb img {
+    width: 100%;
+    height: 100%;
+    min-height: 3.75rem;
+    object-fit: cover;
+    display: block;
+  }
+
+  .mana-player-icon,
+  .mana-player-play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: white;
+    transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+  }
+
+  .mana-player-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .mana-player-play {
+    min-width: 7rem;
+    height: 2.2rem;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    background: #28A6BD;
+    padding: 0 1rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+  }
+
+  .mana-player-icon:hover,
+  .mana-player-play:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .mana-wave {
+    display: inline-flex;
+    height: 1.5rem;
+    align-items: center;
+    gap: 0.1875rem;
+  }
+
+  .mana-wave span {
+    width: 0.25rem;
+    height: 0.65rem;
+    border-radius: 999px;
+    background: #facc15;
+    animation: mana-wave 900ms ease-in-out infinite;
+    animation-play-state: paused;
+  }
+
+  .mana-wave span:nth-child(2) { height: 1.25rem; animation-delay: 100ms; background: #28A6BD; }
+  .mana-wave span:nth-child(3) { height: 0.9rem; animation-delay: 200ms; }
+  .mana-wave span:nth-child(4) { height: 1.5rem; animation-delay: 300ms; background: #28A6BD; }
+  .mana-wave span:nth-child(5) { height: 0.8rem; animation-delay: 400ms; }
+
+  [data-devotional-player][data-playing="true"] .mana-wave span,
+  [data-devotional-player][data-playing="true"] .mana-progress {
+    animation-play-state: running;
+  }
+
+  [data-devotional-player][data-playing="true"] .mana-player-play-icon {
+    display: none;
+  }
+
+  [data-devotional-player][data-playing="true"] .mana-player-pause-icon {
+    display: block;
+  }
+
+  .mana-progress {
+    animation: mana-progress 36s linear infinite;
+    animation-play-state: paused;
+  }
+
+  .mana-playlist {
+    position: relative;
+  }
+
+  .mana-playlist summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mana-playlist-panel {
+    max-height: min(22rem, calc(100vh - 2rem));
+    overflow-y: auto;
+    box-shadow: 0 1rem 2.75rem rgba(0, 0, 0, 0.26);
+  }
+
+  .mana-playlist-track {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 4rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    color: white;
+    text-align: left;
+    transition: background 180ms ease, border-color 180ms ease;
+  }
+
+  .mana-playlist-track:hover,
+  .mana-playlist-track[aria-current="true"] {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .mana-playlist-track img {
+    width: 4rem;
+    aspect-ratio: 16 / 9;
+    border-radius: 0.35rem;
+    object-fit: cover;
+  }
+
+  .mana-playlist-track strong,
+  .mana-playlist-track small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mana-playlist-track strong {
+    white-space: nowrap;
+    font-size: 0.78rem;
+    font-weight: 900;
+    line-height: 1.25;
+  }
+
+  .mana-playlist-track small {
+    display: -webkit-box;
+    margin-top: 0.2rem;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: rgba(203, 213, 225, 0.82);
+    font-size: 0.68rem;
+    line-height: 1.35;
+  }
+
+  .mana-playlist-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.45rem;
+    padding: 0.55rem 0.7rem;
+    color: #fde68a;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-align: center;
+    transition: background 180ms ease, color 180ms ease;
+  }
+
+  .mana-playlist-action:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  @keyframes mana-wave {
+    0%, 100% { transform: scaleY(0.72); }
+    50% { transform: scaleY(1.25); }
+  }
+
+  @keyframes mana-progress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+
+  @media (max-width: 640px) {
+    .mana-footer-title span {
+      margin-bottom: -0.42rem;
+    }
+
+    .mana-footer-title strong,
+    .mana-footer-title em {
+      font-size: clamp(2rem, 12vw, 3rem);
+    }
+
+    .mana-player-icon,
+    .mana-player-play {
+      height: 2.05rem;
+    }
+
+    .mana-player-icon {
+      width: 2.05rem;
+    }
+
+    .mana-player-play {
+      min-width: 5.85rem;
+      padding: 0 0.75rem;
+      font-size: 0.75rem;
+    }
+
+    .mana-wave {
+      display: none;
+    }
+  }
+</style>
