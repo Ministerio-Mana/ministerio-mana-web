@@ -44,6 +44,23 @@
     );
   }
 
+  function requestFrameAutoplay(frame, videoId) {
+    if (!frame?.src) return;
+    try {
+      const url = new URL(frame.src);
+      const desiredPath = videoId ? `/embed/${videoId}` : url.pathname;
+      const shouldReload = url.pathname !== desiredPath || url.searchParams.get('autoplay') !== '1';
+      url.pathname = desiredPath;
+      url.searchParams.set('autoplay', '1');
+      url.searchParams.set('mute', '0');
+      url.searchParams.set('playsinline', '1');
+      url.searchParams.set('enablejsapi', '1');
+      if (shouldReload) frame.src = url.toString();
+    } catch {
+      // Keep the postMessage path as the fallback when URL parsing is unavailable.
+    }
+  }
+
   function getTracks(player) {
     return Array.from(player.querySelectorAll(TRACK_SELECTOR));
   }
@@ -70,6 +87,7 @@
   }
 
   function applyAudioPostMessages(frame, videoId) {
+    requestFrameAutoplay(frame, videoId);
     if (videoId) sendCommand(frame, 'loadVideoById', [videoId]);
     sendCommand(frame, 'unMute');
     sendCommand(frame, 'setVolume', [100]);

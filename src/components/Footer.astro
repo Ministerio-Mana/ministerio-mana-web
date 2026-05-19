@@ -171,8 +171,8 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
   <div class="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-transparent via-[#28A6BD] to-transparent opacity-50"></div>
 
   <div class="relative z-10 border-y border-white/10 bg-[#121a35]">
-    <div class="container mx-auto grid gap-5 px-6 py-5 lg:grid-cols-[minmax(250px,0.72fr)_minmax(470px,1.28fr)] lg:items-stretch lg:py-6">
-      <div class="flex max-w-lg flex-col justify-between gap-4">
+    <div class="container mx-auto grid gap-4 px-6 py-5 lg:grid-cols-[minmax(230px,0.6fr)_minmax(560px,1.4fr)] lg:items-center">
+      <div class="flex max-w-[31rem] flex-col justify-center gap-4 lg:pr-2">
         <div>
           <div class="mana-footer-title">
             <span>{t(locale, 'footer_devotional_script')}</span>
@@ -187,7 +187,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
             href={devotionalWhatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex h-10 items-center justify-center rounded-lg bg-[#28A6BD] px-5 text-sm font-bold text-white shadow-lg shadow-cyan-950/20 transition-all hover:-translate-y-0.5 hover:bg-[#32b5cc] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            class="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg bg-[#28A6BD] px-4 text-[12px] font-bold text-white shadow-lg shadow-cyan-950/20 transition-all hover:-translate-y-0.5 hover:bg-[#32b5cc] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             {t(locale, 'footer_join')}
           </a>
@@ -195,7 +195,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
             href={devotionalYoutubeChannelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex h-10 items-center justify-center rounded-lg border border-white/15 px-5 text-sm font-bold text-amber-100 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white"
+            class="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-white/15 px-4 text-[12px] font-bold text-amber-100 transition-colors hover:border-white/30 hover:bg-white/10 hover:text-white"
           >
             {t(locale, 'footer_youtube_channel')}
           </a>
@@ -203,7 +203,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
       </div>
 
       <section
-        class="relative overflow-visible rounded-lg border border-white/10 bg-[#0d1430]/95 p-3 shadow-xl shadow-black/20 md:p-3.5"
+        class="relative overflow-visible rounded-lg border border-white/10 bg-[#0d1430]/95 p-3.5 shadow-xl shadow-black/20 md:p-4"
         aria-label={t(locale, 'footer_player_aria')}
         data-devotional-player
         data-playing="false"
@@ -220,7 +220,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
           data-devotional-initial-video={latestDevotional.videoId}
         ></iframe>
 
-        <div class="grid grid-cols-[76px_minmax(0,1fr)] gap-3 sm:grid-cols-[96px_minmax(0,1fr)] xl:grid-cols-[96px_minmax(0,1fr)_128px] xl:items-center">
+        <div class="grid grid-cols-[104px_minmax(0,1fr)] gap-3 sm:grid-cols-[128px_minmax(0,1fr)] xl:grid-cols-[138px_minmax(0,1fr)_132px] xl:items-center">
           <a href={latestDevotional.url} target="_blank" rel="noopener noreferrer" class="mana-devotional-thumb" aria-label={latestDevotional.title} data-devotional-link>
             <img src={latestDevotional.image} alt="" loading="lazy" decoding="async" data-devotional-image />
           </a>
@@ -228,7 +228,6 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase text-[#9ee7f4]">{t(locale, 'footer_player_source')}</span>
-              <span class="text-[11px] font-bold uppercase text-amber-100">{t(locale, 'footer_playlist_label')}</span>
             </div>
             <h3 class="mt-2 line-clamp-2 text-sm font-display font-black leading-tight text-white md:line-clamp-1 md:text-base" data-devotional-title>{latestDevotional.title}</h3>
             <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-300 md:text-sm" data-devotional-description>{latestDevotional.description}</p>
@@ -407,7 +406,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
     margin: 0 0 -0.48rem 0.1rem;
     color: #f2c94c;
     font-family: "Summer Loving", cursive;
-    font-size: clamp(2.1rem, 4vw, 3.6rem);
+    font-size: clamp(2rem, 3.35vw, 3rem);
     font-weight: 400;
     line-height: 0.82;
     transform: rotate(-4deg);
@@ -419,7 +418,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
     display: block;
     margin: 0;
     font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
-    font-size: clamp(1.85rem, 3.4vw, 3.4rem);
+    font-size: clamp(1.8rem, 2.9vw, 2.9rem);
     font-style: normal;
     font-weight: 900;
     letter-spacing: 0;
@@ -451,8 +450,8 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
     position: relative;
     display: block;
     width: 100%;
-    min-height: 3.75rem;
-    aspect-ratio: 16 / 9;
+    min-height: 5.25rem;
+    aspect-ratio: 16 / 10;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 0.55rem;
@@ -469,7 +468,7 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
   .mana-devotional-thumb img {
     width: 100%;
     height: 100%;
-    min-height: 3.75rem;
+    min-height: 5.25rem;
     object-fit: cover;
     display: block;
   }
@@ -647,6 +646,11 @@ const devotionalEmbedUrl = `https://www.youtube-nocookie.com/embed/${devotionalE
     .mana-footer-title strong,
     .mana-footer-title em {
       font-size: clamp(2rem, 12vw, 3rem);
+    }
+
+    .mana-devotional-thumb,
+    .mana-devotional-thumb img {
+      min-height: 4.65rem;
     }
 
     .mana-player-icon,
