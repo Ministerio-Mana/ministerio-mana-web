@@ -68,12 +68,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
   if (!current.data) return json({ ok: false, error: 'Petición no encontrada' }, 404);
 
-  if (current.data.visibility !== 'public') {
-    return json({ ok: false, error: 'Las peticiones privadas son solo para intercesión.' }, 400);
+  if (guard.role === 'intercessor') {
+    if (current.data.visibility !== 'public') {
+      return json({ ok: false, error: 'Las peticiones privadas son solo para intercesión.' }, 400);
+    }
+
+    if (!['pending', 'flagged'].includes(String(current.data.moderation_status || ''))) {
+      return json({ ok: false, error: 'Esta petición ya fue revisada.' }, 400);
+    }
   }
 
-  if (!['pending', 'flagged'].includes(String(current.data.moderation_status || ''))) {
-    return json({ ok: false, error: 'Esta petición ya fue revisada.' }, 400);
+  if (decision === 'approve' && current.data.visibility !== 'public') {
+    return json({ ok: false, error: 'Una petición privada no se puede publicar sin cambiar su privacidad.' }, 400);
   }
 
   const updates: Record<string, any> = {
