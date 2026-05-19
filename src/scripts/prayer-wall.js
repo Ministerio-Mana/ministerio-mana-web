@@ -313,11 +313,11 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
 
   note.addEventListener('pointermove', (event) => {
     if (prefersReducedMotion) return;
-    const rect = note.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    note.style.setProperty('--tilt-x', `${x * 8}deg`);
-    note.style.setProperty('--tilt-y', `${y * -8}deg`);
+    const rect = paper.getBoundingClientRect();
+    const x = Math.max(-0.5, Math.min(0.5, (event.clientX - rect.left) / rect.width - 0.5));
+    const y = Math.max(-0.5, Math.min(0.5, (event.clientY - rect.top) / rect.height - 0.5));
+    note.style.setProperty('--tilt-x', `${x * 4}deg`);
+    note.style.setProperty('--tilt-y', `${y * -4}deg`);
   });
 
   note.addEventListener('pointerleave', () => {
