@@ -14,8 +14,6 @@ export const prerender = false;
 
 const REMINDER_KEYS: Record<number, string> = {
   0: 'D0',
-  2: 'D2',
-  3: 'D3',
 };
 
 function env(key: string): string | undefined {

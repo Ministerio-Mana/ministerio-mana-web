@@ -1,31 +1,29 @@
 const DESKTOP_SLOTS = [
-  [24, 17, -7, 0],
-  [58, 16, 4, 3],
-  [82, 30, -5, 2],
-  [10, 27, 6, 1],
-  [52, 33, -4, 1],
-  [28, 45, 5, 0],
-  [70, 45, -4, 3],
-  [28, 73, 6, 3],
-  [64, 73, -5, 0],
-  [52, 43, 4, 1],
-  [74, 38, -3, 1],
-  [22, 66, -4, 1],
-  [60, 66, 5, 1],
-  [16, 25, -5, 1],
-  [70, 23, 4, 1],
-  [38, 73, -4, 3],
+  [23.2, 16.4, -3, 0, 'right'],
+  [56, 16.4, 1, 3, 'right'],
+  [82.3, 30.2, -2, 2, 'left'],
+  [10, 35.5, 0, 1, 'right'],
+  [52.5, 40.6, 0, 1, 'left'],
+  [24.2, 44.8, 0, 1, 'left'],
+  [62.5, 44.8, -2, 3, 'right'],
+  [27.1, 72.9, 0, 1, 'right'],
+  [63.5, 72.9, 0, 1, 'left'],
+  [74.2, 38.4, 0, 1, 'left'],
+  [24.6, 72.9, 1, 3, 'right'],
+  [60.4, 72.9, -2, 0, 'left'],
+  [10, 23.5, 0, 1, 'right'],
+  [52.5, 35.6, 0, 1, 'left'],
 ];
 
 const MOBILE_SLOTS = [
-  [24, 17, -6, 0],
-  [58, 16, 5, 3],
-  [82, 30, -5, 2],
-  [10, 35, 4, 1],
-  [24, 45, -4, 0],
-  [62, 45, 5, 3],
-  [28, 73, -4, 3],
-  [64, 73, 5, 0],
+  [23.2, 16.4, -3, 0, 'right'],
+  [56, 16.4, 1, 3, 'right'],
+  [82.3, 30.2, -2, 2, 'left'],
+  [10, 35.5, 0, 1, 'right'],
+  [52.5, 40.6, 0, 1, 'right'],
+  [27.1, 72.9, 0, 1, 'right'],
+  [63.5, 72.9, -2, 0, 'left'],
+  [24.2, 44.8, 0, 1, 'right'],
 ];
 
 const NOTE_PAPERS = [
@@ -259,8 +257,14 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   note.style.setProperty('--x', `${position[0]}%`);
   note.style.setProperty('--y', `${position[1]}%`);
   note.style.setProperty('--r', `${position[2]}deg`);
-  note.dataset.labelSide = position[0] > (compactWallQuery.matches ? 58 : 62) ? 'left' : 'right';
   const paperType = Number.isFinite(Number(position[3])) ? Number(position[3]) : index % NOTE_PAPERS.length;
+  note.dataset.paperType = String(paperType);
+  note.dataset.labelSide =
+    typeof position[4] === 'string'
+      ? position[4]
+      : position[0] > (compactWallQuery.matches ? 58 : 62)
+        ? 'left'
+        : 'right';
 
   const pin = document.createElement('span');
   pin.className = 'prayer-note__pin';
@@ -309,11 +313,11 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
 
   note.addEventListener('pointermove', (event) => {
     if (prefersReducedMotion) return;
-    const rect = note.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    note.style.setProperty('--tilt-x', `${x * 8}deg`);
-    note.style.setProperty('--tilt-y', `${y * -8}deg`);
+    const rect = paper.getBoundingClientRect();
+    const x = Math.max(-0.5, Math.min(0.5, (event.clientX - rect.left) / rect.width - 0.5));
+    const y = Math.max(-0.5, Math.min(0.5, (event.clientY - rect.top) / rect.height - 0.5));
+    note.style.setProperty('--tilt-x', `${x * 4}deg`);
+    note.style.setProperty('--tilt-y', `${y * -4}deg`);
   });
 
   note.addEventListener('pointerleave', () => {

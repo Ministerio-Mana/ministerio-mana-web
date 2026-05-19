@@ -1182,18 +1182,18 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note {
-    --note-width: 8.4rem;
-    --paper-left: 1.15rem;
-    --paper-top: 1.72rem;
+    --note-width: 1px;
+    --paper-height: 3rem;
+    --paper-width: 5.65rem;
     background: transparent;
     border: 0;
     border-radius: 0;
     box-shadow: none;
     cursor: pointer;
-    left: clamp(calc(var(--note-width) / 2 + 0.65rem), var(--x), calc(100% - (var(--note-width) / 2 + 0.65rem)));
-    height: 4.65rem;
+    height: 1px;
+    left: var(--x);
     max-width: calc(100% - 2rem);
-    min-height: 4.65rem;
+    min-height: 1px;
     isolation: isolate;
     overflow: visible;
     padding: 0;
@@ -1242,7 +1242,7 @@ const i18n = JSON.stringify(c.js);
       rotate(var(--r))
       rotateX(var(--tilt-y, 0deg))
       rotateY(var(--tilt-x, 0deg))
-      scale(1.06);
+      scale(1.025);
     z-index: 4;
   }
 
@@ -1262,9 +1262,9 @@ const i18n = JSON.stringify(c.js);
     background: rgba(32, 45, 99, 0.56);
     border-radius: 999px;
     height: 1px;
-    left: 4.66rem;
+    left: 2.54rem;
     position: absolute;
-    top: 1.44rem;
+    top: -0.04rem;
     transform: rotate(-16deg);
     transform-origin: left center;
     width: 2.1rem;
@@ -1287,7 +1287,7 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note[data-label-side="left"] .prayer-note__pin {
     left: auto;
-    right: 4.66rem;
+    right: 2.54rem;
     transform: rotate(16deg);
     transform-origin: right center;
   }
@@ -1297,15 +1297,21 @@ const i18n = JSON.stringify(c.js);
     right: auto;
   }
 
+  .prayer-note[data-paper-type="1"] .prayer-note__pin {
+    top: 0.48rem;
+    width: 1.55rem;
+  }
+
   .prayer-note__paper {
     display: block;
-    height: 3.35rem;
-    left: calc(var(--paper-left) - 0.86rem);
+    height: var(--paper-height);
+    left: 50%;
     pointer-events: none;
     position: absolute;
-    top: calc(var(--paper-top) - 0.56rem);
-    transform: rotate(var(--r));
+    top: 50%;
+    transform: translate(-50%, -50%);
     width: 5.95rem;
+    width: var(--paper-width);
     z-index: 3;
   }
 
@@ -1362,20 +1368,24 @@ const i18n = JSON.stringify(c.js);
     border: 1px solid rgba(32, 45, 99, 0.28);
     border-radius: 8px;
     box-shadow: 0 12px 24px rgba(7, 17, 28, 0.16);
-    left: 5.86rem;
+    left: 3.62rem;
     margin: 0;
     min-width: 0;
     padding: 0.42rem 0.54rem 0.38rem;
     position: absolute;
-    top: 0.05rem;
+    top: -1.06rem;
     width: max-content;
     z-index: 4;
   }
 
   .prayer-note[data-label-side="left"] header {
     left: auto;
-    right: 5.86rem;
+    right: 3.62rem;
     text-align: right;
+  }
+
+  .prayer-note[data-paper-type="1"] header {
+    top: -0.46rem;
   }
 
   .prayer-note h3 {
@@ -2024,11 +2034,16 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-note {
-      --note-width: 7.25rem;
-      --paper-left: 1rem;
-      --paper-top: 1.8rem;
-      height: 4.4rem;
-      min-height: 4.4rem;
+      --note-width: 1px;
+      --paper-height: 2.05rem;
+      --paper-width: 3.55rem;
+      height: 1px;
+      min-height: 1px;
+    }
+
+    .prayer-note[data-paper-type="1"] {
+      --paper-height: 2.55rem;
+      --paper-width: 2.9rem;
     }
 
     .prayer-note p {
@@ -2043,21 +2058,32 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-note header {
-      left: 4.72rem;
+      left: 2.14rem;
       padding: 0.38rem 0.46rem 0.34rem;
+      top: -0.92rem;
     }
 
     .prayer-note[data-label-side="left"] header {
-      right: 4.72rem;
+      right: 2.14rem;
     }
 
     .prayer-note__pin {
-      left: 3.82rem;
+      left: 1.44rem;
+      top: -0.02rem;
       width: 1.4rem;
     }
 
     .prayer-note[data-label-side="left"] .prayer-note__pin {
-      right: 3.82rem;
+      right: 1.44rem;
+    }
+
+    .prayer-note[data-paper-type="1"] .prayer-note__pin {
+      top: 0.42rem;
+      width: 1.18rem;
+    }
+
+    .prayer-note[data-paper-type="1"] header {
+      top: -0.3rem;
     }
 
     .prayer-note h3 {
