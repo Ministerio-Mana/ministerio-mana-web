@@ -1701,7 +1701,7 @@ function buildParticipantRow(data = {}) {
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
       <select data-field="lodging" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
         <option value="no">Sin alojamiento</option>
-        <option value="yes">Con alojamiento</option>
+        <option value="yes" disabled>Con alojamiento (agotado)</option>
       </select>
       <select data-field="menuType" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
         <option value="">Tipo de menú</option>

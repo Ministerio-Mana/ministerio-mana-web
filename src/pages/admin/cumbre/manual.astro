@@ -86,7 +86,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
                 <div>
                   <h3 class="text-sm font-bold text-[#293C74]">Participantes</h3>
-                  <p class="mt-1 text-xs text-slate-500">Hospedaje habilitado con 15 cupos adicionales; el servidor bloquea nuevas reservas al agotarse.</p>
+                  <p class="mt-1 text-xs text-slate-500">Los cupos con hospedaje ya están agotados; registra nuevos participantes sin alojamiento.</p>
                 </div>
                 <button type="button" id="add-participant" class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90 transition">Agregar participante</button>
               </div>
@@ -95,7 +95,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                 <input id="p-age" type="number" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Edad" />
                 <select id="p-lodging" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm">
                   <option value="no">Sin alojamiento</option>
-                  <option value="yes">Con alojamiento</option>
+                  <option value="yes" disabled>Con alojamiento (agotado)</option>
                 </select>
                 <input id="p-rel" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Relación" />
               </div>

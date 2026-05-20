@@ -416,7 +416,7 @@ function renderPolicies() {
             </svg>
             <div>
               <h4 class="font-bold text-[#293C74] mb-1">Hospedaje</h4>
-              <p class="text-slate-600 leading-relaxed">Se habilitaron 15 cupos adicionales con hospedaje dentro del evento. Si tu reserva queda confirmada con alojamiento, conserva esa confirmación; cuando se agoten, las nuevas reservas seguirán disponibles sin hospedaje.</p>
+              <p class="text-slate-600 leading-relaxed">Los cupos con hospedaje dentro del evento ya están agotados. Las nuevas reservas siguen disponibles sin alojamiento; cada asistente debe gestionar su hospedaje por fuera.</p>
             </div>
           </div>
         </div>

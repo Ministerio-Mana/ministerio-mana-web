@@ -36,6 +36,15 @@ export function isReopenedLodgingCreatedAt(createdAt: string | null | undefined)
 }
 
 export async function getLodgingCapacityStatus(): Promise<LodgingCapacityStatus> {
+  if (CUMBRE_LODGING_CAPACITY <= 0) {
+    return {
+      capacity: CUMBRE_LODGING_CAPACITY,
+      used: 0,
+      remaining: 0,
+      available: false,
+    };
+  }
+
   if (!supabaseAdmin) {
     throw new Error('Supabase no configurado');
   }

@@ -94,13 +94,13 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     <div class="relative">
                         <select id="reg-leader-package" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] appearance-none transition-all">
                           <option value="no_lodging">Sin Alojamiento</option>
-                          <option value="lodging">Con Alojamiento</option>
+                          <option value="lodging" disabled>Con Alojamiento (agotado)</option>
                         </select>
                         <div class="absolute top-1/2 -translate-y-1/2 right-0 pr-4 flex items-center pointer-events-none text-[#293C74]">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </div>
                     </div>
-                    <p class="mt-1 text-xs text-slate-400">15 cupos adicionales con hospedaje. El sistema bloqueará nuevas reservas al agotarse.</p>
+                    <p class="mt-1 text-xs text-slate-400">Los cupos con hospedaje ya están agotados. Continúa sin alojamiento.</p>
                   </div>
                 </div>
 
@@ -194,9 +194,9 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Paquete</label>
                     <select id="companion-package" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
                       <option value="no_lodging">Sin Alojamiento</option>
-                      <option value="lodging">Con Alojamiento</option>
+                      <option value="lodging" disabled>Con Alojamiento (agotado)</option>
                     </select>
-                    <p class="mt-1 text-xs text-slate-400">15 cupos adicionales con hospedaje.</p>
+                    <p class="mt-1 text-xs text-slate-400">Hospedaje agotado. Continúa sin alojamiento.</p>
                   </div>
                   <div class="space-y-2">
                     <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Alimentación</label>
