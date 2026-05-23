@@ -48,17 +48,12 @@ export const GET: APIRoute = async ({ request }) => {
     }
   }
 
-  const includeAllSources = isAdmin && !requestedChurch;
-
   // Build Query
   let bookingQuery = supabaseAdmin
     .from('cumbre_bookings')
     .select('id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency')
     .order('created_at', { ascending: false })
     .limit(200);
-  if (!includeAllSources) {
-    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
-  }
 
   // Apply Scope
   if (isAdmin) {

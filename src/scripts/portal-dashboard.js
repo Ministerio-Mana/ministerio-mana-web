@@ -3421,18 +3421,16 @@ function renderChurchInstallments(list) {
     const safeContactLabel = safeText(booking.contact_name || booking.contact_email || 'Sin nombre');
     const safeReference = safeText((item.provider_reference || item.id).toString().slice(0, 12).toUpperCase());
     const safeInstallmentId = safeAttr(item.id || '');
-    const actionsHtml = isBalanceOnly
-      ? '<div class="text-xs font-semibold text-slate-500">Sin fecha asignada</div>'
-      : (isAutoCharge
+    const actionsHtml = isAutoCharge
         ? '<div class="text-xs font-semibold text-emerald-700">Cobro automático activo</div>'
         : `
           <button class="church-installment-action px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${safeInstallmentId}">
-            Copiar link
+            ${isBalanceOnly ? 'Crear link' : 'Copiar link'}
           </button>
           <button class="church-installment-action px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-action="send-reminder" data-installment="${safeInstallmentId}">
             Enviar recordatorio
           </button>
-        `);
+        `;
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white px-4 py-4';
