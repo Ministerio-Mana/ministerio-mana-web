@@ -2957,7 +2957,7 @@ function resolveInstallmentChargeMode(item) {
   const hasWompiPaymentMethod = Boolean(plan.provider_payment_method_id);
   const hasStripeSubscription = Boolean(plan.provider_subscription_id);
 
-  if (item?.is_balance_only) return 'OTHER';
+  if (item?.is_balance_only && !provider) return 'OTHER';
   if (provider === 'wompi') return hasWompiPaymentMethod ? 'WOMPI_AUTO' : 'WOMPI_MANUAL';
   if (provider === 'stripe') return hasStripeSubscription ? 'STRIPE_AUTO' : 'STRIPE_MANUAL';
   if (provider === 'manual' || provider === 'cash' || provider === 'physical') return 'MANUAL_CASH';

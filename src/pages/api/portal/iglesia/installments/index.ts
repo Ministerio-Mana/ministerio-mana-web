@@ -8,6 +8,7 @@ export const prerender = false;
 const BOOKING_PAGE_SIZE = 1000;
 const QUERY_CHUNK_SIZE = 200;
 const PENDING_INSTALLMENT_STATUSES = ['PENDING', 'FAILED'];
+const APPROVED_PAYMENT_STATUSES = ['APPROVED', 'PAID'];
 
 type ScopeContext = {
   isAdmin: boolean;
@@ -90,6 +91,41 @@ async function loadPendingInstallments(bookingIds: string[]): Promise<any[]> {
   return rows;
 }
 
+async function loadLatestPaymentProviderByBooking(bookingIds: string[]): Promise<Map<string, string>> {
+  const providerByBooking = new Map<string, string>();
+
+  for (const chunk of chunkArray(bookingIds, QUERY_CHUNK_SIZE)) {
+    const { data, error } = await supabaseAdmin!
+      .from('cumbre_payments')
+      .select('booking_id, provider, created_at')
+      .in('booking_id', chunk)
+      .in('status', APPROVED_PAYMENT_STATUSES)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[portal.iglesia.installments] payment provider lookup error', error);
+      continue;
+    }
+
+    (data || []).forEach((payment: any) => {
+      const bookingId = String(payment.booking_id || '');
+      const provider = String(payment.provider || '').trim().toLowerCase();
+      if (!bookingId || providerByBooking.has(bookingId)) return;
+      if (provider === 'stripe' || provider === 'wompi' || provider === 'manual') {
+        providerByBooking.set(bookingId, provider);
+      }
+    });
+  }
+
+  return providerByBooking;
+}
+
+function resolveBalanceProvider(booking: any, providerByBooking: Map<string, string>): string {
+  const provider = providerByBooking.get(String(booking.id || ''));
+  if (provider) return provider;
+  return booking.currency === 'USD' ? 'stripe' : 'wompi';
+}
+
 export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
@@ -167,29 +203,41 @@ export const GET: APIRoute = async ({ request }) => {
 
   const nextInstallments = Array.from(nextByPlan.values());
   const pendingBookingIds = new Set(nextInstallments.map((row: any) => row.booking_id || row.booking?.id).filter(Boolean));
+  const paymentProviderByBooking = await loadLatestPaymentProviderByBooking(bookingIds);
   const balanceOnlyInstallments = eligibleBookings
     .filter((booking: any) => {
       const totalAmount = Number(booking.total_amount || 0);
       const totalPaid = Number(booking.total_paid || 0);
       return totalAmount > totalPaid && !pendingBookingIds.has(booking.id);
     })
-    .map((booking: any) => ({
-      id: `balance-${booking.id}`,
-      booking_id: booking.id,
-      plan_id: null,
-      installment_index: 1,
-      due_date: null,
-      amount: Math.max(Number(booking.total_amount || 0) - Number(booking.total_paid || 0), 0),
-      currency: booking.currency,
-      status: 'PENDING',
-      provider_reference: booking.id,
-      provider_tx_id: null,
-      paid_at: null,
-      created_at: null,
-      booking,
-      plan: null,
-      is_balance_only: true,
-    }));
+    .map((booking: any) => {
+      const provider = resolveBalanceProvider(booking, paymentProviderByBooking);
+      return {
+        id: `balance-${booking.id}`,
+        booking_id: booking.id,
+        plan_id: null,
+        installment_index: 1,
+        due_date: null,
+        amount: Math.max(Number(booking.total_amount || 0) - Number(booking.total_paid || 0), 0),
+        currency: booking.currency,
+        status: 'PENDING',
+        provider_reference: booking.id,
+        provider_tx_id: null,
+        paid_at: null,
+        created_at: null,
+        booking,
+        plan: {
+          id: null,
+          status: 'ACTIVE',
+          provider,
+          currency: booking.currency,
+          installment_count: 1,
+          provider_payment_method_id: null,
+          provider_subscription_id: null,
+        },
+        is_balance_only: true,
+      };
+    });
 
   const installmentIds = nextInstallments.map((row: any) => row.id);
   const reminderMap: Record<string, any> = {};
