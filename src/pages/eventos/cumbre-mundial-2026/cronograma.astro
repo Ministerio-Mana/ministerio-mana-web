@@ -1,0 +1,964 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import {
+  cumbreAudienceFilters,
+  cumbreDays,
+  formatDisplayTime,
+  getEventsForDay,
+  getPublicScheduleEvents,
+} from '@data/cumbreSchedule';
+
+const cspNonce = Astro.locals?.cspNonce;
+const publicEvents = getPublicScheduleEvents();
+const firstDayDate = cumbreDays[0]?.date ?? '2026-06-06';
+const whatsappHref =
+  'https://wa.me/573148297534?text=Hola%20quiero%20informaci%C3%B3n%20del%20cronograma%20de%20la%20Cumbre%20Mundial%202026';
+
+const audienceHelpers: Record<string, string> = {
+  all: 'Todo el evento',
+  todos: 'Solo espacios generales',
+  ninos: 'General + niños',
+  mujeres: 'General + mujeres',
+  varones: 'General + varones',
+  campus: 'General + campus',
+};
+
+const audienceOptions = cumbreAudienceFilters.map((filter) => {
+  return {
+    ...filter,
+    href: `/eventos/cumbre-mundial-2026/calendario.ics?track=${filter.id}`,
+    helper: audienceHelpers[filter.id] ?? filter.label,
+    calendarLabel: filter.id === 'all' ? 'Todos' : filter.label,
+  };
+});
+
+const groupEventsByStart = (events: typeof publicEvents) => {
+  const groups = new Map<string, typeof publicEvents>();
+
+  events.forEach((event) => {
+    const current = groups.get(event.startsAt) ?? [];
+    current.push(event);
+    groups.set(event.startsAt, current);
+  });
+
+  return Array.from(groups.entries()).map(([startsAt, groupEvents]) => ({
+    startsAt,
+    events: groupEvents,
+  }));
+};
+
+const agendaByDay = cumbreDays.map((day) => {
+  const events = getEventsForDay(day.date, publicEvents);
+
+  return {
+    day,
+    events,
+    groups: groupEventsByStart(events),
+  };
+});
+---
+
+<CumbreLayout
+  title="Cronograma | Cumbre Mundial de Discipulado"
+  description="Cronograma para asistentes de la Cumbre Mundial de Discipulado 2026 en Rionegro."
+  image="/images/cumbre/bienvenida-og.jpg"
+  imageAlt="Cronograma de la Cumbre Mundial de Discipulado"
+  imageWidth={1200}
+  imageHeight={630}
+  imageType="image/jpeg"
+  showEventBadge={false}
+>
+  <main class="schedule-page" data-schedule-root data-default-day={firstDayDate}>
+    <section class="schedule-hero relative overflow-hidden px-5 pb-8 pt-32 md:px-8 md:pb-10 md:pt-32">
+      <div class="absolute inset-0 -z-10">
+        <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover opacity-[0.28]" />
+        <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(7,17,28,0.98)_0%,rgba(7,17,28,0.9)_48%,rgba(7,17,28,0.66)_100%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_76%_12%,rgba(40,166,189,0.3),transparent_32%)]"></div>
+      </div>
+
+      <div class="mx-auto max-w-7xl">
+        <div class="max-w-4xl space-y-5">
+          <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3 py-1.5 text-xs font-black uppercase tracking-[0.22em] text-brand-gold backdrop-blur-md">
+            <span class="h-2 w-2 rounded-full bg-brand-teal"></span>
+            Para asistentes
+          </div>
+          <div class="space-y-3">
+            <p class="text-sm font-black uppercase tracking-[0.28em] text-brand-teal">6 al 8 de junio · Rionegro</p>
+            <h1 class="max-w-5xl text-4xl font-black leading-[0.94] text-white md:text-6xl lg:text-7xl">
+              Cronograma Cumbre
+            </h1>
+          </div>
+          <p class="max-w-2xl text-base leading-relaxed text-white/72 md:text-lg">
+            Elige tu día y tu agenda. Los espacios generales ya vienen incluidos.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="cumbre-action cumbre-action--dark-ghost inline-flex rounded-full px-5 py-3 text-sm font-black uppercase tracking-[0.12em]">
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="schedule-content px-5 py-6 md:px-8 md:py-8">
+      <div class="schedule-workspace mx-auto max-w-7xl">
+        <div class="agenda-control-panel">
+          <div class="agenda-control-main">
+            <div>
+              <p class="toolbar-label">Día</p>
+              <div class="day-tabs" aria-label="Filtrar por día">
+                {cumbreDays.map((day) => (
+                  <button
+                    type="button"
+                    class={`schedule-pill ${day.date === firstDayDate ? 'is-active' : ''}`}
+                    data-day-filter={day.date}
+                    aria-pressed={day.date === firstDayDate ? 'true' : 'false'}
+                  >
+                    <span>{day.shortLabel}</span>
+                    <small>{day.title}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <a
+              href={audienceOptions[0]?.href ?? '/eventos/cumbre-mundial-2026/calendario.ics?track=all'}
+              download
+              class="calendar-cta"
+              data-calendar-cta
+            >
+              Agregar calendario de Todos
+            </a>
+          </div>
+
+          <div>
+            <p class="toolbar-label">Tu agenda</p>
+            <div class="audience-picker" aria-label="Filtrar por agenda">
+              {audienceOptions.map((option) => (
+                <button
+                  type="button"
+                  class={`schedule-chip ${option.id === 'all' ? 'is-active' : ''}`}
+                  data-track-filter={option.id}
+                  data-calendar-href={option.href}
+                  data-calendar-label={option.calendarLabel}
+                  aria-pressed={option.id === 'all' ? 'true' : 'false'}
+                >
+                  <span>{option.label}</span>
+                  <small>{option.helper}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div class="schedule-stage">
+          {agendaByDay.map(({ day, groups }) => (
+            <section class="schedule-day" data-day-section={day.date} hidden={day.date !== firstDayDate}>
+              <header class="day-heading">
+                <div>
+                  <p>{day.label}</p>
+                  <h2>{day.title}</h2>
+                </div>
+                <span>{day.summary}</span>
+              </header>
+
+              <div class="agenda-board">
+                {groups.map((group) => (
+                  <article class="agenda-row" data-public-group data-day={day.date}>
+                    <div class="agenda-time">
+                      <span>{formatDisplayTime(group.startsAt)}</span>
+                    </div>
+                    <div class="agenda-events">
+                      {group.events.map((event) => (
+                        <article class="agenda-card" data-public-event data-day={event.date} data-track={event.audience}>
+                          <div class="agenda-card-top">
+                            {event.audience !== 'todos' && <span>{event.trackLabel}</span>}
+                            <small>hasta {formatDisplayTime(event.endsAt)}</small>
+                          </div>
+                          <h3>{event.title}</h3>
+                          <p class="agenda-copy">{event.description}</p>
+                          {event.speaker && <p class="agenda-speaker">{event.speaker}</p>}
+                        </article>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+</CumbreLayout>
+
+<script nonce={cspNonce}>
+  const scheduleRoot = document.querySelector('[data-schedule-root]');
+  if (scheduleRoot) {
+    let activeDay = scheduleRoot.getAttribute('data-default-day') || '2026-06-06';
+    let activeTrack = 'all';
+    const dayButtons = Array.from(scheduleRoot.querySelectorAll('[data-day-filter]'));
+    const trackButtons = Array.from(scheduleRoot.querySelectorAll('[data-track-filter]'));
+	    const events = Array.from(scheduleRoot.querySelectorAll('[data-public-event]'));
+	    const groups = Array.from(scheduleRoot.querySelectorAll('[data-public-group]'));
+	    const sections = Array.from(scheduleRoot.querySelectorAll('[data-day-section]'));
+	    const calendarCta = scheduleRoot.querySelector('[data-calendar-cta]');
+
+    const setActive = (buttons, attr, value) => {
+      buttons.forEach((button) => {
+        const active = button.getAttribute(attr) === value;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    };
+
+	    const updateCalendarCta = () => {
+	      if (!calendarCta) return;
+	      const activeTrackButton = trackButtons.find((button) => button.getAttribute('data-track-filter') === activeTrack);
+	      const href = activeTrackButton?.getAttribute('data-calendar-href');
+	      const label = activeTrackButton?.getAttribute('data-calendar-label') || 'Todos';
+
+	      if (href) {
+	        calendarCta.setAttribute('href', href);
+	      }
+
+	      calendarCta.textContent = `Agregar calendario de ${label}`;
+	    };
+
+	    const applyFilters = () => {
+
+	      events.forEach((event) => {
+	        const dayMatch = event.getAttribute('data-day') === activeDay;
+	        const track = event.getAttribute('data-track');
+	        const trackMatch = activeTrack === 'all' || track === activeTrack || track === 'todos';
+	        const visible = dayMatch && trackMatch;
+	        event.hidden = !visible;
+	      });
+
+      groups.forEach((group) => {
+        const groupDayMatch = group.getAttribute('data-day') === activeDay;
+        const visibleItems = Array.from(group.querySelectorAll('[data-public-event]')).some((item) => !item.hidden);
+        group.hidden = !(groupDayMatch && visibleItems);
+      });
+
+      sections.forEach((section) => {
+        section.hidden = section.getAttribute('data-day-section') !== activeDay;
+      });
+
+	      updateCalendarCta();
+	    };
+
+    dayButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeDay = button.getAttribute('data-day-filter') || activeDay;
+        setActive(dayButtons, 'data-day-filter', activeDay);
+        applyFilters();
+      });
+    });
+
+    trackButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeTrack = button.getAttribute('data-track-filter') || 'all';
+        setActive(trackButtons, 'data-track-filter', activeTrack);
+        applyFilters();
+      });
+    });
+
+    applyFilters();
+  }
+</script>
+
+<style>
+  .schedule-page {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 80% 0%, rgba(40, 166, 189, 0.2), transparent 31rem),
+      linear-gradient(180deg, #07111c 0%, #0b1120 46%, #060b15 100%);
+    color: white;
+  }
+
+  :global(body) {
+    background: #060b15;
+  }
+
+  .day-card,
+  .schedule-toolbar,
+  .schedule-stage,
+  .agenda-row,
+  .agenda-card {
+    border: 1px solid rgba(203, 217, 230, 0.12);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.074), rgba(255, 255, 255, 0.038));
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(18px);
+  }
+
+  .day-card {
+    display: grid;
+    gap: 0.45rem;
+    border-radius: 1rem;
+    padding: 1rem;
+    color: rgba(255, 255, 255, 0.68);
+    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+  }
+
+  .day-card strong {
+    color: #ffffff;
+    font-size: 1.05rem;
+    line-height: 1.1;
+  }
+
+  .day-card span:last-child {
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .day-card-date {
+    color: #f2c94c;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .day-card:hover,
+  .day-card.is-active {
+    border-color: rgba(40, 166, 189, 0.64);
+    background:
+      linear-gradient(145deg, rgba(40, 166, 189, 0.2), rgba(242, 201, 76, 0.055)),
+      rgba(255, 255, 255, 0.05);
+    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(94, 214, 231, 0.18);
+    transform: translateY(-1px);
+  }
+
+	  .schedule-toolbar {
+	    display: grid;
+	    gap: 1rem;
+	    border-radius: 1rem;
+	    max-width: 100%;
+	    min-width: 0;
+	    padding: 1rem;
+	  }
+
+  .toolbar-label {
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+	  .toolbar-row {
+	    display: flex;
+	    flex-wrap: wrap;
+	    gap: 0.34rem;
+	    max-width: 100%;
+	    min-width: 0;
+	    border: 1px solid rgba(255, 255, 255, 0.08);
+	    border-radius: 999px;
+	    background: rgba(7, 17, 28, 0.42);
+    padding: 0.3rem;
+  }
+
+  .schedule-pill,
+  .schedule-chip {
+    position: relative;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    min-height: 2.35rem;
+    padding: 0.58rem 0.74rem;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    white-space: nowrap;
+  }
+
+  .schedule-pill:hover,
+  .schedule-chip:hover,
+  .schedule-pill.is-active,
+  .schedule-chip.is-active {
+    border-color: rgba(94, 214, 231, 0.5);
+    background:
+      linear-gradient(135deg, rgba(40, 166, 189, 0.32), rgba(40, 166, 189, 0.12)),
+      rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 18px rgba(0, 0, 0, 0.18);
+    color: #ffffff;
+  }
+
+  .schedule-pill:focus-visible,
+  .schedule-chip:focus-visible,
+  .calendar-link:focus-visible {
+    outline: 2px solid rgba(242, 201, 76, 0.82);
+    outline-offset: 3px;
+  }
+
+  .schedule-count {
+    justify-self: start;
+    border: 1px solid rgba(242, 201, 76, 0.24);
+    border-radius: 999px;
+    background: rgba(242, 201, 76, 0.1);
+    color: #f2c94c;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    padding: 0.6rem 0.82rem;
+    text-transform: uppercase;
+  }
+
+  .calendar-picker {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 0.25rem;
+  }
+
+	  .calendar-options {
+	    display: grid;
+	    gap: 0.45rem;
+	    max-width: 100%;
+	    min-width: 0;
+	  }
+
+  .calendar-link {
+    display: grid;
+    gap: 0.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.8rem;
+    background: rgba(255, 255, 255, 0.045);
+    color: rgba(255, 255, 255, 0.82);
+    padding: 0.68rem 0.78rem;
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+  }
+
+  .calendar-link:hover {
+    border-color: rgba(242, 201, 76, 0.42);
+    background: rgba(242, 201, 76, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .calendar-link span {
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .calendar-link small {
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .calendar-link-primary {
+    border-color: rgba(40, 166, 189, 0.5);
+    background: linear-gradient(135deg, rgba(40, 166, 189, 0.24), rgba(242, 201, 76, 0.08));
+  }
+
+	  .schedule-stage {
+	    border-radius: 1.15rem;
+	    max-width: 100%;
+	    min-width: 0;
+	    padding: 1rem;
+	  }
+
+  .day-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+  }
+
+  .day-heading p {
+    color: #28a6bd;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .day-heading h2 {
+    margin-top: 0.35rem;
+    color: #ffffff;
+    font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .day-heading > span {
+    max-width: 30rem;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    text-align: right;
+  }
+
+  .agenda-board {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 1rem;
+  }
+
+  .agenda-row {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    border-radius: 0.9rem;
+    padding: 0.75rem;
+  }
+
+  .agenda-time {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .agenda-time span {
+    width: 100%;
+    border-radius: 0.75rem;
+    background: rgba(40, 166, 189, 0.13);
+    color: #5ed6e7;
+    font-size: 0.85rem;
+    font-weight: 900;
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .agenda-events {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: 0.65rem;
+  }
+
+  .agenda-card {
+    border-radius: 0.8rem;
+    padding: 0.85rem;
+  }
+
+  .agenda-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .agenda-card-top span,
+  .agenda-speaker {
+    border-radius: 999px;
+    background: rgba(242, 201, 76, 0.12);
+    color: #f2c94c;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    padding: 0.28rem 0.45rem;
+    text-transform: uppercase;
+  }
+
+  .agenda-card-top small {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.74rem;
+    font-weight: 800;
+  }
+
+  .agenda-card h3 {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.15;
+  }
+
+  .agenda-copy {
+    display: -webkit-box;
+    margin-top: 0.45rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.83rem;
+    line-height: 1.36;
+  }
+
+  .agenda-speaker {
+    display: inline-flex;
+    margin-top: 0.55rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.72);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .agenda-card[hidden],
+  .agenda-row[hidden],
+  .schedule-day[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .schedule-hero {
+      padding-top: 7rem;
+    }
+
+    .schedule-hero h1 {
+      overflow-wrap: anywhere;
+    }
+
+    .day-switcher {
+      display: flex;
+      margin-inline: -0.15rem;
+      overflow-x: auto;
+      padding-bottom: 0.15rem;
+      scrollbar-width: none;
+    }
+
+    .day-switcher::-webkit-scrollbar {
+      display: none;
+    }
+
+    .day-card {
+      flex: 0 0 min(18rem, 82vw);
+    }
+
+	    .schedule-toolbar {
+	      position: relative;
+	      top: auto;
+	      z-index: auto;
+	    }
+
+    .toolbar-row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 0.1rem;
+      scrollbar-width: none;
+    }
+
+    .toolbar-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .calendar-options {
+      display: flex;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .calendar-options::-webkit-scrollbar {
+      display: none;
+    }
+
+    .calendar-link {
+      flex: 0 0 9.5rem;
+    }
+
+    .day-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .day-heading > span {
+      text-align: left;
+    }
+
+    .schedule-stage {
+      padding: 0.8rem;
+    }
+
+    .agenda-row {
+      grid-template-columns: 1fr;
+    }
+
+    .agenda-time span {
+      text-align: left;
+    }
+  }
+  .schedule-hero {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 1.75rem !important;
+    padding-top: 4.8rem !important;
+  }
+
+  .schedule-hero h1 {
+    font-size: clamp(2.8rem, 5.2vw, 4.9rem);
+  }
+
+  .schedule-content {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(40, 166, 189, 0.12), transparent 22rem),
+      linear-gradient(180deg, rgba(7, 17, 28, 0.62), rgba(6, 11, 21, 0.96));
+  }
+
+  .schedule-workspace {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .agenda-control-panel {
+    display: grid;
+    gap: 0.75rem;
+    border: 1px solid rgba(203, 217, 230, 0.13);
+    border-radius: 1rem;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.035)),
+      rgba(7, 17, 28, 0.74);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    padding: 0.85rem;
+  }
+
+  .agenda-control-main {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .day-tabs,
+  .audience-picker {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .day-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .audience-picker {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .schedule-pill,
+  .schedule-chip {
+    display: grid;
+    gap: 0.24rem;
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.045);
+    color: rgba(255, 255, 255, 0.78);
+    min-height: 3.12rem;
+    padding: 0.6rem 0.72rem;
+    text-align: left;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    white-space: normal;
+  }
+
+  .schedule-pill span,
+  .schedule-chip span {
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  .schedule-pill small,
+  .schedule-chip small {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.25;
+    text-transform: none;
+  }
+
+  .schedule-pill:hover,
+  .schedule-chip:hover,
+  .schedule-pill.is-active,
+  .schedule-chip.is-active {
+    border-color: rgba(94, 214, 231, 0.58);
+    background: linear-gradient(145deg, rgba(40, 166, 189, 0.24), rgba(40, 166, 189, 0.08));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+
+  .calendar-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.12rem;
+    border: 1px solid rgba(94, 214, 231, 0.72);
+    border-radius: 0.85rem;
+    background: linear-gradient(135deg, #55cfe2, #28a6bd);
+    box-shadow: 0 14px 28px rgba(40, 166, 189, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    color: #07111c;
+    font-size: 0.76rem;
+    font-weight: 950;
+    letter-spacing: 0.08em;
+    padding: 0.68rem 1rem;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .calendar-cta:hover,
+  .calendar-cta:focus-visible {
+    border-color: rgba(242, 201, 76, 0.72);
+    background: linear-gradient(135deg, #66d8e8, #f2c94c);
+  }
+
+  .schedule-stage {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    padding: 0;
+  }
+
+  .day-heading {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: 1rem;
+  }
+
+  .day-heading h2 {
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+  }
+
+  .agenda-board {
+    gap: 0;
+    margin-top: 0.45rem;
+  }
+
+  .agenda-row {
+    grid-template-columns: 6.4rem minmax(0, 1fr);
+    gap: 1rem;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    padding: 1rem 0;
+  }
+
+  .agenda-row:last-child {
+    border-bottom: 0;
+  }
+
+  .agenda-time span {
+    background: transparent;
+    color: #5ed6e7;
+    font-size: 0.86rem;
+    padding: 0.35rem 0;
+    text-align: left;
+  }
+
+  .agenda-events {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 0.75rem;
+  }
+
+  .agenda-card {
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.055);
+    box-shadow: none;
+    padding: 0.9rem;
+  }
+
+  .agenda-card-top {
+    min-height: 1.35rem;
+  }
+
+  .agenda-card-top small {
+    margin-left: auto;
+  }
+
+  .agenda-card-top span {
+    background: rgba(40, 166, 189, 0.13);
+    color: #7ce6f3;
+  }
+
+  .agenda-card h3 {
+    font-size: 1.04rem;
+  }
+
+  .agenda-copy {
+    -webkit-line-clamp: 3;
+  }
+
+  .agenda-speaker {
+    background: rgba(242, 201, 76, 0.1);
+    color: #f2c94c;
+  }
+
+  @media (max-width: 900px) {
+    .agenda-control-main {
+      grid-template-columns: 1fr;
+    }
+
+    .calendar-cta {
+      width: 100%;
+    }
+
+    .audience-picker {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .schedule-hero {
+      padding-bottom: 1.8rem !important;
+      padding-top: 5.5rem !important;
+    }
+
+    .schedule-hero p {
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+
+    .schedule-hero .cumbre-action {
+      display: none;
+    }
+
+    .agenda-control-panel {
+      padding: 0.85rem;
+    }
+
+    .day-tabs {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .audience-picker {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .schedule-pill,
+    .schedule-chip {
+      min-height: 2.85rem;
+      padding: 0.58rem;
+    }
+
+    .schedule-pill small {
+      display: none;
+    }
+
+    .schedule-chip small {
+      display: none;
+    }
+
+    .calendar-cta {
+      font-size: 0.68rem;
+      min-height: 3rem;
+    }
+
+    .agenda-row {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 0.9rem 0;
+    }
+
+    .agenda-time span {
+      padding-bottom: 0;
+    }
+
+    .day-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .day-heading > span {
+      text-align: left;
+    }
+  }
+</style>

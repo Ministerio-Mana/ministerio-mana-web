@@ -16,6 +16,7 @@ const {
   enableSmoothScroll = false,
   flush = false,
   showEventBadge = true,
+  noindex = false,
 } = Astro.props;
 
 const isLight = variant === 'light';
@@ -32,6 +33,7 @@ const cspNonce = Astro.locals?.cspNonce;
   imageWidth={imageWidth}
   imageHeight={imageHeight}
   imageType={imageType}
+  noindex={noindex}
   hideHeader
   hideFooter
   disableSmoothScroll={!enableSmoothScroll}

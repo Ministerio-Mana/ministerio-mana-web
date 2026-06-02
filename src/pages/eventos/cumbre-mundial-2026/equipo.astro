@@ -1,0 +1,922 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import {
+  cumbreDays,
+  cumbreTeamFilters,
+  delegationAssignments,
+  formatDisplayTime,
+  getCopyText,
+  getEventsForDay,
+  getGoogleCalendarUrl,
+  getIcsDataUri,
+  getScheduleIcsDataUri,
+  getTeamScheduleEvents,
+  testimonyAssignments,
+} from '@data/cumbreSchedule';
+
+const cspNonce = Astro.locals?.cspNonce;
+const teamEvents = getTeamScheduleEvents();
+const firstDayDate = cumbreDays[0]?.date ?? '2026-06-06';
+const teamCalendarHref = getScheduleIcsDataUri(teamEvents, 'Cumbre Mundial 2026 - Equipo');
+const getResolvedStatus = (event: (typeof teamEvents)[number]) =>
+  event.public === false ? 'internal' : event.status ?? 'confirmed';
+const confirmedCount = teamEvents.filter((event) => getResolvedStatus(event) === 'confirmed').length;
+const attentionCount = teamEvents.filter((event) => getResolvedStatus(event) !== 'confirmed').length;
+
+const getSearchIndex = (event: (typeof teamEvents)[number]) =>
+  [
+    event.day,
+    event.title,
+    event.description,
+    event.trackLabel,
+    event.speaker,
+    event.responsible,
+    event.delegation,
+    event.location,
+    event.teamNotes,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+const groupEventsByStart = (events: typeof teamEvents) => {
+  const groups = new Map<string, typeof teamEvents>();
+
+  events.forEach((event) => {
+    const current = groups.get(event.startsAt) ?? [];
+    current.push(event);
+    groups.set(event.startsAt, current);
+  });
+
+  return Array.from(groups.entries()).map(([startsAt, groupEvents]) => ({
+    startsAt,
+    events: groupEvents,
+  }));
+};
+
+const agendaByDay = cumbreDays.map((day) => {
+  const events = getEventsForDay(day.date, teamEvents);
+
+  return {
+    day,
+    events,
+    groups: groupEventsByStart(events),
+  };
+});
+---
+
+<CumbreLayout
+  title="Equipo Cumbre Mundial 2026 | Ministerio Maná"
+  description="Herramienta de coordinación para pastores, predicadores y responsables de la Cumbre Mundial 2026."
+  image="/images/cumbre/bienvenida-og.jpg"
+  imageAlt="Equipo Cumbre Mundial de Discipulado"
+  imageWidth={1200}
+  imageHeight={630}
+  imageType="image/jpeg"
+  showEventBadge={false}
+  noindex
+>
+  <main class="team-page" data-team-root data-default-day={firstDayDate}>
+    <section class="team-hero relative overflow-hidden px-5 pb-7 pt-32 md:px-8 md:pb-9 md:pt-32">
+      <div class="absolute inset-0 -z-10">
+        <img src="/images/cumbre/fishermen-sunset.jpg" alt="" class="h-full w-full object-cover opacity-25" />
+        <div class="absolute inset-0 bg-[linear-gradient(108deg,rgba(7,17,28,0.98)_0%,rgba(8,18,31,0.94)_48%,rgba(11,17,32,0.7)_100%)]"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_82%_10%,rgba(242,201,76,0.18),transparent_28%),radial-gradient(circle_at_18%_24%,rgba(40,166,189,0.24),transparent_30%)]"></div>
+      </div>
+
+      <div class="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-end">
+        <div class="space-y-5">
+          <div class="inline-flex items-center gap-2 rounded-full border border-brand-gold/25 bg-brand-gold/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.22em] text-brand-gold">
+            Vista de equipo
+          </div>
+          <div class="space-y-3">
+            <p class="text-sm font-black uppercase tracking-[0.26em] text-brand-teal">Pastores · predicadores · responsables</p>
+            <h1 class="max-w-4xl text-4xl font-black leading-[0.94] text-white md:text-6xl lg:text-7xl">
+              Coordinación Cumbre
+            </h1>
+          </div>
+          <p class="max-w-2xl text-base leading-relaxed text-white/70">
+            Agenda por día con responsables, delegaciones, notas internas y acciones rápidas para cada bloque.
+          </p>
+        </div>
+
+        <div class="team-tools">
+          <label class="block">
+            <span class="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-white/55">Buscar</span>
+            <input
+              type="search"
+              class="team-search"
+              placeholder="Buscar tema o nombre"
+              data-team-search
+            />
+          </label>
+
+          <div class="team-actions">
+            <a href={teamCalendarHref} download="cumbre-mundial-2026-equipo.ics" class="team-action team-action-primary">
+              Descargar agenda
+            </a>
+            <a href="/eventos/cumbre-mundial-2026/cronograma" class="team-action">
+              Asistentes
+            </a>
+            <a href="/eventos/cumbre-mundial-2026" class="team-action">
+              Landing
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="px-5 py-6 md:px-8 md:py-8">
+      <div class="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[18rem_1fr]">
+        <aside class="team-sidebar lg:sticky lg:top-24 lg:self-start">
+          <div class="metric-grid">
+            <article class="metric-card">
+              <p>Bloques</p>
+              <strong>{teamEvents.length}</strong>
+            </article>
+            <article class="metric-card">
+              <p>Ok</p>
+              <strong class="text-brand-teal">{confirmedCount}</strong>
+            </article>
+            <article class="metric-card">
+              <p>Revisar</p>
+              <strong class="text-brand-gold">{attentionCount}</strong>
+            </article>
+          </div>
+
+          <div>
+            <p class="control-label">Día</p>
+            <div class="control-row" aria-label="Filtrar por día">
+              {cumbreDays.map((day) => (
+                <button
+                  type="button"
+                  class={`team-pill ${day.date === firstDayDate ? 'is-active' : ''}`}
+                  data-team-day={day.date}
+                  aria-pressed={day.date === firstDayDate ? 'true' : 'false'}
+                >
+                  {day.shortLabel}
+                </button>
+              ))}
+              <button type="button" class="team-pill" data-team-day="all" aria-pressed="false">Todo</button>
+            </div>
+          </div>
+
+          <div>
+            <p class="control-label">Área</p>
+            <div class="control-row" aria-label="Filtrar por área">
+              {cumbreTeamFilters.map((filter) => (
+                <button
+                  type="button"
+                  class={`team-chip ${filter.id === 'all' ? 'is-active' : ''}`}
+                  data-team-track={filter.id}
+                  aria-pressed={filter.id === 'all' ? 'true' : 'false'}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p class="control-label">Estado</p>
+            <div class="control-row" aria-label="Filtrar por estado">
+              <button type="button" class="team-status is-active" data-team-status="all" aria-pressed="true">Todo</button>
+              <button type="button" class="team-status" data-team-status="confirmed" aria-pressed="false">Ok</button>
+              <button type="button" class="team-status" data-team-status="pending" aria-pressed="false">Pendiente</button>
+              <button type="button" class="team-status" data-team-status="internal" aria-pressed="false">Interno</button>
+            </div>
+          </div>
+
+          <output class="team-count" data-team-count>
+            {agendaByDay[0]?.events.length ?? teamEvents.length} bloques
+          </output>
+        </aside>
+
+        <div class="team-stage">
+          {agendaByDay.map(({ day, groups }) => (
+            <section class="team-day" data-team-day-section={day.date} hidden={day.date !== firstDayDate}>
+              <header class="team-day-heading">
+                <div>
+                  <p>{day.label}</p>
+                  <h2>{day.title}</h2>
+                </div>
+                <span>{day.summary}</span>
+              </header>
+
+              <div class="team-board">
+                {groups.map((group) => (
+                  <article class="team-row" data-team-group data-day={day.date}>
+                    <div class="team-time">
+                      <span>{formatDisplayTime(group.startsAt)}</span>
+                    </div>
+
+                    <div class="team-event-grid">
+                      {group.events.map((event) => {
+                        const status = getResolvedStatus(event);
+                        const searchIndex = getSearchIndex(event);
+
+                        return (
+                          <article
+                            class="team-event"
+                            data-team-event
+                            data-day={event.date}
+                            data-track={event.audience}
+                            data-status={status}
+                            data-search={searchIndex}
+                          >
+                            <div class="event-head">
+                              <span class={`status-badge status-${status}`}>{status === 'confirmed' ? 'Confirmado' : status === 'pending' ? 'Pendiente' : 'Interno'}</span>
+                              <small>{event.trackLabel} · hasta {formatDisplayTime(event.endsAt)}</small>
+                            </div>
+                            <h3>{event.title}</h3>
+                            <p>{event.description}</p>
+
+                            <div class="event-meta">
+                              {event.speaker && <span>Predica: {event.speaker}</span>}
+                              {event.responsible && <span>Responsable: {event.responsible}</span>}
+                              {event.delegation && <span>Delegación: {event.delegation}</span>}
+                            </div>
+
+                            {event.teamNotes && (
+                              <p class="event-note">{event.teamNotes}</p>
+                            )}
+
+                            <div class="event-actions">
+                              <a href={getGoogleCalendarUrl(event)} target="_blank" rel="noopener noreferrer">Google</a>
+                              <a href={getIcsDataUri(event)} download={`${event.id}.ics`}>ICS</a>
+                              <button type="button" data-copy={getCopyText(event)}>Copiar</button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+
+          <section class="coord-panels">
+            <details class="coord-details">
+              <summary>
+                <span>Responsables por área</span>
+                <strong>{delegationAssignments.length}</strong>
+              </summary>
+              <div class="coord-grid">
+                {delegationAssignments.map((item) => (
+                  <article>
+                    <p>{item.area}</p>
+                    <h3>{item.responsible}</h3>
+                    {item.detail && <span>{item.detail}</span>}
+                  </article>
+                ))}
+              </div>
+            </details>
+
+            <details class="coord-details">
+              <summary>
+                <span>Predicaciones y testimonios</span>
+                <strong>{testimonyAssignments.length}</strong>
+              </summary>
+              <div class="coord-grid">
+                {testimonyAssignments.map((item) => (
+                  <article>
+                    <p>{item.moment}</p>
+                    <h3>{item.theme}</h3>
+                    <span>{item.speaker}{item.delegations ? ` · ${item.delegations}` : ''}</span>
+                  </article>
+                ))}
+              </div>
+            </details>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+</CumbreLayout>
+
+<script nonce={cspNonce}>
+  const teamRoot = document.querySelector('[data-team-root]');
+  if (teamRoot) {
+    let activeDay = teamRoot.getAttribute('data-default-day') || '2026-06-06';
+    let activeTrack = 'all';
+    let activeStatus = 'all';
+
+    const normalize = (value) =>
+      String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const searchInput = teamRoot.querySelector('[data-team-search]');
+    const countOutput = teamRoot.querySelector('[data-team-count]');
+    const dayButtons = Array.from(teamRoot.querySelectorAll('[data-team-day]'));
+    const trackButtons = Array.from(teamRoot.querySelectorAll('[data-team-track]'));
+    const statusButtons = Array.from(teamRoot.querySelectorAll('[data-team-status]'));
+    const events = Array.from(teamRoot.querySelectorAll('[data-team-event]'));
+    const groups = Array.from(teamRoot.querySelectorAll('[data-team-group]'));
+    const sections = Array.from(teamRoot.querySelectorAll('[data-team-day-section]'));
+
+    const setActive = (buttons, attr, value) => {
+      buttons.forEach((button) => {
+        const active = button.getAttribute(attr) === value;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    };
+
+    const applyFilters = () => {
+      const query = normalize(searchInput?.value || '');
+      let visibleCount = 0;
+
+      events.forEach((event) => {
+        const dayMatch = activeDay === 'all' || event.getAttribute('data-day') === activeDay;
+        const track = event.getAttribute('data-track');
+        const trackMatch = activeTrack === 'all' || track === activeTrack || track === 'todos';
+        const statusMatch = activeStatus === 'all' || event.getAttribute('data-status') === activeStatus;
+        const searchMatch = !query || normalize(event.getAttribute('data-search')).includes(query);
+        const visible = dayMatch && trackMatch && statusMatch && searchMatch;
+        event.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+
+      groups.forEach((group) => {
+        const dayMatch = activeDay === 'all' || group.getAttribute('data-day') === activeDay;
+        const visibleItems = Array.from(group.querySelectorAll('[data-team-event]')).some((item) => !item.hidden);
+        group.hidden = !(dayMatch && visibleItems);
+      });
+
+      sections.forEach((section) => {
+        const sectionDay = section.getAttribute('data-team-day-section');
+        const visibleItems = Array.from(section.querySelectorAll('[data-team-event]')).some((item) => !item.hidden);
+        section.hidden = !((activeDay === 'all' || sectionDay === activeDay) && visibleItems);
+      });
+
+      if (countOutput) {
+        countOutput.textContent = `${visibleCount} ${visibleCount === 1 ? 'bloque' : 'bloques'}`;
+      }
+    };
+
+    dayButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeDay = button.getAttribute('data-team-day') || activeDay;
+        setActive(dayButtons, 'data-team-day', activeDay);
+        applyFilters();
+      });
+    });
+
+    trackButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeTrack = button.getAttribute('data-team-track') || 'all';
+        setActive(trackButtons, 'data-team-track', activeTrack);
+        applyFilters();
+      });
+    });
+
+    statusButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        activeStatus = button.getAttribute('data-team-status') || 'all';
+        setActive(statusButtons, 'data-team-status', activeStatus);
+        applyFilters();
+      });
+    });
+
+    searchInput?.addEventListener('input', applyFilters);
+
+    teamRoot.querySelectorAll('[data-copy]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const text = button.getAttribute('data-copy') || '';
+        try {
+          await navigator.clipboard.writeText(text);
+          const original = button.textContent;
+          button.textContent = 'Copiado';
+          window.setTimeout(() => {
+            button.textContent = original;
+          }, 1400);
+        } catch {
+          button.textContent = 'No copiado';
+        }
+      });
+    });
+
+    applyFilters();
+  }
+</script>
+
+<style>
+  .team-page {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 18% 10%, rgba(40, 166, 189, 0.22), transparent 28rem),
+      radial-gradient(circle at 86% 0%, rgba(242, 201, 76, 0.14), transparent 28rem),
+      linear-gradient(180deg, #07111c 0%, #0b1120 48%, #060b15 100%);
+    color: #ffffff;
+  }
+
+  :global(body) {
+    background: #060b15;
+  }
+
+  .team-tools,
+  .team-sidebar,
+  .team-stage,
+  .team-row,
+  .team-event,
+  .coord-details {
+    border: 1px solid rgba(203, 217, 230, 0.12);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.074), rgba(255, 255, 255, 0.038));
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(18px);
+  }
+
+  .team-tools {
+    border-radius: 1rem;
+    padding: 1rem;
+  }
+
+  .team-search {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.8rem;
+    background: rgba(7, 17, 28, 0.78);
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 800;
+    outline: none;
+    padding: 0.9rem 1rem;
+  }
+
+  .team-search:focus {
+    border-color: #28a6bd;
+    box-shadow: 0 0 0 3px rgba(40, 166, 189, 0.16);
+  }
+
+  .team-actions {
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.8rem;
+  }
+
+  .team-action,
+  .event-actions a,
+  .event-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.04));
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    padding: 0.62rem 0.74rem;
+    text-align: center;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .team-action:hover,
+  .event-actions a:hover,
+  .event-actions button:hover,
+  .team-action:focus-visible,
+  .event-actions a:focus-visible,
+  .event-actions button:focus-visible {
+    border-color: rgba(40, 166, 189, 0.62);
+    background: linear-gradient(135deg, rgba(40, 166, 189, 0.24), rgba(40, 166, 189, 0.1));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 18px rgba(0, 0, 0, 0.18);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .team-action-primary {
+    border-color: rgba(40, 166, 189, 0.74);
+    background: linear-gradient(135deg, #4cc9e0, #28a6bd);
+    box-shadow: 0 12px 26px rgba(40, 166, 189, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    color: #07111c;
+  }
+
+	  .team-sidebar {
+	    display: grid;
+	    gap: 1rem;
+	    border-radius: 1rem;
+	    max-width: 100%;
+	    min-width: 0;
+	    padding: 1rem;
+	  }
+
+  .metric-grid {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric-card {
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.8rem;
+    background: rgba(7, 17, 28, 0.45);
+    padding: 0.62rem;
+  }
+
+  .metric-card p,
+  .control-label {
+    color: rgba(255, 255, 255, 0.54);
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .metric-card strong {
+    display: block;
+    margin-top: 0.3rem;
+    color: #ffffff;
+    font-size: 1.45rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .metric-card p {
+    font-size: 0.5rem;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .control-label {
+    margin-bottom: 0.5rem;
+  }
+
+	  .control-row {
+	    display: flex;
+	    flex-wrap: wrap;
+	    gap: 0.34rem;
+	    max-width: 100%;
+	    min-width: 0;
+	    border: 1px solid rgba(255, 255, 255, 0.08);
+	    border-radius: 999px;
+	    background: rgba(7, 17, 28, 0.42);
+    padding: 0.3rem;
+  }
+
+  .team-pill,
+  .team-chip,
+  .team-status {
+    flex: 0 0 auto;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    min-height: 2.25rem;
+    padding: 0.58rem 0.68rem;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    white-space: nowrap;
+  }
+
+  .team-pill:hover,
+  .team-chip:hover,
+  .team-status:hover,
+  .team-pill.is-active,
+  .team-chip.is-active,
+  .team-status.is-active {
+    border-color: rgba(94, 214, 231, 0.5);
+    background:
+      linear-gradient(135deg, rgba(40, 166, 189, 0.32), rgba(40, 166, 189, 0.12)),
+      rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 18px rgba(0, 0, 0, 0.18);
+    color: #ffffff;
+  }
+
+  .team-action:focus-visible,
+  .event-actions a:focus-visible,
+  .event-actions button:focus-visible,
+  .team-pill:focus-visible,
+  .team-chip:focus-visible,
+  .team-status:focus-visible {
+    outline: 2px solid rgba(242, 201, 76, 0.82);
+    outline-offset: 3px;
+  }
+
+  .team-count {
+    justify-self: start;
+    border: 1px solid rgba(242, 201, 76, 0.24);
+    border-radius: 999px;
+    background: rgba(242, 201, 76, 0.1);
+    color: #f2c94c;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    padding: 0.6rem 0.82rem;
+    text-transform: uppercase;
+  }
+
+	  .team-stage {
+	    border-radius: 1.15rem;
+	    max-width: 100%;
+	    min-width: 0;
+	    padding: 1rem;
+	  }
+
+  .team-day-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 1rem;
+  }
+
+  .team-day-heading p {
+    color: #28a6bd;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .team-day-heading h2 {
+    margin-top: 0.35rem;
+    color: #ffffff;
+    font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .team-day-heading > span {
+    max-width: 30rem;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    text-align: right;
+  }
+
+  .team-board {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 1rem;
+  }
+
+  .team-row {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 0.75rem;
+    border-radius: 0.9rem;
+    padding: 0.75rem;
+  }
+
+  .team-time span {
+    display: block;
+    border-radius: 0.75rem;
+    background: rgba(40, 166, 189, 0.13);
+    color: #5ed6e7;
+    font-size: 0.85rem;
+    font-weight: 900;
+    padding: 0.75rem;
+    text-align: center;
+  }
+
+  .team-event-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 0.65rem;
+  }
+
+  .team-event {
+    border-radius: 0.8rem;
+    padding: 0.85rem;
+  }
+
+  .event-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .event-head small {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    padding: 0.32rem 0.48rem;
+    text-transform: uppercase;
+  }
+
+  .status-confirmed {
+    border: 1px solid rgba(40, 166, 189, 0.42);
+    background: rgba(40, 166, 189, 0.14);
+    color: #7ce6f3;
+  }
+
+  .status-pending {
+    border: 1px solid rgba(242, 201, 76, 0.38);
+    background: rgba(242, 201, 76, 0.12);
+    color: #f2c94c;
+  }
+
+  .status-internal {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .team-event h3 {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.15;
+  }
+
+  .team-event > p {
+    display: -webkit-box;
+    margin-top: 0.45rem;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.82rem;
+    line-height: 1.34;
+  }
+
+  .event-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.55rem;
+  }
+
+  .event-meta span {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.26rem 0.45rem;
+  }
+
+  .event-note {
+    display: block !important;
+    border: 1px solid rgba(242, 201, 76, 0.18);
+    border-radius: 0.65rem;
+    background: rgba(242, 201, 76, 0.1);
+    color: #f2c94c !important;
+    font-weight: 800;
+    -webkit-line-clamp: 3 !important;
+    padding: 0.55rem;
+  }
+
+  .event-actions {
+    display: grid;
+    gap: 0.4rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.65rem;
+  }
+
+  .coord-panels {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .coord-details {
+    border-radius: 0.9rem;
+    overflow: hidden;
+  }
+
+  .coord-details summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    list-style: none;
+    padding: 1rem;
+  }
+
+  .coord-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .coord-details summary span {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 900;
+  }
+
+  .coord-details summary strong {
+    border-radius: 999px;
+    background: rgba(40, 166, 189, 0.15);
+    color: #5ed6e7;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .coord-grid {
+    display: grid;
+    gap: 0.6rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+    padding: 0 1rem 1rem;
+  }
+
+  .coord-grid article {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    background: rgba(7, 17, 28, 0.45);
+    padding: 0.8rem;
+  }
+
+  .coord-grid p {
+    color: #28a6bd;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .coord-grid h3 {
+    margin-top: 0.35rem;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+
+  .coord-grid span {
+    display: block;
+    margin-top: 0.25rem;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  .team-event[hidden],
+  .team-row[hidden],
+  .team-day[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .team-hero {
+      padding-top: 7rem;
+    }
+
+    .team-actions,
+    .event-actions {
+      grid-template-columns: 1fr;
+    }
+
+	    .team-sidebar {
+	      position: relative;
+	      top: auto;
+	      z-index: auto;
+	    }
+
+    .control-row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .control-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .team-stage {
+      padding: 0.8rem;
+    }
+
+    .team-day-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .team-day-heading > span {
+      text-align: left;
+    }
+
+    .team-row {
+      grid-template-columns: 1fr;
+    }
+
+    .team-time span {
+      text-align: left;
+    }
+  }
+</style>
