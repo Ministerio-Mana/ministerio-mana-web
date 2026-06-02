@@ -2957,7 +2957,7 @@ function resolveInstallmentChargeMode(item) {
   const hasWompiPaymentMethod = Boolean(plan.provider_payment_method_id);
   const hasStripeSubscription = Boolean(plan.provider_subscription_id);
 
-  if (item?.is_balance_only) return 'OTHER';
+  if (item?.is_balance_only && !provider) return 'OTHER';
   if (provider === 'wompi') return hasWompiPaymentMethod ? 'WOMPI_AUTO' : 'WOMPI_MANUAL';
   if (provider === 'stripe') return hasStripeSubscription ? 'STRIPE_AUTO' : 'STRIPE_MANUAL';
   if (provider === 'manual' || provider === 'cash' || provider === 'physical') return 'MANUAL_CASH';
@@ -2979,6 +2979,12 @@ function getInstallmentChargeMeta(mode) {
 function isInstallmentAutoCharge(item) {
   const mode = resolveInstallmentChargeMode(item);
   return mode === 'WOMPI_AUTO' || mode === 'STRIPE_AUTO';
+}
+
+function resolveBalanceProviderFromParticipant(item) {
+  const registrationType = (item?.registration_type || '').toString().trim().toLowerCase();
+  if (registrationType === 'local') return 'manual';
+  return item?.currency === 'USD' ? 'stripe' : 'wompi';
 }
 
 function isInstallmentRemindable(item) {
@@ -3284,10 +3290,12 @@ function buildChurchInstallmentsView() {
       .map((row) => row.booking_id || row.booking?.id)
       .filter(Boolean),
   );
+  const balanceBookingIds = new Set(installmentBookingIds);
   const pendingBalanceItems = (churchBookingsData || []).reduce((acc, booking) => {
     const totalAmount = Number(booking.total_amount || 0);
     const totalPaid = Number(booking.total_paid || 0);
-    if (totalAmount > totalPaid && !installmentBookingIds.has(booking.id)) {
+    if (totalAmount > totalPaid && !balanceBookingIds.has(booking.id)) {
+      balanceBookingIds.add(booking.id);
       acc.push({
         id: `balance-${booking.id}`,
         booking_id: booking.id,
@@ -3303,8 +3311,62 @@ function buildChurchInstallmentsView() {
     }
     return acc;
   }, []);
+  const participantBalanceItemsByBooking = new Map();
 
-  const merged = [...(churchInstallmentsData || []), ...pendingBalanceItems];
+  (churchParticipantsData || []).forEach((participant) => {
+    const bookingId = participant.booking_id;
+    if (!bookingId || balanceBookingIds.has(bookingId)) return;
+
+    const pendingAmount = Number(participant.pending_amount || 0);
+    const totalPaid = Number(participant.total_paid || 0);
+    const bookingStatus = (participant.booking_status || '').toString().trim().toUpperCase();
+    if (pendingAmount <= 0 || (totalPaid <= 0 && bookingStatus !== 'DEPOSIT_OK' && bookingStatus !== 'PAID')) return;
+
+    const existing = participantBalanceItemsByBooking.get(bookingId);
+    if (existing && !participant.is_payment_owner) return;
+
+    const provider = resolveBalanceProviderFromParticipant(participant);
+    participantBalanceItemsByBooking.set(bookingId, {
+      id: `balance-${bookingId}`,
+      booking_id: bookingId,
+      amount: pendingAmount,
+      currency: participant.currency,
+      status: 'PENDING',
+      due_date: null,
+      provider_reference: bookingId,
+      booking: {
+        id: bookingId,
+        contact_name: participant.responsable_grupo || participant.titular_reserva || participant.participant_name,
+        contact_email: participant.email,
+        contact_phone: participant.phone,
+        contact_church: participant.church_final || participant.church_input || participant.church_catalog,
+        total_amount: participant.total_amount,
+        total_paid: participant.total_paid,
+        status: participant.booking_status,
+        currency: participant.currency,
+      },
+      plan: {
+        id: null,
+        status: 'ACTIVE',
+        provider,
+        currency: participant.currency,
+        installment_count: 1,
+        provider_payment_method_id: null,
+        provider_subscription_id: null,
+      },
+      is_balance_only: true,
+    });
+
+    if (participant.is_payment_owner) {
+      balanceBookingIds.add(bookingId);
+    }
+  });
+
+  const merged = [
+    ...(churchInstallmentsData || []),
+    ...pendingBalanceItems,
+    ...Array.from(participantBalanceItemsByBooking.values()),
+  ];
   const filtered = filterChurchInstallments(merged);
   filtered.sort((a, b) => {
     const aDate = toDate(a.due_date);
@@ -3421,18 +3483,16 @@ function renderChurchInstallments(list) {
     const safeContactLabel = safeText(booking.contact_name || booking.contact_email || 'Sin nombre');
     const safeReference = safeText((item.provider_reference || item.id).toString().slice(0, 12).toUpperCase());
     const safeInstallmentId = safeAttr(item.id || '');
-    const actionsHtml = isBalanceOnly
-      ? '<div class="text-xs font-semibold text-slate-500">Sin fecha asignada</div>'
-      : (isAutoCharge
+    const actionsHtml = isAutoCharge
         ? '<div class="text-xs font-semibold text-emerald-700">Cobro automático activo</div>'
         : `
           <button class="church-installment-action px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${safeInstallmentId}">
-            Copiar link
+            ${isBalanceOnly ? 'Crear link' : 'Copiar link'}
           </button>
           <button class="church-installment-action px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-action="send-reminder" data-installment="${safeInstallmentId}">
             Enviar recordatorio
           </button>
-        `);
+        `;
 
     const card = document.createElement('div');
     card.className = 'rounded-2xl border border-slate-200 bg-white px-4 py-4';
@@ -3523,6 +3583,7 @@ async function loadChurchParticipants(headers = {}) {
     if (!res.ok || !payload.ok) throw new Error(payload.error || 'No se pudo cargar');
     churchParticipantsData = payload.participants || [];
     updateChurchParticipantsView({ resetPage: true });
+    updateChurchInstallmentsView({ resetPage: true });
   } catch (err) {
     console.error(err);
     churchParticipantsData = [];

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { createInstallmentLinkToken } from '@lib/cumbreStore';
+import { ensureBalanceInstallment } from '@lib/cumbreBalanceInstallment';
 
 export const prerender = false;
 
@@ -33,11 +34,51 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const { data: installment, error } = await supabaseAdmin
-    .from('cumbre_installments')
-    .select('id, booking_id, status, booking:cumbre_bookings(id, church_id), plan:cumbre_payment_plans(id, provider, provider_payment_method_id, provider_subscription_id)')
-    .eq('id', installmentId)
-    .maybeSingle();
+  const isBalanceOnly = installmentId.startsWith('balance-');
+  const balanceBookingId = isBalanceOnly ? installmentId.slice('balance-'.length) : '';
+  if (isBalanceOnly) {
+    if (!balanceBookingId) {
+      return new Response(JSON.stringify({ ok: false, error: 'bookingId requerido' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const { data: balanceBooking, error: balanceBookingError } = await supabaseAdmin
+      .from('cumbre_bookings')
+      .select('id, church_id')
+      .eq('id', balanceBookingId)
+      .maybeSingle();
+
+    if (balanceBookingError || !balanceBooking) {
+      return new Response(JSON.stringify({ ok: false, error: 'Reserva no encontrada' }), {
+        status: 404,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    if (!access.isAdmin) {
+      const isAllowedChurch = await isChurchAllowedForAccess((balanceBooking as any).church_id || null, access);
+      if (!isAllowedChurch) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+  }
+
+  const balanceContext = isBalanceOnly
+    ? await ensureBalanceInstallment(balanceBookingId)
+    : null;
+
+  const { data: installment, error } = balanceContext
+    ? { data: balanceContext.installment, error: null }
+    : await supabaseAdmin
+      .from('cumbre_installments')
+      .select('id, booking_id, status, booking:cumbre_bookings(id, church_id), plan:cumbre_payment_plans(id, provider, provider_payment_method_id, provider_subscription_id)')
+      .eq('id', installmentId)
+      .maybeSingle();
 
   if (error || !installment) {
     return new Response(JSON.stringify({ ok: false, error: 'Cuota no encontrada' }), {
@@ -68,7 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const token = await createInstallmentLinkToken(installmentId);
+  const token = await createInstallmentLinkToken((installment as any).id);
   if (!token) {
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo generar el link' }), {
       status: 500,

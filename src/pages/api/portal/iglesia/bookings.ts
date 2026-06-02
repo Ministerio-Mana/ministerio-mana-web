@@ -37,8 +37,6 @@ export const GET: APIRoute = async ({ request }) => {
     }
   }
 
-  const includeAllSources = isAdmin && !requestedChurch;
-
   const baseSelect = 'id, contact_name, contact_email, total_amount, total_paid, currency, status, created_at, church_id, contact_church, source';
   const extendedSelect = `${baseSelect}, payment_method, payment_status`;
 
@@ -47,9 +45,6 @@ export const GET: APIRoute = async ({ request }) => {
       .from('cumbre_bookings')
       .select(select)
       .order('created_at', { ascending: false });
-    if (!includeAllSources) {
-      query = query.eq('source', 'portal-iglesia');
-    }
 
     if (isAdmin) {
       if (requestedChurch) query = query.eq('church_id', requestedChurch);
