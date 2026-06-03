@@ -14,25 +14,25 @@ const actionLinks = [
   {
     label: 'WhatsApp',
     title: 'Hablar con Mujeres',
-    text: 'Escribe para unirte, preguntar por encuentros o recibir orientación.',
+    text: 'Únete, pregunta por encuentros o recibe orientación.',
     href: whatsappHref,
   },
   {
     label: 'Spotify',
     title: 'Devocional',
-    text: 'Escucha y comparte el devocional diario con otras mujeres.',
+    text: 'Escucha y comparte el devocional diario.',
     href: spotifyHref,
   },
   {
     label: 'YouTube',
     title: 'Contenido',
-    text: 'Apoya viendo, compartiendo y creando conversación alrededor de la Palabra.',
+    text: 'Apoya viendo, compartiendo y creando conversación.',
     href: youtubeHref,
   },
   {
     label: 'Instagram',
     title: 'Comunidad',
-    text: 'Sigue la cuenta, comparte publicaciones y ayuda a amplificar el llamado.',
+    text: 'Sigue la cuenta y ayuda a amplificar el llamado.',
     href: instagramHref,
   },
 ];
@@ -96,191 +96,177 @@ const formHelpOptions = [
   showEventBadge={false}
 >
   <main class="mqc-page" data-ven-ayudanos data-initial-ministry="mujeres">
-    <section class="mqc-hero" id="inicio">
-      <div class="mqc-hero__background" aria-hidden="true">
-        <div class="mqc-hero__arc mqc-hero__arc--top"></div>
-        <div class="mqc-hero__arc mqc-hero__arc--bottom"></div>
-        <div class="mqc-dot-field"></div>
-      </div>
-
-      <div class="mqc-hero__inner">
-        <div class="mqc-hero__copy">
-          <img src={`${assetsBase}/logo-mujeres-blanco.svg`} alt="Mujeres que creen y dejan legado" class="mqc-logo" />
-          <p class="mqc-kicker">Ven y ayúdanos</p>
-          <h1>Mujeres que sostienen el llamado</h1>
-          <p class="mqc-lead">
-            Una red de mujeres que creen profundamente, sirven con amor, forman a otras en la Palabra y dejan legado.
-          </p>
-          <div class="mqc-actions">
-            <a href="#primer-paso" class="mqc-btn mqc-btn--light" data-scroll-form>Responder al llamado</a>
-            <a href={whatsappHref} class="mqc-btn mqc-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-            <button type="button" class="mqc-btn mqc-btn--ghost" data-share-page>Compartir</button>
-          </div>
+    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" style="--panel-count: 4;">
+      <section class="cumbre-panel mqc-panel mqc-panel--hero" data-cumbre-panel data-panel-theme="light">
+        <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="mqc-pattern"></div>
+          <div class="mqc-arc mqc-arc--top"></div>
+          <div class="mqc-arc mqc-arc--bottom"></div>
         </div>
 
-        <div class="mqc-hero__art" aria-hidden="true">
-          <img src={`${assetsBase}/cariatide-blanca.svg`} alt="" class="mqc-cariatide" />
-          <img src={`${assetsBase}/barca-blanca.svg`} alt="" class="mqc-boat mqc-boat--hero" />
-          <div class="mqc-verse">
-            <p>
-              “Que nuestras hijas sean como columnas elegantes, talladas para embellecer un palacio.”
-            </p>
-            <strong>Salmos 144:12 NTV</strong>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="mqc-section mqc-section--light" id="llamado">
-      <div class="mqc-shell mqc-intro">
-        <div class="mqc-intro__aside">
-          <div class="mqc-section-heading">
-            <p>Hechos 16:9</p>
-            <h2>La ayuda toma forma cuando alguien responde</h2>
-          </div>
-          <img src={`${assetsBase}/barca-fucsia.svg`} alt="" class="mqc-intro-boat" aria-hidden="true" />
-        </div>
-        <div class="mqc-intro__text">
-          <p>
-            Esta interna existe para convertir el llamado de la Cumbre en pasos concretos: unirse a la comunidad, compartir recursos, servir en encuentros, crear contenido, orar y sembrar.
-          </p>
-          <p>
-            La barca y la red hablan de una obra que no se sostiene sola. Mujeres sostiene estructura, cuidado, formación y comunidad para que otras puedan florecer en Cristo.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="mqc-section mqc-section--dark" id="virtudes">
-      <div class="mqc-shell mqc-virtues">
-        <div class="mqc-virtues__art" aria-hidden="true">
-          <img src={`${assetsBase}/mujeres-virtudes-lineup.png`} alt="" />
-        </div>
-        <div class="mqc-virtues__content">
-          <div class="mqc-section-heading">
-            <p>Tito 2:3-5</p>
-            <h2>10 virtudes de feminidad bíblica</h2>
-          </div>
-          <p class="mqc-section-copy">
-            La visión de Mujeres que Creen no se queda en inspiración: forma carácter, discipulado y servicio. Estas virtudes ayudan a orientar conversaciones, encuentros, grupos y contenido.
-          </p>
-          <div class="mqc-virtue-grid">
-            {virtues.map((virtue, index) => (
-              <article class="mqc-virtue">
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <strong>{virtue}</strong>
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="mqc-section mqc-section--paper" id="acciones">
-      <div class="mqc-shell">
-        <div class="mqc-section-heading mqc-section-heading--center">
-          <p>Cómo puedes ayudar</p>
-          <h2>Un sí puede sostener muchas vidas</h2>
-        </div>
-
-        <div class="mqc-help-grid">
-          {helpTracks.map((track) => (
-            <article class="mqc-help">
-              <span>{track.label}</span>
-              <p>{track.text}</p>
-            </article>
-          ))}
-        </div>
-
-        <div class="mqc-link-band">
-          {actionLinks.map((item) => (
-            <a href={item.href} target="_blank" rel="noopener noreferrer" class="mqc-link-item">
-              <small>{item.label}</small>
-              <strong>{item.title}</strong>
-              <span>{item.text}</span>
-            </a>
-          ))}
-          <a href={websiteHref} target="_blank" rel="noopener noreferrer" class="mqc-link-item mqc-link-item--wide">
-            <small>Sitio web</small>
-            <strong>Conoce Mujeres que Creen</strong>
-            <span>Consulta historia, eventos, recursos y más información oficial del ministerio.</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="mqc-section mqc-section--donation" id="sembrar">
-      <div class="mqc-shell mqc-donation">
-        <div class="mqc-donation__copy">
-          <img src={`${assetsBase}/corazon-blanco.svg`} alt="" class="mqc-heart" />
-          <p class="mqc-kicker">Generosidad</p>
-          <h2>Siembra en la obra de Mujeres</h2>
-          <p>
-            Tu apoyo ayuda a sostener recursos, encuentros, contenidos, cartillas y procesos de discipulado para mujeres en distintas ciudades.
-          </p>
-          <div class="mqc-bank">
-            <div>
-              <span>Cuenta de ahorros Bancolombia</span>
-              <strong>255 0000 8527</strong>
-            </div>
-            <div>
-              <span>Llave</span>
-              <strong>0092110399</strong>
-            </div>
-          </div>
-          <div class="mqc-actions">
-            <button type="button" class="mqc-btn mqc-btn--light" data-copy-value="25500008527">Copiar cuenta</button>
-            <button type="button" class="mqc-btn mqc-btn--outline" data-copy-value="0092110399">Copiar llave</button>
-          </div>
-        </div>
-        <figure class="mqc-qr">
-          <img src={`${assetsBase}/qr-bancolombia-mujeres.jpg`} alt="QR Bancolombia Mujeres que Creen" />
-          <figcaption>Mujeres Que Creen · Iglesia Ministerio Maná</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section class="mqc-section mqc-section--light" id="contactos">
-      <div class="mqc-shell">
-        <div class="mqc-section-heading">
-          <p>Red de contactos</p>
-          <h2>Encuentra una mujer cerca de tu ciudad</h2>
-        </div>
-        <div class="mqc-contact-grid">
-          {contacts.map((contact) => (
-            <article class="mqc-contact">
-              <div>
-                <strong>{contact.city}</strong>
-                <span>{contact.detail}</span>
+        <div class="mqc-panel-inner mqc-shell">
+          <div class="mqc-hero-grid">
+            <div class="mqc-copy">
+              <img src={`${assetsBase}/logo-mujeres-fucsia.svg`} alt="Mujeres que creen y dejan legado" class="mqc-logo" data-reveal />
+              <p class="mqc-kicker" data-reveal>Ven y ayúdanos</p>
+              <h1 data-split-title>Mujeres que sostienen el llamado</h1>
+              <p class="mqc-lead" data-reveal>
+                Una red de mujeres que creen profundamente, sirven con amor, forman a otras en la Palabra y dejan legado.
+              </p>
+              <div class="mqc-actions" data-reveal>
+                <a href="#primer-paso" class="mqc-btn mqc-btn--primary" data-scroll-form>Responder al llamado</a>
+                <a href={whatsappHref} class="mqc-btn mqc-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                <button type="button" class="mqc-btn mqc-btn--soft" data-share-page>Compartir</button>
               </div>
-              <a href={`https://wa.me/${contact.wa}`} target="_blank" rel="noopener noreferrer">{contact.phone}</a>
-            </article>
-          ))}
+            </div>
+
+            <div class="mqc-hero-art" data-reveal aria-hidden="true">
+              <img src={`${assetsBase}/cariatide-fucsia.svg`} alt="" class="mqc-cariatide" />
+              <img src={`${assetsBase}/barca-fucsia.svg`} alt="" class="mqc-boat mqc-boat--hero" />
+              <div class="mqc-verse-card">
+                <p>“Que nuestras hijas sean como columnas elegantes, talladas para embellecer un palacio.”</p>
+                <strong>Salmos 144:12 NTV</strong>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section class="cumbre-panel mqc-panel mqc-panel--call" data-cumbre-panel data-panel-theme="light">
+        <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="mqc-pattern"></div>
+        </div>
+
+        <div class="mqc-panel-inner mqc-shell">
+          <div class="mqc-call-grid">
+            <article class="mqc-scripture" data-reveal>
+              <span>Hechos 16:9</span>
+              <blockquote>“Ven y ayúdanos.”</blockquote>
+              <p>
+                El llamado se responde con presencia, servicio, creatividad, oración, generosidad y manos dispuestas.
+              </p>
+              <img src={`${assetsBase}/barca-fucsia.svg`} alt="" aria-hidden="true" />
+            </article>
+
+            <div class="mqc-panel-copy">
+              <p class="mqc-kicker" data-reveal>La red</p>
+              <h2 data-split-title>La ayuda toma forma cuando alguien responde</h2>
+              <p class="mqc-body" data-reveal>
+                Esta interna convierte el llamado de la Cumbre en pasos concretos para unirse a la comunidad, compartir recursos, servir en encuentros, crear contenido, orar y sembrar.
+              </p>
+              <div class="mqc-help-grid" data-reveal>
+                {helpTracks.map((track) => (
+                  <article class="mqc-help">
+                    <strong>{track.label}</strong>
+                    <p>{track.text}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel mqc-panel mqc-panel--virtues" data-cumbre-panel data-panel-theme="light">
+        <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="mqc-pattern mqc-pattern--soft"></div>
+        </div>
+
+        <div class="mqc-panel-inner mqc-shell">
+          <div class="mqc-virtues-grid">
+            <div class="mqc-panel-copy">
+              <p class="mqc-kicker" data-reveal>Tito 2:3-5</p>
+              <h2 data-split-title>10 virtudes de feminidad bíblica</h2>
+              <p class="mqc-body" data-reveal>
+                La visión de Mujeres que Creen forma carácter, discipulado y servicio. Estas virtudes orientan conversaciones, encuentros, grupos y contenido.
+              </p>
+              <div class="mqc-virtue-grid" data-reveal>
+                {virtues.map((virtue, index) => (
+                  <article class="mqc-virtue">
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <strong>{virtue}</strong>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <aside class="mqc-column-card" data-reveal>
+              <img src={`${assetsBase}/cariatide-fucsia.svg`} alt="" aria-hidden="true" />
+              <p>Columnas elegantes, talladas para embellecer un palacio.</p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel mqc-panel mqc-panel--give" data-cumbre-panel data-panel-theme="light">
+        <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="mqc-pattern mqc-pattern--white"></div>
+        </div>
+
+        <div class="mqc-panel-inner mqc-shell">
+          <div class="mqc-give-grid">
+            <div class="mqc-panel-copy mqc-panel-copy--white">
+              <img src={`${assetsBase}/logo-mujeres-blanco.svg`} alt="Mujeres que creen y dejan legado" class="mqc-logo mqc-logo--white" data-reveal />
+              <p class="mqc-kicker mqc-kicker--white" data-reveal>Generosidad y comunidad</p>
+              <h2 data-split-title>Sembrar también sostiene la red</h2>
+              <p class="mqc-body" data-reveal>
+                Tu apoyo ayuda a sostener recursos, encuentros, contenidos, cartillas y procesos de discipulado para mujeres en distintas ciudades.
+              </p>
+              <div class="mqc-bank" data-reveal>
+                <div>
+                  <span>Cuenta de ahorros Bancolombia</span>
+                  <strong>255 0000 8527</strong>
+                </div>
+                <div>
+                  <span>Llave</span>
+                  <strong>0092110399</strong>
+                </div>
+              </div>
+              <div class="mqc-actions" data-reveal>
+                <button type="button" class="mqc-btn mqc-btn--white" data-copy-value="25500008527">Copiar cuenta</button>
+                <button type="button" class="mqc-btn mqc-btn--white-outline" data-copy-value="0092110399">Copiar llave</button>
+              </div>
+            </div>
+
+            <div class="mqc-qr-stack" data-reveal>
+              <figure class="mqc-qr">
+                <img src={`${assetsBase}/qr-bancolombia-mujeres.jpg`} alt="QR Bancolombia Mujeres que Creen" />
+                <figcaption>Mujeres Que Creen · Iglesia Ministerio Maná</figcaption>
+              </figure>
+              <div class="mqc-social-links">
+                {actionLinks.map((item) => (
+                  <a href={item.href} target="_blank" rel="noopener noreferrer">
+                    <small>{item.label}</small>
+                    <strong>{item.title}</strong>
+                    <span>{item.text}</span>
+                  </a>
+                ))}
+                <a href={websiteHref} target="_blank" rel="noopener noreferrer">
+                  <small>Sitio web</small>
+                  <strong>Conoce Mujeres que Creen</strong>
+                  <span>Historia, eventos, recursos e información oficial.</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
 
-    <section id="primer-paso" class="mqc-section mqc-section--form">
-      <div class="mqc-shell mqc-form-layout">
+    <section id="primer-paso" class="mqc-form-section">
+      <div class="mqc-shell mqc-form-grid">
         <div class="mqc-form-copy">
-          <img src={`${assetsBase}/ven-y-ayudanos.svg`} alt="Ven y ayúdanos" class="mqc-help-logo" />
+          <img src={`${assetsBase}/ven-y-ayudanos.svg`} alt="Ven y ayúdanos" />
+          <p class="mqc-kicker">Primer paso</p>
           <h2>Da tu primer paso</h2>
           <p>
             Esto no es un compromiso definitivo. Es una conversación para descubrir cómo tus manos, recursos, ideas y dones pueden ayudar.
           </p>
-          <blockquote>
-            Padre amado, forma en mí una mujer que cree profundamente y deja legado.
-          </blockquote>
+          <blockquote>Padre amado, forma en mí una mujer que cree profundamente y deja legado.</blockquote>
         </div>
 
         <div class="mqc-form-panel">
-          <form
-            id="ven-ayudanos-form"
-            class="mqc-form"
-            action="/api/ven-ayudanos/responder"
-            method="post"
-            data-help-form
-          >
+          <form id="ven-ayudanos-form" class="mqc-form" action="/api/ven-ayudanos/responder" method="post" data-help-form>
             <input type="hidden" name="origin" value="mujeres" data-hidden-origin data-default-value="mujeres" />
             <input type="hidden" name="place" value="ven-ayudanos-mujeres" data-hidden-place data-default-value="ven-ayudanos-mujeres" />
             <input type="hidden" name="utmSource" data-hidden-utm-source />
@@ -350,23 +336,43 @@ const formHelpOptions = [
               </select>
             </label>
 
-            <TurnstileWidget appearance="always" theme="dark" />
+            <TurnstileWidget appearance="always" theme="light" />
 
             <div class="mqc-form-actions">
-              <button type="submit" class="mqc-btn mqc-btn--light" data-submit-button>Responder al llamado</button>
+              <button type="submit" class="mqc-btn mqc-btn--primary" data-submit-button>Responder al llamado</button>
               <p class="mqc-status hidden" data-form-status></p>
             </div>
           </form>
 
           <div class="mqc-success hidden" data-success-panel>
-            <img src={`${assetsBase}/logo-mujeres-blanco.svg`} alt="Mujeres que creen y dejan legado" />
+            <img src={`${assetsBase}/logo-mujeres-fucsia.svg`} alt="Mujeres que creen y dejan legado" />
             <h3>Gracias por responder.</h3>
             <p>Un líder del ministerio se comunicará contigo pronto.</p>
             <div class="mqc-actions">
               <button type="button" class="mqc-btn mqc-btn--outline" data-share-page>Compartir</button>
-              <a href={whatsappHref} class="mqc-btn mqc-btn--light" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a href={whatsappHref} class="mqc-btn mqc-btn--primary" target="_blank" rel="noopener noreferrer">WhatsApp</a>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mqc-contact-section">
+      <div class="mqc-shell">
+        <div class="mqc-contact-heading">
+          <p class="mqc-kicker">Red de contactos</p>
+          <h2>Encuentra una mujer cerca de tu ciudad</h2>
+        </div>
+        <div class="mqc-contact-grid">
+          {contacts.map((contact) => (
+            <article class="mqc-contact">
+              <div>
+                <strong>{contact.city}</strong>
+                <span>{contact.detail}</span>
+              </div>
+              <a href={`https://wa.me/${contact.wa}`} target="_blank" rel="noopener noreferrer">{contact.phone}</a>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -374,6 +380,9 @@ const formHelpOptions = [
     <a href="#primer-paso" class="mqc-mobile-cta" data-scroll-form>Responder al llamado</a>
   </main>
 
+  <script>
+    import '@scripts/cumbre-welcome-story.js';
+  </script>
   <script type="module" src={venAyudanosScript}></script>
 </CumbreLayout>
 
@@ -397,23 +406,24 @@ const formHelpOptions = [
   .mqc-page {
     --mqc-plum: #ac569b;
     --mqc-rose: #ce86b9;
-    --mqc-soft: #f8eef5;
-    --mqc-ink: #171019;
-    --mqc-muted: #6d5b68;
-    background: var(--mqc-ink);
-    color: #fff;
+    --mqc-soft: #fbedf6;
+    --mqc-blush: #f7d9ec;
+    --mqc-ink: #42233f;
+    --mqc-muted: #705169;
+    background: #fff;
+    color: var(--mqc-ink);
     font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
     overflow: hidden;
   }
 
-  .mqc-page * {
+  .mqc-page *,
+  .mqc-page *::before,
+  .mqc-page *::after {
     box-sizing: border-box;
     letter-spacing: 0;
   }
 
-  .mqc-page p,
-  .mqc-page strong,
-  .mqc-page a {
+  .mqc-page :is(h1, h2, h3, p, a, strong, span) {
     color: inherit;
   }
 
@@ -422,125 +432,227 @@ const formHelpOptions = [
     margin: 0 auto;
   }
 
-  .mqc-hero {
+  .mqc-story {
     position: relative;
-    min-height: 100svh;
-    display: flex;
-    align-items: center;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
     overflow: hidden;
-    isolation: isolate;
-    background:
-      linear-gradient(115deg, rgba(20, 11, 22, 0.98), rgba(44, 24, 44, 0.88)),
-      #171019;
+    background: var(--mqc-soft);
   }
 
-  .mqc-hero::before {
-    content: "";
+  .mqc-page .cumbre-panel {
     position: absolute;
     inset: 0;
-    z-index: 0;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    clip-path: inset(100% 0% 0% 0%);
+    will-change: clip-path, transform;
+  }
+
+  .mqc-page .cumbre-panel:first-child,
+  .mqc-page .cumbre-panel.is-visible {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .mqc-page .cumbre-panel.is-active {
+    pointer-events: auto;
+  }
+
+  .mqc-page .cumbre-panel a,
+  .mqc-page .cumbre-panel button {
+    pointer-events: auto;
+  }
+
+  .mqc-page [data-panel-bg] {
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .mqc-page [data-reveal] {
+    will-change: transform, opacity;
+  }
+
+  .mqc-page [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .mqc-page [data-split-title] .split-word > span {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  .mqc-panel {
+    background: linear-gradient(135deg, #fff 0%, var(--mqc-soft) 100%);
+  }
+
+  .mqc-panel--give {
+    background: var(--mqc-plum);
+    color: #fff;
+  }
+
+  .mqc-panel-bg,
+  .mqc-pattern,
+  .mqc-arc {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .mqc-panel-bg {
+    inset: 0;
+  }
+
+  .mqc-pattern {
+    inset: 0;
     background-image: url("/images/ven-ayudanos/mujeres/corazon-fucsia.svg");
     background-repeat: repeat;
-    background-size: 86px auto;
+    background-size: 82px auto;
+    opacity: 0.11;
+  }
+
+  .mqc-pattern--soft {
+    opacity: 0.07;
+  }
+
+  .mqc-pattern--white {
+    background-image: url("/images/ven-ayudanos/mujeres/corazon-blanco.svg");
     opacity: 0.08;
-    pointer-events: none;
   }
 
-  .mqc-hero__background {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  .mqc-hero__arc {
-    position: absolute;
+  .mqc-arc {
     left: 50%;
-    width: 1180px;
-    height: 430px;
+    width: min(1180px, 136vw);
+    height: 330px;
     border-radius: 0 0 620px 620px;
-    background: var(--mqc-plum);
+    background: var(--mqc-rose);
     transform: translateX(-50%);
   }
 
-  .mqc-hero__arc--top {
-    top: -270px;
+  .mqc-arc--top {
+    top: -238px;
   }
 
-  .mqc-hero__arc--bottom {
-    bottom: -285px;
+  .mqc-arc--bottom {
+    bottom: -250px;
     border-radius: 620px 620px 0 0;
-    background: var(--mqc-rose);
-    opacity: 0.86;
+    background: var(--mqc-blush);
   }
 
-  .mqc-dot-field {
-    position: absolute;
-    inset: 0;
-    background-image:
-      radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 2px, transparent 2.6px),
-      radial-gradient(circle, rgba(206, 134, 185, 0.52) 0 2px, transparent 2.8px);
-    background-position: 74% 18%, 24% 78%;
-    background-size: 120px 120px, 160px 160px;
-    opacity: 0.42;
-  }
-
-  .mqc-hero__inner {
+  .mqc-panel-inner {
     position: relative;
     z-index: 2;
-    width: min(1240px, calc(100% - 40px));
-    margin: 0 auto;
-    padding: 120px 0 96px;
+    min-height: var(--cumbre-vh, 100svh);
+    height: var(--cumbre-vh, 100svh);
+    display: flex;
+    align-items: center;
+    padding: 92px 0 72px;
+  }
+
+  .mqc-hero-grid,
+  .mqc-call-grid,
+  .mqc-virtues-grid,
+  .mqc-give-grid,
+  .mqc-form-grid {
+    width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.78fr);
-    gap: 56px;
+    gap: clamp(28px, 5vw, 64px);
     align-items: center;
   }
 
+  .mqc-hero-grid {
+    grid-template-columns: minmax(0, 0.98fr) minmax(280px, 0.82fr);
+  }
+
+  .mqc-call-grid,
+  .mqc-give-grid {
+    grid-template-columns: minmax(290px, 0.82fr) minmax(0, 1.18fr);
+  }
+
+  .mqc-virtues-grid,
+  .mqc-form-grid {
+    grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+  }
+
   .mqc-logo {
-    width: 180px;
+    width: clamp(140px, 18vw, 210px);
     height: auto;
-    margin-bottom: 42px;
+    margin-bottom: clamp(22px, 4vh, 44px);
+  }
+
+  .mqc-logo--white {
+    margin-bottom: 22px;
   }
 
   .mqc-kicker {
     display: inline-flex;
     align-items: center;
     width: fit-content;
-    margin: 0 0 18px;
-    padding: 9px 18px;
+    margin: 0 0 14px;
+    border: 1px solid rgba(172, 86, 155, 0.2);
     border-radius: 999px;
     background: #fff;
     color: var(--mqc-plum) !important;
+    padding: 8px 15px;
     font-size: 0.76rem;
-    font-weight: 800;
+    font-weight: 900;
     text-transform: uppercase;
   }
 
-  .mqc-hero h1 {
-    max-width: 740px;
+  .mqc-kicker--white {
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff !important;
+  }
+
+  .mqc-copy h1,
+  .mqc-panel-copy h2,
+  .mqc-form-copy h2,
+  .mqc-contact-heading h2 {
     margin: 0;
-    color: #fff;
-    font-size: 4.7rem;
-    line-height: 0.95;
-    font-weight: 800;
-    text-transform: uppercase;
+    color: var(--mqc-plum);
+    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: clamp(3.1rem, 7vw, 6.8rem);
+    font-style: italic;
+    font-weight: 700;
+    line-height: 0.93;
+    text-wrap: balance;
   }
 
-  .mqc-lead {
-    max-width: 650px;
-    margin: 28px 0 0;
-    color: rgba(255, 255, 255, 0.82) !important;
-    font-size: 1.25rem;
-    line-height: 1.55;
+  .mqc-panel-copy h2,
+  .mqc-form-copy h2,
+  .mqc-contact-heading h2 {
+    font-size: clamp(2.55rem, 5.2vw, 5.2rem);
+    line-height: 0.98;
+  }
+
+  .mqc-panel-copy--white h2 {
+    color: #fff;
+  }
+
+  .mqc-lead,
+  .mqc-body,
+  .mqc-form-copy p {
+    max-width: 680px;
+    margin: 24px 0 0;
+    color: var(--mqc-muted) !important;
+    font-size: clamp(1.05rem, 1.55vw, 1.32rem);
+    line-height: 1.62;
     font-weight: 500;
+  }
+
+  .mqc-panel-copy--white .mqc-body {
+    color: rgba(255, 255, 255, 0.84) !important;
   }
 
   .mqc-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin-top: 30px;
+    margin-top: 28px;
   }
 
   .mqc-btn,
@@ -552,8 +664,8 @@ const formHelpOptions = [
     border: 1px solid transparent;
     border-radius: 999px;
     padding: 13px 22px;
-    font-size: 0.82rem;
-    font-weight: 800;
+    font-size: 0.78rem;
+    font-weight: 900;
     text-transform: uppercase;
     text-decoration: none;
     transition: transform 180ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease;
@@ -565,26 +677,37 @@ const formHelpOptions = [
     transform: translateY(-2px);
   }
 
-  .mqc-btn--light {
+  .mqc-btn--primary {
+    background: var(--mqc-plum);
+    color: #fff !important;
+    box-shadow: 0 18px 42px rgba(172, 86, 155, 0.22);
+  }
+
+  .mqc-btn--outline {
+    background: #fff;
+    border-color: rgba(172, 86, 155, 0.34);
+    color: var(--mqc-plum) !important;
+  }
+
+  .mqc-btn--soft {
+    background: var(--mqc-soft);
+    color: var(--mqc-plum) !important;
+  }
+
+  .mqc-btn--white {
     background: #fff;
     color: var(--mqc-plum) !important;
   }
 
-  .mqc-btn--outline {
+  .mqc-btn--white-outline {
     background: transparent;
-    border-color: rgba(255, 255, 255, 0.45);
+    border-color: rgba(255, 255, 255, 0.42);
     color: #fff !important;
   }
 
-  .mqc-btn--ghost {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.18);
-    color: #fff !important;
-  }
-
-  .mqc-hero__art {
+  .mqc-hero-art {
     position: relative;
-    min-height: 650px;
+    min-height: min(620px, calc(var(--cumbre-vh, 100svh) - 150px));
     display: grid;
     place-items: center;
   }
@@ -592,336 +715,184 @@ const formHelpOptions = [
   .mqc-cariatide {
     position: relative;
     z-index: 2;
-    height: 560px;
+    height: clamp(330px, 56vh, 560px);
     width: auto;
     max-width: 100%;
-    filter: drop-shadow(0 20px 32px rgba(0, 0, 0, 0.25));
-  }
-
-  .mqc-boat {
-    display: block;
-    height: auto;
   }
 
   .mqc-boat--hero {
     position: absolute;
     z-index: 1;
-    left: -18px;
-    bottom: 118px;
-    width: min(430px, 76%);
+    left: 0;
+    bottom: 74px;
+    width: min(410px, 82%);
+    height: auto;
     opacity: 0.72;
-    transform: rotate(-2deg);
-    filter: drop-shadow(0 22px 24px rgba(0, 0, 0, 0.2));
   }
 
-  .mqc-verse {
+  .mqc-verse-card {
     position: absolute;
     z-index: 3;
     right: 0;
-    bottom: 44px;
-    width: min(340px, 88%);
-    padding: 24px;
-    background: rgba(172, 86, 155, 0.88);
-    color: #fff;
+    bottom: 0;
+    width: min(330px, 88%);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(172, 86, 155, 0.18);
+    box-shadow: 0 26px 64px rgba(172, 86, 155, 0.16);
+    padding: 22px;
   }
 
-  .mqc-verse p {
-    margin: 0;
-    color: #fff !important;
-    font-size: 1rem;
-    line-height: 1.5;
-  }
-
-  .mqc-verse strong {
-    display: block;
-    margin-top: 16px;
-    color: #fff;
-    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
-    font-size: 1.15rem;
-  }
-
-  .mqc-section {
-    position: relative;
-    isolation: isolate;
-    padding: 96px 0;
-  }
-
-  .mqc-section > .mqc-shell {
-    position: relative;
-    z-index: 1;
-  }
-
-  .mqc-section--light {
-    background: #fff;
-    color: var(--mqc-ink);
-  }
-
-  .mqc-section--paper {
-    background: var(--mqc-soft);
-    color: var(--mqc-ink);
-  }
-
-  .mqc-section--paper::before,
-  .mqc-section--donation::before,
-  .mqc-section--form::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    background-repeat: repeat;
-    background-size: 92px auto;
-    pointer-events: none;
-  }
-
-  .mqc-section--paper::before {
-    background-image: url("/images/ven-ayudanos/mujeres/corazon-fucsia.svg");
-    opacity: 0.13;
-  }
-
-  .mqc-section--dark {
-    background: #0c090d;
-    color: #fff;
-  }
-
-  .mqc-section--donation,
-  .mqc-section--form {
-    background: var(--mqc-plum);
-    color: #fff;
-  }
-
-  .mqc-section--donation::before,
-  .mqc-section--form::before {
-    background-image: url("/images/ven-ayudanos/mujeres/corazon-blanco.svg");
-    opacity: 0.07;
-  }
-
-  .mqc-section-heading {
-    max-width: 620px;
-  }
-
-  .mqc-section-heading--center {
-    margin: 0 auto 42px;
-    text-align: center;
-  }
-
-  .mqc-section-heading p {
-    margin: 0 0 12px;
-    color: var(--mqc-plum) !important;
-    font-size: 0.82rem;
-    font-weight: 800;
-    text-transform: uppercase;
-  }
-
-  .mqc-section--dark .mqc-section-heading p,
-  .mqc-section--donation .mqc-section-heading p,
-  .mqc-section--form .mqc-section-heading p {
-    color: var(--mqc-rose) !important;
-  }
-
-  .mqc-section-heading h2,
-  .mqc-donation__copy h2,
-  .mqc-form-copy h2 {
-    margin: 0;
-    color: inherit;
-    font-size: 3rem;
-    line-height: 1;
-    font-weight: 800;
-    text-transform: uppercase;
-  }
-
-  .mqc-section-copy {
-    margin: 22px 0 0;
-    color: rgba(255, 255, 255, 0.76) !important;
-    font-size: 1.08rem;
-    line-height: 1.65;
-  }
-
-  .mqc-intro {
-    display: grid;
-    grid-template-columns: 0.82fr 1.18fr;
-    gap: 64px;
-    align-items: start;
-  }
-
-  .mqc-intro__aside {
-    display: grid;
-    gap: 34px;
-    align-content: start;
-  }
-
-  .mqc-intro-boat {
-    width: min(360px, 100%);
-    height: auto;
-    opacity: 0.92;
-  }
-
-  .mqc-intro__text {
-    display: grid;
-    gap: 22px;
-  }
-
-  .mqc-intro__text p {
+  .mqc-verse-card p,
+  .mqc-scripture p,
+  .mqc-help p,
+  .mqc-virtue strong,
+  .mqc-social-links span,
+  .mqc-contact span {
     margin: 0;
     color: var(--mqc-muted) !important;
-    font-size: 1.18rem;
-    line-height: 1.7;
+    line-height: 1.48;
   }
 
-  .mqc-virtues {
-    display: grid;
-    grid-template-columns: 0.95fr 1.05fr;
-    gap: 56px;
-    align-items: center;
+  .mqc-verse-card strong {
+    display: block;
+    margin-top: 14px;
+    color: var(--mqc-plum);
+    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
   }
 
-  .mqc-virtues__art {
-    min-height: 520px;
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-    border: 1px solid rgba(206, 134, 185, 0.28);
-    background: #000;
+  .mqc-scripture,
+  .mqc-column-card,
+  .mqc-qr,
+  .mqc-form-panel {
+    border: 1px solid rgba(172, 86, 155, 0.18);
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 24px 80px rgba(172, 86, 155, 0.16);
   }
 
-  .mqc-virtues__art img {
-    width: min(720px, 112%);
+  .mqc-scripture {
+    padding: clamp(24px, 4vw, 44px);
+  }
+
+  .mqc-scripture span {
+    color: var(--mqc-plum);
+    font-size: 0.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mqc-scripture blockquote {
+    margin: 18px 0 18px;
+    color: var(--mqc-plum);
+    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: clamp(2.5rem, 5.2vw, 5rem);
+    font-style: italic;
+    line-height: 0.98;
+  }
+
+  .mqc-scripture img {
+    width: min(360px, 100%);
     height: auto;
-    max-width: none;
+    margin-top: 34px;
+  }
+
+  .mqc-help-grid {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mqc-help {
+    min-height: 136px;
+    padding: 19px;
+    border: 1px solid rgba(172, 86, 155, 0.16);
+    background: #fff;
+  }
+
+  .mqc-help strong {
+    display: block;
+    margin-bottom: 9px;
+    color: var(--mqc-plum);
+    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: 1.36rem;
   }
 
   .mqc-virtue-grid {
-    margin-top: 32px;
+    margin-top: 28px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
 
   .mqc-virtue {
-    min-height: 64px;
+    min-height: 60px;
     display: grid;
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 42px 1fr;
     align-items: center;
     gap: 12px;
-    padding: 12px 14px;
-    border: 1px solid rgba(206, 134, 185, 0.22);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(172, 86, 155, 0.16);
+    background: #fff;
+    padding: 10px 12px;
   }
 
   .mqc-virtue span {
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     border-radius: 999px;
     background: var(--mqc-rose);
     color: #fff;
-    font-weight: 800;
+    font-weight: 900;
   }
 
   .mqc-virtue strong {
-    color: #fff;
+    color: var(--mqc-ink) !important;
     font-family: "Aire Pro", Georgia, "Times New Roman", serif;
-    font-size: 1.15rem;
-    font-weight: 600;
+    font-size: 1.05rem;
   }
 
-  .mqc-help-grid {
+  .mqc-column-card {
+    min-height: 530px;
+    position: relative;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    place-items: center;
+    overflow: hidden;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(251, 237, 246, 0.94)),
+      #fff;
   }
 
-  .mqc-help {
-    min-height: 170px;
-    padding: 24px;
-    border: 1px solid rgba(172, 86, 155, 0.18);
-    background: #fff;
-    color: var(--mqc-ink);
+  .mqc-column-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("/images/ven-ayudanos/mujeres/corazon-fucsia.svg");
+    background-size: 74px auto;
+    opacity: 0.08;
   }
 
-  .mqc-help span {
-    display: block;
-    color: var(--mqc-plum);
-    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
-    font-size: 1.5rem;
-    font-weight: 800;
-    text-transform: uppercase;
+  .mqc-column-card img {
+    position: relative;
+    z-index: 1;
+    height: clamp(320px, 50vh, 500px);
+    width: auto;
   }
 
-  .mqc-help p {
-    margin: 14px 0 0;
-    color: var(--mqc-muted) !important;
-    line-height: 1.58;
-  }
-
-  .mqc-link-band {
-    margin-top: 42px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .mqc-link-item,
-  .mqc-link-item:visited {
-    min-height: 176px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 9px;
-    padding: 22px;
+  .mqc-column-card p {
+    position: absolute;
+    z-index: 2;
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
+    margin: 0;
     background: var(--mqc-plum);
     color: #fff !important;
-    text-decoration: none;
-  }
-
-  .mqc-link-item:hover,
-  .mqc-link-item:focus-visible {
-    color: #fff !important;
-    background: #934984;
-  }
-
-  .mqc-link-item--wide {
-    grid-column: span 2;
-    background: var(--mqc-ink);
-  }
-
-  .mqc-link-item small {
-    font-size: 0.76rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.68);
-  }
-
-  .mqc-link-item strong {
-    color: #fff;
+    padding: 18px;
     font-family: "Aire Pro", Georgia, "Times New Roman", serif;
     font-size: 1.35rem;
-    line-height: 1.1;
-  }
-
-  .mqc-link-item span {
-    color: rgba(255, 255, 255, 0.72);
-    line-height: 1.45;
-  }
-
-  .mqc-donation {
-    display: grid;
-    grid-template-columns: 1fr minmax(320px, 430px);
-    gap: 54px;
-    align-items: center;
-  }
-
-  .mqc-heart {
-    width: 72px;
-    height: auto;
-    margin-bottom: 24px;
-  }
-
-  .mqc-donation__copy p {
-    max-width: 640px;
-    color: rgba(255, 255, 255, 0.78) !important;
-    font-size: 1.1rem;
-    line-height: 1.65;
+    line-height: 1.12;
   }
 
   .mqc-bank {
@@ -932,16 +903,16 @@ const formHelpOptions = [
   }
 
   .mqc-bank div {
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.12);
+    padding: 18px;
   }
 
   .mqc-bank span {
     display: block;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.82rem;
-    font-weight: 700;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.78rem;
+    font-weight: 900;
     text-transform: uppercase;
   }
 
@@ -950,12 +921,19 @@ const formHelpOptions = [
     margin-top: 8px;
     color: #fff;
     font-family: "Aire Pro", Georgia, "Times New Roman", serif;
-    font-size: 1.35rem;
+    font-size: 1.38rem;
+  }
+
+  .mqc-qr-stack {
+    display: grid;
+    grid-template-columns: minmax(240px, 360px) 1fr;
+    gap: 16px;
+    align-items: stretch;
   }
 
   .mqc-qr {
     margin: 0;
-    padding: 18px;
+    padding: 14px;
     background: #fff;
     color: var(--mqc-ink);
   }
@@ -967,87 +945,95 @@ const formHelpOptions = [
   }
 
   .mqc-qr figcaption {
-    margin-top: 12px;
+    margin-top: 10px;
     color: var(--mqc-plum);
     font-family: "Aire Pro", Georgia, "Times New Roman", serif;
     font-size: 0.92rem;
-    font-weight: 800;
     text-align: center;
   }
 
-  .mqc-contact-grid {
-    margin-top: 36px;
+  .mqc-social-links {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
 
-  .mqc-contact {
-    min-height: 116px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 20px;
-    border: 1px solid rgba(172, 86, 155, 0.16);
-    background: var(--mqc-soft);
-  }
-
-  .mqc-contact strong {
-    display: block;
-    color: var(--mqc-ink);
-    font-size: 1.12rem;
-  }
-
-  .mqc-contact span {
-    display: block;
-    margin-top: 4px;
-    color: var(--mqc-muted);
-    font-size: 0.9rem;
-  }
-
-  .mqc-contact a,
-  .mqc-contact a:visited {
-    color: var(--mqc-plum) !important;
-    font-weight: 800;
+  .mqc-social-links a,
+  .mqc-social-links a:visited {
+    display: grid;
+    gap: 4px;
+    align-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+    padding: 14px;
+    color: #fff !important;
     text-decoration: none;
   }
 
-  .mqc-form-layout {
-    display: grid;
-    grid-template-columns: 0.78fr 1.22fr;
-    gap: 54px;
-    align-items: start;
+  .mqc-social-links small {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
   }
 
-  .mqc-help-logo {
-    width: 136px;
+  .mqc-social-links strong {
+    color: #fff;
+    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: 1.18rem;
+  }
+
+  .mqc-social-links span {
+    color: rgba(255, 255, 255, 0.74) !important;
+    font-size: 0.9rem;
+  }
+
+  .mqc-form-section,
+  .mqc-contact-section {
+    position: relative;
+    background: var(--mqc-soft);
+    color: var(--mqc-ink);
+    padding: 96px 0;
+  }
+
+  .mqc-form-section::before,
+  .mqc-contact-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("/images/ven-ayudanos/mujeres/corazon-fucsia.svg");
+    background-repeat: repeat;
+    background-size: 82px auto;
+    opacity: 0.08;
+    pointer-events: none;
+  }
+
+  .mqc-form-grid,
+  .mqc-contact-section .mqc-shell {
+    position: relative;
+    z-index: 1;
+  }
+
+  .mqc-form-copy img {
+    width: 150px;
     height: auto;
     margin-bottom: 28px;
   }
 
-  .mqc-form-copy p {
-    color: rgba(255, 255, 255, 0.78) !important;
-    font-size: 1.08rem;
-    line-height: 1.66;
-  }
-
   .mqc-form-copy blockquote {
     margin: 28px 0 0;
-    padding: 24px;
-    border-left: 4px solid #fff;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: #fff;
+    border-left: 5px solid var(--mqc-plum);
+    color: var(--mqc-plum);
+    padding: 22px;
     font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: 1.36rem;
     font-style: italic;
-    font-size: 1.35rem;
-    line-height: 1.45;
+    line-height: 1.28;
   }
 
   .mqc-form-panel {
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(23, 16, 25, 0.5);
-    padding: 28px;
+    padding: clamp(20px, 3vw, 30px);
+    background: rgba(255, 255, 255, 0.9);
   }
 
   .mqc-form {
@@ -1064,7 +1050,7 @@ const formHelpOptions = [
   .mqc-form label,
   .mqc-form fieldset {
     display: grid;
-    gap: 9px;
+    gap: 8px;
     margin: 0;
     border: 0;
     padding: 0;
@@ -1072,30 +1058,30 @@ const formHelpOptions = [
 
   .mqc-form span,
   .mqc-form legend {
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 0.78rem;
-    font-weight: 800;
+    color: var(--mqc-plum);
+    font-size: 0.76rem;
+    font-weight: 900;
     text-transform: uppercase;
   }
 
   .mqc-input {
     width: 100%;
     min-height: 48px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(172, 86, 155, 0.2);
     border-radius: 0;
-    background: rgba(255, 255, 255, 0.09);
-    color: #fff;
+    background: #fff;
+    color: var(--mqc-ink);
     padding: 12px 14px;
     outline: none;
   }
 
   .mqc-input::placeholder {
-    color: rgba(255, 255, 255, 0.46);
+    color: rgba(66, 35, 63, 0.42);
   }
 
   .mqc-input:focus {
-    border-color: #fff;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+    border-color: var(--mqc-plum);
+    box-shadow: 0 0 0 3px rgba(172, 86, 155, 0.12);
   }
 
   .mqc-input option {
@@ -1118,21 +1104,20 @@ const formHelpOptions = [
     display: flex !important;
     align-items: center;
     min-height: 46px;
+    border: 1px solid rgba(172, 86, 155, 0.18);
+    background: #fff;
     padding: 11px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.08);
   }
 
   .mqc-check input {
     width: 16px;
     height: 16px;
     margin: 0;
-    border-radius: 2px;
     color: var(--mqc-plum);
   }
 
   .mqc-check span {
-    color: #fff;
+    color: var(--mqc-ink);
     font-size: 0.82rem;
   }
 
@@ -1147,10 +1132,10 @@ const formHelpOptions = [
 
   .mqc-status {
     margin: 0;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(172, 86, 155, 0.18);
+    background: #fff;
+    color: var(--mqc-plum) !important;
     padding: 12px 14px;
-    color: #fff !important;
   }
 
   .mqc-success {
@@ -1164,12 +1149,59 @@ const formHelpOptions = [
 
   .mqc-success h3 {
     margin: 0;
-    color: #fff;
-    font-size: 2.2rem;
+    color: var(--mqc-plum);
+    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
+    font-size: 2.4rem;
   }
 
   .mqc-success p {
-    color: rgba(255, 255, 255, 0.76) !important;
+    color: var(--mqc-muted) !important;
+  }
+
+  .mqc-contact-section {
+    background: #fff;
+    padding-top: 88px;
+  }
+
+  .mqc-contact-heading {
+    max-width: 720px;
+  }
+
+  .mqc-contact-grid {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mqc-contact {
+    min-height: 116px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1px solid rgba(172, 86, 155, 0.16);
+    background: var(--mqc-soft);
+    padding: 18px;
+  }
+
+  .mqc-contact strong {
+    display: block;
+    color: var(--mqc-ink);
+    font-size: 1.05rem;
+  }
+
+  .mqc-contact span {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.9rem;
+  }
+
+  .mqc-contact a,
+  .mqc-contact a:visited {
+    color: var(--mqc-plum) !important;
+    font-weight: 900;
+    text-decoration: none;
   }
 
   .mqc-mobile-cta,
@@ -1184,80 +1216,109 @@ const formHelpOptions = [
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: #fff;
-    color: var(--mqc-plum) !important;
+    background: var(--mqc-plum);
+    color: #fff !important;
     font-size: 0.82rem;
-    font-weight: 800;
+    font-weight: 900;
     text-decoration: none;
     text-transform: uppercase;
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+    box-shadow: 0 18px 42px rgba(172, 86, 155, 0.32);
   }
 
   .hidden {
     display: none !important;
   }
 
-  @media (max-width: 1040px) {
-    .mqc-hero__inner,
-    .mqc-intro,
-    .mqc-virtues,
-    .mqc-donation,
-    .mqc-form-layout {
-      grid-template-columns: 1fr;
-    }
-
-    .mqc-hero__art {
-      min-height: 500px;
-    }
-
-    .mqc-cariatide {
-      height: 460px;
-    }
-
-    .mqc-boat--hero {
-      left: 50%;
-      bottom: 96px;
-      width: min(430px, 72%);
-      opacity: 0.54;
-      transform: translateX(-54%) rotate(-2deg);
-    }
-
-    .mqc-intro-boat {
-      width: min(320px, 82%);
-    }
-
+  @media (max-width: 1120px) {
     .mqc-help-grid,
     .mqc-contact-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .mqc-link-band {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .mqc-qr-stack {
+      grid-template-columns: 1fr;
     }
   }
 
-  @media (max-width: 720px) {
-    .mqc-shell,
-    .mqc-hero__inner {
-      width: min(100% - 28px, 1180px);
+  @media (max-width: 900px) {
+    .mqc-hero-grid,
+    .mqc-call-grid,
+    .mqc-virtues-grid,
+    .mqc-give-grid,
+    .mqc-form-grid {
+      grid-template-columns: 1fr;
     }
 
-    .mqc-hero__inner {
-      padding: 112px 0 76px;
-      gap: 28px;
+    .mqc-hero-art {
+      position: absolute;
+      right: -60px;
+      bottom: 32px;
+      width: 330px;
+      min-height: 360px;
+      opacity: 0.32;
     }
 
-    .mqc-logo {
-      width: 150px;
-      margin-bottom: 32px;
+    .mqc-verse-card {
+      display: none;
     }
 
-    .mqc-hero h1 {
-      font-size: 3rem;
+    .mqc-boat--hero {
+      left: -35px;
+      bottom: 46px;
+      width: 260px;
     }
 
-    .mqc-lead {
-      font-size: 1.05rem;
+    .mqc-copy {
+      position: relative;
+      z-index: 4;
+      max-width: 620px;
+    }
+
+    .mqc-column-card {
+      min-height: 420px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .mqc-story {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .mqc-page .cumbre-panel {
+      position: relative;
+      height: auto;
+      min-height: 100svh;
+      clip-path: none !important;
+      pointer-events: auto;
+    }
+
+    .mqc-panel-inner {
+      height: auto;
+      min-height: 100svh;
+      align-items: flex-start;
+      padding: 112px 0 80px;
+    }
+
+    .mqc-copy h1 {
+      font-size: clamp(3rem, 17vw, 4.8rem);
+    }
+
+    .mqc-panel-copy h2,
+    .mqc-form-copy h2,
+    .mqc-contact-heading h2 {
+      font-size: clamp(2.65rem, 14vw, 4.4rem);
+    }
+
+    .mqc-actions,
+    .mqc-bank,
+    .mqc-field-grid,
+    .mqc-check-grid,
+    .mqc-contact-grid,
+    .mqc-help-grid,
+    .mqc-virtue-grid {
+      grid-template-columns: 1fr;
     }
 
     .mqc-actions {
@@ -1268,66 +1329,40 @@ const formHelpOptions = [
       width: 100%;
     }
 
-    .mqc-hero__art {
-      min-height: 430px;
+    .mqc-logo {
+      width: 148px;
     }
 
-    .mqc-cariatide {
-      height: 390px;
-      transform: translateX(-16px);
+    .mqc-hero-art {
+      right: -96px;
+      bottom: 22px;
+      width: 280px;
+      min-height: 320px;
+      opacity: 0.22;
     }
 
-    .mqc-boat--hero {
-      bottom: 84px;
-      width: min(300px, 80%);
-      opacity: 0.38;
+    .mqc-scripture,
+    .mqc-column-card,
+    .mqc-form-panel {
+      box-shadow: 0 18px 46px rgba(172, 86, 155, 0.14);
     }
 
-    .mqc-verse {
-      left: 12px;
-      right: 12px;
-      bottom: 0;
-      width: auto;
-      padding: 18px;
-    }
-
-    .mqc-section {
-      padding: 72px 0;
-    }
-
-    .mqc-hero::before,
-    .mqc-section--paper::before,
-    .mqc-section--donation::before,
-    .mqc-section--form::before {
-      background-size: 72px auto;
-    }
-
-    .mqc-section-heading h2,
-    .mqc-donation__copy h2,
-    .mqc-form-copy h2 {
-      font-size: 2.25rem;
-    }
-
-    .mqc-virtues__art {
+    .mqc-column-card {
       min-height: 360px;
     }
 
-    .mqc-virtue-grid,
-    .mqc-help-grid,
-    .mqc-link-band,
-    .mqc-contact-grid,
-    .mqc-field-grid,
-    .mqc-check-grid,
-    .mqc-bank {
-      grid-template-columns: 1fr;
+    .mqc-column-card img {
+      height: 320px;
     }
 
-    .mqc-link-item--wide {
-      grid-column: auto;
+    .mqc-qr {
+      max-width: 420px;
+      margin: 0 auto;
     }
 
-    .mqc-form-panel {
-      padding: 20px;
+    .mqc-form-section,
+    .mqc-contact-section {
+      padding: 76px 0;
     }
 
     .mqc-mobile-cta {
@@ -1335,9 +1370,18 @@ const formHelpOptions = [
     }
   }
 
+  @media (max-width: 430px) {
+    .mqc-shell {
+      width: min(100% - 28px, 1180px);
+    }
+
+    .mqc-btn {
+      padding-inline: 18px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .mqc-btn,
-    .mqc-link-item {
+    .mqc-btn {
       transition: none;
     }
   }
