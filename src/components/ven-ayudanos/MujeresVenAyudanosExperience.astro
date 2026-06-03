@@ -1391,6 +1391,27 @@ const formHelpOptions = [
       grid-template-columns: 1fr;
     }
 
+    .mqc-form-copy {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      column-gap: 26px;
+      align-items: start;
+    }
+
+    .mqc-form-copy img {
+      grid-row: 1 / span 3;
+      width: 76px;
+      margin: 0;
+    }
+
+    .mqc-form-copy .mqc-kicker {
+      margin-top: 18px;
+    }
+
+    .mqc-form-copy blockquote {
+      grid-column: 1 / -1;
+    }
+
     .mqc-logo {
       width: 136px;
       margin-bottom: 22px;
@@ -1667,6 +1688,15 @@ const formHelpOptions = [
     .mqc-qr {
       max-width: 420px;
       margin: 0 auto;
+    }
+
+    .mqc-form-copy {
+      display: block;
+    }
+
+    .mqc-form-copy img {
+      width: 76px;
+      margin-bottom: 24px;
     }
 
     .mqc-form-section,
