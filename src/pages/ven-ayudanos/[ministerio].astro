@@ -1,5 +1,6 @@
 ---
 import VenAyudanosExperience from '@components/ven-ayudanos/VenAyudanosExperience.astro';
+import MujeresVenAyudanosExperience from '@components/ven-ayudanos/MujeresVenAyudanosExperience.astro';
 import { routedMinistryKeys, type RoutedMinistryKey } from '@data/venAyudanos';
 
 export const prerender = false;
@@ -15,4 +16,8 @@ if (!slug || !routedMinistryKeys.includes(slug as RoutedMinistryKey)) {
 }
 ---
 
-<VenAyudanosExperience selected={slug as RoutedMinistryKey} />
+{slug === 'mujeres' ? (
+  <MujeresVenAyudanosExperience />
+) : (
+  <VenAyudanosExperience selected={slug as RoutedMinistryKey} />
+)}

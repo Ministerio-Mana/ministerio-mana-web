@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 119.9 83.19">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3 {
+        font-family: Intro-Book, 'Intro Book';
+      }
+
+      .cls-4 {
+        font-family: Inter-Regular, Inter;
+        font-size: 14.24px;
+        font-variation-settings: 'wght' 400, 'slnt' 0;
+        letter-spacing: .04em;
+      }
+
+      .cls-4, .cls-5, .cls-6 {
+        fill: #fff;
+      }
+
+      .cls-7 {
+        letter-spacing: .09em;
+      }
+
+      .cls-7, .cls-8, .cls-9, .cls-10 {
+        font-family: Intro-Black-Caps, 'Intro Black-Caps';
+        font-size: 15.34px;
+        font-weight: 800;
+      }
+
+      .cls-8 {
+        letter-spacing: .1em;
+      }
+
+      .cls-9 {
+        letter-spacing: .1em;
+      }
+
+      .cls-10 {
+        letter-spacing: .1em;
+      }
+
+      .cls-2 {
+        fill: #ae559e;
+        font-size: 10.76px;
+      }
+
+      .cls-11 {
+        letter-spacing: .09em;
+      }
+
+      .cls-11, .cls-12 {
+        font-size: 16.45px;
+      }
+
+      .cls-12 {
+        letter-spacing: .1em;
+      }
+
+      .cls-3 {
+        letter-spacing: .1em;
+      }
+
+      .cls-3, .cls-13 {
+        font-size: 14.82px;
+      }
+
+      .cls-6 {
+        stroke: #fff;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-13 {
+        letter-spacing: .1em;
+      }
+
+      .cls-14 {
+        letter-spacing: .1em;
+      }
+
+      .cls-15 {
+        letter-spacing: .07em;
+      }
+
+      .cls-16 {
+        letter-spacing: .08em;
+      }
+
+      .cls-17 {
+        letter-spacing: .04em;
+      }
+    </style>
+  </defs>
+  <g id="Capa_2" data-name="Capa 2">
+    <g>
+      <rect class="cls-5" x="0" y="0" width="119.9" height="18.68" rx="9.34" ry="9.34"/>
+      <text class="cls-2" transform="translate(9.08 12.7)"><tspan class="cls-14" x="0" y="0">VEN</tspan><tspan class="cls-15" x="24.51" y="0"> </tspan><tspan class="cls-17" x="28.05" y="0">A</tspan><tspan class="cls-14" x="36.04" y="0">YÚ</tspan><tspan class="cls-16" x="52.56" y="0">D</tspan><tspan class="cls-14" x="61.27" y="0">ANOS:</tspan></text>
+      <text class="cls-4" transform="translate(6.28 37.92)"><tspan x="0" y="0">MUJERES QUE</tspan></text>
+      <line class="cls-6" x1="6.02" y1="45.69" x2="112.24" y2="45.69"/>
+      <text class="cls-5" transform="translate(6.2 63.01)"><tspan class="cls-1"><tspan class="cls-12" x="0" y="0">SO</tspan><tspan class="cls-11" x="27.24" y="0">S</tspan><tspan class="cls-12" x="39.39" y="0">TIENEN</tspan><tspan class="cls-13" x="108.12" y="0"> </tspan></tspan><tspan class="cls-9" x="4.43" y="16.11">EL LL</tspan><tspan class="cls-10" x="44.62" y="16.11">A</tspan><tspan class="cls-7" x="55.49" y="16.11">M</tspan><tspan class="cls-8" x="69.21" y="16.11">ADO</tspan><tspan class="cls-3" x="103.99" y="16.11">.</tspan></text>
+    </g>
+  </g>
+</svg>

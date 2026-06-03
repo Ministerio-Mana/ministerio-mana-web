@@ -11,11 +11,12 @@ function setupVenAyudanos() {
   const status = root.querySelector('[data-form-status]');
   const submitButton = root.querySelector('[data-submit-button]');
   const successPanel = root.querySelector('[data-success-panel]');
-  const shareButton = root.querySelector('[data-share-page]');
+  const shareButtons = Array.from(root.querySelectorAll('[data-share-page]'));
+  const copyButtons = Array.from(root.querySelectorAll('[data-copy-value]'));
 
   const setHiddenValue = (selector, value) => {
     const input = root.querySelector(selector);
-    if (input) input.value = value || '';
+    if (input) input.value = value || input.dataset.defaultValue || '';
   };
 
   const syncTrackingFields = () => {
@@ -126,7 +127,7 @@ function setupVenAyudanos() {
     }
   });
 
-  shareButton?.addEventListener('click', async () => {
+  const sharePage = async () => {
     const url = window.location.href;
     const title = document.title;
     if (navigator.share) {
@@ -135,6 +136,24 @@ function setupVenAyudanos() {
     }
     await navigator.clipboard?.writeText(url).catch(() => {});
     showStatus('Enlace copiado para compartir.');
+  };
+
+  shareButtons.forEach((button) => {
+    button.addEventListener('click', sharePage);
+  });
+
+  copyButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const value = button.dataset.copyValue || '';
+      if (!value) return;
+      await navigator.clipboard?.writeText(value).catch(() => {});
+      const original = button.textContent;
+      button.textContent = 'Copiado';
+      showStatus('Dato copiado.');
+      window.setTimeout(() => {
+        button.textContent = original;
+      }, 1600);
+    });
   });
 
   syncTrackingFields();
