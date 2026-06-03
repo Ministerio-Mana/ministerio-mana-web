@@ -100,7 +100,7 @@ const formHelpOptions = [
   showEventBadge={false}
 >
   <main class="mqc-page" data-ven-ayudanos data-initial-ministry="mujeres">
-    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="700" data-cumbre-scroll-factor-breakpoint="700" style="--panel-count: 5;">
+    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="700" data-cumbre-scroll-factor-breakpoint="700" data-cumbre-snap-directional="false" data-cumbre-snap-inertia="false" style="--panel-count: 5;">
       <section class="cumbre-panel mqc-panel mqc-panel--hero" data-cumbre-panel data-panel-theme="light">
         <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
           <div class="mqc-pattern"></div>
@@ -507,6 +507,12 @@ const formHelpOptions = [
     background: var(--mqc-soft);
   }
 
+  html[data-cumbre-static-story='true'] .mqc-story {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
   .mqc-page .cumbre-panel {
     position: absolute;
     inset: 0;
@@ -517,6 +523,19 @@ const formHelpOptions = [
     pointer-events: none;
     clip-path: inset(100% 0% 0% 0%);
     will-change: clip-path, transform;
+  }
+
+  html[data-cumbre-static-story='true'] .mqc-page .cumbre-panel {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    clip-path: none !important;
+    pointer-events: auto;
+  }
+
+  html[data-cumbre-static-story='true'] .mqc-panel-inner {
+    height: auto;
+    min-height: 100svh;
   }
 
   .mqc-page .cumbre-panel:first-child,
@@ -1971,13 +1990,26 @@ const formHelpOptions = [
       grid-template-columns: 1fr;
     }
 
+    .mqc-panel--hero .mqc-panel-inner {
+      align-items: flex-start;
+      padding-top: 112px;
+      padding-bottom: 70px;
+    }
+
+    .mqc-hero-grid {
+      align-items: start;
+      gap: 22px;
+    }
+
     .mqc-hero-art {
-      position: absolute;
-      right: -60px;
-      bottom: 32px;
-      width: 330px;
-      min-height: 360px;
-      opacity: 0.32;
+      position: relative;
+      right: auto;
+      bottom: auto;
+      justify-self: end;
+      width: min(360px, 76vw);
+      min-height: min(390px, 58vh);
+      margin-top: -4px;
+      opacity: 0.92;
     }
 
     .mqc-verse-card {
@@ -2095,11 +2127,10 @@ const formHelpOptions = [
     }
 
     .mqc-hero-art {
-      right: -96px;
-      bottom: 22px;
-      width: 280px;
-      min-height: 320px;
-      opacity: 0.22;
+      width: min(300px, 82vw);
+      min-height: 330px;
+      margin-left: auto;
+      opacity: 0.88;
     }
 
     .mqc-scripture,

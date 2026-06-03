@@ -6,6 +6,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let viewportCleanup = null;
+let modeCleanup = null;
 
 if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual';
@@ -17,6 +18,12 @@ function cleanupPreviousStory() {
     window.__cumbreWelcomeCleanup = null;
   }
   viewportCleanup?.();
+  modeCleanup?.();
+  modeCleanup = null;
+  document.documentElement.removeAttribute('data-cumbre-static-story');
+  document.querySelectorAll('[data-cumbre-story]').forEach((story) => {
+    delete story.dataset.cumbreStaticActive;
+  });
 }
 
 function setupLenis() {
@@ -95,6 +102,12 @@ function getScrollFactor(story) {
   return window.innerWidth >= breakpoint ? 1.34 : 1;
 }
 
+function getBooleanData(value, fallback = true) {
+  if (value === 'false') return false;
+  if (value === 'true') return true;
+  return fallback;
+}
+
 function syncViewportHeight() {
   document.documentElement.style.setProperty('--cumbre-vh', `${getViewportHeight()}px`);
 }
@@ -117,6 +130,21 @@ function setupViewportHeightSync() {
     window.removeEventListener('orientationchange', refresh);
     window.visualViewport?.removeEventListener('resize', refresh);
     viewportCleanup = null;
+  };
+}
+
+function setupModeChangeWatcher(staticBreakpoint) {
+  modeCleanup?.();
+
+  const breakpointQuery = window.matchMedia(`(max-width: ${Math.max(0, staticBreakpoint - 1)}px)`);
+  const handleModeChange = () => {
+    setupStory();
+  };
+
+  breakpointQuery.addEventListener('change', handleModeChange);
+  modeCleanup = () => {
+    breakpointQuery.removeEventListener('change', handleModeChange);
+    modeCleanup = null;
   };
 }
 
@@ -251,22 +279,34 @@ function setupStory() {
   story.style.setProperty('--panel-count', String(panels.length));
 
   const staticBreakpoint = Number.parseInt(story.dataset.cumbreStaticBreakpoint || '768', 10);
+  setupModeChangeWatcher(staticBreakpoint);
+
   const useStaticPanels =
     prefersReducedMotion ||
     (story.dataset.cumbreStaticMobile === 'true' && getViewportHeight() > 0 && window.innerWidth < staticBreakpoint);
 
   if (useStaticPanels) {
+    story.dataset.cumbreStaticActive = 'true';
+    document.documentElement.dataset.cumbreStaticStory = 'true';
     revealStaticPanels(panels);
     window.__cumbreWelcomeCleanup = () => {
+      modeCleanup?.();
       viewportCleanup?.();
       document.documentElement.removeAttribute('data-cumbre-welcome-story');
+      document.documentElement.removeAttribute('data-cumbre-static-story');
       document.documentElement.style.removeProperty('--cumbre-vh');
+      delete story.dataset.cumbreStaticActive;
     };
     return;
   }
 
+  delete story.dataset.cumbreStaticActive;
+  document.documentElement.removeAttribute('data-cumbre-static-story');
+
   const lenis = setupLenis();
   const lastIndex = panels.length - 1;
+  const snapDirectional = getBooleanData(story.dataset.cumbreSnapDirectional, true);
+  const snapInertia = getBooleanData(story.dataset.cumbreSnapInertia, true);
   const context = gsap.context(() => {
     panels.forEach(setupPanelInitialState);
 
@@ -288,6 +328,8 @@ function setupStory() {
           duration: { min: 0.18, max: 0.42 },
           delay: 0.07,
           ease: 'power1.inOut',
+          directional: snapDirectional,
+          inertia: snapInertia,
         },
         onUpdate: (self) => {
           const activeIndex = Math.min(lastIndex, Math.max(0, Math.round(self.progress * lastIndex)));
@@ -344,6 +386,7 @@ function setupStory() {
 
   window.__cumbreWelcomeCleanup = () => {
     context.revert();
+    modeCleanup?.();
     if (window.__cumbreWelcomeLenis?.destroy) {
       window.__cumbreWelcomeLenis.destroy();
       window.__cumbreWelcomeLenis = null;
@@ -355,7 +398,9 @@ function setupStory() {
     viewportCleanup?.();
     document.documentElement.removeAttribute('data-cumbre-lenis');
     document.documentElement.removeAttribute('data-cumbre-welcome-story');
+    document.documentElement.removeAttribute('data-cumbre-static-story');
     document.documentElement.style.removeProperty('--cumbre-vh');
+    delete story.dataset.cumbreStaticActive;
   };
 }
 
