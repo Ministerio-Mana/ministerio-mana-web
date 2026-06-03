@@ -9,6 +9,7 @@ const websiteHref = 'https://mujeresquecreen.org/';
 const spotifyHref = 'https://open.spotify.com/show/6bZVKObfABTipTXV0PigVa?si=4576bd25a1c64fb2';
 const youtubeHref = 'https://www.youtube.com/@MujeresQueCreen';
 const instagramHref = 'https://www.instagram.com/mujeresquecreenydejanlegado?igsh=M3h6bDkzOWZiYTd6';
+const zelleEmails = ['ministeriomana.inc2@gmail.com', 'ministeriomana.inc@gmail.com'];
 
 const actionLinks = [
   {
@@ -76,17 +77,14 @@ const contacts = [
 
 const formHelpOptions = [
   { value: 'servicio', label: 'Servir' },
-  { value: 'talentos', label: 'Crear contenido' },
   { value: 'difusion', label: 'Compartir' },
   { value: 'oracion', label: 'Orar' },
-  { value: 'generosidad', label: 'Sembrar' },
-  { value: 'apadrinamiento', label: 'Apadrinar' },
 ];
 ---
 
 <CumbreLayout
   title="Mujeres que sostienen el llamado | Ven y Ayúdanos"
-  description="Una invitación para unirte, servir, crear contenido, compartir el devocional, sembrar y sostener la red de Mujeres que Creen y Dejan Legado."
+  description="Una invitación para unirte, servir, compartir el devocional, orar, sembrar y sostener la red de Mujeres que Creen y Dejan Legado."
   image={`${assetsBase}/mujeres-virtudes-lineup.png`}
   imageAlt="Mujeres que creen y dejan legado"
   imageWidth={1890}
@@ -97,7 +95,7 @@ const formHelpOptions = [
   showEventBadge={false}
 >
   <main class="mqc-page" data-ven-ayudanos data-initial-ministry="mujeres">
-    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="540" style="--panel-count: 4;">
+    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="700" style="--panel-count: 4;">
       <section class="cumbre-panel mqc-panel mqc-panel--hero" data-cumbre-panel data-panel-theme="light">
         <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
           <div class="mqc-pattern"></div>
@@ -153,7 +151,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>La red</p>
               <h2 data-split-title>La ayuda toma forma cuando alguien responde</h2>
               <p class="mqc-body" data-reveal>
-                Esta interna convierte el llamado de la Cumbre en pasos concretos para unirse a la comunidad, compartir recursos, servir en encuentros, crear contenido, orar y sembrar.
+                Esta interna convierte el llamado de la Cumbre en pasos concretos para unirse a la comunidad, compartir recursos, servir en encuentros, orar y sembrar.
               </p>
               <div class="mqc-help-grid" data-reveal>
                 {helpTracks.map((track) => (
@@ -203,7 +201,7 @@ const formHelpOptions = [
         </div>
       </section>
 
-      <section class="cumbre-panel mqc-panel mqc-panel--give" data-cumbre-panel data-panel-theme="light">
+      <section id="sembrar-mujeres" class="cumbre-panel mqc-panel mqc-panel--give" data-cumbre-panel data-panel-theme="light" data-give-panel>
         <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
           <div class="mqc-pattern mqc-pattern--white"></div>
         </div>
@@ -234,10 +232,21 @@ const formHelpOptions = [
             </div>
 
             <div class="mqc-qr-stack" data-reveal>
-              <figure class="mqc-qr">
-                <img src={`${assetsBase}/qr-bancolombia-mujeres.jpg`} alt="QR Bancolombia Mujeres que Creen" />
-                <figcaption>Mujeres Que Creen · Iglesia Ministerio Maná</figcaption>
-              </figure>
+              <div class="mqc-give-tools">
+                <figure class="mqc-qr">
+                  <img src={`${assetsBase}/qr-bancolombia-mujeres.jpg`} alt="QR Bancolombia Mujeres que Creen" />
+                  <figcaption>Mujeres Que Creen · Iglesia Ministerio Maná</figcaption>
+                </figure>
+                <div class="mqc-zelle">
+                  <span>Zelle Estados Unidos</span>
+                  <p>En la nota o asunto escribe “Mujeres que Creen”.</p>
+                  <div>
+                    {zelleEmails.map((email) => (
+                      <button type="button" data-copy-value={email}>{email}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <div class="mqc-social-links">
                 {actionLinks.map((item) => (
                   <a href={item.href} target="_blank" rel="noopener noreferrer">
@@ -324,11 +333,18 @@ const formHelpOptions = [
                   </label>
                 ))}
               </div>
+              <div class="mqc-giving-shortcuts">
+                <p>Para sembrar o apadrinar, ve directo al QR y a los datos de donación.</p>
+                <div>
+                  <button type="button" data-scroll-give>Sembrar</button>
+                  <button type="button" data-scroll-give>Apadrinar</button>
+                </div>
+              </div>
             </fieldset>
 
             <label>
               <span>Cómo te gustaría ayudar</span>
-              <textarea name="message" rows="4" class="mqc-input mqc-textarea" placeholder="Cuéntanos si quieres servir, crear contenido, compartir el devocional, orar, sembrar o unirte a la comunidad."></textarea>
+              <textarea name="message" rows="4" class="mqc-input mqc-textarea" placeholder="Cuéntanos si quieres servir, compartir el devocional, orar o unirte a la comunidad."></textarea>
             </label>
 
             <label>
@@ -802,12 +818,21 @@ const formHelpOptions = [
     line-height: 1.48;
   }
 
+  .mqc-verse-card p {
+    color: var(--mqc-ink) !important;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.42;
+  }
+
   .mqc-verse-card strong {
     display: block;
     margin-top: 10px;
     color: var(--mqc-plum);
-    font-family: "Aire Pro", Georgia, "Times New Roman", serif;
-    font-size: 1rem;
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
   }
 
   .mqc-scripture,
@@ -844,6 +869,11 @@ const formHelpOptions = [
     width: min(360px, 100%);
     height: auto;
     margin-top: 34px;
+  }
+
+  .mqc-give-tools {
+    display: grid;
+    gap: 12px;
   }
 
   .mqc-help-grid {
@@ -1045,6 +1075,49 @@ const formHelpOptions = [
     text-transform: uppercase;
   }
 
+  .mqc-zelle {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px 28px 34px 28px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 14px;
+  }
+
+  .mqc-zelle > span {
+    display: block;
+    color: rgba(255, 255, 255, 0.72) !important;
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mqc-zelle p {
+    margin: 6px 0 10px;
+    color: rgba(255, 255, 255, 0.78) !important;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .mqc-zelle div {
+    display: grid;
+    gap: 7px;
+  }
+
+  .mqc-zelle button {
+    min-height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--mqc-plum);
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1;
+    padding: 9px 10px;
+    text-align: left;
+    cursor: pointer;
+  }
+
   .mqc-social-links {
     display: grid;
     gap: 10px;
@@ -1234,6 +1307,42 @@ const formHelpOptions = [
     font-size: 0.82rem;
   }
 
+  .mqc-giving-shortcuts {
+    margin-top: 12px;
+    border: 1px solid rgba(172, 86, 155, 0.16);
+    border-radius: 24px 24px 30px 24px;
+    background: var(--mqc-soft);
+    padding: 14px;
+  }
+
+  .mqc-giving-shortcuts p {
+    margin: 0;
+    color: var(--mqc-muted) !important;
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+
+  .mqc-giving-shortcuts div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .mqc-giving-shortcuts button {
+    min-height: 38px;
+    border: 1px solid rgba(172, 86, 155, 0.22);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--mqc-plum);
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.74rem;
+    font-weight: 900;
+    padding: 9px 14px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
   .mqc-form-actions {
     display: grid;
     gap: 14px;
@@ -1375,16 +1484,19 @@ const formHelpOptions = [
     .mqc-call-grid {
       grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
       gap: 24px;
+      align-items: stretch;
     }
 
     .mqc-give-grid {
       grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1.22fr);
       gap: 24px;
+      align-items: stretch;
     }
 
     .mqc-virtues-grid {
       grid-template-columns: minmax(0, 1.08fr) minmax(230px, 0.72fr);
       gap: 24px;
+      align-items: stretch;
     }
 
     .mqc-form-grid {
@@ -1435,6 +1547,10 @@ const formHelpOptions = [
     }
 
     .mqc-scripture {
+      min-height: calc(var(--cumbre-vh, 100svh) - 140px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       padding: 22px;
       border-radius: 54px 54px 22px 22px;
     }
@@ -1446,7 +1562,7 @@ const formHelpOptions = [
 
     .mqc-scripture img {
       width: min(260px, 100%);
-      margin-top: 18px;
+      margin-top: auto;
     }
 
     .mqc-help-grid,
@@ -1495,7 +1611,7 @@ const formHelpOptions = [
     }
 
     .mqc-column-card {
-      min-height: 440px;
+      min-height: calc(var(--cumbre-vh, 100svh) - 140px);
       border-radius: 94px 94px 24px 24px;
     }
 
@@ -1544,12 +1660,31 @@ const formHelpOptions = [
     .mqc-qr-stack {
       grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr);
       gap: 10px;
-      align-items: start;
+      align-items: stretch;
+    }
+
+    .mqc-give-tools {
+      gap: 8px;
+      align-content: center;
     }
 
     .mqc-qr {
       padding: 10px;
       border-radius: 30px 30px 14px 14px;
+    }
+
+    .mqc-zelle {
+      padding: 12px;
+    }
+
+    .mqc-zelle p {
+      font-size: 0.72rem;
+      line-height: 1.3;
+    }
+
+    .mqc-zelle button {
+      min-height: 31px;
+      font-size: 0.66rem;
     }
 
     .mqc-social-links {
@@ -1605,6 +1740,15 @@ const formHelpOptions = [
 
     .mqc-qr-stack {
       grid-template-columns: 1fr;
+    }
+
+    .mqc-scripture {
+      min-height: auto;
+      display: block;
+    }
+
+    .mqc-scripture img {
+      margin-top: 18px;
     }
 
     .mqc-copy {

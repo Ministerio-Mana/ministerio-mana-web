@@ -13,6 +13,7 @@ function setupVenAyudanos() {
   const successPanel = root.querySelector('[data-success-panel]');
   const shareButtons = Array.from(root.querySelectorAll('[data-share-page]'));
   const copyButtons = Array.from(root.querySelectorAll('[data-copy-value]'));
+  const giveLinks = Array.from(root.querySelectorAll('[data-scroll-give]'));
 
   const setHiddenValue = (selector, value) => {
     const input = root.querySelector(selector);
@@ -38,6 +39,30 @@ function setupVenAyudanos() {
       return;
     }
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const scrollToGive = () => {
+    const story = root.querySelector('[data-cumbre-story]');
+    const targetPanel = root.querySelector('[data-give-panel]');
+    if (!targetPanel) return;
+
+    const isAnimatedPanel = story && getComputedStyle(targetPanel).position === 'absolute';
+    if (isAnimatedPanel) {
+      const panels = Array.from(story.querySelectorAll('[data-cumbre-panel]'));
+      const index = Math.max(0, panels.indexOf(targetPanel));
+      const factor = window.matchMedia('(min-width: 768px)').matches ? 1.34 : 1;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight || 1;
+      const storyTop = story.getBoundingClientRect().top + window.scrollY;
+      const target = storyTop + viewportHeight * index * factor;
+      if (window.lenis?.scrollTo) {
+        window.lenis.scrollTo(target);
+        return;
+      }
+      window.scrollTo({ top: target, behavior: 'smooth' });
+      return;
+    }
+
+    targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const selectMinistry = (key, updateSelect = true) => {
@@ -76,6 +101,13 @@ function setupVenAyudanos() {
     link.addEventListener('click', (event) => {
       event.preventDefault();
       scrollToForm();
+    });
+  });
+
+  giveLinks.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      scrollToGive();
     });
   });
 
