@@ -5,7 +5,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const desktopQuery = window.matchMedia('(min-width: 768px)');
 let viewportCleanup = null;
 
 if ('scrollRestoration' in window.history) {
@@ -89,6 +88,11 @@ function setActiveTheme(panel) {
 
 function getViewportHeight() {
   return Math.round(window.visualViewport?.height || window.innerHeight || 1);
+}
+
+function getScrollFactor(story) {
+  const breakpoint = Number.parseInt(story.dataset.cumbreScrollFactorBreakpoint || '768', 10);
+  return window.innerWidth >= breakpoint ? 1.34 : 1;
 }
 
 function syncViewportHeight() {
@@ -273,8 +277,7 @@ function setupStory() {
         trigger: story,
         start: 'top top',
         end: () => {
-          const scrollFactor = desktopQuery.matches ? 1.34 : 1;
-          return `+=${getViewportHeight() * lastIndex * scrollFactor}`;
+          return `+=${getViewportHeight() * lastIndex * getScrollFactor(story)}`;
         },
         pin: true,
         scrub: 1.05,

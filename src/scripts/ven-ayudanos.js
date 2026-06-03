@@ -50,7 +50,8 @@ function setupVenAyudanos() {
     if (isAnimatedPanel) {
       const panels = Array.from(story.querySelectorAll('[data-cumbre-panel]'));
       const index = Math.max(0, panels.indexOf(targetPanel));
-      const scrollFactor = window.matchMedia('(min-width: 768px)').matches ? 1.34 : 1;
+      const scrollFactorBreakpoint = Number.parseInt(story.dataset.cumbreScrollFactorBreakpoint || '768', 10);
+      const scrollFactor = window.innerWidth >= scrollFactorBreakpoint ? 1.34 : 1;
       const viewportHeight = window.visualViewport?.height || window.innerHeight || 1;
       const storyTop = story.offsetTop || 0;
       const target = Math.max(storyTop, storyTop + viewportHeight * index * scrollFactor);
