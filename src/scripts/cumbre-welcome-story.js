@@ -246,7 +246,10 @@ function setupStory() {
   document.documentElement.dataset.cumbreWelcomeStory = 'true';
   story.style.setProperty('--panel-count', String(panels.length));
 
-  const useStaticPanels = prefersReducedMotion || (story.dataset.cumbreStaticMobile === 'true' && !desktopQuery.matches);
+  const staticBreakpoint = Number.parseInt(story.dataset.cumbreStaticBreakpoint || '768', 10);
+  const useStaticPanels =
+    prefersReducedMotion ||
+    (story.dataset.cumbreStaticMobile === 'true' && getViewportHeight() > 0 && window.innerWidth < staticBreakpoint);
 
   if (useStaticPanels) {
     revealStaticPanels(panels);
