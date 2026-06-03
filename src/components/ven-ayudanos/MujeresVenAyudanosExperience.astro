@@ -874,6 +874,7 @@ const formHelpOptions = [
   .mqc-give-tools {
     display: grid;
     gap: 12px;
+    min-width: 0;
   }
 
   .mqc-help-grid {
@@ -1051,6 +1052,9 @@ const formHelpOptions = [
 
   .mqc-qr {
     margin: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
     padding: 12px;
     border-radius: 38px 38px 18px 18px;
     background: #fff;
@@ -1060,6 +1064,7 @@ const formHelpOptions = [
   .mqc-qr img {
     display: block;
     width: 100%;
+    min-width: 0;
     height: auto;
     border-radius: 28px 28px 10px 10px;
   }
@@ -1122,6 +1127,7 @@ const formHelpOptions = [
     display: grid;
     gap: 10px;
     align-content: center;
+    min-width: 0;
   }
 
   .mqc-social-links a,
