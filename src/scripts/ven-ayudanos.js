@@ -52,8 +52,9 @@ function setupVenAyudanos() {
       const index = Math.max(0, panels.indexOf(targetPanel));
       const factor = window.matchMedia('(min-width: 768px)').matches ? 1.34 : 1;
       const viewportHeight = window.visualViewport?.height || window.innerHeight || 1;
-      const storyTop = story.getBoundingClientRect().top + window.scrollY;
-      const target = storyTop + viewportHeight * index * factor;
+      const storyTop = story.offsetTop || 0;
+      const panelOffset = Math.min(160, viewportHeight * 0.18);
+      const target = Math.max(storyTop, storyTop + viewportHeight * index * factor - panelOffset);
       if (window.lenis?.scrollTo) {
         window.lenis.scrollTo(target);
         return;

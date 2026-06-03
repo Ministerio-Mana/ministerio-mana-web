@@ -26,8 +26,8 @@ const actionLinks = [
   },
   {
     label: 'YouTube',
-    title: 'Contenido',
-    text: 'Apoya viendo, compartiendo y creando conversación.',
+    title: 'Mensajes',
+    text: 'Mira y comparte testimonios, enseñanzas e invitaciones.',
     href: youtubeHref,
   },
   {
@@ -40,11 +40,10 @@ const actionLinks = [
 
 const helpTracks = [
   { value: 'servicio', label: 'Servir', text: 'Acompañar encuentros, recibir mujeres y sostener espacios.' },
-  { value: 'talentos', label: 'Crear', text: 'Diseño, fotografía, video, enseñanza, música o producción.' },
   { value: 'difusion', label: 'Compartir', text: 'Enviar devocionales, contenidos, invitaciones y testimonios.' },
   { value: 'oracion', label: 'Orar', text: 'Interceder por mujeres, familias, sedes y nuevas discípulas.' },
-  { value: 'generosidad', label: 'Sembrar', text: 'Apoyar recursos, encuentros, cartillas y la expansión del ministerio.' },
-  { value: 'apadrinamiento', label: 'Apadrinar', text: 'Sostener procesos y mujeres que necesitan acompañamiento.' },
+  { value: 'generosidad', label: 'Sembrar', text: 'Apoyar recursos, encuentros, cartillas y la expansión del ministerio.', donation: true },
+  { value: 'apadrinamiento', label: 'Apadrinar', text: 'Sostener procesos y mujeres que necesitan acompañamiento.', donation: true },
 ];
 
 const virtues = [
@@ -155,10 +154,17 @@ const formHelpOptions = [
               </p>
               <div class="mqc-help-grid" data-reveal>
                 {helpTracks.map((track) => (
-                  <article class="mqc-help">
-                    <strong>{track.label}</strong>
-                    <p>{track.text}</p>
-                  </article>
+                  track.donation ? (
+                    <a href="#sembrar-mujeres" class="mqc-help mqc-help--link" data-scroll-give>
+                      <strong>{track.label}</strong>
+                      <p>{track.text}</p>
+                    </a>
+                  ) : (
+                    <article class="mqc-help">
+                      <strong>{track.label}</strong>
+                      <p>{track.text}</p>
+                    </article>
+                  )
                 ))}
               </div>
             </div>
@@ -820,9 +826,10 @@ const formHelpOptions = [
 
   .mqc-verse-card p {
     color: var(--mqc-ink) !important;
-    font-size: 0.95rem;
-    font-weight: 700;
-    line-height: 1.42;
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.48;
   }
 
   .mqc-verse-card strong {
@@ -874,6 +881,7 @@ const formHelpOptions = [
   .mqc-give-tools {
     display: grid;
     gap: 12px;
+    justify-items: stretch;
     min-width: 0;
   }
 
@@ -886,10 +894,31 @@ const formHelpOptions = [
 
   .mqc-help {
     min-height: 116px;
+    display: block;
     padding: 16px;
     border-radius: 22px 22px 34px 22px;
     border: 1px solid rgba(172, 86, 155, 0.16);
     background: #fff;
+    color: var(--mqc-ink);
+    text-decoration: none;
+  }
+
+  .mqc-help--link,
+  .mqc-help--link:visited {
+    position: relative;
+    border-color: rgba(172, 86, 155, 0.28);
+    color: var(--mqc-ink) !important;
+    cursor: pointer;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .mqc-help--link:hover {
+    border-color: rgba(172, 86, 155, 0.44);
+    box-shadow: 0 16px 34px rgba(172, 86, 155, 0.12);
+    transform: translateY(-2px);
   }
 
   .mqc-help strong {
@@ -1052,6 +1081,7 @@ const formHelpOptions = [
 
   .mqc-qr {
     margin: 0;
+    width: 100%;
     min-width: 0;
     max-width: 100%;
     overflow: hidden;
@@ -1495,7 +1525,7 @@ const formHelpOptions = [
     }
 
     .mqc-give-grid {
-      grid-template-columns: minmax(250px, 0.78fr) minmax(0, 1.22fr);
+      grid-template-columns: minmax(230px, 0.68fr) minmax(0, 1.32fr);
       gap: 24px;
       align-items: center;
     }
@@ -1545,12 +1575,40 @@ const formHelpOptions = [
       line-height: 0.96;
     }
 
+    .mqc-panel--give .mqc-logo--white {
+      display: none;
+    }
+
+    .mqc-panel--give .mqc-kicker--white {
+      opacity: 0 !important;
+      visibility: hidden;
+    }
+
+    .mqc-panel--give .mqc-panel-copy h2 {
+      font-size: clamp(1.55rem, 3.75vw, 2.25rem);
+      line-height: 0.98;
+    }
+
     .mqc-lead,
     .mqc-body,
     .mqc-form-copy p {
       margin-top: 16px;
       font-size: 0.98rem;
       line-height: 1.48;
+    }
+
+    .mqc-panel--give .mqc-body {
+      margin-top: 12px;
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    .mqc-panel--give .mqc-panel-copy--white {
+      margin-top: 62px;
+    }
+
+    .mqc-panel--give .mqc-qr-stack {
+      margin-top: 34px;
     }
 
     .mqc-scripture {
@@ -1636,7 +1694,7 @@ const formHelpOptions = [
 
     .mqc-bank {
       grid-template-columns: 1fr;
-      margin-top: 20px;
+      margin-top: 16px;
       gap: 8px;
     }
 
@@ -1654,18 +1712,18 @@ const formHelpOptions = [
     }
 
     .mqc-panel-copy--white .mqc-actions {
-      margin-top: 18px;
-      gap: 8px;
+      margin-top: 14px;
+      gap: 7px;
     }
 
     .mqc-panel-copy--white .mqc-btn {
-      min-height: 42px;
-      padding: 10px 14px;
+      min-height: 38px;
+      padding: 9px 14px;
       font-size: 0.7rem;
     }
 
     .mqc-qr-stack {
-      grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1fr);
+      grid-template-columns: minmax(210px, 0.78fr) minmax(0, 1fr);
       gap: 10px;
       align-items: center;
     }
