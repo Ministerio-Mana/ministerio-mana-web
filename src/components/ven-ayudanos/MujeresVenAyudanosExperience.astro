@@ -14,27 +14,33 @@ const zelleEmails = ['ministeriomana.inc2@gmail.com', 'ministeriomana.inc@gmail.
 const actionLinks = [
   {
     label: 'WhatsApp',
-    title: 'Hablar con Mujeres',
-    text: 'Únete, pregunta por encuentros o recibe orientación.',
+    title: 'Únete a la comunidad',
+    text: 'Recibe información, próximos pasos y acompañamiento.',
     href: whatsappHref,
   },
   {
     label: 'Spotify',
-    title: 'Devocional',
-    text: 'Escucha y comparte el devocional diario.',
+    title: 'Comparte el devocional',
+    text: 'Escúchalo, envíalo y conversa sobre la Palabra.',
     href: spotifyHref,
   },
   {
     label: 'YouTube',
-    title: 'Mensajes',
-    text: 'Mira y comparte testimonios, enseñanzas e invitaciones.',
+    title: 'Comenta y comparte',
+    text: 'Sé parte de la conversación y ayuda a llevar el mensaje.',
     href: youtubeHref,
   },
   {
     label: 'Instagram',
-    title: 'Comunidad',
-    text: 'Sigue la cuenta y ayuda a amplificar el llamado.',
+    title: 'Sigue el movimiento',
+    text: 'Comparte historias, invitaciones y testimonios.',
     href: instagramHref,
+  },
+  {
+    label: 'Sitio web',
+    title: 'Entérate y participa',
+    text: 'Conoce eventos, recursos y formas de servir o sostener.',
+    href: websiteHref,
   },
 ];
 
@@ -222,6 +228,7 @@ const formHelpOptions = [
                 Tu apoyo ayuda a sostener recursos, encuentros, contenidos, cartillas y procesos de discipulado para mujeres en distintas ciudades.
               </p>
               <div class="mqc-bank" data-reveal>
+                <span class="mqc-bank-heading">Donaciones Colombia</span>
                 <div>
                   <span>Cuenta de ahorros Bancolombia</span>
                   <strong>255 0000 8527</strong>
@@ -253,19 +260,18 @@ const formHelpOptions = [
                   </div>
                 </div>
               </div>
-              <div class="mqc-social-links">
-                {actionLinks.map((item) => (
-                  <a href={item.href} target="_blank" rel="noopener noreferrer">
-                    <small>{item.label}</small>
-                    <strong>{item.title}</strong>
-                    <span>{item.text}</span>
-                  </a>
-                ))}
-                <a href={websiteHref} target="_blank" rel="noopener noreferrer">
-                  <small>Sitio web</small>
-                  <strong>Conoce Mujeres que Creen</strong>
-                  <span>Historia, eventos, recursos e información oficial.</span>
-                </a>
+              <div class="mqc-other-help">
+                <span>Otra manera de ayudarnos</span>
+                <p>También puedes sostener la red compartiendo, uniéndote y ayudando a que más mujeres conozcan este llamado.</p>
+                <div class="mqc-social-links">
+                  {actionLinks.map((item) => (
+                    <a href={item.href} target="_blank" rel="noopener noreferrer">
+                      <small>{item.label}</small>
+                      <strong>{item.title}</strong>
+                      <span>{item.text}</span>
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -454,6 +460,10 @@ const formHelpOptions = [
     color: inherit;
   }
 
+  html:has(.mqc-page) .cumbre-action--whatsapp {
+    display: none !important;
+  }
+
   .mqc-shell {
     width: min(1180px, calc(100% - 40px));
     margin: 0 auto;
@@ -629,6 +639,11 @@ const formHelpOptions = [
 
   .mqc-logo--white {
     margin-bottom: 22px;
+  }
+
+  .mqc-panel--give .mqc-logo--white,
+  .mqc-panel--give .mqc-kicker--white {
+    display: none;
   }
 
   .mqc-kicker {
@@ -881,6 +896,8 @@ const formHelpOptions = [
   .mqc-give-tools {
     display: grid;
     gap: 12px;
+    grid-template-columns: minmax(250px, 360px) minmax(210px, 1fr);
+    align-items: center;
     justify-items: stretch;
     min-width: 0;
   }
@@ -1037,17 +1054,20 @@ const formHelpOptions = [
   .mqc-bank {
     margin-top: 28px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 0;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 28px 28px 34px 28px;
+    background: rgba(255, 255, 255, 0.13);
+    padding: 15px 16px;
   }
 
   .mqc-bank div {
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 24px 24px 32px 24px;
-    background: rgba(255, 255, 255, 0.14);
-    padding: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    margin-top: 12px;
+    padding: 12px 0 0;
   }
 
+  .mqc-bank-heading,
   .mqc-bank span {
     display: block;
     color: rgba(255, 255, 255, 0.72);
@@ -1056,26 +1076,27 @@ const formHelpOptions = [
     text-transform: uppercase;
   }
 
+  .mqc-bank-heading {
+    color: #fff !important;
+    font-size: 0.72rem;
+  }
+
   .mqc-bank strong {
-    display: inline-flex;
-    align-items: center;
-    width: 100%;
-    margin-top: 8px;
-    border-radius: 999px;
-    background: #fff;
-    color: var(--mqc-plum);
+    display: block;
+    margin-top: 6px;
+    color: #fff;
     font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
-    font-size: clamp(1rem, 1.7vw, 1.24rem);
+    font-size: clamp(1.18rem, 2.1vw, 1.55rem);
     font-weight: 900;
-    line-height: 1;
-    padding: 12px 14px;
+    line-height: 1.08;
+    padding: 0;
     white-space: nowrap;
   }
 
   .mqc-qr-stack {
     display: grid;
-    grid-template-columns: minmax(240px, 360px) 1fr;
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 14px;
     align-items: center;
   }
 
@@ -1155,27 +1176,50 @@ const formHelpOptions = [
 
   .mqc-social-links {
     display: grid;
-    gap: 10px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
     align-content: center;
     min-width: 0;
+  }
+
+  .mqc-other-help {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 28px 28px 34px 28px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 13px;
+  }
+
+  .mqc-other-help > span {
+    display: block;
+    color: #fff !important;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mqc-other-help > p {
+    margin: 5px 0 11px;
+    color: rgba(255, 255, 255, 0.76) !important;
+    font-size: 0.78rem;
+    line-height: 1.35;
   }
 
   .mqc-social-links a,
   .mqc-social-links a:visited {
     display: grid;
-    gap: 4px;
+    gap: 3px;
     align-content: center;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 24px 24px 30px 24px;
-    background: rgba(255, 255, 255, 0.12);
-    padding: 13px 14px;
+    border-radius: 18px 18px 24px 18px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
     color: #fff !important;
     text-decoration: none;
   }
 
   .mqc-social-links small {
     color: rgba(255, 255, 255, 0.68);
-    font-size: 0.72rem;
+    font-size: 0.61rem;
     font-weight: 900;
     text-transform: uppercase;
   }
@@ -1183,15 +1227,16 @@ const formHelpOptions = [
   .mqc-social-links strong {
     color: #fff;
     font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
-    font-size: 0.96rem;
+    font-size: 0.72rem;
     font-weight: 900;
-    line-height: 1.08;
+    line-height: 1.12;
     text-transform: uppercase;
   }
 
   .mqc-social-links span {
     color: rgba(255, 255, 255, 0.74) !important;
-    font-size: 0.9rem;
+    font-size: 0.68rem;
+    line-height: 1.25;
   }
 
   .mqc-form-section,
@@ -1496,8 +1541,8 @@ const formHelpOptions = [
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .mqc-qr-stack {
-      grid-template-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+    .mqc-give-tools {
+      grid-template-columns: minmax(220px, 0.9fr) minmax(190px, 0.75fr);
     }
   }
 
@@ -1696,10 +1741,12 @@ const formHelpOptions = [
       grid-template-columns: 1fr;
       margin-top: 16px;
       gap: 8px;
+      padding: 12px 13px;
     }
 
     .mqc-bank div {
-      padding: 12px;
+      margin-top: 8px;
+      padding: 8px 0 0;
     }
 
     .mqc-bank span {
@@ -1707,8 +1754,7 @@ const formHelpOptions = [
     }
 
     .mqc-bank strong {
-      font-size: 0.94rem;
-      padding: 10px 12px;
+      font-size: 1.02rem;
     }
 
     .mqc-panel-copy--white .mqc-actions {
@@ -1723,12 +1769,12 @@ const formHelpOptions = [
     }
 
     .mqc-qr-stack {
-      grid-template-columns: minmax(210px, 0.78fr) minmax(0, 1fr);
       gap: 10px;
       align-items: center;
     }
 
     .mqc-give-tools {
+      grid-template-columns: minmax(190px, 0.9fr) minmax(0, 0.8fr);
       gap: 8px;
       align-content: center;
     }
@@ -1752,14 +1798,29 @@ const formHelpOptions = [
       font-size: 0.66rem;
     }
 
+    .mqc-other-help {
+      padding: 11px;
+    }
+
+    .mqc-other-help > span {
+      font-size: 0.66rem;
+    }
+
+    .mqc-other-help > p {
+      margin-bottom: 9px;
+      font-size: 0.7rem;
+      line-height: 1.28;
+    }
+
     .mqc-social-links {
-      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
     }
 
     .mqc-social-links a,
     .mqc-social-links a:visited {
-      min-height: 58px;
-      padding: 10px 12px;
+      min-height: 46px;
+      padding: 8px 9px;
     }
 
     .mqc-social-links small {
@@ -1767,7 +1828,7 @@ const formHelpOptions = [
     }
 
     .mqc-social-links strong {
-      font-size: 0.82rem;
+      font-size: 0.66rem;
     }
 
     .mqc-social-links span {
@@ -1805,6 +1866,41 @@ const formHelpOptions = [
 
     .mqc-qr-stack {
       grid-template-columns: 1fr;
+    }
+
+    .mqc-give-tools {
+      grid-template-columns: 1fr;
+    }
+
+    .mqc-panel--give .mqc-logo--white {
+      display: block;
+    }
+
+    .mqc-panel--give .mqc-kicker--white {
+      display: inline-flex;
+      opacity: 1 !important;
+      visibility: visible;
+    }
+
+    .mqc-panel--give .mqc-panel-copy--white,
+    .mqc-panel--give .mqc-qr-stack {
+      margin-top: 0;
+    }
+
+    .mqc-panel--give .mqc-panel-copy h2 {
+      font-size: clamp(2.35rem, 11vw, 4rem);
+    }
+
+    .mqc-social-links {
+      grid-template-columns: 1fr;
+    }
+
+    .mqc-social-links span {
+      display: block;
+    }
+
+    html:has(.mqc-page) .cumbre-action--whatsapp {
+      display: none !important;
     }
 
     .mqc-scripture {
@@ -1934,6 +2030,10 @@ const formHelpOptions = [
 
     .mqc-mobile-cta {
       display: flex;
+    }
+
+    .mqc-page .mqc-mobile-cta {
+      display: none;
     }
   }
 
