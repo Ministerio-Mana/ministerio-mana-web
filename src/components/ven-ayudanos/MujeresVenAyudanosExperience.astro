@@ -14,42 +14,42 @@ const zelleEmails = ['ministeriomana.inc2@gmail.com', 'ministeriomana.inc@gmail.
 const actionLinks = [
   {
     label: 'WhatsApp',
-    title: 'Únete a la comunidad',
-    text: 'Recibe información, próximos pasos y acompañamiento.',
+    title: 'Queremos escucharte',
+    text: 'Escríbenos para conocer tu historia y orientarte.',
     href: whatsappHref,
   },
   {
     label: 'Spotify',
-    title: 'Comparte el devocional',
-    text: 'Escúchalo, envíalo y conversa sobre la Palabra.',
+    title: 'Devocional diario',
+    text: 'Escucha contenido preparado para tu crecimiento.',
     href: spotifyHref,
   },
   {
     label: 'YouTube',
-    title: 'Comenta y comparte',
-    text: 'Sé parte de la conversación y ayuda a llevar el mensaje.',
+    title: 'Descubre contenido',
+    text: 'Comparte enseñanzas, estudios y recursos bíblicos.',
     href: youtubeHref,
   },
   {
     label: 'Instagram',
-    title: 'Sigue el movimiento',
-    text: 'Comparte historias, invitaciones y testimonios.',
+    title: 'Síguenos',
+    text: 'Acompaña invitaciones, eventos y testimonios.',
     href: instagramHref,
   },
   {
     label: 'Sitio web',
-    title: 'Entérate y participa',
-    text: 'Conoce eventos, recursos y formas de servir o sostener.',
+    title: 'Conoce más',
+    text: 'Revisa historia, eventos, reuniones y recursos.',
     href: websiteHref,
   },
 ];
 
 const helpTracks = [
-  { value: 'servicio', label: 'Servir', text: 'Acompañar encuentros, recibir mujeres y sostener espacios.' },
-  { value: 'difusion', label: 'Compartir', text: 'Enviar devocionales, contenidos, invitaciones y testimonios.' },
-  { value: 'oracion', label: 'Orar', text: 'Interceder por mujeres, familias, sedes y nuevas discípulas.' },
-  { value: 'generosidad', label: 'Sembrar', text: 'Apoyar recursos, encuentros, cartillas y la expansión del ministerio.', donation: true },
-  { value: 'apadrinamiento', label: 'Apadrinar', text: 'Sostener procesos y mujeres que necesitan acompañamiento.', donation: true },
+  { value: 'feminidad', label: 'Modelar', text: 'Reflejar el carácter de Cristo y una feminidad piadosa.' },
+  { value: 'servicio', label: 'Servir', text: 'Extender misericordia y practicar el bien con intención.' },
+  { value: 'discipulado', label: 'Discipular', text: 'Caminar con otras y enseñar lo recibido en la Palabra.' },
+  { value: 'doctrina', label: 'Enseñar', text: 'Compartir sana doctrina con fidelidad, gracia y amor.' },
+  { value: 'generosidad', label: 'Generosidad', text: 'Vivir en unidad, comunión y corazones agradecidos.', donation: true },
 ];
 
 const virtues = [
@@ -100,7 +100,7 @@ const formHelpOptions = [
   showEventBadge={false}
 >
   <main class="mqc-page" data-ven-ayudanos data-initial-ministry="mujeres">
-    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="700" data-cumbre-scroll-factor-breakpoint="700" data-cumbre-snap-directional="false" data-cumbre-snap-inertia="false" style="--panel-count: 5;">
+    <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="1100" data-cumbre-scroll-factor-breakpoint="1100" data-cumbre-snap-directional="false" data-cumbre-snap-inertia="false" style="--panel-count: 5;">
       <section class="cumbre-panel mqc-panel mqc-panel--hero" data-cumbre-panel data-panel-theme="light">
         <div class="mqc-panel-bg" data-panel-bg aria-hidden="true">
           <div class="mqc-pattern"></div>
@@ -115,7 +115,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>Ven y ayúdanos</p>
               <h1 data-split-title>Mujeres que sostienen el llamado</h1>
               <p class="mqc-lead" data-reveal>
-                Una red de mujeres que creen profundamente, sirven con amor, forman a otras en la Palabra y dejan legado.
+                Mujeres firmes en la Palabra, activas en la enseñanza, constantes en el servicio y comprometidas con hacer discípulas.
               </p>
               <div class="mqc-actions" data-reveal>
                 <a href="#primer-paso" class="mqc-btn mqc-btn--primary" data-scroll-form>Responder al llamado</a>
@@ -148,7 +148,7 @@ const formHelpOptions = [
               <span>Hechos 16:9</span>
               <blockquote>“Ven y ayúdanos.”</blockquote>
               <p>
-                El llamado se responde con presencia, servicio, creatividad, oración, generosidad y manos dispuestas.
+                El llamado se responde con presencia, misericordia, enseñanza, discipulado, unidad y generosidad.
               </p>
               <img src={`${assetsBase}/barca-fucsia.svg`} alt="" aria-hidden="true" />
             </article>
@@ -157,7 +157,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>La red</p>
               <h2 data-split-title>La ayuda toma forma cuando alguien responde</h2>
               <p class="mqc-body" data-reveal>
-                Esta interna convierte el llamado de la Cumbre en pasos concretos para unirse a la comunidad, compartir recursos, servir en encuentros, orar y sembrar.
+                El propósito de Mujeres que Creen se vive cuando una mujer modela, sirve, discipula, enseña y camina en comunión.
               </p>
               <div class="mqc-help-grid" data-reveal>
                 {helpTracks.map((track) => (
@@ -190,7 +190,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>Tito 2:3-5</p>
               <h2 data-split-title>10 virtudes de feminidad bíblica</h2>
               <p class="mqc-body" data-reveal>
-                La visión de Mujeres que Creen forma carácter, discipulado y servicio. Estas virtudes orientan conversaciones, encuentros, grupos y contenido.
+                Con base en Tito 2:3-5, estas virtudes ayudan a formar carácter, discipulado y una vida que refleja el diseño de Dios.
               </p>
               <p class="mqc-tito-note" data-reveal>
                 <span>Base bíblica</span>
@@ -286,9 +286,9 @@ const formHelpOptions = [
           <div class="mqc-connect-grid">
             <div class="mqc-panel-copy">
               <p class="mqc-kicker" data-reveal>Otra manera de ayudarnos</p>
-              <h2 data-split-title>Ayúdanos a que más mujeres respondan</h2>
+              <h2 data-split-title>Extiende la red</h2>
               <p class="mqc-body" data-reveal>
-                Compartir también sostiene la red. Únete a la comunidad, envía el devocional, comenta los mensajes y ayuda a que más mujeres conozcan este llamado.
+                Comparte contenidos, recursos y eventos para que más mujeres conozcan esta comunidad y caminen en la Palabra.
               </p>
               <figure class="mqc-connect-boat" data-reveal>
                 <img src={`${assetsBase}/barca-fucsia.svg`} alt="" aria-hidden="true" />
@@ -530,6 +530,7 @@ const formHelpOptions = [
     position: relative;
     height: auto;
     min-height: 100svh;
+    overflow: visible;
     clip-path: none !important;
     pointer-events: auto;
   }
@@ -1664,6 +1665,112 @@ const formHelpOptions = [
 
   .hidden {
     display: none !important;
+  }
+
+  @media (max-width: 1440px) and (max-height: 820px) {
+    .mqc-panel--call .mqc-panel-inner,
+    .mqc-panel--virtues .mqc-panel-inner {
+      padding-top: 60px;
+      padding-bottom: 34px;
+    }
+
+    .mqc-panel--call .mqc-panel-copy h2,
+    .mqc-panel--virtues .mqc-panel-copy h2 {
+      font-size: clamp(2.25rem, 3.7vw, 3.65rem);
+      line-height: 0.94;
+    }
+
+    .mqc-panel--call .mqc-body,
+    .mqc-panel--virtues .mqc-body {
+      margin-top: 14px;
+      font-size: 0.96rem;
+      line-height: 1.38;
+    }
+
+    .mqc-panel--call .mqc-help-grid,
+    .mqc-panel--virtues .mqc-virtue-grid {
+      margin-top: 16px;
+      gap: 8px;
+    }
+
+    .mqc-panel--call .mqc-help {
+      min-height: 86px;
+      padding: 11px 12px;
+    }
+
+    .mqc-panel--call .mqc-help strong {
+      margin-bottom: 5px;
+      font-size: 0.82rem;
+    }
+
+    .mqc-panel--call .mqc-help p {
+      font-size: 0.73rem;
+      line-height: 1.26;
+    }
+
+    .mqc-panel--call .mqc-scripture {
+      padding: 24px;
+      border-radius: 56px 56px 22px 22px;
+    }
+
+    .mqc-panel--call .mqc-scripture blockquote {
+      margin: 14px 0;
+      font-size: clamp(2.35rem, 4vw, 3.7rem);
+    }
+
+    .mqc-panel--call .mqc-scripture img {
+      width: min(280px, 100%);
+      margin-top: 22px;
+    }
+
+    .mqc-panel--virtues .mqc-virtues-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .mqc-panel--virtues .mqc-tito-note {
+      margin-top: 12px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      line-height: 1.3;
+    }
+
+    .mqc-panel--virtues .mqc-virtue {
+      min-height: 44px;
+      grid-template-columns: 30px 1fr;
+      gap: 8px;
+      padding: 7px 9px;
+    }
+
+    .mqc-panel--virtues .mqc-virtue span {
+      width: 28px;
+      height: 28px;
+      font-size: 0.68rem;
+    }
+
+    .mqc-panel--virtues .mqc-virtue strong {
+      font-size: 0.76rem;
+      line-height: 1.06;
+    }
+
+    .mqc-panel--virtues .mqc-column-card {
+      min-height: 0;
+      height: min(500px, calc(var(--cumbre-vh, 100svh) - 150px));
+      border-radius: 96px 96px 24px 24px;
+    }
+
+    .mqc-panel--virtues .mqc-column-card img {
+      height: min(360px, calc(var(--cumbre-vh, 100svh) - 250px));
+    }
+
+    .mqc-panel--virtues .mqc-column-card p {
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+    }
   }
 
   @media (max-width: 1120px) {
