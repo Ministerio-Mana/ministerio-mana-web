@@ -120,7 +120,8 @@ const formHelpOptions = [
               <div class="mqc-actions" data-reveal>
                 <a href="#primer-paso" class="mqc-btn mqc-btn--primary" data-scroll-form>Responder al llamado</a>
                 <a href={whatsappHref} class="mqc-btn mqc-btn--outline" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-                <button type="button" class="mqc-btn mqc-btn--soft" data-share-page>Compartir</button>
+                <a href="#sembrar-mujeres" class="mqc-btn mqc-btn--soft mqc-btn--mobile-give" data-scroll-give>Sembrar</a>
+                <button type="button" class="mqc-btn mqc-btn--soft mqc-btn--share" data-share-page>Compartir</button>
               </div>
             </div>
 
@@ -852,6 +853,10 @@ const formHelpOptions = [
     background: transparent;
     border-color: rgba(255, 255, 255, 0.42);
     color: #fff !important;
+  }
+
+  .mqc-btn--mobile-give {
+    display: none;
   }
 
   .mqc-hero-art {
@@ -1993,7 +1998,7 @@ const formHelpOptions = [
     .mqc-panel--hero .mqc-panel-inner {
       align-items: flex-start;
       padding-top: 112px;
-      padding-bottom: 70px;
+      padding-bottom: clamp(48px, 10vw, 70px);
     }
 
     .mqc-hero-grid {
@@ -2001,18 +2006,25 @@ const formHelpOptions = [
       gap: 22px;
     }
 
+    html[data-cumbre-static-story='true'] .mqc-page .cumbre-panel.mqc-panel--hero,
+    html[data-cumbre-static-story='true'] .mqc-page .cumbre-panel.mqc-panel--hero .mqc-panel-inner {
+      height: auto;
+      min-height: auto;
+    }
+
     .mqc-hero-art {
-      position: relative;
-      right: auto;
-      bottom: auto;
-      justify-self: end;
-      width: min(360px, 76vw);
-      min-height: min(390px, 58vh);
-      margin-top: -4px;
-      opacity: 0.92;
+      display: none;
     }
 
     .mqc-verse-card {
+      display: none;
+    }
+
+    .mqc-btn--mobile-give {
+      display: inline-flex;
+    }
+
+    .mqc-btn--share {
       display: none;
     }
 
@@ -2124,13 +2136,6 @@ const formHelpOptions = [
 
     .mqc-logo {
       width: 148px;
-    }
-
-    .mqc-hero-art {
-      width: min(300px, 82vw);
-      min-height: 330px;
-      margin-left: auto;
-      opacity: 0.88;
     }
 
     .mqc-scripture,
