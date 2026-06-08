@@ -35,11 +35,12 @@ function setupVenAyudanos() {
   const scrollToForm = () => {
     const target = document.getElementById('primer-paso');
     if (!target) return;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - 12;
     if (window.lenis?.scrollTo) {
-      window.lenis.scrollTo(target, { offset: -12 });
+      window.lenis.scrollTo(Math.max(0, targetTop), { force: true });
       return;
     }
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
   };
 
   const scrollToStoryPanel = (targetPanel) => {
