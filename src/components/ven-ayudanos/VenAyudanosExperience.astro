@@ -86,14 +86,14 @@ const pageDescription = selectedMinistry
                 </p>
               </div>
 
-              <div class="flex flex-col gap-3 sm:flex-row" data-reveal>
-                <a href="#primer-paso" class="mana-btn justify-center px-8 py-4 text-sm uppercase tracking-[0.16em] shadow-[0_0_40px_-10px_var(--mana-teal)]" data-scroll-form>
+              <div class="ven-hero-actions flex flex-col gap-3 sm:flex-row" data-reveal>
+                <a href="#primer-paso" class="ven-main-cta justify-center px-8 py-4 text-sm uppercase tracking-[0.12em]" data-scroll-form>
                   Responder al llamado
                 </a>
                 <a href="/donaciones/" data-astro-reload class="ven-donation-cta justify-center px-8 py-4 text-sm uppercase tracking-[0.16em]">
                   Sembrar / Donaciones
                 </a>
-                <a href="#elige-red" class="mana-btn-ghost justify-center border-white/25 bg-white/10 px-8 py-4 text-sm uppercase tracking-[0.16em] text-white hover:bg-white/20 hover:text-white">
+                <a href="#elige-red" class="ven-secondary-cta justify-center px-8 py-4 text-sm uppercase tracking-[0.12em]" data-scroll-ministry>
                   Ver ministerios
                 </a>
               </div>
@@ -111,7 +111,7 @@ const pageDescription = selectedMinistry
                 </p>
                 <div class="grid grid-cols-2 gap-3">
                   {['Servir', 'Crear', 'Orar', 'Sembrar'].map((item) => (
-                    <span class="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/84">{item}</span>
+                    <span class="ven-action-chip rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-white/84">{item}</span>
                   ))}
                 </div>
               </div>
@@ -224,16 +224,16 @@ const pageDescription = selectedMinistry
                       <p class="mt-4 text-base leading-relaxed text-slate-700">{ministry.body}</p>
                       <div class="mt-6 grid gap-3 sm:grid-cols-2">
                         {ministry.actions.map((action) => (
-                          <span class="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold leading-snug text-slate-700">{action}</span>
+                          <span class="ven-action-chip rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold leading-snug text-slate-700">{action}</span>
                         ))}
                       </div>
                       <div class="mt-auto pt-8">
                         {opensCurrentForm ? (
-                          <a href="#primer-paso" class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto" data-scroll-form data-ministry-form={key}>
+                          <a href="#primer-paso" class="ven-main-cta w-full px-6 py-3.5 text-sm uppercase tracking-[0.12em] sm:w-auto" data-scroll-form data-ministry-form={key}>
                             {ministry.cta}
                           </a>
                         ) : (
-                          <a href={ministry.href} data-astro-reload class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto">
+                          <a href={ministry.href} data-astro-reload class="ven-main-cta w-full px-6 py-3.5 text-sm uppercase tracking-[0.12em] sm:w-auto">
                             {ministry.cta}
                           </a>
                         )}
@@ -295,7 +295,7 @@ const pageDescription = selectedMinistry
               Déjanos tus datos y un líder podrá conversar contigo para descubrir cómo tus manos pueden ayudar.
             </p>
             <div class="flex flex-col justify-center gap-3 sm:flex-row" data-reveal>
-              <a href="#primer-paso" class="mana-btn justify-center px-8 py-4 text-sm uppercase tracking-[0.16em]" data-scroll-form>
+              <a href="#primer-paso" class="ven-main-cta justify-center px-8 py-4 text-sm uppercase tracking-[0.12em]" data-scroll-form>
                 Responder al llamado
               </a>
               <a href="/donaciones/" data-astro-reload class="ven-donation-cta justify-center px-8 py-4 text-sm uppercase tracking-[0.16em]">
@@ -328,7 +328,7 @@ const pageDescription = selectedMinistry
             </div>
           </div>
 
-          <div class="rounded-[2rem] border border-white/14 bg-black/35 p-5 shadow-2xl shadow-black/25 backdrop-blur-xl md:p-8">
+          <div class="ven-form-card rounded-[2rem] border border-white/14 bg-black/35 p-5 shadow-2xl shadow-black/25 backdrop-blur-xl md:p-8">
             <form
               id="ven-ayudanos-form"
               class="space-y-6"
@@ -378,7 +378,7 @@ const pageDescription = selectedMinistry
 
               <fieldset class="space-y-3">
                 <legend class="text-xs font-black uppercase tracking-[0.18em] text-white/68">Puedo aportar con</legend>
-                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {helpOptions.map((option) => (
                     <label class="ven-check">
                       <input type="checkbox" name="helpTypes" value={option.key} />
@@ -406,7 +406,7 @@ const pageDescription = selectedMinistry
               <TurnstileWidget appearance="always" theme="dark" />
 
               <div class="space-y-4">
-                <button type="submit" class="mana-btn w-full justify-center px-8 py-4 text-sm uppercase tracking-[0.16em]" data-submit-button>
+                <button type="submit" class="ven-main-cta w-full justify-center px-8 py-4 text-sm uppercase tracking-[0.12em]" data-submit-button>
                   Responder al llamado
                 </button>
                 <p class="hidden rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-semibold text-white/80" data-form-status></p>
@@ -423,7 +423,7 @@ const pageDescription = selectedMinistry
                 <button type="button" class="mana-btn-ghost justify-center border-white/20 bg-white/10 text-sm text-white hover:bg-white/20 hover:text-white" data-share-page>
                   Compartir
                 </button>
-                <a href="#elige-red" class="mana-btn-ghost justify-center border-white/20 bg-white/10 text-sm text-white hover:bg-white/20 hover:text-white">
+                <a href="#elige-red" class="ven-secondary-cta justify-center px-5 py-3 text-sm" data-scroll-ministry>
                   Ministerios
                 </a>
                 <a href="/donaciones/" data-astro-reload class="ven-donation-cta justify-center text-sm">
@@ -437,7 +437,7 @@ const pageDescription = selectedMinistry
     </section>
 
     <div class="ven-mobile-action-bar fixed bottom-4 left-4 right-4 z-50 grid grid-cols-[1fr_0.8fr] gap-2 md:hidden">
-      <a href="#primer-paso" class="ven-mobile-cta mana-btn justify-center py-4 text-sm uppercase tracking-[0.12em]" data-scroll-form>
+      <a href="#primer-paso" class="ven-mobile-cta ven-main-cta justify-center py-4 text-sm uppercase tracking-[0.12em]" data-scroll-form>
         Responder
       </a>
       <a href="/donaciones/" data-astro-reload class="ven-mobile-cta ven-donation-cta justify-center py-4 text-sm uppercase tracking-[0.12em]">
@@ -561,8 +561,83 @@ const pageDescription = selectedMinistry
     transform: translateY(0) scale(1);
   }
 
+  .ven-main-cta,
+  .ven-secondary-cta,
+  .ven-donation-cta {
+    display: inline-flex;
+    min-height: 3.25rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    text-align: center;
+    font-weight: 950;
+    line-height: 1.08;
+    text-decoration: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, color 180ms ease, filter 180ms ease;
+  }
+
+  .ven-main-cta {
+    border: 1px solid rgba(40, 166, 189, 0.72);
+    background: linear-gradient(135deg, #28a6bd 0%, #3fc5d8 100%);
+    color: #07111c;
+    box-shadow: 0 16px 38px rgba(40, 166, 189, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.46);
+  }
+
+  .ven-main-cta:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #33b8cd 0%, #65d5e5 100%);
+    box-shadow: 0 20px 46px rgba(40, 166, 189, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  }
+
+  .ven-secondary-cta {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+  }
+
+  .ven-secondary-cta:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+
+  .ven-form-card {
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+      rgba(0, 0, 0, 0.36);
+  }
+
+  .ven-form-card label,
+  .ven-form-card fieldset {
+    min-width: 0;
+  }
+
+  .ven-form-card label > span,
+  .ven-form-card legend {
+    display: block;
+    line-height: 1.35;
+    letter-spacing: 0.11em;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .ven-action-chip {
+    min-width: 0;
+    line-height: 1.22;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
   .ven-input {
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.08);
@@ -588,7 +663,8 @@ const pageDescription = selectedMinistry
 
   .ven-check {
     display: flex;
-    align-items: center;
+    min-width: 0;
+    align-items: flex-start;
     gap: 0.65rem;
     border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.13);
@@ -600,23 +676,27 @@ const pageDescription = selectedMinistry
   }
 
   .ven-check input {
+    flex: 0 0 1rem;
     height: 1rem;
     width: 1rem;
+    margin-top: 0.05rem;
     border-radius: 0.3rem;
     color: var(--active-accent);
   }
 
+  .ven-check span {
+    min-width: 0;
+    line-height: 1.18;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
   .ven-donation-cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.72);
     background: linear-gradient(135deg, #f7d85f 0%, #f2c94c 46%, #fff3a6 100%);
     color: #17213f;
-    font-weight: 950;
     box-shadow: 0 18px 44px rgba(242, 201, 76, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
   }
 
   .ven-donation-cta:hover {

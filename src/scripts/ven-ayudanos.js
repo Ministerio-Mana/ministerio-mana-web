@@ -14,6 +14,7 @@ function setupVenAyudanos() {
   const shareButtons = Array.from(root.querySelectorAll('[data-share-page]'));
   const copyButtons = Array.from(root.querySelectorAll('[data-copy-value]'));
   const giveLinks = Array.from(root.querySelectorAll('[data-scroll-give]'));
+  const ministryLinks = Array.from(root.querySelectorAll('[data-scroll-ministry]'));
 
   const setHiddenValue = (selector, value) => {
     const input = root.querySelector(selector);
@@ -41,10 +42,9 @@ function setupVenAyudanos() {
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const scrollToGive = () => {
+  const scrollToStoryPanel = (targetPanel) => {
     const story = root.querySelector('[data-cumbre-story]');
-    const targetPanel = root.querySelector('[data-give-panel]');
-    if (!targetPanel) return;
+    if (!targetPanel) return false;
 
     const isAnimatedPanel = story && getComputedStyle(targetPanel).position === 'absolute';
     if (isAnimatedPanel) {
@@ -57,13 +57,22 @@ function setupVenAyudanos() {
       const target = Math.max(storyTop, storyTop + viewportHeight * index * scrollFactor);
       if (window.lenis?.scrollTo) {
         window.lenis.scrollTo(target, { force: true });
-        return;
+        return true;
       }
       window.scrollTo({ top: target, behavior: 'smooth' });
-      return;
+      return true;
     }
 
     targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+  };
+
+  const scrollToMinistries = () => {
+    scrollToStoryPanel(root.querySelector('#elige-red'));
+  };
+
+  const scrollToGive = () => {
+    scrollToStoryPanel(root.querySelector('[data-give-panel]'));
   };
 
   const selectMinistry = (key, updateSelect = true) => {
@@ -102,6 +111,13 @@ function setupVenAyudanos() {
     link.addEventListener('click', (event) => {
       event.preventDefault();
       scrollToForm();
+    });
+  });
+
+  ministryLinks.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      scrollToMinistries();
     });
   });
 
