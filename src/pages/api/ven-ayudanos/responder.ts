@@ -30,6 +30,31 @@ const allowedHelpTypes = new Set([
 ]);
 const allowedAvailability = new Set(['semanal', 'mensual', 'eventos-especiales', 'no-estoy-seguro']);
 
+const ministryNotifyEmails: Record<string, string[]> = {
+  ninos: [
+    'devocionalmana@gmail.com',
+    'carlosriosgomez@yahoo.es',
+    'carlosrios@ministeriomana.org',
+  ],
+  varones: [
+    'devocionalmana@gmail.com',
+    'carlosriosgomez@yahoo.es',
+    'carlosrios@ministeriomana.org',
+    'medellin@ministeriomana.org',
+  ],
+  mujeres: [
+    'gloriacano@ministeriomana.org',
+    'monicapalacio@ministeriomana.org',
+    'mujeresquecreen2024@gmail.com',
+  ],
+};
+
+const ministryNotifyEnvKeys: Record<string, string> = {
+  ninos: 'VEN_AYUDANOS_NINOS_NOTIFY_EMAILS',
+  varones: 'VEN_AYUDANOS_VARONES_NOTIFY_EMAILS',
+  mujeres: 'VEN_AYUDANOS_MUJERES_NOTIFY_EMAILS',
+};
+
 function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
@@ -39,6 +64,27 @@ function parseEmailList(value: string | undefined): string[] {
     .split(',')
     .map((item) => item.trim().toLowerCase())
     .filter((item) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item));
+}
+
+function uniqueEmails(items: string[]): string[] {
+  return Array.from(new Set(items.map((item) => item.trim().toLowerCase()))).filter(Boolean);
+}
+
+function defaultRecipients(): string[] {
+  return parseEmailList(
+    env('VEN_AYUDANOS_NOTIFY_EMAILS') || env('SENDGRID_REPLY_TO') || env('PORTAL_SUPERADMIN_EMAILS'),
+  );
+}
+
+function recipientsForMinistry(ministry: unknown): string[] {
+  const key = String(ministry || '').toLowerCase();
+  const ministryRecipients = ministryNotifyEmails[key] || [];
+  const envRecipients = ministryNotifyEnvKeys[key]
+    ? parseEmailList(env(ministryNotifyEnvKeys[key]))
+    : [];
+
+  const recipients = uniqueEmails([...ministryRecipients, ...envRecipients]);
+  return recipients.length ? recipients : defaultRecipients();
 }
 
 function escapeHtml(value: string): string {
@@ -61,9 +107,7 @@ function clean(value: FormDataEntryValue | null, max = 120): string {
 async function notifyTeam(payload: Record<string, unknown>) {
   if (!isSendgridEnabled()) return;
 
-  const recipients = parseEmailList(
-    env('VEN_AYUDANOS_NOTIFY_EMAILS') || env('SENDGRID_REPLY_TO') || env('PORTAL_SUPERADMIN_EMAILS'),
-  );
+  const recipients = recipientsForMinistry(payload.ministry);
   if (!recipients.length) return;
 
   const rows = [
