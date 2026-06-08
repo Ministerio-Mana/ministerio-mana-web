@@ -187,8 +187,8 @@ const pageDescription = selectedMinistry
                   const ministry = ministries[key];
                   const active = key === initialKey;
                   return (
-                    <button
-                      type="button"
+                    <a
+                      href={ministry.href}
                       class="ven-ministry-card rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-xl shadow-brand-dark/8 backdrop-blur-md transition"
                       data-ministry-card={key}
                       aria-pressed={active ? 'true' : 'false'}
@@ -196,7 +196,7 @@ const pageDescription = selectedMinistry
                     >
                       <span class="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{ministry.eyebrow}</span>
                       <span class="mt-2 block text-xl font-black leading-tight text-brand-dark">{ministry.shortName}</span>
-                    </button>
+                    </a>
                   );
                 })}
               </div>
