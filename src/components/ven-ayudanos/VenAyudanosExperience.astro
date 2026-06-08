@@ -205,7 +205,7 @@ const pageDescription = selectedMinistry
               </div>
             </div>
 
-            <div class="relative min-h-[29rem]" data-reveal>
+            <div class="relative min-h-[35rem]" data-reveal>
               {ministryOrder.map((key) => {
                 const ministry = ministries[key];
                 const active = key === initialKey;
@@ -233,7 +233,7 @@ const pageDescription = selectedMinistry
                             {ministry.cta}
                           </a>
                         ) : (
-                          <a href={ministry.href} data-astro-reload class="ven-main-cta w-full px-6 py-3.5 text-sm uppercase tracking-[0.12em] sm:w-auto">
+                          <a href={ministry.href} data-astro-prefetch="hover" class="ven-main-cta w-full px-6 py-3.5 text-sm uppercase tracking-[0.12em] sm:w-auto">
                             {ministry.cta}
                           </a>
                         )}
