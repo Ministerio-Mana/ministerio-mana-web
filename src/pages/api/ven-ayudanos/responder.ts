@@ -30,18 +30,16 @@ const allowedHelpTypes = new Set([
 ]);
 const allowedAvailability = new Set(['semanal', 'mensual', 'eventos-especiales', 'no-estoy-seguro']);
 
+const baseNotifyEmails = [
+  'devocionalmana@gmail.com',
+  'carlosriosgomez@yahoo.es',
+  'carlosrios@ministeriomana.org',
+  'info@ministeriomana.org',
+];
+
 const ministryNotifyEmails: Record<string, string[]> = {
-  ninos: [
-    'devocionalmana@gmail.com',
-    'carlosriosgomez@yahoo.es',
-    'carlosrios@ministeriomana.org',
-  ],
-  varones: [
-    'devocionalmana@gmail.com',
-    'carlosriosgomez@yahoo.es',
-    'carlosrios@ministeriomana.org',
-    'medellin@ministeriomana.org',
-  ],
+  ninos: [],
+  varones: ['medellin@ministeriomana.org'],
   mujeres: [
     'gloriacano@ministeriomana.org',
     'monicapalacio@ministeriomana.org',
@@ -83,7 +81,7 @@ function recipientsForMinistry(ministry: unknown): string[] {
     ? parseEmailList(env(ministryNotifyEnvKeys[key]))
     : [];
 
-  const recipients = uniqueEmails([...ministryRecipients, ...envRecipients]);
+  const recipients = uniqueEmails([...baseNotifyEmails, ...ministryRecipients, ...envRecipients]);
   return recipients.length ? recipients : defaultRecipients();
 }
 

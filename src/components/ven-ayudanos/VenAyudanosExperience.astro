@@ -189,8 +189,8 @@ const pageDescription = selectedMinistry
                   return (
                     <a
                       href={ministry.href}
+                      data-astro-reload
                       class="ven-ministry-card rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-xl shadow-brand-dark/8 backdrop-blur-md transition"
-                      data-ministry-card={key}
                       aria-pressed={active ? 'true' : 'false'}
                       style={`--card-accent:${ministry.accent}; --card-glow:${ministry.glow};`}
                     >
@@ -230,7 +230,7 @@ const pageDescription = selectedMinistry
                             {ministry.cta}
                           </a>
                         ) : (
-                          <a href={ministry.href} class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto">
+                          <a href={ministry.href} data-astro-reload class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto">
                             {ministry.cta}
                           </a>
                         )}
