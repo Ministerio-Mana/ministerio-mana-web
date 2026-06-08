@@ -46,6 +46,16 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
         <button type="button" class="freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-gray-400" data-freq="once">Única vez</button>
       </div>
 
+      <div class="mb-5">
+        <label class="mb-2 block text-center text-[10px] font-intro uppercase tracking-widest text-[#001B3A]" for={`campus-currency-${slug}`}>
+          Moneda de tu siembra
+        </label>
+        <select id={`campus-currency-${slug}`} class="currency-select donor-input-single w-full text-center">
+          <option value="COP" selected={initialCurrency.code === 'COP'}>Pesos colombianos / Wompi</option>
+          <option value="USD" selected={initialCurrency.code === 'USD'}>Dólares / Stripe</option>
+        </select>
+      </div>
+
       <div class="amount-choice-area mb-6">
         <!-- Custom Amount — organic border -->
         <div class="custom-amount-control">

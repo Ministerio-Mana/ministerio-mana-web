@@ -129,15 +129,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
-    if (donorInfo.donationType === 'misiones') {
-      return new Response(JSON.stringify({
-        ok: false,
-        error: 'Las donaciones de misiones se procesan en Colombia.',
-      }), {
-        status: 400,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
     const recurringFlag = String(data.get('isRecurring') || '').toLowerCase();
     const isRecurring = ['true', '1', 'on', 'yes'].includes(recurringFlag);
     const frequencyConfig = parseDonationFrequency(data.get('frequency'));

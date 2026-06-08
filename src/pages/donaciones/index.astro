@@ -1,20 +1,19 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DonationGateway from '@components/DonationGateway.astro';
-import { getFxSnapshot } from '@lib/fx';
 import { preferredGatewayForCountry } from '@lib/geo';
 
 const geo = Astro.locals?.geo ?? { country: 'CO', lang: 'es' };
-const rates = await getFxSnapshot();
 const requestedType = Astro.url.searchParams.get('type')?.toLowerCase() || '';
+const requestedGateway = Astro.url.searchParams.get('gateway')?.toLowerCase() || '';
 const initialDonationType = ['diezmos', 'ofrendas', 'misiones'].includes(requestedType)
   ? requestedType
   : '';
-const preferred = initialDonationType === 'misiones'
-  ? 'wompi'
+const preferred = requestedGateway === 'stripe' || requestedGateway === 'wompi'
+  ? requestedGateway
   : preferredGatewayForCountry(geo.country);
 export const prerender = false;
 ---
 <BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión de Ministerio Maná.">
-  <DonationGateway preferred={preferred} rates={rates} country={geo.country} initialDonationType={initialDonationType} />
+  <DonationGateway preferred={preferred} country={geo.country} initialDonationType={initialDonationType} />
 </BaseLayout>

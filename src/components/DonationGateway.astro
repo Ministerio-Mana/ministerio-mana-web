@@ -52,6 +52,18 @@ const gateway = isWompi
       presets: [25, 50, 100, 250],
     };
 
+function gatewayHref(nextGateway: Gateway): string {
+  const url = new URL(Astro.url);
+  url.searchParams.set('gateway', nextGateway);
+  if (selectedDonationType) {
+    url.searchParams.set('type', selectedDonationType);
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+const wompiHref = gatewayHref('wompi');
+const stripeHref = gatewayHref('stripe');
+
 function formatPreset(value: number): string {
   if (isWompi) {
     return new Intl.NumberFormat('es-CO', {
@@ -105,13 +117,20 @@ function formatPreset(value: number): string {
         class="donation-form"
         data-donation-form
         data-gateway={preferred}
-        data-mission-wompi-url="/donaciones/?type=misiones"
         data-login-url="/portal/ingresar?next=/donaciones/%3Frecurring%3D1&reason=recurring-donation"
         novalidate
       >
         <div class="donation-form__header">
           <div class="donation-form__route">
             <span>{isWompi ? 'Donación en Colombia' : 'Donación internacional'}</span>
+          </div>
+          <div class="donation-gateway-switch" aria-label="Selecciona moneda y pasarela">
+            <a href={wompiHref} class={isWompi ? 'is-active' : ''} aria-current={isWompi ? 'true' : undefined}>
+              COP / Wompi
+            </a>
+            <a href={stripeHref} class={!isWompi ? 'is-active' : ''} aria-current={!isWompi ? 'true' : undefined}>
+              USD / Stripe
+            </a>
           </div>
           <h2>Haz tu donación</h2>
           <p>
@@ -541,6 +560,38 @@ function formatPreset(value: number): string {
     align-items: center;
     margin-bottom: 0.75rem;
     color: rgb(var(--mana-teal));
+  }
+
+  .donation-gateway-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-bottom: 1rem;
+  }
+
+  .donation-gateway-switch a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(var(--mana-navy), 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.68);
+    color: rgba(var(--mana-navy), 0.72);
+    font-size: 0.76rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .donation-gateway-switch a:hover,
+  .donation-gateway-switch a:focus-visible,
+  .donation-gateway-switch a.is-active {
+    border-color: rgb(var(--mana-teal));
+    background: rgb(var(--mana-navy));
+    color: white;
   }
 
   .donation-progress {
@@ -1290,14 +1341,6 @@ function formatPreset(value: number): string {
     projectInput.value = projectByType[donationType] || 'Ministerio Maná';
   }
 
-  function enforceMissionGateway(form) {
-    const donationType = form.querySelector('select[name="donationType"]')?.value || '';
-    if (donationType !== 'misiones') return false;
-    if (form.dataset.gateway !== 'stripe') return false;
-    window.location.href = form.dataset.missionWompiUrl || '/donaciones/?type=misiones';
-    return true;
-  }
-
   let portalProfileCache = null;
   prefillFromPortalProfile().then((profile) => {
     portalProfileCache = profile;
@@ -1326,7 +1369,6 @@ function formatPreset(value: number): string {
 
     form.querySelector('select[name="donationType"]')?.addEventListener('change', () => {
       syncDonationProject(form);
-      enforceMissionGateway(form);
     });
 
     form.querySelectorAll('[data-amount-preset]').forEach((button) => {
@@ -1336,6 +1378,25 @@ function formatPreset(value: number): string {
           amountInput.value = button.getAttribute('data-amount-preset') || '';
           amountInput.focus();
         }
+      });
+    });
+
+    form.querySelectorAll('.donation-gateway-switch a').forEach((link) => {
+      link.addEventListener('click', () => {
+        const url = new URL(link.href);
+        const donationType = form.querySelector('select[name="donationType"]')?.value || '';
+        const amount = form.querySelector('input[name="amount"]')?.value || '';
+        const recurring = form.querySelector('input[name="isRecurring"][value="true"]')?.checked;
+        const frequency = form.querySelector('select[name="frequency"]')?.value || '';
+        if (donationType) url.searchParams.set('type', donationType);
+        else url.searchParams.delete('type');
+        if (amount) url.searchParams.set('amount', amount);
+        else url.searchParams.delete('amount');
+        if (recurring) url.searchParams.set('recurring', '1');
+        else url.searchParams.delete('recurring');
+        if (frequency) url.searchParams.set('frequency', frequency);
+        else url.searchParams.delete('frequency');
+        link.href = `${url.pathname}${url.search}${url.hash}`;
       });
     });
 
