@@ -626,6 +626,7 @@ const pageDescription = selectedMinistry
   }
 
   .ven-mobile-action-bar {
+    z-index: 80;
     border-radius: 1.45rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(7, 17, 28, 0.72);
@@ -639,6 +640,10 @@ const pageDescription = selectedMinistry
   }
 
   @media (max-width: 767px) {
+    html:has(.ven-help-experience) .cumbre-action--whatsapp {
+      display: none !important;
+    }
+
     .ven-help-story {
       height: auto;
       min-height: 0;
