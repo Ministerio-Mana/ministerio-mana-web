@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import VenAyudanosBackLink from '@components/ven-ayudanos/VenAyudanosBackLink.astro';
 
 const title = 'Cómo ser socio de la Gran Comisión | Campus Maná';
 const description = 'Tutorial sencillo para apoyar mensualmente a los misioneros de Campus Maná.';
@@ -160,6 +161,8 @@ const supportItems = [
 ---
 
 <BaseLayout {title} {description} {image}>
+  <VenAyudanosBackLink tone="dark" />
+
   <style is:global>
     @font-face {
       font-family: 'Intro';

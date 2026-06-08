@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import VenAyudanosBackLink from '@components/ven-ayudanos/VenAyudanosBackLink.astro';
 export const prerender = false;
 
 const title = "¡Gracias por Sembrar! · Campus Maná";
@@ -7,6 +8,8 @@ const description = "Tu siembra hace posible llevar el evangelio a las universid
 ---
 
 <BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
+  <VenAyudanosBackLink tone="dark" />
+
   <!-- Campus Identity Fonts -->
   <style is:global>
     @font-face {
@@ -99,11 +102,11 @@ const description = "Tu siembra hace posible llevar el evangelio a las universid
 
       <!-- CTAs -->
       <div class="flex flex-col sm:flex-row items-center gap-4">
-        <a href="/campus" class="btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-sm uppercase tracking-wider text-center">
-          ← Volver al Campus
+        <a href="/ven-ayudanos" class="btn-scribble px-8 py-4 bg-[#001B3A] text-white font-intro text-sm uppercase tracking-wider text-center">
+          ← Volver a Ven y Ayúdanos
         </a>
-        <a href="/" class="btn-scribble px-8 py-4 bg-transparent text-white font-intro text-sm uppercase tracking-wider text-center border-none">
-          Ir al Inicio
+        <a href="/campus" class="btn-scribble px-8 py-4 bg-transparent text-white font-intro text-sm uppercase tracking-wider text-center border-none">
+          Ver Campus
         </a>
       </div>
 

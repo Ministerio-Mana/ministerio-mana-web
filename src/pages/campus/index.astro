@@ -3,6 +3,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DonationForm from '@components/campus/DonationForm.astro';
 import MultiDonationFlow from '@components/campus/MultiDonationFlow.astro';
+import VenAyudanosBackLink from '@components/ven-ayudanos/VenAyudanosBackLink.astro';
 import { MISIONEROS } from '@data/misioneros';
 
 const title = "Campus Maná | Socios de la Gran Comisión";
@@ -15,6 +16,8 @@ const hasPlayableVideo = (url?: string) => Boolean(url && !url.includes('VIDEO_I
 ---
 
 <BaseLayout {title} {description} {image} hideHeader={false} hideFooter={false}>
+  <VenAyudanosBackLink tone="dark" />
+
   <!-- Local Maná Identity Fonts -->
   <style is:global>
     @font-face {

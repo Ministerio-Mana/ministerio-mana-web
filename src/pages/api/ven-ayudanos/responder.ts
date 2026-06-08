@@ -18,6 +18,15 @@ const allowedHelpTypes = new Set([
   'generosidad',
   'apadrinamiento',
   'difusion',
+  'ilustracion',
+  'animacion',
+  'guiones',
+  'manualidades',
+  'ensenanza-kids',
+  'musica-kids',
+  'produccion-kids',
+  'materiales-kids',
+  'propuesta-kids',
 ]);
 const allowedAvailability = new Set(['semanal', 'mensual', 'eventos-especiales', 'no-estoy-seguro']);
 

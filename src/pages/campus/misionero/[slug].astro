@@ -2,6 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DonationForm from '@components/campus/DonationForm.astro';
 import MultiDonationFlow from '@components/campus/MultiDonationFlow.astro';
+import VenAyudanosBackLink from '@components/ven-ayudanos/VenAyudanosBackLink.astro';
 import { MISIONEROS } from '@data/misioneros';
 
 const { slug } = Astro.params;
@@ -17,6 +18,8 @@ const hasPlayableVideo = Boolean(misionero.video && !misionero.video.includes('V
 ---
 
 <BaseLayout {title} {description} {image} hideHeader={false} hideFooter={false}>
+  <VenAyudanosBackLink tone="dark" />
+
   <style is:global>
     @font-face {
       font-family: 'Intro';

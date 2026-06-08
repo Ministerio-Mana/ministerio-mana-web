@@ -1,0 +1,80 @@
+---
+interface Props {
+  label?: string;
+  href?: string;
+  tone?: 'light' | 'dark';
+}
+
+const {
+  label = 'Volver a Ven y Ayúdanos',
+  href = '/ven-ayudanos',
+  tone = 'light',
+} = Astro.props as Props;
+---
+
+<a href={href} class={`ven-ayudanos-back ven-ayudanos-back--${tone}`}>
+  <span aria-hidden="true">←</span>
+  <span>{label}</span>
+</a>
+
+<style>
+  .ven-ayudanos-back {
+    align-items: center;
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(41, 60, 116, 0.14);
+    border-radius: 999px;
+    box-shadow: 0 16px 42px rgba(11, 17, 32, 0.14);
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 900;
+    gap: 0.55rem;
+    justify-content: center;
+    left: clamp(1rem, 2.3vw, 1.5rem);
+    letter-spacing: 0.14em;
+    padding: 0.72rem 1rem;
+    position: fixed;
+    text-transform: uppercase;
+    top: clamp(5.8rem, 9vw, 6.7rem);
+    transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+    z-index: 60;
+  }
+
+  .ven-ayudanos-back:hover,
+  .ven-ayudanos-back:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .ven-ayudanos-back--light {
+    background: rgba(255, 255, 255, 0.88);
+    color: #293c74;
+  }
+
+  .ven-ayudanos-back--light:hover,
+  .ven-ayudanos-back--light:focus-visible {
+    background: #ffffff;
+    border-color: rgba(41, 60, 116, 0.24);
+    color: #1a255c;
+  }
+
+  .ven-ayudanos-back--dark {
+    background: rgba(7, 17, 28, 0.62);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+
+  .ven-ayudanos-back--dark:hover,
+  .ven-ayudanos-back--dark:focus-visible {
+    background: rgba(7, 17, 28, 0.82);
+    border-color: rgba(255, 255, 255, 0.34);
+    color: #ffffff;
+  }
+
+  @media (max-width: 640px) {
+    .ven-ayudanos-back {
+      font-size: 0.66rem;
+      left: 0.85rem;
+      padding: 0.66rem 0.82rem;
+      top: 5.25rem;
+    }
+  }
+</style>

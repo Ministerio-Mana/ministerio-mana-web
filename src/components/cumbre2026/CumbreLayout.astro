@@ -16,6 +16,10 @@ const {
   enableSmoothScroll = false,
   flush = false,
   showEventBadge = true,
+  showBackButton = true,
+  backHref = '/eventos/cumbre-mundial-2026',
+  backLabel = 'Volver',
+  useHistoryBack = true,
   noindex = false,
 } = Astro.props;
 
@@ -41,18 +45,23 @@ const cspNonce = Astro.locals?.cspNonce;
   <div class={`relative min-h-screen ${mainBg} ${overflowMode}`}>
     <!-- Top Controls -->
     <div class="fixed top-5 left-5 right-5 z-50 flex items-center justify-between pointer-events-none">
-      <a
-        id="cumbre-back-link"
-        href="/eventos/cumbre-mundial-2026"
-        class={`cumbre-action ${
-          isLight
-            ? 'cumbre-action--light-ghost'
-            : 'cumbre-action--dark-ghost'
-        } pointer-events-auto inline-flex gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-md transition`}
-      >
-        <span aria-hidden="true">←</span>
-        <span>Volver</span>
-      </a>
+      {showBackButton ? (
+        <a
+          id="cumbre-back-link"
+          href={backHref}
+          data-use-history-back={useHistoryBack ? 'true' : 'false'}
+          class={`cumbre-action ${
+            isLight
+              ? 'cumbre-action--light-ghost'
+              : 'cumbre-action--dark-ghost'
+          } pointer-events-auto inline-flex gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-md transition`}
+        >
+          <span aria-hidden="true">←</span>
+          <span>{backLabel}</span>
+        </a>
+      ) : (
+        <div aria-hidden="true"></div>
+      )}
       <div class="pointer-events-auto">
         <div
           id="cumbre-account-shell"

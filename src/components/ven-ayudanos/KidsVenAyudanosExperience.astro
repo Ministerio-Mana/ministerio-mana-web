@@ -1,0 +1,1942 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import TurnstileWidget from '@components/TurnstileWidget.astro';
+import venAyudanosScript from '@scripts/ven-ayudanos.js?url';
+
+const assetsBase = '/images/ven-ayudanos/ninos';
+const logoOnLight = `${assetsBase}/mana-kids-lineas-azul.svg`;
+const logoOnDark = `${assetsBase}/mana-kids-completo-azul.svg`;
+const decorativeLogoOnDark = `${assetsBase}/mana-kids-lineas-blancas.svg`;
+
+const talentTracks = [
+  {
+    value: 'ilustracion',
+    title: 'Ilustración',
+    text: 'Personajes, láminas, historias visuales y recursos para explicar la Biblia con claridad.',
+  },
+  {
+    value: 'animacion',
+    title: 'Animación',
+    text: 'Animaciones cortas, reels, piezas para pantallas y contenido digital para niños.',
+  },
+  {
+    value: 'guiones',
+    title: 'Guiones',
+    text: 'Historias, devocionales, clases, dinámicas y narrativas centradas en la Palabra.',
+  },
+  {
+    value: 'manualidades',
+    title: 'Manualidades',
+    text: 'Actividades, imprimibles, juegos y materiales que ayuden a recordar lo aprendido.',
+  },
+  {
+    value: 'ensenanza-kids',
+    title: 'Enseñanza',
+    text: 'Maestros y auxiliares con amor por los niños, orden, paciencia y fundamento bíblico.',
+  },
+  {
+    value: 'musica-kids',
+    title: 'Música',
+    text: 'Canciones, acompañamientos, voces, ritmos y recursos para adorar con los niños.',
+  },
+];
+
+const buildIdeas = [
+  'Devocionales para familias',
+  'Historias bíblicas ilustradas',
+  'Guías para maestros',
+  'Actividades imprimibles',
+  'Canciones con verdad bíblica',
+  'Videos cortos para redes',
+  'Material para la cumbre',
+  'Juegos y retos de memoria',
+];
+
+const ideaPrompts = [
+  'Tengo una canción',
+  'Puedo ilustrar una historia',
+  'Sé hacer juegos bíblicos',
+  'Quiero animar contenido',
+  'Puedo escribir clases',
+  'Tengo una idea nueva',
+];
+
+const formHelpOptions = [
+  { value: 'ilustracion', label: 'Ilustración' },
+  { value: 'animacion', label: 'Animación' },
+  { value: 'guiones', label: 'Guiones' },
+  { value: 'manualidades', label: 'Manualidades' },
+  { value: 'ensenanza-kids', label: 'Enseñanza' },
+  { value: 'musica-kids', label: 'Música' },
+  { value: 'produccion-kids', label: 'Video / foto' },
+  { value: 'materiales-kids', label: 'Materiales' },
+  { value: 'servicio', label: 'Servicio' },
+  { value: 'oracion', label: 'Oración' },
+  { value: 'generosidad', label: 'Generosidad' },
+  { value: 'difusion', label: 'Difusión' },
+  { value: 'propuesta-kids', label: 'Tengo una idea' },
+];
+---
+
+<CumbreLayout
+  title="Ayuda a que los niños conozcan la Palabra | Ven y Ayúdanos"
+  description="Una invitación para servir a Maná Kids con talentos, ideas, materiales, contenido, enseñanza, oración y generosidad."
+  image={logoOnLight}
+  imageAlt="Maná Kids"
+  imageWidth={1200}
+  imageHeight={630}
+  imageType="image/svg+xml"
+  variant="light"
+  flush
+  showEventBadge={false}
+  backHref="/ven-ayudanos"
+  useHistoryBack={false}
+>
+  <main class="kids-help" data-ven-ayudanos data-initial-ministry="ninos">
+    <section class="kids-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="900" data-cumbre-scroll-factor-breakpoint="900" data-cumbre-snap-directional="false" data-cumbre-snap-inertia="false" style="--panel-count: 5;">
+      <section class="cumbre-panel kids-panel kids-panel--hero" data-cumbre-panel data-panel-theme="light">
+        <div class="kids-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="kids-grid-bg"></div>
+          <div class="kids-blob kids-blob--blue"></div>
+          <div class="kids-blob kids-blob--yellow"></div>
+          <div class="kids-shapes"></div>
+          <div class="kids-floating-kit">
+            <span class="kids-float kids-float--music">♪</span>
+            <span class="kids-float kids-float--spark">+</span>
+            <span class="kids-float kids-float--play"></span>
+            <span class="kids-float kids-float--dot"></span>
+          </div>
+        </div>
+
+        <div class="kids-panel-inner kids-shell">
+          <div class="kids-hero-grid">
+            <div class="kids-copy">
+              <img src={logoOnLight} alt="Maná Kids" class="kids-logo" data-reveal />
+              <p class="kids-kicker" data-reveal>Ven y ayúdanos</p>
+              <h1 data-split-title>Ayuda a que los niños conozcan la Palabra</h1>
+              <p class="kids-lead" data-reveal>
+                Talentos, ideas, materiales y manos dispuestas para crear recursos que acerquen a los niños a Jesús.
+              </p>
+              <div class="kids-actions" data-reveal>
+                <a href="#primer-paso" class="kids-btn kids-btn--primary" data-scroll-form>Quiero ayudar</a>
+                <a href="#talentos-kids" class="kids-btn kids-btn--outline">Ver talentos</a>
+                <a href="/donaciones/" class="kids-btn kids-btn--soft">Sembrar</a>
+              </div>
+            </div>
+
+            <div class="kids-hero-card" data-reveal aria-hidden="true">
+              <div class="kids-card-stage">
+                <img src={decorativeLogoOnDark} alt="" class="kids-stage-logo" />
+                <div class="kids-pencil"></div>
+                <div class="kids-star kids-star--one"></div>
+                <div class="kids-star kids-star--two"></div>
+                <div class="kids-sound-card">
+                  <span>Música</span>
+                  <div class="kids-eq" aria-hidden="true">
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                  </div>
+                  <p>Canciones, voces y ritmos con verdad bíblica.</p>
+                </div>
+                <div class="kids-note">
+                  <span>Marcos 10:14</span>
+                  <p>Dejen que los niños vengan a mí.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="talentos-kids" class="cumbre-panel kids-panel kids-panel--talents" data-cumbre-panel data-panel-theme="light">
+        <div class="kids-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="kids-grid-bg kids-grid-bg--soft"></div>
+          <div class="kids-blob kids-blob--pink"></div>
+          <div class="kids-blob kids-blob--green"></div>
+        </div>
+
+        <div class="kids-panel-inner kids-shell">
+          <div class="kids-two-col">
+            <article class="kids-scripture" data-reveal>
+              <span>Proverbios 22:6</span>
+              <blockquote>Instruye al niño en su camino.</blockquote>
+              <p>La creatividad también puede servir al discipulado cuando nace de la Palabra y del amor por los niños.</p>
+              <img src={logoOnLight} alt="" aria-hidden="true" />
+            </article>
+
+            <div class="kids-panel-copy">
+              <p class="kids-kicker" data-reveal>Talentos al servicio</p>
+              <h2 data-split-title>Hay muchas formas de construir para los niños</h2>
+              <p class="kids-body" data-reveal>
+                Buscamos personas que puedan crear, enseñar, escribir, ilustrar, animar, hacer música, preparar actividades o apoyar materiales con excelencia y corazón pastoral.
+              </p>
+              <div class="kids-talent-grid" data-reveal>
+                {talentTracks.map((track, index) => (
+                  <article class={`kids-talent kids-talent--${(index % 6) + 1}`}>
+                    <strong>{track.title}</strong>
+                    <p>{track.text}</p>
+                  </article>
+                ))}
+              </div>
+              <div class="kids-idea-strip" data-reveal>
+                <div>
+                  <strong>¿Tienes una idea que no aparece aquí?</strong>
+                  <p>También queremos escuchar propuestas nuevas para juegos, canciones, historias, recursos, retos y contenido para niños.</p>
+                </div>
+                <a href="#primer-paso" data-scroll-form>Proponer idea</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel kids-panel kids-panel--build" data-cumbre-panel data-panel-theme="light">
+        <div class="kids-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="kids-grid-bg"></div>
+          <div class="kids-blob kids-blob--yellow kids-blob--wide"></div>
+        </div>
+
+        <div class="kids-panel-inner kids-shell">
+          <div class="kids-build-grid">
+            <div class="kids-panel-copy">
+              <p class="kids-kicker" data-reveal>Recursos e ideas</p>
+              <h2 data-split-title>Lo que podemos crear juntos</h2>
+              <p class="kids-body" data-reveal>
+                La meta no es hacer contenido por hacer contenido. Queremos materiales claros, bíblicos, memorables y fáciles de usar por maestros, familias y equipos de niños.
+              </p>
+              <div class="kids-build-board" data-reveal>
+                {buildIdeas.map((idea, index) => (
+                  <article class={`kids-build-card kids-build-card--${(index % 4) + 1}`}>
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    <strong>{idea}</strong>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <aside class="kids-resource-card" data-reveal>
+              <img src={logoOnLight} alt="" aria-hidden="true" />
+              <div class="kids-mini-studio" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <p>Una idea puede convertirse en una clase, una historia, una canción o una actividad que marque a un niño.</p>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel kids-panel kids-panel--give" data-cumbre-panel data-panel-theme="dark" data-give-panel>
+        <div class="kids-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="kids-grid-bg kids-grid-bg--dark"></div>
+          <div class="kids-blob kids-blob--sky"></div>
+          <div class="kids-blob kids-blob--yellow"></div>
+        </div>
+
+        <div class="kids-panel-inner kids-shell">
+          <div class="kids-give-grid">
+            <div class="kids-panel-copy kids-panel-copy--white">
+              <img src={logoOnDark} alt="Maná Kids" class="kids-logo kids-logo--white" data-reveal />
+              <p class="kids-kicker kids-kicker--white" data-reveal>Materiales y recursos</p>
+              <h2 data-split-title>Sembrar también prepara el camino</h2>
+              <p class="kids-body" data-reveal>
+                Las donaciones económicas pueden hacerse por los canales de Ministerio Maná. Si quieres apoyar a niños, puedes indicarlo en la nota de tu donación.
+              </p>
+              <div class="kids-actions" data-reveal>
+                <a href="/donaciones/" class="kids-btn kids-btn--white">Ir a donaciones</a>
+                <a href="#primer-paso" class="kids-btn kids-btn--ghost-white" data-scroll-form>Ofrecer talentos</a>
+              </div>
+            </div>
+
+            <div class="kids-give-board" data-reveal>
+              <article>
+                <span>Talentos</span>
+                <strong>Crear recursos para enseñar la Biblia</strong>
+              </article>
+              <article>
+                <span>Materiales</span>
+                <strong>Apoyar imprimibles, kits y herramientas</strong>
+              </article>
+              <article>
+                <span>Generosidad</span>
+                <strong>Sembrar para que el equipo tenga lo necesario</strong>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel kids-panel kids-panel--step" data-cumbre-panel data-panel-theme="light">
+        <div class="kids-panel-bg" data-panel-bg aria-hidden="true">
+          <div class="kids-grid-bg kids-grid-bg--soft"></div>
+          <div class="kids-blob kids-blob--blue"></div>
+        </div>
+
+        <div class="kids-panel-inner kids-shell">
+          <div class="kids-final">
+            <img src={logoOnLight} alt="Maná Kids" class="kids-final-logo" data-reveal />
+            <p class="kids-kicker" data-reveal>Primer paso</p>
+            <h2 data-split-title>Cuéntanos cómo puedes ayudar</h2>
+            <p class="kids-body" data-reveal>
+              No necesitas tener todo listo. Si tienes una idea, un talento o disponibilidad para servir, empecemos con una conversación.
+            </p>
+            <div class="kids-actions kids-actions--center" data-reveal>
+              <a href="#primer-paso" class="kids-btn kids-btn--primary" data-scroll-form>Ir al formulario</a>
+              <button type="button" class="kids-btn kids-btn--outline" data-share-page>Compartir</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="primer-paso" class="kids-form-section">
+      <div class="kids-shell kids-form-grid">
+        <div class="kids-form-copy">
+          <img src={logoOnDark} alt="Maná Kids" />
+          <p class="kids-kicker kids-kicker--white">Formulario</p>
+          <h2>Apoya a Maná Kids</h2>
+          <p>
+            Queremos conocer tus talentos, ideas y disponibilidad para crear recursos que ayuden a los niños a conocer a Jesús y amar la Palabra.
+          </p>
+          <blockquote>Una generación puede recordar la Palabra cuando alguien decide prepararla con amor.</blockquote>
+        </div>
+
+        <div class="kids-form-panel">
+          <form id="ven-ayudanos-form" class="kids-form" action="/api/ven-ayudanos/responder" method="post" data-help-form>
+            <input type="hidden" name="origin" value="ninos" data-hidden-origin data-default-value="ninos" />
+            <input type="hidden" name="place" value="ven-ayudanos-ninos" data-hidden-place data-default-value="ven-ayudanos-ninos" />
+            <input type="hidden" name="utmSource" data-hidden-utm-source />
+            <input type="hidden" name="utmMedium" data-hidden-utm-medium />
+            <input type="hidden" name="utmCampaign" data-hidden-utm-campaign />
+            <input type="hidden" name="qr" data-hidden-qr />
+            <input type="hidden" name="path" data-hidden-path />
+
+            <div class="kids-field-grid">
+              <label>
+                <span>Nombre</span>
+                <input name="fullName" required autocomplete="name" class="kids-input" placeholder="Nombre completo" />
+              </label>
+              <label>
+                <span>WhatsApp</span>
+                <input name="whatsapp" required inputmode="tel" autocomplete="tel" class="kids-input" placeholder="+57 300 000 0000" />
+              </label>
+              <label>
+                <span>Correo</span>
+                <input name="email" type="email" autocomplete="email" class="kids-input" placeholder="correo@ejemplo.com" />
+              </label>
+              <label>
+                <span>Ciudad</span>
+                <input name="city" autocomplete="address-level2" class="kids-input" placeholder="Ciudad" />
+              </label>
+              <label>
+                <span>Iglesia / sede</span>
+                <input name="church" class="kids-input" placeholder="Iglesia o sede" />
+              </label>
+              <label>
+                <span>Ministerio</span>
+                <select name="ministry" required class="kids-input" data-ministry-select>
+                  <option value="ninos" selected>Maná Kids</option>
+                  <option value="mana">Ministerio Maná</option>
+                  <option value="no-estoy-seguro">No estoy seguro</option>
+                </select>
+              </label>
+            </div>
+
+            <fieldset>
+              <legend>Puedo aportar con</legend>
+              <div class="kids-check-grid">
+                {formHelpOptions.map((option) => (
+                  <label class="kids-check">
+                    <input type="checkbox" name="helpTypes" value={option.value} />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div class="kids-prompt-box">
+              <span>También puedes proponer desde cero</span>
+              <div>
+                {ideaPrompts.map((prompt) => (
+                  <small>{prompt}</small>
+                ))}
+              </div>
+            </div>
+
+            <label>
+              <span>Cómo te gustaría ayudar</span>
+              <textarea name="message" rows="4" class="kids-input kids-textarea" placeholder="Cuéntanos tu idea, talento, experiencia con niños, recurso que quieres crear, canción, historia, juego, animación o disponibilidad para servir."></textarea>
+            </label>
+
+            <label>
+              <span>Disponibilidad</span>
+              <select name="availability" class="kids-input">
+                <option value="no-estoy-seguro">No estoy seguro</option>
+                <option value="semanal">Semanal</option>
+                <option value="mensual">Mensual</option>
+                <option value="eventos-especiales">Eventos especiales</option>
+              </select>
+            </label>
+
+            <TurnstileWidget appearance="always" theme="light" />
+
+            <div class="kids-form-actions">
+              <button type="submit" class="kids-btn kids-btn--primary" data-submit-button>Responder al llamado</button>
+              <p class="kids-status hidden" data-form-status></p>
+            </div>
+          </form>
+
+          <div class="kids-success hidden" data-success-panel>
+            <img src={logoOnLight} alt="Maná Kids" />
+            <h3>Gracias por responder.</h3>
+            <p>Un líder del ministerio se comunicará contigo pronto.</p>
+            <div class="kids-actions kids-actions--center">
+              <button type="button" class="kids-btn kids-btn--outline" data-share-page>Compartir</button>
+              <a href="/donaciones/" class="kids-btn kids-btn--primary">Donaciones</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <a href="#primer-paso" class="kids-mobile-cta" data-scroll-form>Quiero ayudar</a>
+  </main>
+
+  <script>
+    import '@scripts/cumbre-welcome-story.js';
+  </script>
+  <script type="module" src={venAyudanosScript}></script>
+</CumbreLayout>
+
+<style is:global>
+  .kids-help {
+    --kids-navy: #1a2740;
+    --kids-blue: #00a7bd;
+    --kids-sky: #2ab9d4;
+    --kids-green: #009e57;
+    --kids-yellow: #fdc500;
+    --kids-cream: #f7fbf6;
+    --kids-ink: #142238;
+    --active-accent: var(--kids-blue);
+    background: var(--kids-cream);
+    color: var(--kids-ink);
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .kids-shell {
+    width: min(100% - 42px, 1420px);
+    margin-inline: auto;
+  }
+
+  .kids-story {
+    position: relative;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    background: var(--kids-cream);
+  }
+
+  .kids-panel {
+    position: absolute;
+    inset: 0;
+    min-height: var(--cumbre-vh, 100svh);
+    height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    background: var(--kids-cream);
+    color: var(--kids-ink);
+    pointer-events: none;
+    clip-path: inset(100% 0% 0% 0%);
+    will-change: clip-path, transform;
+  }
+
+  .kids-panel:first-child,
+  .kids-panel.is-visible {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .kids-panel.is-active {
+    pointer-events: auto;
+  }
+
+  .kids-panel a,
+  .kids-panel button {
+    pointer-events: auto;
+  }
+
+  .kids-panel-bg,
+  .kids-panel-bg > * {
+    position: absolute;
+    inset: 0;
+  }
+
+  .kids-panel-inner {
+    position: relative;
+    z-index: 1;
+    min-height: var(--cumbre-vh, 100svh);
+    height: var(--cumbre-vh, 100svh);
+    display: flex;
+    align-items: center;
+    padding-block: clamp(62px, 8vh, 88px);
+  }
+
+  .kids-grid-bg {
+    background-image:
+      linear-gradient(rgba(0, 167, 189, 0.1) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(0, 167, 189, 0.1) 2px, transparent 2px);
+    background-size: 42px 42px;
+    opacity: 0.75;
+    mask-image: radial-gradient(circle at 50% 50%, black, transparent 78%);
+    animation: kidsGridDrift 30s linear infinite;
+  }
+
+  .kids-grid-bg--soft {
+    opacity: 0.45;
+  }
+
+  .kids-grid-bg--dark {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.11) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.11) 2px, transparent 2px);
+    opacity: 0.34;
+  }
+
+  .kids-blob {
+    inset: auto;
+    border-radius: 999px;
+    filter: blur(0);
+    opacity: 0.18;
+    transform: rotate(-8deg);
+    animation: kidsBlobBreath 10s ease-in-out infinite;
+  }
+
+  .kids-blob--blue {
+    left: auto;
+    right: -9%;
+    top: -18%;
+    width: 54vw;
+    height: 54vw;
+    background: var(--kids-blue);
+  }
+
+  .kids-blob--yellow {
+    right: auto;
+    left: -11%;
+    top: auto;
+    bottom: -28%;
+    width: 42vw;
+    height: 42vw;
+    background: var(--kids-yellow);
+    animation-delay: -2.5s;
+  }
+
+  .kids-blob--pink {
+    left: -14%;
+    top: -20%;
+    width: 42vw;
+    height: 42vw;
+    background: var(--kids-yellow);
+  }
+
+  .kids-blob--green {
+    inset: auto -10% -22% auto;
+    width: 42vw;
+    height: 42vw;
+    background: var(--kids-green);
+    animation-delay: -4.5s;
+  }
+
+  .kids-blob--sky {
+    inset: -18% -12% auto auto;
+    width: 48vw;
+    height: 48vw;
+    background: var(--kids-sky);
+    opacity: 0.22;
+    animation-delay: -1.4s;
+  }
+
+  .kids-blob--wide {
+    width: 62vw;
+    height: 34vw;
+    border-radius: 44% 56% 54% 46%;
+  }
+
+  .kids-shapes::before,
+  .kids-shapes::after {
+    content: "";
+    position: absolute;
+    border: 12px solid;
+    opacity: 0.9;
+  }
+
+  .kids-shapes::before {
+    width: 92px;
+    height: 92px;
+    right: 9%;
+    bottom: 12%;
+    border-color: rgba(253, 197, 0, 0.72);
+    border-radius: 28px;
+    transform: rotate(16deg);
+  }
+
+  .kids-shapes::after {
+    width: 72px;
+    height: 72px;
+    left: 44%;
+    top: 16%;
+    border-color: var(--kids-green);
+    border-radius: 999px;
+  }
+
+  .kids-floating-kit {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .kids-float {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    color: var(--kids-navy);
+    font-weight: 950;
+    animation: kidsFloat 5.5s ease-in-out infinite;
+    opacity: 0.86;
+  }
+
+  .kids-float--music {
+    left: auto;
+    right: 34%;
+    top: 72%;
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    background: var(--kids-yellow);
+    color: var(--kids-navy);
+    font-size: 2.4rem;
+    transform: rotate(-12deg);
+  }
+
+  .kids-float--spark {
+    right: 7%;
+    top: 30%;
+    color: rgba(0, 167, 189, 0.54);
+    font-size: 4.2rem;
+    animation-delay: -1.8s;
+  }
+
+  .kids-float--play {
+    left: auto;
+    right: 13%;
+    bottom: 11%;
+    width: 84px;
+    height: 84px;
+    border-radius: 999px;
+    background: var(--kids-green);
+    animation-delay: -0.9s;
+  }
+
+  .kids-float--play::before {
+    content: "";
+    margin-left: 7px;
+    border-left: 24px solid #fff;
+    border-top: 16px solid transparent;
+    border-bottom: 16px solid transparent;
+  }
+
+  .kids-float--dot {
+    right: 27%;
+    bottom: 18%;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: var(--kids-green);
+    animation-delay: -2.7s;
+  }
+
+  .kids-hero-grid,
+  .kids-two-col,
+  .kids-build-grid,
+  .kids-give-grid {
+    display: grid;
+    width: 100%;
+    align-items: center;
+    gap: clamp(32px, 5vw, 78px);
+  }
+
+  .kids-hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(390px, 0.86fr);
+  }
+
+  .kids-two-col {
+    grid-template-columns: minmax(330px, 0.78fr) minmax(0, 1.18fr);
+  }
+
+  .kids-build-grid,
+  .kids-give-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 0.78fr);
+  }
+
+  .kids-logo {
+    width: clamp(132px, 13vw, 210px);
+    height: auto;
+    margin-bottom: clamp(20px, 3vh, 34px);
+  }
+
+  .kids-logo--white {
+    width: clamp(120px, 11vw, 176px);
+  }
+
+  .kids-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    border: 2px solid rgba(0, 167, 189, 0.25);
+    border-radius: 999px;
+    padding: 7px 14px;
+    color: var(--kids-blue);
+    background: rgba(255, 255, 255, 0.68);
+    font-size: 0.78rem;
+    line-height: 1;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .kids-kicker--white {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.26);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .kids-copy h1,
+  .kids-panel-copy h2,
+  .kids-final h2,
+  .kids-form-copy h2 {
+    margin: 16px 0 0;
+    max-width: 890px;
+    color: var(--kids-navy);
+    font-size: clamp(3.25rem, 6.1vw, 7.6rem);
+    line-height: 0.88;
+    font-weight: 950;
+    letter-spacing: 0;
+  }
+
+  .kids-panel-copy h2,
+  .kids-final h2,
+  .kids-form-copy h2 {
+    font-size: clamp(2.55rem, 4.5vw, 5.85rem);
+    line-height: 0.92;
+  }
+
+  .kids-panel-copy h2::first-letter,
+  .kids-copy h1::first-letter {
+    color: var(--kids-blue);
+  }
+
+  .kids-lead,
+  .kids-body,
+  .kids-form-copy p {
+    max-width: 680px;
+    margin: 24px 0 0;
+    color: rgba(20, 34, 56, 0.72);
+    font-size: clamp(1.05rem, 1.45vw, 1.36rem);
+    line-height: 1.58;
+    font-weight: 500;
+  }
+
+  .kids-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .kids-actions--center {
+    justify-content: center;
+  }
+
+  .kids-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border-radius: 999px;
+    padding: 13px 22px;
+    border: 2px solid transparent;
+    font-size: 0.82rem;
+    line-height: 1;
+    font-weight: 950;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .kids-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .kids-btn--primary {
+    color: #fff;
+    background: var(--kids-navy);
+    box-shadow: 0 18px 36px rgba(26, 39, 64, 0.2);
+  }
+
+  .kids-btn--outline {
+    color: var(--kids-navy);
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 167, 189, 0.28);
+  }
+
+  .kids-btn--soft {
+    color: var(--kids-navy);
+    background: var(--kids-yellow);
+  }
+
+  .kids-btn--white {
+    color: var(--kids-navy);
+    background: #fff;
+  }
+
+  .kids-btn--ghost-white {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.26);
+  }
+
+  .kids-hero-card {
+    justify-self: end;
+    width: min(100%, 560px);
+  }
+
+  .kids-card-stage {
+    position: relative;
+    min-height: min(620px, calc(var(--cumbre-vh, 100svh) - 155px));
+    overflow: hidden;
+    border-radius: 52px 52px 16px 16px;
+    background: linear-gradient(150deg, var(--kids-blue), var(--kids-sky));
+    box-shadow: 0 32px 90px rgba(0, 167, 189, 0.28);
+  }
+
+  .kids-card-stage::before,
+  .kids-card-stage::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    opacity: 0.9;
+  }
+
+  .kids-card-stage::before {
+    right: -42px;
+    top: 18px;
+    width: 150px;
+    height: 150px;
+    background: var(--kids-yellow);
+  }
+
+  .kids-card-stage::after {
+    left: -48px;
+    bottom: 86px;
+    width: 128px;
+    height: 128px;
+    border: 18px solid rgba(255, 255, 255, 0.72);
+  }
+
+  .kids-stage-logo {
+    position: absolute;
+    inset: 12% auto auto 50%;
+    width: min(70%, 340px);
+    transform: translateX(-50%);
+    opacity: 0.22;
+  }
+
+  .kids-pencil {
+    position: absolute;
+    left: 12%;
+    bottom: 28%;
+    width: 64%;
+    height: 34px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--kids-yellow) 0 72%, #fff 72% 82%, var(--kids-green) 82%);
+    transform: rotate(-12deg);
+    box-shadow: 0 16px 28px rgba(26, 39, 64, 0.16);
+    animation: kidsPencil 4.5s ease-in-out infinite;
+  }
+
+  .kids-star {
+    position: absolute;
+    width: 78px;
+    height: 78px;
+    background: #fff;
+    clip-path: polygon(50% 0%, 61% 36%, 98% 36%, 68% 57%, 79% 94%, 50% 72%, 21% 94%, 32% 57%, 2% 36%, 39% 36%);
+  }
+
+  .kids-star--one {
+    right: 14%;
+    top: 17%;
+    background: var(--kids-yellow);
+    transform: rotate(14deg);
+    animation: kidsSpin 7s linear infinite;
+  }
+
+  .kids-star--two {
+    left: 12%;
+    top: 33%;
+    width: 46px;
+    height: 46px;
+    background: #fff;
+    transform: rotate(-16deg);
+    animation: kidsFloat 4.8s ease-in-out infinite;
+  }
+
+  .kids-sound-card {
+    position: absolute;
+    left: 32px;
+    top: 28px;
+    width: min(45%, 218px);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 16px;
+    color: var(--kids-navy);
+    box-shadow: 0 18px 42px rgba(26, 39, 64, 0.16);
+  }
+
+  .kids-sound-card span {
+    color: var(--kids-blue);
+    font-size: 0.72rem;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .kids-sound-card p {
+    margin: 10px 0 0;
+    color: rgba(26, 39, 64, 0.72);
+    font-size: 0.82rem;
+    line-height: 1.2;
+    font-weight: 800;
+  }
+
+  .kids-eq {
+    display: flex;
+    align-items: end;
+    gap: 6px;
+    height: 46px;
+    margin-top: 10px;
+  }
+
+  .kids-eq i,
+  .kids-mini-studio span {
+    display: block;
+    width: 11px;
+    border-radius: 999px;
+    background: var(--kids-blue);
+    animation: kidsBars 1.05s ease-in-out infinite;
+  }
+
+  .kids-eq i:nth-child(1) { height: 24px; background: var(--kids-yellow); }
+  .kids-eq i:nth-child(2) { height: 38px; animation-delay: -0.2s; background: var(--kids-sky); }
+  .kids-eq i:nth-child(3) { height: 18px; animation-delay: -0.35s; background: var(--kids-green); }
+  .kids-eq i:nth-child(4) { height: 44px; animation-delay: -0.52s; background: var(--kids-blue); }
+  .kids-eq i:nth-child(5) { height: 28px; animation-delay: -0.72s; background: var(--kids-yellow); }
+
+  .kids-note {
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: 28px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 22px;
+    color: var(--kids-navy);
+  }
+
+  .kids-note span,
+  .kids-scripture span,
+  .kids-give-board span {
+    display: block;
+    color: var(--kids-blue);
+    font-size: 0.76rem;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .kids-note p {
+    margin: 8px 0 0;
+    font-size: clamp(1.28rem, 2vw, 1.85rem);
+    line-height: 1.1;
+    font-weight: 950;
+  }
+
+  .kids-scripture,
+  .kids-resource-card,
+  .kids-give-board {
+    position: relative;
+    overflow: hidden;
+    border: 2px solid rgba(0, 167, 189, 0.15);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.82);
+    padding: clamp(24px, 3vw, 42px);
+    box-shadow: 0 28px 70px rgba(26, 39, 64, 0.1);
+  }
+
+  .kids-scripture {
+    border-color: rgba(0, 167, 189, 0.2);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(253, 197, 0, 0.2), transparent 32%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(229, 249, 251, 0.9));
+    box-shadow: 0 28px 70px rgba(0, 167, 189, 0.12);
+    color: var(--kids-navy);
+  }
+
+  .kids-scripture span {
+    color: var(--kids-blue);
+  }
+
+  .kids-scripture blockquote {
+    margin: 20px 0;
+    color: var(--kids-navy);
+    font-size: clamp(2.7rem, 5vw, 5.3rem);
+    line-height: 0.9;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .kids-scripture p {
+    color: rgba(26, 39, 64, 0.72);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-weight: 700;
+  }
+
+  .kids-scripture img {
+    width: min(86%, 330px);
+    margin-top: 28px;
+    opacity: 0.92;
+  }
+
+  .kids-talent-grid,
+  .kids-build-board {
+    display: grid;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  .kids-talent-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .kids-talent,
+  .kids-build-card {
+    position: relative;
+    border: 2px solid rgba(0, 167, 189, 0.14);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.84);
+    padding: 17px;
+    box-shadow: 0 18px 40px rgba(26, 39, 64, 0.07);
+  }
+
+  .kids-talent::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 7px;
+    border-radius: 18px 18px 0 0;
+    background: var(--kids-blue);
+  }
+
+  .kids-talent--2::before { background: var(--kids-green); }
+  .kids-talent--3::before { background: var(--kids-yellow); }
+  .kids-talent--4::before { background: var(--kids-green); }
+  .kids-talent--5::before { background: var(--kids-sky); }
+  .kids-talent--6::before { background: linear-gradient(90deg, var(--kids-blue), var(--kids-yellow), var(--kids-green)); }
+
+  .kids-talent strong,
+  .kids-build-card strong {
+    display: block;
+    color: var(--kids-navy);
+    font-size: 1rem;
+    line-height: 1.1;
+    font-weight: 950;
+  }
+
+  .kids-talent p {
+    margin: 9px 0 0;
+    color: rgba(26, 39, 64, 0.66);
+    font-size: 0.9rem;
+    line-height: 1.34;
+    font-weight: 650;
+  }
+
+  .kids-idea-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    margin-top: 16px;
+    border: 2px dashed rgba(0, 167, 189, 0.28);
+    border-radius: 22px;
+    background:
+      linear-gradient(135deg, rgba(253, 197, 0, 0.22), rgba(255, 255, 255, 0.82)),
+      #fff;
+    padding: 18px;
+  }
+
+  .kids-idea-strip strong {
+    display: block;
+    color: var(--kids-navy);
+    font-size: 1rem;
+    line-height: 1.15;
+    font-weight: 950;
+  }
+
+  .kids-idea-strip p {
+    margin: 6px 0 0;
+    color: rgba(26, 39, 64, 0.66);
+    font-size: 0.88rem;
+    line-height: 1.34;
+    font-weight: 700;
+  }
+
+  .kids-idea-strip a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: 999px;
+    background: var(--kids-blue);
+    color: #fff;
+    padding: 12px 16px;
+    font-size: 0.78rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+
+  .kids-build-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kids-build-card {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    min-height: 74px;
+    gap: 12px;
+  }
+
+  .kids-build-card span {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--kids-blue);
+    font-size: 0.8rem;
+    font-weight: 950;
+  }
+
+  .kids-build-card--2 span { background: var(--kids-sky); }
+  .kids-build-card--3 span { background: var(--kids-green); }
+  .kids-build-card--4 span { background: var(--kids-yellow); color: var(--kids-navy); }
+
+  .kids-resource-card {
+    min-height: min(580px, calc(var(--cumbre-vh, 100svh) - 165px));
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: linear-gradient(160deg, #fff, rgba(42, 185, 212, 0.12));
+  }
+
+  .kids-resource-card img {
+    width: min(100%, 360px);
+    align-self: center;
+  }
+
+  .kids-mini-studio {
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    gap: 10px;
+    height: 80px;
+    margin: 10px auto;
+    padding: 14px 20px;
+    border-radius: 22px;
+    background: rgba(0, 167, 189, 0.1);
+  }
+
+  .kids-mini-studio span {
+    width: 18px;
+  }
+
+  .kids-mini-studio span:nth-child(1) { height: 28px; background: var(--kids-yellow); }
+  .kids-mini-studio span:nth-child(2) { height: 52px; background: var(--kids-sky); animation-delay: -0.18s; }
+  .kids-mini-studio span:nth-child(3) { height: 40px; background: var(--kids-green); animation-delay: -0.36s; }
+  .kids-mini-studio span:nth-child(4) { height: 62px; background: var(--kids-blue); animation-delay: -0.54s; }
+
+  .kids-resource-card p {
+    margin: 28px 0 0;
+    color: var(--kids-navy);
+    font-size: clamp(1.5rem, 2.35vw, 2.3rem);
+    line-height: 1.08;
+    font-weight: 950;
+  }
+
+  .kids-panel--give {
+    background: var(--kids-blue);
+    color: #fff;
+  }
+
+  .kids-panel-copy--white h2,
+  .kids-panel-copy--white .kids-body {
+    color: #fff;
+  }
+
+  .kids-panel-copy--white .kids-body {
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .kids-give-board {
+    display: grid;
+    gap: 14px;
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .kids-give-board article {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 22px;
+    color: var(--kids-navy);
+  }
+
+  .kids-give-board strong {
+    display: block;
+    margin-top: 8px;
+    font-size: clamp(1.15rem, 1.7vw, 1.55rem);
+    line-height: 1.12;
+    font-weight: 950;
+  }
+
+  .kids-final {
+    width: min(100%, 900px);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .kids-final-logo {
+    width: min(260px, 54vw);
+    margin-inline: auto;
+    margin-bottom: 22px;
+  }
+
+  .kids-final .kids-body {
+    margin-inline: auto;
+  }
+
+  .kids-form-section {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 10% 12%, rgba(253, 197, 0, 0.2), transparent 30%),
+      radial-gradient(circle at 86% 18%, rgba(0, 158, 87, 0.2), transparent 27%),
+      linear-gradient(145deg, var(--kids-navy), #102034);
+    padding: clamp(76px, 10vw, 128px) 0;
+    color: #fff;
+  }
+
+  .kids-form-grid {
+    display: grid;
+    align-items: start;
+    gap: clamp(30px, 5vw, 74px);
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  }
+
+  .kids-form-copy {
+    position: sticky;
+    top: 96px;
+  }
+
+  .kids-form-copy img {
+    width: min(220px, 56vw);
+    margin-bottom: 24px;
+  }
+
+  .kids-form-copy h2,
+  .kids-form-copy p {
+    color: #fff;
+  }
+
+  .kids-form-copy blockquote {
+    margin: 30px 0 0;
+    border-left: 5px solid var(--kids-yellow);
+    padding-left: 20px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: clamp(1.25rem, 2vw, 1.9rem);
+    line-height: 1.22;
+    font-weight: 850;
+  }
+
+  .kids-form-panel {
+    border: 2px solid rgba(255, 255, 255, 0.16);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.93);
+    padding: clamp(18px, 3vw, 34px);
+    color: var(--kids-navy);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.24);
+  }
+
+  .kids-form {
+    display: grid;
+    gap: 20px;
+  }
+
+  .kids-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .kids-form label,
+  .kids-form fieldset {
+    display: grid;
+    gap: 8px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+
+  .kids-form label > span,
+  .kids-form legend {
+    color: rgba(26, 39, 64, 0.64);
+    font-size: 0.76rem;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .kids-input {
+    width: 100%;
+    border: 2px solid rgba(0, 167, 189, 0.18);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--kids-navy);
+    padding: 13px 14px;
+    font: inherit;
+    font-weight: 650;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .kids-input::placeholder {
+    color: rgba(26, 39, 64, 0.38);
+  }
+
+  .kids-input:focus {
+    border-color: var(--kids-blue);
+    box-shadow: 0 0 0 4px rgba(0, 167, 189, 0.14);
+  }
+
+  .kids-textarea {
+    min-height: 124px;
+    resize: vertical;
+  }
+
+  .kids-check-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .kids-check {
+    display: flex !important;
+    align-items: center;
+    gap: 9px;
+    min-height: 46px;
+    border: 2px solid rgba(0, 167, 189, 0.14);
+    border-radius: 16px;
+    background: rgba(0, 167, 189, 0.06);
+    padding: 10px 12px;
+    color: var(--kids-navy);
+    font-size: 0.84rem;
+    font-weight: 900;
+  }
+
+  .kids-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--kids-blue);
+  }
+
+  .kids-prompt-box {
+    display: grid;
+    gap: 12px;
+    border: 2px dashed rgba(0, 167, 189, 0.22);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(253, 197, 0, 0.22), transparent 38%),
+      rgba(0, 167, 189, 0.06);
+    padding: 14px;
+  }
+
+  .kids-prompt-box > span {
+    color: var(--kids-navy);
+    font-size: 0.8rem;
+    line-height: 1.2;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .kids-prompt-box div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .kids-prompt-box small {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    border-radius: 999px;
+    background: #fff;
+    color: rgba(26, 39, 64, 0.78);
+    padding: 7px 11px;
+    font-size: 0.74rem;
+    line-height: 1;
+    font-weight: 900;
+    box-shadow: 0 10px 24px rgba(26, 39, 64, 0.06);
+  }
+
+  .kids-form-actions {
+    display: grid;
+    gap: 12px;
+  }
+
+  .kids-status {
+    margin: 0;
+    border: 2px solid rgba(0, 167, 189, 0.18);
+    border-radius: 16px;
+    background: rgba(0, 167, 189, 0.08);
+    padding: 12px 14px;
+    color: var(--kids-navy);
+    font-size: 0.92rem;
+    font-weight: 800;
+  }
+
+  .kids-success {
+    text-align: center;
+  }
+
+  .kids-success img {
+    width: min(220px, 60vw);
+    margin-inline: auto;
+  }
+
+  .kids-success h3 {
+    margin: 24px 0 0;
+    color: var(--kids-navy);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 1;
+    font-weight: 950;
+  }
+
+  .kids-success p {
+    color: rgba(26, 39, 64, 0.68);
+    font-size: 1.05rem;
+    line-height: 1.5;
+    font-weight: 650;
+  }
+
+  .kids-mobile-cta {
+    display: none;
+  }
+
+  .kids-panel [data-reveal] {
+    will-change: transform, opacity;
+  }
+
+  .kids-panel [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .kids-panel [data-split-title] .split-word > span {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  @keyframes kidsFloat {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
+    50% { transform: translate3d(0, -16px, 0) rotate(7deg); }
+  }
+
+  @keyframes kidsPencil {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-12deg); }
+    50% { transform: translate3d(10px, -8px, 0) rotate(-8deg); }
+  }
+
+  @keyframes kidsSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes kidsBars {
+    0%, 100% { transform: scaleY(0.58); }
+    50% { transform: scaleY(1); }
+  }
+
+  @keyframes kidsGridDrift {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 42px 42px, 42px 42px; }
+  }
+
+  @keyframes kidsBlobBreath {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(-8deg); }
+    50% { transform: translate3d(12px, -14px, 0) scale(1.045) rotate(-4deg); }
+  }
+
+  @keyframes kidsAccentPulse {
+    0%, 100% { opacity: 0.84; transform: scaleX(0.94); }
+    50% { opacity: 1; transform: scaleX(1); }
+  }
+
+  @media (min-width: 1100px) and (max-height: 900px) {
+    .kids-panel-inner {
+      padding-block: clamp(48px, 6vh, 66px);
+    }
+
+    .kids-copy h1 {
+      font-size: clamp(3rem, 5vw, 5.8rem);
+    }
+
+    .kids-panel-copy h2,
+    .kids-final h2 {
+      font-size: clamp(2.4rem, 3.9vw, 4.5rem);
+    }
+
+    .kids-lead,
+    .kids-body {
+      margin-top: 18px;
+      font-size: clamp(0.98rem, 1.25vw, 1.1rem);
+      line-height: 1.42;
+    }
+
+    .kids-logo {
+      margin-bottom: 18px;
+      width: clamp(116px, 10vw, 162px);
+    }
+
+    .kids-card-stage {
+      min-height: min(520px, calc(var(--cumbre-vh, 100svh) - 125px));
+    }
+
+    .kids-talent-grid {
+      margin-top: 18px;
+      gap: 10px;
+    }
+
+    .kids-talent {
+      padding: 13px;
+    }
+
+    .kids-talent p {
+      font-size: 0.82rem;
+      line-height: 1.28;
+    }
+
+    .kids-idea-strip {
+      margin-top: 12px;
+      padding: 14px;
+    }
+
+    .kids-scripture {
+      padding: 24px;
+    }
+
+    .kids-scripture blockquote {
+      font-size: clamp(2.2rem, 3.8vw, 3.7rem);
+    }
+
+    .kids-build-board {
+      margin-top: 18px;
+      gap: 10px;
+    }
+
+    .kids-build-card {
+      min-height: 62px;
+      padding: 12px;
+    }
+
+    .kids-resource-card {
+      min-height: min(470px, calc(var(--cumbre-vh, 100svh) - 130px));
+    }
+  }
+
+  @media (max-width: 1080px) {
+    .kids-hero-grid,
+    .kids-two-col,
+    .kids-build-grid,
+    .kids-give-grid,
+    .kids-form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .kids-scripture,
+    .kids-resource-card {
+      display: none;
+    }
+
+    .kids-idea-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .kids-hero-card {
+      display: none;
+    }
+
+    .kids-copy,
+    .kids-panel-copy,
+    .kids-final {
+      max-width: 760px;
+    }
+
+    .kids-form-copy {
+      position: relative;
+      top: auto;
+    }
+  }
+
+  @media (max-width: 899px) {
+    .kids-story {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .kids-panel {
+      position: relative;
+      height: auto;
+      min-height: auto;
+      clip-path: none !important;
+      pointer-events: auto;
+    }
+
+    .kids-panel-inner {
+      height: auto;
+      min-height: auto;
+      padding-top: 74px;
+      padding-bottom: 118px;
+    }
+
+    .kids-panel:not(.kids-panel--hero) .kids-panel-inner {
+      padding-top: 104px;
+    }
+
+    .kids-hero-card {
+      display: none;
+    }
+
+    .kids-grid-bg {
+      opacity: 0.28;
+      animation-duration: 42s;
+    }
+
+    .kids-blob {
+      opacity: 0.1;
+      animation: kidsBlobBreath 9s ease-in-out infinite;
+    }
+
+    .kids-blob--pink {
+      animation-delay: -2.2s;
+    }
+
+    .kids-blob--green {
+      animation-delay: -4.4s;
+    }
+
+    .kids-floating-kit {
+      display: block;
+      opacity: 0.66;
+    }
+
+    .kids-float--music {
+      right: 12px;
+      top: 64%;
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      font-size: 1.65rem;
+    }
+
+    .kids-float--spark {
+      right: 16px;
+      top: 14%;
+      font-size: 2.7rem;
+      opacity: 0.46;
+    }
+
+    .kids-float--play {
+      right: 18px;
+      bottom: 58px;
+      width: 54px;
+      height: 54px;
+      opacity: 0.72;
+    }
+
+    .kids-float--play::before {
+      margin-left: 5px;
+      border-left-width: 16px;
+      border-top-width: 11px;
+      border-bottom-width: 11px;
+    }
+
+    .kids-float--dot {
+      right: auto;
+      left: 12px;
+      bottom: 32%;
+      width: 20px;
+      height: 20px;
+      opacity: 0.56;
+    }
+
+    .kids-hero-grid {
+      gap: 26px;
+    }
+
+    .kids-hero-card {
+      display: block;
+      justify-self: center;
+      width: min(100%, 360px);
+      margin-top: -2px;
+    }
+
+    .kids-card-stage {
+      min-height: 202px;
+      border-radius: 30px 30px 12px 12px;
+      box-shadow: 0 22px 52px rgba(0, 167, 189, 0.2);
+    }
+
+    .kids-card-stage::before {
+      right: -34px;
+      top: -30px;
+      width: 112px;
+      height: 112px;
+    }
+
+    .kids-card-stage::after {
+      left: -34px;
+      bottom: 54px;
+      width: 82px;
+      height: 82px;
+      border-width: 12px;
+    }
+
+    .kids-stage-logo {
+      top: 12%;
+      width: min(58%, 190px);
+      opacity: 0.2;
+    }
+
+    .kids-pencil {
+      left: 18%;
+      bottom: 39%;
+      width: 64%;
+      height: 18px;
+    }
+
+    .kids-star--one {
+      right: 13%;
+      top: 18%;
+      width: 40px;
+      height: 40px;
+    }
+
+    .kids-star--two {
+      left: 15%;
+      top: 32%;
+      width: 30px;
+      height: 30px;
+    }
+
+    .kids-sound-card {
+      left: 14px;
+      top: 14px;
+      width: 132px;
+      border-radius: 15px;
+      padding: 10px;
+    }
+
+    .kids-sound-card p {
+      display: none;
+    }
+
+    .kids-eq {
+      height: 28px;
+      gap: 4px;
+      margin-top: 7px;
+    }
+
+    .kids-eq i,
+    .kids-mini-studio span {
+      width: 7px;
+    }
+
+    .kids-eq i:nth-child(1) { height: 15px; }
+    .kids-eq i:nth-child(2) { height: 24px; }
+    .kids-eq i:nth-child(3) { height: 12px; }
+    .kids-eq i:nth-child(4) { height: 28px; }
+    .kids-eq i:nth-child(5) { height: 18px; }
+
+    .kids-note {
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      border-radius: 16px;
+      padding: 12px 14px;
+    }
+
+    .kids-note p {
+      margin-top: 5px;
+      font-size: 0.92rem;
+      line-height: 1.15;
+    }
+
+    .kids-talent::before {
+      transform-origin: left center;
+      animation: kidsAccentPulse 3.6s ease-in-out infinite;
+    }
+
+    .kids-talent--2::before { animation-delay: -0.4s; }
+    .kids-talent--3::before { animation-delay: -0.8s; }
+    .kids-talent--4::before { animation-delay: -1.2s; }
+    .kids-talent--5::before { animation-delay: -1.6s; }
+    .kids-talent--6::before { animation-delay: -2s; }
+
+    .kids-build-card span {
+      animation: kidsFloat 5.2s ease-in-out infinite;
+    }
+
+    .kids-copy h1,
+    .kids-panel-copy h2,
+    .kids-final h2,
+    .kids-form-copy h2 {
+      font-size: clamp(2.65rem, 13vw, 4.65rem);
+      line-height: 0.9;
+    }
+
+    .kids-talent-grid,
+    .kids-build-board,
+    .kids-check-grid,
+    .kids-field-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .kids-panel--give .kids-panel-inner {
+      min-height: auto;
+    }
+
+    .kids-form-section {
+      padding-bottom: 108px;
+    }
+
+    .kids-mobile-cta {
+      position: fixed;
+      z-index: 50;
+      left: 14px;
+      right: 86px;
+      bottom: 14px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      border-radius: 999px;
+      background: var(--kids-navy);
+      color: #fff;
+      box-shadow: 0 18px 40px rgba(26, 39, 64, 0.24);
+      font-size: 0.82rem;
+      font-weight: 950;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .kids-shell {
+      width: min(100% - 28px, 1420px);
+    }
+
+    .kids-panel-inner {
+      padding-top: 64px;
+      padding-bottom: 118px;
+    }
+
+    .kids-panel:not(.kids-panel--hero) .kids-panel-inner {
+      padding-top: 98px;
+    }
+
+    .kids-logo {
+      width: 132px;
+      margin-bottom: 18px;
+    }
+
+    .kids-lead,
+    .kids-body,
+    .kids-form-copy p {
+      font-size: 1rem;
+      line-height: 1.48;
+    }
+
+    .kids-actions {
+      display: grid;
+    }
+
+    .kids-btn {
+      width: 100%;
+    }
+
+    .kids-form-panel {
+      border-radius: 22px;
+      padding: 16px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kids-float,
+    .kids-grid-bg,
+    .kids-blob,
+    .kids-pencil,
+    .kids-star,
+    .kids-eq i,
+    .kids-mini-studio span,
+    .kids-talent::before,
+    .kids-build-card span {
+      animation: none !important;
+    }
+
+    .kids-story {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .kids-panel {
+      position: relative;
+      height: auto;
+      min-height: 100svh;
+      clip-path: none !important;
+      pointer-events: auto;
+    }
+
+    .kids-panel-inner {
+      height: auto;
+      min-height: 100svh;
+    }
+  }
+</style>

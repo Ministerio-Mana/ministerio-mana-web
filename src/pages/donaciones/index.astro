@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import DonationGateway from '@components/DonationGateway.astro';
+import VenAyudanosBackLink from '@components/ven-ayudanos/VenAyudanosBackLink.astro';
 import { preferredGatewayForCountry } from '@lib/geo';
 
 const geo = Astro.locals?.geo ?? { country: 'CO', lang: 'es' };
@@ -15,5 +16,6 @@ const preferred = requestedGateway === 'stripe' || requestedGateway === 'wompi'
 export const prerender = false;
 ---
 <BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión de Ministerio Maná.">
+  <VenAyudanosBackLink tone="dark" />
   <DonationGateway preferred={preferred} country={geo.country} initialDonationType={initialDonationType} />
 </BaseLayout>

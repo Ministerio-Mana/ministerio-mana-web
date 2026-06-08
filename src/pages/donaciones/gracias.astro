@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import VenAyudanosBackLink from '@components/ven-ayudanos/VenAyudanosBackLink.astro';
 export const prerender = false;
 ---
 
@@ -7,6 +8,8 @@ export const prerender = false;
   title="¡Gracias por tu donación! · Ministerio Maná"
   description="Confirmación de donación. Gracias por sembrar en el ministerio."
 >
+  <VenAyudanosBackLink />
+
   <section class="container-tight py-12 space-y-6 text-center">
     <p class="eyebrow">Donaciones</p>
     <h1 class="h1">¡Gracias por tu generosidad!</h1>
@@ -51,16 +54,16 @@ export const prerender = false;
 
     <div class="inline-flex flex-col gap-2 items-center">
       <a
-        href="/"
+        href="/ven-ayudanos"
         class="rounded-full px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#293C74] via-indigo-600 to-sky-600 shadow"
       >
-        Ir a la Cumbre 2026
+        Volver a Ven y Ayúdanos
       </a>
       <a
-        href="/"
+        href="/donaciones/"
         class="text-sm text-slate-500 hover:text-slate-700"
       >
-        Volver al inicio
+        Hacer otra donación
       </a>
     </div>
   </section>

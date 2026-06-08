@@ -15,41 +15,42 @@ const actionLinks = [
   {
     label: 'WhatsApp',
     title: 'Queremos escucharte',
-    text: 'Escríbenos para conocer tu historia y orientarte.',
+    text: 'Cuéntanos tu historia y recibe orientación para conectarte.',
     href: whatsappHref,
   },
   {
     label: 'Spotify',
     title: 'Devocional diario',
-    text: 'Escucha contenido preparado para tu crecimiento.',
+    text: 'Escucha contenido de calidad para tu crecimiento en la Palabra.',
     href: spotifyHref,
   },
   {
     label: 'YouTube',
-    title: 'Descubre contenido',
-    text: 'Comparte enseñanzas, estudios y recursos bíblicos.',
+    title: 'Todo el contenido',
+    text: 'Comparte enseñanzas, estudios y recursos que edifican.',
     href: youtubeHref,
   },
   {
     label: 'Instagram',
-    title: 'Síguenos',
-    text: 'Acompaña invitaciones, eventos y testimonios.',
+    title: 'Redes sociales',
+    text: 'Acompaña invitaciones, eventos y testimonios del ministerio.',
     href: instagramHref,
   },
   {
     label: 'Sitio web',
-    title: 'Conoce más',
-    text: 'Revisa historia, eventos, reuniones y recursos.',
+    title: 'Historia y eventos',
+    text: 'Conoce nuestra historia, eventos, devocional y contactos.',
     href: websiteHref,
   },
 ];
 
 const helpTracks = [
-  { value: 'feminidad', label: 'Modelar', text: 'Reflejar el carácter de Cristo y una feminidad piadosa.' },
-  { value: 'servicio', label: 'Servir', text: 'Extender misericordia y practicar el bien con intención.' },
-  { value: 'discipulado', label: 'Discipular', text: 'Caminar con otras y enseñar lo recibido en la Palabra.' },
-  { value: 'doctrina', label: 'Enseñar', text: 'Compartir sana doctrina con fidelidad, gracia y amor.' },
-  { value: 'generosidad', label: 'Generosidad', text: 'Vivir en unidad, comunión y corazones agradecidos.', donation: true },
+  { value: 'feminidad', label: 'Feminidad piadosa', text: 'Reflejar el carácter de Cristo y la belleza del diseño de Dios.' },
+  { value: 'servicio', label: 'Misericordia', text: 'Servir al necesitado y practicar el bien con intención.' },
+  { value: 'discipulado', label: 'Discipulado', text: 'Caminar con otras y edificar a la siguiente generación.' },
+  { value: 'doctrina', label: 'Sana doctrina', text: 'Enseñar la verdad con fidelidad, gracia y amor.' },
+  { value: 'comunion', label: 'Unidad y generosidad', text: 'Vivir en comunión, perseverar juntas y compartir con gozo.', donation: true },
+  { value: 'familia-fe', label: 'Familia de la fe', text: 'Animar y fortalecer a quienes caminan en Cristo.' },
 ];
 
 const virtues = [
@@ -67,17 +68,26 @@ const virtues = [
 
 const contacts = [
   { city: 'Londres', detail: 'Contacto internacional', phone: '+33 666 548305', wa: '33666548305' },
-  { city: 'París', detail: 'Contacto internacional', phone: '+33 664 175342', wa: '33664175342' },
-  { city: 'Orlando, Florida', detail: 'Beatriz Henao', phone: '+1 407 5809897', wa: '14075809897' },
   { city: 'Carolina del Norte', detail: 'Gloria Martínez', phone: '+1 347 8135589', wa: '13478135589' },
-  { city: 'Providence, Rhode Island', detail: 'Contacto local', phone: '+1 401 5161478', wa: '14015161478' },
-  { city: 'Atlanta, Georgia', detail: 'Claudia Salazar', phone: '+1 770 5393573', wa: '17705393573' },
   { city: 'New Jersey', detail: 'Contacto local', phone: '+1 908 4144802', wa: '19084144802' },
   { city: 'Ixcatepec', detail: 'Contacto México', phone: '+52 789 1126016', wa: '527891126016' },
-  { city: 'Bogotá', detail: 'Contacto Colombia', phone: '+57 318 4373583', wa: '573184373583' },
   { city: 'Cali', detail: 'Contacto Colombia', phone: '+57 301 6539295', wa: '573016539295' },
-  { city: 'Itagüí', detail: 'Contacto Colombia', phone: '+57 305 3548906', wa: '573053548906' },
+  { city: 'Armenia', detail: 'Contacto Colombia', phone: '+57 310 4001217', wa: '573104001217' },
+  { city: 'Buenaventura', detail: 'Contacto Colombia', phone: '+57 315 4833033', wa: '573154833033' },
+  { city: 'París', detail: 'Contacto internacional', phone: '+33 664 175342', wa: '33664175342' },
+  { city: 'Providence, Rhode Island', detail: 'Contacto local', phone: '+1 401 5161478', wa: '14015161478' },
+  { city: 'Tantoyuca, México', detail: 'Contacto México', phone: '+52 789 1003457', wa: '527891003457' },
+  { city: 'Tantoyuca, Veracruz', detail: 'Contacto México', phone: '+52 789 1241807', wa: '527891241807' },
+  { city: 'Bogotá', detail: 'Contacto Colombia', phone: '+57 318 4373583', wa: '573184373583' },
+  { city: 'Marinilla', detail: 'Contacto Colombia', phone: '+57 312 8472997', wa: '573128472997' },
+  { city: 'Bucaramanga', detail: 'Contacto Colombia', phone: '+57 312 8803962', wa: '573128803962' },
+  { city: 'Orlando, Florida', detail: 'Beatriz Henao', phone: '+1 407 5809897', wa: '14075809897' },
+  { city: 'Atlanta, Georgia', detail: 'Claudia Salazar', phone: '+1 770 5393573', wa: '17705393573' },
+  { city: 'Tantoyuca', detail: 'Contacto México', phone: '+52 789 1056547', wa: '527891056547' },
+  { city: 'Tempoal, México', detail: 'Contacto México', phone: '+52 789 1241807', wa: '527891241807' },
   { city: 'Cuenca, Ecuador', detail: 'Contacto Ecuador', phone: '+593 98 1696000', wa: '593981696000' },
+  { city: 'Itagüí', detail: 'Contacto Colombia', phone: '+57 305 3548906', wa: '573053548906' },
+  { city: 'Cartago', detail: 'Contacto Colombia', phone: '+57 313 6416313', wa: '573136416313' },
 ];
 
 const formHelpOptions = [
@@ -89,7 +99,7 @@ const formHelpOptions = [
 
 <CumbreLayout
   title="Mujeres que sostienen el llamado | Ven y Ayúdanos"
-  description="Una invitación para unirte, servir, compartir el devocional, orar, sembrar y sostener la red de Mujeres que Creen y Dejan Legado."
+  description="Una invitación para unirte, servir, compartir el devocional, orar, sembrar y sostener la misión de Mujeres que Creen y Dejan Legado."
   image={`${assetsBase}/mujeres-virtudes-lineup.png`}
   imageAlt="Mujeres que creen y dejan legado"
   imageWidth={1890}
@@ -98,6 +108,8 @@ const formHelpOptions = [
   variant="light"
   flush
   showEventBadge={false}
+  backHref="/ven-ayudanos"
+  useHistoryBack={false}
 >
   <main class="mqc-page" data-ven-ayudanos data-initial-ministry="mujeres">
     <section class="mqc-story" data-cumbre-story data-cumbre-static-mobile="true" data-cumbre-static-breakpoint="1100" data-cumbre-scroll-factor-breakpoint="1100" data-cumbre-snap-directional="false" data-cumbre-snap-inertia="false" style="--panel-count: 5;">
@@ -115,7 +127,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>Ven y ayúdanos</p>
               <h1 data-split-title>Mujeres que sostienen el llamado</h1>
               <p class="mqc-lead" data-reveal>
-                Mujeres firmes en la Palabra, activas en la enseñanza, constantes en el servicio y comprometidas con hacer discípulas.
+                Mujeres firmes en la Palabra, activas en la enseñanza, constantes en el servicio, generosas en la comunión y comprometidas con la Gran Comisión.
               </p>
               <div class="mqc-actions" data-reveal>
                 <a href="#primer-paso" class="mqc-btn mqc-btn--primary" data-scroll-form>Responder al llamado</a>
@@ -148,7 +160,7 @@ const formHelpOptions = [
               <span>Hechos 16:9</span>
               <blockquote>“Ven y ayúdanos.”</blockquote>
               <p>
-                El llamado se responde con presencia, misericordia, enseñanza, discipulado, unidad y generosidad.
+                El llamado se responde con presencia, misericordia, enseñanza, discipulado, unidad, generosidad y práctica del bien.
               </p>
               <img src={`${assetsBase}/barca-fucsia.svg`} alt="" aria-hidden="true" />
             </article>
@@ -157,7 +169,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>La red</p>
               <h2 data-split-title>La ayuda toma forma cuando alguien responde</h2>
               <p class="mqc-body" data-reveal>
-                El propósito de Mujeres que Creen se vive cuando una mujer modela, sirve, discipula, enseña y camina en comunión.
+                El propósito de Mujeres que Creen se vive cuando una mujer modela una feminidad piadosa, sirve con misericordia, discipula, enseña sana doctrina y camina en comunión.
               </p>
               <div class="mqc-help-grid" data-reveal>
                 {helpTracks.map((track) => (
@@ -190,7 +202,7 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>Tito 2:3-5</p>
               <h2 data-split-title>10 virtudes de feminidad bíblica</h2>
               <p class="mqc-body" data-reveal>
-                Con base en Tito 2:3-5, estas virtudes ayudan a formar carácter, discipulado y una vida que refleja el diseño de Dios.
+                Con base en Tito 2:3-5, estas virtudes llaman a vivir con reverencia, sensatez y pureza, formando carácter y discipulado.
               </p>
               <p class="mqc-tito-note" data-reveal>
                 <span>Base bíblica</span>
@@ -226,7 +238,7 @@ const formHelpOptions = [
               <p class="mqc-kicker mqc-kicker--white" data-reveal>Generosidad y comunidad</p>
               <h2 data-split-title>Sembrar también sostiene la red</h2>
               <p class="mqc-body" data-reveal>
-                Tu apoyo ayuda a sostener recursos, encuentros, contenidos, cartillas y procesos de discipulado para mujeres en distintas ciudades.
+                Tu apoyo ayuda a crear materiales discipulares, sostener encuentros, preparar cartillas y llevar la visión a nuevos territorios.
               </p>
               <div class="mqc-give-note" data-reveal>
                 <span>Sostén la red</span>
@@ -288,11 +300,11 @@ const formHelpOptions = [
               <p class="mqc-kicker" data-reveal>Otra manera de ayudarnos</p>
               <h2 data-split-title>Extiende la red</h2>
               <p class="mqc-body" data-reveal>
-                Comparte contenidos, recursos y eventos para que más mujeres conozcan esta comunidad y caminen en la Palabra.
+                Ayúdanos a que más mujeres escuchen el devocional, encuentren enseñanzas, se unan a la comunidad y conozcan los eventos del ministerio.
               </p>
               <figure class="mqc-connect-boat" data-reveal>
                 <img src={`${assetsBase}/barca-fucsia.svg`} alt="" aria-hidden="true" />
-                <figcaption>Haz parte de la red desde donde estás.</figcaption>
+                <figcaption>Una mujer que comparte también sostiene la red.</figcaption>
               </figure>
             </div>
 
@@ -317,7 +329,7 @@ const formHelpOptions = [
           <p class="mqc-kicker">Primer paso</p>
           <h2>Da tu primer paso</h2>
           <p>
-            Esto no es un compromiso definitivo. Es una conversación para descubrir cómo tus manos, recursos, ideas y dones pueden ayudar.
+            Queremos escucharte y conocer tu historia. Este formulario abre una conversación para descubrir cómo puedes servir, orar, compartir o apoyar lo que Dios está haciendo entre mujeres.
           </p>
           <blockquote>Padre amado, forma en mí una mujer que cree profundamente y deja legado.</blockquote>
         </div>

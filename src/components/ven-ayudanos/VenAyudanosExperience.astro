@@ -6,9 +6,10 @@ import { helpOptions, ministries, ministryOrder, type MinistryKey } from '@data/
 
 interface Props {
   selected?: MinistryKey | null;
+  isHome?: boolean;
 }
 
-const { selected = null } = Astro.props as Props;
+const { selected = null, isHome = false } = Astro.props as Props;
 const selectedMinistry = selected ? ministries[selected] : null;
 const initialKey: MinistryKey = selected ?? 'mana';
 const activeMinistry = ministries[initialKey];
@@ -30,6 +31,9 @@ const pageDescription = selectedMinistry
   imageType="image/jpeg"
   flush
   showEventBadge={false}
+  showBackButton={!isHome}
+  backHref="/ven-ayudanos"
+  useHistoryBack={false}
 >
   <main
     class="ven-help-experience bg-[#07111c] text-white"
@@ -174,7 +178,7 @@ const pageDescription = selectedMinistry
                   Dónde quieres poner tus manos
                 </h2>
                 <p class="text-lg leading-relaxed text-slate-700">
-                  Toca un área y mira cómo puedes responder. Campus conserva su landing actual.
+                  Toca un área, revisa su enfoque y entra a la interna correspondiente para responder mejor.
                 </p>
               </div>
 
@@ -202,6 +206,7 @@ const pageDescription = selectedMinistry
               {ministryOrder.map((key) => {
                 const ministry = ministries[key];
                 const active = key === initialKey;
+                const opensCurrentForm = selectedMinistry?.key === key;
                 return (
                   <article
                     class="ven-ministry-panel absolute inset-0 overflow-hidden rounded-[2rem] border border-white/80 bg-white/88 p-6 shadow-2xl shadow-brand-dark/14 backdrop-blur-md md:p-8"
@@ -220,12 +225,12 @@ const pageDescription = selectedMinistry
                         ))}
                       </div>
                       <div class="mt-auto pt-8">
-                        {ministry.external ? (
-                          <a href={ministry.href} class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto">
+                        {opensCurrentForm ? (
+                          <a href="#primer-paso" class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto" data-scroll-form data-ministry-form={key}>
                             {ministry.cta}
                           </a>
                         ) : (
-                          <a href="#primer-paso" class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto" data-ministry-form={key}>
+                          <a href={ministry.href} class="inline-flex w-full items-center justify-center rounded-full bg-brand-dark px-6 py-3.5 text-sm font-black uppercase tracking-[0.16em] text-white shadow-2xl shadow-brand-dark/18 transition hover:-translate-y-0.5 hover:bg-brand-medium sm:w-auto">
                             {ministry.cta}
                           </a>
                         )}
