@@ -181,7 +181,7 @@ const pageDescription = selectedMinistry
                   Dónde quieres poner tus manos
                 </h2>
                 <p class="text-lg leading-relaxed text-slate-700">
-                  Toca un área, revisa su enfoque y entra a la interna correspondiente para responder mejor.
+                  Toca un área, revisa su enfoque y elige el paso para responder mejor.
                 </p>
               </div>
 
@@ -190,16 +190,16 @@ const pageDescription = selectedMinistry
                   const ministry = ministries[key];
                   const active = key === initialKey;
                   return (
-                    <a
-                      href={ministry.href}
-                      data-astro-reload
+                    <button
+                      type="button"
                       class="ven-ministry-card rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-xl shadow-brand-dark/8 backdrop-blur-md transition"
+                      data-ministry-card={key}
                       aria-pressed={active ? 'true' : 'false'}
                       style={`--card-accent:${ministry.accent}; --card-glow:${ministry.glow};`}
                     >
                       <span class="block text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{ministry.eyebrow}</span>
                       <span class="mt-2 block text-xl font-black leading-tight text-brand-dark">{ministry.shortName}</span>
-                    </a>
+                    </button>
                   );
                 })}
               </div>
@@ -209,7 +209,7 @@ const pageDescription = selectedMinistry
               {ministryOrder.map((key) => {
                 const ministry = ministries[key];
                 const active = key === initialKey;
-                const opensCurrentForm = selectedMinistry?.key === key;
+                const opensCurrentForm = selectedMinistry?.key === key || key === 'varones';
                 return (
                   <article
                     class="ven-ministry-panel absolute inset-0 overflow-hidden rounded-[2rem] border border-white/80 bg-white/88 p-6 shadow-2xl shadow-brand-dark/14 backdrop-blur-md md:p-8"
@@ -544,21 +544,35 @@ const pageDescription = selectedMinistry
     transform: translateY(-2px);
   }
 
+  .ven-ministry-card {
+    cursor: pointer;
+  }
+
   .ven-ministry-card[aria-pressed='true'] span:last-child {
     color: var(--card-accent);
   }
 
   .ven-ministry-panel {
+    z-index: 0;
     opacity: 0;
     pointer-events: none;
-    transform: translateY(18px) scale(0.98);
-    transition: opacity 260ms ease, transform 260ms ease;
+    transform: translateY(10px) scale(0.992);
+    transition: opacity 150ms ease, transform 150ms ease;
   }
 
   .ven-ministry-panel[data-active='true'] {
+    z-index: 2;
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0) scale(1);
+  }
+
+  .ven-help-experience .ven-select-panel [data-reveal],
+  .ven-help-experience .ven-select-panel [data-split-title] .split-word > span {
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
   }
 
   .ven-main-cta,

@@ -3,9 +3,7 @@ function setupVenAyudanos() {
   if (!root || root.dataset.ready === 'true') return;
   root.dataset.ready = 'true';
 
-  const cards = Array.from(root.querySelectorAll('[data-ministry-card]'));
   const panels = Array.from(root.querySelectorAll('[data-ministry-panel]'));
-  const formLinks = Array.from(root.querySelectorAll('[data-ministry-form]'));
   const ministrySelect = root.querySelector('[data-ministry-select]');
   const form = root.querySelector('[data-help-form]');
   const status = root.querySelector('[data-form-status]');
@@ -13,8 +11,6 @@ function setupVenAyudanos() {
   const successPanel = root.querySelector('[data-success-panel]');
   const shareButtons = Array.from(root.querySelectorAll('[data-share-page]'));
   const copyButtons = Array.from(root.querySelectorAll('[data-copy-value]'));
-  const giveLinks = Array.from(root.querySelectorAll('[data-scroll-give]'));
-  const ministryLinks = Array.from(root.querySelectorAll('[data-scroll-ministry]'));
 
   const setHiddenValue = (selector, value) => {
     const input = root.querySelector(selector);
@@ -37,7 +33,7 @@ function setupVenAyudanos() {
     if (!target) return;
     const targetTop = target.getBoundingClientRect().top + window.scrollY - 12;
     if (window.lenis?.scrollTo) {
-      window.lenis.scrollTo(Math.max(0, targetTop), { force: true });
+      window.lenis.scrollTo(Math.max(0, targetTop), { duration: 0.48, force: true });
       return;
     }
     window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
@@ -57,7 +53,7 @@ function setupVenAyudanos() {
       const storyTop = story.offsetTop || 0;
       const target = Math.max(storyTop, storyTop + viewportHeight * index * scrollFactor);
       if (window.lenis?.scrollTo) {
-        window.lenis.scrollTo(target, { force: true });
+        window.lenis.scrollTo(target, { duration: 0.48, force: true });
         return true;
       }
       window.scrollTo({ top: target, behavior: 'smooth' });
@@ -77,6 +73,7 @@ function setupVenAyudanos() {
   };
 
   const selectMinistry = (key, updateSelect = true) => {
+    const cards = Array.from(root.querySelectorAll('[data-ministry-card]'));
     const card = cards.find((item) => item.dataset.ministryCard === key);
     const accent = card?.style.getPropertyValue('--card-accent');
     const glow = card?.style.getPropertyValue('--card-glow');
@@ -95,38 +92,38 @@ function setupVenAyudanos() {
     }
   };
 
-  cards.forEach((card) => {
-    card.addEventListener('click', () => {
-      selectMinistry(card.dataset.ministryCard);
-    });
-  });
+  root.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
 
-  formLinks.forEach((link) => {
-    link.addEventListener('click', () => {
-      const key = link.dataset.ministryForm;
-      if (key) selectMinistry(key);
-    });
-  });
-
-  root.querySelectorAll('[data-scroll-form]').forEach((link) => {
-    link.addEventListener('click', (event) => {
+    const card = target.closest('[data-ministry-card]');
+    if (card && root.contains(card)) {
       event.preventDefault();
-      scrollToForm();
-    });
-  });
+      selectMinistry(card.dataset.ministryCard);
+      return;
+    }
 
-  ministryLinks.forEach((link) => {
-    link.addEventListener('click', (event) => {
+    const formLink = target.closest('[data-scroll-form]');
+    if (formLink && root.contains(formLink)) {
+      event.preventDefault();
+      const key = formLink.dataset.ministryForm;
+      if (key) selectMinistry(key);
+      scrollToForm();
+      return;
+    }
+
+    const ministryLink = target.closest('[data-scroll-ministry]');
+    if (ministryLink && root.contains(ministryLink)) {
       event.preventDefault();
       scrollToMinistries();
-    });
-  });
+      return;
+    }
 
-  giveLinks.forEach((link) => {
-    link.addEventListener('click', (event) => {
+    const giveLink = target.closest('[data-scroll-give]');
+    if (giveLink && root.contains(giveLink)) {
       event.preventDefault();
       scrollToGive();
-    });
+    }
   });
 
   ministrySelect?.addEventListener('change', () => {
