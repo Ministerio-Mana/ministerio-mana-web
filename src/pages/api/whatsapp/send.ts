@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
+import { enforceRateLimit } from '@lib/rateLimit';
 
 export const prerender = false;
 
@@ -20,9 +22,15 @@ function getBearerToken(request: Request): string | null {
   }
   const headerToken = request.headers.get('x-whatsapp-token');
   if (headerToken) return headerToken.trim();
-  const url = new URL(request.url);
-  const queryToken = url.searchParams.get('token');
-  return queryToken ? queryToken.trim() : null;
+  return null;
+}
+
+function safeEqual(left: string, right: string): boolean {
+  if (!left || !right) return false;
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function normalizeWhatsappNumber(value: string): string {
@@ -31,13 +39,20 @@ function normalizeWhatsappNumber(value: string): string {
   return trimmed.startsWith('whatsapp:') ? trimmed : `whatsapp:${trimmed}`;
 }
 
-export const POST: APIRoute = async ({ request }) => {
-  const webhookToken = env('WHATSAPP_WEBHOOK_TOKEN');
-  if (webhookToken) {
-    const token = getBearerToken(request);
-    if (!token || token !== webhookToken) {
-      return json({ ok: false, error: 'No autorizado' }, 401);
-    }
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  const webhookToken = String(env('WHATSAPP_WEBHOOK_TOKEN') || '').trim();
+  if (!webhookToken) {
+    return json({ ok: false, error: 'WhatsApp webhook no configurado' }, 503);
+  }
+
+  const token = getBearerToken(request);
+  if (!token || !safeEqual(token, webhookToken)) {
+    return json({ ok: false, error: 'No autorizado' }, 401);
+  }
+
+  const allowed = await enforceRateLimit(`whatsapp.send:${clientAddress ?? 'unknown'}`, 60, 20);
+  if (!allowed) {
+    return json({ ok: false, error: 'Demasiadas solicitudes' }, 429);
   }
 
   let payload: any = {};

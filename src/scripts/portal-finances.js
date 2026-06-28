@@ -39,6 +39,12 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function sanitizeMailtoEmail(value) {
+    const email = String(value || '').trim();
+    if (!email || /[\r\n<>"']/.test(email)) return '';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
+}
+
 async function init() {
     try {
         const auth = await ensureAuthenticated();
@@ -166,6 +172,7 @@ function renderIssues(issues) {
         const amount = formatCurrency(issue.amount || 0, issue.currency);
         const name = issue.donor_name || 'Sin nombre';
         const email = issue.donor_email || '';
+        const mailtoEmail = sanitizeMailtoEmail(email);
         const phoneRaw = issue.donor_phone || '';
         const phone = phoneRaw.toString().replace(/\D/g, '');
         const reference = issue.reference ? `Ref: ${issue.reference}` : '';
@@ -175,15 +182,15 @@ function renderIssues(issues) {
 
         const message = `Hola ${name}, tu pago ${issue.status === 'FAILED' ? 'fue rechazado' : 'esta pendiente'} por ${amount}. ${reason ? `Motivo: ${reason}. ` : ''}${reference ? `${reference}. ` : ''}Si ya esta resuelto, ignora este mensaje.`;
         const encodedMessage = encodeURIComponent(message);
-        const mailto = email
-            ? `mailto:${email}?subject=${encodeURIComponent(`Pago ${statusLabel} · ${issue.concept_label || 'Aporte'}`)}&body=${encodedMessage}`
+        const mailto = mailtoEmail
+            ? `mailto:${mailtoEmail}?subject=${encodeURIComponent(`Pago ${statusLabel} · ${issue.concept_label || 'Aporte'}`)}&body=${encodedMessage}`
             : '';
         const whatsapp = phone && phone.length >= 8
             ? `https://wa.me/${phone}?text=${encodedMessage}`
             : '';
 
         const actions = [
-            email ? `<a class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" href="${mailto}">Correo</a>` : '',
+            mailto ? `<a class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
             whatsapp ? `<a class="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600" href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>` : '',
             `<button class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`
         ].filter(Boolean).join('');

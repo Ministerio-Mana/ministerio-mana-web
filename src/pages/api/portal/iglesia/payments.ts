@@ -68,19 +68,7 @@ export const GET: APIRoute = async ({ request }) => {
   } else {
     return new Response(JSON.stringify({ ok: true, payments: [] }), { status: 200 });
   }
-  bookingQuery = restrictToPortalIglesiaBookings(bookingQuery, isAdmin);
-
-  if (!isAdmin) {
-    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
-  }
-
-  if (!isAdmin) {
-    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
-  }
-
-  if (!isAdmin) {
-    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
-  }
+  bookingQuery = restrictToPortalIglesiaBookings(bookingQuery);
 
   const { data: bookings, error: bookingsError } = await bookingQuery;
   if (bookingsError) {

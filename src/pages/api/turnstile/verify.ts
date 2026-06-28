@@ -33,7 +33,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const hasSecret = Boolean(env('TURNSTILE_SECRET_KEY'));
-  if (!isProduction() || !hasSecret) {
+  if (isProduction() && !hasSecret) {
+    return new Response(JSON.stringify({ ok: false, error: 'Captcha no configurado' }), {
+      status: 503,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  if (!isProduction() && !hasSecret) {
     return new Response(JSON.stringify({ ok: true, bypass: true }), {
       status: 200,
       headers: { 'content-type': 'application/json' },

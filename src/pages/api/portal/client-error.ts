@@ -22,9 +22,11 @@ function sanitizeMeta(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const entries = Object.entries(raw as Record<string, unknown>).slice(0, 24);
   const result: Record<string, unknown> = {};
+  const reservedKeys = new Set(['source', 'actor_email', 'actoremail', 'ip', 'useragent']);
   for (const [key, value] of entries) {
     const safeKey = clampText(key, 64);
     if (!safeKey) continue;
+    if (reservedKeys.has(safeKey.toLowerCase())) continue;
     if (typeof value === 'string') {
       result[safeKey] = clampText(value, 240);
       continue;
@@ -70,6 +72,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const authUser = await getUserFromRequest(request);
   const passwordSession = authUser?.email ? null : readPasswordSession(request);
   const actorEmail = authUser?.email || passwordSession?.email || '';
+  if (!actorEmail) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
 
   const identifier = clampText(body?.identifier || 'portal.client.error', 120) || 'portal.client.error';
   const meta = sanitizeMeta(body?.meta);
@@ -81,9 +89,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     userAgent,
     detail: message,
     meta: {
-      source: 'portal-client',
-      actor_email: actorEmail ? maskEmail(actorEmail) : null,
       ...meta,
+      source: 'portal-client',
+      actor_email: maskEmail(actorEmail),
     },
   });
 

@@ -4,6 +4,7 @@ import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
 import churchesData from '../../../../data/churches.json';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { getSafeMapsUrl } from '@lib/mapsUrl';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -78,7 +79,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             country,
             continent,
             address: church.address,
-            maps_url: church.maps_url || null,
+            maps_url: getSafeMapsUrl(church.maps_url),
             lat: typeof church.lat === 'number' ? church.lat : null,
             lng: typeof church.lng === 'number' ? church.lng : null,
             contact_name: church.contact?.name || null,

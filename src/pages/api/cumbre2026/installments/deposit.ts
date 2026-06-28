@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { depositThreshold, hashToken } from '@lib/cumbre2026';
-import { buildDepositSchedule, getInstallmentDeadline, isValidDateOnly } from '@lib/cumbreInstallments';
+import { buildDepositSchedule, getInstallmentDeadline, isValidDateOnly, parseDateOnly } from '@lib/cumbreInstallments';
 import { createPaymentPlan, getBookingById, getPlanByBookingId } from '@lib/cumbreStore';
 
 export const prerender = false;
@@ -107,13 +107,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const deadline = getInstallmentDeadline();
     const today = parseLocalDate(new Date());
-    if (rawDueDate < today) {
+    const dueDate = parseDateOnly(rawDueDate);
+    const todayDate = parseDateOnly(today);
+    const deadlineDate = parseDateOnly(deadline);
+    if (dueDate < todayDate) {
       return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
-    if (rawDueDate > deadline) {
+    if (dueDate > deadlineDate) {
       return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha limite' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },

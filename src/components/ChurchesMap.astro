@@ -90,6 +90,7 @@ const isAmbient = variant === 'ambient';
 <script>
   import CHURCHES from '../data/churches.json';
   import { buildChurchGeoTree, normalizeChurchCountry } from '@lib/churchGeo';
+  import { buildSafeChurchMapsUrl } from '@lib/mapsUrl';
 
   const MAP_ID = 'churches-map-canvas';
 
@@ -101,20 +102,8 @@ const isAmbient = variant === 'ambient';
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
 
-  const mapsHrefForChurch = (church) => {
-    if (typeof church.maps_url === 'string' && church.maps_url.trim()) {
-      return church.maps_url.trim();
-    }
-
-    if (typeof church.lat === 'number' && typeof church.lng === 'number') {
-      return `https://www.google.com/maps?q=${church.lat},${church.lng}`;
-    }
-
-    const query = [church.address, church.city, normalizeChurchCountry(church)].filter(Boolean).join(', ');
-    return query
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
-      : 'https://maps.google.com';
-  };
+  const mapsHrefForChurch = (church) =>
+    buildSafeChurchMapsUrl(church, normalizeChurchCountry(church));
 
   const normalizeToken = (value) =>
     String(value || '')
@@ -237,7 +226,7 @@ const isAmbient = variant === 'ambient';
           ${church.service ? `<p class="mana-popup-service">${sanitize(church.service)}</p>` : ''}
           ${church.contact?.name ? `<p class="mana-popup-contact">Contacto: ${sanitize(church.contact.name)}</p>` : ''}
           <div class="mana-popup-actions">
-            <a class="mana-popup-btn mana-popup-btn-map" href="${mapsHref}" target="_blank" rel="noopener noreferrer">Cómo llegar</a>
+            <a class="mana-popup-btn mana-popup-btn-map" href="${sanitize(mapsHref)}" target="_blank" rel="noopener noreferrer">Cómo llegar</a>
             ${whatsappHref ? `<a class="mana-popup-btn mana-popup-btn-wa" href="${whatsappHref}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
           </div>
         </div>

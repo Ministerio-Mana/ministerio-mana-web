@@ -103,11 +103,8 @@ async function fetchProfilesByChurchIds(churchIds: string[]): Promise<ProfileRow
   const chunks = chunkArray(uniqueIds, 120);
 
   for (const ids of chunks) {
-    const [byChurch, byPortalChurch] = await Promise.all([
-      fetchProfiles((query) => query.in('church_id', ids)),
-      fetchProfiles((query) => query.in('portal_church_id', ids)),
-    ]);
-    rows.push(...byChurch, ...byPortalChurch);
+    const byChurch = await fetchProfiles((query) => query.in('church_id', ids));
+    rows.push(...byChurch);
   }
 
   return dedupeProfiles(rows);
@@ -137,19 +134,17 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
   }
 
-  if (access.isAdmin) {
-    const ipCheck = await enforceAdminIp({
-      request,
-      clientAddress,
-      identifier: 'portal.admin.users.list',
-      allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.users.list',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
     });
-    if (!ipCheck.ok) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 403,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
   }
 
   let scopedUsers: ProfileRow[] = [];

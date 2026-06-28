@@ -4,7 +4,6 @@ import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
 import { normalizeCountryRegion } from '@lib/normalization';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
-import { isAdminRole } from '@lib/portalAuth';
 import {
   getPortalChurchAccessContext,
   mapPortalAccessError,
@@ -64,24 +63,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const effectiveRole = String(access.role || 'user');
 
-  if (isAdminRole(effectiveRole)) {
-    const ipCheck = await enforceAdminIp({
-      request,
-      clientAddress,
-      identifier: 'portal.admin.users.create',
-      allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
-    });
-    if (!ipCheck.ok) {
-      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-        status: 403,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-  }
-
   const capabilities = getRoleCapabilities(effectiveRole);
   if (!capabilities.can_create_users) {
     return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para crear usuarios' }), { status: 403 });
+  }
+
+  const ipCheck = await enforceAdminIp({
+    request,
+    clientAddress,
+    identifier: 'portal.admin.users.create',
+    allowlistKeys: ['PORTAL_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
+  });
+  if (!ipCheck.ok) {
+    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   const creatableRoles = getCreatableRoles(effectiveRole);

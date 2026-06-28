@@ -138,7 +138,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
     bookingsQuery = bookingsQuery.in('church_id', scopedChurchIds);
   }
-  bookingsQuery = restrictToPortalIglesiaBookings(bookingsQuery, access.isAdmin);
+  bookingsQuery = restrictToPortalIglesiaBookings(bookingsQuery);
 
   const { data: bookings, error: bookingsError } = await bookingsQuery;
   if (bookingsError) {

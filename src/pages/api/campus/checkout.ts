@@ -235,6 +235,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         });
 
         const totalAmount = allocationAmounts.reduce((sum, allocation) => sum + allocation.amount, 0);
+        try {
+            if (normalizedCurrency === 'COP') {
+                validateCopAmount(totalAmount);
+            } else {
+                validateUsdAmount(totalAmount);
+            }
+        } catch (e: any) {
+            return json({ ok: false, error: e?.message || 'Monto inválido' }, 400);
+        }
         const equalAmounts = allocationAmounts.every((allocation) => allocation.amount === allocationAmounts[0]?.amount);
         const amountMode = Array.isArray(allocations) && allocations.length > 0 && !equalAmounts ? 'custom' : 'same';
         const allocationBySlug = new Map(allocationAmounts.map((allocation) => [allocation.slug, allocation.amount]));

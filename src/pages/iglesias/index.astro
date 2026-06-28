@@ -4,17 +4,10 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import ChurchesMap from '@components/ChurchesMap.astro';
 import churchesData from '@data/churches.json';
 import { buildChurchGeoTree } from '@lib/churchGeo';
+import { buildSafeChurchMapsUrl } from '@lib/mapsUrl';
 
 const toMapsHref = (church: any) => {
-  if (typeof church.maps_url === 'string' && church.maps_url.trim()) return church.maps_url.trim();
-  if (typeof church.lat === 'number' && typeof church.lng === 'number') {
-    return `https://www.google.com/maps?q=${church.lat},${church.lng}`;
-  }
-
-  const query = [church.address, church.city, church.country || 'Colombia'].filter(Boolean).join(', ');
-  return query
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
-    : 'https://maps.google.com';
+  return buildSafeChurchMapsUrl(church, church.country || 'Colombia');
 };
 
 const churchesRaw = (churchesData as any[]).map((church, index) => ({

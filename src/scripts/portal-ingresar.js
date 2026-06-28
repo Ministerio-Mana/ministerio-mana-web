@@ -165,13 +165,13 @@ async function verifyTurnstileToken(token) {
   }
 }
 
-async function verifyTurnstileTokenSoft(token, context = 'generic') {
-  if (!token) return false;
+async function verifyTurnstileTokenStrict(token, context = 'generic') {
+  if (!token) return { ok: false, error: 'Captcha requerido.' };
   const result = await verifyTurnstileToken(token);
   if (!result.ok) {
-    console.warn(`[Turnstile] Soft verify failed (${context}):`, result.error);
+    console.warn(`[Turnstile] Verify failed (${context}):`, result.error);
   }
-  return result.ok;
+  return result;
 }
 
 function showStatus(msg, type = 'loading') {
@@ -275,7 +275,13 @@ async function startOAuth(provider, label, btn) {
     return;
   }
   if (captcha.token && !captcha.bypass) {
-    await verifyTurnstileTokenSoft(captcha.token, `oauth:${provider}`);
+    const captchaCheck = await verifyTurnstileTokenStrict(captcha.token, `oauth:${provider}`);
+    if (!captchaCheck.ok) {
+      reportCaptchaGuardBlock(`oauth:${provider}`, { ...captcha, error: captchaCheck.error, reason: 'server_rejected' });
+      showStatus(captchaCheck.error || 'Captcha inválido.', 'error');
+      resetTurnstile();
+      return;
+    }
   }
 
   if (btn) {
@@ -439,7 +445,13 @@ passwordForm?.addEventListener('submit', async (e) => {
 
     // Only verify Turnstile token if we actually have one (widget rendered)
     if (captcha.token && !captcha.bypass) {
-      await verifyTurnstileTokenSoft(captcha.token, 'password-login-post-supabase');
+      const captchaCheck = await verifyTurnstileTokenStrict(captcha.token, 'password-login-post-supabase');
+      if (!captchaCheck.ok) {
+        if (supabase) {
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        }
+        throw new Error(captchaCheck.error || 'Captcha inválido. Intenta de nuevo.');
+      }
     }
 
     showStatus('Acceso correcto. Entrando...', 'success');
@@ -485,7 +497,13 @@ passkeyBtn?.addEventListener('click', async () => {
       return;
     }
     if (captcha.token && !captcha.bypass) {
-      await verifyTurnstileTokenSoft(captcha.token, 'passkey');
+      const captchaCheck = await verifyTurnstileTokenStrict(captcha.token, 'passkey');
+      if (!captchaCheck.ok) {
+        reportCaptchaGuardBlock('passkey-login', { ...captcha, error: captchaCheck.error, reason: 'server_rejected' });
+        showStatus(captchaCheck.error || 'Captcha inválido.', 'error');
+        resetTurnstile();
+        return;
+      }
     }
     if (!supabase) {
       throw new Error('El portal no está configurado.');

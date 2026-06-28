@@ -10,7 +10,6 @@ import {
   calculateTotals,
   depositThreshold,
   generateAccessToken,
-  hashToken,
 } from '@lib/cumbre2026';
 import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
@@ -208,16 +207,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       const existing = await findIdempotentBooking(idempotencyKey);
       if (existing) {
         return new Response(JSON.stringify({
-          ok: true,
-          bookingId: existing.booking.id,
-          token: idempotencyKey,
-          currency: existing.booking.currency,
-          totalAmount: existing.booking.total_amount,
-          depositThreshold: existing.booking.deposit_threshold,
-          participants: existing.participants,
+          ok: false,
+          error: 'Esta solicitud ya fue procesada. Revisa tu correo o solicita ayuda si necesitas recuperar el enlace.',
           idempotent: true,
         }), {
-          status: 200,
+          status: 409,
           headers: { 'content-type': 'application/json' },
         });
       }
@@ -231,9 +225,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
-    const token = idempotencyKey
-      ? { token: idempotencyKey, hash: hashToken(idempotencyKey) }
-      : generateAccessToken();
+    const token = generateAccessToken();
 
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('cumbre_bookings')
@@ -260,16 +252,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         const existing = await findIdempotentBooking(idempotencyKey);
         if (existing) {
           return new Response(JSON.stringify({
-            ok: true,
-            bookingId: existing.booking.id,
-            token: idempotencyKey,
-            currency: existing.booking.currency,
-            totalAmount: existing.booking.total_amount,
-            depositThreshold: existing.booking.deposit_threshold,
-            participants: existing.participants,
+            ok: false,
+            error: 'Esta solicitud ya fue procesada. Revisa tu correo o solicita ayuda si necesitas recuperar el enlace.',
             idempotent: true,
           }), {
-            status: 200,
+            status: 409,
             headers: { 'content-type': 'application/json' },
           });
         }

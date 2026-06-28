@@ -69,7 +69,7 @@ export const GET: APIRoute = async ({ request }) => {
     } else {
       return null;
     }
-    return restrictToPortalIglesiaBookings(query, isAdmin);
+    return restrictToPortalIglesiaBookings(query);
   };
 
   const primaryQuery = buildQuery(extendedSelect);

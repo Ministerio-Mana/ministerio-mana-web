@@ -6288,30 +6288,25 @@ logoutBtn?.addEventListener('click', async () => {
   logoutBtn.disabled = true;
   logoutBtn.textContent = 'Saliendo...';
 
-  // Guarantee redirect happens within 1 second, even if cleanup hangs
-  const redirectTimer = setTimeout(() => {
-    window.location.href = '/portal/ingresar';
-  }, 1000);
+  try {
+    if (supabase) {
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+  } catch (err) {
+    console.error('Supabase logout cleanup error:', err);
+  }
 
-  // Attempt to clean up sessions (non-blocking)
-  Promise.race([
-    (async () => {
-      try {
-        if (supabase) {
-          await supabase.auth.signOut({ scope: 'local' });
-        }
-        if (authMode === 'password') {
-          await fetch('/api/portal/password-logout', { method: 'POST', credentials: 'include' });
-        }
-      } catch (err) {
-        console.error('Logout cleanup error:', err);
-      }
-    })(),
-    new Promise(resolve => setTimeout(resolve, 800)) // 800ms max for cleanup
-  ]).finally(() => {
-    clearTimeout(redirectTimer);
-    window.location.href = '/portal/ingresar';
-  });
+  try {
+    await fetch('/api/portal/password-logout', {
+      method: 'POST',
+      credentials: 'include',
+      keepalive: true,
+    });
+  } catch (err) {
+    console.error('Password logout cleanup error:', err);
+  }
+
+  window.location.href = '/portal/ingresar';
 });
 
 saveProfileBtn?.addEventListener('click', updateProfile);

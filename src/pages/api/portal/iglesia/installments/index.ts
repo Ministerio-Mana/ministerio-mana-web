@@ -53,7 +53,7 @@ function buildScopedBookingQuery(scope: ScopeContext) {
     return null;
   }
 
-  return restrictToPortalIglesiaBookings(query, scope.isAdmin);
+  return restrictToPortalIglesiaBookings(query);
 }
 
 async function loadScopedBookings(scope: ScopeContext): Promise<LimitedRows<any> | null> {

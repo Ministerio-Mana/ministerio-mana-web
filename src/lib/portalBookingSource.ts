@@ -7,7 +7,7 @@ export function isPortalIglesiaBooking(booking: unknown): boolean {
 
 export function restrictToPortalIglesiaBookings<T extends { eq: (column: string, value: string) => T }>(
   query: T,
-  isAdmin: boolean,
+  includeAllSources = false,
 ): T {
-  return isAdmin ? query : query.eq('source', PORTAL_IGLESIA_BOOKING_SOURCE);
+  return includeAllSources ? query : query.eq('source', PORTAL_IGLESIA_BOOKING_SOURCE);
 }
