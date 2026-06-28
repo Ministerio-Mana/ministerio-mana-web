@@ -985,6 +985,16 @@ export const PUT: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos un participante' }), { status: 400 });
   }
 
+  const submittedParticipantIds = participantsRaw
+    .map((participant: any) => String(participant?.id || '').trim())
+    .filter(Boolean);
+  const duplicateParticipantId = submittedParticipantIds.find((participantId, index) => (
+    submittedParticipantIds.indexOf(participantId) !== index
+  ));
+  if (duplicateParticipantId) {
+    return new Response(JSON.stringify({ ok: false, error: 'No se puede reutilizar el mismo participante en la inscripción' }), { status: 400 });
+  }
+
   const invalidEmail = participantsRaw.find((participant: any) => {
     const rawEmail = participant?.email ?? participant?.email_address ?? participant?.emailAddress;
     return rawEmail && !normalizeEmail(rawEmail);
@@ -1185,6 +1195,7 @@ export const PUT: APIRoute = async ({ request }) => {
       return {
         safe,
         extra: participant ?? {},
+        participantId,
         preservesExistingLodging: packageType === 'lodging' && existingLodgingParticipantIds.has(participantId),
         isLegacyLodging: packageType === 'lodging' && existingLegacyLodgingParticipantIds.has(participantId),
         originalCreatedAt: existingParticipantCreatedAtById.get(participantId) || null,
@@ -1193,6 +1204,7 @@ export const PUT: APIRoute = async ({ request }) => {
     .filter(Boolean) as {
       safe: NonNullable<ReturnType<typeof sanitizeParticipant>>;
       extra: any;
+      participantId: string;
       preservesExistingLodging: boolean;
       isLegacyLodging: boolean;
       originalCreatedAt: string | null;
@@ -1201,10 +1213,16 @@ export const PUT: APIRoute = async ({ request }) => {
   if (!participants.length) {
     return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), { status: 400 });
   }
+
+  const preservedLegacyLodgingIds = new Set(
+    participants
+      .filter((participant) => participant.isLegacyLodging)
+      .map((participant) => participant.participantId),
+  );
   const lodgingCapacity = await checkLodgingCapacity({
     participants: participants.map((participant) => participant.safe),
     currentBookingLodgingCount: existingReopenedLodgingParticipantIds.size,
-    legacyLodgingCount: participants.filter((participant) => participant.isLegacyLodging).length,
+    legacyLodgingCount: preservedLegacyLodgingIds.size,
   });
   if (!lodgingCapacity.ok) {
     return new Response(JSON.stringify({ ok: false, error: lodgingCapacity.message }), { status: 409 });

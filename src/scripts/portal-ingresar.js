@@ -36,11 +36,23 @@ const statusWrapper = document.getElementById('login-status-wrapper');
 
 const TURNSTILE_RENDER_WAIT_MS = 3000;
 
+function normalizeSafePortalPath(value) {
+  const fallback = '/portal';
+  const next = value || fallback;
+  if (!next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return fallback;
+
+  try {
+    const parsed = new URL(next, window.location.origin);
+    if (parsed.origin !== window.location.origin) return fallback;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 function getSafeNextPath() {
   const params = new URLSearchParams(window.location.search);
-  const next = params.get('next') || '/portal';
-  if (!next.startsWith('/') || next.startsWith('//')) return '/portal';
-  return next;
+  return normalizeSafePortalPath(params.get('next'));
 }
 
 function buildActivationRedirectTo() {

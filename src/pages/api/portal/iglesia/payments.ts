@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { listAccessibleChurchIds } from '@lib/portalScope';
+import { restrictToPortalIglesiaBookings } from '@lib/portalBookingSource';
 
 export const prerender = false;
 
@@ -51,7 +52,7 @@ export const GET: APIRoute = async ({ request }) => {
   // Build Query
   let bookingQuery = supabaseAdmin
     .from('cumbre_bookings')
-    .select('id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency')
+    .select('id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency, source')
     .order('created_at', { ascending: false })
     .limit(200);
 
@@ -66,6 +67,19 @@ export const GET: APIRoute = async ({ request }) => {
     bookingQuery = bookingQuery.eq('church_id', churchId);
   } else {
     return new Response(JSON.stringify({ ok: true, payments: [] }), { status: 200 });
+  }
+  bookingQuery = restrictToPortalIglesiaBookings(bookingQuery, isAdmin);
+
+  if (!isAdmin) {
+    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
+  }
+
+  if (!isAdmin) {
+    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
+  }
+
+  if (!isAdmin) {
+    bookingQuery = bookingQuery.eq('source', 'portal-iglesia');
   }
 
   const { data: bookings, error: bookingsError } = await bookingQuery;

@@ -5,6 +5,7 @@ import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalA
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { createInstallmentLinkToken } from '@lib/cumbreStore';
 import { ensureBalanceInstallment } from '@lib/cumbreBalanceInstallment';
+import { isPortalIglesiaBooking } from '@lib/portalBookingSource';
 
 export const prerender = false;
 
@@ -46,7 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const { data: balanceBooking, error: balanceBookingError } = await supabaseAdmin
       .from('cumbre_bookings')
-      .select('id, church_id')
+      .select('id, church_id, source')
       .eq('id', balanceBookingId)
       .maybeSingle();
 
@@ -58,6 +59,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (!access.isAdmin) {
+      if (!isPortalIglesiaBooking(balanceBooking)) {
+        return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
       const isAllowedChurch = await isChurchAllowedForAccess((balanceBooking as any).church_id || null, access);
       if (!isAllowedChurch) {
         return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
@@ -76,7 +83,7 @@ export const POST: APIRoute = async ({ request }) => {
     ? { data: balanceContext.installment, error: null }
     : await supabaseAdmin
       .from('cumbre_installments')
-      .select('id, booking_id, status, booking:cumbre_bookings(id, church_id), plan:cumbre_payment_plans(id, provider, provider_payment_method_id, provider_subscription_id)')
+      .select('id, booking_id, status, booking:cumbre_bookings(id, church_id, source), plan:cumbre_payment_plans(id, provider, provider_payment_method_id, provider_subscription_id)')
       .eq('id', installmentId)
       .maybeSingle();
 
@@ -93,6 +100,12 @@ export const POST: APIRoute = async ({ request }) => {
     || (plan?.provider === 'stripe' && plan?.provider_subscription_id);
 
   if (!access.isAdmin) {
+    if (!isPortalIglesiaBooking(booking)) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     const isAllowedChurch = await isChurchAllowedForAccess(booking?.church_id || null, access);
     if (!isAllowedChurch) {
       return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {

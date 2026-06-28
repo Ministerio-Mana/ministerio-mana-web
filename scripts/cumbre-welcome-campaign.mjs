@@ -960,6 +960,11 @@ async function sendEmail(recipient, htmlTemplate) {
 
 async function writeWhatsappCsv(recipients) {
   if (!whatsappCsvPath) return;
+  const neutralizeCsvCell = (value) => {
+    const text = String(value || '');
+    return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  };
+  const escapeCsvCell = (value) => `"${neutralizeCsvCell(value).replaceAll('"', '""')}"`;
   const rows = [
     ['name', 'phone', 'booking_id', 'message'].join(','),
     ...recipients
@@ -967,7 +972,7 @@ async function writeWhatsappCsv(recipients) {
       .map((recipient) => {
         const message = `Hola ${recipient.name || ''}, ya esta lista tu guia de bienvenida para la Cumbre Mundial de Discipulado: ${config.guideUrl}`.trim();
         return [recipient.name, recipient.phone, recipient.bookingId, message]
-          .map((value) => `"${String(value || '').replaceAll('"', '""')}"`)
+          .map(escapeCsvCell)
           .join(',');
       }),
   ];

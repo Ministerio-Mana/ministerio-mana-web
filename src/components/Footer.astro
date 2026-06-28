@@ -185,26 +185,51 @@ async function getLatestListFromVideosPage(limit = 6): Promise<DevotionalVideo[]
   }
 }
 
-async function getLatestDevotionals(): Promise<DevotionalVideo[]> {
-  const globalCache = globalThis as typeof globalThis & {
-    __manaYoutubeFooterVideoListsV2?: Record<string, { ts: number; data: DevotionalVideo[] }>;
-  };
-  const cache = (globalCache.__manaYoutubeFooterVideoListsV2 ??= {});
-  const cached = cache[locale];
-  if (cached && Array.isArray(cached.data) && Date.now() - cached.ts < 1000 * 60 * 15) return cached.data;
-
+async function fetchLatestDevotionalsFromRemote(): Promise<DevotionalVideo[]> {
   const rssVideos = await getLatestListFromRss();
-  const pageVideos = rssVideos.length > 0 ? [] : await getLatestListFromVideosPage();
-  const data = rssVideos.length > 0
-    ? rssVideos
-    : pageVideos.length > 0
-      ? pageVideos
-      : fallbackDevotionalList;
-  cache[locale] = { ts: Date.now(), data };
-  return data;
+  if (rssVideos.length > 0) return rssVideos;
+
+  const pageVideos = await getLatestListFromVideosPage();
+  return pageVideos.length > 0 ? pageVideos : fallbackDevotionalList;
 }
 
-const latestDevotionals = await getLatestDevotionals();
+function getLatestDevotionals(): DevotionalVideo[] {
+  const cacheKey = locale;
+  const globalCache = globalThis as typeof globalThis & {
+    __manaYoutubeFooterVideoListsV3?: Record<string, { ts: number; data: DevotionalVideo[]; inflight?: Promise<DevotionalVideo[]> }>;
+  };
+  const cache = (globalCache.__manaYoutubeFooterVideoListsV3 ??= {});
+  const cached = cache[cacheKey];
+  const now = Date.now();
+  const cacheTtlMs = 1000 * 60 * 15;
+  const fallbackTtlMs = 1000 * 60 * 2;
+
+  if (cached && Array.isArray(cached.data) && now - cached.ts < cacheTtlMs) return cached.data;
+
+  const current = cached ?? { ts: now, data: fallbackDevotionalList };
+  cache[cacheKey] = current;
+
+  if (!current.inflight && now - current.ts >= fallbackTtlMs) {
+    current.inflight = fetchLatestDevotionalsFromRemote()
+      .then((data) => {
+        current.ts = Date.now();
+        current.data = data.length > 0 ? data : fallbackDevotionalList;
+        return current.data;
+      })
+      .catch(() => {
+        current.ts = Date.now();
+        current.data = fallbackDevotionalList;
+        return current.data;
+      })
+      .finally(() => {
+        current.inflight = undefined;
+      });
+  }
+
+  return current.data;
+}
+
+const latestDevotionals = getLatestDevotionals();
 const latestDevotional = latestDevotionals[0] ?? {
   ...fallbackDevotional,
   image: `https://i.ytimg.com/vi/${fallbackDevotional.videoId}/hqdefault.jpg`,

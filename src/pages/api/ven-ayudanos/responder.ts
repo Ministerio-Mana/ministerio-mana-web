@@ -30,27 +30,13 @@ const allowedHelpTypes = new Set([
 ]);
 const allowedAvailability = new Set(['semanal', 'mensual', 'eventos-especiales', 'no-estoy-seguro']);
 
-const baseNotifyEmails = [
-  'devocionalmana@gmail.com',
-  'carlosriosgomez@yahoo.es',
-  'carlosrios@ministeriomana.org',
-  'info@ministeriomana.org',
-];
-
-const ministryNotifyEmails: Record<string, string[]> = {
-  ninos: [],
-  varones: ['medellin@ministeriomana.org'],
-  mujeres: [
-    'gloriacano@ministeriomana.org',
-    'monicapalacio@ministeriomana.org',
-    'mujeresquecreen2024@gmail.com',
-  ],
-};
-
 const ministryNotifyEnvKeys: Record<string, string> = {
+  campus: 'VEN_AYUDANOS_CAMPUS_NOTIFY_EMAILS',
   ninos: 'VEN_AYUDANOS_NINOS_NOTIFY_EMAILS',
   varones: 'VEN_AYUDANOS_VARONES_NOTIFY_EMAILS',
   mujeres: 'VEN_AYUDANOS_MUJERES_NOTIFY_EMAILS',
+  mana: 'VEN_AYUDANOS_MANA_NOTIFY_EMAILS',
+  'no-estoy-seguro': 'VEN_AYUDANOS_GENERAL_NOTIFY_EMAILS',
 };
 
 function env(key: string): string | undefined {
@@ -76,13 +62,11 @@ function defaultRecipients(): string[] {
 
 function recipientsForMinistry(ministry: unknown): string[] {
   const key = String(ministry || '').toLowerCase();
-  const ministryRecipients = ministryNotifyEmails[key] || [];
   const envRecipients = ministryNotifyEnvKeys[key]
     ? parseEmailList(env(ministryNotifyEnvKeys[key]))
     : [];
 
-  const recipients = uniqueEmails([...baseNotifyEmails, ...ministryRecipients, ...envRecipients]);
-  return recipients.length ? recipients : defaultRecipients();
+  return envRecipients.length ? uniqueEmails(envRecipients) : defaultRecipients();
 }
 
 function escapeHtml(value: string): string {
@@ -189,6 +173,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const turnstileConfigured = Boolean(env('TURNSTILE_SECRET_KEY'));
+    if (!import.meta.env.DEV && !turnstileConfigured) {
+      void logSecurityEvent({
+        type: 'maintenance',
+        identifier: 'ven-ayudanos.submit',
+        ip: clientAddress,
+        detail: 'Turnstile secret no configurado',
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Captcha no configurado.' }), { status: 503 });
+    }
     if (turnstileConfigured) {
       const okCaptcha = await verifyTurnstile(turnstileToken, clientAddress);
       if (!okCaptcha) {

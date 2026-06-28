@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { isChurchAllowedForAccess, listAccessibleChurchIds } from '@lib/portalScope';
 import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
+import { isPortalIglesiaBooking, restrictToPortalIglesiaBookings } from '@lib/portalBookingSource';
 
 export const prerender = false;
 
@@ -71,7 +72,7 @@ function calculateAgeFromBirthdate(raw: unknown): number | null {
 
 function resolveRegistrationType(booking: any): string {
   const method = String(booking?.payment_method || '').toLowerCase();
-  return method === 'cash' || method === 'manual' || booking?.source === 'portal-iglesia'
+  return method === 'cash' || method === 'manual' || isPortalIglesiaBooking(booking)
     ? 'LOCAL'
     : 'ONLINE';
 }
@@ -137,6 +138,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
     bookingsQuery = bookingsQuery.in('church_id', scopedChurchIds);
   }
+  bookingsQuery = restrictToPortalIglesiaBookings(bookingsQuery, access.isAdmin);
 
   const { data: bookings, error: bookingsError } = await bookingsQuery;
   if (bookingsError) {
@@ -235,7 +237,7 @@ export const GET: APIRoute = async ({ request }) => {
     const paymentMethod = String(booking.payment_method || '').toLowerCase();
     const isManualPayment = paymentMethod === 'cash'
       || paymentMethod === 'manual'
-      || booking.source === 'portal-iglesia';
+      || isPortalIglesiaBooking(booking);
 
     for (const participant of list) {
       const packageInfo = packageResolution.get(String(participant.id || ''));

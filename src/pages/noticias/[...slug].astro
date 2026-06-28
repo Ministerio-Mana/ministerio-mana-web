@@ -1,29 +1,42 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import { getCollection, getEntry } from 'astro:content';
-import type { CollectionEntry } from 'astro:content';
-export async function getStaticPaths() {
-  const posts = await getCollection('news');
-  return posts.map((p)=>({ params: { slug: p.slug.split('/') }, props: { entry: p } }));
+import { getEntry } from 'astro:content';
+
+export const prerender = false;
+
+const slug = String(Astro.params.slug || '').replace(/\/$/, '');
+const entry = slug ? await getEntry('news', slug) : undefined;
+if (!entry) {
+  Astro.response.status = 404;
 }
-const { entry } = Astro.props as { entry: CollectionEntry<'news'> };
-const { Content, data } = await entry.render();
+const { Content } = entry ? await entry.render() : { Content: null };
+const data = entry?.data;
 const url = new URL(Astro.url);
-const canonical = `${url.origin}/noticias/${entry.slug}/`;
+const canonical = entry ? `${url.origin}/noticias/${entry.slug}/` : `${url.origin}/noticias/`;
 const cspNonce = Astro.locals?.cspNonce;
 ---
-<BaseLayout title={`${data.title} — Noticias`} description={data.summary}>
-  <article class="prose dark:prose-invert mx-auto">
-    <h1 class="mb-2">{data.title}</h1>
-    <p class="text-sm text-gray-500">{new Date(data.date).toLocaleDateString('es')}</p>
-    <Content />
-  </article>
-  <script type="application/ld+json" nonce={cspNonce} set:html={JSON.stringify({
-    "@context":"https://schema.org",
-    "@type":"NewsArticle",
-    headline: data.title,
-    datePublished: data.date,
-    dateModified: data.date,
-    description: data.summary,
-  })}></script>
+<BaseLayout title={data ? `${data.title} — Noticias` : 'Noticia no encontrada'} description={data?.summary || 'Noticia no encontrada'}>
+  {entry && data && Content ? (
+    <>
+      <article class="prose dark:prose-invert mx-auto">
+        <h1 class="mb-2">{data.title}</h1>
+        <p class="text-sm text-gray-500">{new Date(data.date).toLocaleDateString('es')}</p>
+        <Content />
+      </article>
+      <script type="application/ld+json" nonce={cspNonce} set:html={JSON.stringify({
+        "@context":"https://schema.org",
+        "@type":"NewsArticle",
+        headline: data.title,
+        datePublished: data.date,
+        dateModified: data.date,
+        description: data.summary,
+        url: canonical,
+      })}></script>
+    </>
+  ) : (
+    <article class="prose dark:prose-invert mx-auto">
+      <h1>Noticia no encontrada</h1>
+      <p>La noticia solicitada no esta disponible.</p>
+    </article>
+  )}
 </BaseLayout>

@@ -1,5 +1,6 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import { getPortalAdminContext } from '@lib/portalAdminGuard';
 import {
   cumbreDays,
   cumbreTeamFilters,
@@ -13,6 +14,13 @@ import {
   getTeamScheduleEvents,
   testimonyAssignments,
 } from '@data/cumbreSchedule';
+
+const guard = await getPortalAdminContext(Astro.request);
+
+if (!guard.ok) {
+  const next = encodeURIComponent(Astro.url.pathname);
+  return Astro.redirect(`/portal/ingresar?next=${next}`, 302);
+}
 
 const cspNonce = Astro.locals?.cspNonce;
 const teamEvents = getTeamScheduleEvents();

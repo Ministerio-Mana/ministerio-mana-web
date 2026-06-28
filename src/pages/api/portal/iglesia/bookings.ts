@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { listAccessibleChurchIds } from '@lib/portalScope';
+import { isPortalIglesiaBooking, restrictToPortalIglesiaBookings } from '@lib/portalBookingSource';
 
 export const prerender = false;
 
@@ -57,7 +58,7 @@ export const GET: APIRoute = async ({ request }) => {
     } else {
       return null;
     }
-    return query;
+    return restrictToPortalIglesiaBookings(query, isAdmin);
   };
 
   const primaryQuery = buildQuery(extendedSelect);
@@ -106,7 +107,7 @@ export const GET: APIRoute = async ({ request }) => {
     const isManual =
       paymentMethod === 'cash' ||
       paymentMethod === 'manual' ||
-      booking.source === 'portal-iglesia';
+      isPortalIglesiaBooking(booking);
     return {
       ...booking,
       participant_count: counts[booking.id] || 0,

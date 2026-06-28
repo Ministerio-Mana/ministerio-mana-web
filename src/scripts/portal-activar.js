@@ -26,6 +26,20 @@ const retryBtn = document.getElementById('activate-retry');
 let hasRecoveryContext = false;
 const TURNSTILE_RENDER_WAIT_MS = 3000;
 
+function normalizeSafePortalPath(value) {
+  const fallback = '/portal';
+  const next = value || fallback;
+  if (!next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return fallback;
+
+  try {
+    const parsed = new URL(next, window.location.origin);
+    if (parsed.origin !== window.location.origin) return fallback;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -506,7 +520,7 @@ form?.addEventListener('submit', async (event) => {
 
   // Redirect with a small delay to ensure the message is visible
   const url = new URL(window.location.href);
-  const next = url.searchParams.get('next') || '/portal';
+  const next = normalizeSafePortalPath(url.searchParams.get('next'));
   console.log('[Activar] Redirecting to:', next);
 
   setTimeout(() => {

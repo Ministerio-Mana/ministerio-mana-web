@@ -2,7 +2,12 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
-import { getDonationByReference, updateDonationByReference, type DonationStatus } from '@lib/donationsStore';
+import {
+  getDonationByReference,
+  updateDonationByReference,
+  type DonationRecord,
+  type DonationStatus,
+} from '@lib/donationsStore';
 import { getWompiTransaction } from '@lib/wompi';
 
 export const prerender = false;
@@ -29,6 +34,62 @@ function normalizeWompiStatus(status: unknown): DonationStatus {
 function resolvePaymentMethod(transaction: any): string | null {
   const value = transaction?.payment_method?.type ?? transaction?.payment_method_type ?? null;
   return value ? String(value) : null;
+}
+
+function expectedAmountInCents(donation: DonationRecord): number | null {
+  const amount = Number(donation.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return Math.round(amount * 100);
+}
+
+function validateTransactionMatchesDonation(params: {
+  transaction: any;
+  donation: DonationRecord;
+  reference: string;
+}): { ok: true } | { ok: false; error: string; detail: Record<string, unknown> } {
+  const transactionReference = String(params.transaction?.reference || '').trim();
+  if (!transactionReference || transactionReference !== params.reference) {
+    return {
+      ok: false,
+      error: 'La transacción de Wompi no corresponde a la referencia local',
+      detail: {
+        expectedReference: params.reference,
+        transactionReference: transactionReference || null,
+      },
+    };
+  }
+
+  const expectedCurrency = String(params.donation.currency || '').trim().toUpperCase();
+  const transactionCurrency = String(params.transaction?.currency || '').trim().toUpperCase();
+  if (!transactionCurrency || transactionCurrency !== expectedCurrency) {
+    return {
+      ok: false,
+      error: 'La moneda de la transacción no coincide con la donación local',
+      detail: {
+        expectedCurrency,
+        transactionCurrency: transactionCurrency || null,
+      },
+    };
+  }
+
+  const expectedAmount = expectedAmountInCents(params.donation);
+  const transactionAmount = Number(params.transaction?.amount_in_cents);
+  if (
+    expectedAmount == null ||
+    !Number.isFinite(transactionAmount) ||
+    Math.round(transactionAmount) !== expectedAmount
+  ) {
+    return {
+      ok: false,
+      error: 'El monto de la transacción no coincide con la donación local',
+      detail: {
+        expectedAmountInCents: expectedAmount,
+        transactionAmountInCents: Number.isFinite(transactionAmount) ? Math.round(transactionAmount) : null,
+      },
+    };
+  }
+
+  return { ok: true };
 }
 
 async function findStoredWompiEvent(reference: string): Promise<any | null> {
@@ -167,6 +228,19 @@ export const POST: APIRoute = async ({ request }) => {
       manualAvailable: allowsManualApproval(),
     }), {
       status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const transactionMatch = validateTransactionMatchesDonation({ transaction, donation, reference });
+  if (!transactionMatch.ok) {
+    return new Response(JSON.stringify({
+      ok: false,
+      code: 'WOMPI_TRANSACTION_MISMATCH',
+      error: transactionMatch.error,
+      detail: transactionMatch.detail,
+    }), {
+      status: 409,
       headers: { 'content-type': 'application/json' },
     });
   }

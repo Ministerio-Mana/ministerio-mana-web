@@ -228,9 +228,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       return json({ ok: false, error: 'Escribe una petición para orar.' }, 400);
     }
 
-    const turnstileConfigured = !import.meta.env.DEV && Boolean(
+    const turnstileConfigured = Boolean(
       import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
     );
+    if (!import.meta.env.DEV && !turnstileConfigured) {
+      void logSecurityEvent({
+        type: 'maintenance',
+        identifier: 'prayer.submit',
+        ip: clientAddress,
+        detail: 'Turnstile secret no configurado',
+      });
+      return json({ ok: false, error: 'Captcha no configurado' }, 503);
+    }
     if (turnstileConfigured) {
       const okCaptcha = await verifyTurnstile(captchaToken, clientAddress);
       if (!okCaptcha) {

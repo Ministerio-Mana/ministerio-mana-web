@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
+import { isPortalIglesiaBooking, restrictToPortalIglesiaBookings } from '@lib/portalBookingSource';
 
 export const prerender = false;
 
@@ -13,6 +14,7 @@ type ExportOptions = {
   from?: string | null;
   to?: string | null;
   typeFilter?: string | null;
+  includeAllSources?: boolean;
 };
 
 const TEXT_COLUMNS = new Set(['documento_numero', 'telefono', 'grupo_familiar']);
@@ -115,7 +117,7 @@ function resolveRegistrationType(booking: any): string {
   const isManual =
     method === 'cash' ||
     method === 'manual' ||
-    booking?.source === 'portal-iglesia';
+    isPortalIglesiaBooking(booking);
   return isManual ? 'LOCAL' : 'ONLINE';
 }
 
@@ -232,18 +234,23 @@ async function loadExportRecords(targetChurch: string, options: ExportOptions) {
   const baseSelect = 'id, contact_name, contact_email, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, source, status, total_amount, total_paid, currency, created_at';
   const extendedSelect = `${baseSelect}, payment_method`;
 
-  let { data: bookings, error: bookingsError } = await supabaseAdmin
+  let bookingsQuery = supabaseAdmin
     .from('cumbre_bookings')
     .select(`${extendedSelect}, church:churches(id, name)`)
     .eq('church_id', targetChurch)
     .order('created_at', { ascending: false });
+  bookingsQuery = restrictToPortalIglesiaBookings(bookingsQuery, Boolean(options.includeAllSources));
+
+  let { data: bookings, error: bookingsError } = await bookingsQuery;
 
   if (bookingsError && bookingsError.code === '42703') {
-    const fallback = await supabaseAdmin
+    let fallbackQuery = supabaseAdmin
       .from('cumbre_bookings')
       .select(`${baseSelect}, church:churches(id, name)`)
       .eq('church_id', targetChurch)
       .order('created_at', { ascending: false });
+    fallbackQuery = restrictToPortalIglesiaBookings(fallbackQuery, Boolean(options.includeAllSources));
+    const fallback = await fallbackQuery;
     bookings = fallback.data;
     bookingsError = fallback.error;
   }
@@ -487,6 +494,7 @@ export const GET: APIRoute = async ({ request }) => {
     from: url.searchParams.get('from'),
     to: url.searchParams.get('to'),
     typeFilter: url.searchParams.get('type'),
+    includeAllSources: access.isAdmin,
   };
 
   const { data: churchInfo, error: churchError } = await supabaseAdmin

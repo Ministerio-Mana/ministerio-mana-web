@@ -220,6 +220,43 @@ export async function updateCampusSubscriptionById(
   return data as CampusSubscriptionRecord | null;
 }
 
+export async function claimDueWompiCampusSubscription(params: {
+  id: string;
+  nowIso: string;
+  reference: string;
+  scheduledAtIso: string;
+}): Promise<CampusSubscriptionRecord | null> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('campus_donation_subscriptions')
+    .update({
+      status: 'PENDING',
+      provider_reference: params.reference,
+      last_charge_status: 'PENDING',
+      last_charge_error: null,
+      raw_provider_data: {
+        scheduledAt: params.scheduledAtIso,
+        reference: params.reference,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', params.id)
+    .eq('provider', 'wompi')
+    .eq('status', 'ACTIVE')
+    .lte('next_charge_at', params.nowIso)
+    .select('*, allocations:campus_donation_subscription_allocations(*)')
+    .maybeSingle();
+
+  if (error) {
+    if (missingCampusTable(error)) {
+      throw new Error('Falta ejecutar el SQL de suscripciones Campus en Supabase.');
+    }
+    throw new Error('No se pudo reservar la suscripcion Campus vencida.');
+  }
+
+  return data as CampusSubscriptionRecord | null;
+}
+
 export async function updateCampusSubscriptionByProviderSubscription(params: {
   provider: 'stripe' | 'wompi';
   providerSubscriptionId: string;

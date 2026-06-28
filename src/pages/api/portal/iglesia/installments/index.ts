@@ -2,11 +2,16 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { listAccessibleChurchIds } from '@lib/portalScope';
+import { restrictToPortalIglesiaBookings } from '@lib/portalBookingSource';
+import { enforceRateLimit } from '@lib/rateLimit';
 
 export const prerender = false;
 
 const BOOKING_PAGE_SIZE = 1000;
 const QUERY_CHUNK_SIZE = 200;
+const MAX_SCOPED_BOOKINGS = 400;
+const MAX_PENDING_INSTALLMENTS = 500;
+const MAX_RESPONSE_INSTALLMENTS = 500;
 const PENDING_INSTALLMENT_STATUSES = ['PENDING', 'FAILED'];
 const APPROVED_PAYMENT_STATUSES = ['APPROVED', 'PAID'];
 
@@ -15,6 +20,11 @@ type ScopeContext = {
   requestedChurch: string | null;
   churchId: string | null;
   scopedChurchIds: string[];
+};
+
+type LimitedRows<T> = {
+  rows: T[];
+  truncated: boolean;
 };
 
 function chunkArray<T>(items: T[], chunkSize: number): T[][] {
@@ -28,7 +38,7 @@ function chunkArray<T>(items: T[], chunkSize: number): T[][] {
 function buildScopedBookingQuery(scope: ScopeContext) {
   let query = supabaseAdmin!
     .from('cumbre_bookings')
-    .select('id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency')
+    .select('id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency, source')
     .order('created_at', { ascending: false });
 
   if (scope.isAdmin) {
@@ -43,18 +53,21 @@ function buildScopedBookingQuery(scope: ScopeContext) {
     return null;
   }
 
-  return query;
+  return restrictToPortalIglesiaBookings(query, scope.isAdmin);
 }
 
-async function loadScopedBookings(scope: ScopeContext): Promise<any[] | null> {
+async function loadScopedBookings(scope: ScopeContext): Promise<LimitedRows<any> | null> {
   const bookings: any[] = [];
 
-  for (let page = 0; ; page += 1) {
+  for (let page = 0; bookings.length < MAX_SCOPED_BOOKINGS; page += 1) {
     const query = buildScopedBookingQuery(scope);
     if (!query) return null;
 
     const from = page * BOOKING_PAGE_SIZE;
-    const to = from + BOOKING_PAGE_SIZE - 1;
+    if (from > MAX_SCOPED_BOOKINGS) break;
+
+    const remaining = MAX_SCOPED_BOOKINGS - bookings.length;
+    const to = Math.min(from + BOOKING_PAGE_SIZE - 1, MAX_SCOPED_BOOKINGS);
     const { data, error } = await query.range(from, to);
 
     if (error) {
@@ -63,32 +76,48 @@ async function loadScopedBookings(scope: ScopeContext): Promise<any[] | null> {
     }
 
     const rows = data || [];
-    bookings.push(...rows);
-    if (rows.length < BOOKING_PAGE_SIZE) break;
+    bookings.push(...rows.slice(0, remaining));
+    if (rows.length > remaining) {
+      return { rows: bookings, truncated: true };
+    }
+    if (rows.length < to - from + 1) break;
   }
 
-  return bookings;
+  return { rows: bookings, truncated: false };
 }
 
-async function loadPendingInstallments(bookingIds: string[]): Promise<any[]> {
+async function loadPendingInstallments(bookingIds: string[]): Promise<LimitedRows<any>> {
   const rows: any[] = [];
-  for (const chunk of chunkArray(bookingIds, QUERY_CHUNK_SIZE)) {
+  const chunks = chunkArray(bookingIds, QUERY_CHUNK_SIZE);
+
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index];
+    const remaining = MAX_PENDING_INSTALLMENTS - rows.length;
+    if (remaining <= 0) {
+      return { rows, truncated: true };
+    }
+
     const { data, error } = await supabaseAdmin!
       .from('cumbre_installments')
-      .select('id, booking_id, plan_id, installment_index, due_date, amount, currency, status, provider_reference, provider_tx_id, paid_at, created_at, booking:cumbre_bookings(id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency), plan:cumbre_payment_plans(id, status, provider, currency, installment_count, provider_payment_method_id, provider_subscription_id)')
+      .select('id, booking_id, plan_id, installment_index, due_date, amount, currency, status, provider_reference, provider_tx_id, paid_at, created_at, booking:cumbre_bookings(id, contact_name, contact_email, contact_phone, contact_church, church_id, total_amount, total_paid, status, currency, source), plan:cumbre_payment_plans(id, status, provider, currency, installment_count, provider_payment_method_id, provider_subscription_id)')
       .in('booking_id', chunk)
       .in('status', PENDING_INSTALLMENT_STATUSES)
-      .order('due_date', { ascending: true });
+      .order('due_date', { ascending: true })
+      .limit(remaining + 1);
 
     if (error) {
       console.error('[portal.iglesia.installments] list error', error);
       throw new Error('No se pudo cargar');
     }
 
-    rows.push(...(data || []));
+    const chunkRows = data || [];
+    rows.push(...chunkRows.slice(0, remaining));
+    if (chunkRows.length > remaining || (rows.length >= MAX_PENDING_INSTALLMENTS && index < chunks.length - 1)) {
+      return { rows, truncated: true };
+    }
   }
 
-  return rows;
+  return { rows, truncated: false };
 }
 
 async function loadLatestPaymentProviderByBooking(bookingIds: string[]): Promise<Map<string, string>> {
@@ -126,7 +155,7 @@ function resolveBalanceProvider(booking: any, providerByBooking: Map<string, str
   return booking.currency === 'USD' ? 'stripe' : 'wompi';
 }
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), { status: 500 });
   }
@@ -135,6 +164,18 @@ export const GET: APIRoute = async ({ request }) => {
   if (!access.ok) {
     const denied = mapPortalAccessError(access.reason, 'Acceso denegado a datos operativos');
     return new Response(JSON.stringify({ ok: false, error: denied.error }), { status: denied.status });
+  }
+
+  const rateAllowed = await enforceRateLimit(
+    `portal.iglesia.installments:${access.userId || access.email || clientAddress || 'unknown'}`,
+    60,
+    30,
+  );
+  if (!rateAllowed) {
+    return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes. Intenta de nuevo en un momento.' }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   const isAdmin = access.isAdmin;
@@ -155,19 +196,20 @@ export const GET: APIRoute = async ({ request }) => {
     }
   }
 
-  let bookings: any[] | null = null;
+  let bookingResult: LimitedRows<any> | null = null;
   try {
-    bookings = await loadScopedBookings({ isAdmin, requestedChurch, churchId, scopedChurchIds });
+    bookingResult = await loadScopedBookings({ isAdmin, requestedChurch, churchId, scopedChurchIds });
   } catch {
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo cargar' }), {
       status: 500,
       headers: { 'content-type': 'application/json' },
     });
   }
-  if (!bookings) {
+  if (!bookingResult) {
     return new Response(JSON.stringify({ ok: true, installments: [] }), { status: 200 });
   }
 
+  const bookings = bookingResult.rows;
   const eligibleBookings = (bookings || []).filter((booking: any) => {
     const totalPaid = Number(booking.total_paid || 0);
     return totalPaid > 0 || booking.status === 'DEPOSIT_OK' || booking.status === 'PAID';
@@ -181,9 +223,9 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  let installments: any[] = [];
+  let installmentResult: LimitedRows<any>;
   try {
-    installments = await loadPendingInstallments(bookingIds);
+    installmentResult = await loadPendingInstallments(bookingIds);
   } catch {
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo cargar' }), {
       status: 500,
@@ -191,6 +233,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
+  const installments = installmentResult.rows;
   const nextByPlan = new Map<string, any>();
   (installments || []).forEach((row: any) => {
     const planId = row.plan_id || row.plan?.id;
@@ -203,13 +246,19 @@ export const GET: APIRoute = async ({ request }) => {
 
   const nextInstallments = Array.from(nextByPlan.values());
   const pendingBookingIds = new Set(nextInstallments.map((row: any) => row.booking_id || row.booking?.id).filter(Boolean));
-  const paymentProviderByBooking = await loadLatestPaymentProviderByBooking(bookingIds);
-  const balanceOnlyInstallments = eligibleBookings
-    .filter((booking: any) => {
-      const totalAmount = Number(booking.total_amount || 0);
-      const totalPaid = Number(booking.total_paid || 0);
-      return totalAmount > totalPaid && !pendingBookingIds.has(booking.id);
-    })
+  const remainingResponseSlots = Math.max(MAX_RESPONSE_INSTALLMENTS - nextInstallments.length, 0);
+  const balanceCandidateBookings = installmentResult.truncated
+    ? []
+    : eligibleBookings
+      .filter((booking: any) => {
+        const totalAmount = Number(booking.total_amount || 0);
+        const totalPaid = Number(booking.total_paid || 0);
+        return totalAmount > totalPaid && !pendingBookingIds.has(booking.id);
+      })
+      .slice(0, remainingResponseSlots);
+  const balanceCandidateBookingIds = balanceCandidateBookings.map((booking: any) => booking.id).filter(Boolean);
+  const paymentProviderByBooking = await loadLatestPaymentProviderByBooking(balanceCandidateBookingIds);
+  const balanceOnlyInstallments = balanceCandidateBookings
     .map((booking: any) => {
       const provider = resolveBalanceProvider(booking, paymentProviderByBooking);
       return {
@@ -269,7 +318,7 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const response = [
+  const fullResponse = [
     ...nextInstallments.map((row: any) => ({
       ...row,
       last_reminder: reminderMap[row.id] || null,
@@ -277,8 +326,18 @@ export const GET: APIRoute = async ({ request }) => {
     })),
     ...balanceOnlyInstallments,
   ];
+  const response = fullResponse.slice(0, MAX_RESPONSE_INSTALLMENTS);
+  const truncated = bookingResult.truncated || installmentResult.truncated || fullResponse.length > response.length;
 
-  return new Response(JSON.stringify({ ok: true, installments: response }), {
+  return new Response(JSON.stringify({
+    ok: true,
+    installments: response,
+    meta: {
+      truncated,
+      booking_limit: MAX_SCOPED_BOOKINGS,
+      installment_limit: MAX_RESPONSE_INSTALLMENTS,
+    },
+  }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   });
