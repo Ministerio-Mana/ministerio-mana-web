@@ -10,6 +10,7 @@ import {
   calculateTotals,
   depositThreshold,
   buildPaymentReference,
+  isValidPackageType,
   type PackageType,
 } from '@lib/cumbre2026';
 import { checkLodgingCapacity, isReopenedLodgingCreatedAt } from '@lib/cumbreLodgingCapacity';
@@ -935,7 +936,7 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from('cumbre_bookings')
-    .select('id, contact_email, contact_name, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, currency, source, payment_method')
+    .select('id, contact_email, contact_name, contact_phone, contact_document_type, contact_document_number, contact_country, contact_city, contact_church, church_id, country_group, currency, total_amount, deposit_threshold, source, payment_method')
     .eq('id', bookingId)
     .maybeSingle();
 
@@ -962,6 +963,15 @@ export const PUT: APIRoute = async ({ request }) => {
   const existingParticipantCreatedAtById = new Map(
     (existingParticipantsForBooking || [])
       .map((participant) => [String(participant.id), participant?.created_at || null]),
+  );
+  const existingParticipantIds = new Set(
+    (existingParticipantsForBooking || [])
+      .map((participant) => String(participant.id || '').trim())
+      .filter(Boolean),
+  );
+  const existingPackageTypeById = new Map(
+    (existingParticipantsForBooking || [])
+      .map((participant) => [String(participant.id), String(participant.package_type || '')]),
   );
   const existingReopenedLodgingParticipantIds = new Set(
     (existingParticipantsForBooking || [])
@@ -993,6 +1003,18 @@ export const PUT: APIRoute = async ({ request }) => {
   ));
   if (duplicateParticipantId) {
     return new Response(JSON.stringify({ ok: false, error: 'No se puede reutilizar el mismo participante en la inscripción' }), { status: 400 });
+  }
+
+  if (!canEditPayment) {
+    const submittedIds = new Set(submittedParticipantIds);
+    const preservesParticipantSet = submittedIds.size === existingParticipantIds.size
+      && Array.from(existingParticipantIds).every((participantId) => submittedIds.has(participantId));
+    if (!preservesParticipantSet) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'No se pueden cambiar participantes en una reserva con pagos online',
+      }), { status: 403 });
+    }
   }
 
   const invalidEmail = participantsRaw.find((participant: any) => {
@@ -1176,11 +1198,14 @@ export const PUT: APIRoute = async ({ request }) => {
     .map((participant: any) => {
       const age = resolveParticipantAge(participant);
       const participantId = String(participant?.id || '').trim();
-      const packageChoice = participant?.packageType
+      const existingPackageType = existingPackageTypeById.get(participantId) || null;
+      const requestedPackageChoice = participant?.packageType
         ?? participant?.package_type
         ?? participant?.lodging
         ?? (existingLodgingParticipantIds.has(participantId) ? 'lodging' : 'no_lodging');
-      const packageType = packageTypeFromAge(age, packageChoice);
+      const packageType = !canEditPayment && isValidPackageType(existingPackageType)
+        ? existingPackageType
+        : packageTypeFromAge(age, requestedPackageChoice);
       const relationship = participant?.isLeader ? 'responsable' : 'acompanante';
       const documentType = sanitizePlainText(participant?.document_type ?? participant?.documentType ?? '', 40);
       const documentNumber = sanitizePlainText(participant?.document_number ?? participant?.documentNumber ?? '', 50);
@@ -1233,14 +1258,25 @@ export const PUT: APIRoute = async ({ request }) => {
     countryGroup = currencyOverride === 'USD' ? 'INT' : 'CO';
   }
   const currency = currencyOverride ?? currencyForGroup(countryGroup);
+  const financialFieldsLocked = !canEditPayment;
+  const effectiveCountryGroup = financialFieldsLocked
+    ? (booking.country_group || countryGroup)
+    : countryGroup;
+  const effectiveCurrency = financialFieldsLocked
+    ? (normalizeCurrency(booking.currency) || currency)
+    : currency;
 
-  let paymentAmountInput = parseAmountForCurrency(body.payment_amount ?? body.paymentAmount, currency);
+  let paymentAmountInput = parseAmountForCurrency(body.payment_amount ?? body.paymentAmount, effectiveCurrency);
   if (!canEditPayment && !canRecordPhysicalPayment) {
     paymentAmountInput = null;
   }
 
-  const totalAmount = calculateTotals(currency, participants.map((p) => p.safe));
-  const threshold = depositThreshold(totalAmount);
+  const totalAmount = financialFieldsLocked
+    ? Number(booking.total_amount || 0)
+    : calculateTotals(effectiveCurrency, participants.map((p) => p.safe));
+  const threshold = financialFieldsLocked
+    ? Number(booking.deposit_threshold ?? depositThreshold(totalAmount))
+    : depositThreshold(totalAmount);
   const { data: approvedPaymentsBefore } = await supabaseAdmin
     .from('cumbre_payments')
     .select('amount')
@@ -1270,8 +1306,8 @@ export const PUT: APIRoute = async ({ request }) => {
       contact_city: contactCity || null,
       contact_church: resolvedChurchName || null,
       church_id: resolvedChurchId || null,
-      country_group: countryGroup,
-      currency,
+      country_group: effectiveCountryGroup,
+      currency: effectiveCurrency,
       total_amount: totalAmount,
       deposit_threshold: threshold,
       updated_at: new Date().toISOString(),
@@ -1334,7 +1370,7 @@ export const PUT: APIRoute = async ({ request }) => {
           provider_tx_id: providerTxId,
           reference,
           amount: paymentAmountInput,
-          currency,
+          currency: effectiveCurrency,
           status: 'APPROVED',
           raw_event: {
             source: paymentSource,
@@ -1388,7 +1424,7 @@ export const PUT: APIRoute = async ({ request }) => {
           provider: 'physical',
           status: 'APPROVED',
           amount: paymentAmountInput,
-          currency,
+          currency: effectiveCurrency,
           reference,
           provider_tx_id: null,
           payment_method: 'manual',
@@ -1438,7 +1474,7 @@ export const PUT: APIRoute = async ({ request }) => {
   await updatePlanForBooking({
     bookingId,
     totalAmount,
-    currency,
+    currency: effectiveCurrency,
     totalPaid,
     depositDueDate: body.deposit_due_date ?? body.depositDueDate ?? null,
   });

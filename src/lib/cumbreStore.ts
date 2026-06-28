@@ -107,6 +107,22 @@ export const ACTIVE_PENDING_PAYMENT_STATUSES = [
   'APPROVAL_PENDING',
 ] as const;
 
+const DEFAULT_PENDING_PAYMENT_LOCK_MINUTES = 120;
+
+function getPendingPaymentLockMinutes(): number {
+  const raw = Number(
+    import.meta.env?.CUMBRE_PENDING_PAYMENT_LOCK_MINUTES
+      ?? process.env?.CUMBRE_PENDING_PAYMENT_LOCK_MINUTES
+      ?? DEFAULT_PENDING_PAYMENT_LOCK_MINUTES,
+  );
+  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_PENDING_PAYMENT_LOCK_MINUTES;
+  return Math.min(Math.floor(raw), 24 * 60);
+}
+
+function getPendingPaymentCutoffIso(): string {
+  return new Date(Date.now() - getPendingPaymentLockMinutes() * 60 * 1000).toISOString();
+}
+
 export async function getBookingById(id: string): Promise<BookingRecord | null> {
   const supabase = ensureSupabase();
   const { data, error } = await supabase
@@ -159,6 +175,7 @@ export async function listActivePendingPayments(params: {
     .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, plan_id, installment_id, created_at')
     .eq('booking_id', params.bookingId)
     .in('status', [...ACTIVE_PENDING_PAYMENT_STATUSES])
+    .gte('created_at', getPendingPaymentCutoffIso())
     .order('created_at', { ascending: false })
     .limit(50);
 

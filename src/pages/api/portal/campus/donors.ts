@@ -46,15 +46,6 @@ const campusDonationSelect = [
     'raw_event',
 ].join(', ');
 
-function normalizeMissionaryName(value: string): string {
-    return String(value || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
-}
-
 function isMissingColumnError(error: any): boolean {
     const code = String(error?.code || '');
     const message = String(error?.message || '').toLowerCase();
@@ -103,8 +94,8 @@ function toCampusDonationClientRow(donation: any, isAdmin: boolean) {
     return {
         id: donation.id,
         created_at: donation.created_at,
-        reference: donation.reference,
-        provider: donation.provider,
+        reference: isAdmin ? donation.reference : null,
+        provider: isAdmin ? donation.provider : null,
         campus: donation.campus,
         missionary: {
             id: donation.missionary_id,
@@ -206,37 +197,13 @@ export const GET: APIRoute = async ({ request }) => {
             donations = byId.data || [];
         }
 
-        // Fallback scope: legacy rows where only missionary_name was saved.
-        const fullName = String(userProfile?.full_name || '').trim();
-        if (!error && fullName) {
-            const byName = await supabaseAdmin
-                .from('donations')
-                .select(donationSelect)
-                .in('status', CAMPUS_STATUSES)
-                .ilike('missionary_name', `%${fullName}%`)
-                .order('created_at', { ascending: false })
-                .limit(200);
-            if (byName.error) {
-                error = byName.error;
-            } else {
-                const dedupe = new Set(donations.map((d) => d.id));
-                (byName.data || []).forEach((row: any) => {
-                    if (!dedupe.has(row.id)) donations.push(row);
-                });
-                donations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                donations = donations.slice(0, 200);
-            }
-        }
-
-        const missionarySlug = MISIONEROS.find((m) => (
-            normalizeMissionaryName(m.nombre) === normalizeMissionaryName(fullName)
-        ))?.slug;
-        if (!error && missionarySlug) {
+        // Fallback scope: legacy rows whose raw event still stores the immutable user id.
+        if (!error) {
             const byRawEvent = await supabaseAdmin
                 .from('donations')
                 .select(donationSelect)
                 .in('status', CAMPUS_STATUSES)
-                .contains('raw_event', { missionaries: [missionarySlug] })
+                .contains('raw_event', { missionaryMatches: [{ userId: user.id }] })
                 .order('created_at', { ascending: false })
                 .limit(200);
             if (byRawEvent.error) {

@@ -41,7 +41,8 @@ type ParticipantAuditRow = AuditRow & {
 
 function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  const raw = String(value);
+  const str = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
   if (/[,\n\r"]/.test(str)) {
     return `"${str.replace(/"/g, '""')}"`;
   }

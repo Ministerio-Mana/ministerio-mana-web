@@ -89,15 +89,15 @@ export const POST: APIRoute = async ({ request }) => {
     supabaseAdmin
       .from('cumbre_bookings')
       .select('id, total_amount, total_paid, status')
-      .ilike('contact_email', scopedEmail),
+      .eq('contact_email', scopedEmail),
     supabaseAdmin
       .from('donations')
       .select('id, amount, status')
-      .ilike('donor_email', scopedEmail),
+      .eq('donor_email', scopedEmail),
     supabaseAdmin
       .from('donation_reminder_subscriptions')
       .select('id, status')
-      .ilike('donor_email', scopedEmail),
+      .eq('donor_email', scopedEmail),
   ]);
 
   const bookingRows = bookingsRes.data || [];
@@ -176,7 +176,7 @@ export const POST: APIRoute = async ({ request }) => {
         status: 'CANCELLED',
         updated_at: nowIso,
       })
-      .ilike('donor_email', scopedEmail)
+      .eq('donor_email', scopedEmail)
       .in('status', ['ACTIVE', 'PAUSED']),
     supabaseAdmin
       .from('church_memberships')

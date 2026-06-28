@@ -6,6 +6,15 @@ import { isPortalIglesiaBooking, restrictToPortalIglesiaBookings } from '@lib/po
 
 export const prerender = false;
 
+const DEFAULT_BOOKINGS_LIMIT = 200;
+const MAX_BOOKINGS_LIMIT = 500;
+
+function resolveLimit(request: Request): number {
+  const raw = Number(new URL(request.url).searchParams.get('limit') || DEFAULT_BOOKINGS_LIMIT);
+  if (!Number.isFinite(raw)) return DEFAULT_BOOKINGS_LIMIT;
+  return Math.min(Math.max(Math.floor(raw), 1), MAX_BOOKINGS_LIMIT);
+}
+
 export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
@@ -21,6 +30,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   const isAdmin = access.isAdmin;
+  const limit = resolveLimit(request);
   let churchId: string | null = access.allowedChurchId;
   let scopedChurchIds: string[] = churchId ? [churchId] : [];
   const url = new URL(request.url);
@@ -45,7 +55,8 @@ export const GET: APIRoute = async ({ request }) => {
     let query = supabaseAdmin
       .from('cumbre_bookings')
       .select(select)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
     if (isAdmin) {
       if (requestedChurch) query = query.eq('church_id', requestedChurch);
@@ -117,7 +128,14 @@ export const GET: APIRoute = async ({ request }) => {
     };
   });
 
-  return new Response(JSON.stringify({ ok: true, bookings: response }), {
+  return new Response(JSON.stringify({
+    ok: true,
+    bookings: response,
+    meta: {
+      limit,
+      truncated: (bookings || []).length >= limit,
+    },
+  }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   });

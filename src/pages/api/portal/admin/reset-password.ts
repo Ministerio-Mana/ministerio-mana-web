@@ -152,9 +152,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       if (!allowed && targetChurchId) {
         allowed = await isChurchAllowedForAccess(targetChurchId, access);
       }
-      if (!allowed && access.allowedCountry && targetProfile.country) {
-        allowed = sameCountry(targetProfile.country, access.allowedCountry);
-      }
     } else if (access.isNational) {
       if (targetChurchId) {
         allowed = await isChurchAllowedForAccess(targetChurchId, access);

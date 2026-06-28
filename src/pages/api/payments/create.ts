@@ -1,11 +1,12 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { resolveBaseUrl } from '@lib/url';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
 import { logSecurityEvent } from '@lib/securityEvents';
-import { buildPaymentReference } from '@lib/cumbre2026';
+import { buildPaymentReference, hashToken } from '@lib/cumbre2026';
 import {
   countPayments,
   getApprovedPaymentsTotal,
@@ -19,6 +20,18 @@ export const prerender = false;
 function acceptsJson(request: Request): boolean {
   const accept = request.headers.get('accept') || '';
   return accept.includes('application/json');
+}
+
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+function isValidBookingToken(token: unknown, tokenHash: unknown): boolean {
+  const normalizedToken = String(token || '').trim();
+  const storedHash = String(tokenHash || '').trim();
+  if (!normalizedToken || !storedHash) return false;
+  return safeEqual(hashToken(normalizedToken), storedHash);
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -101,6 +114,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!booking) {
       return new Response(JSON.stringify({ ok: false, error: 'Reserva no encontrada' }), {
         status: 404,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    if (!isValidBookingToken(payload.token, booking.token_hash)) {
+      void logSecurityEvent({
+        type: 'webhook_invalid',
+        identifier: 'cumbre.payment',
+        ip: clientAddress,
+        detail: 'Token de reserva invalido en inicio de pago',
+      });
+      return new Response(JSON.stringify({ ok: false, error: 'Token invalido' }), {
+        status: 403,
         headers: { 'content-type': 'application/json' },
       });
     }
