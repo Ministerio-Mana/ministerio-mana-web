@@ -11,11 +11,13 @@ const statusEl = document.getElementById('register-status');
 const starsContainer = document.getElementById('stars-container');
 const passwordInput = document.getElementById('reg-password');
 const toggleBtn = document.getElementById('toggle-password-reg');
+const TURNSTILE_RENDER_WAIT_MS = 3000;
+const SIGNUP_TIMEOUT_MS = 22000;
 
 function getSafeNextPath() {
     const params = new URLSearchParams(window.location.search);
     const next = params.get('next') || '/portal';
-    if (!next.startsWith('/') || next.startsWith('//')) return '/portal';
+    if (!next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return '/portal';
     return next;
 }
 
@@ -36,12 +38,66 @@ function resetTurnstile() {
     }
 }
 
-function getTurnstileToken() {
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readTurnstileTokenField(widget) {
+    const selectors = 'input[name="cf-turnstile-response"], textarea[name="cf-turnstile-response"]';
+    const inWidget = widget?.querySelector?.(selectors);
+    if (inWidget?.value) return String(inWidget.value).trim();
+    const inDocument = document.querySelector(selectors);
+    if (inDocument?.value) return String(inDocument.value).trim();
+    return '';
+}
+
+async function waitForTurnstileReady(widget, timeoutMs = TURNSTILE_RENDER_WAIT_MS) {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt <= timeoutMs) {
+        if (window.turnstile || readTurnstileTokenField(widget)) return true;
+        await sleep(120);
+    }
+    return false;
+}
+
+async function getTurnstileToken() {
     const widget = document.querySelector('.cf-turnstile');
     if (!widget) return { ok: true, token: '' };
-    const token = window.turnstile?.getResponse?.() || '';
-    if (!token) return { ok: false, error: 'Captcha requerido.' };
+
+    const siteKey = widget.getAttribute('data-sitekey');
+    if (!siteKey) {
+        return { ok: false, error: 'Captcha no configurado. Recarga la página o contacta soporte.' };
+    }
+
+    if (!window.turnstile && !readTurnstileTokenField(widget)) {
+        await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
+    }
+
+    if (!window.turnstile && !readTurnstileTokenField(widget)) {
+        return {
+            ok: false,
+            error: 'No cargó el captcha. Recarga la página, desactiva bloqueadores y vuelve a intentarlo.',
+        };
+    }
+
+    const token = (window.turnstile?.getResponse?.() || readTurnstileTokenField(widget) || '').trim();
+    if (!token) return { ok: false, error: 'Completa la verificación antes de continuar.' };
     return { ok: true, token };
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = SIGNUP_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            throw new Error('La solicitud tardó demasiado. Revisa tu conexión e intenta de nuevo.');
+        }
+        throw err;
+    } finally {
+        window.clearTimeout(timeout);
+    }
 }
 
 // Password Toggle
@@ -92,12 +148,12 @@ form?.addEventListener('submit', async (e) => {
     statusEl?.classList.add('hidden');
 
     try {
-        const captcha = getTurnstileToken();
+        const captcha = await getTurnstileToken();
         if (!captcha.ok) {
             throw new Error(captcha.error || 'Captcha requerido.');
         }
         // Use our backend endpoint instead of Supabase Auth directly
-        const res = await fetch('/api/auth/signup', {
+        const res = await fetchWithTimeout('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -110,9 +166,9 @@ form?.addEventListener('submit', async (e) => {
             })
         });
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
-        if (!data.ok) {
+        if (!res.ok || !data.ok) {
             throw new Error(data.error || 'Error al registrarse');
         }
 

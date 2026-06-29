@@ -5,6 +5,7 @@ function env(key: string): string | undefined {
 const SENDGRID_API_KEY = env('SENDGRID_API_KEY');
 const SENDGRID_FROM = env('SENDGRID_FROM') || env('AUTH_EMAIL_FROM') || env('CUMBRE_EMAIL_FROM');
 const SENDGRID_REPLY_TO = env('SENDGRID_REPLY_TO') || env('AUTH_EMAIL_REPLY_TO');
+const SENDGRID_TIMEOUT_MS = 8000;
 
 export function isSendgridEnabled(): boolean {
   return Boolean(SENDGRID_API_KEY && SENDGRID_FROM);
@@ -20,24 +21,35 @@ export async function sendSendgridEmail(params: {
 }): Promise<boolean> {
   if (!SENDGRID_API_KEY || !SENDGRID_FROM) return false;
 
-  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${SENDGRID_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      personalizations: [{
-        to: [{ email: params.to }],
-        ...(params.dynamicTemplateData ? { dynamic_template_data: params.dynamicTemplateData } : {}),
-      }],
-      from: { email: SENDGRID_FROM },
-      ...(SENDGRID_REPLY_TO ? { reply_to: { email: SENDGRID_REPLY_TO } } : {}),
-      ...(params.templateId ? { template_id: params.templateId } : {}),
-      ...(params.templateId ? {} : { subject: params.subject || '' }),
-      ...(params.templateId ? {} : { content: [{ type: 'text/html', value: params.html || '' }] }),
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SENDGRID_TIMEOUT_MS);
 
-  return res.ok;
+  try {
+    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: [{
+          to: [{ email: params.to }],
+          ...(params.dynamicTemplateData ? { dynamic_template_data: params.dynamicTemplateData } : {}),
+        }],
+        from: { email: SENDGRID_FROM },
+        ...(SENDGRID_REPLY_TO ? { reply_to: { email: SENDGRID_REPLY_TO } } : {}),
+        ...(params.templateId ? { template_id: params.templateId } : {}),
+        ...(params.templateId ? {} : { subject: params.subject || '' }),
+        ...(params.templateId ? {} : { content: [{ type: 'text/html', value: params.html || '' }] }),
+      }),
+      signal: controller.signal,
+    });
+
+    return res.ok;
+  } catch (err: any) {
+    console.warn('[sendgrid] email send failed', err?.name === 'AbortError' ? 'timeout' : err?.message || 'unknown');
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
