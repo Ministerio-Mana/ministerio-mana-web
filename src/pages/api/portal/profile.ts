@@ -97,7 +97,7 @@ export const POST: APIRoute = async ({ request }) => {
     ? (payload.affiliation_type || payload.affiliationType)
     : null;
   const churchName = sanitizePlainText(payload.church_name || payload.churchName || '', 120);
-  const churchId = payload.church_id || payload.churchId || null;
+  const requestedChurchId = payload.church_id || payload.churchId || null;
 
   const { data: existingProfile, error: existingProfileError } = await supabaseAdmin
     .from('user_profiles')
@@ -127,7 +127,30 @@ export const POST: APIRoute = async ({ request }) => {
   const existingRole = String(existingProfile?.role || 'user');
   const lockScopeFields = lockedScopeRoles.has(existingRole);
   const scopedCountry = lockScopeFields ? (existingProfile?.country || null) : (country || null);
-  const scopedChurchId = lockScopeFields ? (existingProfile?.church_id || null) : churchId;
+  let scopedChurchId = lockScopeFields ? (existingProfile?.church_id || null) : null;
+  if (!lockScopeFields && requestedChurchId) {
+    const { data: membership, error: membershipError } = await supabaseAdmin
+      .from('church_memberships')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('church_id', requestedChurchId)
+      .neq('status', 'pending')
+      .maybeSingle();
+    if (membershipError) {
+      console.error('[portal.profile] membership check error', membershipError);
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar la sede' }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (!membership?.id) {
+      return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta sede' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    scopedChurchId = requestedChurchId;
+  }
 
   if (affiliationType === 'local' && !churchName && !scopedChurchId) {
     return new Response(JSON.stringify({ ok: false, error: 'Selecciona una sede o escribe el nombre de tu iglesia' }), {

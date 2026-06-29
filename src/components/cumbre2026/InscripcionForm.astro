@@ -1865,11 +1865,13 @@ const formatTestAmount = (value, currency) =>
 
           if (bookingData?.bookingId && bookingToken) {
              try {
-                localStorage.setItem(`cumbre-token:${bookingData.bookingId}`, bookingToken);
+                sessionStorage.setItem(`cumbre-token:${bookingData.bookingId}`, bookingToken);
+                sessionStorage.setItem('cumbre-last-token', bookingToken);
                 localStorage.setItem('cumbre-last-booking', bookingData.bookingId);
-                localStorage.setItem('cumbre-last-token', bookingToken);
+                localStorage.removeItem(`cumbre-token:${bookingData.bookingId}`);
+                localStorage.removeItem('cumbre-last-token');
              } catch (e) {
-                console.warn('No se pudo guardar token en localStorage');
+                console.warn('No se pudo guardar token de sesión');
              }
           }
 

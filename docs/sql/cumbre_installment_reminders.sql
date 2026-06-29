@@ -16,3 +16,8 @@ create unique index if not exists cumbre_installment_reminders_unique
 
 create index if not exists cumbre_installment_reminders_installment_idx
   on public.cumbre_installment_reminders(installment_id);
+
+alter table public.cumbre_installment_reminders enable row level security;
+
+revoke all on table public.cumbre_installment_reminders from anon, authenticated;
+grant all on table public.cumbre_installment_reminders to service_role;

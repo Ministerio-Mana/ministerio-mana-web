@@ -112,11 +112,14 @@ export const GET: APIRoute = async ({ request }) => {
     bookingMap.set(booking.id, booking);
   });
 
-  const response = (payments || []).map((payment: any) => ({
-    ...payment,
-    method: extractMethod(payment.raw_event),
-    booking: bookingMap.get(payment.booking_id) || null,
-  }));
+  const response = (payments || []).map((payment: any) => {
+    const { raw_event: rawEvent, ...safePayment } = payment;
+    return {
+      ...safePayment,
+      method: extractMethod(rawEvent),
+      booking: bookingMap.get(payment.booking_id) || null,
+    };
+  });
 
   return new Response(JSON.stringify({ ok: true, payments: response }), {
     status: 200,

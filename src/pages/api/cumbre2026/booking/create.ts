@@ -10,6 +10,7 @@ import {
   calculateTotals,
   depositThreshold,
   generateAccessToken,
+  type PackageType,
 } from '@lib/cumbre2026';
 import { checkLodgingCapacity, checkWrittenLodgingCapacity } from '@lib/cumbreLodgingCapacity';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
@@ -26,6 +27,34 @@ function normalizeDate(value: unknown): string | null {
   const raw = (value ?? '').toString().trim();
   if (!raw) return null;
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
+}
+
+function calculateAgeOnEventDate(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const [year, month, day] = birthdate.split('-').map((part) => Number(part));
+  const birth = new Date(Date.UTC(year, month - 1, day));
+  const eventDate = new Date(Date.UTC(2026, 5, 6));
+  if (Number.isNaN(birth.getTime()) || birth > eventDate) return null;
+  let age = eventDate.getUTCFullYear() - birth.getUTCFullYear();
+  const monthDiff = eventDate.getUTCMonth() - birth.getUTCMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && eventDate.getUTCDate() < birth.getUTCDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
+function resolvePackageType(rawPackageType: unknown, birthdate: string | null): PackageType | null {
+  const requested = String(rawPackageType || '').trim();
+  const lodgingChoice = requested === 'lodging' ? 'lodging' : 'no_lodging';
+  const age = calculateAgeOnEventDate(birthdate);
+  if (age !== null) {
+    if (age <= 4) return 'child_0_7';
+    if (age <= 10) return 'child_7_13';
+    if (requested === 'child_0_7' || requested === 'child_7_13') return null;
+    return lodgingChoice;
+  }
+  if (requested === 'child_0_7' || requested === 'child_7_13') return null;
+  return lodgingChoice;
 }
 
 function normalizeGender(value: unknown): string | null {
@@ -93,10 +122,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   try {
-    const runtimeEnv =
-      import.meta.env?.VERCEL_ENV ?? process.env?.VERCEL_ENV ?? process.env?.NODE_ENV ?? 'development';
-    const enforceTurnstile = runtimeEnv === 'production';
-    const turnstileConfigured = enforceTurnstile && Boolean(
+    const turnstileConfigured = Boolean(
       import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
     );
     if (turnstileConfigured) {
@@ -165,11 +191,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     const participantsInput = parseParticipants(participantsRaw);
+    let invalidParticipant = false;
     const participants = participantsInput
       .map((entry: any) => {
+        const birthdate = normalizeDate(entry?.birthdate);
+        const packageType = resolvePackageType(entry?.packageType ?? entry?.type, birthdate);
+        if (!packageType) {
+          invalidParticipant = true;
+          return null;
+        }
         const safe = sanitizeParticipant({
           fullName: entry?.fullName ?? entry?.name ?? '',
-          packageType: entry?.packageType ?? entry?.type,
+          packageType,
           relationship: entry?.relationship ?? '',
           documentType: entry?.documentType ?? entry?.document_type ?? entry?.docType ?? '',
           documentNumber: entry?.documentNumber ?? entry?.document_number ?? entry?.docNumber ?? '',
@@ -180,6 +213,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       .filter(Boolean) as Array<{ safe: NonNullable<ReturnType<typeof sanitizeParticipant>>; raw: any }>;
 
     const safeParticipants = participants.map((item) => item.safe);
+    if (invalidParticipant || participants.length !== participantsInput.length) {
+      return new Response(JSON.stringify({ ok: false, error: 'Revisa edades y fechas de nacimiento de los participantes' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     if (!safeParticipants.length) {
       return new Response(JSON.stringify({ ok: false, error: 'Agrega al menos una persona' }), {
         status: 400,

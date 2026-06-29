@@ -4,6 +4,7 @@ import { logSecurityEvent } from '@lib/securityEvents';
 import { getPrice, isValidPackageType } from '@lib/cumbre2026';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
 import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
+import { csvEscape } from '@lib/csv';
 
 export const prerender = false;
 
@@ -21,19 +22,7 @@ function validateExport(request: Request): boolean {
   if (!secret) return !isProduction();
   const header = request.headers.get('x-export-secret');
   if (header && header === secret) return true;
-  if (isProduction()) return false;
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  return Boolean(token && token === secret);
-}
-
-function csvEscape(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  const str = String(value);
-  if (/[,\n\r"]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+  return false;
 }
 
 function ilikeValue(value: string | null): string | null {
@@ -450,6 +439,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': 'attachment; filename="cumbre-admin.csv"',
+      'cache-control': 'no-store',
     },
   });
 };

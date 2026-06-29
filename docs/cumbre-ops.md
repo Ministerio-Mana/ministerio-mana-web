@@ -34,7 +34,6 @@ Guia corta para cron de cuotas, export CSV y acceso de cuenta.
 Endpoint:
 - `POST /api/cumbre2026/installments/run`
 - Header requerido: `x-cron-secret: <CUMBRE_CRON_SECRET>`
-- Alternativa: `?token=<CUMBRE_CRON_SECRET>`
 
 Ejemplo manual:
 
@@ -62,7 +61,6 @@ Si el pago inicial fue por PSE/Nequi, no hay autodebito y se usan recordatorios.
 Endpoint:
 - `POST /api/cumbre2026/installments/reminders/run`
 - Header requerido: `x-cron-secret: <CUMBRE_CRON_SECRET>`
-- Alternativa: `?token=<CUMBRE_CRON_SECRET>`
 
 Ejemplo manual:
 
@@ -80,12 +78,12 @@ Programacion sugerida:
 Endpoint:
 - `GET /api/cumbre2026/installments/export`
 - Header requerido: `x-export-secret: <CUMBRE_EXPORT_SECRET>`
-- Alternativa: `?token=<CUMBRE_EXPORT_SECRET>`
 
 Ejemplo:
 
 ```bash
-curl -L "https://TU-DOMINIO/api/cumbre2026/installments/export?token=TU_SECRETO" \
+curl -L "https://TU-DOMINIO/api/cumbre2026/installments/export" \
+  -H "x-export-secret: TU_SECRETO" \
   -o cumbre_installments.csv
 ```
 
@@ -96,13 +94,13 @@ Abre el CSV en Excel/Sheets para el control de pagos.
 Endpoint:
 - `GET /api/cumbre2026/admin/export`
 - Header requerido: `x-export-secret: <CUMBRE_ADMIN_EXPORT_SECRET>`
-- Alternativa: `?token=<CUMBRE_ADMIN_EXPORT_SECRET>`
 - Filtro opcional: `?provider=wompi|stripe|manual` (manual = fisico)
 
 Ejemplo:
 
 ```bash
-curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export?token=TU_SECRETO" \
+curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export" \
+  -H "x-export-secret: TU_SECRETO" \
   -o cumbre-admin.csv
 ```
 
@@ -111,13 +109,13 @@ curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export?token=TU_SECRETO" \
 Endpoint:
 - `GET /api/cumbre2026/admin/export-all`
 - Header requerido: `x-export-secret: <CUMBRE_ADMIN_EXPORT_SECRET>`
-- Alternativa: `?token=<CUMBRE_ADMIN_EXPORT_SECRET>`
 - Filtro opcional: `?provider=wompi|stripe|manual` (manual = fisico)
 
 Ejemplo:
 
 ```bash
-curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export-all?token=TU_SECRETO" \
+curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export-all" \
+  -H "x-export-secret: TU_SECRETO" \
   -o cumbre-admin-all.csv
 ```
 

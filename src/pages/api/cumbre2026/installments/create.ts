@@ -135,8 +135,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
 
     const baseUrl = resolveBaseUrl(request);
-    const tokenParam = payload.token ? `&token=${encodeURIComponent(payload.token)}` : '';
-    const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${bookingId}${tokenParam}&source=payment`;
+    const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${bookingId}&source=payment`;
 
     if (provider === 'stripe') {
       const interval = frequency === 'BIWEEKLY' ? 'week' : 'month';

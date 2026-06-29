@@ -20,10 +20,7 @@ function validateExport(request: Request): boolean {
   if (!secret) return !isProduction();
   const header = request.headers.get('x-export-secret');
   if (header && header === secret) return true;
-  if (isProduction()) return false;
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  return Boolean(token && token === secret);
+  return false;
 }
 
 function csvEscape(value: unknown): string {

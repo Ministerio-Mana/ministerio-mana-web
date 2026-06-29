@@ -28,6 +28,17 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
+function hasOwn(input: any, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(input ?? {}, key);
+}
+
+function firstPresent(input: any, keys: string[]): unknown {
+  for (const key of keys) {
+    if (hasOwn(input, key)) return input[key];
+  }
+  return undefined;
+}
+
 export const POST: APIRoute = async ({ request }) => {
   const contentType = request.headers.get('content-type') || '';
   let body: any = null;
@@ -91,11 +102,18 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const contactName = sanitizePlainText(payload.contactName, 120);
-    const email = (payload.email || '').toString().trim().toLowerCase();
-    const phone = sanitizePlainText(payload.phone, 30);
-    const emergencyName = sanitizePlainText(payload.emergencyName, 120);
-    const emergencyPhone = sanitizePlainText(payload.emergencyPhone, 30);
+    const contactUpdates: Record<string, string | null> = {};
+    if (hasOwn(payload, 'contactName')) {
+      contactUpdates.contact_name = sanitizePlainText(payload.contactName, 120) || null;
+    }
+    if (hasOwn(payload, 'email')) {
+      contactUpdates.contact_email = (payload.email || '').toString().trim().toLowerCase() || null;
+    }
+    if (hasOwn(payload, 'phone')) {
+      contactUpdates.contact_phone = sanitizePlainText(payload.phone, 30) || null;
+    }
+    const contactName = contactUpdates.contact_name || '';
+    const email = contactUpdates.contact_email || '';
 
     if (containsBlockedSequence(contactName) || containsBlockedSequence(email)) {
       return new Response(JSON.stringify({ ok: false, error: 'Datos invalidos' }), {
@@ -104,14 +122,12 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    await supabaseAdmin
-      .from('cumbre_bookings')
-      .update({
-        contact_name: contactName || null,
-        contact_email: email || null,
-        contact_phone: phone || null,
-      })
-      .eq('id', bookingId);
+    if (Object.keys(contactUpdates).length > 0) {
+      await supabaseAdmin
+        .from('cumbre_bookings')
+        .update(contactUpdates)
+        .eq('id', bookingId);
+    }
 
     let participantsRaw: unknown = payload.participants;
     if (typeof participantsRaw === 'string') {
@@ -127,20 +143,31 @@ export const POST: APIRoute = async ({ request }) => {
       const participantId = (entry?.id || '').toString();
       if (!participantId) continue;
 
-      const update = {
-        full_name: sanitizePlainText(entry?.fullName ?? entry?.name, 120) || null,
-        birthdate: entry?.birthdate || null,
-        gender: sanitizePlainText(entry?.gender, 30) || null,
-        nationality: sanitizePlainText(entry?.nationality, 60) || null,
-        document_type: sanitizePlainText(entry?.documentType, 40) || null,
-        document_number: sanitizePlainText(entry?.documentNumber, 50) || null,
-        room_preference: sanitizePlainText(entry?.roomPreference, 60) || null,
-        blood_type: sanitizePlainText(entry?.bloodType, 12) || null,
-        allergies: sanitizePlainText(entry?.allergies, 160) || null,
-        diet_type: sanitizePlainText(entry?.dietType, 40) || null,
-        diet_notes: sanitizePlainText(entry?.dietNotes, 160) || null,
-        relationship: sanitizePlainText(entry?.relationship, 60) || null,
-      };
+      const update: Record<string, string | null> = {};
+      const fieldMap: Array<{ column: string; keys: string[]; max?: number; raw?: boolean }> = [
+        { column: 'full_name', keys: ['fullName', 'name'], max: 120 },
+        { column: 'birthdate', keys: ['birthdate'], raw: true },
+        { column: 'gender', keys: ['gender'], max: 30 },
+        { column: 'nationality', keys: ['nationality'], max: 60 },
+        { column: 'document_type', keys: ['documentType'], max: 40 },
+        { column: 'document_number', keys: ['documentNumber'], max: 50 },
+        { column: 'room_preference', keys: ['roomPreference'], max: 60 },
+        { column: 'blood_type', keys: ['bloodType'], max: 12 },
+        { column: 'allergies', keys: ['allergies'], max: 160 },
+        { column: 'diet_type', keys: ['dietType'], max: 40 },
+        { column: 'diet_notes', keys: ['dietNotes'], max: 160 },
+        { column: 'relationship', keys: ['relationship'], max: 60 },
+      ];
+
+      for (const field of fieldMap) {
+        const rawValue = firstPresent(entry, field.keys);
+        if (rawValue === undefined) continue;
+        update[field.column] = field.raw
+          ? (rawValue ? String(rawValue) : null)
+          : (sanitizePlainText(String(rawValue ?? ''), field.max) || null);
+      }
+
+      if (Object.keys(update).length === 0) continue;
 
       await supabaseAdmin
         .from('cumbre_participants')

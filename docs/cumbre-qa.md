@@ -74,7 +74,8 @@ where id = (
 Ejecuta cron:
 
 ```bash
-curl -X POST "https://TU-DOMINIO/api/cumbre2026/installments/run?token=TU_CUMBRE_CRON_SECRET"
+curl -X POST "https://TU-DOMINIO/api/cumbre2026/installments/run" \
+  -H "x-cron-secret: TU_CUMBRE_CRON_SECRET"
 ```
 
 Luego revisa:
@@ -92,7 +93,8 @@ Luego revisa:
 ## 6) Export CSV
 
 ```bash
-curl -L "https://TU-DOMINIO/api/cumbre2026/installments/export?token=TU_CUMBRE_EXPORT_SECRET" \
+curl -L "https://TU-DOMINIO/api/cumbre2026/installments/export" \
+  -H "x-export-secret: TU_CUMBRE_EXPORT_SECRET" \
   -o cumbre_installments.csv
 ```
 

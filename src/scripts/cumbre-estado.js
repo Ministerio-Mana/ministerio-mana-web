@@ -7,7 +7,14 @@ const paymentStatusMeta = document.getElementById('payment-status-meta');
 
 const params = new URLSearchParams(window.location.search);
 const bookingId = params.get('bookingId');
-const token = params.get('token');
+let token = params.get('token') || '';
+if (!token && bookingId) {
+  try {
+    token = sessionStorage.getItem(`cumbre-token:${bookingId}`) || localStorage.getItem(`cumbre-token:${bookingId}`) || '';
+  } catch {
+    token = '';
+  }
+}
 const source = params.get('source');
 const isPayment = source === 'payment';
 const hasBookingLink = Boolean(bookingId && token);
@@ -125,8 +132,13 @@ function updateCompleteButtonLabel() {
 
 async function fetchPaymentStatus() {
   if (!isPayment || !bookingId || !paymentStatusDetail) return;
+  if (!token) {
+    paymentStatusDetail.textContent = 'Regresaste del proveedor de pago. Te notificaremos cuando el pago sea confirmado.';
+    if (paymentStatusMeta) paymentStatusMeta.textContent = '';
+    return;
+  }
   try {
-    const res = await fetch(`/api/cumbre2026/booking/status?bookingId=${encodeURIComponent(bookingId)}`);
+    const res = await fetch(`/api/cumbre2026/booking/status?bookingId=${encodeURIComponent(bookingId)}&token=${encodeURIComponent(token)}`);
     const payload = await res.json();
     if (!res.ok || !payload?.ok) {
       throw new Error(payload?.error || 'No se pudo consultar el estado.');

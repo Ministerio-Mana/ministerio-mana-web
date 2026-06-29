@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { csvEscape } from '@lib/csv';
 
 export const prerender = false;
 
@@ -19,19 +20,7 @@ function validateExport(request: Request): boolean {
   if (!secret) return false;
   const header = request.headers.get('x-export-secret');
   if (header && header === secret) return true;
-  if (isProduction()) return false;
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  return Boolean(token && token === secret);
-}
-
-function csvEscape(value: unknown): string {
-  if (value == null) return '';
-  const text = String(value);
-  if (text.includes(',') || text.includes('"') || text.includes('\n')) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
+  return false;
 }
 
 export const GET: APIRoute = async ({ request, clientAddress }) => {
@@ -155,6 +144,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': 'attachment; filename="cumbre-installments.csv"',
+      'cache-control': 'no-store',
     },
   });
 };

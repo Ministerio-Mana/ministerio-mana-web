@@ -190,13 +190,13 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
   if (registroCta) {
     try {
       const bookingId = localStorage.getItem('cumbre-last-booking');
-      const token = localStorage.getItem('cumbre-last-token');
+      const token = sessionStorage.getItem('cumbre-last-token') || localStorage.getItem('cumbre-last-token');
       if (bookingId && token) {
         registroCta.href = `/eventos/cumbre-mundial-2026/registro?bookingId=${encodeURIComponent(bookingId)}&token=${encodeURIComponent(token)}`;
         registroCta.classList.remove('hidden');
       }
     } catch (err) {
-      console.warn('No se pudo leer localStorage', err);
+      console.warn('No se pudo leer almacenamiento local', err);
     }
   }
 </script>

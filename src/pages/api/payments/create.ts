@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import crypto from 'node:crypto';
-import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { resolveBaseUrl } from '@lib/url';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
@@ -64,35 +63,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
-  }
-
-  const runtimeEnv =
-    import.meta.env?.VERCEL_ENV ?? process.env?.VERCEL_ENV ?? process.env?.NODE_ENV ?? 'development';
-  const enforceTurnstile = runtimeEnv === 'production';
-  const turnstileConfigured = enforceTurnstile && Boolean(
-    import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
-  );
-  if (turnstileConfigured) {
-    const token = payload.cfToken?.toString() || payload['cf-turnstile-response'];
-    if (token) {
-      const okCaptcha = await verifyTurnstile(token, clientAddress);
-      if (!okCaptcha) {
-        void logSecurityEvent({
-          type: 'captcha_failed',
-          identifier: 'cumbre.payment',
-          ip: clientAddress,
-          detail: 'Turnstile invalido',
-        });
-        return new Response(JSON.stringify({ ok: false, error: 'Captcha invalido' }), {
-          status: 400,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
-    } else {
-      console.warn('[CUMBRE] Turnstile sin token en pago: se omite validacion');
-    }
-  } else {
-    console.warn('[CUMBRE] Turnstile no configurado: bypass en entorno local/dev');
   }
 
   const allowed = await enforceRateLimit(`cumbre.payments:${clientAddress ?? 'unknown'}`);
@@ -171,8 +141,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const paymentIndex = (await countPayments(bookingId)) + 1;
     const reference = buildPaymentReference(bookingId, paymentIndex);
     const baseUrl = resolveBaseUrl(request);
-    const tokenParam = payload.token ? `&token=${encodeURIComponent(payload.token)}` : '';
-    const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${bookingId}${tokenParam}&source=payment`;
+    const statusUrl = `${baseUrl}/eventos/cumbre-mundial-2026/estado?bookingId=${bookingId}&source=payment`;
 
     if (booking.currency === 'COP') {
       await recordPayment({

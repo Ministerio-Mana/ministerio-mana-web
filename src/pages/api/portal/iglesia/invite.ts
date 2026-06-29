@@ -145,7 +145,13 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // ... (User creation / Upsert membership logic remains same) ...
-  const existingUser = await findAuthUserByEmail(email);
+  let existingUser: Awaited<ReturnType<typeof findAuthUserByEmail>> = null;
+  try {
+    existingUser = await findAuthUserByEmail(email);
+  } catch (error) {
+    console.error('[portal.iglesia.invite] user lookup failed', error);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el usuario destino' }), { status: 500 });
+  }
   let targetUserId = existingUser?.id || null;
 
   const baseUrl = resolveBaseUrl(request);

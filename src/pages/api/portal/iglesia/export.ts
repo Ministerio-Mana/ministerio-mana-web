@@ -2,14 +2,9 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalAccess';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
+import { csvEscapeQuoted as csvEscape } from '@lib/csv';
 
 export const prerender = false;
-
-function csvEscape(value: unknown): string {
-  if (value === null || value === undefined) return '""';
-  const str = String(value).replace(/"/g, '""');
-  return `"${str}"`;
-}
 
 export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
@@ -182,6 +177,7 @@ export const GET: APIRoute = async ({ request }) => {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': `attachment; filename="${filename}"`,
+      'cache-control': 'no-store',
     },
   });
 };

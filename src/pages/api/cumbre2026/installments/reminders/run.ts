@@ -30,9 +30,7 @@ function validateCron(request: Request): boolean {
   if (!secret) return !isProduction();
   const header = request.headers.get('x-cron-secret');
   if (header && header === secret) return true;
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  return Boolean(token && token === secret);
+  return false;
 }
 
 function formatCurrency(amount: number, currency: string): string {

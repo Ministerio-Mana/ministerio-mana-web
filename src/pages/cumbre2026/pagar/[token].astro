@@ -4,7 +4,7 @@ import { buildInstallmentReference } from '@lib/cumbre2026';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
 import { resolveBaseUrl } from '@lib/url';
-import { getInstallmentByLinkToken, listActivePendingPayments, updateInstallment } from '@lib/cumbreStore';
+import { getInstallmentByLinkToken, listActivePendingPayments, recordPayment, updateInstallment } from '@lib/cumbreStore';
 
 const token = Astro.params.token ?? '';
 const baseUrl = resolveBaseUrl(Astro.request);
@@ -96,6 +96,19 @@ if (token) {
             },
           });
           paymentUrl = session.url || null;
+          if (paymentUrl) {
+            await recordPayment({
+              bookingId: booking.id,
+              provider: 'stripe',
+              providerTxId: session.id || null,
+              reference,
+              amount,
+              currency: 'USD',
+              status: 'PENDING',
+              planId: plan.id,
+              installmentId: installment.id,
+            });
+          }
         } else {
           const { url } = buildWompiCheckoutUrl({
             amountInCents: Math.round(amount * 100),
@@ -110,6 +123,17 @@ if (token) {
             },
           });
           paymentUrl = url;
+          await recordPayment({
+            bookingId: booking.id,
+            provider: 'wompi',
+            providerTxId: null,
+            reference,
+            amount,
+            currency: 'COP',
+            status: 'PENDING',
+            planId: plan.id,
+            installmentId: installment.id,
+          });
         }
 
         if (paymentUrl) {

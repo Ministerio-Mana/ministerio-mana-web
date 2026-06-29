@@ -6,7 +6,7 @@ import { logSecurityEvent } from '@lib/securityEvents';
 
 export const prerender = false;
 
-const ALLOWED_TYPES = new Set(['invite', 'magiclink', 'recovery']);
+const ALLOWED_TYPES = new Set(['magiclink', 'recovery']);
 const DEBUG =
   (import.meta.env?.AUTH_LINK_DEBUG ?? process.env.AUTH_LINK_DEBUG) === 'true';
 
@@ -19,8 +19,7 @@ function env(key: string): string | undefined {
 }
 
 function isProduction(): boolean {
-  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
-  return runtimeEnv === 'production';
+  return Boolean(env('TURNSTILE_SECRET_KEY'));
 }
 
 function getTrustedSiteUrl(): string {
@@ -36,6 +35,33 @@ function makeTraceId(): string {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = String(email || '').trim().toLowerCase().split('@');
+  if (!domain) return `${(local || '').slice(0, 2)}***`;
+  return `${(local || '').slice(0, 2) || '*'}***@${domain}`;
+}
+
+function redactUrl(raw: string): string {
+  try {
+    const url = new URL(raw);
+    const sensitive = new Set([
+      'access_token',
+      'bookingId',
+      'code',
+      'next',
+      'refresh_token',
+      'token',
+      'token_hash',
+    ]);
+    sensitive.forEach((key) => {
+      if (url.searchParams.has(key)) url.searchParams.set(key, '[redacted]');
+    });
+    return `${url.origin}${url.pathname}${url.search}${url.hash ? '#[redacted]' : ''}`;
+  } catch {
+    return '[invalid-url]';
+  }
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -122,9 +148,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   console.log('[auth.send-link] start', {
     traceId,
-    email,
+    email: maskEmail(email),
     kind,
-    redirectTo,
+    redirectTo: redactUrl(redirectTo),
     hasSupabaseUrl: hasEnv('SUPABASE_URL'),
     hasServiceKey: hasEnv('SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_ROLE'),
     hasSendgridKey: hasEnv('SENDGRID_API_KEY'),
@@ -134,16 +160,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   let result;
   try {
     result = await sendAuthLink({
-      kind: kind as 'invite' | 'magiclink' | 'recovery',
+      kind: kind as 'magiclink' | 'recovery',
       email,
       redirectTo,
     });
   } catch (error: any) {
     console.error('[auth.send-link] unexpected error', {
       traceId,
-      email,
+      email: maskEmail(email),
       kind,
-      redirectTo,
+      redirectTo: redactUrl(redirectTo),
       message: error?.message || String(error),
     });
     return new Response(JSON.stringify({ ok: false, error: 'Error interno' }), {
@@ -155,21 +181,23 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!result.ok) {
     console.error('[auth.send-link] failed', {
       traceId,
-      email,
+      email: maskEmail(email),
       kind,
-      redirectTo,
+      redirectTo: redactUrl(redirectTo),
       method: result.method,
-      error: result.error,
+      error: result.error || 'send failed',
     });
-    return new Response(JSON.stringify({ ok: false, error: result.error || 'No se pudo enviar' }), {
-      status: 500,
+    return new Response(JSON.stringify({
+      ok: true,
+      ...(DEBUG ? { traceId } : {}),
+    }), {
+      status: 200,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   return new Response(JSON.stringify({
     ok: true,
-    method: result.method,
     ...(DEBUG ? { traceId } : {}),
   }), {
     status: 200,

@@ -253,7 +253,7 @@ export async function sendAuthLink(params: {
           error: err?.message || 'unknown',
         },
       });
-      return { ok: false, method: 'supabase', error: err?.message || 'No se pudo enviar' };
+      return { ok: false, method: 'supabase', error: 'No se pudo enviar' };
     }
   }
 
@@ -264,46 +264,16 @@ export async function sendAuthLink(params: {
   });
 
   if (error || !data?.properties?.action_link) {
-    // Diagnóstico adicional: Verificar si el usuario existe
-    let userExists = false;
-    let userCheckError = null;
-    try {
-      // Intento de listar usuarios filtrando por email (si es supported) o buscar
-      // Nota: listUsers no siempre soporta filtro por email directo en todas las versiones
-      // pero podemos listar y buscar. O usar getUserById si tuvieramos ID.
-      // La forma más segura de saber si existe sin ID es intentar un getUser (que no hay por email admin)
-      // o listUsers.
-      // Usaremos createUser con email dummy para ver si dice "ya existe"? No, side effects.
-      // Mejor asumimos que si no hay link y no hay error, es probable que no exista.
-
-      // Vamos a intentar obtener el usuario para confirmar
-      const { data: listData, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
-      if (!listErr && listData?.users) {
-        userExists = listData.users.some(u => u.email?.toLowerCase() === params.email.toLowerCase());
-      } else {
-        userCheckError = listErr;
-      }
-    } catch (e) {
-      userCheckError = e;
-    }
-
-    const errorMsg = error?.message
-      ? error.message
-      : (userExists ? 'No se generó link (link property missing)' : 'Usuario no registrado');
-
     console.error('[auth.generateLink] failed', {
       kind: params.kind,
-      email: params.email,
-      redirectTo,
-      error: error || 'Undefined error from Supabase',
+      email: maskEmail(params.email),
+      has_redirect_to: Boolean(redirectTo),
+      error: error?.message || 'Undefined error from Supabase',
       hasProperties: Boolean(data?.properties),
       hasActionLink: Boolean(data?.properties?.action_link),
-      userExists,
-      userCheckError,
-      data: JSON.stringify(data)
     });
 
-    return { ok: false, method: 'sendgrid', error: errorMsg };
+    return { ok: false, method: 'sendgrid', error: 'No se pudo enviar' };
   }
 
   const actionUrl = buildPortalActivationUrl({

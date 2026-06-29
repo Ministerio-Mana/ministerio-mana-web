@@ -5,6 +5,7 @@ import { getPortalChurchAccessContext, mapPortalAccessError } from '@lib/portalA
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
 import { isPortalIglesiaBooking, restrictToPortalIglesiaBookings } from '@lib/portalBookingSource';
+import { csvEscape } from '@lib/csv';
 
 export const prerender = false;
 
@@ -54,15 +55,6 @@ const HEADER_LABELS: Record<string, string> = {
   cuotas_pendientes: 'cuotas_pendientes',
   proximos_pagos: 'proximos_pagos',
 };
-
-function csvEscape(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  const str = String(value);
-  if (/[,\n\r"]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
 
 function normalizeText(value: string | null | undefined): string {
   return (value ?? '').toString().trim();

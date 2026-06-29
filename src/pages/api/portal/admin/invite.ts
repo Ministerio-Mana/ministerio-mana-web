@@ -90,7 +90,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const baseUrl = resolveBaseUrl(request);
   const redirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
 
-  const existingUser = await findAuthUserByEmail(email);
+  let existingUser: Awaited<ReturnType<typeof findAuthUserByEmail>> = null;
+  try {
+    existingUser = await findAuthUserByEmail(email);
+  } catch (error) {
+    console.error('[portal.admin.invite] user lookup failed', error);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el usuario destino' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
   let userId = existingUser?.id || null;
   const linkKind = userId ? 'recovery' : 'invite';
   const result = await sendAuthLink({ kind: linkKind, email, redirectTo });
