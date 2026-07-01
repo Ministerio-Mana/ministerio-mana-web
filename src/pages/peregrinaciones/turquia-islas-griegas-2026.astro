@@ -1,0 +1,2208 @@
+---
+import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import bookOpenCheckIcon from 'lucide-static/icons/book-open-check.svg?raw';
+import calendarIcon from 'lucide-static/icons/calendar.svg?raw';
+import clockIcon from 'lucide-static/icons/clock.svg?raw';
+import contactIcon from 'lucide-static/icons/contact.svg?raw';
+import mapIcon from 'lucide-static/icons/map.svg?raw';
+import planeIcon from 'lucide-static/icons/plane.svg?raw';
+import shipIcon from 'lucide-static/icons/ship.svg?raw';
+import ticketIcon from 'lucide-static/icons/ticket.svg?raw';
+import walletIcon from 'lucide-static/icons/wallet.svg?raw';
+
+const lucideIcon = (svg: string) =>
+  svg
+    .replace(/<!--[\s\S]*?-->\s*/g, '')
+    .replace(/<svg\b([^>]*)class="([^"]*)"([^>]*)>/, '<svg$1class="pilgrim-lucide-icon $2"$3 aria-hidden="true" focusable="false">')
+    .replace(/<svg\b((?:(?!class=)[^>])*)>/, '<svg$1 class="pilgrim-lucide-icon" aria-hidden="true" focusable="false">');
+
+const assetBase = '/images/peregrinaciones/turquia-islas-griegas-2026';
+const heroImage = `${assetBase}/istanbul-cruise.jpg`;
+const flagImage = `${assetBase}/turkey-flag.jpg`;
+const posterImage = `${assetBase}/poster-reference.jpg`;
+const routeMapImage = `${assetBase}/route-map-original.jpg`;
+
+const whatsappText = encodeURIComponent(
+  'Hola Ministerio Maná, quiero información de la peregrinación a Turquía e Islas Griegas 2026.',
+);
+const whatsappHref = `https://wa.me/573004298001?text=${whatsappText}`;
+const whatsappSecondaryHref = `https://wa.me/573148297534?text=${whatsappText}`;
+
+const quickFacts = [
+  { label: 'Fecha', value: '17 oct - 1 nov 2026', icon: lucideIcon(calendarIcon) },
+  { label: 'Duración', value: '16 días', icon: lucideIcon(clockIcon) },
+  { label: 'Ruta', value: 'Turquía + Islas Griegas', icon: lucideIcon(mapIcon) },
+  { label: 'Enfoque', value: 'Las siete iglesias', icon: lucideIcon(bookOpenCheckIcon) },
+];
+
+const routeStops = [
+  'Estambul',
+  'Esmirna',
+  'Kuşadası',
+  'Patmos',
+  'Rodas',
+  'Creta',
+  'Santorini',
+  'Atenas',
+  'Mykonos',
+  'Éfeso',
+  'Pérgamo',
+  'Tiatira',
+  'Sardes',
+  'Filadelfia',
+  'Pamukkale',
+  'Laodicea',
+  'Konya',
+  'Capadocia',
+];
+
+const routePillars = [
+  {
+    title: 'Palabra',
+    text: 'Una ruta para caminar escenarios bíblicos y leer la historia con propósito.',
+  },
+  {
+    title: 'Comunión',
+    text: 'Un tiempo para viajar como iglesia, compartir mesa y crecer juntos.',
+  },
+  {
+    title: 'Preparación',
+    text: 'Acompañamiento para cupos, requisitos, tiquetes y claridad logística.',
+  },
+];
+
+const itinerary = [
+  {
+    day: '01',
+    date: '17 oct',
+    title: 'Salida del país',
+    meta: 'Inicio de la peregrinación',
+    body: 'Salida desde tu lugar de origen con destino a Estambul. ¡Comienza nuestra peregrinación a Turquía e Islas Griegas!',
+  },
+  {
+    day: '02',
+    date: '18 oct',
+    title: 'Llegada a Estambul',
+    meta: 'Cena',
+    body: 'Llegada a Estambul y traslado al hotel. Cena y alojamiento.',
+  },
+  {
+    day: '03',
+    date: '19 oct',
+    title: 'Estambul - Izmir',
+    meta: 'D - A - C',
+    body: 'Bazar Egipcio, mercado de las especias. Recorrido en barco por el Bósforo, entre Europa y Asia, con sus palacios y yalıs. Almuerzo, traslado al aeropuerto y vuelo a Esmirna. Cena y alojamiento.',
+  },
+  {
+    day: '04',
+    date: '20 oct',
+    title: 'Embarque al crucero',
+    meta: 'Kuşadası / Patmos · D - A - C',
+    body: 'Desayuno. Traslado al puerto de Kuşadası para embarcar en el crucero. Salida hacia la isla de Patmos: visita al monasterio y a la gruta donde el apóstol Juan escribió el Apocalipsis.',
+  },
+  {
+    day: '05',
+    date: '21 oct',
+    title: 'Crucero: Rodas',
+    meta: 'D - A - C',
+    body: 'Llegada al puerto de Rodas, isla de los Caballeros de la Orden de San Juan. Excursión opcional a la Acrópolis de Lindos y a la ciudad medieval, Antigua Rodas.',
+  },
+  {
+    day: '06',
+    date: '22 oct',
+    title: 'Crucero: Creta / Santorini',
+    meta: 'D - A - C',
+    body: 'Parada en Heraklio, Creta, con excursión opcional al Palacio de Knosos, centro de la civilización minoica. Navegación a Santorini, el continente perdido de la Atlántida. Excursión opcional a Oía, uno de los lugares más mágicos para ver la puesta de sol.',
+  },
+  {
+    day: '07',
+    date: '23 oct',
+    title: 'Crucero: Atenas / Mykonos',
+    meta: 'D - A - C',
+    body: 'Por la mañana, excursión opcional a Atenas. Por la tarde, parada en Mykonos, famosa por sus playas, molinos de viento y encanto.',
+  },
+  {
+    day: '08',
+    date: '24 oct',
+    title: 'Kuşadası - Éfeso - Izmir',
+    meta: 'Desayuno y almuerzo',
+    body: 'Desembarque y visita de Éfeso, una de las siete iglesias, desde donde el apóstol Pablo escribió a los Corintios y a los Gálatas: el Teatro, la Biblioteca de Celso y la Vía Mármol. Almuerzo, Basílica de San Juan, dedicada al apóstol Juan, autor del Apocalipsis. Centro de cuero. Alojamiento en Kuşadası.',
+  },
+  {
+    day: '09',
+    date: '25 oct',
+    title: 'Izmir - Pérgamo - Tiatira',
+    meta: 'Desayuno y cena',
+    body: 'Pérgamo: Acrópolis con su Gran Teatro y los Templos de Atenea y Zeus. Basílica Roja, la primera de las siete iglesias. Tiatira, la segunda de las siete iglesias, con el templo dedicado a Apolo. Regreso a Izmir, cena y alojamiento.',
+  },
+  {
+    day: '10',
+    date: '26 oct',
+    title: 'Esmirna - Sardes - Filadelfia',
+    meta: 'Pamukkale · D - A - C',
+    body: 'Iglesia de Policarpo en Esmirna, la tercera de las siete iglesias; obispo y mártir cristiano del siglo II. Sardes, la madre de las siete iglesias, donde el rey Creso acuñó la primera moneda de la historia: templo, iglesia bizantina, gimnasio y sinagoga. Almuerzo. Filadelfia, la sexta de las siete iglesias, con su basílica bizantina. Continuación a Pamukkale. Cena y alojamiento.',
+  },
+  {
+    day: '11',
+    date: '27 oct',
+    title: 'Pamukkale',
+    meta: 'D - A - C',
+    body: 'Pamukkale, cuyas aguas calcáreas han creado formaciones espectaculares. Hierápolis: tumba del apóstol Felipe, teatro y tiempo en aguas termales. Laodicea, una de las siete iglesias evangelizada por Epafras. Almuerzo, cena y alojamiento.',
+  },
+  {
+    day: '12',
+    date: '28 oct',
+    title: 'Pamukkale - Konya - Capadocia',
+    meta: 'D - A - C',
+    body: 'Konya, Iconium, donde los apóstoles Pablo y Bernabé predicaron el Evangelio. Almuerzo. Continuación a Capadocia; en ruta, un kervansaray del siglo XIII de la Ruta de la Seda. Cena y alojamiento.',
+  },
+  {
+    day: '13',
+    date: '29 oct',
+    title: 'Capadocia',
+    meta: 'D - A - C',
+    body: 'Al amanecer, paseo en globo aerostático sobre las chimeneas de hadas, incluido. Valle de Göreme, Uçhisar, Avcilar y Valle de Derbent. Almuerzo, talleres de alfombras y ónyx. Cena y espectáculo de danza folclórica.',
+  },
+  {
+    day: '14',
+    date: '30 oct',
+    title: 'Vuelo a Estambul',
+    meta: 'Sultanahmet · D - A - C',
+    body: 'Vuelo a Estambul. Barrios de Pera y Gálata: Torre de Gálata, exterior, Plaza Taksim y avenida İstiklal. Almuerzo. Barrio de Sultanahmet: Hipódromo Romano, Mezquita Azul, 6 minaretes, y Santa Sofía, siglo VI. Cena y alojamiento.',
+  },
+  {
+    day: '15',
+    date: '31 oct',
+    title: 'Estambul',
+    meta: 'Topkapi y Gran Bazar · D - A - C',
+    body: 'Palacio Topkapi, residencia de los sultanes otomanos, con entrada incluida. Patriarcado de Constantinopla en Fener; si está cerrado, se visita San Esteban de los Búlgaros. Barrios de Fener y Balat, Mezquita de Süleymaniye y tiempo libre en el Gran Bazar.',
+  },
+  {
+    day: '16',
+    date: '1 nov',
+    title: 'Salida de Estambul',
+    meta: 'Desayuno',
+    body: 'Desayuno y traslado al aeropuerto de Estambul. Fin de nuestros servicios.',
+  },
+];
+
+const hotels = [
+  { city: 'Crucero', hotel: 'Celestyal - cabina interior, categoría IB / IC' },
+  { city: 'Esmirna', hotel: 'Kaya Izmir Termal o similar' },
+  { city: 'Pamukkale', hotel: 'Colossae Thermal o Adempira Thermal o similar' },
+  { city: 'Capadocia', hotel: 'Utopia Hotel Cueva o similar' },
+  { city: 'Estambul', hotel: 'Wish More o Windsor o similar' },
+];
+
+const includedTurkey = [
+  '3 noches en Estambul, 2 en Capadocia, 2 en Pamukkale y 3 en Esmirna.',
+  'Todos los traslados en grupo, en bus privado con aire acondicionado.',
+  'Todos los tours con guía de habla española.',
+  '10 desayunos, 9 almuerzos y 10 cenas.',
+  'Vuelo doméstico Capadocia - Estambul con 20 kg + 8 kg de cabina.',
+  'Noche de bailes folclóricos y paseo en globo en Capadocia.',
+  'Entradas a los museos y auriculares.',
+  'Nueva tasa de alojamiento en los hoteles de Turquía.',
+];
+
+const includedCruise = [
+  'Crucero en régimen de pensión completa en cabina interior categoría IB.',
+  'Café, té, agua y jugo ilimitados en el horario del restaurante, 6:30-22:00.',
+  'Refrescos ilimitados con las comidas en restaurantes Thalassa y Taverna.',
+  'Impuestos y propinas del crucero.',
+];
+
+const notIncluded = [
+  'Gastos personales.',
+  'Bebidas durante los almuerzos y las cenas en Turquía.',
+  'Traslados individuales por llegadas o salidas fuera de los vuelos del grupo.',
+  'Propinas al guía y al conductor: sugerido 3-5 USD por persona/día al guía y 2-3 USD al chofer.',
+  'Las excursiones del crucero en Patmos y Atenas, y otras excursiones.',
+  'Bebidas durante el crucero.',
+  'Gastos personales y todo lo no mencionado expresamente como incluido.',
+];
+
+const flightNotes = [
+  'Es importante tener en cuenta que el Ministerio Maná no es una agencia de viajes; por ello, los tiquetes aéreos son adquiridos a través de una agencia, y nosotros actuamos como intermediarios entre la agencia y el peregrino.',
+  'Cada persona es libre de comparar los tiquetes de forma particular. Nosotros ayudamos a gestionar sus vuelos, escalas y tiempos, pero la decisión final la toma cada peregrino.',
+  'Los valores enviados son válidos solo por 24 horas; pasado este tiempo, se debe volver a cotizar. Si desea negociar directamente con la agencia, puede hacerlo.',
+  'El Ministerio Maná no cobra ningún valor por la intermediación; por lo tanto, si el itinerario sufre algún cambio que implique un sobrecosto, este deberá ser asumido por cada viajero.',
+  'En caso de devoluciones relacionadas con la porción aérea, cada viajero deberá asumir los gastos bancarios correspondientes, que oscilan entre el 3% y el 5%, según la comisión de cada banco.',
+  'Los cambios que realice la aerolínea, modificación del día, cambio de horario o cancelación de escalas, entre otros, deberán ser asumidos por cada peregrino, ya que están fuera de nuestro alcance.',
+  'Al reservar el cupo de la peregrinación, usted nos autoriza a realizar la compra de los tiquetes. Si por motivos personales decide cancelar su viaje, los tiquetes quedarán abiertos para usarse dentro del período que determine la aerolínea, generalmente hasta un año, por lo que el Ministerio Maná no podrá hacer devolución de dinero por este concepto.',
+];
+
+const travelCare = [
+  {
+    title: 'Pasaporte',
+    body: 'Debe estar en buen estado, con vigencia mínima de 6 meses y al menos 5 hojas en blanco.',
+  },
+  {
+    title: 'Aeropuerto',
+    body: 'Llegar a la hora indicada, llevar pasaporte, documento de identidad y dinero siempre en bolsa de mano.',
+  },
+  {
+    title: 'Durante el vuelo',
+    body: 'Conservar siempre el pase de abordaje y registrarse por internet antes del viaje si desea redimir millas.',
+  },
+];
+
+const itineraryPreview = itinerary.slice(0, 6);
+const includedPreview = includedTurkey.slice(0, 4);
+const notIncludedPreview = notIncluded.slice(0, 3);
+const overviewSections = [
+  { label: 'Turquía', icon: lucideIcon(mapIcon), items: includedPreview },
+  { label: 'Crucero', icon: lucideIcon(shipIcon), items: includedCruise },
+  { label: 'No incluye', icon: lucideIcon(walletIcon), items: notIncludedPreview },
+];
+const travelCareWithIcons = [
+  { ...travelCare[0], icon: lucideIcon(contactIcon) },
+  { ...travelCare[1], icon: lucideIcon(planeIcon) },
+  { ...travelCare[2], icon: lucideIcon(ticketIcon) },
+];
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'TouristTrip',
+  name: 'Peregrinación Turquía e Islas Griegas 2026',
+  description: 'Ruta de peregrinación del Ministerio Maná por Turquía, las siete iglesias e Islas Griegas.',
+  image: `https://ministeriomana.org${posterImage}`,
+  itinerary: routeStops.join(', '),
+};
+
+const cspNonce = Astro.locals?.cspNonce;
+---
+
+<CumbreLayout
+  title="Peregrinación Turquía e Islas Griegas 2026 | Ministerio Maná"
+  description="Ruta de peregrinación por Turquía, las siete iglesias e Islas Griegas del 17 de octubre al 1 de noviembre de 2026."
+  image={posterImage}
+  imageAlt="Arte de la peregrinación Turquía e Islas Griegas 2026"
+  structuredData={structuredData}
+  flush
+  showEventBadge={false}
+  showBackButton
+  showAccountButton={false}
+  backHref="/peregrinaciones/"
+  backLabel="Peregrinaciones"
+  useHistoryBack={false}
+>
+  <main class="pilgrim-page" data-pilgrim-story-root>
+    <section
+      class="pilgrim-story"
+      data-cumbre-story
+      data-cumbre-static-mobile="true"
+      data-cumbre-static-breakpoint="520"
+      data-cumbre-scroll-factor-breakpoint="520"
+      data-cumbre-snap-directional="false"
+      data-cumbre-snap-inertia="false"
+      style="--panel-count: 6;"
+    >
+      <section class="cumbre-panel pilgrim-panel pilgrim-panel--hero pilgrim-hero" aria-labelledby="peregrinacion-title" data-cumbre-panel data-panel-theme="dark">
+        <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
+        <div class="pilgrim-panel-inner pilgrim-shell pilgrim-hero__grid">
+          <div class="pilgrim-hero__copy">
+            <p class="pilgrim-kicker" data-reveal>Peregrinación 2026</p>
+            <h1 id="peregrinacion-title" data-split-title>Turquía e Islas Griegas</h1>
+            <p class="pilgrim-script" data-reveal>Las Siete Iglesias</p>
+            <p class="pilgrim-hero__lead" data-reveal>
+              Una ruta para caminar la Palabra, reconocer lugares bíblicos y vivir comunión
+              como familia Maná.
+            </p>
+            <div class="pilgrim-actions" data-reveal>
+              <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="pilgrim-button pilgrim-button--teal">
+                Quiero información
+              </a>
+              <a href="#itinerario" class="pilgrim-button pilgrim-button--line" data-story-link>Ver itinerario</a>
+            </div>
+          </div>
+
+          <div class="pilgrim-poster" aria-label="Arte de referencia de la peregrinación" data-reveal>
+            <img src={posterImage} alt="" loading="eager" />
+          </div>
+        </div>
+      </section>
+
+      <section id="ruta" class="cumbre-panel pilgrim-panel pilgrim-panel--route pilgrim-route" data-cumbre-panel data-panel-theme="dark">
+        <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
+        <div class="pilgrim-panel-inner pilgrim-shell pilgrim-route__grid">
+          <div class="pilgrim-route__map" data-reveal>
+            <img
+              src={routeMapImage}
+              alt="Mapa de la ruta de peregrinación por Turquía con Estambul, Esmirna, Capadocia y Colossae."
+              width="945"
+              height="570"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+
+          <div class="pilgrim-route__content">
+            <p class="pilgrim-kicker" data-reveal>La ruta</p>
+            <h2 class="pilgrim-display-title pilgrim-display-title--route" data-reveal>
+              <span class="pilgrim-display-title__outline">Ruta</span>
+              <span class="pilgrim-display-title__solid">Bíblica</span>
+              <span class="pilgrim-display-title__script">Turquía e Islas Griegas</span>
+            </h2>
+            <p data-reveal>
+              Una peregrinación para recorrer lugares bíblicos, caminar la historia de la iglesia
+              primitiva y vivir la ruta con acompañamiento pastoral, logística clara y comunidad.
+            </p>
+            <div class="pilgrim-facts pilgrim-facts--panel" aria-label="Datos principales" data-reveal>
+              {quickFacts.map((fact) => (
+                <article>
+                  <span class="pilgrim-fact-icon" set:html={fact.icon}></span>
+                  <span class="pilgrim-fact-label">{fact.label}</span>
+                  <strong>{fact.value}</strong>
+                </article>
+              ))}
+            </div>
+            <div class="pilgrim-route__stops" data-reveal>
+              {routeStops.slice(0, 10).map((stop) => <span>{stop}</span>)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="itinerario" class="cumbre-panel pilgrim-panel pilgrim-panel--itinerary pilgrim-section pilgrim-section--navy" data-cumbre-panel data-panel-theme="dark">
+        <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
+        <div class="pilgrim-panel-inner pilgrim-shell pilgrim-itinerary__grid">
+          <div class="pilgrim-section-head pilgrim-section-head--story">
+            <p class="pilgrim-kicker" data-reveal>Itinerario</p>
+            <h2 class="pilgrim-display-title pilgrim-display-title--itinerary" data-reveal>
+              <span class="pilgrim-display-title__outline">Día</span>
+              <span class="pilgrim-display-title__solid">Por Día</span>
+              <span class="pilgrim-display-title__script">paso a paso</span>
+            </h2>
+            <p data-reveal>D = desayuno, A = almuerzo, C = cena. Algunas excursiones del crucero son opcionales.</p>
+          </div>
+
+          <div class="pilgrim-itinerary__side">
+            <div class="pilgrim-days pilgrim-days--preview" data-reveal>
+              {itineraryPreview.map((item) => (
+                <article class="pilgrim-day pilgrim-day--preview">
+                  <div class="pilgrim-day__badge">
+                    <span>Día</span>
+                    <strong>{item.day}</strong>
+                  </div>
+                  <div class="pilgrim-day__body">
+                    <p>{item.meta}</p>
+                    <h3>{item.title}</h3>
+                  </div>
+                  <div class="pilgrim-day__date">{item.date}</div>
+                </article>
+              ))}
+            </div>
+
+            <div class="pilgrim-actions" data-reveal>
+              <a href="#itinerario-detalle" class="pilgrim-button pilgrim-button--teal">Ver itinerario completo</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="hoteles" class="cumbre-panel pilgrim-panel pilgrim-panel--hotels pilgrim-hotels" data-cumbre-panel data-panel-theme="dark">
+        <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
+        <div class="pilgrim-panel-inner pilgrim-shell pilgrim-hotels__grid">
+          <div>
+            <p class="pilgrim-kicker" data-reveal>Hotelería</p>
+            <h2 class="pilgrim-display-title pilgrim-display-title--hotels" data-reveal>
+              <span class="pilgrim-display-title__outline">Descanso</span>
+              <span class="pilgrim-display-title__solid">Previsto</span>
+              <span class="pilgrim-display-title__script">en la ruta</span>
+            </h2>
+            <p data-reveal>Hoteles de primera categoría y turista superior. El check-in es a partir de las 4:00 p.m.</p>
+          </div>
+          <div class="pilgrim-hotels__list" data-reveal>
+            {hotels.map((item) => (
+              <article>
+                <span>{item.city}</span>
+                <strong>{item.hotel}</strong>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="incluye" class="cumbre-panel pilgrim-panel pilgrim-panel--includes pilgrim-section pilgrim-section--navy" data-cumbre-panel data-panel-theme="dark">
+        <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
+        <div class="pilgrim-panel-inner pilgrim-shell pilgrim-includes-panel__grid">
+          <div class="pilgrim-section-head pilgrim-section-head--story">
+            <p class="pilgrim-kicker" data-reveal>Servicios incluidos</p>
+            <h2 class="pilgrim-display-title pilgrim-display-title--includes" data-reveal>
+              <span class="pilgrim-display-title__outline">Lo que</span>
+              <span class="pilgrim-display-title__solid">Incluye</span>
+              <span class="pilgrim-display-title__script">la peregrinación</span>
+            </h2>
+            <p data-reveal>Un resumen claro para comparar lo que está cubierto en Turquía, en el crucero y lo que debe presupuestarse aparte.</p>
+          </div>
+
+          <div class="pilgrim-includes-panel__side">
+            <div class="pilgrim-overview-grid" data-reveal>
+              {overviewSections.map((section) => (
+                <article>
+                  <span class="pilgrim-overview-icon" set:html={section.icon}></span>
+                  <span class="pilgrim-overview-label">{section.label}</span>
+                  <ul>
+                    {section.items.map((item) => <li>{item}</li>)}
+                  </ul>
+                </article>
+              ))}
+            </div>
+
+            <div class="pilgrim-actions" data-reveal>
+              <a href="#incluye-detalle" class="pilgrim-button pilgrim-button--teal">Ver detalle incluido</a>
+              <a href="#tiquetes-detalle" class="pilgrim-button pilgrim-button--line">Tiquetes</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cumbre-panel pilgrim-panel pilgrim-panel--final pilgrim-final" data-cumbre-panel data-panel-theme="light">
+        <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
+        <div class="pilgrim-panel-inner pilgrim-shell pilgrim-final__box">
+          <div>
+            <p class="pilgrim-kicker pilgrim-kicker--navy" data-reveal>Da el primer paso</p>
+            <h2 class="pilgrim-display-title pilgrim-display-title--final" data-reveal>
+              <span class="pilgrim-display-title__outline">Reserva</span>
+              <span class="pilgrim-display-title__solid">Tu Lugar</span>
+              <span class="pilgrim-display-title__script">con el equipo</span>
+            </h2>
+            <p data-reveal>Te ayudamos a revisar cupos, requisitos, pasaporte, reserva y cotización aérea vigente.</p>
+          </div>
+          <div class="pilgrim-final__actions" data-reveal>
+            <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="pilgrim-button pilgrim-button--navy">
+              WhatsApp 300 429 8001
+            </a>
+            <a href={whatsappSecondaryHref} target="_blank" rel="noopener noreferrer" class="pilgrim-button pilgrim-button--navy-line">
+              WhatsApp 314 829 7534
+            </a>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="itinerario-detalle" class="pilgrim-section pilgrim-section--navy pilgrim-detail-section">
+      <div class="pilgrim-shell">
+        <div class="pilgrim-section-head">
+          <p class="pilgrim-kicker">Itinerario</p>
+          <h2 class="pilgrim-display-title pilgrim-display-title--detail">
+            <span class="pilgrim-display-title__outline">Detalle</span>
+            <span class="pilgrim-display-title__solid">Completo</span>
+            <span class="pilgrim-display-title__script">día por día</span>
+          </h2>
+          <p>D = desayuno, A = almuerzo, C = cena. Algunas excursiones del crucero son opcionales.</p>
+        </div>
+
+        <div class="pilgrim-days">
+          {itinerary.map((item) => (
+            <article class="pilgrim-day">
+              <div class="pilgrim-day__badge">
+                <span>Día</span>
+                <strong>{item.day}</strong>
+              </div>
+              <div class="pilgrim-day__body">
+                <p>{item.meta}</p>
+                <h3>{item.title}</h3>
+                <small>{item.body}</small>
+              </div>
+              <div class="pilgrim-day__date">{item.date}</div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section id="incluye-detalle" class="pilgrim-section pilgrim-section--navy pilgrim-detail-section">
+      <div class="pilgrim-shell">
+        <div class="pilgrim-section-head pilgrim-section-head--center">
+          <p class="pilgrim-kicker">Servicios incluidos</p>
+          <h2 class="pilgrim-display-title pilgrim-display-title--detail pilgrim-display-title--center">
+            <span class="pilgrim-display-title__outline">Ruta</span>
+            <span class="pilgrim-display-title__solid">Peregrinación</span>
+            <span class="pilgrim-display-title__script">lo incluido</span>
+          </h2>
+        </div>
+
+        <div class="pilgrim-includes">
+          <article>
+            <h3>Parte Turquía</h3>
+            <ul>
+              {includedTurkey.map((item) => <li>{item}</li>)}
+            </ul>
+          </article>
+          <article>
+            <h3>Crucero</h3>
+            <ul>
+              {includedCruise.map((item) => <li>{item}</li>)}
+            </ul>
+          </article>
+          <article class="pilgrim-includes__not">
+            <h3>No se incluye</h3>
+            <ul>
+              {notIncluded.map((item) => <li>{item}</li>)}
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="tiquetes-detalle" class="pilgrim-flights pilgrim-detail-section">
+      <img src={flagImage} alt="" loading="lazy" data-parallax-bg data-bg="0.45" />
+      <div class="pilgrim-flights__shade"></div>
+      <div class="pilgrim-shell pilgrim-flights__content">
+        <div class="pilgrim-flights__intro">
+          <p class="pilgrim-kicker">Tiquetes aéreos</p>
+          <h2 class="pilgrim-display-title pilgrim-display-title--flights">
+            <span class="pilgrim-display-title__outline">Vuelos</span>
+            <span class="pilgrim-display-title__solid">Con Claridad</span>
+            <span class="pilgrim-display-title__script">sin reemplazar tu decisión</span>
+          </h2>
+        </div>
+        <div class="pilgrim-flight-notes">
+          {flightNotes.map((note) => <p>{note}</p>)}
+        </div>
+      </div>
+    </section>
+
+    <section id="preparacion-detalle" class="pilgrim-section pilgrim-section--navy pilgrim-detail-section">
+      <div class="pilgrim-shell">
+        <div class="pilgrim-section-head">
+          <p class="pilgrim-kicker">Consideraciones importantes</p>
+          <h2 class="pilgrim-display-title pilgrim-display-title--detail">
+            <span class="pilgrim-display-title__outline">Antes</span>
+            <span class="pilgrim-display-title__solid">De Salir</span>
+            <span class="pilgrim-display-title__script">preparados</span>
+          </h2>
+        </div>
+        <div class="pilgrim-care">
+          {travelCareWithIcons.map((item) => (
+            <article>
+              <span class="pilgrim-care__icon" set:html={item.icon}></span>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <div class="pilgrim-mobile-cta">
+      <a href={whatsappHref} target="_blank" rel="noopener noreferrer">Quiero información</a>
+    </div>
+
+    <script nonce={cspNonce} is:inline>
+      (() => {
+        const root = document.querySelector('[data-pilgrim-story-root]');
+        if (!root) return;
+
+        const scrollToStoryPanel = (targetPanel) => {
+          const story = root.querySelector('[data-cumbre-story]');
+          if (!story || !targetPanel) return false;
+
+          const isAnimatedPanel = getComputedStyle(targetPanel).position === 'absolute';
+          if (isAnimatedPanel) {
+            const panels = Array.from(story.querySelectorAll('[data-cumbre-panel]'));
+            const index = Math.max(0, panels.indexOf(targetPanel));
+            const breakpoint = Number.parseInt(story.dataset.cumbreScrollFactorBreakpoint || '768', 10);
+            const scrollFactor = window.innerWidth >= breakpoint ? 1.34 : 1;
+            const viewportHeight = window.visualViewport?.height || window.innerHeight || 1;
+            const storyTop = story.offsetTop || 0;
+            const target = Math.max(storyTop, storyTop + viewportHeight * index * scrollFactor);
+
+            if (window.lenis?.scrollTo) {
+              window.lenis.scrollTo(target, { duration: 0.48, force: true });
+              return true;
+            }
+
+            window.scrollTo({ top: target, behavior: 'smooth' });
+            return true;
+          }
+
+          targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return true;
+        };
+
+        document.addEventListener('click', (event) => {
+          if (!(event.target instanceof Element)) return;
+
+          const link = event.target.closest('.pilgrim-page a[href^="#"]');
+          if (!link) return;
+
+          const href = link.getAttribute('href');
+          if (!href || href === '#') return;
+
+          const target = document.querySelector(href);
+          if (!target) return;
+
+          event.preventDefault();
+
+          const handled = target.matches('[data-cumbre-panel]')
+            ? scrollToStoryPanel(target)
+            : false;
+
+          if (!handled) {
+            const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 68);
+            if (window.lenis?.scrollTo) {
+              window.lenis.scrollTo(top, { duration: 0.48, force: true });
+            } else {
+              window.scrollTo({ top, behavior: 'smooth' });
+            }
+          }
+
+          if (history.pushState) {
+            history.pushState(null, '', href);
+          }
+        });
+      })();
+    </script>
+    <script>
+      import '@scripts/cumbre-welcome-story.js';
+    </script>
+  </main>
+</CumbreLayout>
+
+<style>
+  @font-face {
+    font-family: "Pilgrim Summer";
+    src: url("/fonts/SUMMER FONT/Summer Loving Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :global(html) {
+    scroll-padding-top: 68px;
+  }
+
+  .pilgrim-page {
+    --pilgrim-navy: #17243c;
+    --pilgrim-deep: #07111f;
+    --pilgrim-teal: #08aebe;
+    --pilgrim-teal-soft: #d9f7fa;
+    --pilgrim-white: #ffffff;
+    --pilgrim-ink: #101827;
+    background: var(--pilgrim-navy);
+    color: var(--pilgrim-white);
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    overflow-x: clip;
+  }
+
+  .pilgrim-page *,
+  .pilgrim-page *::before,
+  .pilgrim-page *::after {
+    box-sizing: border-box;
+  }
+
+  .pilgrim-shell {
+    width: min(1160px, calc(100% - 32px));
+    margin-inline: auto;
+  }
+
+  .pilgrim-story {
+    position: relative;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    background: var(--pilgrim-deep);
+  }
+
+  .pilgrim-page .cumbre-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    pointer-events: none;
+    clip-path: inset(100% 0% 0% 0%);
+    will-change: clip-path, transform;
+  }
+
+  .pilgrim-page .cumbre-panel.pilgrim-hero,
+  .pilgrim-page .cumbre-panel.pilgrim-route,
+  .pilgrim-page .cumbre-panel.pilgrim-section,
+  .pilgrim-page .cumbre-panel.pilgrim-hotels,
+  .pilgrim-page .cumbre-panel.pilgrim-final {
+    padding: 0;
+  }
+
+  .pilgrim-page .cumbre-panel:first-child,
+  .pilgrim-page .cumbre-panel.is-visible {
+    clip-path: inset(0% 0% 0% 0%);
+  }
+
+  .pilgrim-page .cumbre-panel.is-active {
+    pointer-events: auto;
+  }
+
+  .pilgrim-page .cumbre-panel a,
+  .pilgrim-page .cumbre-panel button {
+    pointer-events: auto;
+  }
+
+  .pilgrim-panel-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .pilgrim-panel-inner {
+    position: relative;
+    z-index: 1;
+    min-height: var(--cumbre-vh, 100svh);
+    height: var(--cumbre-vh, 100svh);
+    align-content: center;
+    padding: 84px 0 60px;
+  }
+
+  .pilgrim-page [data-reveal] {
+    will-change: transform, opacity;
+  }
+
+  .pilgrim-page :global(.pilgrim-lucide-icon) {
+    width: 1em;
+    height: 1em;
+    stroke: currentColor;
+    stroke-width: 1.8;
+  }
+
+  .pilgrim-page [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  .pilgrim-page [data-split-title] .split-word > span {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  :global(html[data-cumbre-static-story='true']) .pilgrim-story {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  :global(html[data-cumbre-static-story='true']) .pilgrim-page .cumbre-panel {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    clip-path: none !important;
+    pointer-events: auto;
+  }
+
+  :global(html[data-cumbre-static-story='true']) .pilgrim-panel-inner {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .pilgrim-hero {
+    min-height: 100svh;
+    display: grid;
+    align-items: center;
+    padding: 112px 0 72px;
+    background:
+      linear-gradient(180deg, rgba(7, 17, 31, 0.92), rgba(23, 36, 60, 0.98)),
+      radial-gradient(circle at 20% 18%, rgba(8, 174, 190, 0.18), transparent 28%);
+    overflow: hidden;
+  }
+
+  .pilgrim-hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.72fr);
+    gap: 44px;
+    align-items: center;
+  }
+
+  .pilgrim-hero__copy {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .pilgrim-kicker {
+    margin: 0 0 16px;
+    color: var(--pilgrim-teal);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-kicker--navy {
+    color: var(--pilgrim-navy);
+  }
+
+  .pilgrim-hero h1,
+  .pilgrim-route__content h2,
+  .pilgrim-section-head h2,
+  .pilgrim-hotels h2,
+  .pilgrim-flights h2,
+  .pilgrim-final h2 {
+    margin: 0;
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-hero h1 {
+    max-width: min(100%, 760px);
+    color: white;
+    font-size: clamp(2.85rem, 4.7vw, 4.35rem);
+    line-height: 1.01;
+    text-transform: none;
+  }
+
+  .pilgrim-hero h1::after {
+    content: "";
+    display: block;
+    width: min(190px, 38vw);
+    height: 3px;
+    margin-top: 22px;
+    background: linear-gradient(90deg, var(--pilgrim-teal), rgba(255, 255, 255, 0));
+  }
+
+  .pilgrim-script {
+    margin: 28px 0 0;
+    color: white;
+    font-family: "Pilgrim Summer", "Brush Script MT", cursive;
+    font-size: clamp(3.4rem, 8vw, 6.8rem);
+    line-height: 0.76;
+    text-shadow: 0 4px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .pilgrim-script--navy {
+    color: var(--pilgrim-navy);
+  }
+
+  .pilgrim-hero__lead {
+    max-width: min(100%, 660px);
+    margin: 34px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(1.05rem, 2vw, 1.28rem);
+    line-height: 1.7;
+  }
+
+  .pilgrim-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 34px;
+  }
+
+  .pilgrim-button {
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 26px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+  }
+
+  .pilgrim-button:hover {
+    transform: translateY(-2px);
+  }
+
+  .pilgrim-button--teal {
+    background: var(--pilgrim-teal);
+    color: var(--pilgrim-deep);
+  }
+
+  .pilgrim-button--line {
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    color: white;
+  }
+
+  .pilgrim-button--navy {
+    background: var(--pilgrim-navy);
+    color: white;
+  }
+
+  .pilgrim-button--navy-line {
+    border: 1px solid rgba(23, 36, 60, 0.32);
+    color: var(--pilgrim-navy);
+  }
+
+  .pilgrim-poster {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    aspect-ratio: 1;
+    justify-self: end;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    box-shadow: 0 36px 90px rgba(0, 0, 0, 0.32);
+  }
+
+  .pilgrim-poster::after {
+    content: "";
+    position: absolute;
+    inset: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    pointer-events: none;
+  }
+
+  .pilgrim-poster img,
+  .pilgrim-flights img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pilgrim-facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .pilgrim-facts--panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 26px;
+  }
+
+  .pilgrim-facts article {
+    min-height: 132px;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    padding: 24px;
+    background: var(--pilgrim-navy);
+  }
+
+  .pilgrim-facts--panel article {
+    min-height: 86px;
+    padding: 16px;
+  }
+
+  .pilgrim-fact-icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 16px;
+    place-items: center;
+    border: 1px solid rgba(8, 174, 190, 0.42);
+    border-radius: 999px;
+    color: var(--pilgrim-teal);
+    font-size: 1.28rem;
+  }
+
+  .pilgrim-fact-label,
+  .pilgrim-hotels__list span {
+    color: var(--pilgrim-teal);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-facts strong {
+    margin-top: 10px;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: clamp(1.05rem, 2vw, 1.45rem);
+    line-height: 1.15;
+  }
+
+  .pilgrim-route {
+    padding: 96px 0;
+    border-block: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+      radial-gradient(circle at 18% 20%, rgba(8, 174, 190, 0.16), transparent 32%),
+      linear-gradient(180deg, #101c31, var(--pilgrim-navy));
+    color: white;
+  }
+
+  .pilgrim-route__grid {
+    display: grid;
+    grid-template-columns: minmax(360px, 0.95fr) minmax(0, 1fr);
+    gap: 60px;
+    align-items: center;
+  }
+
+  .pilgrim-route__map {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--pilgrim-teal);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+  }
+
+  .pilgrim-route__map img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .pilgrim-route__content h2,
+  .pilgrim-hotels h2,
+  .pilgrim-final h2 {
+    color: var(--pilgrim-navy);
+    font-size: clamp(2.2rem, 4.8vw, 4.35rem);
+    line-height: 1;
+  }
+
+  .pilgrim-route__content h2 {
+    color: white;
+  }
+
+  .pilgrim-hotels h2 {
+    color: white;
+  }
+
+  .pilgrim-display-title {
+    display: grid;
+    gap: 0;
+    max-width: min(100%, 680px);
+    margin: 0;
+    font-family: "Intro", ui-sans-serif, system-ui, sans-serif;
+    line-height: 0.9;
+  }
+
+  .pilgrim-display-title__outline,
+  .pilgrim-display-title__solid {
+    display: block;
+    font-weight: 950;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-display-title__outline {
+    color: transparent;
+    -webkit-text-stroke: 1.4px rgba(255, 255, 255, 0.82);
+    text-stroke: 1.4px rgba(255, 255, 255, 0.82);
+    font-size: clamp(3.25rem, 6.2vw, 6.25rem);
+    line-height: 0.82;
+  }
+
+  .pilgrim-display-title__solid {
+    color: white;
+    font-size: clamp(2.45rem, 4.85vw, 4.9rem);
+    line-height: 0.86;
+  }
+
+  .pilgrim-display-title__script {
+    display: block;
+    margin-top: 0.08em;
+    color: var(--pilgrim-teal);
+    font-family: "Pilgrim Summer", "Brush Script MT", cursive;
+    font-size: clamp(2.9rem, 5.4vw, 5.3rem);
+    font-weight: 400;
+    line-height: 0.72;
+    text-transform: none;
+  }
+
+  .pilgrim-display-title--itinerary,
+  .pilgrim-display-title--includes,
+  .pilgrim-display-title--flights,
+  .pilgrim-display-title--detail,
+  .pilgrim-display-title--final {
+    max-width: min(100%, 720px);
+  }
+
+  .pilgrim-display-title--itinerary .pilgrim-display-title__outline,
+  .pilgrim-display-title--includes .pilgrim-display-title__outline,
+  .pilgrim-display-title--flights .pilgrim-display-title__outline,
+  .pilgrim-display-title--detail .pilgrim-display-title__outline {
+    font-size: clamp(3rem, 6vw, 5.8rem);
+  }
+
+  .pilgrim-display-title--itinerary .pilgrim-display-title__solid,
+  .pilgrim-display-title--includes .pilgrim-display-title__solid,
+  .pilgrim-display-title--flights .pilgrim-display-title__solid,
+  .pilgrim-display-title--detail .pilgrim-display-title__solid {
+    font-size: clamp(2.35rem, 4.7vw, 4.45rem);
+  }
+
+  .pilgrim-display-title--detail {
+    max-width: 620px;
+  }
+
+  .pilgrim-display-title--detail .pilgrim-display-title__outline {
+    font-size: clamp(2.7rem, 5vw, 4.65rem);
+  }
+
+  .pilgrim-display-title--detail .pilgrim-display-title__solid {
+    font-size: clamp(2.15rem, 4vw, 3.65rem);
+  }
+
+  .pilgrim-display-title--center {
+    margin-inline: auto;
+    justify-items: center;
+  }
+
+  .pilgrim-display-title--final .pilgrim-display-title__outline {
+    -webkit-text-stroke-color: rgba(23, 36, 60, 0.72);
+    text-stroke-color: rgba(23, 36, 60, 0.72);
+    font-size: clamp(2.9rem, 5.4vw, 5.15rem);
+  }
+
+  .pilgrim-display-title--final .pilgrim-display-title__solid {
+    color: var(--pilgrim-navy);
+    font-size: clamp(2.35rem, 4.4vw, 4.05rem);
+  }
+
+  .pilgrim-display-title--final .pilgrim-display-title__script {
+    color: white;
+  }
+
+  .pilgrim-display-title--hotels .pilgrim-display-title__outline {
+    font-size: clamp(2.95rem, 5.6vw, 5.55rem);
+  }
+
+  .pilgrim-display-title--hotels .pilgrim-display-title__solid {
+    font-size: clamp(2.3rem, 4.5vw, 4.5rem);
+  }
+
+  .pilgrim-route__content p,
+  .pilgrim-hotels p,
+  .pilgrim-final p {
+    max-width: 620px;
+    color: rgba(23, 36, 60, 0.82);
+    font-size: 1.08rem;
+    line-height: 1.72;
+  }
+
+  .pilgrim-route__content p {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .pilgrim-hotels p {
+    color: rgba(255, 255, 255, 0.76);
+  }
+
+  .pilgrim-route__stops {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  .pilgrim-route__stops span {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    padding: 0 14px;
+    border: 1px solid rgba(8, 174, 190, 0.36);
+    border-radius: 999px;
+    background: rgba(8, 174, 190, 0.12);
+    color: white;
+    font-size: 0.86rem;
+    font-weight: 900;
+  }
+
+  .pilgrim-pillars {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    padding: 86px 0;
+  }
+
+  .pilgrim-pillars article {
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .pilgrim-pillars span {
+    color: var(--pilgrim-teal);
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+  }
+
+  .pilgrim-pillars h3 {
+    margin: 42px 0 12px;
+    color: white;
+    font-size: 1.7rem;
+    line-height: 1;
+  }
+
+  .pilgrim-pillars p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.74);
+    line-height: 1.6;
+  }
+
+  .pilgrim-section {
+    padding: 96px 0;
+  }
+
+  .pilgrim-section--navy {
+    background: var(--pilgrim-navy);
+    color: white;
+  }
+
+  .pilgrim-section-head {
+    max-width: 850px;
+    margin-bottom: 46px;
+  }
+
+  .pilgrim-section-head--story {
+    max-width: 620px;
+    margin-bottom: 0;
+  }
+
+  .pilgrim-section-head--center {
+    max-width: none;
+    text-align: center;
+  }
+
+  .pilgrim-section-head h2,
+  .pilgrim-flights h2 {
+    color: white;
+    font-size: clamp(2.6rem, 6vw, 5.5rem);
+    line-height: 0.95;
+  }
+
+  .pilgrim-section-head--center h2 {
+    color: var(--pilgrim-teal);
+  }
+
+  .pilgrim-section-head p:not(.pilgrim-kicker):not(.pilgrim-script) {
+    max-width: 680px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  .pilgrim-itinerary__grid,
+  .pilgrim-includes-panel__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.74fr) minmax(460px, 1fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+
+  .pilgrim-itinerary__side,
+  .pilgrim-includes-panel__side {
+    min-width: 0;
+  }
+
+  .pilgrim-days {
+    display: grid;
+    gap: 1px;
+    border-block: 1px solid rgba(255, 255, 255, 0.42);
+  }
+
+  .pilgrim-days--preview {
+    max-height: min(46svh, 410px);
+    overflow: hidden;
+  }
+
+  .pilgrim-day {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr) 150px;
+    gap: 28px;
+    align-items: center;
+    padding: 28px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.42);
+  }
+
+  .pilgrim-day--preview {
+    grid-template-columns: 66px minmax(0, 1fr) 96px;
+    gap: 16px;
+    padding: 12px 0;
+  }
+
+  .pilgrim-day--preview .pilgrim-day__badge {
+    width: 58px;
+    height: 58px;
+  }
+
+  .pilgrim-day--preview .pilgrim-day__badge strong {
+    font-size: 1.35rem;
+  }
+
+  .pilgrim-day--preview .pilgrim-day__body h3 {
+    font-size: clamp(1.1rem, 2.1vw, 1.65rem);
+    line-height: 1.05;
+  }
+
+  .pilgrim-day--preview .pilgrim-day__body p {
+    margin-bottom: 4px;
+    font-size: 0.78rem;
+  }
+
+  .pilgrim-day--preview .pilgrim-day__date {
+    padding-left: 16px;
+    font-size: 1.05rem;
+  }
+
+  .pilgrim-day:last-child {
+    border-bottom: 0;
+  }
+
+  .pilgrim-day__badge {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--pilgrim-teal);
+    color: var(--pilgrim-navy);
+  }
+
+  .pilgrim-day__badge span {
+    align-self: end;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-day__badge strong {
+    align-self: start;
+    font-size: 2.1rem;
+    line-height: 0.9;
+  }
+
+  .pilgrim-day__body p {
+    margin: 0 0 8px;
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 0.92rem;
+  }
+
+  .pilgrim-day__body h3 {
+    margin: 0;
+    color: white;
+    font-size: clamp(1.7rem, 3.5vw, 3.2rem);
+    line-height: 0.95;
+  }
+
+  .pilgrim-day__body small {
+    display: block;
+    max-width: 720px;
+    margin-top: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .pilgrim-day__date {
+    padding-left: 28px;
+    border-left: 3px solid var(--pilgrim-teal);
+    color: white;
+    font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+    font-weight: 900;
+    line-height: 1.05;
+  }
+
+  .pilgrim-hotels {
+    padding: 88px 0;
+    border-block: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+      radial-gradient(circle at 78% 16%, rgba(8, 174, 190, 0.18), transparent 30%),
+      linear-gradient(180deg, var(--pilgrim-navy), #101c31);
+    color: white;
+  }
+
+  .pilgrim-hotels__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  .pilgrim-hotels__list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .pilgrim-hotels__list article {
+    min-height: 150px;
+    padding: 22px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 20px 56px rgba(0, 0, 0, 0.16);
+  }
+
+  .pilgrim-hotels__list span {
+    color: #087f8b;
+  }
+
+  .pilgrim-hotels__list strong {
+    display: block;
+    margin-top: 12px;
+    color: var(--pilgrim-deep);
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .pilgrim-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .pilgrim-overview-grid article {
+    min-height: 250px;
+    padding: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.045)),
+      rgba(255, 255, 255, 0.055);
+  }
+
+  .pilgrim-overview-icon {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    margin-bottom: 24px;
+    place-items: center;
+    border: 1px solid rgba(8, 174, 190, 0.42);
+    border-radius: 999px;
+    color: var(--pilgrim-teal);
+    font-size: 1.65rem;
+  }
+
+  .pilgrim-overview-label {
+    color: var(--pilgrim-teal);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-overview-grid ul {
+    display: grid;
+    gap: 12px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pilgrim-overview-grid li {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.92rem;
+    line-height: 1.42;
+  }
+
+  .pilgrim-includes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .pilgrim-includes article {
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .pilgrim-includes h3 {
+    margin: 0 0 20px;
+    color: white;
+    font-size: 1.55rem;
+  }
+
+  .pilgrim-includes ul {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pilgrim-includes li {
+    position: relative;
+    padding-left: 36px;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.55;
+  }
+
+  .pilgrim-includes li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.2em;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--pilgrim-teal);
+  }
+
+  .pilgrim-includes li::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 0.52em;
+    width: 8px;
+    height: 4px;
+    border-left: 2px solid var(--pilgrim-navy);
+    border-bottom: 2px solid var(--pilgrim-navy);
+    transform: rotate(-45deg);
+  }
+
+  .pilgrim-includes__not li::before {
+    background: #d93057;
+  }
+
+  .pilgrim-includes__not li::after {
+    left: 6px;
+    top: 0.42em;
+    width: 10px;
+    height: 10px;
+    border: 0;
+    background:
+      linear-gradient(45deg, transparent 44%, var(--pilgrim-navy) 45%, var(--pilgrim-navy) 55%, transparent 56%),
+      linear-gradient(-45deg, transparent 44%, var(--pilgrim-navy) 45%, var(--pilgrim-navy) 55%, transparent 56%);
+    transform: none;
+  }
+
+  .pilgrim-flights {
+    position: relative;
+    min-height: 640px;
+    display: grid;
+    align-items: center;
+    overflow: hidden;
+    background: var(--pilgrim-deep);
+  }
+
+  @media (min-width: 981px) {
+    .pilgrim-facts,
+    .pilgrim-pillars {
+      min-height: calc(100svh - 68px);
+      align-content: center;
+    }
+
+    .pilgrim-facts--panel {
+      min-height: 0;
+      align-content: stretch;
+    }
+
+    .pilgrim-route,
+    .pilgrim-hotels,
+    .pilgrim-flights,
+    .pilgrim-final {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+    }
+
+    .pilgrim-section--navy:not(#itinerario):not(#incluye) {
+      min-height: 100svh;
+      display: grid;
+      align-items: center;
+    }
+  }
+
+  @media (min-width: 981px) and (max-width: 1240px) {
+    .pilgrim-route__grid {
+      gap: 38px;
+    }
+
+    .pilgrim-route__content h2 {
+      font-size: clamp(2.1rem, 4.2vw, 3.2rem);
+    }
+
+    .pilgrim-facts--panel {
+      margin-top: 18px;
+    }
+
+    .pilgrim-facts--panel article {
+      min-height: 78px;
+      padding: 14px;
+    }
+
+    .pilgrim-route__stops {
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pilgrim-route__stops span {
+      min-height: 34px;
+      padding: 0 12px;
+      font-size: 0.8rem;
+    }
+  }
+
+  .pilgrim-flights img,
+  .pilgrim-flights__shade {
+    position: absolute;
+    inset: 0;
+  }
+
+  .pilgrim-flights__shade {
+    background:
+      linear-gradient(90deg, rgba(7, 17, 31, 0.97) 0%, rgba(23, 36, 60, 0.91) 46%, rgba(23, 36, 60, 0.74) 100%),
+      linear-gradient(0deg, rgba(7, 17, 31, 0.94), rgba(7, 17, 31, 0.12));
+  }
+
+  .pilgrim-flights__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(460px, 1fr);
+    gap: clamp(34px, 6vw, 84px);
+    align-items: center;
+    padding: 96px 0;
+  }
+
+  .pilgrim-flights__content h2 {
+    max-width: 780px;
+  }
+
+  .pilgrim-flight-notes {
+    display: grid;
+    gap: 12px;
+    margin-top: 0;
+  }
+
+  .pilgrim-flight-notes p {
+    margin: 0;
+    padding: 18px 20px 18px 24px;
+    border-left: 4px solid var(--pilgrim-teal);
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.84);
+    line-height: 1.6;
+  }
+
+  .pilgrim-care {
+    display: grid;
+    gap: 1px;
+    border-block: 1px solid rgba(255, 255, 255, 0.38);
+  }
+
+  .pilgrim-care article {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+    padding: 34px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.38);
+  }
+
+  .pilgrim-care article:last-child {
+    border-bottom: 0;
+  }
+
+  .pilgrim-care__icon {
+    display: grid;
+    width: 74px;
+    height: 74px;
+    place-items: center;
+    border: 1px solid rgba(8, 174, 190, 0.48);
+    border-radius: 26px 26px 6px 26px;
+    background: var(--pilgrim-teal);
+    color: var(--pilgrim-navy);
+    font-size: 2.15rem;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  }
+
+  .pilgrim-care h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.45rem;
+    text-transform: uppercase;
+  }
+
+  .pilgrim-care p {
+    max-width: 820px;
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+
+  .pilgrim-final {
+    padding: 82px 0 112px;
+    background: var(--pilgrim-teal);
+    color: var(--pilgrim-navy);
+  }
+
+  .pilgrim-final__box {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .pilgrim-final p {
+    max-width: 640px;
+  }
+
+  .pilgrim-final__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .pilgrim-detail-section {
+    scroll-margin-top: 72px;
+  }
+
+  .pilgrim-mobile-cta {
+    display: none;
+  }
+
+  @media (max-width: 980px) {
+    .pilgrim-hero__grid,
+    .pilgrim-route__grid,
+    .pilgrim-hotels__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pilgrim-poster {
+      max-width: 620px;
+      justify-self: center;
+    }
+
+    .pilgrim-facts,
+    .pilgrim-pillars,
+    .pilgrim-includes,
+    .pilgrim-overview-grid,
+    .pilgrim-hotels__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 680px) {
+    :global(.cumbre-action--whatsapp) {
+      display: none !important;
+    }
+
+    .pilgrim-shell {
+      width: min(100% - 24px, 1160px);
+    }
+
+    .pilgrim-hero {
+      min-height: auto;
+      padding: 96px 0 46px;
+    }
+
+    .pilgrim-hero__grid {
+      gap: 34px;
+    }
+
+    .pilgrim-hero h1 {
+      max-width: 100%;
+      font-size: clamp(1.95rem, 8vw, 2.65rem);
+      line-height: 1;
+    }
+
+    .pilgrim-hero h1 strong {
+      font-size: 0.52em;
+    }
+
+    .pilgrim-script {
+      font-size: clamp(2.6rem, 13vw, 4rem);
+    }
+
+    .pilgrim-hero__lead {
+      max-width: 22rem;
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .pilgrim-actions {
+      display: flex;
+      flex-direction: column;
+      margin-top: 28px;
+    }
+
+    .pilgrim-actions .pilgrim-button {
+      width: min(100%, 360px);
+    }
+
+    .pilgrim-poster::after {
+      inset: 12px;
+    }
+
+    .pilgrim-poster {
+      max-width: 100%;
+    }
+
+    .pilgrim-facts,
+    .pilgrim-pillars,
+    .pilgrim-includes,
+    .pilgrim-overview-grid,
+    .pilgrim-hotels__list {
+      grid-template-columns: 1fr;
+    }
+
+    .pilgrim-facts article {
+      min-height: 104px;
+      padding: 22px;
+    }
+
+    .pilgrim-route,
+    .pilgrim-section,
+    .pilgrim-hotels {
+      padding: 52px 0 64px;
+    }
+
+    .pilgrim-route__content h2,
+    .pilgrim-section-head h2,
+    .pilgrim-hotels h2,
+    .pilgrim-flights h2,
+    .pilgrim-final h2 {
+      font-size: clamp(1.9rem, 8.6vw, 2.8rem);
+      line-height: 1.03;
+    }
+
+    .pilgrim-pillars {
+      padding: 64px 0;
+    }
+
+    .pilgrim-pillars article {
+      min-height: 200px;
+    }
+
+    .pilgrim-day {
+      grid-template-columns: 76px minmax(0, 1fr);
+      gap: 16px;
+      padding: 24px 0;
+    }
+
+    .pilgrim-day__badge {
+      width: 76px;
+      height: 76px;
+    }
+
+    .pilgrim-day__badge strong {
+      font-size: 1.55rem;
+    }
+
+    .pilgrim-day__date {
+      grid-column: 2;
+      padding-left: 14px;
+      font-size: 1.1rem;
+    }
+
+    .pilgrim-day__body h3 {
+      font-size: clamp(1.5rem, 8vw, 2.2rem);
+    }
+
+    .pilgrim-day__body small {
+      font-size: 0.95rem;
+    }
+
+    .pilgrim-flights {
+      min-height: auto;
+    }
+
+    .pilgrim-flights__shade {
+      background: rgba(7, 17, 31, 0.88);
+    }
+
+    .pilgrim-flights__content {
+      grid-template-columns: 1fr;
+      gap: 28px;
+      padding: 72px 0;
+    }
+
+    .pilgrim-care article {
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .pilgrim-care__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px 16px 4px 16px;
+      font-size: 1.3rem;
+    }
+
+    .pilgrim-care p {
+      font-size: 1rem;
+    }
+
+    .pilgrim-final {
+      padding: 70px 0 112px;
+    }
+
+    .pilgrim-final__box {
+      display: block;
+    }
+
+    .pilgrim-final__actions {
+      justify-content: stretch;
+      margin-top: 24px;
+    }
+
+    .pilgrim-final__actions .pilgrim-button {
+      width: 100%;
+    }
+
+    .pilgrim-mobile-cta {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 60;
+      display: none;
+    }
+
+    .pilgrim-mobile-cta a {
+      display: flex;
+      min-height: 54px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--pilgrim-teal);
+      color: var(--pilgrim-deep);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+      font-size: 0.82rem;
+      font-weight: 950;
+      letter-spacing: 0.14em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+  }
+
+  @media (min-width: 520px) and (max-width: 980px) {
+    .pilgrim-panel-inner {
+      padding: 70px 0 46px;
+    }
+
+    .pilgrim-hero__grid,
+    .pilgrim-route__grid,
+    .pilgrim-hotels__grid,
+    .pilgrim-itinerary__grid,
+    .pilgrim-includes-panel__grid,
+    .pilgrim-flights__content {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 22px;
+    }
+
+    .pilgrim-hero h1 {
+      font-size: clamp(2.15rem, 6.6vw, 3rem);
+      line-height: 1.02;
+    }
+
+    .pilgrim-hero h1::after {
+      width: 150px;
+      margin-top: 16px;
+    }
+
+    .pilgrim-script {
+      margin-top: 18px;
+      font-size: clamp(2.7rem, 9vw, 4.2rem);
+    }
+
+    .pilgrim-hero__lead,
+    .pilgrim-route__content p,
+    .pilgrim-hotels p {
+      max-width: 36rem;
+      margin-top: 18px;
+      font-size: 0.96rem;
+      line-height: 1.45;
+    }
+
+    .pilgrim-actions {
+      margin-top: 20px;
+    }
+
+    .pilgrim-button {
+      min-height: 46px;
+      padding: 0 18px;
+      font-size: 0.72rem;
+    }
+
+    .pilgrim-poster {
+      display: none;
+    }
+
+    .pilgrim-route__map {
+      max-width: 360px;
+    }
+
+    .pilgrim-route__content h2,
+    .pilgrim-section-head h2,
+    .pilgrim-hotels h2,
+    .pilgrim-final h2 {
+      font-size: clamp(1.95rem, 6.6vw, 3rem);
+      line-height: 0.98;
+    }
+
+    .pilgrim-display-title {
+      max-width: 36rem;
+    }
+
+    .pilgrim-display-title__outline {
+      -webkit-text-stroke-width: 1.1px;
+      text-stroke-width: 1.1px;
+      font-size: clamp(2.45rem, 8vw, 3.85rem);
+    }
+
+    .pilgrim-display-title__solid {
+      font-size: clamp(1.95rem, 6.8vw, 3.1rem);
+    }
+
+    .pilgrim-display-title__script {
+      font-size: clamp(2.4rem, 8vw, 3.7rem);
+    }
+
+    .pilgrim-facts--panel {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 16px;
+    }
+
+    .pilgrim-facts--panel article {
+      min-height: 70px;
+      padding: 12px;
+    }
+
+    .pilgrim-fact-icon {
+      width: 30px;
+      height: 30px;
+      margin-bottom: 8px;
+      font-size: 0.94rem;
+    }
+
+    .pilgrim-fact-label,
+    .pilgrim-hotels__list span,
+    .pilgrim-overview-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+    }
+
+    .pilgrim-facts strong {
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .pilgrim-route__stops {
+      display: none;
+    }
+
+    .pilgrim-section-head {
+      margin-bottom: 24px;
+    }
+
+    .pilgrim-days--preview {
+      max-height: 48svh;
+    }
+
+    .pilgrim-day--preview {
+      grid-template-columns: 52px minmax(0, 1fr) 74px;
+      gap: 12px;
+      padding: 9px 0;
+    }
+
+    .pilgrim-day--preview .pilgrim-day__badge {
+      width: 48px;
+      height: 48px;
+    }
+
+    .pilgrim-day--preview .pilgrim-day__badge strong {
+      font-size: 1.05rem;
+    }
+
+    .pilgrim-day--preview .pilgrim-day__body h3 {
+      font-size: clamp(0.98rem, 2.7vw, 1.35rem);
+    }
+
+    .pilgrim-day--preview .pilgrim-day__date {
+      grid-column: auto;
+      padding-left: 10px;
+      font-size: 0.84rem;
+    }
+
+    .pilgrim-hotels__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pilgrim-hotels__list article {
+      min-height: 82px;
+      padding: 14px;
+    }
+
+    .pilgrim-hotels__list strong {
+      margin-top: 8px;
+      font-size: 0.82rem;
+      line-height: 1.25;
+    }
+
+    .pilgrim-overview-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pilgrim-overview-grid article {
+      min-height: 0;
+      padding: 14px;
+    }
+
+    .pilgrim-overview-icon {
+      width: 38px;
+      height: 38px;
+      margin-bottom: 12px;
+      font-size: 1.1rem;
+    }
+
+    .pilgrim-overview-grid ul {
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .pilgrim-overview-grid li {
+      font-size: 0.76rem;
+      line-height: 1.28;
+    }
+
+    .pilgrim-overview-grid li:nth-child(n+4) {
+      display: none;
+    }
+
+    .pilgrim-final__box {
+      display: grid;
+      gap: 22px;
+    }
+  }
+
+  @media (min-width: 520px) and (max-width: 700px) {
+    .pilgrim-route__map {
+      display: none;
+    }
+
+    .pilgrim-display-title__outline {
+      font-size: clamp(2.2rem, 9vw, 3.15rem);
+    }
+
+    .pilgrim-display-title__solid {
+      font-size: clamp(1.8rem, 7.4vw, 2.55rem);
+    }
+
+    .pilgrim-display-title__script {
+      font-size: clamp(2.25rem, 9vw, 3.1rem);
+    }
+
+    .pilgrim-section-head p:not(.pilgrim-kicker):not(.pilgrim-script) {
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .pilgrim-overview-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pilgrim-overview-grid article {
+      padding: 12px 14px;
+    }
+
+    .pilgrim-overview-grid li:nth-child(n+3) {
+      display: none;
+    }
+  }
+</style>

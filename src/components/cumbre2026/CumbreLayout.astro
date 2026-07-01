@@ -12,11 +12,13 @@ const {
   imageWidth,
   imageHeight,
   imageType,
+  structuredData,
   variant = 'dark',
   enableSmoothScroll = false,
   flush = false,
   showEventBadge = true,
   showBackButton = true,
+  showAccountButton = true,
   backHref = '/eventos/cumbre-mundial-2026',
   backLabel = 'Volver',
   useHistoryBack = true,
@@ -37,6 +39,7 @@ const cspNonce = Astro.locals?.cspNonce;
   imageWidth={imageWidth}
   imageHeight={imageHeight}
   imageType={imageType}
+  structuredData={structuredData}
   noindex={noindex}
   hideHeader
   hideFooter
@@ -62,14 +65,18 @@ const cspNonce = Astro.locals?.cspNonce;
       ) : (
         <div aria-hidden="true"></div>
       )}
-      <div class="pointer-events-auto">
-        <div
-          id="cumbre-account-shell"
-          class={`rounded-full border backdrop-blur-md px-2 py-1 ${isLight ? 'bg-white/70 border-brand-navy/10' : 'bg-white/10 border-white/10'}`}
-        >
-          <AccountButton variant={isLight ? 'light' : 'dark'} />
+      {showAccountButton ? (
+        <div class="pointer-events-auto">
+          <div
+            id="cumbre-account-shell"
+            class={`rounded-full border backdrop-blur-md px-2 py-1 ${isLight ? 'bg-white/70 border-brand-navy/10' : 'bg-white/10 border-white/10'}`}
+          >
+            <AccountButton variant={isLight ? 'light' : 'dark'} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div aria-hidden="true"></div>
+      )}
     </div>
     <!-- Shared Background Effects (Dark Mode Only) -->
     {!isLight && (
@@ -225,5 +232,47 @@ const cspNonce = Astro.locals?.cspNonce;
   html[data-cumbre-panel-theme='light'] #account-guest {
     color: #1A255C;
     border-color: rgba(26, 37, 92, 0.18);
+  }
+
+  @media (max-width: 680px) {
+    #cumbre-account-shell {
+      max-width: 3.25rem !important;
+      padding: 0.25rem !important;
+      overflow: hidden !important;
+    }
+
+    #cumbre-account-shell #account-guest {
+      width: 2.75rem !important;
+      min-width: 2.75rem !important;
+      max-width: 2.75rem !important;
+      height: 2.75rem !important;
+      padding: 0 !important;
+      gap: 0 !important;
+      border-radius: 999px !important;
+      overflow: hidden !important;
+    }
+
+    #cumbre-account-shell #account-guest svg {
+      flex: 0 0 auto !important;
+    }
+
+    #cumbre-account-shell #account-guest span {
+      display: none !important;
+    }
+
+    #cumbre-account-shell #account-logged summary {
+      width: 2.75rem !important;
+      min-width: 2.75rem !important;
+      max-width: 2.75rem !important;
+      height: 2.75rem !important;
+      padding: 0 !important;
+      gap: 0 !important;
+      overflow: hidden !important;
+    }
+
+    #cumbre-account-shell #account-logged summary > svg,
+    #cumbre-account-shell #account-name {
+      display: none !important;
+    }
   }
 </style>

@@ -26,6 +26,7 @@ const resolvedImage = (() => {
 })();
 const resolvedImageAlt = imageAlt ?? title;
 const cspNonce = Astro.locals?.cspNonce;
+const structuredDataJson = structuredData ? JSON.stringify(structuredData) : '';
 ---
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -49,4 +50,4 @@ const cspNonce = Astro.locals?.cspNonce;
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={resolvedImage} />
 <meta name="twitter:image:alt" content={resolvedImageAlt} />
-{structuredData && (<script type="application/ld+json" nonce={cspNonce}>{JSON.stringify(structuredData)}</script>)}
+{structuredData && <script type="application/ld+json" nonce={cspNonce} set:html={structuredDataJson} />}
