@@ -43,6 +43,10 @@ function isMissingColumnError(error: any): boolean {
   return code === '42703' || (message.includes('column') && message.includes('does not exist'));
 }
 
+function isUniqueViolation(error: any): boolean {
+  return String(error?.code || '') === '23505';
+}
+
 function normalizeNameForMatch(value: string): string {
   return String(value || '')
     .normalize('NFD')
@@ -370,6 +374,26 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ? (requestedCampusMissionarySlug || resolveCampusMissionarySlug(fullName))
     : null;
 
+  if (resolvedCampusMissionarySlug) {
+    const { data: slugOwner, error: slugOwnerError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('user_id')
+      .eq('campus_missionary_slug', resolvedCampusMissionarySlug)
+      .maybeSingle();
+
+    if (slugOwnerError && !isMissingColumnError(slugOwnerError)) {
+      console.error('[create-user] campus slug owner check error', slugOwnerError);
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el misionero Campus' }), { status: 500 });
+    }
+
+    if (slugOwner?.user_id && String(slugOwner.user_id) !== String(userId)) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Ese misionero Campus ya está asignado a otro usuario.',
+      }), { status: 409 });
+    }
+  }
+
   const profilePayload: Record<string, unknown> = {
     user_id: userId,
     email: normalizedEmail,
@@ -402,6 +426,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   if (profileError) {
     console.error('Profile Error', profileError);
+    if (isUniqueViolation(profileError)) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Ese correo o misionero Campus ya está asignado a otro usuario.',
+      }), { status: 409 });
+    }
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar el perfil del usuario' }), { status: 500 });
   }
 
