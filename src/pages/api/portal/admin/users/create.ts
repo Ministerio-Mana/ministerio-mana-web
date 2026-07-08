@@ -390,13 +390,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   let { error: profileError } = await supabaseAdmin
     .from('user_profiles')
-    .upsert(profilePayload);
+    .upsert(profilePayload, { onConflict: 'user_id' });
 
   if (profileError && resolvedCampusMissionarySlug && isMissingColumnError(profileError)) {
     delete profilePayload.campus_missionary_slug;
     const fallback = await supabaseAdmin
       .from('user_profiles')
-      .upsert(profilePayload);
+      .upsert(profilePayload, { onConflict: 'user_id' });
     profileError = fallback.error;
   }
 
