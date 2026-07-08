@@ -11,6 +11,8 @@ const categoriesEl = document.getElementById('finances-categories');
 const issuesListEl = document.getElementById('finances-issues-list');
 const issuesEmptyEl = document.getElementById('finances-issues-empty');
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 const DEFAULT_CATEGORIES = [
     'Diezmos',
     'Ofrendas',
@@ -45,19 +47,91 @@ function sanitizeMailtoEmail(value) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
 }
 
-async function init() {
+function makeTimeoutError(label) {
+    const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+    error.name = 'TimeoutError';
+    return error;
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+    let timeoutId;
     try {
-        const auth = await ensureAuthenticated();
+        return await Promise.race([
+            promise,
+            new Promise((_, reject) => {
+                timeoutId = window.setTimeout(() => reject(makeTimeoutError(label)), timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timeoutId) window.clearTimeout(timeoutId);
+    }
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const res = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({
+            ok: false,
+            error: 'El servidor respondió sin datos válidos.',
+        }));
+        return { res, data };
+    } catch (err) {
+        if (err?.name === 'AbortError') throw makeTimeoutError(label);
+        throw err;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
+function setLoading(message = 'Cargando datos...') {
+    if (!loadingEl) return;
+    loadingEl.className = 'py-12 text-center text-slate-400 animate-pulse';
+    loadingEl.textContent = message;
+    loadingEl.classList.remove('hidden');
+    tableEl?.classList.add('hidden');
+    emptyEl?.classList.add('hidden');
+}
+
+function showLoadError(error) {
+    if (!loadingEl) return;
+    const message = error?.name === 'TimeoutError'
+        ? 'La carga tardó demasiado. Revisa la señal y vuelve a intentar.'
+        : error?.message || 'No se pudieron cargar las finanzas.';
+    loadingEl.className = 'py-12 text-center';
+    loadingEl.innerHTML = `
+        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+            <p class="font-bold mb-2">Error al cargar finanzas</p>
+            <p class="text-sm">${escapeHtml(message)}</p>
+            <button type="button" id="btn-retry-finances" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+                Reintentar
+            </button>
+        </div>
+    `;
+    document.getElementById('btn-retry-finances')?.addEventListener('click', () => {
+        void init();
+    });
+}
+
+async function init() {
+    setLoading();
+    try {
+        const auth = await withTimeout(ensureAuthenticated(), REQUEST_TIMEOUT_MS, 'La autenticación del portal');
         if (!auth.isAuthenticated) {
             redirectToLogin();
             return;
         }
         const token = auth.token;
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('/api/portal/finances', {
+        const { res, data } = await fetchJsonWithTimeout('/api/portal/finances', {
             headers,
             credentials: 'include'
-        });
+        }, REQUEST_TIMEOUT_MS, 'La carga de finanzas');
 
         if (res.status === 403) {
             alert('No tienes permisos para ver finanzas.');
@@ -65,14 +139,13 @@ async function init() {
             return;
         }
 
-        const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Error de carga');
 
         renderDashboard(data);
 
     } catch (err) {
         console.error(err);
-        if (loadingEl) loadingEl.textContent = 'Error al cargar datos.';
+        showLoadError(err);
     }
 }
 

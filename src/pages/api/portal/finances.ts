@@ -4,6 +4,7 @@ import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 
 export const GET: APIRoute = async ({ request }) => {
+    const startedAt = Date.now();
     if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
     const user = await getUserFromRequest(request);
@@ -111,12 +112,20 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     if (approvedResult.error) {
-        console.error(approvedResult.error);
+        console.error('[portal.finances] approved query failed', {
+            elapsedMs: Date.now() - startedAt,
+            message: approvedResult.error?.message || String(approvedResult.error),
+            code: approvedResult.error?.code,
+        });
         return new Response(JSON.stringify({ ok: false, error: 'Error loading finances' }), { status: 500 });
     }
 
     if (issuesResult?.error) {
-        console.error(issuesResult.error);
+        console.error('[portal.finances] issues query failed', {
+            elapsedMs: Date.now() - startedAt,
+            message: issuesResult.error?.message || String(issuesResult.error),
+            code: issuesResult.error?.code,
+        });
     }
 
     const toClientRow = (row: any) => ({
@@ -156,6 +165,16 @@ export const GET: APIRoute = async ({ request }) => {
         byCategory[label].total += amount;
         byCategory[label].byCurrency[currency] = (byCategory[label].byCurrency[currency] || 0) + amount;
     });
+
+    const elapsedMs = Date.now() - startedAt;
+    if (elapsedMs > 2500) {
+        console.warn('[portal.finances] slow response', {
+            elapsedMs,
+            transactionCount: approvedTransactions.length,
+            issueCount: issues.length,
+            role: profile?.role,
+        });
+    }
 
     return new Response(JSON.stringify({ ok: true, stats: { totalByCurrency, byCategory }, transactions: approvedTransactions, issues }), { status: 200 });
 };

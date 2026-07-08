@@ -9,6 +9,8 @@ export interface PortalAuthResult {
 }
 
 const DEBUG_PREFIX = '[PortalAuth]';
+const AUTH_TIMEOUT_MS = 8000;
+const SESSION_TIMEOUT_MS = 6000;
 
 function dlog(...args: any[]) {
     if (import.meta.env.DEV || window.location.host.includes('localhost')) {
@@ -47,6 +49,42 @@ function isSessionExpired(session: any): boolean {
     return expiresAt * 1000 <= Date.now() + bufferMs;
 }
 
+function makeTimeoutError(label: string): Error {
+    const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+    error.name = 'TimeoutError';
+    return error;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+    let timeoutId: number | undefined;
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<T>((_, reject) => {
+                timeoutId = window.setTimeout(() => reject(makeTimeoutError(label)), timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timeoutId) window.clearTimeout(timeoutId);
+    }
+}
+
+async function fetchJsonWithTimeout(url: string, options: RequestInit = {}, timeoutMs = SESSION_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const res = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        const data = await res.json().catch(() => null);
+        return { res, data };
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
 /**
  * Single source of truth for Portal Authentication.
  * Checks Supabase (SDK + LocalStorage) and Legacy Cookies.
@@ -58,11 +96,19 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
     try {
         const supabase = getSupabaseBrowserClient();
         if (supabase) {
-            const { data } = await supabase.auth.getSession();
+            const { data } = await withTimeout(
+                supabase.auth.getSession(),
+                AUTH_TIMEOUT_MS,
+                'La sesión del portal',
+            );
             const session = data?.session;
             if (session?.access_token) {
                 if (isSessionExpired(session)) {
-                    const { data: refreshed, error } = await supabase.auth.refreshSession();
+                    const { data: refreshed, error } = await withTimeout(
+                        supabase.auth.refreshSession(),
+                        AUTH_TIMEOUT_MS,
+                        'La renovación de sesión',
+                    );
                     if (!error && refreshed?.session?.access_token) {
                         dlog('Authenticated via Supabase SDK (refreshed)');
                         return {
@@ -101,10 +147,14 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
 
             if (isSessionExpired(sessionObj)) {
                 if (supabase && sessionObj.refresh_token) {
-                    const { data, error } = await supabase.auth.setSession({
-                        access_token: sessionObj.access_token,
-                        refresh_token: sessionObj.refresh_token,
-                    });
+                    const { data, error } = await withTimeout(
+                        supabase.auth.setSession({
+                            access_token: sessionObj.access_token,
+                            refresh_token: sessionObj.refresh_token,
+                        }),
+                        AUTH_TIMEOUT_MS,
+                        'La restauración de sesión',
+                    );
                     if (!error && data?.session?.access_token) {
                         dlog('Authenticated via LocalStorage (refreshed)');
                         return {
@@ -120,7 +170,20 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
                 }
             } else {
                 if (supabase) {
-                    const { data: userData, error: userError } = await supabase.auth.getUser(sessionObj.access_token);
+                    const { data: userData, error: userError } = await withTimeout(
+                        supabase.auth.getUser(sessionObj.access_token),
+                        AUTH_TIMEOUT_MS,
+                        'La validación de sesión',
+                    ).catch((error) => {
+                        if (error?.name === 'TimeoutError') {
+                            console.warn(DEBUG_PREFIX, 'User validation timed out; sending token to API validation.');
+                            return {
+                                data: { user: sessionObj.user || null },
+                                error: null,
+                            };
+                        }
+                        throw error;
+                    });
                     if (!userError && userData?.user) {
                         dlog('Authenticated via LocalStorage Fallback (validated)');
                         return {
@@ -150,9 +213,8 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
 
     // 3. Try Legacy Password Session (Cookie-based)
     try {
-        const res = await fetch('/api/portal/password-session', { credentials: 'include' });
+        const { res, data } = await fetchJsonWithTimeout('/api/portal/password-session', { credentials: 'include' });
         if (res.ok) {
-            const data = await res.json();
             if (data?.ok) {
                 const legacyUser = data.profile ?? (
                     data.email

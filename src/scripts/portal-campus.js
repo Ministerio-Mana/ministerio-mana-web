@@ -12,6 +12,8 @@ const statTotalDonors = document.getElementById('stat-total-donors');
 const statMonthDonations = document.getElementById('stat-month-donations');
 const statActiveMissionaries = document.getElementById('stat-active-missionaries');
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -21,21 +23,93 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-async function loadDonors() {
+function makeTimeoutError(label) {
+    const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+    error.name = 'TimeoutError';
+    return error;
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+    let timeoutId;
     try {
-        const auth = await ensureAuthenticated();
+        return await Promise.race([
+            promise,
+            new Promise((_, reject) => {
+                timeoutId = window.setTimeout(() => reject(makeTimeoutError(label)), timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timeoutId) window.clearTimeout(timeoutId);
+    }
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({
+            ok: false,
+            error: 'El servidor respondió sin datos válidos.',
+        }));
+        return { response, data };
+    } catch (error) {
+        if (error?.name === 'AbortError') throw makeTimeoutError(label);
+        throw error;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
+function showLoading() {
+    loadingEl?.classList.remove('hidden');
+    if (loadingEl) {
+        loadingEl.className = 'py-12 text-center text-slate-400 animate-pulse';
+        loadingEl.textContent = 'Cargando donantes...';
+    }
+    contentEl?.classList.add('hidden');
+    emptyEl?.classList.add('hidden');
+}
+
+function showLoadError(error) {
+    if (!loadingEl) return;
+    const message = error?.name === 'TimeoutError'
+        ? 'La carga tardó demasiado. Revisa la señal y vuelve a intentar.'
+        : error?.message || 'No se pudieron cargar los donantes.';
+    loadingEl.className = 'py-12 text-center';
+    loadingEl.innerHTML = `
+        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+            <p class="font-bold mb-2">Error al cargar donantes</p>
+            <p class="text-sm">${escapeHtml(message)}</p>
+            <button type="button" id="btn-retry-donors" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+                Reintentar
+            </button>
+        </div>
+    `;
+    document.getElementById('btn-retry-donors')?.addEventListener('click', () => {
+        void loadDonors();
+    });
+}
+
+async function loadDonors() {
+    showLoading();
+    try {
+        const auth = await withTimeout(ensureAuthenticated(), REQUEST_TIMEOUT_MS, 'La autenticación del portal');
         if (!auth.isAuthenticated) {
             redirectToLogin();
             return;
         }
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
-        const response = await fetch('/api/portal/campus/donors', {
+        const { response, data } = await fetchJsonWithTimeout('/api/portal/campus/donors', {
             headers,
             credentials: 'include'
-        });
-        const data = await response.json();
+        }, REQUEST_TIMEOUT_MS, 'La carga de donantes');
 
-        if (!data.ok) {
+        if (!response.ok || !data.ok) {
             throw new Error(data.error || 'Failed to load donors');
         }
 
@@ -161,12 +235,7 @@ async function loadDonors() {
 
     } catch (error) {
         console.error('[campus] Error loading donors:', error);
-        loadingEl.innerHTML = `
-            <div class="text-red-500">
-                <p class="font-bold mb-2">Error al cargar donantes</p>
-                <p class="text-sm">${error.message}</p>
-            </div>
-        `;
+        showLoadError(error);
     }
 }
 

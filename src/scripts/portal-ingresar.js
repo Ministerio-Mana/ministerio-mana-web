@@ -1,8 +1,8 @@
 import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 import { gsap } from 'gsap';
 
-window.addEventListener('load', () => {
-  gsap.to('#login-card', { opacity: 1, y: 0, duration: 1.2, ease: 'power4.out', delay: 0.2 });
+window.addEventListener('DOMContentLoaded', () => {
+  gsap.from('#login-card', { opacity: 0, y: 16, duration: 0.9, ease: 'power4.out', delay: 0.1 });
 
   const starsContainer = document.getElementById('stars-container');
   if (starsContainer) {
@@ -35,6 +35,46 @@ const statusIcon = document.getElementById('login-status-icon');
 const statusWrapper = document.getElementById('login-status-wrapper');
 
 const TURNSTILE_RENDER_WAIT_MS = 3000;
+const REQUEST_TIMEOUT_MS = 15000;
+
+function makeTimeoutError(label) {
+  const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+  error.name = 'TimeoutError';
+  return error;
+}
+
+async function withTimeout(promise, timeoutMs, label) {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(makeTimeoutError(label)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { res, data };
+  } catch (err) {
+    if (err?.name === 'AbortError') throw makeTimeoutError(label);
+    throw err;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 
 function normalizeSafePortalPath(value) {
   const fallback = '/portal';
@@ -149,12 +189,11 @@ async function getTurnstileTokenIfRequired() {
 async function verifyTurnstileToken(token) {
   if (!token) return { ok: false, error: 'Captcha requerido.' };
   try {
-    const res = await fetch('/api/turnstile/verify', {
+    const { res, data } = await fetchJsonWithTimeout('/api/turnstile/verify', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ turnstileToken: token }),
-    });
-    const data = await res.json().catch(() => ({}));
+    }, 10000, 'La verificación del captcha');
     if (!res.ok || !data?.ok) {
       return { ok: false, error: data?.error || 'Captcha inválido. Intenta de nuevo.' };
     }
@@ -204,6 +243,7 @@ function showStatus(msg, type = 'loading') {
 function resolveLoginErrorMessage(err) {
   const raw = String(err?.message || '').trim();
   if (!raw) return 'No se pudo iniciar sesión. Intenta de nuevo.';
+  if (/tard[oó] demasiado|timeout|aborted/i.test(raw)) return 'La conexión tardó demasiado. Revisa la señal y vuelve a intentar.';
   if (/invalid login credentials/i.test(raw)) return 'Contraseña incorrecta o usuario no encontrado.';
   if (/email not confirmed/i.test(raw)) return 'Debes confirmar tu correo para ingresar.';
   if (/captcha requerido|captcha invalido|captcha token|captcha verification/i.test(raw)) {
@@ -221,7 +261,7 @@ function getLoginErrorMessage(err) {
 
 async function reportPortalLoginError(identifier, err, meta = {}) {
   try {
-    await fetch('/api/portal/client-error', {
+    await fetchJsonWithTimeout('/api/portal/client-error', {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
@@ -233,7 +273,7 @@ async function reportPortalLoginError(identifier, err, meta = {}) {
           ...meta,
         },
       }),
-    });
+    }, 8000, 'El reporte de error');
   } catch {
     // no-op
   }
@@ -292,10 +332,14 @@ async function startOAuth(provider, label, btn) {
 
   try {
     const redirectTo = new URL(getSafeNextPath(), window.location.origin).toString();
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo },
-    });
+    const { data, error } = await withTimeout(
+      supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo },
+      }),
+      REQUEST_TIMEOUT_MS,
+      `El ingreso con ${label}`,
+    );
 
     if (error) throw error;
     if (data?.url) {
@@ -379,12 +423,11 @@ magicForm?.addEventListener('submit', async (e) => {
 
   try {
     const redirectTo = buildActivationRedirectTo();
-    const res = await fetch('/api/auth/send-link', {
+    const { res, data: payload } = await fetchJsonWithTimeout('/api/auth/send-link', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, kind: 'recovery', redirectTo, turnstileToken: captcha.token, enforceTurnstile: true }),
-    });
-    const payload = await res.json();
+    }, REQUEST_TIMEOUT_MS, 'El envío del enlace');
     if (!res.ok || !payload?.ok) throw new Error(payload?.error || 'Error al enviar enlace.');
 
     showStatus('¡Enlace enviado! Revisa tu correo para restablecer.', 'success');
@@ -430,7 +473,11 @@ passwordForm?.addEventListener('submit', async (e) => {
     }
 
     const supabasePayload = buildSupabasePasswordPayload(email, password, captcha);
-    const { error } = await supabase.auth.signInWithPassword(supabasePayload);
+    const { error } = await withTimeout(
+      supabase.auth.signInWithPassword(supabasePayload),
+      REQUEST_TIMEOUT_MS,
+      'El inicio de sesión',
+    );
 
     if (error) {
       console.warn('Supabase login failed, trying API fallback...', error.message);
@@ -458,14 +505,13 @@ passwordForm?.addEventListener('submit', async (e) => {
 });
 
 async function tryApiLogin(email, password, token) {
-  const res = await fetch('/api/portal/password-login', {
+  const { res, data } = await fetchJsonWithTimeout('/api/portal/password-login', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, turnstileToken: token || '' })
-  });
+  }, REQUEST_TIMEOUT_MS, 'El ingreso administrativo');
 
-  const data = await res.json();
   if (!res.ok || !data.ok) {
     throw new Error(data.error || 'Credenciales inválidas');
   }

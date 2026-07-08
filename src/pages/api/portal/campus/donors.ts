@@ -226,6 +226,7 @@ async function loadCampusDonationsBase() {
 }
 
 export const GET: APIRoute = async ({ request }) => {
+    const startedAt = Date.now();
     if (!supabaseAdmin) {
         return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
     }
@@ -319,7 +320,11 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     if (error) {
-        console.error('[campus.donors] Error:', error);
+        console.error('[campus.donors] Error:', {
+            elapsedMs: Date.now() - startedAt,
+            message: error?.message || String(error),
+            code: error?.code,
+        });
         return new Response(JSON.stringify({ ok: false, error: 'Failed to load donors' }), { status: 500 });
     }
 
@@ -388,6 +393,18 @@ export const GET: APIRoute = async ({ request }) => {
             currency: donations[0]?.currency || 'USD',
             activeMissionaries: uniqueMissionaries.size
         };
+    }
+
+    const elapsedMs = Date.now() - startedAt;
+    if (elapsedMs > 2500) {
+        console.warn('[campus.donors] slow response', {
+            elapsedMs,
+            role,
+            donationCount: donations.length,
+            donorCount: donors.length,
+            isAdmin,
+            isCampusMissionary,
+        });
     }
 
     return new Response(JSON.stringify({
