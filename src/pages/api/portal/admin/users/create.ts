@@ -321,10 +321,37 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
   }
 
+  const resolvedCampusMissionarySlug = targetRole === 'campus_missionary'
+    ? (requestedCampusMissionarySlug || resolveCampusMissionarySlug(fullName))
+    : null;
+  let campusSlugOwnerUserId: string | null = null;
+
+  if (resolvedCampusMissionarySlug) {
+    const { data: slugOwner, error: slugOwnerError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('user_id')
+      .eq('campus_missionary_slug', resolvedCampusMissionarySlug)
+      .maybeSingle();
+
+    if (slugOwnerError && !isMissingColumnError(slugOwnerError)) {
+      console.error('[create-user] campus slug owner check error', slugOwnerError);
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el misionero Campus' }), { status: 500 });
+    }
+
+    campusSlugOwnerUserId = slugOwner?.user_id ? String(slugOwner.user_id) : null;
+  }
+
   let userId: string | null = null;
   const activationRedirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
 
   if (hasInitialPassword) {
+    if (campusSlugOwnerUserId) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Ese misionero Campus ya está asignado a otro usuario.',
+      }), { status: 409 });
+    }
+
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: normalizedEmail,
       password: initialPassword,
@@ -353,6 +380,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el usuario destino' }), { status: 500 });
     }
 
+    if (campusSlugOwnerUserId && campusSlugOwnerUserId !== String(existingUser?.id || '')) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Ese misionero Campus ya está asignado a otro usuario.',
+      }), { status: 409 });
+    }
+
     const linkResult = await sendAuthLink({
       kind: existingUser?.id ? 'recovery' : 'invite',
       email: normalizedEmail,
@@ -367,30 +401,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     userId = existingUser?.id || linkResult.userId || null;
     if (!userId) {
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear usuario' }), { status: 500 });
-    }
-  }
-
-  const resolvedCampusMissionarySlug = targetRole === 'campus_missionary'
-    ? (requestedCampusMissionarySlug || resolveCampusMissionarySlug(fullName))
-    : null;
-
-  if (resolvedCampusMissionarySlug) {
-    const { data: slugOwner, error: slugOwnerError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('user_id')
-      .eq('campus_missionary_slug', resolvedCampusMissionarySlug)
-      .maybeSingle();
-
-    if (slugOwnerError && !isMissingColumnError(slugOwnerError)) {
-      console.error('[create-user] campus slug owner check error', slugOwnerError);
-      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el misionero Campus' }), { status: 500 });
-    }
-
-    if (slugOwner?.user_id && String(slugOwner.user_id) !== String(userId)) {
-      return new Response(JSON.stringify({
-        ok: false,
-        error: 'Ese misionero Campus ya está asignado a otro usuario.',
-      }), { status: 409 });
     }
   }
 
