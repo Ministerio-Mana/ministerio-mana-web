@@ -1230,6 +1230,29 @@ function runSafe(label, fn) {
   }
 }
 
+async function loadChurchCatalog(headers = {}) {
+  try {
+    const churchesRes = await fetch('/api/portal/churches', { headers, credentials: 'include' });
+    if (!churchesRes?.ok) {
+      dwarn('Could not load churches:', churchesRes ? `status ${churchesRes.status}` : 'request failed');
+      return;
+    }
+
+    const churchesPayload = await churchesRes.json().catch((err) => {
+      console.error('[portal.dashboard] churches payload parse error', err);
+      return [];
+    });
+    portalChurchesCatalog = enrichChurchCatalog(Array.isArray(churchesPayload) ? churchesPayload : []);
+    runSafe('populateChurchesUI', () => populateChurchesUI(portalChurchesCatalog));
+
+    if (window.advancedChurchSelector && portalChurchesCatalog.length > 0) {
+      runSafe('advancedChurchSelector.setChurches', () => window.advancedChurchSelector.setChurches(portalChurchesCatalog));
+    }
+  } catch (err) {
+    console.error('[portal.dashboard] churches request failed', err);
+  }
+}
+
 // Core Dashboard Logic - Reactive Auth
 async function loadDashboardData(authResult) {
   dlog('[DEBUG] loadDashboardData called with mode:', authResult.mode);
@@ -1252,9 +1275,8 @@ async function loadDashboardData(authResult) {
 
     dlog('[DEBUG] Starting Promise.all for API requests...');
 
-    const [sessionResult, churchesResult, resumenResult, userResult] = await Promise.allSettled([
+    const [sessionResult, resumenResult, userResult] = await Promise.allSettled([
       fetch('/api/portal/session', { headers, credentials: 'include' }),
-      fetch('/api/portal/churches', { headers, credentials: 'include' }),
       fetch('/api/cuenta/resumen', { headers, credentials: 'include' }),
       token && supabase
         ? supabase.auth.getUser()
@@ -1265,9 +1287,6 @@ async function loadDashboardData(authResult) {
       throw new Error('No se pudo validar la sesión');
     }
 
-    if (churchesResult.status === 'rejected') {
-      console.error('[portal.dashboard] churches request failed', churchesResult.reason);
-    }
     if (resumenResult.status === 'rejected') {
       console.error('[portal.dashboard] resumen request failed', resumenResult.reason);
     }
@@ -1276,27 +1295,11 @@ async function loadDashboardData(authResult) {
     }
 
     const sessionRes = sessionResult.value;
-    const churchesRes = churchesResult.status === 'fulfilled' ? churchesResult.value : null;
     const resumenRes = resumenResult.status === 'fulfilled' ? resumenResult.value : null;
     const userData = userResult.status === 'fulfilled'
       ? userResult.value?.data?.user || null
       : null;
     dlog('[DEBUG] Promise.all completed.');
-
-    // Handle Church Catalog
-    if (churchesRes?.ok) {
-      const churchesPayload = await churchesRes.json().catch((err) => {
-        console.error('[portal.dashboard] churches payload parse error', err);
-        return [];
-      });
-      portalChurchesCatalog = enrichChurchCatalog(Array.isArray(churchesPayload) ? churchesPayload : []);
-      runSafe('populateChurchesUI', () => populateChurchesUI(portalChurchesCatalog));
-
-      // Update advanced church selector if it exists
-      if (window.advancedChurchSelector && portalChurchesCatalog.length > 0) {
-        runSafe('advancedChurchSelector.setChurches', () => window.advancedChurchSelector.setChurches(portalChurchesCatalog));
-      }
-    }
 
     dlog('[DEBUG] sessionRes status:', sessionRes.status);
     dlog('[DEBUG] userData:', userData);
@@ -1584,6 +1587,7 @@ async function loadDashboardData(authResult) {
     // 5. Reveal Dashboard (Eager Loading)
     loadingEl.classList.add('hidden');
     contentEl.classList.remove('hidden');
+    void loadChurchCatalog(headers);
 
     // Inject Admin Filters if applicable
     if (portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin') {
@@ -6363,6 +6367,23 @@ const updatePasswordBtn = document.getElementById('btn-update-password');
 const newPasswordInput = document.getElementById('security-new-password');
 const securityStatus = document.getElementById('security-status');
 
+function getPasswordStrengthErrors(value) {
+  const errors = [];
+  if (!value || value.length < 10) errors.push('mínimo 10 caracteres');
+  if (!/[a-z]/.test(value)) errors.push('una minúscula');
+  if (!/[A-Z]/.test(value)) errors.push('una mayúscula');
+  if (!/[0-9]/.test(value)) errors.push('un número');
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(value)) errors.push('un símbolo');
+  return errors;
+}
+
+function formatPasswordStrengthErrors(errors) {
+  if (!errors.length) return '';
+  if (errors.length === 1) return `La contraseña debe incluir ${errors[0]}.`;
+  const last = errors[errors.length - 1];
+  return `La contraseña debe incluir ${errors.slice(0, -1).join(', ')} y ${last}.`;
+}
+
 updatePasswordBtn?.addEventListener('click', async () => {
   if (!newPasswordInput || !securityStatus) return;
   if (!supabase) {
@@ -6371,8 +6392,9 @@ updatePasswordBtn?.addEventListener('click', async () => {
     return;
   }
   const password = newPasswordInput.value.trim();
-  if (password.length < 6) {
-    securityStatus.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+  const strengthErrors = getPasswordStrengthErrors(password);
+  if (strengthErrors.length) {
+    securityStatus.textContent = formatPasswordStrengthErrors(strengthErrors);
     securityStatus.className = 'text-sm font-medium text-red-500';
     return;
   }

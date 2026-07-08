@@ -3,6 +3,11 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { MISIONEROS } from '@data/misioneros';
+import {
+    attachCampusAllocationsToDonations,
+    loadCampusAllocationsByDonationIds,
+    loadCampusAllocationsForMissionary,
+} from '@lib/campusDonationAllocations';
 
 export const prerender = false;
 
@@ -52,7 +57,20 @@ function isMissingColumnError(error: any): boolean {
     return code === '42703' || (message.includes('column') && message.includes('does not exist'));
 }
 
+function getCampusAllocations(donation: any): any[] {
+    return Array.isArray(donation?._campusAllocations) ? donation._campusAllocations : [];
+}
+
 function getAmountPerMissionary(donation: any): number | null {
+    const allocations = getCampusAllocations(donation);
+    if (allocations.length > 0) {
+        const amounts = allocations
+            .map((allocation) => Number(allocation?.amount || 0))
+            .filter((amount) => Number.isFinite(amount) && amount > 0);
+        if (!amounts.length) return null;
+        return amounts.every((amount) => amount === amounts[0]) ? amounts[0] : null;
+    }
+
     const raw = donation?.raw_event;
     const value = raw?.amountPerMissionary ?? raw?.amount_per_missionary;
     const parsed = Number(value);
@@ -60,6 +78,13 @@ function getAmountPerMissionary(donation: any): number | null {
 }
 
 function getMissionarySlugs(donation: any): string[] {
+    const allocations = getCampusAllocations(donation);
+    if (allocations.length > 0) {
+        return allocations
+            .map((allocation) => String(allocation?.missionary_slug || '').trim())
+            .filter(Boolean);
+    }
+
     const raw = donation?.raw_event;
     if (Array.isArray(raw?.missionaries)) {
         return raw.missionaries.map((item: unknown) => String(item || '').trim()).filter(Boolean);
@@ -72,6 +97,13 @@ function getMissionaryNamesFromSlugs(slugs: string[]): string[] {
 }
 
 function getMissionaryNames(donation: any): string[] {
+    const allocations = getCampusAllocations(donation);
+    if (allocations.length > 0) {
+        return allocations
+            .map((allocation) => String(allocation?.missionary_name || '').trim())
+            .filter(Boolean);
+    }
+
     const rawMatches = donation?.raw_event?.missionaryMatches;
     if (Array.isArray(rawMatches)) {
         const fromMatches = rawMatches
@@ -91,6 +123,7 @@ function getMissionaryNames(donation: any): string[] {
 function toCampusDonationClientRow(donation: any, isAdmin: boolean) {
     const missionaryNames = getMissionaryNames(donation);
     const amountPerMissionary = getAmountPerMissionary(donation);
+    const allocations = getCampusAllocations(donation);
     return {
         id: donation.id,
         created_at: donation.created_at,
@@ -106,7 +139,56 @@ function toCampusDonationClientRow(donation: any, isAdmin: boolean) {
         amount: isAdmin ? donation.amount : null,
         amountPerMissionary: isAdmin ? amountPerMissionary : null,
         currency: isAdmin ? donation.currency : null,
+        allocations: isAdmin
+            ? allocations.map((allocation) => ({
+                missionary_slug: allocation.missionary_slug,
+                missionary_name: allocation.missionary_name,
+                missionary_id: allocation.missionary_id,
+                amount: allocation.amount,
+                currency: allocation.currency,
+            }))
+            : [],
     };
+}
+
+async function loadCampusDonationsByIds(donationIds: string[]) {
+    if (!supabaseAdmin || donationIds.length === 0) return { data: [], error: null };
+    const ids = Array.from(new Set(donationIds.filter(Boolean)));
+
+    let result = await supabaseAdmin
+        .from('donations')
+        .select(campusDonationSelect)
+        .in('id', ids)
+        .in('status', CAMPUS_STATUSES)
+        .order('created_at', { ascending: false })
+        .limit(300);
+
+    if (result.error && isMissingColumnError(result.error)) {
+        result = await supabaseAdmin
+            .from('donations')
+            .select(donationSelect)
+            .in('id', ids)
+            .in('status', CAMPUS_STATUSES)
+            .order('created_at', { ascending: false })
+            .limit(300);
+    }
+
+    return result;
+}
+
+function mergeDonationRows(current: any[], rows: any[]): any[] {
+    const byId = new Map<string, any>();
+    current.forEach((row) => {
+        if (row?.id) byId.set(String(row.id), row);
+    });
+    rows.forEach((row) => {
+        if (!row?.id || byId.has(String(row.id))) return;
+        byId.set(String(row.id), row);
+    });
+
+    return Array.from(byId.values())
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 200);
 }
 
 async function loadCampusDonationsBase() {
@@ -183,18 +265,31 @@ export const GET: APIRoute = async ({ request }) => {
     let error: any = null;
 
     if (isCampusMissionary && user?.id) {
+        const allocationScope = await loadCampusAllocationsForMissionary(user.id, 200);
+        if (allocationScope.available && allocationScope.donationIds.length > 0) {
+            const byAllocation = await loadCampusDonationsByIds(allocationScope.donationIds);
+            if (byAllocation.error) {
+                error = byAllocation.error;
+            } else {
+                donations = attachCampusAllocationsToDonations(
+                    byAllocation.data || [],
+                    allocationScope.allocationsByDonationId,
+                );
+            }
+        }
+
         // Primary scope: strict ownership by missionary_id.
-        const byId = await supabaseAdmin
+        const byId = !error ? await supabaseAdmin
             .from('donations')
             .select(donationSelect)
             .in('status', CAMPUS_STATUSES)
             .eq('missionary_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(200);
+            .limit(200) : { data: [], error: null };
         if (byId.error) {
             error = byId.error;
         } else {
-            donations = byId.data || [];
+            donations = mergeDonationRows(donations, byId.data || []);
         }
 
         // Fallback scope: legacy rows whose raw event still stores the immutable user id.
@@ -209,12 +304,7 @@ export const GET: APIRoute = async ({ request }) => {
             if (byRawEvent.error) {
                 error = byRawEvent.error;
             } else {
-                const dedupe = new Set(donations.map((d) => d.id));
-                (byRawEvent.data || []).forEach((row: any) => {
-                    if (!dedupe.has(row.id)) donations.push(row);
-                });
-                donations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                donations = donations.slice(0, 200);
+                donations = mergeDonationRows(donations, byRawEvent.data || []);
             }
         }
     } else {
@@ -222,6 +312,10 @@ export const GET: APIRoute = async ({ request }) => {
         const campusRows = await loadCampusDonationsBase();
         error = campusRows.error;
         donations = campusRows.data || [];
+        if (!error && donations.length > 0) {
+            const allocationLookup = await loadCampusAllocationsByDonationIds(donations.map((donation) => donation.id));
+            donations = attachCampusAllocationsToDonations(donations, allocationLookup.allocationsByDonationId);
+        }
     }
 
     if (error) {

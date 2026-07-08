@@ -4,6 +4,8 @@ import { sendAuthLink } from '@lib/authMailer';
 import { checkLeakedPassword, formatPasswordErrors, validatePasswordStrength } from '@lib/passwordSecurity';
 import { normalizeCountryRegion } from '@lib/normalization';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
+import { MISIONEROS } from '@data/misioneros';
 import {
   getPortalChurchAccessContext,
   mapPortalAccessError,
@@ -33,6 +35,35 @@ const MANAGEMENT_ALLOWED_ROLES: PortalChurchRole[] = [
 
 function sameCountry(left?: string | null, right?: string | null): boolean {
   return normalizeCountryRegion(left || '') === normalizeCountryRegion(right || '');
+}
+
+function isMissingColumnError(error: any): boolean {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '').toLowerCase();
+  return code === '42703' || (message.includes('column') && message.includes('does not exist'));
+}
+
+function normalizeNameForMatch(value: string): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function resolveCampusMissionarySlug(fullName: string): string | null {
+  const normalizedFullName = normalizeNameForMatch(fullName);
+  if (!normalizedFullName) return null;
+  const match = MISIONEROS.find((missionary) => {
+    const normalizedMissionaryName = normalizeNameForMatch(missionary.nombre);
+    return (
+      normalizedMissionaryName === normalizedFullName
+      || normalizedFullName.includes(normalizedMissionaryName)
+      || normalizedMissionaryName.includes(normalizedFullName)
+    );
+  });
+  return match?.slug || null;
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -88,22 +119,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const body = await request.json().catch(() => null);
   const { email, password, firstName, lastName, role, churchId, country, regionId } = body || {};
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedFirstName = String(firstName || '').trim();
+  const normalizedLastName = String(lastName || '').trim();
+  const fullName = `${normalizedFirstName} ${normalizedLastName}`.trim();
+  const initialPassword = typeof password === 'string' ? password : '';
+  const hasInitialPassword = initialPassword.length > 0;
 
-  if (!email || !password || !firstName || !lastName) {
+  if (!normalizedEmail || !normalizedFirstName || !normalizedLastName) {
     return new Response(JSON.stringify({ ok: false, error: 'Faltan campos requeridos' }), { status: 400 });
   }
 
-  const strength = validatePasswordStrength(password);
-  if (!strength.ok) {
-    return new Response(JSON.stringify({ ok: false, error: formatPasswordErrors(strength.errors) }), { status: 400 });
-  }
+  if (hasInitialPassword) {
+    const strength = validatePasswordStrength(initialPassword);
+    if (!strength.ok) {
+      return new Response(JSON.stringify({ ok: false, error: formatPasswordErrors(strength.errors) }), { status: 400 });
+    }
 
-  const leaked = await checkLeakedPassword(password);
-  if (leaked.leaked) {
-    return new Response(JSON.stringify({ ok: false, error: 'Esta contraseña aparece en filtraciones conocidas. Elige otra.' }), { status: 400 });
-  }
-  if (!leaked.checked && leaked.error) {
-    console.warn('[create-user] HIBP check failed:', leaked.error);
+    const leaked = await checkLeakedPassword(initialPassword);
+    if (leaked.leaked) {
+      return new Response(JSON.stringify({ ok: false, error: 'Esta contraseña aparece en filtraciones conocidas. Elige otra.' }), { status: 400 });
+    }
+    if (!leaked.checked && leaked.error) {
+      console.warn('[create-user] HIBP check failed:', leaked.error);
+    }
   }
 
   const targetRole = String(role || 'user');
@@ -266,58 +305,114 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
   }
 
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: firstName,
-      last_name: lastName,
-      full_name: `${firstName} ${lastName}`.trim(),
-    },
-  });
+  let userId: string | null = null;
+  const activationRedirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
 
-  if (authError) {
-    return new Response(JSON.stringify({ ok: false, error: authError.message }), { status: 400 });
-  }
-
-  if (!authData.user) {
-    return new Response(JSON.stringify({ ok: false, error: 'Failed to create user' }), { status: 500 });
-  }
-
-  const { error: profileError } = await supabaseAdmin
-    .from('user_profiles')
-    .upsert({
-      user_id: authData.user.id,
-      email: email,
-      first_name: firstName,
-      last_name: lastName,
-      role: targetRole,
-      church_id: targetChurchId,
-      church_name: targetChurchName,
-      city: targetCity,
-      country: targetCountry,
-      region_id: targetRegionId,
-      updated_at: new Date().toISOString(),
+  if (hasInitialPassword) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: normalizedEmail,
+      password: initialPassword,
+      email_confirm: true,
+      user_metadata: {
+        first_name: normalizedFirstName,
+        last_name: normalizedLastName,
+        full_name: fullName,
+      },
     });
+
+    if (authError) {
+      return new Response(JSON.stringify({ ok: false, error: authError.message }), { status: 400 });
+    }
+
+    if (!authData.user) {
+      return new Response(JSON.stringify({ ok: false, error: 'Failed to create user' }), { status: 500 });
+    }
+    userId = authData.user.id;
+  } else {
+    let existingUser: Awaited<ReturnType<typeof findAuthUserByEmail>> = null;
+    try {
+      existingUser = await findAuthUserByEmail(normalizedEmail);
+    } catch (error) {
+      console.error('[create-user] user lookup failed', error);
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el usuario destino' }), { status: 500 });
+    }
+
+    const linkResult = await sendAuthLink({
+      kind: existingUser?.id ? 'recovery' : 'invite',
+      email: normalizedEmail,
+      redirectTo: activationRedirectTo,
+    });
+
+    if (!linkResult.ok) {
+      console.error('[create-user] invite link error', linkResult.error);
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo enviar invitación' }), { status: 500 });
+    }
+
+    userId = existingUser?.id || linkResult.userId || null;
+    if (!userId) {
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear usuario' }), { status: 500 });
+    }
+  }
+
+  const campusMissionarySlug = targetRole === 'campus_missionary'
+    ? resolveCampusMissionarySlug(fullName)
+    : null;
+
+  const profilePayload: Record<string, unknown> = {
+    user_id: userId,
+    email: normalizedEmail,
+    first_name: normalizedFirstName,
+    last_name: normalizedLastName,
+    full_name: fullName,
+    role: targetRole,
+    church_id: targetChurchId,
+    church_name: targetChurchName,
+    city: targetCity,
+    country: targetCountry,
+    region_id: targetRegionId,
+    updated_at: new Date().toISOString(),
+  };
+  if (campusMissionarySlug) {
+    profilePayload.campus_missionary_slug = campusMissionarySlug;
+  }
+
+  let { error: profileError } = await supabaseAdmin
+    .from('user_profiles')
+    .upsert(profilePayload);
+
+  if (profileError && campusMissionarySlug && isMissingColumnError(profileError)) {
+    delete profilePayload.campus_missionary_slug;
+    const fallback = await supabaseAdmin
+      .from('user_profiles')
+      .upsert(profilePayload);
+    profileError = fallback.error;
+  }
 
   if (profileError) {
     console.error('Profile Error', profileError);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo guardar el perfil del usuario' }), { status: 500 });
   }
 
-  try {
-    const emailResult = await sendAuthLink({
-      kind: 'magiclink',
-      email: email,
-      redirectTo: `${baseUrl}/portal`,
-    });
+  if (hasInitialPassword) {
+    try {
+      const emailResult = await sendAuthLink({
+        kind: 'magiclink',
+        email: normalizedEmail,
+        redirectTo: `${baseUrl}/portal`,
+      });
 
-    if (!emailResult.ok) {
-      console.warn('[create-user] Email not sent:', emailResult.error);
+      if (!emailResult.ok) {
+        console.warn('[create-user] Email not sent:', emailResult.error);
+      }
+    } catch (emailErr) {
+      console.error('[create-user] Email error:', emailErr);
     }
-  } catch (emailErr) {
-    console.error('[create-user] Email error:', emailErr);
   }
 
-  return new Response(JSON.stringify({ ok: true, userId: authData.user.id }), { status: 200 });
+  return new Response(JSON.stringify({
+    ok: true,
+    userId,
+    inviteSent: !hasInitialPassword,
+    campusMissionarySlug,
+  }), { status: 200 });
 };

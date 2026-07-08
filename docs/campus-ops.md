@@ -23,6 +23,8 @@ Guia corta para siembras mensuales Campus con Stripe y Wompi.
 Ejecutar en Supabase:
 
 - `docs/sql/campus_donation_subscriptions.sql`
+- `docs/sql/campus_donation_allocations.sql`
+- `docs/sql/campus_missionary_slugs_seed.sql`
 
 ## Stripe
 

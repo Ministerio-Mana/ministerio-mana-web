@@ -12,6 +12,7 @@ import {
   type CampusSubscriptionAllocationInput,
   type CampusSubscriptionRecord,
 } from '@lib/campusSubscriptions';
+import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
 
 export const prerender = false;
 
@@ -215,6 +216,14 @@ export const POST: APIRoute = async ({ request }) => {
           allocations,
         },
       });
+      await upsertCampusDonationAllocations(allocations.map((allocation) => ({
+        donationId: donation.id,
+        missionarySlug: allocation.missionary_slug,
+        missionaryName: allocation.missionary_name,
+        missionaryId: allocation.missionary_id,
+        amount: allocation.amount,
+        currency: allocation.currency,
+      })));
     } catch (error: any) {
       errors += 1;
       await updateCampusSubscriptionById(claimedSubscription.id, {

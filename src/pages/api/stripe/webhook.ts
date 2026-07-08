@@ -37,6 +37,7 @@ import {
   resolveStripePeriod,
   updateCampusSubscriptionById,
 } from '@lib/campusSubscriptions';
+import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
 
 export const prerender = false;
 
@@ -395,6 +396,14 @@ async function processEvent(event: Stripe.Event): Promise<void> {
               missionary_name: missionaryName || null,
               raw_event: invoice,
             });
+            await upsertCampusDonationAllocations(allocations.map((allocation: any) => ({
+              donationId: donation.id,
+              missionarySlug: allocation.missionary_slug,
+              missionaryName: allocation.missionary_name,
+              missionaryId: allocation.missionary_id,
+              amount: allocation.amount,
+              currency,
+            })));
             await updateCampusSubscriptionById(campusSubscription.id, {
               last_donation_id: donation.id,
             });

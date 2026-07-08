@@ -40,6 +40,23 @@ function normalizeSafePortalPath(value) {
   }
 }
 
+function getPasswordStrengthErrors(value) {
+  const errors = [];
+  if (!value || value.length < 10) errors.push('mínimo 10 caracteres');
+  if (!/[a-z]/.test(value)) errors.push('una minúscula');
+  if (!/[A-Z]/.test(value)) errors.push('una mayúscula');
+  if (!/[0-9]/.test(value)) errors.push('un número');
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(value)) errors.push('un símbolo');
+  return errors;
+}
+
+function formatPasswordStrengthErrors(errors) {
+  if (!errors.length) return '';
+  if (errors.length === 1) return `La contraseña debe incluir ${errors[0]}.`;
+  const last = errors[errors.length - 1];
+  return `La contraseña debe incluir ${errors.slice(0, -1).join(', ')} y ${last}.`;
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -452,8 +469,9 @@ form?.addEventListener('submit', async (event) => {
   statusContainer?.classList.add('hidden');
   const value = password?.value?.trim();
   const confirmValue = confirm?.value?.trim();
-  if (!value || value.length < 6) {
-    showStatus('La contraseña debe tener al menos 6 caracteres.', 'error');
+  const strengthErrors = getPasswordStrengthErrors(value || '');
+  if (strengthErrors.length) {
+    showStatus(formatPasswordStrengthErrors(strengthErrors), 'error');
     return;
   }
   if (value !== confirmValue) {

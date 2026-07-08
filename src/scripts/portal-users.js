@@ -25,8 +25,6 @@ const btnCancel = document.getElementById('btn-cancel-create');
 const form = document.getElementById('create-user-form');
 const btnSubmit = document.getElementById('btn-submit-create');
 const roleSelect = document.getElementById('user-role-select');
-const passwordInput = document.getElementById('user-password-input');
-const togglePasswordBtn = document.getElementById('toggle-password-user');
 const scopeCountryWrapper = document.getElementById('user-scope-country');
 const scopeCountryInput = document.getElementById('user-country-input');
 const scopeCountryList = document.getElementById('user-country-list');
@@ -86,6 +84,33 @@ const roleOrder = [
     'leader',
     'user',
 ];
+
+const quickRoleChangeRoles = new Set([
+    'superadmin',
+    'admin',
+    'campus_missionary',
+    'intercessor',
+    'user',
+]);
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const res = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({
+            ok: false,
+            error: 'El servidor respondió sin datos válidos.',
+        }));
+        return { res, data };
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
 
 const accessStatusTranslations = {
     active: 'Activo',
@@ -206,12 +231,6 @@ function applySidebarPermissions(role, memberships = []) {
     if (navLinkPrayers) navLinkPrayers.style.display = prayerRoles.includes(effectiveRole) ? 'flex' : 'none';
     return effectiveRole;
 }
-
-// Password Toggle
-togglePasswordBtn?.addEventListener('click', () => {
-    const type = passwordInput.type === 'password' ? 'text' : 'password';
-    passwordInput.type = type;
-});
 
 async function init() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -647,7 +666,7 @@ function renderRoleCell(user) {
     const pendingRole = pendingRoleChanges.get(user.user_id);
     const selectedRole = pendingRole?.nextRole || user.role;
     if (currentUserRole === 'superadmin') {
-        const options = roleOrder.map((role) => {
+        const options = roleOrder.filter((role) => quickRoleChangeRoles.has(role) || role === selectedRole).map((role) => {
             const label = escapeHtml(roleTranslations[role] || role);
             const safeRole = escapeAttr(role);
             const selected = selectedRole === role ? 'selected' : '';
@@ -971,26 +990,30 @@ function setupModal(token) {
         btnSubmit.disabled = true;
 
         try {
-            const res = await fetch('/api/portal/admin/users/create', {
+            const { res, data } = await fetchJsonWithTimeout('/api/portal/admin/users/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(body)
-            });
+            }, 30000);
 
-            const data = await res.json();
-            if (!data.ok) throw new Error(data.error || 'Error al crear');
+            if (!res.ok || !data.ok) throw new Error(data.error || 'Error al crear');
 
-            alert('Usuario creado exitosamente.');
+            alert(data.inviteSent
+                ? 'Usuario creado. Le enviamos un enlace para activar su cuenta y crear su contraseña.'
+                : 'Usuario creado exitosamente.');
             modal?.classList.add('hidden');
             form.reset();
             loadUsers(token); // Reload list
 
         } catch (err) {
             console.error(err);
-            alert(`Error: ${err.message}`);
+            const message = err?.name === 'AbortError'
+                ? 'La creación tardó demasiado y se canceló. Revisa si el usuario se creó antes de intentarlo otra vez.'
+                : err?.message || 'No se pudo crear el usuario.';
+            alert(`Error: ${message}`);
         } finally {
             btnSubmit.textContent = originalText;
             btnSubmit.disabled = false;

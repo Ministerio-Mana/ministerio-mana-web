@@ -443,17 +443,6 @@ passwordForm?.addEventListener('submit', async (e) => {
       }
     }
 
-    // Only verify Turnstile token if we actually have one (widget rendered)
-    if (captcha.token && !captcha.bypass) {
-      const captchaCheck = await verifyTurnstileTokenStrict(captcha.token, 'password-login-post-supabase');
-      if (!captchaCheck.ok) {
-        if (supabase) {
-          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-        }
-        throw new Error(captchaCheck.error || 'Captcha inválido. Intenta de nuevo.');
-      }
-    }
-
     showStatus('Acceso correcto. Entrando...', 'success');
     window.location.href = getSafeNextPath();
   } catch (err) {

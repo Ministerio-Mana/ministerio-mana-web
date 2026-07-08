@@ -13,6 +13,7 @@ import { ensureUserProfile } from '@lib/portalAuth';
 import { DOCUMENT_TYPES_ANY, normalizeDocumentType } from '@lib/donationInput';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createCampusSubscription } from '@lib/campusSubscriptions';
+import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
 
 export const prerender = false;
 
@@ -28,6 +29,12 @@ function normalizeMissionaryName(value: string): string {
 function asText(value: unknown): string {
     if (value === null || value === undefined) return '';
     return typeof value === 'string' ? value : String(value);
+}
+
+function isMissingColumnError(error: any): boolean {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '').toLowerCase();
+    return code === '42703' || (message.includes('column') && message.includes('does not exist'));
 }
 
 function normalizeMoneyAmount(value: unknown, currency: 'COP' | 'USD'): number {
@@ -255,13 +262,27 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         }));
 
         if (supabaseAdmin) {
-            const { data: campusProfiles } = await supabaseAdmin
+            let { data: campusProfiles, error: campusProfilesError } = await supabaseAdmin
                 .from('user_profiles')
-                .select('user_id, full_name, role')
+                .select('user_id, full_name, role, campus_missionary_slug')
                 .eq('role', 'campus_missionary');
 
+            if (campusProfilesError && isMissingColumnError(campusProfilesError)) {
+                const fallback = await supabaseAdmin
+                    .from('user_profiles')
+                    .select('user_id, full_name, role')
+                    .eq('role', 'campus_missionary');
+                campusProfiles = fallback.data;
+                campusProfilesError = fallback.error;
+            }
+
             const byName = new Map<string, string>();
+            const bySlug = new Map<string, string>();
             (campusProfiles || []).forEach((profile: any) => {
+                const slug = asText(profile?.campus_missionary_slug).trim();
+                if (slug && profile?.user_id && !bySlug.has(slug)) {
+                    bySlug.set(slug, String(profile.user_id));
+                }
                 const normalized = normalizeMissionaryName(profile?.full_name || '');
                 if (!normalized || byName.has(normalized)) return;
                 if (profile?.user_id) byName.set(normalized, String(profile.user_id));
@@ -269,8 +290,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
             selectedMissionaries.forEach((missionary) => {
                 const normalized = normalizeMissionaryName(missionary.name);
-                missionary.userId = byName.get(normalized) || null;
+                missionary.userId = bySlug.get(missionary.slug) || byName.get(normalized) || null;
             });
+
+            if (campusProfilesError) {
+                console.warn('[campus.checkout] campus missionary profile lookup failed', campusProfilesError);
+            }
         }
 
         const missionaryName = selectedMissionaries.length === 1
@@ -348,6 +373,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                 userId: user?.id || null,
             },
         });
+
+        await upsertCampusDonationAllocations(selectedMissionaries.map((missionary) => ({
+            donationId: donation.id,
+            missionarySlug: missionary.slug,
+            missionaryName: missionary.name,
+            missionaryId: missionary.userId,
+            amount: allocationBySlug.get(missionary.slug) || 0,
+            currency,
+        })));
 
         let checkoutUrl: string;
         let campusSubscriptionId = '';
