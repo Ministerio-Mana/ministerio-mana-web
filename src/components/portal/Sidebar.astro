@@ -94,7 +94,7 @@
 </aside>
 
 <script>
-    import { ensureAuthenticated } from '@lib/portalAuthClient';
+    import { getPortalSession } from '@lib/portalAuthClient';
 
     const toggleBtn = document.getElementById('sidebar-toggle');
     const content = document.getElementById('sidebar-content');
@@ -108,15 +108,8 @@
         if (!link) return;
 
         try {
-            const auth = await ensureAuthenticated();
+            const { auth, data: payload } = await getPortalSession();
             if (!auth.isAuthenticated) return;
-
-            const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
-            const res = await fetch('/api/portal/session', {
-                headers,
-                credentials: 'include',
-            });
-            const payload = await res.json().catch(() => ({}));
             const role = String(payload?.profile?.effective_role || payload?.profile?.role || '');
             if (['superadmin', 'admin', 'intercessor'].includes(role)) {
                 link.classList.remove('hidden');

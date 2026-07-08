@@ -1,4 +1,4 @@
-import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const loadingEl = document.getElementById('prayers-loading');
 const emptyEl = document.getElementById('prayers-empty');
@@ -250,7 +250,10 @@ async function init() {
     }
     authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
 
-    const session = await fetchJson('/api/portal/session');
+    const { ok: sessionOk, data: session } = await getPortalSession({ auth });
+    if (!sessionOk || !session?.ok) {
+      throw new Error(session?.error || 'No se pudo validar la sesión.');
+    }
     const role = String(session?.profile?.effective_role || session?.profile?.role || '');
     if (!['superadmin', 'admin', 'intercessor'].includes(role)) {
       window.location.href = '/portal';

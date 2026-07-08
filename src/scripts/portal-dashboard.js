@@ -1,5 +1,5 @@
 import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
-import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 import { compareSpanishLabels, normalizeChurchContinent, normalizeChurchCountry } from '@lib/churchGeo';
 import { gsap } from 'gsap';
 
@@ -1276,7 +1276,7 @@ async function loadDashboardData(authResult) {
     dlog('[DEBUG] Starting Promise.all for API requests...');
 
     const [sessionResult, resumenResult, userResult] = await Promise.allSettled([
-      fetch('/api/portal/session', { headers, credentials: 'include' }),
+      getPortalSession({ auth: authResult }),
       fetch('/api/cuenta/resumen', { headers, credentials: 'include' }),
       token && supabase
         ? supabase.auth.getUser()
@@ -1294,33 +1294,29 @@ async function loadDashboardData(authResult) {
       console.error('[portal.dashboard] user request failed', userResult.reason);
     }
 
-    const sessionRes = sessionResult.value;
+    const sessionInfo = sessionResult.value;
+    const sessionRes = sessionInfo.response;
     const resumenRes = resumenResult.status === 'fulfilled' ? resumenResult.value : null;
     const userData = userResult.status === 'fulfilled'
       ? userResult.value?.data?.user || null
       : null;
     dlog('[DEBUG] Promise.all completed.');
 
-    dlog('[DEBUG] sessionRes status:', sessionRes.status);
+    dlog('[DEBUG] sessionRes status:', sessionRes?.status);
     dlog('[DEBUG] userData:', userData);
 
-    if (!sessionRes.ok) {
-      console.error('[DEBUG] /api/portal/session failed:', sessionRes.status, sessionRes.statusText);
-      const text = await sessionRes.text();
-      console.error('[DEBUG] /api/portal/session body:', text);
-      if (sessionRes.status === 401 || sessionRes.status === 403) {
+    if (!sessionInfo.ok) {
+      console.error('[DEBUG] /api/portal/session failed:', sessionRes?.status, sessionRes?.statusText);
+      if (sessionRes?.status === 401 || sessionRes?.status === 403) {
         redirectToLogin();
         return;
       }
-      throw new Error(`Session API error: ${sessionRes.status}`);
+      throw new Error(`Session API error: ${sessionRes?.status || 'unknown'}`);
     }
 
-    const sessionPayload = await sessionRes.json().catch((err) => {
-      console.error('[portal.dashboard] session payload parse error', err);
-      return { ok: false, error: 'Respuesta inválida de sesión' };
-    });
+    const sessionPayload = sessionInfo.data || { ok: false, error: 'Respuesta inválida de sesión' };
     dlog('[DEBUG] sessionPayload:', sessionPayload);
-    if (!sessionRes.ok || !sessionPayload.ok) throw new Error(sessionPayload.error || 'No se pudo cargar el perfil');
+    if (!sessionInfo.ok || !sessionPayload.ok) throw new Error(sessionPayload.error || 'No se pudo cargar el perfil');
     sessionValidated = true;
 
     let payload = { ok: true, user: {}, bookings: [], plans: [], payments: [] };

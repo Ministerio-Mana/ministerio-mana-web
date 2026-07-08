@@ -1,6 +1,4 @@
-import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
-
-const supabase = getSupabaseBrowserClient();
+import { getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const tableEl = document.getElementById('users-table');
 const tbody = tableEl?.querySelector('tbody');
@@ -233,48 +231,44 @@ function applySidebarPermissions(role, memberships = []) {
 }
 
 async function init() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-        window.location.href = '/portal/ingresar';
+    const { auth, data: payload } = await getPortalSession();
+    if (!auth.isAuthenticated) {
+        redirectToLogin();
         return;
     }
 
-    const token = session.access_token;
+    const token = auth.token || '';
     currentToken = token;
 
     // 1. Get My Profile to set UI permissions
     try {
-        const res = await fetch('/api/portal/session', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (res.ok) {
-            const payload = await res.json();
-            if (payload?.ok) {
-                const profile = payload.profile || {};
-                const memberships = payload.memberships || [];
-                const scopeContext = payload.scope_context || {};
-                const allowedRegionIds = Array.isArray(scopeContext.allowed_region_ids)
-                    ? scopeContext.allowed_region_ids.filter(Boolean)
-                    : [];
-                currentMemberships = memberships;
-                currentUserRole = profile.role || 'user';
-                currentUserId = profile.user_id || '';
-                currentUserCountry = scopeContext.allowed_country || profile.country || '';
-                currentAllowedRegionIds = allowedRegionIds;
-                currentUserRegionId = allowedRegionIds[0] || profile.region_id || '';
-                currentUserChurchId = scopeContext.allowed_church_id
-                    || profile.church_id
-                    || profile.portal_church_id
-                    || memberships.find((m) => m?.church?.id)?.church?.id
-                    || '';
-                currentCreatableRoles = Array.isArray(payload.creatable_roles) ? payload.creatable_roles : [];
+        if (payload?.ok) {
+            const profile = payload.profile || {};
+            const memberships = payload.memberships || [];
+            const scopeContext = payload.scope_context || {};
+            const allowedRegionIds = Array.isArray(scopeContext.allowed_region_ids)
+                ? scopeContext.allowed_region_ids.filter(Boolean)
+                : [];
+            currentMemberships = memberships;
+            currentUserRole = profile.role || 'user';
+            currentUserId = profile.user_id || '';
+            currentUserCountry = scopeContext.allowed_country || profile.country || '';
+            currentAllowedRegionIds = allowedRegionIds;
+            currentUserRegionId = allowedRegionIds[0] || profile.region_id || '';
+            currentUserChurchId = scopeContext.allowed_church_id
+                || profile.church_id
+                || profile.portal_church_id
+                || memberships.find((m) => m?.church?.id)?.church?.id
+                || '';
+            currentCreatableRoles = Array.isArray(payload.creatable_roles) ? payload.creatable_roles : [];
 
-                currentUserRole = applySidebarPermissions(currentUserRole, memberships);
+            currentUserRole = applySidebarPermissions(currentUserRole, memberships);
 
-                // Hide Create Button for Roles that cannot create users
-                if (btnOpen) btnOpen.style.display = currentCreatableRoles.length ? '' : 'none';
+            // Hide Create Button for Roles that cannot create users
+            if (btnOpen) btnOpen.style.display = currentCreatableRoles.length ? '' : 'none';
 
-                if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-                    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-                }
+            if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             }
         }
     } catch (e) { console.error(e); }

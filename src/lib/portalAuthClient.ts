@@ -8,9 +8,20 @@ export interface PortalAuthResult {
     user: User | { email: string; role: string } | null;
 }
 
+export interface PortalSessionResult {
+    auth: PortalAuthResult;
+    headers: Record<string, string>;
+    response: Response | null;
+    data: any | null;
+    ok: boolean;
+}
+
 const DEBUG_PREFIX = '[PortalAuth]';
 const AUTH_TIMEOUT_MS = 8000;
 const SESSION_TIMEOUT_MS = 6000;
+const PORTAL_SESSION_CACHE_MS = 10000;
+let portalSessionCache: { key: string; expiresAt: number; result: PortalSessionResult } | null = null;
+let portalSessionPromise: { key: string; promise: Promise<PortalSessionResult> } | null = null;
 
 function dlog(...args: any[]) {
     if (import.meta.env.DEV || window.location.host.includes('localhost')) {
@@ -83,6 +94,69 @@ async function fetchJsonWithTimeout(url: string, options: RequestInit = {}, time
     } finally {
         window.clearTimeout(timeoutId);
     }
+}
+
+function getPortalSessionCacheKey(auth: PortalAuthResult): string {
+    const userEmail = typeof (auth.user as any)?.email === 'string' ? (auth.user as any).email : '';
+    return `${auth.mode || 'none'}:${auth.token || userEmail || 'anonymous'}`;
+}
+
+export async function getPortalSession(options: {
+    auth?: PortalAuthResult;
+    force?: boolean;
+    cacheMs?: number;
+} = {}): Promise<PortalSessionResult> {
+    const auth = options.auth ?? await ensureAuthenticated();
+    const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+
+    if (!auth.isAuthenticated) {
+        return {
+            auth,
+            headers,
+            response: null,
+            data: null,
+            ok: false,
+        };
+    }
+
+    const cacheKey = getPortalSessionCacheKey(auth);
+    const cacheMs = Number.isFinite(options.cacheMs) ? Number(options.cacheMs) : PORTAL_SESSION_CACHE_MS;
+
+    if (!options.force && portalSessionCache?.key === cacheKey && portalSessionCache.expiresAt > Date.now()) {
+        return portalSessionCache.result;
+    }
+
+    if (!options.force && portalSessionPromise?.key === cacheKey) {
+        return portalSessionPromise.promise;
+    }
+
+    const promise = fetchJsonWithTimeout('/api/portal/session', {
+        headers,
+        credentials: 'include',
+    }).then(({ res, data }) => {
+        const result: PortalSessionResult = {
+            auth,
+            headers,
+            response: res,
+            data,
+            ok: res.ok && data?.ok !== false,
+        };
+        if (result.ok && cacheMs > 0) {
+            portalSessionCache = {
+                key: cacheKey,
+                expiresAt: Date.now() + cacheMs,
+                result,
+            };
+        }
+        return result;
+    }).finally(() => {
+        if (portalSessionPromise?.key === cacheKey) {
+            portalSessionPromise = null;
+        }
+    });
+
+    portalSessionPromise = { key: cacheKey, promise };
+    return promise;
 }
 
 /**

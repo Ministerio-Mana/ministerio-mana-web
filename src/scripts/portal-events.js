@@ -1,4 +1,4 @@
-import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 // DOM Elements
 const eventsList = document.getElementById('events-list');
@@ -400,15 +400,10 @@ function canEditEvent(event) {
     return false;
 }
 
-async function loadProfile() {
+async function loadProfile(auth) {
     try {
-        const { res, data } = await fetchJsonWithTimeout('/api/portal/session', {
-            headers: authHeaders,
-            credentials: 'include',
-        }, REQUEST_TIMEOUT_MS, 'La sesión del portal');
-        if (!res.ok) return;
-
-        if (!data?.ok) return;
+        const { ok, data } = await getPortalSession({ auth });
+        if (!ok || !data?.ok) return;
 
         const profile = data.profile || {};
         const scopeContext = data.scope_context || {};
@@ -489,7 +484,7 @@ async function init() {
 
         authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
 
-        await loadProfile();
+        await loadProfile(auth);
         await Promise.all([loadChurchesCatalog(), loadRegionsCatalog()]);
 
         syncScopeOptions();

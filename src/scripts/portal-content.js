@@ -1,4 +1,4 @@
-import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const SECTION_KINDS = ['hero', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'];
 const SECTION_STATUSES = ['draft', 'published', 'archived'];
@@ -864,7 +864,10 @@ async function boot() {
       state.headers.authorization = `Bearer ${auth.token}`;
     }
 
-    const session = await fetchJson('/api/portal/session', { headers: state.headers });
+    const { ok: sessionOk, data: session } = await getPortalSession({ auth });
+    if (!sessionOk || !session?.ok) {
+      throw new Error(session?.error || 'No se pudo validar la sesión.');
+    }
     const role = session?.profile?.effective_role || session?.profile?.role || 'user';
     if (!['admin', 'superadmin'].includes(role)) {
       showAlert('Tu usuario no tiene permisos para gestionar contenido.', 'error', 0);
