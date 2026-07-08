@@ -1,9 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 import gsap from 'gsap';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = getSupabaseBrowserClient();
 
 const form = document.getElementById('register-form');
 const btnSubmit = document.getElementById('btn-submit-register');

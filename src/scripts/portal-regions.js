@@ -1,8 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = getSupabaseBrowserClient();
 
 const errorBox = document.getElementById('regions-error');
 const regionForm = document.getElementById('region-form');
