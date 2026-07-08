@@ -66,6 +66,10 @@ function resolveCampusMissionarySlug(fullName: string): string | null {
   return match?.slug || null;
 }
 
+function isValidCampusMissionarySlug(value: string): boolean {
+  return MISIONEROS.some((missionary) => missionary.slug === value);
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
@@ -118,7 +122,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const body = await request.json().catch(() => null);
-  const { email, password, firstName, lastName, role, churchId, country, regionId } = body || {};
+  const { email, password, firstName, lastName, role, churchId, country, regionId, campusMissionarySlug } = body || {};
   const normalizedEmail = String(email || '').trim().toLowerCase();
   const normalizedFirstName = String(firstName || '').trim();
   const normalizedLastName = String(lastName || '').trim();
@@ -148,6 +152,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const targetRole = String(role || 'user');
   if (!canCreateRole(effectiveRole, targetRole)) {
     return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
+  }
+  const requestedCampusMissionarySlug = String(campusMissionarySlug || '').trim();
+  if (
+    targetRole === 'campus_missionary'
+    && requestedCampusMissionarySlug
+    && !isValidCampusMissionarySlug(requestedCampusMissionarySlug)
+  ) {
+    return new Response(JSON.stringify({ ok: false, error: 'Misionero Campus no válido' }), { status: 400 });
   }
 
   const requestedCountry = normalizeCountryRegion(country || '');
@@ -354,8 +366,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
   }
 
-  const campusMissionarySlug = targetRole === 'campus_missionary'
-    ? resolveCampusMissionarySlug(fullName)
+  const resolvedCampusMissionarySlug = targetRole === 'campus_missionary'
+    ? (requestedCampusMissionarySlug || resolveCampusMissionarySlug(fullName))
     : null;
 
   const profilePayload: Record<string, unknown> = {
@@ -372,15 +384,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     region_id: targetRegionId,
     updated_at: new Date().toISOString(),
   };
-  if (campusMissionarySlug) {
-    profilePayload.campus_missionary_slug = campusMissionarySlug;
+  if (resolvedCampusMissionarySlug) {
+    profilePayload.campus_missionary_slug = resolvedCampusMissionarySlug;
   }
 
   let { error: profileError } = await supabaseAdmin
     .from('user_profiles')
     .upsert(profilePayload);
 
-  if (profileError && campusMissionarySlug && isMissingColumnError(profileError)) {
+  if (profileError && resolvedCampusMissionarySlug && isMissingColumnError(profileError)) {
     delete profilePayload.campus_missionary_slug;
     const fallback = await supabaseAdmin
       .from('user_profiles')
@@ -413,6 +425,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ok: true,
     userId,
     inviteSent: !hasInitialPassword,
-    campusMissionarySlug,
+    campusMissionarySlug: resolvedCampusMissionarySlug,
   }), { status: 200 });
 };

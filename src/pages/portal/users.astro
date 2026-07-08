@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
+import { MISIONEROS } from '@data/misioneros';
 ---
 
 <BaseLayout title="Usuarios | Portal Maná" description="Gestión de usuarios." hideHeader hideFooter>
@@ -143,6 +144,16 @@ import Sidebar from '@components/portal/Sidebar.astro';
                          <option value="pastor" class="admin-only hidden">Pastor</option>
                          <option value="admin" class="admin-only hidden">Admin</option>
                      </select>
+                </div>
+
+                <div id="user-campus-missionary" class="hidden">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Misionero asociado</label>
+                    <select id="user-campus-missionary-select" name="campusMissionarySlug" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm">
+                        <option value="">Selecciona un misionero Campus</option>
+                        {MISIONEROS.map((missionary) => (
+                            <option value={missionary.slug}>{missionary.nombre}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div id="user-scope-country" class="hidden">

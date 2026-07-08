@@ -140,6 +140,38 @@ export async function loadCampusAllocationsForMissionary(
   return { available: false, donationIds: [], allocationsByDonationId: new Map() };
 }
 
+export async function loadCampusAllocationsForMissionarySlug(
+  missionarySlug: string,
+  limit = 300,
+): Promise<CampusAllocationLookup & { donationIds: string[] }> {
+  const normalizedSlug = String(missionarySlug || '').trim();
+  if (!supabaseAdmin || !normalizedSlug) {
+    return { available: Boolean(supabaseAdmin), donationIds: [], allocationsByDonationId: new Map() };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('campus_donation_allocations')
+    .select('id, donation_id, missionary_slug, missionary_name, missionary_id, amount, currency, created_at')
+    .eq('missionary_slug', normalizedSlug)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (!error) {
+    const rows = (data || []) as CampusDonationAllocationRecord[];
+    return {
+      available: true,
+      donationIds: Array.from(new Set(rows.map((row) => row.donation_id).filter(Boolean))),
+      allocationsByDonationId: groupByDonationId(rows),
+    };
+  }
+  if (isMissingAllocationsTable(error)) {
+    return { available: false, donationIds: [], allocationsByDonationId: new Map() };
+  }
+
+  console.error('[campus.allocations] missionary slug lookup error', error);
+  return { available: false, donationIds: [], allocationsByDonationId: new Map() };
+}
+
 export function attachCampusAllocationsToDonations<T extends Record<string, any>>(
   donations: T[],
   allocationsByDonationId: Map<string, CampusDonationAllocationRecord[]>,

@@ -7,6 +7,7 @@ import {
     attachCampusAllocationsToDonations,
     loadCampusAllocationsByDonationIds,
     loadCampusAllocationsForMissionary,
+    loadCampusAllocationsForMissionarySlug,
 } from '@lib/campusDonationAllocations';
 
 export const prerender = false;
@@ -55,6 +56,55 @@ function isMissingColumnError(error: any): boolean {
     const code = String(error?.code || '');
     const message = String(error?.message || '').toLowerCase();
     return code === '42703' || (message.includes('column') && message.includes('does not exist'));
+}
+
+function normalizeNameForMatch(value: string): string {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function resolveCampusMissionarySlug(profile: any): string | null {
+    const explicitSlug = String(profile?.campus_missionary_slug || '').trim();
+    if (explicitSlug && MISIONEROS.some((missionary) => missionary.slug === explicitSlug)) {
+        return explicitSlug;
+    }
+
+    const normalizedFullName = normalizeNameForMatch(profile?.full_name || '');
+    if (!normalizedFullName) return null;
+    const match = MISIONEROS.find((missionary) => {
+        const normalizedMissionaryName = normalizeNameForMatch(missionary.nombre);
+        return (
+            normalizedMissionaryName === normalizedFullName
+            || normalizedFullName.includes(normalizedMissionaryName)
+            || normalizedMissionaryName.includes(normalizedFullName)
+        );
+    });
+    return match?.slug || null;
+}
+
+function mergeAllocationMaps(maps: Map<string, any[]>[]): Map<string, any[]> {
+    const merged = new Map<string, any[]>();
+    const seen = new Set<string>();
+
+    maps.forEach((map) => {
+        map.forEach((rows, donationId) => {
+            const current = merged.get(donationId) || [];
+            rows.forEach((row) => {
+                const key = row?.id
+                    || `${row?.donation_id || donationId}:${row?.missionary_slug || ''}:${row?.missionary_id || ''}:${row?.amount || ''}:${row?.currency || ''}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                current.push(row);
+            });
+            merged.set(donationId, current);
+        });
+    });
+
+    return merged;
 }
 
 function getCampusAllocations(donation: any): any[] {
@@ -237,14 +287,21 @@ export const GET: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
     }
 
-    let userProfile: { user_id?: string; role?: string; full_name?: string | null } | null = null;
+    let userProfile: { user_id?: string; role?: string; full_name?: string | null; campus_missionary_slug?: string | null } | null = null;
     if (user) {
-        const { data: profile } = await supabaseAdmin
+        let profileResult = await supabaseAdmin
             .from('user_profiles')
-            .select('user_id, role, full_name')
+            .select('user_id, role, full_name, campus_missionary_slug')
             .eq('user_id', user.id)
             .single();
-        userProfile = profile ?? null;
+        if (profileResult.error && isMissingColumnError(profileResult.error)) {
+            profileResult = await supabaseAdmin
+                .from('user_profiles')
+                .select('user_id, role, full_name')
+                .eq('user_id', user.id)
+                .single();
+        }
+        userProfile = profileResult.data ?? null;
     }
 
     if (!userProfile && !passwordSession) {
@@ -266,15 +323,28 @@ export const GET: APIRoute = async ({ request }) => {
     let error: any = null;
 
     if (isCampusMissionary && user?.id) {
+        const missionarySlug = resolveCampusMissionarySlug(userProfile);
         const allocationScope = await loadCampusAllocationsForMissionary(user.id, 200);
-        if (allocationScope.available && allocationScope.donationIds.length > 0) {
-            const byAllocation = await loadCampusDonationsByIds(allocationScope.donationIds);
+        const slugAllocationScope = missionarySlug
+            ? await loadCampusAllocationsForMissionarySlug(missionarySlug, 200)
+            : { available: allocationScope.available, donationIds: [], allocationsByDonationId: new Map() };
+        const allocationDonationIds = Array.from(new Set([
+            ...(allocationScope.donationIds || []),
+            ...(slugAllocationScope.donationIds || []),
+        ].filter(Boolean)));
+        const allocationsByDonationId = mergeAllocationMaps([
+            allocationScope.allocationsByDonationId,
+            slugAllocationScope.allocationsByDonationId,
+        ]);
+
+        if ((allocationScope.available || slugAllocationScope.available) && allocationDonationIds.length > 0) {
+            const byAllocation = await loadCampusDonationsByIds(allocationDonationIds);
             if (byAllocation.error) {
                 error = byAllocation.error;
             } else {
                 donations = attachCampusAllocationsToDonations(
                     byAllocation.data || [],
-                    allocationScope.allocationsByDonationId,
+                    allocationsByDonationId,
                 );
             }
         }

@@ -32,6 +32,8 @@ const scopeRegionWrapper = document.getElementById('user-scope-region');
 const scopeRegionSelect = document.getElementById('user-region-select');
 const scopeChurchWrapper = document.getElementById('user-scope-church');
 const scopeChurchSelect = document.getElementById('user-church-select');
+const scopeCampusMissionaryWrapper = document.getElementById('user-campus-missionary');
+const scopeCampusMissionarySelect = document.getElementById('user-campus-missionary-select');
 const navLinkEvents = document.getElementById('nav-link-events');
 const navLinkUsers = document.getElementById('nav-link-users');
 const navLinkCampus = document.getElementById('nav-link-campus');
@@ -413,6 +415,7 @@ function updateScopeFields(role) {
     const needsCountry = role === 'national_pastor' || role === 'national_collaborator';
     const needsRegion = role === 'regional_pastor' || role === 'regional_collaborator';
     const needsChurch = role === 'pastor' || role === 'local_collaborator' || role === 'leader';
+    const needsCampusMissionary = role === 'campus_missionary';
     const isNationalCreator = currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator';
     const isRegionalCreator = currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator';
     const isLocalCreator = currentUserRole === 'pastor' || currentUserRole === 'local_collaborator' || currentUserRole === 'leader';
@@ -458,6 +461,14 @@ function updateScopeFields(role) {
             scopeChurchSelect.disabled = true;
         } else {
             scopeChurchSelect.disabled = false;
+        }
+    }
+
+    if (scopeCampusMissionaryWrapper && scopeCampusMissionarySelect) {
+        scopeCampusMissionaryWrapper.classList.toggle('hidden', !needsCampusMissionary);
+        scopeCampusMissionarySelect.disabled = !needsCampusMissionary;
+        if (!needsCampusMissionary) {
+            scopeCampusMissionarySelect.value = '';
         }
     }
 }
