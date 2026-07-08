@@ -6,3 +6,6 @@ dist
 .env.*
 .vercel
 .claude/
+tmp/
+*.bak*
+scripts/debug-auth.mjs
