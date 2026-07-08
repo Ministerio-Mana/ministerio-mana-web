@@ -11,6 +11,8 @@ const statCopEl = document.getElementById('donations-stat-cop');
 const statUsdEl = document.getElementById('donations-stat-usd');
 let currentAuthHeaders = {};
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 function escapeHtml(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -18,6 +20,54 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function makeTimeoutError(label) {
+    const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+    error.name = 'TimeoutError';
+    return error;
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({
+            ok: false,
+            error: 'El servidor respondió sin datos válidos.',
+        }));
+        return { response, data };
+    } catch (error) {
+        if (error?.name === 'AbortError') throw makeTimeoutError(label);
+        throw error;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
+function showLoadError(error) {
+    if (!loadingEl) return;
+    const message = error?.name === 'TimeoutError'
+        ? 'La carga tardó demasiado. Revisa la señal y vuelve a intentar.'
+        : error?.message || 'Error al cargar donaciones.';
+    loadingEl.className = 'py-12 text-center';
+    loadingEl.innerHTML = `
+        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+            <p class="font-bold mb-2">Error al cargar donaciones</p>
+            <p class="text-sm">${escapeHtml(message)}</p>
+            <button type="button" id="btn-retry-donations" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+                Reintentar
+            </button>
+        </div>
+    `;
+    document.getElementById('btn-retry-donations')?.addEventListener('click', () => {
+        void loadDonations();
+    });
 }
 
 function formatCurrency(amount, currency) {
@@ -57,6 +107,7 @@ function statusBadge(status) {
 async function loadDonations() {
     if (loadingEl) {
         loadingEl.classList.remove('hidden');
+        loadingEl.className = 'py-12 text-center text-slate-400 animate-pulse';
         loadingEl.textContent = 'Cargando donaciones...';
     }
     if (emptyEl) emptyEl.classList.add('hidden');
@@ -75,17 +126,16 @@ async function loadDonations() {
 
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
         currentAuthHeaders = headers;
-        const response = await fetch(`/api/portal/donations?${params.toString()}`, {
+        const { response, data } = await fetchJsonWithTimeout(`/api/portal/donations?${params.toString()}`, {
             headers,
             credentials: 'include',
-        });
+        }, REQUEST_TIMEOUT_MS, 'La carga de donaciones');
 
         if (response.status === 403) {
             window.location.href = '/portal';
             return;
         }
 
-        const data = await response.json();
         if (!response.ok || !data.ok) {
             throw new Error(data.error || 'No se pudieron cargar las donaciones');
         }
@@ -93,7 +143,7 @@ async function loadDonations() {
         renderDonations(data.donations || [], data.stats || {});
     } catch (error) {
         console.error('[portal-donations] error', error);
-        if (loadingEl) loadingEl.textContent = error.message || 'Error al cargar donaciones.';
+        showLoadError(error);
     }
 }
 
@@ -155,7 +205,7 @@ function bindSyncButtons() {
             button.textContent = 'Sincronizando...';
             button.setAttribute('disabled', 'disabled');
             try {
-                let response = await fetch('/api/portal/donations/sync-wompi', {
+                let { response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
                     method: 'POST',
                     headers: {
                         ...currentAuthHeaders,
@@ -163,12 +213,11 @@ function bindSyncButtons() {
                     },
                     credentials: 'include',
                     body: JSON.stringify({ reference }),
-                });
-                let payload = await response.json();
+                }, REQUEST_TIMEOUT_MS, 'La sincronización con Wompi');
                 if (!response.ok && payload?.code === 'TRANSACTION_ID_REQUIRED') {
                     const transactionId = window.prompt('Pega el ID de transacción de Wompi para esta referencia.');
                     if (!transactionId) throw new Error(payload.error || 'ID de transacción requerido');
-                    response = await fetch('/api/portal/donations/sync-wompi', {
+                    ({ response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
                         method: 'POST',
                         headers: {
                             ...currentAuthHeaders,
@@ -176,13 +225,12 @@ function bindSyncButtons() {
                         },
                         credentials: 'include',
                         body: JSON.stringify({ reference, transactionId }),
-                    });
-                    payload = await response.json();
+                    }, REQUEST_TIMEOUT_MS, 'La sincronización con Wompi'));
                 }
                 if (!response.ok && payload?.code === 'WOMPI_LOOKUP_FAILED' && payload?.manualAvailable) {
                     const transactionId = window.prompt('No pude consultar Wompi automáticamente. Si en Wompi está aprobada, pega nuevamente el ID de transacción para marcarla aprobada manualmente.');
                     if (!transactionId) throw new Error(payload.error || 'No se pudo consultar Wompi');
-                    response = await fetch('/api/portal/donations/sync-wompi', {
+                    ({ response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
                         method: 'POST',
                         headers: {
                             ...currentAuthHeaders,
@@ -190,8 +238,7 @@ function bindSyncButtons() {
                         },
                         credentials: 'include',
                         body: JSON.stringify({ reference, transactionId, manualApprove: true }),
-                    });
-                    payload = await response.json();
+                    }, REQUEST_TIMEOUT_MS, 'La sincronización con Wompi'));
                 }
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.error || 'No se pudo sincronizar');

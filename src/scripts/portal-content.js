@@ -2,6 +2,8 @@ import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
 
 const SECTION_KINDS = ['hero', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'];
 const SECTION_STATUSES = ['draft', 'published', 'archived'];
+const REQUEST_TIMEOUT_MS = 15000;
+const UPLOAD_TIMEOUT_MS = 45000;
 
 const state = {
   headers: {},
@@ -85,6 +87,12 @@ function parseError(error, fallback) {
   if (typeof error === 'string') return error;
   if (error instanceof Error && error.message) return error.message;
   return fallback;
+}
+
+function makeTimeoutError(label) {
+  const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+  error.name = 'TimeoutError';
+  return error;
 }
 
 function safeFolder(input) {
@@ -172,6 +180,9 @@ function closeModal(node) {
 
 async function fetchJson(url, options = {}) {
   const isForm = options.body instanceof FormData;
+  const timeoutMs = Number(options.timeoutMs || (isForm ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS));
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   const headers = {
     ...state.headers,
     ...(options.headers || {}),
@@ -180,16 +191,25 @@ async function fetchJson(url, options = {}) {
     headers['content-type'] = 'application/json';
   }
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    const { timeoutMs: _timeoutMs, ...fetchOptions } = options;
+    const res = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || data?.ok === false) {
-    throw new Error(data?.error || `Error ${res.status}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.ok === false) {
+      throw new Error(data?.error || `Error ${res.status}`);
+    }
+    return data;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw makeTimeoutError(isForm ? 'La subida del archivo' : 'La solicitud');
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
-  return data;
 }
 
 function applyPageToForm(page) {

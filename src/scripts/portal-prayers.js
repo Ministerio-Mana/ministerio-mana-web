@@ -15,6 +15,8 @@ let authHeaders = {};
 let canReview = false;
 let currentRows = [];
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -26,6 +28,32 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function makeTimeoutError(label) {
+  const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+  error.name = 'TimeoutError';
+  return error;
+}
+
+function showLoadError(error) {
+  if (!loadingEl) return;
+  const message = error?.name === 'TimeoutError'
+    ? 'La carga tardó demasiado. Revisa la señal y vuelve a intentar.'
+    : error?.message || 'No se pudieron cargar peticiones.';
+  loadingEl.className = 'py-12 text-center';
+  loadingEl.innerHTML = `
+    <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+      <p class="font-bold mb-2">Error al cargar peticiones</p>
+      <p class="text-sm">${escapeHtml(message)}</p>
+      <button type="button" id="btn-retry-prayers" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+        Reintentar
+      </button>
+    </div>
+  `;
+  document.getElementById('btn-retry-prayers')?.addEventListener('click', () => {
+    void loadPrayers();
+  });
 }
 
 function formatDate(value) {
@@ -67,19 +95,30 @@ function statusClass(status, visibility) {
 }
 
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: 'include',
-    ...options,
-    headers: {
-      ...authHeaders,
-      ...(options.headers || {}),
-    },
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload.ok === false) {
-    throw new Error(payload.error || 'No se pudo completar la operación');
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      ...options,
+      signal: controller.signal,
+      headers: {
+        ...authHeaders,
+        ...(options.headers || {}),
+      },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.error || 'No se pudo completar la operación');
+    }
+    return payload;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw makeTimeoutError('La solicitud');
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
-  return payload;
 }
 
 function updateStats(rows) {
@@ -161,23 +200,29 @@ function renderRows(rows) {
 async function loadPrayers() {
   if (loadingEl) {
     loadingEl.classList.remove('hidden');
+    loadingEl.className = 'py-12 text-center text-slate-400';
     loadingEl.textContent = 'Cargando peticiones...';
   }
   if (emptyEl) emptyEl.classList.add('hidden');
   if (listEl) listEl.classList.add('hidden');
 
-  const params = new URLSearchParams();
-  params.set('status', statusEl?.value || 'all');
-  params.set('visibility', visibilityEl?.value || 'all');
+  try {
+    const params = new URLSearchParams();
+    params.set('status', statusEl?.value || 'all');
+    params.set('visibility', visibilityEl?.value || 'all');
 
-  const payload = await fetchJson(`/api/prayer/admin/list?${params.toString()}`);
-  canReview = Boolean(payload.permissions?.canReview);
-  if (roleNoteEl) {
-    roleNoteEl.textContent = canReview
-      ? 'Puedes revisar peticiones públicas. Las privadas quedan solo para oración.'
-      : 'Puedes leer las peticiones recibidas para interceder.';
+    const payload = await fetchJson(`/api/prayer/admin/list?${params.toString()}`);
+    canReview = Boolean(payload.permissions?.canReview);
+    if (roleNoteEl) {
+      roleNoteEl.textContent = canReview
+        ? 'Puedes revisar peticiones públicas. Las privadas quedan solo para oración.'
+        : 'Puedes leer las peticiones recibidas para interceder.';
+    }
+    renderRows(Array.isArray(payload.rows) ? payload.rows : []);
+  } catch (error) {
+    console.error('[portal-prayers] load error', error);
+    showLoadError(error);
   }
-  renderRows(Array.isArray(payload.rows) ? payload.rows : []);
 }
 
 async function reviewPrayer(id, decision) {
@@ -214,7 +259,8 @@ async function init() {
 
     await loadPrayers();
   } catch (error) {
-    if (loadingEl) loadingEl.textContent = error?.message || 'No se pudieron cargar peticiones.';
+    console.error('[portal-prayers] init error', error);
+    showLoadError(error);
   }
 }
 

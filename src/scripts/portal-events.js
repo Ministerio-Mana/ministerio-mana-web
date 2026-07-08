@@ -18,6 +18,8 @@ const eventRegionSelect = document.getElementById('event-region-select');
 const eventChurchWrapper = document.getElementById('event-scope-church-wrapper');
 const eventChurchSelect = document.getElementById('event-church-select');
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 let authHeaders = {};
 let eventsCache = [];
 let churchesCatalog = [];
@@ -48,6 +50,54 @@ function escapeHtml(value) {
 
 function escapeAttr(value) {
     return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function makeTimeoutError(label) {
+    const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
+    error.name = 'TimeoutError';
+    return error;
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const res = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+        const data = await res.json().catch(() => ({
+            ok: false,
+            error: 'El servidor respondió sin datos válidos.',
+        }));
+        return { res, data };
+    } catch (error) {
+        if (error?.name === 'AbortError') throw makeTimeoutError(label);
+        throw error;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+}
+
+function showEventsError(error) {
+    if (!eventsLoading) return;
+    const message = error?.name === 'TimeoutError'
+        ? 'La carga tardó demasiado. Revisa la señal y vuelve a intentar.'
+        : error?.message || 'No se pudieron cargar eventos.';
+    eventsLoading.className = 'py-12 text-center';
+    eventsLoading.innerHTML = `
+        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+            <p class="font-bold mb-2">Error al cargar eventos</p>
+            <p class="text-sm">${escapeHtml(message)}</p>
+            <button type="button" id="btn-retry-events" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+                Reintentar
+            </button>
+        </div>
+    `;
+    document.getElementById('btn-retry-events')?.addEventListener('click', () => {
+        void loadEvents();
+    });
 }
 
 function sanitizeUrl(value) {
@@ -352,13 +402,12 @@ function canEditEvent(event) {
 
 async function loadProfile() {
     try {
-        const res = await fetch('/api/portal/session', {
+        const { res, data } = await fetchJsonWithTimeout('/api/portal/session', {
             headers: authHeaders,
             credentials: 'include',
-        });
+        }, REQUEST_TIMEOUT_MS, 'La sesión del portal');
         if (!res.ok) return;
 
-        const data = await res.json();
         if (!data?.ok) return;
 
         const profile = data.profile || {};
@@ -384,15 +433,14 @@ async function loadProfile() {
 
 async function loadChurchesCatalog() {
     try {
-        const res = await fetch('/api/portal/churches', {
+        const { res, data: payload } = await fetchJsonWithTimeout('/api/portal/churches', {
             credentials: 'include',
-        });
+        }, REQUEST_TIMEOUT_MS, 'La carga de iglesias');
         if (!res.ok) {
             churchesCatalog = [];
             churchesById.clear();
             return;
         }
-        const payload = await res.json();
         churchesCatalog = Array.isArray(payload) ? payload : [];
         churchesById.clear();
         churchesCatalog.forEach((church) => {
@@ -408,16 +456,15 @@ async function loadChurchesCatalog() {
 
 async function loadRegionsCatalog() {
     try {
-        const res = await fetch('/api/portal/regions', {
+        const { res, data: payload } = await fetchJsonWithTimeout('/api/portal/regions', {
             headers: authHeaders,
             credentials: 'include',
-        });
+        }, REQUEST_TIMEOUT_MS, 'La carga de regiones');
         if (!res.ok) {
             regionsCatalog = [];
             regionsById.clear();
             return;
         }
-        const payload = await res.json();
         regionsCatalog = Array.isArray(payload?.regions) ? payload.regions : [];
         regionsById.clear();
         regionsCatalog.forEach((region) => {
@@ -433,19 +480,24 @@ async function loadRegionsCatalog() {
 
 // Auth & Init
 async function init() {
-    const auth = await ensureAuthenticated();
-    if (!auth.isAuthenticated) {
-        redirectToLogin();
-        return;
+    try {
+        const auth = await ensureAuthenticated();
+        if (!auth.isAuthenticated) {
+            redirectToLogin();
+            return;
+        }
+
+        authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+
+        await loadProfile();
+        await Promise.all([loadChurchesCatalog(), loadRegionsCatalog()]);
+
+        syncScopeOptions();
+        await loadEvents();
+    } catch (error) {
+        console.error('[portal-events] init error', error);
+        showEventsError(error);
     }
-
-    authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
-
-    await loadProfile();
-    await Promise.all([loadChurchesCatalog(), loadRegionsCatalog()]);
-
-    syncScopeOptions();
-    await loadEvents();
 }
 
 function toInputDateTime(value) {
@@ -516,25 +568,29 @@ async function loadEvents() {
     if (!eventsLoading || !eventsList || !eventsEmpty) return;
 
     eventsLoading.classList.remove('hidden');
+    eventsLoading.className = 'py-12 text-center text-slate-400 animate-pulse';
+    eventsLoading.textContent = 'Cargando eventos...';
     eventsList.classList.add('hidden');
     eventsEmpty.classList.add('hidden');
 
     try {
-        const res = await fetch('/api/portal/events', {
+        const { res, data } = await fetchJsonWithTimeout('/api/portal/events', {
             headers: authHeaders,
             credentials: 'include',
-        });
-        const data = await res.json();
+        }, REQUEST_TIMEOUT_MS, 'La carga de eventos');
 
-        if (!data.ok) throw new Error(data.error);
+        if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudieron cargar eventos');
 
         eventsCache = data.events || [];
         renderEvents(eventsCache);
     } catch (err) {
         console.error(err);
-        eventsEmpty.classList.remove('hidden');
+        showEventsError(err);
+        return;
     } finally {
-        eventsLoading.classList.add('hidden');
+        if (!eventsLoading.querySelector('#btn-retry-events')) {
+            eventsLoading.classList.add('hidden');
+        }
     }
 }
 
@@ -656,14 +712,13 @@ eventForm?.addEventListener('submit', async (e) => {
             if (payload[key] === '') delete payload[key];
         });
 
-        const res = await fetch('/api/portal/events', {
+        const { res, data } = await fetchJsonWithTimeout('/api/portal/events', {
             method: eventId ? 'PATCH' : 'POST',
             headers: { 'Content-Type': 'application/json', ...authHeaders },
             credentials: 'include',
             body: JSON.stringify(eventId ? { id: eventId, ...payload } : payload),
-        });
+        }, REQUEST_TIMEOUT_MS, 'El guardado del evento');
 
-        const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || 'Error al guardar');
 
         eventForm.reset();
