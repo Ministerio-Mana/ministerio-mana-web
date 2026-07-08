@@ -1507,7 +1507,6 @@ async function loadDashboardData(authResult) {
       // but Sidebar is now the primary navigation.
       // adminUsersCard?.classList.remove('hidden'); // Legacy logic?
       syncWrapper?.classList.remove('hidden');
-      loadAdminUsers(portalAuthHeaders);
     }
 
     runSafe('renderHeaderStats', () => {
@@ -1624,11 +1623,23 @@ async function loadDashboardData(authResult) {
       backgroundTasks.push(loadChurchInstallments(headers));
       backgroundTasks.push(loadChurchMembers(headers));
     }
-    backgroundTasks.push(loadAdminUsers(headers));
-    backgroundTasks.push(loadAdminFollowups(headers));
-    backgroundTasks.push(loadChurchDraft());
+    if (portalIsSuperadmin) {
+      backgroundTasks.push(loadAdminUsers(headers));
+    }
+    if (portalIsAdmin) {
+      backgroundTasks.push(loadAdminFollowups(headers));
+    }
+    if (churchForm) {
+      backgroundTasks.push(loadChurchDraft());
+    }
 
-    await Promise.all(backgroundTasks);
+    void Promise.allSettled(backgroundTasks).then((results) => {
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error('[portal.dashboard] background task failed', { index, reason: result.reason });
+        }
+      });
+    });
 
     syncDeleteAccountAccess();
 
