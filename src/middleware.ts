@@ -132,6 +132,36 @@ function isLocalhost(request: Request): boolean {
   return host.startsWith('localhost') || host.startsWith('127.') || host.endsWith('.local');
 }
 
+function isPrivateApiPath(pathname: string): boolean {
+  if (pathname.startsWith('/api/cuenta')) return true;
+  if (pathname.startsWith('/api/portal/admin')) return true;
+  if (pathname.startsWith('/api/portal/campus')) return true;
+  if (pathname.startsWith('/api/portal/content')) return true;
+  if (pathname.startsWith('/api/portal/donations')) return true;
+  if (pathname.startsWith('/api/portal/finances')) return true;
+  if (pathname.startsWith('/api/portal/iglesia')) return true;
+  if (pathname.startsWith('/api/portal/password-')) return true;
+  if (pathname.startsWith('/api/portal/profile')) return true;
+  if (pathname.startsWith('/api/portal/regions')) return true;
+  if (pathname.startsWith('/api/portal/session')) return true;
+  if (pathname.startsWith('/api/portal/client-error')) return true;
+  return false;
+}
+
+function appendVary(response: Response, values: string[]) {
+  const current = response.headers.get('Vary');
+  const existing = new Set(
+    (current || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  for (const value of values) {
+    existing.add(value);
+  }
+  response.headers.set('Vary', Array.from(existing).join(', '));
+}
+
 const appMiddleware: MiddlewareHandler = async (context, next) => {
   const { cookies, locals, request } = context;
   const url = new URL(request.url);
@@ -183,6 +213,13 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
   }
 
   const response = await next();
+
+  if (isPrivateApiPath(url.pathname)) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    appendVary(response, ['Authorization', 'Cookie']);
+  }
 
   if (isSecure) {
     response.headers.set('Strict-Transport-Security', HSTS_HEADER);
