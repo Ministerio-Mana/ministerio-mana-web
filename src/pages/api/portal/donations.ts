@@ -114,8 +114,12 @@ export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const status = String(url.searchParams.get('status') || 'all').toUpperCase();
   const domain = String(url.searchParams.get('domain') || '').toUpperCase();
-  const limitRaw = Number(url.searchParams.get('limit') || 250);
-  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 250;
+  const pageRaw = Number(url.searchParams.get('page') || 1);
+  const pageSizeRaw = Number(url.searchParams.get('pageSize') || url.searchParams.get('limit') || 50);
+  const page = Number.isFinite(pageRaw) ? Math.max(Math.floor(pageRaw), 1) : 1;
+  const pageSize = Number.isFinite(pageSizeRaw) ? Math.min(Math.max(Math.floor(pageSizeRaw), 1), 100) : 50;
+  const rangeFrom = (page - 1) * pageSize;
+  const rangeTo = rangeFrom + pageSize - 1;
 
   const selectFields = [
     'id',
@@ -153,9 +157,9 @@ export const GET: APIRoute = async ({ request }) => {
   const buildQuery = (fields: string) => {
     let query = supabaseAdmin
       .from('donations')
-      .select(fields)
+      .select(fields, { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(rangeFrom, rangeTo);
 
     if (status === 'APPROVED') query = query.in('status', APPROVED_STATUSES);
     if (status === 'ISSUES') query = query.in('status', ISSUE_STATUSES);
@@ -168,9 +172,9 @@ export const GET: APIRoute = async ({ request }) => {
   if (result.error && isMissingColumnError(result.error)) {
     let fallbackQuery = supabaseAdmin
       .from('donations')
-      .select(fallbackFields)
+      .select(fallbackFields, { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(rangeFrom, rangeTo);
 
     if (status === 'APPROVED') fallbackQuery = fallbackQuery.in('status', APPROVED_STATUSES);
     if (status === 'ISSUES') fallbackQuery = fallbackQuery.in('status', ISSUE_STATUSES);
@@ -184,28 +188,45 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   const donations = (result.data || []).map(toClientRow);
-  const totalsByCurrency: Record<string, number> = {};
-  const totalsByConcept: Record<string, { count: number; byCurrency: Record<string, number> }> = {};
+  const pageTotalsByCurrency: Record<string, number> = {};
+  const pageTotalsByConcept: Record<string, { count: number; byCurrency: Record<string, number> }> = {};
 
   donations.forEach((donation) => {
     const currency = String(donation.currency || 'COP').toUpperCase();
     const amount = Number(donation.amount || 0);
     const concept = donation.concept_label || 'Otros';
     if (APPROVED_STATUSES.includes(String(donation.status || '').toUpperCase())) {
-      totalsByCurrency[currency] = (totalsByCurrency[currency] || 0) + amount;
-      if (!totalsByConcept[concept]) totalsByConcept[concept] = { count: 0, byCurrency: {} };
-      totalsByConcept[concept].count += 1;
-      totalsByConcept[concept].byCurrency[currency] = (totalsByConcept[concept].byCurrency[currency] || 0) + amount;
+      pageTotalsByCurrency[currency] = (pageTotalsByCurrency[currency] || 0) + amount;
+      if (!pageTotalsByConcept[concept]) pageTotalsByConcept[concept] = { count: 0, byCurrency: {} };
+      pageTotalsByConcept[concept].count += 1;
+      pageTotalsByConcept[concept].byCurrency[currency] = (pageTotalsByConcept[concept].byCurrency[currency] || 0) + amount;
     }
   });
+
+  const totalRows = Number(result.count ?? donations.length);
+  const totalPages = totalRows > 0 ? Math.ceil(totalRows / pageSize) : 0;
+  const visibleFrom = donations.length ? rangeFrom + 1 : 0;
+  const visibleTo = donations.length ? rangeFrom + donations.length : 0;
 
   return new Response(JSON.stringify({
     ok: true,
     donations,
+    pagination: {
+      page,
+      pageSize,
+      totalRows,
+      totalPages,
+      visibleFrom,
+      visibleTo,
+      hasNextPage: page < totalPages,
+    },
     stats: {
-      totalRows: donations.length,
-      totalsByCurrency,
-      totalsByConcept,
+      totalRows,
+      loadedRows: donations.length,
+      totalsByCurrency: pageTotalsByCurrency,
+      totalsByConcept: pageTotalsByConcept,
+      pageTotalsByCurrency,
+      pageTotalsByConcept,
     },
   }), {
     status: 200,

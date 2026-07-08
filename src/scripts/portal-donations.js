@@ -6,10 +6,23 @@ const tableEl = document.getElementById('donations-table');
 const tbody = tableEl?.querySelector('tbody');
 const statusEl = document.getElementById('donations-status');
 const domainEl = document.getElementById('donations-domain');
+const pageSizeEl = document.getElementById('donations-page-size');
+const pageInfoEl = document.getElementById('donations-page-info');
+const loadMoreBtn = document.getElementById('donations-load-more');
 const statCountEl = document.getElementById('donations-stat-count');
 const statCopEl = document.getElementById('donations-stat-cop');
 const statUsdEl = document.getElementById('donations-stat-usd');
 let currentAuthHeaders = {};
+let paginationState = {
+    page: 1,
+    pageSize: 50,
+    totalRows: 0,
+    totalPages: 0,
+    visibleFrom: 0,
+    visibleTo: 0,
+    hasNextPage: false,
+};
+let loadedPageTotalsByCurrency = {};
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -66,7 +79,7 @@ function showLoadError(error) {
         </div>
     `;
     document.getElementById('btn-retry-donations')?.addEventListener('click', () => {
-        void loadDonations();
+        void loadDonations({ append: false });
     });
 }
 
@@ -104,14 +117,61 @@ function statusBadge(status) {
     return `<span class="px-2 py-1 rounded-full text-[10px] font-bold ${color}">${label}</span>`;
 }
 
-async function loadDonations() {
-    if (loadingEl) {
-        loadingEl.classList.remove('hidden');
-        loadingEl.className = 'py-12 text-center text-slate-400 animate-pulse';
-        loadingEl.textContent = 'Cargando donaciones...';
+function resetLoadedTotals() {
+    loadedPageTotalsByCurrency = {};
+}
+
+function accumulateLoadedTotals(totals = {}) {
+    Object.entries(totals || {}).forEach(([currency, amount]) => {
+        const key = String(currency || 'COP').toUpperCase();
+        loadedPageTotalsByCurrency[key] = (loadedPageTotalsByCurrency[key] || 0) + Number(amount || 0);
+    });
+}
+
+function setLoadMoreState(isLoading = false) {
+    if (!loadMoreBtn) return;
+    loadMoreBtn.classList.toggle('hidden', !paginationState.hasNextPage);
+    loadMoreBtn.disabled = isLoading;
+    loadMoreBtn.textContent = isLoading ? 'Cargando...' : 'Cargar más';
+}
+
+function updatePageInfo() {
+    if (!pageInfoEl) return;
+    if (!paginationState.totalRows) {
+        pageInfoEl.textContent = 'Sin registros para este filtro';
+        return;
     }
-    if (emptyEl) emptyEl.classList.add('hidden');
-    if (tableEl) tableEl.classList.add('hidden');
+    pageInfoEl.textContent = `Mostrando ${paginationState.visibleFrom}-${paginationState.visibleTo} de ${paginationState.totalRows}`;
+}
+
+async function loadDonations({ append = false } = {}) {
+    const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 50);
+    const page = append ? paginationState.page + 1 : 1;
+
+    if (!append) {
+        resetLoadedTotals();
+        paginationState = {
+            page: 1,
+            pageSize,
+            totalRows: 0,
+            totalPages: 0,
+            visibleFrom: 0,
+            visibleTo: 0,
+            hasNextPage: false,
+        };
+        if (loadingEl) {
+            loadingEl.classList.remove('hidden');
+            loadingEl.className = 'py-12 text-center text-slate-400 animate-pulse';
+            loadingEl.textContent = 'Cargando donaciones...';
+        }
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (tableEl) tableEl.classList.add('hidden');
+        if (tbody) tbody.innerHTML = '';
+        setLoadMoreState(false);
+        updatePageInfo();
+    } else {
+        setLoadMoreState(true);
+    }
 
     try {
         const auth = await ensureAuthenticated();
@@ -122,6 +182,8 @@ async function loadDonations() {
 
         const params = new URLSearchParams();
         params.set('status', statusEl?.value || 'all');
+        params.set('page', String(page));
+        params.set('pageSize', String(pageSize));
         if (domainEl?.value) params.set('domain', domainEl.value);
 
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
@@ -140,56 +202,85 @@ async function loadDonations() {
             throw new Error(data.error || 'No se pudieron cargar las donaciones');
         }
 
-        renderDonations(data.donations || [], data.stats || {});
+        renderDonations(data.donations || [], data.stats || {}, data.pagination || {}, { append });
     } catch (error) {
         console.error('[portal-donations] error', error);
-        showLoadError(error);
+        if (append) {
+            setLoadMoreState(false);
+            if (loadMoreBtn) loadMoreBtn.textContent = 'Reintentar carga';
+        } else {
+            showLoadError(error);
+        }
     }
 }
 
-function renderDonations(donations, stats) {
-    if (loadingEl) loadingEl.classList.add('hidden');
-    if (statCountEl) statCountEl.textContent = stats.totalRows || donations.length || 0;
-    if (statCopEl) statCopEl.textContent = formatCurrency(stats.totalsByCurrency?.COP || 0, 'COP');
-    if (statUsdEl) statUsdEl.textContent = formatCurrency(stats.totalsByCurrency?.USD || 0, 'USD');
+function donationRowsHtml(donations) {
+    return donations.map((donation) => {
+        const contact = [donation.donor_email, donation.donor_phone].filter(Boolean).join(' · ');
+        const recurring = donation.is_recurring ? '<span class="ml-2 text-[10px] font-bold text-brand-teal">RECURRENTE</span>' : '';
+        const reference = donation.reference
+            ? `<p class="text-[11px] text-slate-400 mt-1">Ref: ${escapeHtml(donation.reference)}</p>`
+            : '';
+        const canSyncWompi = String(donation.provider || '').toLowerCase() === 'wompi'
+            && String(donation.status || '').toUpperCase() === 'PENDING'
+            && donation.reference;
+        const syncAction = canSyncWompi
+            ? `<button class="mt-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
+            : '';
 
-    if (!donations.length) {
+        return `
+            <tr>
+                <td class="py-3 pl-2 align-top">${formatDate(donation.created_at)}</td>
+                <td class="py-3 align-top">
+                    <p class="font-semibold text-[#293C74]">${escapeHtml(donation.concept_label || 'Otros')}${recurring}</p>
+                    <p class="text-[11px] text-slate-400 uppercase">${escapeHtml(donation.provider || '')}</p>
+                </td>
+                <td class="py-3 align-top">
+                    <p class="font-medium text-slate-700">${escapeHtml(donation.destination || '-')}</p>
+                    ${reference}
+                </td>
+                <td class="py-3 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
+                <td class="py-3 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
+                <td class="py-3 align-top">${statusBadge(donation.status)}${syncAction}</td>
+                <td class="py-3 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderDonations(donations, stats, pagination, { append = false } = {}) {
+    if (loadingEl) loadingEl.classList.add('hidden');
+    paginationState = {
+        page: Number(pagination.page || (append ? paginationState.page + 1 : 1)),
+        pageSize: Number(pagination.pageSize || pageSizeEl?.value || 50),
+        totalRows: Number(pagination.totalRows || stats.totalRows || donations.length || 0),
+        totalPages: Number(pagination.totalPages || 0),
+        visibleFrom: append
+            ? Number(paginationState.visibleFrom || pagination.visibleFrom || 0)
+            : Number(pagination.visibleFrom || 0),
+        visibleTo: Number(pagination.visibleTo || 0),
+        hasNextPage: Boolean(pagination.hasNextPage),
+    };
+    accumulateLoadedTotals(stats.pageTotalsByCurrency || stats.totalsByCurrency || {});
+
+    if (statCountEl) statCountEl.textContent = paginationState.totalRows;
+    if (statCopEl) statCopEl.textContent = formatCurrency(loadedPageTotalsByCurrency.COP || 0, 'COP');
+    if (statUsdEl) statUsdEl.textContent = formatCurrency(loadedPageTotalsByCurrency.USD || 0, 'USD');
+    updatePageInfo();
+    setLoadMoreState(false);
+
+    if (!append && !donations.length) {
         if (emptyEl) emptyEl.classList.remove('hidden');
         return;
     }
 
     if (tbody) {
-        tbody.innerHTML = donations.map((donation) => {
-            const contact = [donation.donor_email, donation.donor_phone].filter(Boolean).join(' · ');
-            const recurring = donation.is_recurring ? '<span class="ml-2 text-[10px] font-bold text-brand-teal">RECURRENTE</span>' : '';
-            const reference = donation.reference
-                ? `<p class="text-[11px] text-slate-400 mt-1">Ref: ${escapeHtml(donation.reference)}</p>`
-                : '';
-            const canSyncWompi = String(donation.provider || '').toLowerCase() === 'wompi'
-                && String(donation.status || '').toUpperCase() === 'PENDING'
-                && donation.reference;
-            const syncAction = canSyncWompi
-                ? `<button class="mt-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
-                : '';
-
-            return `
-                <tr>
-                    <td class="py-3 pl-2 align-top">${formatDate(donation.created_at)}</td>
-                    <td class="py-3 align-top">
-                        <p class="font-semibold text-[#293C74]">${escapeHtml(donation.concept_label || 'Otros')}${recurring}</p>
-                        <p class="text-[11px] text-slate-400 uppercase">${escapeHtml(donation.provider || '')}</p>
-                    </td>
-                    <td class="py-3 align-top">
-                        <p class="font-medium text-slate-700">${escapeHtml(donation.destination || '-')}</p>
-                        ${reference}
-                    </td>
-                    <td class="py-3 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
-                    <td class="py-3 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
-                    <td class="py-3 align-top">${statusBadge(donation.status)}${syncAction}</td>
-                    <td class="py-3 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
-                </tr>
-            `;
-        }).join('');
+        const rows = donationRowsHtml(donations);
+        if (append) {
+            tbody.insertAdjacentHTML('beforeend', rows);
+        } else {
+            tbody.innerHTML = rows;
+        }
         bindSyncButtons();
     }
 
@@ -198,6 +289,8 @@ function renderDonations(donations, stats) {
 
 function bindSyncButtons() {
     document.querySelectorAll('[data-sync-wompi]').forEach((button) => {
+        if (button.dataset.syncBound === '1') return;
+        button.dataset.syncBound = '1';
         button.addEventListener('click', async () => {
             const reference = button.getAttribute('data-sync-wompi');
             if (!reference) return;
@@ -243,7 +336,7 @@ function bindSyncButtons() {
                 if (!response.ok || !payload.ok) {
                     throw new Error(payload.error || 'No se pudo sincronizar');
                 }
-                await loadDonations();
+                await loadDonations({ append: false });
             } catch (error) {
                 console.error('[portal-donations] sync error', error);
                 button.textContent = 'Error al sincronizar';
@@ -256,7 +349,9 @@ function bindSyncButtons() {
     });
 }
 
-statusEl?.addEventListener('change', loadDonations);
-domainEl?.addEventListener('change', loadDonations);
+statusEl?.addEventListener('change', () => loadDonations({ append: false }));
+domainEl?.addEventListener('change', () => loadDonations({ append: false }));
+pageSizeEl?.addEventListener('change', () => loadDonations({ append: false }));
+loadMoreBtn?.addEventListener('click', () => loadDonations({ append: true }));
 
-document.addEventListener('DOMContentLoaded', loadDonations);
+document.addEventListener('DOMContentLoaded', () => loadDonations({ append: false }));

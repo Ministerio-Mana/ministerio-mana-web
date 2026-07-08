@@ -30,25 +30,34 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <option value="PRIMICIAS">Primicias</option>
                 <option value="OTHER">Otros</option>
               </select>
+              <select id="donations-page-size" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+                <option value="50">50 por carga</option>
+                <option value="100">100 por carga</option>
+              </select>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Registros</p>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Registros filtrados</p>
               <p class="text-3xl font-bold text-[#293C74]" id="donations-stat-count">0</p>
             </div>
             <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total COP</p>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">COP en esta carga</p>
               <p class="text-3xl font-bold text-brand-teal" id="donations-stat-cop">$ 0</p>
             </div>
             <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Total USD</p>
+              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">USD en esta carga</p>
               <p class="text-3xl font-bold text-[#293C74]" id="donations-stat-usd">$ 0</p>
             </div>
           </div>
 
           <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6 md:p-8">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p id="donations-page-info" class="text-xs font-bold uppercase tracking-widest text-slate-400">
+                Preparando donaciones...
+              </p>
+            </div>
             <div id="donations-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando donaciones...</div>
 
             <div class="overflow-x-auto">
@@ -70,6 +79,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <div id="donations-empty" class="hidden text-center py-10 text-slate-400 text-sm">
               No hay donaciones para este filtro.
+            </div>
+
+            <div class="mt-6 flex justify-center">
+              <button id="donations-load-more" type="button" class="hidden rounded-full border border-[#293C74]/20 px-5 py-2 text-xs font-bold uppercase tracking-widest text-[#293C74] hover:bg-[#293C74]/5 disabled:cursor-wait disabled:opacity-60">
+                Cargar más
+              </button>
             </div>
           </div>
         </div>

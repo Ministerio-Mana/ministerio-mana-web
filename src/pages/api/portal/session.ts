@@ -49,16 +49,6 @@ export const GET: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({
         ok: false,
         error: 'No autorizado',
-        debug: {
-          hasAuthHeader: !!request.headers.get('authorization'),
-          hasToken: !!request.headers.get('authorization')?.startsWith('Bearer '),
-          // We can't import supabaseAdmin easily here to check instance without circular deps potentially,
-          // but we can check env vars which is the likely root cause.
-          envCheck: {
-            hasUrl: !!import.meta.env.SUPABASE_URL,
-            hasKey: !!(import.meta.env.SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE)
-          }
-        }
       }), {
         status: 401,
         headers: { 'content-type': 'application/json' },
