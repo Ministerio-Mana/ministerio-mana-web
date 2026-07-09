@@ -3,6 +3,8 @@ import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 const supabase = getSupabaseBrowserClient();
 
 const errorBox = document.getElementById('regions-error');
+const gateEl = document.getElementById('regions-gate');
+const secureContentEl = document.getElementById('regions-secure-content');
 const regionForm = document.getElementById('region-form');
 const cityForm = document.getElementById('city-form');
 const assignmentForm = document.getElementById('assignment-form');
@@ -18,6 +20,20 @@ let token = '';
 let regions = [];
 let cities = [];
 let assignments = [];
+let permissionValidated = false;
+
+function showSecureContent() {
+  gateEl?.classList.add('hidden');
+  secureContentEl?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+  if (gateEl) {
+    gateEl.textContent = message;
+    gateEl.classList.remove('hidden');
+  }
+  secureContentEl?.classList.add('hidden');
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -143,6 +159,7 @@ async function reloadAll() {
 }
 
 async function bootstrap() {
+  showGate();
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
     window.location.href = '/portal/ingresar';
@@ -151,13 +168,27 @@ async function bootstrap() {
   token = session.access_token;
 
   try {
+    const sessionData = await api('/api/portal/session');
+    const role = String(sessionData?.profile?.effective_role || sessionData?.profile?.role || 'user');
+    if (!['admin', 'superadmin'].includes(role)) {
+      window.location.replace('/portal');
+      return;
+    }
+
+    permissionValidated = true;
+    showSecureContent();
     await reloadAll();
   } catch (err) {
     if (err?.status === 401 || err?.status === 403) {
       window.location.replace('/portal');
       return;
     }
-    showError(err.message || 'No se pudo cargar el módulo.');
+    if (permissionValidated) {
+      showSecureContent();
+      showError(err.message || 'No se pudo cargar el módulo.');
+    } else {
+      showGate(err.message || 'No se pudieron validar permisos.');
+    }
   }
 }
 

@@ -1,5 +1,7 @@
-import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
+const gateEl = document.getElementById('donations-gate');
+const secureContentEl = document.getElementById('donations-secure-content');
 const loadingEl = document.getElementById('donations-loading');
 const emptyEl = document.getElementById('donations-empty');
 const tableEl = document.getElementById('donations-table');
@@ -23,8 +25,22 @@ let paginationState = {
     hasNextPage: false,
 };
 let loadedPageTotalsByCurrency = {};
+let financeSessionChecked = false;
 
 const REQUEST_TIMEOUT_MS = 15000;
+
+function showSecureContent() {
+    gateEl?.classList.add('hidden');
+    secureContentEl?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+    if (gateEl) {
+        gateEl.textContent = message;
+        gateEl.classList.remove('hidden');
+    }
+    secureContentEl?.classList.add('hidden');
+}
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -144,6 +160,34 @@ function updatePageInfo() {
     pageInfoEl.textContent = `Mostrando ${paginationState.visibleFrom}-${paginationState.visibleTo} de ${paginationState.totalRows}`;
 }
 
+async function ensureFinanceAccess() {
+    const auth = await ensureAuthenticated();
+    if (!auth.isAuthenticated) {
+        redirectToLogin();
+        return false;
+    }
+
+    currentAuthHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+
+    if (financeSessionChecked) {
+        return true;
+    }
+
+    const { ok, data } = await getPortalSession({ auth });
+    if (!ok || !data?.ok) {
+        throw new Error(data?.error || 'No se pudo validar la sesión.');
+    }
+
+    if (!data.permissions?.can_access_finances) {
+        window.location.replace('/portal');
+        return false;
+    }
+
+    financeSessionChecked = true;
+    showSecureContent();
+    return true;
+}
+
 async function loadDonations({ append = false } = {}) {
     const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 50);
     const page = append ? paginationState.page + 1 : 1;
@@ -174,11 +218,7 @@ async function loadDonations({ append = false } = {}) {
     }
 
     try {
-        const auth = await ensureAuthenticated();
-        if (!auth.isAuthenticated) {
-            redirectToLogin();
-            return;
-        }
+        if (!await ensureFinanceAccess()) return;
 
         const params = new URLSearchParams();
         params.set('status', statusEl?.value || 'all');
@@ -186,10 +226,8 @@ async function loadDonations({ append = false } = {}) {
         params.set('pageSize', String(pageSize));
         if (domainEl?.value) params.set('domain', domainEl.value);
 
-        const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
-        currentAuthHeaders = headers;
         const { response, data } = await fetchJsonWithTimeout(`/api/portal/donations?${params.toString()}`, {
-            headers,
+            headers: currentAuthHeaders,
             credentials: 'include',
         }, REQUEST_TIMEOUT_MS, 'La carga de donaciones');
 
@@ -209,7 +247,12 @@ async function loadDonations({ append = false } = {}) {
             setLoadMoreState(false);
             if (loadMoreBtn) loadMoreBtn.textContent = 'Reintentar carga';
         } else {
-            showLoadError(error);
+            if (financeSessionChecked) {
+                showSecureContent();
+                showLoadError(error);
+            } else {
+                showGate(error?.message || 'No se pudieron validar permisos.');
+            }
         }
     }
 }
@@ -354,4 +397,7 @@ domainEl?.addEventListener('change', () => loadDonations({ append: false }));
 pageSizeEl?.addEventListener('change', () => loadDonations({ append: false }));
 loadMoreBtn?.addEventListener('click', () => loadDonations({ append: true }));
 
-document.addEventListener('DOMContentLoaded', () => loadDonations({ append: false }));
+document.addEventListener('DOMContentLoaded', () => {
+    showGate();
+    loadDonations({ append: false });
+});

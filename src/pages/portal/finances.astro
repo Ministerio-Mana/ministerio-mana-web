@@ -9,17 +9,16 @@ import Sidebar from '@components/portal/Sidebar.astro';
       <Sidebar />
       
       <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
-         <div class="max-w-6xl mx-auto space-y-8">
+         <div id="finances-gate" class="max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
+            <div id="finances-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando datos...</div>
+         </div>
+
+         <div id="finances-secure-content" class="hidden max-w-6xl mx-auto space-y-8">
             <div>
                <h1 class="text-3xl font-display font-bold text-[#293C74]">Finanzas</h1>
                <p class="text-slate-600">Resumen financiero de tu iglesia/sede.</p>
             </div>
 
-            <div id="finances-gate" class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
-                <div id="finances-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando datos...</div>
-            </div>
-
-            <div id="finances-secure-content" class="hidden space-y-8">
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Total Card -->
@@ -115,7 +114,6 @@ import Sidebar from '@components/portal/Sidebar.astro';
 	                    </button>
 	                </div>
 	            </div>
-            </div>
 
          </div>
       </section>

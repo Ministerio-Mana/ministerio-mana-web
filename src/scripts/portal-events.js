@@ -1,6 +1,8 @@
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 // DOM Elements
+const eventsGate = document.getElementById('events-gate');
+const eventsSecureContent = document.getElementById('events-secure-content');
 const eventsList = document.getElementById('events-list');
 const eventsLoading = document.getElementById('events-loading');
 const eventsEmpty = document.getElementById('events-empty');
@@ -35,9 +37,23 @@ let currentPermissions = {
     can_manage_national_events: false,
     can_manage_global_events: false,
 };
+let eventPermissionValidated = false;
 
 const churchesById = new Map();
 const regionsById = new Map();
+
+function showSecureContent() {
+    eventsGate?.classList.add('hidden');
+    eventsSecureContent?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+    if (eventsGate) {
+        eventsGate.textContent = message;
+        eventsGate.classList.remove('hidden');
+    }
+    eventsSecureContent?.classList.add('hidden');
+}
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -476,6 +492,7 @@ async function loadRegionsCatalog() {
 // Auth & Init
 async function init() {
     try {
+        showGate();
         const auth = await ensureAuthenticated();
         if (!auth.isAuthenticated) {
             redirectToLogin();
@@ -489,13 +506,20 @@ async function init() {
             window.location.replace('/portal');
             return;
         }
+        eventPermissionValidated = true;
+        showSecureContent();
         await Promise.all([loadChurchesCatalog(), loadRegionsCatalog()]);
 
         syncScopeOptions();
         await loadEvents();
     } catch (error) {
         console.error('[portal-events] init error', error);
-        showEventsError(error);
+        if (eventPermissionValidated) {
+            showSecureContent();
+            showEventsError(error);
+        } else {
+            showGate(error?.message || 'No se pudieron validar permisos.');
+        }
     }
 }
 

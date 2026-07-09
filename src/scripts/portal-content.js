@@ -15,11 +15,14 @@ const state = {
   logs: [],
   media: [],
   cmsSchemaReady: true,
+  permissionValidated: false,
   busyCount: 0,
   alertTimeout: null,
 };
 
 const el = {
+  gate: document.getElementById('cms-gate'),
+  secureContent: document.getElementById('cms-secure-content'),
   alert: document.getElementById('cms-alert'),
   busy: document.getElementById('cms-busy'),
   filter: document.getElementById('cms-filter'),
@@ -119,6 +122,19 @@ function setBusy(flag, message = 'Procesando...') {
     btn.classList.toggle('opacity-60', isBusy);
     btn.classList.toggle('cursor-not-allowed', isBusy);
   });
+}
+
+function showSecureContent() {
+  el.gate?.classList.add('hidden');
+  el.secureContent?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+  if (el.gate) {
+    el.gate.textContent = message;
+    el.gate.classList.remove('hidden');
+  }
+  el.secureContent?.classList.add('hidden');
 }
 
 function showAlert(message, tone = 'info', ttlMs = 4500) {
@@ -855,6 +871,7 @@ function bindModalEvents() {
 async function boot() {
   try {
     setBusy(true, 'Validando sesión CMS...');
+    showGate('Validando sesión CMS...');
 
     const auth = await ensureAuthenticated();
     if (!auth.isAuthenticated) {
@@ -876,6 +893,8 @@ async function boot() {
       return;
     }
 
+    state.permissionValidated = true;
+    showSecureContent();
     await loadPages(true);
     if (state.cmsSchemaReady === false) {
       showAlert('CMS pendiente de configurar. Ejecuta docs/sql/cms_schema.sql para activar edición de contenido.', 'error', 0);
@@ -883,7 +902,12 @@ async function boot() {
       clearAlert();
     }
   } catch (error) {
-    showAlert(parseError(error, 'No se pudo inicializar el panel CMS.'), 'error', 0);
+    if (state.permissionValidated) {
+      showSecureContent();
+      showAlert(parseError(error, 'No se pudo inicializar el panel CMS.'), 'error', 0);
+    } else {
+      showGate(parseError(error, 'No se pudieron validar permisos CMS.'));
+    }
   } finally {
     setBusy(false);
   }

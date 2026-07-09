@@ -1,6 +1,8 @@
 import { getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const tableEl = document.getElementById('users-table');
+const gateEl = document.getElementById('users-gate');
+const secureContentEl = document.getElementById('users-secure-content');
 const tbody = tableEl?.querySelector('tbody');
 const loadingEl = document.getElementById('users-loading');
 const emptyEl = document.getElementById('users-empty');
@@ -53,6 +55,19 @@ let regionsCatalog = [];
 let scopeListenerAttached = false;
 let scopeCatalogsPromise = null;
 const pendingRoleChanges = new Map();
+
+function showSecureContent() {
+    gateEl?.classList.add('hidden');
+    secureContentEl?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+    if (gateEl) {
+        gateEl.textContent = message;
+        gateEl.classList.remove('hidden');
+    }
+    secureContentEl?.classList.add('hidden');
+}
 
 const roleTranslations = {
     'superadmin': 'Super Admin',
@@ -253,9 +268,16 @@ function applySidebarPermissions(role, memberships = [], permissions = {}) {
 }
 
 async function init() {
+    showGate();
     const { auth, data: payload } = await getPortalSession();
     if (!auth.isAuthenticated) {
         redirectToLogin();
+        return;
+    }
+
+    if (!payload?.ok) {
+        showSecureContent();
+        if (loadingEl) loadingEl.textContent = payload?.error || 'No se pudo validar la sesión.';
         return;
     }
 
@@ -285,6 +307,11 @@ async function init() {
             currentCreatableRoles = Array.isArray(payload.creatable_roles) ? payload.creatable_roles : [];
 
             currentUserRole = applySidebarPermissions(currentUserRole, memberships, payload.permissions || {});
+            if (!payload.permissions?.can_manage_users) {
+                window.location.replace('/portal');
+                return;
+            }
+            showSecureContent();
 
             // Hide Create Button for Roles that cannot create users
             if (btnOpen) btnOpen.style.display = currentCreatableRoles.length ? '' : 'none';
@@ -1077,4 +1104,7 @@ function setupModal(token) {
     });
 }
 
-init();
+init().catch((error) => {
+    console.error('[portal-users] init error', error);
+    showGate(error?.message || 'No se pudieron validar permisos.');
+});

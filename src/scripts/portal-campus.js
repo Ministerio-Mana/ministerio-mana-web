@@ -1,6 +1,8 @@
 // portal-campus.js - Campus Donor Management
-import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
+const gateEl = document.getElementById('campus-gate');
+const secureContentEl = document.getElementById('campus-secure-content');
 const loadingEl = document.getElementById('donors-loading');
 const contentEl = document.getElementById('donors-content');
 const emptyEl = document.getElementById('donors-empty');
@@ -13,6 +15,20 @@ const statMonthDonations = document.getElementById('stat-month-donations');
 const statActiveMissionaries = document.getElementById('stat-active-missionaries');
 
 const REQUEST_TIMEOUT_MS = 15000;
+let campusSessionChecked = false;
+
+function showSecureContent() {
+    gateEl?.classList.add('hidden');
+    secureContentEl?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+    if (gateEl) {
+        gateEl.textContent = message;
+        gateEl.classList.remove('hidden');
+    }
+    secureContentEl?.classList.add('hidden');
+}
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -104,12 +120,30 @@ async function loadDonors() {
             return;
         }
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+
+        if (!campusSessionChecked) {
+            const { ok, data } = await getPortalSession({ auth });
+            if (!ok || !data?.ok) {
+                throw new Error(data?.error || 'No se pudo validar la sesión.');
+            }
+            if (!data.permissions?.can_access_campus) {
+                window.location.replace('/portal');
+                return;
+            }
+            campusSessionChecked = true;
+            showSecureContent();
+        }
+
         const { response, data } = await fetchJsonWithTimeout('/api/portal/campus/donors', {
             headers,
             credentials: 'include'
         }, REQUEST_TIMEOUT_MS, 'La carga de donantes');
 
         if (!response.ok || !data.ok) {
+            if (response.status === 403) {
+                window.location.replace('/portal');
+                return;
+            }
             throw new Error(data.error || 'Failed to load donors');
         }
 
@@ -235,7 +269,12 @@ async function loadDonors() {
 
     } catch (error) {
         console.error('[campus] Error loading donors:', error);
-        showLoadError(error);
+        if (campusSessionChecked) {
+            showSecureContent();
+            showLoadError(error);
+        } else {
+            showGate(error?.message || 'No se pudieron validar permisos.');
+        }
     }
 }
 
@@ -252,5 +291,6 @@ function formatCurrency(amount, currency) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    showGate();
     loadDonors();
 });

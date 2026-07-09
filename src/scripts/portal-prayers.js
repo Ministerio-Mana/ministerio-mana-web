@@ -1,5 +1,7 @@
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
+const gateEl = document.getElementById('prayers-gate');
+const secureContentEl = document.getElementById('prayers-secure-content');
 const loadingEl = document.getElementById('prayers-loading');
 const emptyEl = document.getElementById('prayers-empty');
 const listEl = document.getElementById('prayers-list');
@@ -14,8 +16,22 @@ const roleNoteEl = document.getElementById('prayers-role-note');
 let authHeaders = {};
 let canReview = false;
 let currentRows = [];
+let prayerPermissionValidated = false;
 
 const REQUEST_TIMEOUT_MS = 15000;
+
+function showSecureContent() {
+  gateEl?.classList.add('hidden');
+  secureContentEl?.classList.remove('hidden');
+}
+
+function showGate(message = 'Validando permisos...') {
+  if (gateEl) {
+    gateEl.textContent = message;
+    gateEl.classList.remove('hidden');
+  }
+  secureContentEl?.classList.add('hidden');
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -243,6 +259,7 @@ async function reviewPrayer(id, decision) {
 
 async function init() {
   try {
+    showGate();
     const auth = await ensureAuthenticated();
     if (!auth.isAuthenticated) {
       redirectToLogin();
@@ -260,10 +277,17 @@ async function init() {
       return;
     }
 
+    prayerPermissionValidated = true;
+    showSecureContent();
     await loadPrayers();
   } catch (error) {
     console.error('[portal-prayers] init error', error);
-    showLoadError(error);
+    if (prayerPermissionValidated) {
+      showSecureContent();
+      showLoadError(error);
+    } else {
+      showGate(error?.message || 'No se pudieron validar permisos.');
+    }
   }
 }
 
