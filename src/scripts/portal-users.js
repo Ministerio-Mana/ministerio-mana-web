@@ -51,6 +51,7 @@ let allUsers = [];
 let churchesCatalog = [];
 let regionsCatalog = [];
 let scopeListenerAttached = false;
+let scopeCatalogsPromise = null;
 const pendingRoleChanges = new Map();
 
 const roleTranslations = {
@@ -273,11 +274,17 @@ async function init() {
         }
     } catch (e) { console.error(e); }
 
-    await loadChurches();
-    await loadRegions(token);
-
-    // 2. Load Users
+    // 2. Load Users before optional create-user catalogs so the table paints faster.
     loadUsers(token);
+
+    const warmScopeCatalogs = () => {
+        void ensureScopeCatalogs(token);
+    };
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(warmScopeCatalogs, { timeout: 2000 });
+    } else {
+        window.setTimeout(warmScopeCatalogs, 1000);
+    }
 
     // 3. Setup Events
     setupModal(token);
@@ -344,6 +351,19 @@ async function loadRegions(token) {
         regionsCatalog = [];
         populateRegionOptions();
     }
+}
+
+function ensureScopeCatalogs(token) {
+    if (!scopeCatalogsPromise) {
+        scopeCatalogsPromise = Promise.all([
+            loadChurches(),
+            loadRegions(token),
+        ]).catch((err) => {
+            scopeCatalogsPromise = null;
+            console.error(err);
+        });
+    }
+    return scopeCatalogsPromise;
 }
 
 function populateScopeOptions() {
@@ -976,6 +996,11 @@ function setupModal(token) {
             populateScopeOptions();
             populateRegionOptions();
             updateScopeFields(roleSelect.value);
+            void ensureScopeCatalogs(token).then(() => {
+                populateScopeOptions();
+                populateRegionOptions();
+                updateScopeFields(roleSelect.value);
+            });
         }
     });
 
