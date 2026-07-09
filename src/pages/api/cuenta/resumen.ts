@@ -56,47 +56,6 @@ export const GET: APIRoute = async ({ request }) => {
     .eq('contact_email', email)
     .order('created_at', { ascending: false });
 
-  const [{ data: profile }, { data: bookings, error: bookingsError }] = await Promise.all([
-    profileQuery,
-    bookingsQuery,
-  ]);
-
-  if (bookingsError) {
-    return new Response(JSON.stringify({ ok: false, error: 'No se pudo cargar la cuenta' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
-
-  const bookingIds = (bookings || []).map((booking) => booking.id);
-
-  let plans: any[] = [];
-  let installments: any[] = [];
-  let payments: any[] = [];
-
-  if (bookingIds.length > 0) {
-    const [plansData, installmentsData, paymentsData] = await Promise.all([
-      runOptionalQuery('payment plans', supabaseAdmin
-        .from('cumbre_payment_plans')
-        .select('*')
-        .in('booking_id', bookingIds)
-        .order('created_at', { ascending: false })),
-      runOptionalQuery('installments', supabaseAdmin
-        .from('cumbre_installments')
-        .select('*')
-        .in('booking_id', bookingIds)
-        .order('due_date', { ascending: true })),
-      runOptionalQuery('payments', supabaseAdmin
-        .from('cumbre_payments')
-        .select('*')
-        .in('booking_id', bookingIds)
-        .order('created_at', { ascending: false })),
-    ]);
-    plans = plansData;
-    installments = installmentsData;
-    payments = paymentsData;
-  }
-
   const donationsPromise = runOptionalQuery('donations', supabaseAdmin
       .from('donations')
       .select('id, amount, currency, status, donation_type, event_name, project_name, campus, created_at, provider, reference, is_recurring')
@@ -138,6 +97,47 @@ export const GET: APIRoute = async ({ request }) => {
     'campus subscriptions',
     campusQuery.order('created_at', { ascending: false }).limit(80),
   );
+
+  const [{ data: profile }, { data: bookings, error: bookingsError }] = await Promise.all([
+    profileQuery,
+    bookingsQuery,
+  ]);
+
+  if (bookingsError) {
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo cargar la cuenta' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const bookingIds = (bookings || []).map((booking) => booking.id);
+
+  let plans: any[] = [];
+  let installments: any[] = [];
+  let payments: any[] = [];
+
+  if (bookingIds.length > 0) {
+    const [plansData, installmentsData, paymentsData] = await Promise.all([
+      runOptionalQuery('payment plans', supabaseAdmin
+        .from('cumbre_payment_plans')
+        .select('*')
+        .in('booking_id', bookingIds)
+        .order('created_at', { ascending: false })),
+      runOptionalQuery('installments', supabaseAdmin
+        .from('cumbre_installments')
+        .select('*')
+        .in('booking_id', bookingIds)
+        .order('due_date', { ascending: true })),
+      runOptionalQuery('payments', supabaseAdmin
+        .from('cumbre_payments')
+        .select('*')
+        .in('booking_id', bookingIds)
+        .order('created_at', { ascending: false })),
+    ]);
+    plans = plansData;
+    installments = installmentsData;
+    payments = paymentsData;
+  }
 
   let orFilter = 'scope.eq.GLOBAL';
   if (profile?.country) {
