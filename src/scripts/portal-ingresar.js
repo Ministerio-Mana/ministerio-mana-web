@@ -1,19 +1,15 @@
-import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
-import { gsap } from 'gsap';
-
 window.addEventListener('DOMContentLoaded', () => {
-  gsap.from('#login-card', { opacity: 0, y: 16, duration: 0.9, ease: 'power4.out', delay: 0.1 });
-
-  const starsContainer = document.getElementById('stars-container');
-  if (starsContainer) {
-    for (let i = 0; i < 30; i += 1) {
-      const star = document.createElement('div');
-      star.className = 'absolute w-[2px] h-[2px] bg-white rounded-full';
-      star.style.left = `${Math.random() * 100}%`;
-      star.style.top = `${Math.random() * 100}%`;
-      starsContainer.appendChild(star);
-      gsap.to(star, { opacity: 0.2, duration: 2 + Math.random() * 3, repeat: -1, yoyo: true, delay: Math.random() * 5 });
-    }
+  const loginCard = document.getElementById('login-card');
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (loginCard?.animate && !reduceMotion) {
+    loginCard.animate([
+      { opacity: 0, transform: 'translateY(16px)' },
+      { opacity: 1, transform: 'translateY(0)' },
+    ], {
+      duration: 520,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'both',
+    });
   }
 });
 
@@ -36,6 +32,7 @@ const statusWrapper = document.getElementById('login-status-wrapper');
 
 const TURNSTILE_RENDER_WAIT_MS = 3000;
 const REQUEST_TIMEOUT_MS = 15000;
+let supabaseClientPromise = null;
 
 function makeTimeoutError(label) {
   const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
@@ -237,7 +234,16 @@ function showStatus(msg, type = 'loading') {
     statusEl.className = 'text-sm font-semibold text-blue-700';
   }
 
-  gsap.from(statusContainer, { scale: 0.9, duration: 0.4, ease: 'back.out' });
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (statusContainer.animate && !reduceMotion) {
+    statusContainer.animate([
+      { opacity: 0, transform: 'scale(0.94)' },
+      { opacity: 1, transform: 'scale(1)' },
+    ], {
+      duration: 260,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    });
+  }
 }
 
 function resolveLoginErrorMessage(err) {
@@ -293,6 +299,32 @@ function reportCaptchaGuardBlock(context, captcha = {}, extraMeta = {}) {
   );
 }
 
+async function loadSupabaseClient() {
+  if (!supabaseClientPromise) {
+    supabaseClientPromise = import('@lib/supabaseBrowser')
+      .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient())
+      .catch((err) => {
+        supabaseClientPromise = null;
+        throw err;
+      });
+  }
+  return supabaseClientPromise;
+}
+
+async function getSupabaseClientOrShowError() {
+  try {
+    return await loadSupabaseClient();
+  } catch (err) {
+    console.error('Supabase client not available:', err);
+    showStatus('El portal no está configurado. Escríbenos por WhatsApp.', 'error');
+    return null;
+  }
+}
+
+function warmSupabaseClient() {
+  void loadSupabaseClient().catch(() => {});
+}
+
 function buildSupabasePasswordPayload(email, password, captcha = {}) {
   const payload = { email, password };
   if (captcha?.token && !captcha?.bypass) {
@@ -302,11 +334,6 @@ function buildSupabasePasswordPayload(email, password, captcha = {}) {
 }
 
 async function startOAuth(provider, label, btn) {
-  if (!supabase) {
-    showStatus('El portal no está configurado. Escríbenos por WhatsApp.', 'error');
-    return;
-  }
-
   const captcha = await getTurnstileTokenIfRequired();
   if (!captcha.ok) {
     reportCaptchaGuardBlock(`oauth:${provider}`, captcha);
@@ -323,6 +350,9 @@ async function startOAuth(provider, label, btn) {
       return;
     }
   }
+
+  const supabase = await getSupabaseClientOrShowError();
+  if (!supabase) return;
 
   if (btn) {
     btn.disabled = true;
@@ -358,21 +388,6 @@ async function startOAuth(provider, label, btn) {
     }
   }
 }
-
-let supabase = null;
-try {
-  supabase = getSupabaseBrowserClient();
-} catch (err) {
-  console.error('Supabase client not available:', err);
-  showStatus('El portal no está configurado. Escríbenos por WhatsApp.', 'error');
-}
-
-supabase?.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session) {
-    showStatus('¡Sesión iniciada! Entrando...', 'success');
-    window.location.href = getSafeNextPath();
-  }
-});
 
 toggleMagicBtn?.addEventListener('click', () => {
   passwordForm?.classList.add('hidden');
@@ -449,6 +464,11 @@ passwordForm?.addEventListener('submit', async (e) => {
   const password = passwordInput?.value?.trim();
   if (!email || !password) return;
 
+  const supabaseLoad = loadSupabaseClient().catch((err) => {
+    console.warn('Supabase client warmup failed, trying API fallback if possible:', err);
+    return null;
+  });
+
   const captcha = await getTurnstileTokenIfRequired();
   if (!captcha.ok) {
     reportCaptchaGuardBlock('password-login', captcha, { emailHint: maskEmailHint(email) });
@@ -465,6 +485,7 @@ passwordForm?.addEventListener('submit', async (e) => {
   }
 
   try {
+    const supabase = await supabaseLoad;
     if (!supabase) {
       // Fallback directly to API if Supabase client is missing
       console.warn('Supabase client missing, trying API login directly.');
@@ -540,9 +561,8 @@ passkeyBtn?.addEventListener('click', async () => {
         return;
       }
     }
-    if (!supabase) {
-      throw new Error('El portal no está configurado.');
-    }
+    const supabase = await getSupabaseClientOrShowError();
+    if (!supabase) return;
     if (typeof supabase.auth.signInWithSSO !== 'function') {
       throw new Error('Passkeys no configurado en esta versión.');
     }
@@ -563,6 +583,11 @@ passkeyBtn?.addEventListener('click', async () => {
       if (statusContainer) statusContainer.classList.add('hidden');
     }, 3000);
   }
+});
+
+[passwordEmailInput, passwordInput, oauthGoogleBtn, oauthFacebookBtn, passkeyBtn].forEach((el) => {
+  el?.addEventListener('focus', warmSupabaseClient, { once: true });
+  el?.addEventListener('pointerdown', warmSupabaseClient, { once: true, passive: true });
 });
 
 syncReturnLinks();
