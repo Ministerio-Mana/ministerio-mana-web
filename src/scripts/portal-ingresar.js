@@ -31,10 +31,14 @@ const statusIcon = document.getElementById('login-status-icon');
 const statusWrapper = document.getElementById('login-status-wrapper');
 
 const TURNSTILE_RENDER_WAIT_MS = 3000;
-const TURNSTILE_SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+const TURNSTILE_SCRIPT_BASE = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+const TURNSTILE_SCRIPT_SRC = `${TURNSTILE_SCRIPT_BASE}?render=explicit`;
 const REQUEST_TIMEOUT_MS = 15000;
 let supabaseClientPromise = null;
 let turnstileScriptPromise = null;
+let turnstileRenderPromise = null;
+let turnstileWidgetId = null;
+let turnstileToken = '';
 
 function makeTimeoutError(label) {
   const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
@@ -126,7 +130,7 @@ function maskEmailHint(value) {
 async function waitForTurnstileReady(widget, timeoutMs = TURNSTILE_RENDER_WAIT_MS) {
   const startedAt = Date.now();
   while (Date.now() - startedAt <= timeoutMs) {
-    if (window.turnstile || readTurnstileTokenField(widget)) return true;
+    if (typeof window.turnstile?.render === 'function' || readTurnstileTokenField(widget)) return true;
     await sleep(120);
   }
   return false;
@@ -149,7 +153,7 @@ function ensureTurnstileScriptLoaded() {
 
   if (turnstileScriptPromise) return turnstileScriptPromise;
 
-  const existingScript = Array.from(document.scripts).find((script) => script.src === TURNSTILE_SCRIPT_SRC);
+  const existingScript = Array.from(document.scripts).find((script) => script.src.startsWith(TURNSTILE_SCRIPT_BASE));
   if (existingScript) {
     turnstileScriptPromise = new Promise((resolve, reject) => {
       if (window.turnstile) {
@@ -176,15 +180,67 @@ function ensureTurnstileScriptLoaded() {
   return turnstileScriptPromise;
 }
 
+async function ensureTurnstileRendered() {
+  const widget = document.querySelector('.cf-turnstile');
+  const siteKey = widget?.getAttribute('data-sitekey') || '';
+  if (!widget || !siteKey) return false;
+  if (turnstileWidgetId !== null || readTurnstileTokenField(widget)) return true;
+  if (turnstileRenderPromise) return turnstileRenderPromise;
+
+  turnstileRenderPromise = (async () => {
+    const scriptLoaded = await ensureTurnstileScriptLoaded();
+    if (!scriptLoaded && !window.turnstile) return false;
+
+    const apiReady = await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
+    if (!apiReady || typeof window.turnstile?.render !== 'function') return false;
+    if (turnstileWidgetId !== null || readTurnstileTokenField(widget)) return true;
+
+    turnstileToken = '';
+    try {
+      turnstileWidgetId = window.turnstile.render(widget, {
+        sitekey: siteKey,
+        appearance: widget.getAttribute('data-appearance') || 'always',
+        theme: widget.getAttribute('data-theme') || 'light',
+        callback: (token) => {
+          turnstileToken = String(token || '').trim();
+        },
+        'expired-callback': () => {
+          turnstileToken = '';
+        },
+        'timeout-callback': () => {
+          turnstileToken = '';
+        },
+        'error-callback': () => {
+          turnstileToken = '';
+        },
+      });
+      widget.setAttribute('data-turnstile-rendered', 'true');
+      return turnstileWidgetId !== null && turnstileWidgetId !== undefined;
+    } catch (error) {
+      turnstileWidgetId = null;
+      console.warn('[Turnstile] Explicit render failed:', error);
+      return Boolean(readTurnstileTokenField(widget));
+    }
+  })().finally(() => {
+    turnstileRenderPromise = null;
+  });
+
+  return turnstileRenderPromise;
+}
+
 function warmTurnstile() {
-  void ensureTurnstileScriptLoaded().catch((error) => {
+  void ensureTurnstileRendered().catch((error) => {
     console.warn('[Turnstile] Warmup failed:', error);
   });
 }
 
 function resetTurnstile() {
-  if (window.turnstile && typeof window.turnstile.reset === 'function') {
-    window.turnstile.reset();
+  turnstileToken = '';
+  if (turnstileWidgetId === null || typeof window.turnstile?.reset !== 'function') return;
+  try {
+    window.turnstile.reset(turnstileWidgetId);
+  } catch (error) {
+    console.warn('[Turnstile] Reset failed:', error);
   }
 }
 
@@ -203,7 +259,14 @@ async function getTurnstileTokenIfRequired() {
   }
 
   try {
-    await ensureTurnstileScriptLoaded();
+    const rendered = await ensureTurnstileRendered();
+    if (!rendered && !readTurnstileTokenField(widget)) {
+      return {
+        ok: false,
+        error: 'No cargó el captcha (Cloudflare). Revisa la conexión, recarga e intenta de nuevo.',
+        reason: 'widget_not_rendered',
+      };
+    }
   } catch (err) {
     console.warn('[Turnstile] Script failed to load.', err);
     return {
@@ -215,11 +278,11 @@ async function getTurnstileTokenIfRequired() {
 
   // If widget has key but did not render, do NOT bypass.
   // Backend requires captcha in production, so sending empty token causes hard failure.
-  if (!window.turnstile && !readTurnstileTokenField(widget)) {
+  if (turnstileWidgetId === null && !readTurnstileTokenField(widget)) {
     await waitForTurnstileReady(widget, TURNSTILE_RENDER_WAIT_MS);
   }
 
-  if (!window.turnstile && !readTurnstileTokenField(widget)) {
+  if (turnstileWidgetId === null && !readTurnstileTokenField(widget)) {
     console.warn('[Turnstile] Widget has site key but failed to render.');
     return {
       ok: false,
@@ -229,7 +292,14 @@ async function getTurnstileTokenIfRequired() {
   }
 
   // Widget is configured AND rendered, so validation is required
-  const token = (window.turnstile?.getResponse?.() || readTurnstileTokenField(widget) || '').trim();
+  let token = turnstileToken || readTurnstileTokenField(widget);
+  if (!token && turnstileWidgetId !== null && typeof window.turnstile?.getResponse === 'function') {
+    try {
+      token = String(window.turnstile.getResponse(turnstileWidgetId) || '').trim();
+    } catch (error) {
+      console.warn('[Turnstile] Could not read response:', error);
+    }
+  }
   if (!token) {
     return { ok: false, error: 'Completa la verificación antes de continuar.', reason: 'token_missing' };
   }
@@ -645,5 +715,18 @@ passkeyBtn?.addEventListener('click', async () => {
   el?.addEventListener('focus', warmTurnstile, { once: true });
   el?.addEventListener('pointerdown', warmTurnstile, { once: true, passive: true });
 });
+
+const scheduleTurnstileWarmup = () => {
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(warmTurnstile, { timeout: 1200 });
+    return;
+  }
+  window.setTimeout(warmTurnstile, 250);
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', scheduleTurnstileWarmup, { once: true });
+} else {
+  scheduleTurnstileWarmup();
+}
 
 syncReturnLinks();
