@@ -180,29 +180,29 @@ async function loadDonors() {
             // Only show amounts for admins
             const amountDisplay = isAdmin && donor.totalAmount !== null
                 ? `
-                    <div class="text-right">
+                    <div class="w-full rounded-2xl bg-slate-50 p-4 sm:w-auto sm:min-w-[150px] sm:bg-transparent sm:p-0 sm:text-right">
                         <p class="text-xs text-slate-400 uppercase tracking-widest mb-1">Total Donado</p>
-                        <p class="text-xl font-bold text-brand-teal">${formatCurrency(donor.totalAmount, donor.currency)}</p>
+                        <p class="text-xl font-bold text-brand-teal break-words">${formatCurrency(donor.totalAmount, donor.currency)}</p>
                     </div>
                 `
                 : '';
 
             return `
                 <div class="p-6 border border-slate-100 rounded-2xl hover:shadow-md transition-all bg-white">
-                    <div class="flex items-start justify-between gap-6">
-                        <div class="flex items-start gap-4 flex-1">
+                    <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex min-w-0 flex-1 items-start gap-4">
                             <!-- Donor Avatar -->
                             <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-teal to-[#293C74] flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
                                 ${donorName.charAt(0).toUpperCase()}
                             </div>
                             
                             <!-- Donor Info -->
-                            <div class="flex-1">
+                            <div class="min-w-0 flex-1">
                                 <h3 class="text-lg font-bold text-[#293C74] mb-1">${donorName}</h3>
-                                ${donor.email ? `<p class="text-sm text-slate-600 mb-1">${donorEmail}</p>` : ''}
-                                ${donor.phone ? `<p class="text-sm text-slate-500">${donorPhone}</p>` : ''}
+                                ${donor.email ? `<p class="text-sm text-slate-600 mb-1 break-all">${donorEmail}</p>` : ''}
+                                ${donor.phone ? `<p class="text-sm text-slate-500 break-words">${donorPhone}</p>` : ''}
                                 
-                                <div class="flex items-center gap-4 mt-3">
+                                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
                                     <div class="text-xs text-slate-400">
                                         <span class="font-bold">${donor.donationCount}</span> donación${donor.donationCount > 1 ? 'es' : ''}
                                     </div>

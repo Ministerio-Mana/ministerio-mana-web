@@ -3,6 +3,8 @@ import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
 const statTotalCop = document.getElementById('stat-total-cop');
 const statTotalUsd = document.getElementById('stat-total-usd');
 const statTop = document.getElementById('stat-top-concept');
+const gateEl = document.getElementById('finances-gate');
+const secureContentEl = document.getElementById('finances-secure-content');
 const loadingEl = document.getElementById('finances-loading');
 const tableEl = document.getElementById('finances-table');
 const emptyEl = document.getElementById('finances-empty');
@@ -125,6 +127,8 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
 
 function setLoading(message = 'Cargando datos...') {
   if (!loadingEl) return;
+  gateEl?.classList.remove('hidden');
+  secureContentEl?.classList.add('hidden');
   loadingEl.className = 'py-12 text-center text-slate-400 animate-pulse';
   loadingEl.textContent = message;
   loadingEl.classList.remove('hidden');
@@ -141,6 +145,8 @@ function setLoading(message = 'Cargando datos...') {
 
 function showLoadError(error) {
   if (!loadingEl) return;
+  gateEl?.classList.remove('hidden');
+  secureContentEl?.classList.add('hidden');
   const message = error?.name === 'TimeoutError'
     ? 'La carga tardó demasiado. Revisa la señal y vuelve a intentar.'
     : error?.message || 'No se pudieron cargar las finanzas.';
@@ -161,6 +167,8 @@ function showLoadError(error) {
 
 function showForbidden() {
   if (!loadingEl) return;
+  gateEl?.classList.remove('hidden');
+  secureContentEl?.classList.add('hidden');
   loadingEl.className = 'py-12 text-center';
   loadingEl.innerHTML = `
     <div class="mx-auto max-w-md rounded-2xl border border-amber-100 bg-amber-50 px-5 py-4 text-amber-800">
@@ -258,6 +266,8 @@ function renderDashboard(data, options = {}) {
   } = options;
 
   if (loadingEl) loadingEl.classList.add('hidden');
+  gateEl?.classList.add('hidden');
+  secureContentEl?.classList.remove('hidden');
 
   if (includeTransactions) {
     mergeLoadedStats(data.stats || {});
