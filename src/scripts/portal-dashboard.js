@@ -1,7 +1,6 @@
 import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 import { compareSpanishLabels, normalizeChurchContinent, normalizeChurchCountry } from '@lib/churchGeo';
-import { gsap } from 'gsap';
 
 const DEBUG = import.meta.env?.DEV === true;
 const dlog = (...args) => { if (DEBUG) console.log(...args); };
@@ -18,6 +17,17 @@ const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#96;');
 
 const safeText = (value, fallback = '') => escapeHtml(value ?? fallback);
 const safeAttr = (value, fallback = '') => escapeAttr(value ?? fallback);
+
+function animateIn(element, { x = 0, y = 0, duration = 300 } = {}) {
+  if (!element?.animate || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+  element.animate([
+    { opacity: 0, transform: `translate(${x}px, ${y}px)` },
+    { opacity: 1, transform: 'translate(0, 0)' },
+  ], {
+    duration,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  });
+}
 
 function isApprovedChurchMembershipStatus(status) {
   const normalized = String(status || '').trim().toLowerCase();
@@ -1185,7 +1195,7 @@ function switchTab(tabId) {
   tabContents.forEach(content => {
     if (content.id === `tab-${tabId}`) {
       content.classList.remove('hidden');
-      gsap.fromTo(content, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.6, ease: 'power2.out' });
+      animateIn(content, { x: 20, duration: 260 });
     } else {
       content.classList.add('hidden');
     }
@@ -1582,6 +1592,9 @@ async function loadDashboardData(authResult) {
     // 5. Reveal Dashboard (Eager Loading)
     loadingEl.classList.add('hidden');
     contentEl.classList.remove('hidden');
+    if (hasChurchAccess) {
+      scheduleAdvancedComponentsInit();
+    }
     void loadChurchCatalog(headers);
 
     // Inject Admin Filters if applicable
@@ -1603,7 +1616,7 @@ async function loadDashboardData(authResult) {
     // But renderPlans/etc might also need filtering. For now, focus on Bookings list.
     runSafe('renderBookings(filtered)', () => renderBookings(displayedBookings));
 
-    gsap.from(contentEl, { opacity: 0, y: 30, duration: 1, ease: 'expo.out' });
+    animateIn(contentEl, { y: 30, duration: 420 });
 
     // 6. Background Initialization (Parallelized)
     const backgroundTasks = [];
@@ -3062,11 +3075,12 @@ function resolveBookingChurchForEdit(booking) {
 }
 
 async function openEditBookingModal(bookingId) {
-  if (!advancedRegistrationModal) {
-    showPortalAlert('El formulario de edición aún no está listo. Intenta nuevamente.', { title: 'Atención' });
-    return;
-  }
   try {
+    const { registrationModal } = await ensureAdvancedComponents();
+    if (!registrationModal) {
+      showPortalAlert('El formulario de edición aún no está listo. Intenta nuevamente.', { title: 'Atención' });
+      return;
+    }
     const headers = typeof window.getPortalAuthHeaders === 'function'
       ? await window.getPortalAuthHeaders()
       : portalAuthHeaders;
@@ -3079,7 +3093,7 @@ async function openEditBookingModal(bookingId) {
       throw new Error(data?.error || 'No se pudo cargar el registro.');
     }
     const church = resolveBookingChurchForEdit(data.booking);
-    advancedRegistrationModal.loadBookingForEdit({ ...data, church });
+    registrationModal.loadBookingForEdit({ ...data, church });
   } catch (err) {
     console.error(err);
     showPortalAlert(err.message || 'No se pudo abrir la edición.');
@@ -6189,17 +6203,7 @@ const churchFormContainer = document.getElementById('church-manual-form-containe
 const churchFormCloseBtn = document.getElementById('church-form-close');
 const inviteToggleBtn = document.getElementById('btn-toggle-invite');
 
-// Manual Registration Modal Trigger
-// Variable declared at top is 'churchFormToggle'
-churchFormToggle?.addEventListener('click', () => {
-  console.log('[DEBUG] Open manual registration modal clicked');
-
-  // Validation: Check if admin has selected a church
-  if (requiresScopedChurchSelection()) {
-    showPortalAlert('Por favor selecciona una iglesia en el panel superior antes de registrar.');
-    return;
-  }
-
+function openManualRegistrationFallback() {
   const modal = document.getElementById('manual-registration-modal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -6208,6 +6212,33 @@ churchFormToggle?.addEventListener('click', () => {
   } else {
     console.error('[DEBUG] Modal manual-registration-modal not found');
   }
+}
+
+async function openAdvancedRegistrationModal() {
+  try {
+    const { registrationModal } = await ensureAdvancedComponents();
+    if (registrationModal?.open) {
+      registrationModal.open();
+      return;
+    }
+  } catch (err) {
+    console.error('[portal.dashboard] advanced registration modal failed', err);
+  }
+  openManualRegistrationFallback();
+}
+
+// Manual Registration Modal Trigger
+// Variable declared at top is 'churchFormToggle'
+churchFormToggle?.addEventListener('click', async () => {
+  console.log('[DEBUG] Open manual registration modal clicked');
+
+  // Validation: Check if admin has selected a church
+  if (requiresScopedChurchSelection()) {
+    showPortalAlert('Por favor selecciona una iglesia en el panel superior antes de registrar.');
+    return;
+  }
+
+  await openAdvancedRegistrationModal();
 });
 
 // Manual Modal Close Handlers
@@ -6680,75 +6711,117 @@ if (syncBtn) {
 // ======================================
 // Advanced Registration Modal & Church Selector Initialization
 // ======================================
-import { ChurchSelector } from './ChurchSelector.js';
-import { RegistrationModal } from './RegistrationModal.js';
-
 let advancedChurchSelector;
 let advancedRegistrationModal;
+let advancedComponentsLoadPromise = null;
+let advancedComponentsReadyPromise = null;
+let advancedComponentsScheduled = false;
 
-// Initialize components when DOM is ready
-function initAdvancedComponents() {
-  const modalElement = document.getElementById('manual-registration-modal');
-
-  // If modal not found yet, retry in a moment
-  if (!modalElement) {
-    // console.log('Waiting for Registration Modal DOM...');
-    setTimeout(initAdvancedComponents, 200);
-    return;
+function loadAdvancedComponentClasses() {
+  if (!advancedComponentsLoadPromise) {
+    advancedComponentsLoadPromise = Promise.all([
+      import('./ChurchSelector.js'),
+      import('./RegistrationModal.js'),
+    ]).then(([churchModule, registrationModule]) => ({
+      ChurchSelector: churchModule.ChurchSelector,
+      RegistrationModal: registrationModule.RegistrationModal,
+    })).catch((err) => {
+      advancedComponentsLoadPromise = null;
+      throw err;
+    });
   }
+  return advancedComponentsLoadPromise;
+}
 
-  // Initialize Church Selector
-  if (!advancedChurchSelector) {
-    advancedChurchSelector = new ChurchSelector(portalChurchesCatalog || []);
-    // Make it accessible globally for data syncing
-    window.advancedChurchSelector = advancedChurchSelector;
-  }
-
-  // Initialize Registration Modal
-  if (!advancedRegistrationModal) {
-    advancedRegistrationModal = new RegistrationModal();
-  }
-
-  // Connect church selector button
+function bindAdvancedRegistrationButtons() {
   const btnOpenChurchSelector = document.getElementById('btn-open-church-selector');
-  if (btnOpenChurchSelector) {
-    // Clone to remove old listeners
+  if (btnOpenChurchSelector && btnOpenChurchSelector.dataset.advancedBound !== '1') {
     const newBtn = btnOpenChurchSelector.cloneNode(true);
+    newBtn.dataset.advancedBound = '1';
     btnOpenChurchSelector.parentNode.replaceChild(newBtn, btnOpenChurchSelector);
 
-    newBtn.addEventListener('click', () => {
-      advancedChurchSelector.open();
+    newBtn.addEventListener('click', async () => {
+      const { selector } = await ensureAdvancedComponents();
+      selector?.open?.();
     });
   }
 
-  // When a church is selected, pass it to the registration modal
-  advancedChurchSelector.onSelect((church) => {
-    advancedRegistrationModal.setChurch(church);
-  });
-
-  // Update church selector data when catalog is loaded
-  if (portalChurchesCatalog && portalChurchesCatalog.length > 0) {
-    advancedChurchSelector.setChurches(portalChurchesCatalog);
+  if (advancedChurchSelector && advancedRegistrationModal && advancedChurchSelector.__portalOnSelectBound !== true) {
+    advancedChurchSelector.onSelect((church) => {
+      advancedRegistrationModal.setChurch(church);
+    });
+    advancedChurchSelector.__portalOnSelectBound = true;
   }
 
-  // Connect the "Registrar Participante" button to open the new modal
-  const churchFormToggle = document.getElementById('church-form-toggle');
-  if (churchFormToggle) {
-    // Clone to remove old listeners
-    const newToggle = churchFormToggle.cloneNode(true);
-    churchFormToggle.parentNode.replaceChild(newToggle, churchFormToggle);
+  const toggle = document.getElementById('church-form-toggle');
+  if (toggle && toggle.dataset.advancedBound !== '1') {
+    const newToggle = toggle.cloneNode(true);
+    newToggle.dataset.advancedBound = '1';
+    toggle.parentNode.replaceChild(newToggle, toggle);
 
-    newToggle.addEventListener('click', () => {
-      advancedRegistrationModal.open();
+    newToggle.addEventListener('click', async () => {
+      if (requiresScopedChurchSelection()) {
+        showPortalAlert('Por favor selecciona una iglesia en el panel superior antes de registrar.');
+        return;
+      }
+      await openAdvancedRegistrationModal();
     });
   }
 }
 
-// Call after loadDashboardData completes
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initAdvancedComponents, 500); // Give time for data to load
-  });
-} else {
-  setTimeout(initAdvancedComponents, 500);
+async function ensureAdvancedComponents() {
+  if (advancedChurchSelector && advancedRegistrationModal) {
+    if (portalChurchesCatalog?.length) {
+      advancedChurchSelector.setChurches(portalChurchesCatalog);
+    }
+    return { selector: advancedChurchSelector, registrationModal: advancedRegistrationModal };
+  }
+
+  if (!advancedComponentsReadyPromise) {
+    advancedComponentsReadyPromise = (async () => {
+      const modalElement = document.getElementById('manual-registration-modal');
+      if (!modalElement) return;
+
+      const { ChurchSelector, RegistrationModal } = await loadAdvancedComponentClasses();
+
+      if (!advancedChurchSelector) {
+        advancedChurchSelector = new ChurchSelector(portalChurchesCatalog || []);
+        window.advancedChurchSelector = advancedChurchSelector;
+      }
+
+      if (!advancedRegistrationModal) {
+        advancedRegistrationModal = new RegistrationModal();
+      }
+
+      bindAdvancedRegistrationButtons();
+
+      if (portalChurchesCatalog?.length) {
+        advancedChurchSelector.setChurches(portalChurchesCatalog);
+      }
+    })().catch((err) => {
+      advancedComponentsReadyPromise = null;
+      throw err;
+    });
+  }
+
+  await advancedComponentsReadyPromise;
+  return { selector: advancedChurchSelector, registrationModal: advancedRegistrationModal };
+}
+
+function scheduleAdvancedComponentsInit() {
+  if (advancedComponentsScheduled) return;
+  if (!document.getElementById('manual-registration-modal')) return;
+  advancedComponentsScheduled = true;
+
+  const init = () => {
+    void ensureAdvancedComponents().catch((err) => {
+      console.error('[portal.dashboard] advanced components init failed', err);
+    });
+  };
+
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(init, { timeout: 2500 });
+  } else {
+    window.setTimeout(init, 900);
+  }
 }
