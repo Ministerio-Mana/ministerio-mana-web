@@ -138,6 +138,46 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Faltan campos requeridos' }), { status: 400 });
   }
 
+  if (access.email && normalizedEmail === access.email) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'No puedes crear otro usuario con el mismo correo de tu sesión actual.',
+    }), { status: 409 });
+  }
+
+  const { data: existingProfilesByEmail, error: existingProfilesByEmailError } = await supabaseAdmin
+    .from('user_profiles')
+    .select('user_id, email, role')
+    .eq('email', normalizedEmail)
+    .limit(5);
+
+  if (existingProfilesByEmailError) {
+    console.error('[create-user] existing profile lookup failed', existingProfilesByEmailError);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar si el correo ya existe' }), { status: 500 });
+  }
+
+  if ((existingProfilesByEmail || []).length > 0) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Ese correo ya existe en el Portal. Usa la edición de rol o Reenviar acceso; no crees otro usuario con el mismo correo.',
+    }), { status: 409 });
+  }
+
+  let existingUser: Awaited<ReturnType<typeof findAuthUserByEmail>> = null;
+  try {
+    existingUser = await findAuthUserByEmail(normalizedEmail);
+  } catch (error) {
+    console.error('[create-user] user lookup failed', error);
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el usuario destino' }), { status: 500 });
+  }
+
+  if (hasInitialPassword && existingUser?.id) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Ese correo ya existe en autenticación. Deja la contraseña vacía para enviar acceso si no tiene perfil, o usa Reenviar acceso si ya aparece en usuarios.',
+    }), { status: 409 });
+  }
+
   if (hasInitialPassword) {
     const strength = validatePasswordStrength(initialPassword);
     if (!strength.ok) {
@@ -375,14 +415,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
     userId = authData.user.id;
   } else {
-    let existingUser: Awaited<ReturnType<typeof findAuthUserByEmail>> = null;
-    try {
-      existingUser = await findAuthUserByEmail(normalizedEmail);
-    } catch (error) {
-      console.error('[create-user] user lookup failed', error);
-      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el usuario destino' }), { status: 500 });
-    }
-
     if (campusSlugOwnerUserId && campusSlugOwnerUserId !== String(existingUser?.id || '')) {
       return new Response(JSON.stringify({
         ok: false,
