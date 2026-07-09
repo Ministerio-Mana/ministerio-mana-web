@@ -141,5 +141,8 @@ const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.s
     )}
     <script src={devotionalFooterPlayerScript} nonce={cspNonce} defer></script>
     <script type="module" src={appModalScript} nonce={cspNonce}></script>
+    <script>
+      import '@scripts/vercel-speed-insights.js';
+    </script>
   </body>
 </html>
