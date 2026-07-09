@@ -155,7 +155,6 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
     'intercessor',
     'pastor',
     'local_collaborator',
-    'leader',
     'user',
   ],
   admin: [
@@ -167,7 +166,6 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
     'intercessor',
     'pastor',
     'local_collaborator',
-    'leader',
     'user',
   ],
   national_pastor: [
@@ -176,11 +174,10 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
     'regional_collaborator',
     'pastor',
     'local_collaborator',
-    'leader',
     'user',
   ],
-  regional_pastor: ['regional_collaborator', 'pastor', 'local_collaborator', 'leader', 'user'],
-  pastor: ['local_collaborator', 'leader', 'user'],
+  regional_pastor: ['regional_collaborator', 'pastor', 'local_collaborator', 'user'],
+  pastor: ['local_collaborator', 'user'],
 };
 
 export function normalizePortalRole(role?: string | null): string {

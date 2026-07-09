@@ -294,6 +294,17 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: ctx.error }), { status: ctx.status });
   }
 
+  const canAccessEventManagement = Boolean(
+    ctx.capabilities.can_manage_local_events
+    || ctx.capabilities.can_manage_regional_events
+    || ctx.capabilities.can_manage_national_events
+    || ctx.capabilities.can_manage_global_events
+  );
+
+  if (!canAccessEventManagement) {
+    return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
+  }
+
   if (ctx.isPasswordSession) {
     await ensureCumbreEvent(null);
     const { data: events, error } = await supabaseAdmin
@@ -310,14 +321,7 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: true, events }), { status: 200 });
   }
 
-  if (
-    ctx.capabilities.can_manage_local_events
-    || ctx.capabilities.can_manage_regional_events
-    || ctx.capabilities.can_manage_national_events
-    || ctx.capabilities.can_manage_global_events
-  ) {
-    await ensureCumbreEvent(ctx.userId);
-  }
+  await ensureCumbreEvent(ctx.userId);
 
   let eventsQuery = supabaseAdmin
     .from('events')
