@@ -33,7 +33,7 @@ function decodePayload(encoded: string): PortalPasswordSession | null {
   }
 }
 
-export function createPasswordSessionToken(email: string, ttlSeconds = 60 * 60 * 12): string | null {
+export function createPasswordSessionToken(email: string, ttlSeconds = 60 * 30): string | null {
   const secret = getSecret();
   if (!secret) return null;
   const session: PortalPasswordSession = {
@@ -65,7 +65,7 @@ export function readPasswordSession(request: Request): PortalPasswordSession | n
   return session;
 }
 
-export function buildSessionCookie(token: string, ttlSeconds = 60 * 60 * 12) {
+export function buildSessionCookie(token: string, ttlSeconds = 60 * 30) {
   return `${COOKIE_NAME}=${token}; Path=/; Max-Age=${ttlSeconds}; SameSite=Lax; Secure; HttpOnly`;
 }
 

@@ -742,11 +742,25 @@ function renderRoleCell(user) {
             const selected = selectedRole === role ? 'selected' : '';
             return `<option value="${safeRole}" ${selected}>${label}</option>`;
         }).join('');
+        const selectedCampusSlug = pendingRole?.campusMissionarySlug ?? user.campus_missionary_slug ?? '';
+        const campusOptions = Array.from(scopeCampusMissionarySelect?.options || [])
+            .filter((option) => option.value)
+            .map((option) => {
+                const selected = option.value === selectedCampusSlug ? 'selected' : '';
+                return `<option value="${escapeAttr(option.value)}" ${selected}>${escapeHtml(option.textContent || option.value)}</option>`;
+            })
+            .join('');
         return `
             <div class="space-y-1">
                 <select data-action="role" data-user-id="${escapeAttr(user.user_id || '')}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
                     ${options}
                 </select>
+                ${selectedRole === 'campus_missionary' ? `
+                    <select data-action="campus-missionary" data-user-id="${escapeAttr(user.user_id || '')}" class="max-w-48 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-slate-600">
+                        <option value="">Selecciona misionero</option>
+                        ${campusOptions}
+                    </select>
+                ` : ''}
                 ${pendingRole ? '<p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Cambio pendiente</p>' : ''}
             </div>
         `;
@@ -863,12 +877,23 @@ function renderTable(users) {
 tbody?.addEventListener('change', async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) return;
-    if (target.dataset.action !== 'role') return;
+    if (!['role', 'campus-missionary'].includes(target.dataset.action)) return;
     const userId = target.dataset.userId;
     if (!userId || !currentToken) return;
     const role = target.value;
     const user = allUsers.find((item) => item.user_id === userId);
     if (!user) return;
+
+    if (target.dataset.action === 'campus-missionary') {
+        const pending = pendingRoleChanges.get(userId) || {
+            previousRole: user.role,
+            nextRole: 'campus_missionary',
+        };
+        pending.campusMissionarySlug = target.value;
+        pendingRoleChanges.set(userId, pending);
+        applyFilters();
+        return;
+    }
 
     if (user.role === role) {
         pendingRoleChanges.delete(userId);
@@ -876,6 +901,7 @@ tbody?.addEventListener('change', async (event) => {
         pendingRoleChanges.set(userId, {
             previousRole: user.role,
             nextRole: role,
+            campusMissionarySlug: role === 'campus_missionary' ? (user.campus_missionary_slug || '') : null,
         });
     }
     applyFilters();
@@ -893,6 +919,10 @@ tbody?.addEventListener('click', async (event) => {
         const user = allUsers.find((item) => item.user_id === userId);
         if (!user) return;
         const roleLabel = roleTranslations[pending.nextRole] || pending.nextRole;
+        if (pending.nextRole === 'campus_missionary' && !pending.campusMissionarySlug) {
+            alert('Selecciona el misionero Campus que corresponde a esta cuenta.');
+            return;
+        }
         const confirmed = window.confirm(`¿Guardar cambio de rol para ${user.email}?\nNuevo rol: ${roleLabel}`);
         if (!confirmed) return;
 
@@ -903,13 +933,20 @@ tbody?.addEventListener('click', async (event) => {
             const res = await fetch('/api/portal/admin/role', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
-                body: JSON.stringify({ userId, role: pending.nextRole })
+                body: JSON.stringify({
+                    userId,
+                    role: pending.nextRole,
+                    campusMissionarySlug: pending.campusMissionarySlug || null,
+                })
             });
             const data = await res.json();
             if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el rol');
             const idx = allUsers.findIndex((item) => item.user_id === userId);
             if (idx !== -1) {
                 allUsers[idx].role = pending.nextRole;
+                allUsers[idx].campus_missionary_slug = pending.nextRole === 'campus_missionary'
+                    ? pending.campusMissionarySlug
+                    : null;
             }
             pendingRoleChanges.delete(userId);
             applyFilters();

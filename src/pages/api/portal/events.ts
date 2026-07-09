@@ -419,6 +419,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!ctx.ok) {
     return new Response(JSON.stringify({ ok: false, error: ctx.error }), { status: ctx.status });
   }
+  if (ctx.isPasswordSession) {
+    return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), { status: 403 });
+  }
 
   const body = await request.json();
   const payload = sanitizeEventPayload(body);
@@ -566,6 +569,9 @@ export const PATCH: APIRoute = async ({ request }) => {
   const ctx = await getEventActorContext(request);
   if (!ctx.ok) {
     return new Response(JSON.stringify({ ok: false, error: ctx.error }), { status: ctx.status });
+  }
+  if (ctx.isPasswordSession) {
+    return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), { status: 403 });
   }
 
   const body = await request.json();

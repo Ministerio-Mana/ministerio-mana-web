@@ -32,6 +32,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!user && !passwordSession) {
     return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
   }
+  if (passwordSession || !user?.email) {
+    return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta individual' }), { status: 403 });
+  }
 
   let body: { id?: string; action?: string; nextReminderDate?: string };
   try {
@@ -51,7 +54,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Invalid date format. Use YYYY-MM-DD' }), { status: 400 });
   }
 
-  const sessionEmail = normalizeEmail(user?.email || passwordSession?.email);
+  const sessionEmail = normalizeEmail(user.email);
   if (!sessionEmail) {
     return new Response(JSON.stringify({ ok: false, error: 'Email missing' }), { status: 400 });
   }

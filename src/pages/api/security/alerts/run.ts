@@ -17,10 +17,12 @@ function isProduction(): boolean {
 }
 
 function validateCron(request: Request): boolean {
-  const secret = env('SECURITY_ALERT_CRON_SECRET');
+  const secret = env('SECURITY_ALERT_CRON_SECRET') ?? env('CRON_SECRET');
   if (!secret) return !isProduction();
   const header = request.headers.get('x-cron-secret');
   if (header && header === secret) return true;
+  const authorization = request.headers.get('authorization') || '';
+  if (authorization === `Bearer ${secret}`) return true;
   if (isProduction()) return false;
   const url = new URL(request.url);
   const token = url.searchParams.get('token');

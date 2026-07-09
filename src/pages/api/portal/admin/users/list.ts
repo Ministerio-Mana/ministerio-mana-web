@@ -21,7 +21,7 @@ const MANAGEMENT_ALLOWED_ROLES: PortalChurchRole[] = [
   'leader',
 ];
 
-const PROFILE_SELECT = 'user_id, first_name, last_name, full_name, email, role, church_id, portal_church_id, region_id, church_name, city, country, created_at, updated_at';
+const PROFILE_SELECT = 'user_id, first_name, last_name, full_name, email, role, campus_missionary_slug, church_id, portal_church_id, region_id, church_name, city, country, created_at, updated_at';
 
 const FETCH_LIMIT = 400;
 const RESPONSE_LIMIT = 200;

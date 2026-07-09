@@ -47,29 +47,6 @@ function isUniqueViolation(error: any): boolean {
   return String(error?.code || '') === '23505';
 }
 
-function normalizeNameForMatch(value: string): string {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-function resolveCampusMissionarySlug(fullName: string): string | null {
-  const normalizedFullName = normalizeNameForMatch(fullName);
-  if (!normalizedFullName) return null;
-  const match = MISIONEROS.find((missionary) => {
-    const normalizedMissionaryName = normalizeNameForMatch(missionary.nombre);
-    return (
-      normalizedMissionaryName === normalizedFullName
-      || normalizedFullName.includes(normalizedMissionaryName)
-      || normalizedMissionaryName.includes(normalizedFullName)
-    );
-  });
-  return match?.slug || null;
-}
-
 function isValidCampusMissionarySlug(value: string): boolean {
   return MISIONEROS.some((missionary) => missionary.slug === value);
 }
@@ -198,6 +175,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
   }
   const requestedCampusMissionarySlug = String(campusMissionarySlug || '').trim();
+  if (targetRole === 'campus_missionary' && !requestedCampusMissionarySlug) {
+    return new Response(JSON.stringify({ ok: false, error: 'Selecciona el misionero Campus que corresponde a esta cuenta' }), { status: 400 });
+  }
   if (
     targetRole === 'campus_missionary'
     && requestedCampusMissionarySlug
@@ -362,7 +342,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const resolvedCampusMissionarySlug = targetRole === 'campus_missionary'
-    ? (requestedCampusMissionarySlug || resolveCampusMissionarySlug(fullName))
+    ? requestedCampusMissionarySlug
     : null;
   let campusSlugOwnerUserId: string | null = null;
 

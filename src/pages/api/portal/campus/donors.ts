@@ -58,32 +58,12 @@ function isMissingColumnError(error: any): boolean {
     return code === '42703' || (message.includes('column') && message.includes('does not exist'));
 }
 
-function normalizeNameForMatch(value: string): string {
-    return String(value || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, ' ')
-        .trim();
-}
-
 function resolveCampusMissionarySlug(profile: any): string | null {
     const explicitSlug = String(profile?.campus_missionary_slug || '').trim();
     if (explicitSlug && MISIONEROS.some((missionary) => missionary.slug === explicitSlug)) {
         return explicitSlug;
     }
-
-    const normalizedFullName = normalizeNameForMatch(profile?.full_name || '');
-    if (!normalizedFullName) return null;
-    const match = MISIONEROS.find((missionary) => {
-        const normalizedMissionaryName = normalizeNameForMatch(missionary.nombre);
-        return (
-            normalizedMissionaryName === normalizedFullName
-            || normalizedFullName.includes(normalizedMissionaryName)
-            || normalizedMissionaryName.includes(normalizedFullName)
-        );
-    });
-    return match?.slug || null;
+    return null;
 }
 
 function mergeAllocationMaps(maps: Map<string, any[]>[]): Map<string, any[]> {

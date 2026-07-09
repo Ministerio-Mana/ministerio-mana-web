@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { createPasswordSessionToken, buildSessionCookie } from '@lib/portalPasswordSession';
 import { verifyTurnstile } from '@lib/turnstile';
 import { enforceRateLimit } from '@lib/rateLimit';
@@ -31,7 +32,27 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}***@${domain}`;
 }
 
+function isEmergencyLoginEnabled(): boolean {
+  const raw = env('PORTAL_PASSWORD_LOGIN_ENABLED');
+  if (raw == null) return true;
+  return ['1', 'true', 'yes', 'on'].includes(raw.trim().toLowerCase());
+}
+
+function safeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
+  if (isProduction() && !isEmergencyLoginEnabled()) {
+    return new Response(JSON.stringify({ ok: false, error: 'Acceso administrativo alternativo deshabilitado' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const userAgent = request.headers.get('user-agent') || '';
   let payload: any = {};
   try {
@@ -92,8 +113,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
   }
 
-  const rateKey = `portal.password:${clientAddress ?? 'unknown'}`;
-  const rateAllowed = await enforceRateLimit(rateKey);
+  const rateKey = `portal.password:${clientAddress ?? 'unknown'}:${email}`;
+  const rateAllowed = await enforceRateLimit(rateKey, 60, 5, { failOpen: !isProduction() });
   if (!rateAllowed) {
     void logSecurityEvent({
       type: 'rate_limited',
@@ -117,7 +138,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  if (!allowed || password !== expected) {
+  if (!allowed || !safeEqual(password, expected)) {
     void logSecurityEvent({
       type: 'maintenance',
       identifier: 'portal.password-login.invalid-credentials',

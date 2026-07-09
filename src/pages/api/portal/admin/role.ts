@@ -8,35 +8,6 @@ import { MISIONEROS } from '@data/misioneros';
 
 export const prerender = false;
 
-function isMissingColumnError(error: any): boolean {
-  const code = String(error?.code || '');
-  const message = String(error?.message || '').toLowerCase();
-  return code === '42703' || (message.includes('column') && message.includes('does not exist'));
-}
-
-function normalizeNameForMatch(value: string): string {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-function resolveCampusMissionarySlug(fullName?: string | null): string | null {
-  const normalizedFullName = normalizeNameForMatch(fullName || '');
-  if (!normalizedFullName) return null;
-  const match = MISIONEROS.find((missionary) => {
-    const normalizedMissionaryName = normalizeNameForMatch(missionary.nombre);
-    return (
-      normalizedMissionaryName === normalizedFullName
-      || normalizedFullName.includes(normalizedMissionaryName)
-      || normalizedMissionaryName.includes(normalizedFullName)
-    );
-  });
-  return match?.slug || null;
-}
-
 async function getAdminContext(request: Request) {
   const user = await getUserFromRequest(request);
   if (user?.email) {
@@ -106,10 +77,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       headers: { 'content-type': 'application/json' },
     });
   }
+  const requestedCampusMissionarySlug = String(payload.campusMissionarySlug || '').trim();
+  if (
+    desiredRole === 'campus_missionary'
+    && !MISIONEROS.some((missionary) => missionary.slug === requestedCampusMissionarySlug)
+  ) {
+    return new Response(JSON.stringify({ ok: false, error: 'Selecciona un misionero Campus válido' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
 
   const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
     .from('user_profiles')
-    .select('user_id, role, full_name')
+    .select('user_id, role, campus_missionary_slug')
     .eq('user_id', payload.userId)
     .maybeSingle();
 
@@ -137,33 +118,30 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const updatePayload: Record<string, unknown> = {
     role: desiredRole,
+    campus_missionary_slug: desiredRole === 'campus_missionary' ? requestedCampusMissionarySlug : null,
     updated_at: new Date().toISOString(),
   };
-  const campusMissionarySlug = desiredRole === 'campus_missionary'
-    ? resolveCampusMissionarySlug(targetProfile.full_name)
-    : null;
-  if (campusMissionarySlug) {
-    updatePayload.campus_missionary_slug = campusMissionarySlug;
+  if (desiredRole === 'campus_missionary') {
+    const { data: slugOwner, error: slugOwnerError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('user_id')
+      .eq('campus_missionary_slug', requestedCampusMissionarySlug)
+      .neq('user_id', targetProfile.user_id)
+      .maybeSingle();
+    if (slugOwnerError) {
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el misionero Campus' }), { status: 500 });
+    }
+    if (slugOwner?.user_id) {
+      return new Response(JSON.stringify({ ok: false, error: 'Ese misionero Campus ya está asociado a otra cuenta' }), { status: 409 });
+    }
   }
 
-  let { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('user_profiles')
     .update(updatePayload)
     .eq('user_id', payload.userId)
     .select('user_id, role')
     .single();
-
-  if (error && campusMissionarySlug && isMissingColumnError(error)) {
-    delete updatePayload.campus_missionary_slug;
-    const fallback = await supabaseAdmin
-      .from('user_profiles')
-      .update(updatePayload)
-      .eq('user_id', payload.userId)
-      .select('user_id, role')
-      .single();
-    data = fallback.data;
-    error = fallback.error;
-  }
 
   if (error) {
     console.error('[portal.admin.role] error', error);

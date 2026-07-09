@@ -31,9 +31,15 @@ async function cleanupOldEntries(conf: ReturnType<typeof getSupabaseRestConfig>)
   }
 }
 
-export async function enforceRateLimit(identifier: string, windowSeconds = WINDOW_SECONDS, maxAttempts = MAX_ATTEMPTS): Promise<boolean> {
+export async function enforceRateLimit(
+  identifier: string,
+  windowSeconds = WINDOW_SECONDS,
+  maxAttempts = MAX_ATTEMPTS,
+  options: { failOpen?: boolean } = {},
+): Promise<boolean> {
+  const failOpen = options.failOpen ?? true;
   const conf = getSupabaseRestConfig();
-  if (!conf) return true; // rate limit disabled if no supabase config
+  if (!conf) return failOpen;
 
   try {
     // record attempt
@@ -49,7 +55,7 @@ export async function enforceRateLimit(identifier: string, windowSeconds = WINDO
       headers: { ...conf.headers, Prefer: 'count=exact' },
     });
 
-    if (!res.ok) return true; // fail-open
+    if (!res.ok) return failOpen;
 
     let count = 0;
     const contentRange = res.headers.get('content-range') || res.headers.get('Content-Range');
@@ -71,6 +77,6 @@ export async function enforceRateLimit(identifier: string, windowSeconds = WINDO
     return count <= maxAttempts;
   } catch (error) {
     console.error('[rateLimit] error', error);
-    return true; // fail-open to avoid blocking traffic unexpectedly
+    return failOpen;
   }
 }

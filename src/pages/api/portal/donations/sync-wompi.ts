@@ -124,16 +124,19 @@ export const POST: APIRoute = async ({ request }) => {
   if (!user && !passwordSession) {
     return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
   }
-
-  let role = 'superadmin';
-  if (user) {
-    const { data: profile } = await supabaseAdmin
-      .from('user_profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-    role = profile?.role || 'user';
+  if (passwordSession) {
+    return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
   }
+
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single();
+  const role = profile?.role || 'user';
 
   if (!isAdminRole(role)) {
     return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
