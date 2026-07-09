@@ -56,7 +56,7 @@ const featuredFacts = ['17 oct - 1 nov 2026', '16 días', 'Turquía e Islas Grie
       </header>
 
       <div class="pilgrimages-grid">
-        {peregrinaciones.map(({ slug, data }) => (
+        {peregrinaciones.map(({ id, data }) => (
           <article class="pilgrimages-card">
             <div>
               <p class="pilgrimages-card__meta">
@@ -66,7 +66,7 @@ const featuredFacts = ['17 oct - 1 nov 2026', '16 días', 'Turquía e Islas Grie
               <p>{data.summary}</p>
             </div>
             <div class="pilgrimages-card__actions">
-              <a href={`/eventos/${slug}/`} class="pilgrimages-card__link pilgrimages-card__link--main">
+              <a href={`/eventos/${id}/`} class="pilgrimages-card__link pilgrimages-card__link--main">
                 Ver detalles
               </a>
               {data.brochurePdf && (

@@ -8,12 +8,12 @@ const eventDate = new Date(d.date);
 <article class="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
   {d.heroImage && <img src={d.heroImage} alt="" class="h-44 w-full object-cover" />}
   <div class="p-4 space-y-2">
-    <h3 class="font-semibold text-lg"><a href={'/eventos/' + event.slug + '/'} class="hover:underline">{d.title}</a></h3>
+    <h3 class="font-semibold text-lg"><a href={'/eventos/' + event.id + '/'} class="hover:underline">{d.title}</a></h3>
     <p class="text-sm text-gray-600 dark:text-gray-300">
       {eventDate.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' })}
       • {d.location}
     </p>
     {d.summary && <p class="text-sm text-gray-700 dark:text-gray-200">{d.summary}</p>}
-    <div class="pt-2"><a href={'/eventos/' + event.slug + '/'} class="text-sm font-semibold text-brand hover:underline">Ver detalle</a></div>
+    <div class="pt-2"><a href={'/eventos/' + event.id + '/'} class="text-sm font-semibold text-brand hover:underline">Ver detalle</a></div>
   </div>
 </article>

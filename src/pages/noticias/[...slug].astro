@@ -12,7 +12,7 @@ if (!entry) {
 const { Content } = entry ? await entry.render() : { Content: null };
 const data = entry?.data;
 const url = new URL(Astro.url);
-const canonical = entry ? `${url.origin}/noticias/${entry.slug}/` : `${url.origin}/noticias/`;
+const canonical = entry ? `${url.origin}/noticias/${entry.id}/` : `${url.origin}/noticias/`;
 const cspNonce = Astro.locals?.cspNonce;
 ---
 <BaseLayout title={data ? `${data.title} — Noticias` : 'Noticia no encontrada'} description={data?.summary || 'Noticia no encontrada'}>

@@ -9,7 +9,7 @@ export const GET: APIRoute = async (ctx) => {
     description: 'Noticias e historias de fe',
     site: ctx.site!.href,
     items: posts.map(p => ({
-      link: `/noticias/${p.slug}/`,
+      link: `/noticias/${p.id}/`,
       title: p.data.title,
       pubDate: new Date(p.data.date),
       description: p.data.summary,

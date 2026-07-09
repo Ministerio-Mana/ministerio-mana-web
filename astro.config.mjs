@@ -1,5 +1,4 @@
 import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
 
@@ -7,7 +6,7 @@ export default defineConfig({
   site: 'https://ministeriomana.org',
   output: 'server',
   adapter: vercel(),
-  integrations: [tailwind({ config: { applyBaseStyles: true } }), sitemap()],
+  integrations: [sitemap()],
   experimental: { clientPrerender: true },
   vite: {
     build: {

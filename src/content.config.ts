@@ -1,11 +1,12 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
 
-// 🟣 Eventos: peregrinaciones, congresos, mujeres, campus, etc.
 const events = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/[^_]*.{md,mdx}', base: './src/content/events' }),
   schema: z.object({
     title: z.string(),
-    date: z.string(), // usamos string para hacerlo sencillo
+    date: z.string(),
     category: z.enum([
       'peregrinacion',
       'evento',
@@ -17,13 +18,12 @@ const events = defineCollection({
     location: z.string(),
     heroImage: z.string().optional(),
     brochurePdf: z.string().optional(),
-    highlight: z.boolean().optional(), // para destacar en home
+    highlight: z.boolean().optional(),
   }),
 });
 
-// 🟣 Noticias / historias para SEO
 const news = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/[^_]*.{md,mdx}', base: './src/content/news' }),
   schema: z.object({
     title: z.string(),
     date: z.string(),
