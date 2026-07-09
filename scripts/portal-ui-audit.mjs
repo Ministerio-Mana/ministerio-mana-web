@@ -15,7 +15,7 @@ const CHROME_PATH = process.env.PORTAL_UI_AUDIT_CHROME_PATH || '/Applications/Go
 const DEBUG_PORT = Number(process.env.PORTAL_UI_AUDIT_PORT || 9339);
 const HEADLESS = process.env.PORTAL_UI_AUDIT_HEADLESS !== '0';
 const PAGE_TIMEOUT_MS = Number(process.env.PORTAL_UI_AUDIT_PAGE_TIMEOUT_MS || 6000);
-const SETTLE_MS = Number(process.env.PORTAL_UI_AUDIT_SETTLE_MS || 500);
+const SETTLE_MS = Number(process.env.PORTAL_UI_AUDIT_SETTLE_MS || 1800);
 const WARN_PAGE_MS = Number(process.env.PORTAL_UI_AUDIT_WARN_PAGE_MS || 3000);
 const CRITICAL_PAGE_MS = Number(process.env.PORTAL_UI_AUDIT_CRITICAL_PAGE_MS || 5000);
 
@@ -346,6 +346,9 @@ async function collectUiState(page) {
       .filter(visible)
       .map(ownText)
       .filter(Boolean);
+    const visibleLoadingTexts = Array.from(new Set(
+      visibleOwnTexts.filter((text) => /Cargando|Validando|Sincronizando/i.test(text))
+    )).slice(0, 6);
     const nav = {};
     ${JSON.stringify(NAV_EXPECTATIONS.map((item) => item.id))}.forEach((id) => {
       const el = document.getElementById(id);
@@ -370,7 +373,8 @@ async function collectUiState(page) {
       title: document.title,
       nav,
       buttons,
-      visibleLoading: /Cargando|Validando|Sincronizando/i.test(visibleText),
+      visibleLoading: visibleLoadingTexts.length > 0,
+      visibleLoadingTexts,
       hasErrorText: /No autorizado|Forbidden|Error al|No se pudo|tard[oó] demasiado/i.test(visibleText),
       textSample: body.slice(0, 500),
       counts: {
@@ -463,6 +467,10 @@ async function auditPageForUser(page, viewport, modulePage, context) {
   const mismatch = expected
     ? redirectedAway || /No autorizado|Forbidden/i.test(state.textSample)
     : (!redirectedAway && !/No autorizado|Forbidden/i.test(state.textSample) && modulePage.key !== 'home');
+  const loadingTexts = Array.from(new Set([
+    ...(loadingState?.loadingTexts || []),
+    ...(state.visibleLoadingTexts || []),
+  ]));
 
   return {
     key: modulePage.key,
@@ -475,8 +483,8 @@ async function auditPageForUser(page, viewport, modulePage, context) {
     redirectedAway,
     finalPath: state.pathname,
     title: state.title,
-    visibleLoadingAfterWait: Boolean(loadingState?.loadingTexts?.length || state.visibleLoading),
-    loadingTexts: loadingState?.loadingTexts || [],
+    visibleLoadingAfterWait: loadingTexts.length > 0,
+    loadingTexts,
     hasErrorText: state.hasErrorText,
     counts: state.counts,
     perf: state.perf,
