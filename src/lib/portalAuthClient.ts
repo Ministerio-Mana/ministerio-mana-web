@@ -319,3 +319,48 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
 export function redirectToLogin() {
     window.location.href = '/portal/ingresar';
 }
+
+export async function signOutPortalSession(): Promise<void> {
+    portalSessionCache = null;
+    portalSessionPromise = null;
+
+    let storageKey: string | null = null;
+    let hasStoredSupabaseSession = false;
+    try {
+        storageKey = getSupabaseStorageKey();
+        hasStoredSupabaseSession = Boolean(storageKey && localStorage.getItem(storageKey));
+    } catch {
+        storageKey = null;
+    }
+
+    try {
+        if (hasStoredSupabaseSession) {
+            const supabase = await loadSupabaseBrowserClient();
+            if (supabase) {
+                await withTimeout(
+                    supabase.auth.signOut({ scope: 'local' }),
+                    AUTH_TIMEOUT_MS,
+                    'El cierre de sesión',
+                );
+            }
+        }
+    } catch (error) {
+        console.warn(DEBUG_PREFIX, 'Supabase logout cleanup failed:', error);
+    } finally {
+        try {
+            if (storageKey) localStorage.removeItem(storageKey);
+        } catch {
+            // The server-side cookie is still cleared below.
+        }
+    }
+
+    try {
+        await fetchJsonWithTimeout('/api/portal/password-logout', {
+            method: 'POST',
+            credentials: 'include',
+            keepalive: true,
+        }, SESSION_TIMEOUT_MS);
+    } catch (error) {
+        console.warn(DEBUG_PREFIX, 'Password logout cleanup failed:', error);
+    }
+}

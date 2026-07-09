@@ -207,7 +207,6 @@ const adminFollowupsPagination = document.getElementById('admin-followups-pagina
 // UI Helpers
 const navLinks = document.querySelectorAll('.nav-link');
 const tabContents = document.querySelectorAll('.tab-content');
-const logoutBtn = document.getElementById('btn-logout');
 const saveProfileBtn = document.getElementById('btn-save-profile');
 const onboardingModal = document.getElementById('onboarding-modal');
 const onboardingForm = document.getElementById('onboarding-form');
@@ -6338,32 +6337,6 @@ document.addEventListener('click', (event) => {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-});
-
-logoutBtn?.addEventListener('click', async () => {
-  logoutBtn.disabled = true;
-  logoutBtn.textContent = 'Saliendo...';
-
-  try {
-    if (authMode !== 'password') {
-      const supabase = await getSupabaseClientForAction();
-      await supabase.auth.signOut({ scope: 'local' });
-    }
-  } catch (err) {
-    console.error('Supabase logout cleanup error:', err);
-  }
-
-  try {
-    await fetch('/api/portal/password-logout', {
-      method: 'POST',
-      credentials: 'include',
-      keepalive: true,
-    });
-  } catch (err) {
-    console.error('Password logout cleanup error:', err);
-  }
-
-  window.location.href = '/portal/ingresar';
 });
 
 saveProfileBtn?.addEventListener('click', updateProfile);
