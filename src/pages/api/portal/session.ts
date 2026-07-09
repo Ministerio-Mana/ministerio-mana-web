@@ -80,7 +80,10 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const profile = await ensureUserProfile(user);
+  const [profile, memberships] = await Promise.all([
+    ensureUserProfile(user),
+    listUserMemberships(user.id),
+  ]);
   if (!profile) {
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear perfil' }), {
       status: 500,
@@ -88,7 +91,6 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const memberships = await listUserMemberships(user.id);
   const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
   const effectiveChurchId = resolveEffectiveChurchId(profile.church_id || profile.portal_church_id || null, memberships);
   const scope = getRoleScope(effectiveRole);
