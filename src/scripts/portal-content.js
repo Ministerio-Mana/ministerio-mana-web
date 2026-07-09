@@ -14,6 +14,7 @@ const state = {
   revisions: [],
   logs: [],
   media: [],
+  cmsSchemaReady: true,
   busyCount: 0,
   alertTimeout: null,
 };
@@ -568,6 +569,7 @@ async function loadMedia(silent = false) {
 
 async function loadPages(selectFirst = false) {
   const data = await fetchJson('/api/portal/content/pages');
+  state.cmsSchemaReady = data.schemaReady !== false;
   state.pages = Array.isArray(data.pages) ? data.pages : [];
 
   if (state.selectedPageId && !state.pages.some((p) => p.id === state.selectedPageId)) {
@@ -876,7 +878,11 @@ async function boot() {
     }
 
     await loadPages(true);
-    clearAlert();
+    if (state.cmsSchemaReady === false) {
+      showAlert('CMS pendiente de configurar. Ejecuta docs/sql/cms_schema.sql para activar edición de contenido.', 'error', 0);
+    } else {
+      clearAlert();
+    }
   } catch (error) {
     showAlert(parseError(error, 'No se pudo inicializar el panel CMS.'), 'error', 0);
   } finally {

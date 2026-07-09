@@ -60,6 +60,19 @@ export function isSectionKind(value: string | null | undefined): value is CmsSec
   return CMS_SECTION_KINDS.includes(String(value || '') as CmsSectionKind);
 }
 
+export function isCmsSchemaMissingError(error: any): boolean {
+  const code = String(error?.code || '');
+  const message = String(error?.message || error?.details || '').toLowerCase();
+  return (
+    ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(code)
+    || (message.includes('cms_') && (
+      message.includes('does not exist')
+      || message.includes('schema cache')
+      || message.includes('could not find')
+    ))
+  );
+}
+
 export async function insertCmsRevision(params: {
   entityType: 'page' | 'section';
   entityId: string;

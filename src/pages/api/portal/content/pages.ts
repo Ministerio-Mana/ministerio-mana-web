@@ -5,6 +5,7 @@ import {
   cleanText,
   insertCmsAuditLog,
   insertCmsRevision,
+  isCmsSchemaMissingError,
   isPageStatus,
   normalizeKey,
   normalizeRoutePath,
@@ -29,6 +30,9 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       .eq('id', pageId)
       .maybeSingle();
 
+    if (isCmsSchemaMissingError(error)) {
+      return jsonResponse({ ok: false, error: 'CMS no configurado' }, 404);
+    }
     if (error || !page) return jsonResponse({ ok: false, error: 'Página no encontrada' }, 404);
 
     const { data: sections } = await supabaseAdmin
@@ -45,9 +49,12 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     .select('id, page_key, route_path, locale, title, description, status, version, published_at, updated_at')
     .order('updated_at', { ascending: false });
 
+  if (isCmsSchemaMissingError(error)) {
+    return jsonResponse({ ok: true, pages: [], schemaReady: false });
+  }
   if (error) return jsonResponse({ ok: false, error: 'No se pudo listar páginas' }, 500);
 
-  return jsonResponse({ ok: true, pages: data ?? [] });
+  return jsonResponse({ ok: true, pages: data ?? [], schemaReady: true });
 };
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {

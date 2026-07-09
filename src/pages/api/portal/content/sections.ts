@@ -6,6 +6,7 @@ import {
   cleanText,
   insertCmsAuditLog,
   insertCmsRevision,
+  isCmsSchemaMissingError,
   isSectionKind,
   isSectionStatus,
   normalizeKey,
@@ -30,8 +31,11 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     .eq('page_id', pageId)
     .order('position', { ascending: true });
 
+  if (isCmsSchemaMissingError(error)) {
+    return jsonResponse({ ok: true, sections: [], schemaReady: false });
+  }
   if (error) return jsonResponse({ ok: false, error: 'No se pudieron listar secciones' }, 500);
-  return jsonResponse({ ok: true, sections: data ?? [] });
+  return jsonResponse({ ok: true, sections: data ?? [], schemaReady: true });
 };
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {

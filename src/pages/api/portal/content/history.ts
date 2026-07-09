@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { requireCmsAdmin, jsonResponse } from '@lib/cmsAdmin';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
+import { isCmsSchemaMissingError } from '@lib/cms';
 
 export const prerender = false;
 
@@ -37,9 +38,12 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     auditQuery,
   ]);
 
+  if (isCmsSchemaMissingError(revError) || isCmsSchemaMissingError(logsError)) {
+    return jsonResponse({ ok: true, revisions: [], logs: [], schemaReady: false });
+  }
   if (revError || logsError) {
     return jsonResponse({ ok: false, error: 'No se pudo cargar historial' }, 500);
   }
 
-  return jsonResponse({ ok: true, revisions: revisions ?? [], logs: logs ?? [] });
+  return jsonResponse({ ok: true, revisions: revisions ?? [], logs: logs ?? [], schemaReady: true });
 };
