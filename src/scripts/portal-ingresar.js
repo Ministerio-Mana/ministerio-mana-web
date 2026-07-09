@@ -31,8 +31,10 @@ const statusIcon = document.getElementById('login-status-icon');
 const statusWrapper = document.getElementById('login-status-wrapper');
 
 const TURNSTILE_RENDER_WAIT_MS = 3000;
+const TURNSTILE_SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
 const REQUEST_TIMEOUT_MS = 15000;
 let supabaseClientPromise = null;
+let turnstileScriptPromise = null;
 
 function makeTimeoutError(label) {
   const error = new Error(`${label} tardó demasiado. Revisa tu conexión e intenta de nuevo.`);
@@ -139,6 +141,47 @@ function readTurnstileTokenField(widget) {
   return '';
 }
 
+function ensureTurnstileScriptLoaded() {
+  if (window.turnstile) return Promise.resolve(true);
+
+  const widget = document.querySelector('.cf-turnstile');
+  if (!widget?.getAttribute('data-sitekey')) return Promise.resolve(false);
+
+  if (turnstileScriptPromise) return turnstileScriptPromise;
+
+  const existingScript = Array.from(document.scripts).find((script) => script.src === TURNSTILE_SCRIPT_SRC);
+  if (existingScript) {
+    turnstileScriptPromise = new Promise((resolve, reject) => {
+      if (window.turnstile) {
+        resolve(true);
+        return;
+      }
+      existingScript.addEventListener('load', () => resolve(true), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('No cargó Cloudflare Turnstile.')), { once: true });
+      window.setTimeout(() => resolve(Boolean(window.turnstile)), TURNSTILE_RENDER_WAIT_MS);
+    });
+    return turnstileScriptPromise;
+  }
+
+  turnstileScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = TURNSTILE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener('load', () => resolve(true), { once: true });
+    script.addEventListener('error', () => reject(new Error('No cargó Cloudflare Turnstile.')), { once: true });
+    document.head.appendChild(script);
+  });
+
+  return turnstileScriptPromise;
+}
+
+function warmTurnstile() {
+  void ensureTurnstileScriptLoaded().catch((error) => {
+    console.warn('[Turnstile] Warmup failed:', error);
+  });
+}
+
 function resetTurnstile() {
   if (window.turnstile && typeof window.turnstile.reset === 'function') {
     window.turnstile.reset();
@@ -157,6 +200,17 @@ async function getTurnstileTokenIfRequired() {
   if (!siteKey) {
     console.warn('[Turnstile] Widget rendered without site key.');
     return { ok: false, error: 'Captcha no configurado. Recarga la pagina o contacta soporte.', reason: 'sitekey_missing' };
+  }
+
+  try {
+    await ensureTurnstileScriptLoaded();
+  } catch (err) {
+    console.warn('[Turnstile] Script failed to load.', err);
+    return {
+      ok: false,
+      error: 'No cargó el captcha (Cloudflare). Revisa la conexión, recarga e intenta de nuevo.',
+      reason: 'script_not_loaded',
+    };
   }
 
   // If widget has key but did not render, do NOT bypass.
@@ -588,6 +642,8 @@ passkeyBtn?.addEventListener('click', async () => {
 [passwordEmailInput, passwordInput, oauthGoogleBtn, oauthFacebookBtn, passkeyBtn].forEach((el) => {
   el?.addEventListener('focus', warmSupabaseClient, { once: true });
   el?.addEventListener('pointerdown', warmSupabaseClient, { once: true, passive: true });
+  el?.addEventListener('focus', warmTurnstile, { once: true });
+  el?.addEventListener('pointerdown', warmTurnstile, { once: true, passive: true });
 });
 
 syncReturnLinks();

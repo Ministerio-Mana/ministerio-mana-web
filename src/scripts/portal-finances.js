@@ -166,23 +166,13 @@ function showLoadError(error) {
 }
 
 function showForbidden() {
-  if (!loadingEl) return;
-  gateEl?.classList.remove('hidden');
+  gateEl?.classList.add('hidden');
   secureContentEl?.classList.add('hidden');
-  loadingEl.className = 'py-12 text-center';
-  loadingEl.innerHTML = `
-    <div class="mx-auto max-w-md rounded-2xl border border-amber-100 bg-amber-50 px-5 py-4 text-amber-800">
-      <p class="font-bold mb-2">No tienes permisos para ver finanzas</p>
-      <p class="text-sm">Esta sección es solo para administradores autorizados.</p>
-      <a href="/portal" class="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-amber-800 shadow-sm border border-amber-100">
-        Volver al portal
-      </a>
-    </div>
-  `;
   tableEl?.classList.add('hidden');
   emptyEl?.classList.add('hidden');
   setLoadMoreState(false);
   setIssuesLoadMoreState(false);
+  window.location.replace('/portal');
 }
 
 async function init() {
