@@ -1452,9 +1452,12 @@ async function loadDashboardData(authResult) {
       (membership) => ['church_admin', 'church_member'].includes(membership?.role)
         && isApprovedChurchMembershipStatus(membership?.status),
     );
+    const canUseChurchManagement = myRole !== 'campus_missionary';
     const hasChurchAccess = portalIsAdmin
-      || hasChurchRole
-      || ['national_pastor', 'pastor', 'local_collaborator'].includes(myRole);
+      || (canUseChurchManagement && (
+        hasChurchRole
+        || ['national_pastor', 'pastor', 'local_collaborator'].includes(myRole)
+      ));
     const membershipChurch = portalMemberships.find((item) => item?.church?.id)?.church || null;
 
     if (!portalSelectedChurchId && membershipChurch?.id && !portalIsAdmin) {
@@ -1590,7 +1593,9 @@ async function loadDashboardData(authResult) {
     if (hasChurchAccess) {
       scheduleAdvancedComponentsInit();
     }
-    void loadChurchCatalog(headers);
+    if (hasChurchAccess) {
+      void loadChurchCatalog(headers);
+    }
 
     // Inject Admin Filters if applicable
     if (portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin') {
