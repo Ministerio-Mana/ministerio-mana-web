@@ -21,6 +21,7 @@ const donationSelect = [
     'donor_phone',
     'amount',
     'currency',
+    'is_recurring',
     'created_at',
     'missionary_id',
     'missionary_name',
@@ -38,6 +39,7 @@ const campusDonationSelect = [
     'donor_phone',
     'amount',
     'currency',
+    'is_recurring',
     'created_at',
     'missionary_id',
     'missionary_name',
@@ -89,6 +91,27 @@ function mergeAllocationMaps(maps: Map<string, any[]>[]): Map<string, any[]> {
 
 function getCampusAllocations(donation: any): any[] {
     return Array.isArray(donation?._campusAllocations) ? donation._campusAllocations : [];
+}
+
+function isRecurringDonation(donation: any): boolean {
+    if (donation?.is_recurring === true || donation?.is_recurring === 'true') return true;
+    const raw = donation?.raw_event;
+    return (
+        raw?.frequency === 'monthly'
+        || raw?.mode === 'subscription'
+        || Boolean(raw?.metadata?.campus_subscription_id)
+    );
+}
+
+function addDonationAmount(
+    totalsByCurrency: Record<string, number>,
+    donation: any,
+): Record<string, number> {
+    const currency = String(donation?.currency || '').trim().toUpperCase();
+    const amount = Number(donation?.amount || 0);
+    if (!currency || !Number.isFinite(amount)) return totalsByCurrency;
+    totalsByCurrency[currency] = (totalsByCurrency[currency] || 0) + amount;
+    return totalsByCurrency;
 }
 
 function getAmountPerMissionary(donation: any): number | null {
@@ -157,6 +180,7 @@ function toCampusDonationClientRow(donation: any, isAdmin: boolean) {
     return {
         id: donation.id,
         created_at: donation.created_at,
+        frequency: isRecurringDonation(donation) ? 'recurring' : 'one_time',
         reference: isAdmin ? donation.reference : null,
         provider: isAdmin ? donation.provider : null,
         campus: donation.campus,
@@ -382,17 +406,24 @@ export const GET: APIRoute = async ({ request }) => {
     const donorMap = new Map();
 
     donations.forEach((donation) => {
-        const donorKey = donation.donor_email || donation.donor_name || 'unknown';
+        const normalizedEmail = String(donation.donor_email || '').trim().toLowerCase();
+        const normalizedPhone = String(donation.donor_phone || '').replace(/\D/g, '');
+        const donorKey = normalizedEmail
+            ? `email:${normalizedEmail}`
+            : normalizedPhone
+                ? `phone:${normalizedPhone}`
+                : `donation:${donation.id}`;
+        const recurring = isRecurringDonation(donation);
 
         if (!donorMap.has(donorKey)) {
             donorMap.set(donorKey, {
                 name: donation.donor_name || 'Donante Anónimo',
                 email: donation.donor_email,
                 phone: donation.donor_phone,
-                // Only include amounts for admins
-                totalAmount: isAdmin ? donation.amount : null,
-                currency: isAdmin ? donation.currency : null,
+                totalsByCurrency: isAdmin ? addDonationAmount({}, donation) : null,
                 donationCount: 1,
+                recurringDonationCount: recurring ? 1 : 0,
+                oneTimeDonationCount: recurring ? 0 : 1,
                 lastDonation: donation.created_at,
                 missionary: {
                     id: donation.missionary_id,
@@ -404,8 +435,10 @@ export const GET: APIRoute = async ({ request }) => {
         } else {
             const existing = donorMap.get(donorKey);
             existing.donationCount += 1;
+            existing.recurringDonationCount += recurring ? 1 : 0;
+            existing.oneTimeDonationCount += recurring ? 0 : 1;
             if (isAdmin) {
-                existing.totalAmount = (existing.totalAmount || 0) + (donation.amount || 0);
+                addDonationAmount(existing.totalsByCurrency, donation);
             }
             // Update last donation if more recent
             if (new Date(donation.created_at) > new Date(existing.lastDonation)) {
@@ -422,28 +455,28 @@ export const GET: APIRoute = async ({ request }) => {
         }
     });
 
-    const donors = Array.from(donorMap.values());
+    const donors = Array.from(donorMap.values()).map((donor) => ({
+        ...donor,
+        givingType: donor.recurringDonationCount > 0 ? 'recurring' : 'one_time',
+    }));
 
-    // Calculate stats (only for admins)
-    let stats = null;
+    const totalsByCurrency = isAdmin
+        ? donations.reduce((totals, donation) => addDonationAmount(totals, donation), {})
+        : null;
+    const uniqueMissionaries = new Set();
     if (isAdmin) {
-        const totalDonors = donors.length;
-        const totalAmount = donors.reduce((sum, d) => sum + (d.totalAmount || 0), 0);
-
-        // Count unique missionaries
-        const uniqueMissionaries = new Set();
-        donations.forEach(d => {
-            if (d.missionary_id) uniqueMissionaries.add(d.missionary_id);
-            getMissionarySlugs(d).forEach((slug) => uniqueMissionaries.add(slug));
+        donations.forEach(donation => {
+            if (donation.missionary_id) uniqueMissionaries.add(donation.missionary_id);
+            getMissionarySlugs(donation).forEach((slug) => uniqueMissionaries.add(slug));
         });
-
-        stats = {
-            totalDonors,
-            totalAmount,
-            currency: donations[0]?.currency || 'USD',
-            activeMissionaries: uniqueMissionaries.size
-        };
     }
+    const stats = {
+        totalDonors: donors.length,
+        recurringDonors: donors.filter((donor) => donor.givingType === 'recurring').length,
+        oneTimeDonors: donors.filter((donor) => donor.givingType === 'one_time').length,
+        totalsByCurrency,
+        activeMissionaries: isAdmin ? uniqueMissionaries.size : null,
+    };
 
     const elapsedMs = Date.now() - startedAt;
     if (elapsedMs > 2500) {

@@ -1,4 +1,3 @@
-// portal-campus.js - Campus Donor Management
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const gateEl = document.getElementById('campus-gate');
@@ -7,15 +6,30 @@ const loadingEl = document.getElementById('donors-loading');
 const contentEl = document.getElementById('donors-content');
 const emptyEl = document.getElementById('donors-empty');
 const subtitleEl = document.getElementById('campus-subtitle');
-const adminStatsEl = document.getElementById('admin-stats');
+const donorStatsEl = document.getElementById('donor-stats');
+const searchEl = document.getElementById('donor-search');
+const resultCountEl = document.getElementById('donors-result-count');
+const loadMoreEl = document.getElementById('donors-load-more');
+const filterButtons = Array.from(document.querySelectorAll('[data-donor-filter]'));
+const adminStatEls = Array.from(document.querySelectorAll('.admin-campus-stat'));
 
-// Stats elements (admins only)
 const statTotalDonors = document.getElementById('stat-total-donors');
-const statMonthDonations = document.getElementById('stat-month-donations');
+const statRecurringDonors = document.getElementById('stat-recurring-donors');
+const statOneTimeDonors = document.getElementById('stat-one-time-donors');
+const statCampusTotals = document.getElementById('stat-campus-totals');
 const statActiveMissionaries = document.getElementById('stat-active-missionaries');
+const filterCountAll = document.getElementById('filter-count-all');
+const filterCountRecurring = document.getElementById('filter-count-recurring');
+const filterCountOneTime = document.getElementById('filter-count-one-time');
 
 const REQUEST_TIMEOUT_MS = 15000;
+const DONORS_PAGE_SIZE = 20;
+
 let campusSessionChecked = false;
+let allDonors = [];
+let currentFilter = 'all';
+let visibleDonorLimit = DONORS_PAGE_SIZE;
+let isAdminView = false;
 
 function showSecureContent() {
     gateEl?.classList.add('hidden');
@@ -37,6 +51,34 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function normalizeSearch(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+function formatCurrency(amount, currency) {
+    if (!amount && amount !== 0) return '$0';
+    return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CO', {
+        style: 'currency',
+        currency: currency || 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: currency === 'USD' ? 2 : 0,
+    }).format(amount);
+}
+
+function formatTotals(totalsByCurrency, className = '') {
+    const entries = Object.entries(totalsByCurrency || {})
+        .filter(([, amount]) => Number.isFinite(Number(amount)))
+        .sort(([currencyA]) => currencyA === 'COP' ? -1 : 1);
+    if (!entries.length) return '—';
+    return entries
+        .map(([currency, amount]) => `<p class="${className}">${formatCurrency(Number(amount), currency)}</p>`)
+        .join('');
 }
 
 function makeTimeoutError(label) {
@@ -62,12 +104,8 @@ async function withTimeout(promise, timeoutMs, label) {
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-
     try {
-        const response = await fetch(url, {
-            ...options,
-            signal: controller.signal,
-        });
+        const response = await fetch(url, { ...options, signal: controller.signal });
         const data = await response.json().catch(() => ({
             ok: false,
             error: 'El servidor respondió sin datos válidos.',
@@ -89,6 +127,8 @@ function showLoading() {
     }
     contentEl?.classList.add('hidden');
     emptyEl?.classList.add('hidden');
+    resultCountEl?.classList.add('hidden');
+    loadMoreEl?.classList.add('hidden');
 }
 
 function showLoadError(error) {
@@ -98,23 +138,226 @@ function showLoadError(error) {
         : error?.message || 'No se pudieron cargar los donantes.';
     loadingEl.className = 'py-12 text-center';
     loadingEl.innerHTML = `
-        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
-            <p class="font-bold mb-2">Error al cargar donantes</p>
+        <div class="mx-auto max-w-md rounded-lg border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+            <p class="mb-2 font-bold">Error al cargar donantes</p>
             <p class="text-sm">${escapeHtml(message)}</p>
-            <button type="button" id="btn-retry-donors" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+            <button type="button" id="btn-retry-donors" class="mt-4 rounded-lg border border-red-100 bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm">
                 Reintentar
             </button>
         </div>
     `;
-    document.getElementById('btn-retry-donors')?.addEventListener('click', () => {
-        void loadDonors();
+    document.getElementById('btn-retry-donors')?.addEventListener('click', () => void loadDonors());
+}
+
+function updateFilterState() {
+    filterButtons.forEach((button) => {
+        const active = button.dataset.donorFilter === currentFilter;
+        button.setAttribute('aria-pressed', String(active));
+        button.classList.toggle('bg-white', active);
+        button.classList.toggle('text-[#293C74]', active);
+        button.classList.toggle('shadow-sm', active);
+        button.classList.toggle('text-slate-500', !active);
     });
+}
+
+function getFilteredDonors() {
+    const query = normalizeSearch(searchEl?.value);
+    return allDonors.filter((donor) => {
+        if (currentFilter !== 'all' && donor.givingType !== currentFilter) return false;
+        if (!query) return true;
+        return normalizeSearch([
+            donor.name,
+            donor.email,
+            donor.phone,
+            donor.missionary?.name,
+        ].filter(Boolean).join(' ')).includes(query);
+    });
+}
+
+function getEmptyMessage() {
+    if (searchEl?.value?.trim()) return 'No hay donantes que coincidan con la búsqueda.';
+    if (currentFilter === 'recurring') return 'Todavía no hay donantes recurrentes en este alcance.';
+    if (currentFilter === 'one_time') return 'Todavía no hay personas con donación única en este alcance.';
+    return 'No se encontraron donantes todavía.';
+}
+
+function buildDonorCard(donor) {
+    const isRecurring = donor.givingType === 'recurring';
+    const donorNameRaw = donor.name || 'Donante Anónimo';
+    const donorName = escapeHtml(donorNameRaw);
+    const donorEmail = escapeHtml(donor.email || '');
+    const donorPhone = escapeHtml(donor.phone || '');
+    const donorInitial = escapeHtml(String(donorNameRaw).trim().charAt(0).toUpperCase() || '?');
+    const lastDonationDate = new Date(donor.lastDonation).toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+    const relationshipBadge = isRecurring
+        ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Donante recurrente</span>'
+        : '<span class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">Donación única</span>';
+    const thanksText = isRecurring
+        ? `Hola ${donorNameRaw}, gracias por tu apoyo constante a Campus Maná. Tu compromiso mensual nos ayuda a sostener la misión en las universidades. Cuenta con nuestra gratitud y oraciones.`
+        : `Hola ${donorNameRaw}, gracias por tu siembra a Campus Maná. Tu generosidad nos ayuda a compartir el evangelio en las universidades. Si deseas seguir caminando con esta misión, será una alegría contar nuevamente contigo.`;
+    const thanksMessage = encodeURIComponent(thanksText);
+    const subject = encodeURIComponent(isRecurring
+        ? 'Gracias por tu apoyo constante a Campus Maná'
+        : 'Gracias por apoyar Campus Maná');
+    const phoneDigits = String(donor.phone || '').replace(/\D/g, '');
+    const contactActions = [
+        donor.email
+            ? `<a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-[#293C74]/30 hover:text-[#293C74]" href="mailto:${encodeURIComponent(donor.email)}?subject=${subject}&body=${thanksMessage}">Correo</a>`
+            : '',
+        phoneDigits.length >= 8
+            ? `<a class="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noreferrer">WhatsApp</a>`
+            : '',
+    ].filter(Boolean).join('');
+
+    const donationLines = Array.isArray(donor.donations) && donor.donations.length
+        ? `
+            <div class="mt-4 space-y-2 rounded-lg bg-slate-50 p-4">
+                ${donor.donations.slice(0, 4).map((donation) => {
+                    const recurringDonation = donation.frequency === 'recurring';
+                    const typeBadge = recurringDonation
+                        ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Mensual</span>'
+                        : '<span class="rounded-full bg-sky-100 px-2 py-0.5 font-bold text-sky-700">Una vez</span>';
+                    const date = donation.created_at
+                        ? new Date(donation.created_at).toLocaleDateString('es-CO')
+                        : '';
+                    const names = donation.missionary?.names?.length
+                        ? donation.missionary.names.join(', ')
+                        : donation.missionary?.name || 'Campus';
+                    const amount = isAdminView && donation.amount !== null
+                        ? `<span class="font-bold text-brand-teal">${formatCurrency(donation.amount, donation.currency)}</span>`
+                        : '';
+                    const perMissionary = isAdminView && donation.amountPerMissionary
+                        ? `<span class="text-slate-400">(${formatCurrency(donation.amountPerMissionary, donation.currency)} por misionero)</span>`
+                        : '';
+                    return `
+                        <div class="flex flex-col gap-2 border-b border-slate-200/70 pb-2 text-xs text-slate-500 last:border-0 last:pb-0 md:flex-row md:items-center md:justify-between">
+                            <span class="flex flex-wrap items-center gap-2">
+                                ${typeBadge}
+                                <strong class="text-[#293C74]">${escapeHtml(names)}</strong>
+                                ${date ? `<span>· ${escapeHtml(date)}</span>` : ''}
+                            </span>
+                            <span>${amount} ${perMissionary}</span>
+                        </div>
+                    `;
+                }).join('')}
+                ${donor.donations.length > 4
+                    ? `<p class="pt-1 text-xs font-semibold text-slate-400">+${donor.donations.length - 4} donaciones anteriores</p>`
+                    : ''}
+            </div>
+        `
+        : '';
+
+    const amountDisplay = isAdminView && donor.totalsByCurrency
+        ? `
+            <div class="w-full rounded-lg bg-slate-50 p-4 sm:w-auto sm:min-w-[160px] sm:text-right">
+                <p class="mb-1 text-xs font-bold uppercase text-slate-400">Total donado</p>
+                ${formatTotals(donor.totalsByCurrency, 'break-words text-lg font-bold text-brand-teal')}
+            </div>
+        `
+        : '';
+
+    return `
+        <article class="rounded-lg border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md md:p-6">
+            <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 flex-1 items-start gap-4">
+                    <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-teal to-[#293C74] text-xl font-bold text-white">
+                        ${donorInitial}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                            <h3 class="text-lg font-bold text-[#293C74]">${donorName}</h3>
+                            ${relationshipBadge}
+                        </div>
+                        ${donor.email ? `<p class="mb-1 break-all text-sm text-slate-600">${donorEmail}</p>` : ''}
+                        ${donor.phone ? `<p class="break-words text-sm text-slate-500">${donorPhone}</p>` : ''}
+
+                        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                            <span><strong>${donor.donationCount}</strong> donación${donor.donationCount > 1 ? 'es' : ''}</span>
+                            ${donor.recurringDonationCount > 0 ? `<span><strong>${donor.recurringDonationCount}</strong> mensual${donor.recurringDonationCount > 1 ? 'es' : ''}</span>` : ''}
+                            ${donor.oneTimeDonationCount > 0 ? `<span><strong>${donor.oneTimeDonationCount}</strong> de una vez</span>` : ''}
+                            <span>Última: <strong>${lastDonationDate}</strong></span>
+                        </div>
+
+                        ${donor.missionary?.name ? `
+                            <div class="mt-3">
+                                <span class="inline-flex items-center rounded-full bg-[#293C74]/10 px-3 py-1 text-xs font-bold text-[#293C74]">
+                                    ${escapeHtml(donor.missionary.name)}
+                                </span>
+                            </div>
+                        ` : ''}
+                        ${contactActions ? `<div class="mt-4 flex flex-wrap gap-2">${contactActions}</div>` : ''}
+                        ${donationLines}
+                    </div>
+                </div>
+                ${amountDisplay}
+            </div>
+        </article>
+    `;
+}
+
+function renderDonors() {
+    updateFilterState();
+    const filteredDonors = getFilteredDonors();
+    const visibleDonors = filteredDonors.slice(0, visibleDonorLimit);
+
+    loadingEl?.classList.add('hidden');
+    if (!filteredDonors.length) {
+        contentEl?.classList.add('hidden');
+        loadMoreEl?.classList.add('hidden');
+        resultCountEl?.classList.add('hidden');
+        if (emptyEl) {
+            emptyEl.textContent = getEmptyMessage();
+            emptyEl.classList.remove('hidden');
+        }
+        return;
+    }
+
+    emptyEl?.classList.add('hidden');
+    if (contentEl) {
+        contentEl.innerHTML = visibleDonors.map(buildDonorCard).join('');
+        contentEl.classList.remove('hidden');
+    }
+    if (resultCountEl) {
+        resultCountEl.textContent = `Mostrando ${visibleDonors.length} de ${filteredDonors.length} donantes`;
+        resultCountEl.classList.remove('hidden');
+    }
+    loadMoreEl?.classList.toggle('hidden', visibleDonors.length >= filteredDonors.length);
+}
+
+function updateStats(stats, isAdmin) {
+    donorStatsEl?.classList.remove('hidden');
+    donorStatsEl?.classList.toggle('lg:grid-cols-5', isAdmin);
+    donorStatsEl?.classList.toggle('lg:grid-cols-3', !isAdmin);
+    if (statTotalDonors) statTotalDonors.textContent = String(stats?.totalDonors || 0);
+    if (statRecurringDonors) statRecurringDonors.textContent = String(stats?.recurringDonors || 0);
+    if (statOneTimeDonors) statOneTimeDonors.textContent = String(stats?.oneTimeDonors || 0);
+    if (filterCountAll) filterCountAll.textContent = String(stats?.totalDonors || 0);
+    if (filterCountRecurring) filterCountRecurring.textContent = String(stats?.recurringDonors || 0);
+    if (filterCountOneTime) filterCountOneTime.textContent = String(stats?.oneTimeDonors || 0);
+
+    adminStatEls.forEach((element) => element.classList.toggle('hidden', !isAdmin));
+    if (isAdmin) {
+        if (statCampusTotals) {
+            statCampusTotals.innerHTML = formatTotals(stats?.totalsByCurrency, 'leading-6');
+        }
+        if (statActiveMissionaries) {
+            statActiveMissionaries.textContent = String(stats?.activeMissionaries || 0);
+        }
+    }
 }
 
 async function loadDonors() {
     showLoading();
     try {
-        const auth = await withTimeout(ensureAuthenticated(), REQUEST_TIMEOUT_MS, 'La autenticación del portal');
+        const auth = await withTimeout(
+            ensureAuthenticated(),
+            REQUEST_TIMEOUT_MS,
+            'La autenticación del portal',
+        );
         if (!auth.isAuthenticated) {
             redirectToLogin();
             return;
@@ -136,7 +379,7 @@ async function loadDonors() {
 
         const { response, data } = await fetchJsonWithTimeout('/api/portal/campus/donors', {
             headers,
-            credentials: 'include'
+            credentials: 'include',
         }, REQUEST_TIMEOUT_MS, 'La carga de donantes');
 
         if (!response.ok || !data.ok) {
@@ -144,129 +387,21 @@ async function loadDonors() {
                 window.location.replace('/portal');
                 return;
             }
-            throw new Error(data.error || 'Failed to load donors');
+            throw new Error(data.error || 'No se pudieron cargar los donantes.');
         }
 
-        const { donors, stats, isAdmin, isCampusMissionary } = data;
+        isAdminView = Boolean(data.isAdmin);
+        allDonors = Array.isArray(data.donors) ? data.donors : [];
+        visibleDonorLimit = DONORS_PAGE_SIZE;
 
-        // Update subtitle based on role
-        if (isCampusMissionary) {
-            subtitleEl.textContent = 'Tus donantes para enviar agradecimientos';
-        } else if (isAdmin) {
-            subtitleEl.textContent = 'Solo donaciones Campus, con donante, monto y misionero';
+        if (data.isCampusMissionary) {
+            subtitleEl.textContent = 'Tus donantes recurrentes y de una sola vez';
+        } else if (data.isAdmin) {
+            subtitleEl.textContent = 'Donantes Campus por frecuencia, moneda y misionero';
         }
 
-        // Show admin stats if applicable
-        if (isAdmin && stats) {
-            adminStatsEl.classList.remove('hidden');
-            statTotalDonors.textContent = stats.totalDonors || 0;
-            statMonthDonations.textContent = formatCurrency(stats.totalAmount, stats.currency);
-            statActiveMissionaries.textContent = stats.activeMissionaries || 0;
-        }
-
-        // Render donors
-        if (!donors || donors.length === 0) {
-            loadingEl.classList.add('hidden');
-            emptyEl.classList.remove('hidden');
-            return;
-        }
-
-        contentEl.innerHTML = donors.map(donor => {
-            const lastDonationDate = new Date(donor.lastDonation).toLocaleDateString('es-CO', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-            const donorName = escapeHtml(donor.name || 'Donante Anónimo');
-            const donorEmail = escapeHtml(donor.email || '');
-            const donorPhone = escapeHtml(donor.phone || '');
-            const phoneDigits = String(donor.phone || '').replace(/\D/g, '');
-            const thanksMessage = encodeURIComponent(`Hola ${donor.name || ''}, gracias por apoyar Campus Maná. Tu generosidad nos ayuda a seguir compartiendo el evangelio en las universidades.`);
-            const contactActions = [
-                donor.email ? `<a class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" href="mailto:${encodeURIComponent(donor.email)}?subject=${encodeURIComponent('Gracias por apoyar Campus Maná')}&body=${thanksMessage}">Correo</a>` : '',
-                phoneDigits.length >= 8 ? `<a class="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noreferrer">WhatsApp</a>` : ''
-            ].filter(Boolean).join('');
-            const donationLines = Array.isArray(donor.donations) && donor.donations.length
-                ? `
-                    <div class="mt-4 rounded-2xl bg-slate-50 p-4 space-y-2">
-                        ${donor.donations.slice(0, 4).map((donation) => {
-                            const date = donation.created_at ? new Date(donation.created_at).toLocaleDateString('es-CO') : '';
-                            const names = donation.missionary?.names?.length
-                                ? donation.missionary.names.join(', ')
-                                : donation.missionary?.name || 'Campus';
-                            const amount = isAdmin && donation.amount !== null
-                                ? `<span class="font-bold text-brand-teal">${formatCurrency(donation.amount, donation.currency)}</span>`
-                                : '';
-                            const perMissionary = isAdmin && donation.amountPerMissionary
-                                ? `<span class="text-slate-400">(${formatCurrency(donation.amountPerMissionary, donation.currency)} por misionero)</span>`
-                                : '';
-                            return `
-                                <div class="flex flex-col gap-1 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
-                                    <span><strong class="text-[#293C74]">${escapeHtml(names)}</strong> ${date ? `· ${escapeHtml(date)}` : ''}</span>
-                                    <span>${amount} ${perMissionary}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `
-                : '';
-
-            // Only show amounts for admins
-            const amountDisplay = isAdmin && donor.totalAmount !== null
-                ? `
-                    <div class="w-full rounded-2xl bg-slate-50 p-4 sm:w-auto sm:min-w-[150px] sm:bg-transparent sm:p-0 sm:text-right">
-                        <p class="text-xs text-slate-400 uppercase tracking-widest mb-1">Total Donado</p>
-                        <p class="text-xl font-bold text-brand-teal break-words">${formatCurrency(donor.totalAmount, donor.currency)}</p>
-                    </div>
-                `
-                : '';
-
-            return `
-                <div class="p-6 border border-slate-100 rounded-2xl hover:shadow-md transition-all bg-white">
-                    <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="flex min-w-0 flex-1 items-start gap-4">
-                            <!-- Donor Avatar -->
-                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-teal to-[#293C74] flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
-                                ${donorName.charAt(0).toUpperCase()}
-                            </div>
-                            
-                            <!-- Donor Info -->
-                            <div class="min-w-0 flex-1">
-                                <h3 class="text-lg font-bold text-[#293C74] mb-1">${donorName}</h3>
-                                ${donor.email ? `<p class="text-sm text-slate-600 mb-1 break-all">${donorEmail}</p>` : ''}
-                                ${donor.phone ? `<p class="text-sm text-slate-500 break-words">${donorPhone}</p>` : ''}
-                                
-                                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3">
-                                    <div class="text-xs text-slate-400">
-                                        <span class="font-bold">${donor.donationCount}</span> donación${donor.donationCount > 1 ? 'es' : ''}
-                                    </div>
-                                    <div class="text-xs text-slate-400">
-                                        Última: <span class="font-bold">${lastDonationDate}</span>
-                                    </div>
-                                </div>
-
-                                ${donor.missionary?.name ? `
-                                    <div class="mt-2">
-                                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-[#293C74]/10 text-[#293C74] rounded-full text-xs font-bold">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                            ${escapeHtml(donor.missionary.name)}
-                                        </span>
-                                    </div>
-                                ` : ''}
-                                ${contactActions ? `<div class="mt-4 flex flex-wrap gap-2">${contactActions}</div>` : ''}
-                                ${donationLines}
-                            </div>
-                        </div>
-                        
-                        ${amountDisplay}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        loadingEl.classList.add('hidden');
-        contentEl.classList.remove('hidden');
-
+        updateStats(data.stats, isAdminView);
+        renderDonors();
     } catch (error) {
         console.error('[campus] Error loading donors:', error);
         if (campusSessionChecked) {
@@ -278,19 +413,25 @@ async function loadDonors() {
     }
 }
 
-function formatCurrency(amount, currency) {
-    if (!amount && amount !== 0) return '$0';
-    const formatter = new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: currency || 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
+filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+        currentFilter = button.dataset.donorFilter || 'all';
+        visibleDonorLimit = DONORS_PAGE_SIZE;
+        renderDonors();
     });
-    return formatter.format(amount);
-}
+});
 
-// Initialize
+searchEl?.addEventListener('input', () => {
+    visibleDonorLimit = DONORS_PAGE_SIZE;
+    renderDonors();
+});
+
+loadMoreEl?.addEventListener('click', () => {
+    visibleDonorLimit += DONORS_PAGE_SIZE;
+    renderDonors();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     showGate();
-    loadDonors();
+    void loadDonors();
 });
