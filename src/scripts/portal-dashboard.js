@@ -744,6 +744,8 @@ let adminIssuesData = [];
 let adminIssuesFilter = 'all';
 let adminIssuesCounts = {};
 let adminIssuesPage = 1;
+let churchManualFormInitialized = false;
+let inviteFormInitialized = false;
 const ALL_CHURCHES_VALUE = '__all__';
 const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
@@ -1592,6 +1594,8 @@ async function loadDashboardData(authResult) {
     loadingEl.classList.add('hidden');
     contentEl.classList.remove('hidden');
     if (hasChurchAccess) {
+      runSafe('initChurchManualForm', () => initChurchManualForm());
+      runSafe('initInviteForm', () => initInviteForm());
       scheduleAdvancedComponentsInit();
     }
 
@@ -1645,7 +1649,7 @@ async function loadDashboardData(authResult) {
     if (portalIsAdmin) {
       backgroundTasks.push(loadAdminFollowups(headers));
     }
-    if (churchForm) {
+    if (hasChurchAccess && churchForm) {
       backgroundTasks.push(loadChurchDraft());
     }
 
@@ -4339,6 +4343,9 @@ async function saveChurchDraft() {
 
 function initChurchManualForm() {
   if (!churchForm || !participantsList || !addParticipantBtn) return;
+  if (churchManualFormInitialized) return;
+  churchManualFormInitialized = true;
+
   if (requiresScopedChurchSelection()) {
     if (churchFormStatus) {
       churchFormStatus.textContent = 'Selecciona una iglesia en el panel superior antes de registrar.';
@@ -4424,6 +4431,9 @@ function initChurchManualForm() {
 
 function initInviteForm() {
   if (!inviteBtn || !inviteEmail || !inviteRole) return;
+  if (inviteFormInitialized) return;
+  inviteFormInitialized = true;
+
   inviteBtn.addEventListener('click', async () => {
     if (!inviteStatus) return;
     inviteStatus.textContent = 'Enviando invitación...';
@@ -6618,8 +6628,6 @@ async function initDashboard() {
 }
 
 initDashboard();
-initChurchManualForm();
-initInviteForm();
 
 // Church Catalog Helpers
 function populateChurchesUI(catalog) {
