@@ -485,6 +485,10 @@ async function init() {
         authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
 
         await loadProfile(auth);
+        if (!hasAnyEventManagementPermission()) {
+            window.location.replace('/portal');
+            return;
+        }
         await Promise.all([loadChurchesCatalog(), loadRegionsCatalog()]);
 
         syncScopeOptions();

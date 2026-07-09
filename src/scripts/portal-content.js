@@ -872,8 +872,7 @@ async function boot() {
     }
     const role = session?.profile?.effective_role || session?.profile?.role || 'user';
     if (!['admin', 'superadmin'].includes(role)) {
-      showAlert('Tu usuario no tiene permisos para gestionar contenido.', 'error', 0);
-      setPageActionAvailability();
+      window.location.replace('/portal');
       return;
     }
 

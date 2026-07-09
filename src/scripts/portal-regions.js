@@ -154,7 +154,7 @@ async function bootstrap() {
     await reloadAll();
   } catch (err) {
     if (err?.status === 401 || err?.status === 403) {
-      showError('No autorizado. Este módulo es solo para admin/superadmin con IP permitida.');
+      window.location.replace('/portal');
       return;
     }
     showError(err.message || 'No se pudo cargar el módulo.');

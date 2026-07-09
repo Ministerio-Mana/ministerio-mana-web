@@ -498,8 +498,7 @@ async function loadUsers(token) {
         });
 
         if (res.status === 403) {
-            // alert('No tienes permiso para ver usuarios.');
-            // window.location.href = '/portal';
+            window.location.replace('/portal');
             return;
         }
 
