@@ -3,178 +3,277 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 
+export const prerender = false;
+
+const APPROVED_STATUSES = ['PAID', 'APPROVED'];
+const ISSUE_STATUSES = ['PENDING', 'FAILED'];
+const CATEGORY_ORDER = ['Diezmos', 'Ofrendas', 'Misiones', 'Campus', 'Eventos', 'Peregrinaciones', 'General', 'Otros'];
+const CATEGORY_SET = new Set(CATEGORY_ORDER);
+const TYPE_MAP: Record<string, string> = {
+  diezmos: 'Diezmos',
+  ofrendas: 'Ofrendas',
+  misiones: 'Misiones',
+  campus: 'Campus',
+  evento: 'Eventos',
+  peregrinaciones: 'Peregrinaciones',
+  general: 'General',
+};
+
+const TRANSACTION_FIELDS = [
+  'id',
+  'amount',
+  'currency',
+  'status',
+  'concept_label',
+  'concept_code',
+  'donation_type',
+  'created_at',
+  'donor_name',
+  'donor_email',
+  'donor_phone',
+  'provider',
+  'reference',
+  'church_id',
+].join(', ');
+
+const TRANSACTION_FALLBACK_FIELDS = [
+  'id',
+  'amount',
+  'currency',
+  'status',
+  'donation_type',
+  'created_at',
+  'donor_name',
+  'donor_email',
+  'donor_phone',
+  'provider',
+  'reference',
+  'church_id',
+].join(', ');
+
+const ISSUE_FIELDS = `${TRANSACTION_FIELDS}, raw_event`;
+const ISSUE_FALLBACK_FIELDS = `${TRANSACTION_FALLBACK_FIELDS}, raw_event`;
+
+function json(payload: any, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+function parseBoundedInt(value: string | null, fallback: number, min: number, max: number): number {
+  const parsed = Number(value || fallback);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.floor(parsed), min), max);
+}
+
+function isAdminRole(role?: string | null): boolean {
+  return role === 'admin' || role === 'superadmin';
+}
+
+function isMissingColumnError(error: any): boolean {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '').toLowerCase();
+  return code === '42703' || (message.includes('column') && message.includes('does not exist'));
+}
+
+function resolveCategory(row: any): string {
+  const conceptLabel = String(row?.concept_label || '').trim();
+  if (conceptLabel && CATEGORY_SET.has(conceptLabel)) return conceptLabel;
+
+  const conceptCode = String(row?.concept_code || '').trim().toUpperCase();
+  if (conceptCode === 'TITHE') return 'Diezmos';
+  if (conceptCode === 'OFFERING') return 'Ofrendas';
+  if (conceptCode === 'MISSIONS') return 'Misiones';
+  if (conceptCode === 'CAMPUS') return 'Campus';
+  if (conceptCode === 'EVENT') return 'Eventos';
+  if (conceptCode === 'PILGRIMAGE') return 'Peregrinaciones';
+  if (conceptCode === 'GENERAL') return 'General';
+
+  const donationType = String(row?.donation_type || '').trim().toLowerCase();
+  return TYPE_MAP[donationType] || 'Otros';
+}
+
+function extractReason(raw: any, status: string): string {
+  const candidates = [
+    raw?.error?.message,
+    raw?.error?.reason,
+    raw?.error?.code,
+    raw?.status_message,
+    raw?.message,
+    raw?.failure_message,
+    raw?.data?.transaction?.status_message,
+    raw?.data?.transaction?.error?.message,
+    raw?.data?.transaction?.error?.reason,
+    raw?.last_payment_error?.message,
+    raw?.last_payment_error?.code,
+  ];
+  const found = candidates.find((value) => typeof value === 'string' && value.trim().length);
+  if (found) return found.trim();
+  return status === 'PENDING' ? 'En verificación' : 'Pago no confirmado';
+}
+
+function toClientRow(row: any) {
+  return {
+    id: row.id,
+    amount: row.amount,
+    currency: row.currency,
+    status: row.status,
+    concept_label: resolveCategory(row),
+    donation_type: row.donation_type ?? null,
+    created_at: row.created_at,
+    donor_name: row.donor_name ?? null,
+    donor_email: row.donor_email ?? null,
+    donor_phone: row.donor_phone ?? null,
+    provider: row.provider ?? null,
+    reference: row.reference ?? null,
+    church_id: row.church_id ?? null,
+  };
+}
+
+function makePagination(count: number | null | undefined, rowCount: number, page: number, pageSize: number) {
+  const totalRows = Number(count ?? rowCount);
+  const totalPages = totalRows > 0 ? Math.ceil(totalRows / pageSize) : 0;
+  const visibleFrom = rowCount ? ((page - 1) * pageSize) + 1 : 0;
+  const visibleTo = rowCount ? ((page - 1) * pageSize) + rowCount : 0;
+  return {
+    page,
+    pageSize,
+    totalRows,
+    totalPages,
+    visibleFrom,
+    visibleTo,
+    hasNextPage: page < totalPages,
+  };
+}
+
 export const GET: APIRoute = async ({ request }) => {
-    const startedAt = Date.now();
-    if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
+  const startedAt = Date.now();
+  if (!supabaseAdmin) return json({ ok: false, error: 'Server Config Error' }, 500);
 
-    const user = await getUserFromRequest(request);
-    const passwordSession = user ? null : readPasswordSession(request);
-    if (!user && !passwordSession) return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
+  const user = await getUserFromRequest(request);
+  const passwordSession = user ? null : readPasswordSession(request);
+  if (!user && !passwordSession) return json({ ok: false, error: 'Unauthorized' }, 401);
 
-    // Get Profile
-    const { data: profile } = user
-        ? await supabaseAdmin
-            .from('user_profiles')
-            .select('church_id, role')
-            .eq('user_id', user.id)
-            .single()
-        : { data: { role: 'superadmin', church_id: null } };
+  const { data: profile } = user
+    ? await supabaseAdmin
+      .from('user_profiles')
+      .select('church_id, role')
+      .eq('user_id', user.id)
+      .single()
+    : { data: { role: 'superadmin', church_id: null } };
 
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin')) {
-        return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
-    }
+  if (!profile || !isAdminRole(profile.role)) {
+    return json({ ok: false, error: 'Forbidden' }, 403);
+  }
 
-    const APPROVED_STATUSES = ['PAID', 'APPROVED'];
-    const ISSUE_STATUSES = ['PENDING', 'FAILED'];
-    const categoryOrder = ['Diezmos', 'Ofrendas', 'Misiones', 'Campus', 'Eventos', 'Peregrinaciones', 'General', 'Otros'];
-    const categorySet = new Set(categoryOrder);
-    const typeMap: Record<string, string> = {
-        diezmos: 'Diezmos',
-        ofrendas: 'Ofrendas',
-        misiones: 'Misiones',
-        campus: 'Campus',
-        evento: 'Eventos',
-        peregrinaciones: 'Peregrinaciones',
-        general: 'General',
-    };
+  const url = new URL(request.url);
+  const page = parseBoundedInt(url.searchParams.get('page') || url.searchParams.get('transactionsPage'), 1, 1, 10000);
+  const pageSize = parseBoundedInt(url.searchParams.get('pageSize') || url.searchParams.get('transactionsPageSize'), 50, 1, 100);
+  const issuesPage = parseBoundedInt(url.searchParams.get('issuesPage'), 1, 1, 10000);
+  const issuesPageSize = parseBoundedInt(url.searchParams.get('issuesPageSize'), 20, 1, 50);
+  const includeTransactions = url.searchParams.get('includeTransactions') !== 'false';
+  const includeIssues = url.searchParams.get('includeIssues') !== 'false';
 
-    const resolveCategory = (row: any): string => {
-        const conceptLabel = (row?.concept_label || '').toString().trim();
-        if (conceptLabel && categorySet.has(conceptLabel)) return conceptLabel;
-        const conceptCode = (row?.concept_code || '').toString().trim().toUpperCase();
-        if (conceptCode === 'TITHE') return 'Diezmos';
-        if (conceptCode === 'OFFERING') return 'Ofrendas';
-        if (conceptCode === 'MISSIONS') return 'Misiones';
-        if (conceptCode === 'CAMPUS') return 'Campus';
-        if (conceptCode === 'EVENT') return 'Eventos';
-        if (conceptCode === 'PILGRIMAGE') return 'Peregrinaciones';
-        if (conceptCode === 'GENERAL') return 'General';
-        const donationType = (row?.donation_type || '').toString().trim().toLowerCase();
-        return typeMap[donationType] || 'Otros';
-    };
+  const buildQuery = (fields: string, statuses: string[], currentPage: number, currentPageSize: number) => {
+    const rangeFrom = (currentPage - 1) * currentPageSize;
+    const rangeTo = rangeFrom + currentPageSize - 1;
+    return supabaseAdmin
+      .from('donations')
+      .select(fields, { count: 'exact' })
+      .in('status', statuses)
+      .order('created_at', { ascending: false })
+      .range(rangeFrom, rangeTo);
+  };
 
-    const extractReason = (raw: any, status: string): string => {
-        const candidates = [
-            raw?.error?.message,
-            raw?.error?.reason,
-            raw?.error?.code,
-            raw?.status_message,
-            raw?.message,
-            raw?.failure_message,
-            raw?.data?.transaction?.status_message,
-            raw?.data?.transaction?.error?.message,
-            raw?.data?.transaction?.error?.reason,
-            raw?.last_payment_error?.message,
-            raw?.last_payment_error?.code,
-        ];
-        const found = candidates.find((value) => typeof value === 'string' && value.trim().length);
-        if (found) return found.trim();
-        return status === 'PENDING' ? 'En verificación' : 'Pago no confirmado';
-    };
+  let [approvedResult, issuesResult] = await Promise.all([
+    includeTransactions
+      ? buildQuery(TRANSACTION_FIELDS, APPROVED_STATUSES, page, pageSize)
+      : Promise.resolve({ data: [], error: null, count: 0 }),
+    includeIssues
+      ? buildQuery(ISSUE_FIELDS, ISSUE_STATUSES, issuesPage, issuesPageSize)
+      : Promise.resolve({ data: [], error: null, count: 0 }),
+  ]);
 
-    const selectFields = 'id, amount, currency, status, concept_label, concept_code, donation_type, created_at, donor_name, donor_email, donor_phone, provider, reference, raw_event, church_id';
-    const fallbackFields = 'id, amount, currency, status, donation_type, created_at, donor_name, donor_email, donor_phone, provider, reference, raw_event, church_id';
+  if (approvedResult.error && isMissingColumnError(approvedResult.error)) {
+    approvedResult = await buildQuery(TRANSACTION_FALLBACK_FIELDS, APPROVED_STATUSES, page, pageSize);
+  }
 
-    const buildQuery = (fields: string) => {
-        let query = supabaseAdmin
-            .from('donations')
-            .select(fields)
-            .order('created_at', { ascending: false });
+  if (issuesResult.error && isMissingColumnError(issuesResult.error)) {
+    issuesResult = await buildQuery(ISSUE_FALLBACK_FIELDS, ISSUE_STATUSES, issuesPage, issuesPageSize);
+  }
 
-        return query;
-    };
-
-    let approvedQuery = buildQuery(selectFields);
-    if (!approvedQuery) {
-        return new Response(JSON.stringify({ ok: true, stats: { total: 0, byCategory: {} }, transactions: [], issues: [] }), { status: 200 });
-    }
-    approvedQuery = approvedQuery.in('status', APPROVED_STATUSES).limit(120);
-
-    let issuesQuery = buildQuery(selectFields);
-    issuesQuery = issuesQuery ? issuesQuery.in('status', ISSUE_STATUSES).limit(120) : null;
-
-    let approvedResult = await approvedQuery;
-    let issuesResult = issuesQuery ? await issuesQuery : { data: [], error: null };
-
-    if (approvedResult.error && approvedResult.error.code === '42703') {
-        const fallbackQuery = buildQuery(fallbackFields);
-        if (!fallbackQuery) {
-            return new Response(JSON.stringify({ ok: true, stats: { total: 0, byCategory: {} }, transactions: [], issues: [] }), { status: 200 });
-        }
-        approvedResult = await fallbackQuery.in('status', APPROVED_STATUSES).limit(120);
-    }
-
-    if (issuesResult?.error && issuesResult.error.code === '42703') {
-        const fallbackQuery = buildQuery(fallbackFields);
-        issuesResult = fallbackQuery
-            ? await fallbackQuery.in('status', ISSUE_STATUSES).limit(120)
-            : { data: [], error: null };
-    }
-
-    if (approvedResult.error) {
-        console.error('[portal.finances] approved query failed', {
-            elapsedMs: Date.now() - startedAt,
-            message: approvedResult.error?.message || String(approvedResult.error),
-            code: approvedResult.error?.code,
-        });
-        return new Response(JSON.stringify({ ok: false, error: 'Error loading finances' }), { status: 500 });
-    }
-
-    if (issuesResult?.error) {
-        console.error('[portal.finances] issues query failed', {
-            elapsedMs: Date.now() - startedAt,
-            message: issuesResult.error?.message || String(issuesResult.error),
-            code: issuesResult.error?.code,
-        });
-    }
-
-    const toClientRow = (row: any) => ({
-        id: row.id,
-        amount: row.amount,
-        currency: row.currency,
-        status: row.status,
-        concept_label: resolveCategory(row),
-        donation_type: row.donation_type ?? null,
-        created_at: row.created_at,
-        donor_name: row.donor_name ?? null,
-        donor_email: row.donor_email ?? null,
-        donor_phone: row.donor_phone ?? null,
-        provider: row.provider ?? null,
-        reference: row.reference ?? null,
-        church_id: row.church_id ?? null,
+  if (approvedResult.error) {
+    console.error('[portal.finances] approved query failed', {
+      elapsedMs: Date.now() - startedAt,
+      message: approvedResult.error?.message || String(approvedResult.error),
+      code: approvedResult.error?.code,
     });
+    return json({ ok: false, error: 'Error loading finances' }, 500);
+  }
 
-    const approvedTransactions = (approvedResult.data || []).map((row: any) => toClientRow(row));
+  if (issuesResult.error) {
+    console.error('[portal.finances] issues query failed', {
+      elapsedMs: Date.now() - startedAt,
+      message: issuesResult.error?.message || String(issuesResult.error),
+      code: issuesResult.error?.code,
+    });
+  }
 
-    const issues = (issuesResult?.data || []).map((row: any) => ({
-        ...toClientRow(row),
-        reason: extractReason(row.raw_event, row.status),
+  const approvedTransactions = (approvedResult.data || []).map((row: any) => toClientRow(row));
+  const issues = issuesResult.error
+    ? []
+    : (issuesResult.data || []).map((row: any) => ({
+      ...toClientRow(row),
+      reason: extractReason(row.raw_event, row.status),
     }));
 
-    const totalByCurrency: Record<string, number> = {};
-    const byCategory: Record<string, { total: number; byCurrency: Record<string, number> }> = {};
-    categoryOrder.forEach((label) => { byCategory[label] = { total: 0, byCurrency: {} }; });
+  const totalByCurrency: Record<string, number> = {};
+  const byCategory: Record<string, { total: number; byCurrency: Record<string, number> }> = {};
+  CATEGORY_ORDER.forEach((label) => { byCategory[label] = { total: 0, byCurrency: {} }; });
 
-    approvedTransactions.forEach((t: any) => {
-        const amount = Number(t.amount) || 0;
-        const label = t.concept_label || 'Otros';
-        const currency = (t.currency || 'COP').toUpperCase();
+  approvedTransactions.forEach((transaction: any) => {
+    const amount = Number(transaction.amount) || 0;
+    const label = transaction.concept_label || 'Otros';
+    const currency = String(transaction.currency || 'COP').toUpperCase();
 
-        totalByCurrency[currency] = (totalByCurrency[currency] || 0) + amount;
-        if (!byCategory[label]) byCategory[label] = { total: 0, byCurrency: {} };
-        byCategory[label].total += amount;
-        byCategory[label].byCurrency[currency] = (byCategory[label].byCurrency[currency] || 0) + amount;
+    totalByCurrency[currency] = (totalByCurrency[currency] || 0) + amount;
+    if (!byCategory[label]) byCategory[label] = { total: 0, byCurrency: {} };
+    byCategory[label].total += amount;
+    byCategory[label].byCurrency[currency] = (byCategory[label].byCurrency[currency] || 0) + amount;
+  });
+
+  const transactionsPagination = makePagination(approvedResult.count, approvedTransactions.length, page, pageSize);
+  const issuesPagination = makePagination(
+    issuesResult.error ? 0 : issuesResult.count,
+    issues.length,
+    issuesPage,
+    issuesPageSize,
+  );
+
+  const elapsedMs = Date.now() - startedAt;
+  if (elapsedMs > 2500) {
+    console.warn('[portal.finances] slow response', {
+      elapsedMs,
+      transactionCount: approvedTransactions.length,
+      issueCount: issues.length,
+      role: profile?.role,
     });
+  }
 
-    const elapsedMs = Date.now() - startedAt;
-    if (elapsedMs > 2500) {
-        console.warn('[portal.finances] slow response', {
-            elapsedMs,
-            transactionCount: approvedTransactions.length,
-            issueCount: issues.length,
-            role: profile?.role,
-        });
-    }
-
-    return new Response(JSON.stringify({ ok: true, stats: { totalByCurrency, byCategory }, transactions: approvedTransactions, issues }), { status: 200 });
+  return json({
+    ok: true,
+    stats: {
+      totalByCurrency,
+      byCategory,
+      scope: 'loaded-page',
+      loadedRows: approvedTransactions.length,
+      totalRows: transactionsPagination.totalRows,
+    },
+    transactions: approvedTransactions,
+    issues,
+    pagination: transactionsPagination,
+    transactionsPagination,
+    issuesPagination,
+  });
 };

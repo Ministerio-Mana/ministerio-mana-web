@@ -1,5 +1,4 @@
-import { getSupabaseBrowserClient } from './supabaseBrowser';
-import type { User, Session } from '@supabase/supabase-js';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 export interface PortalAuthResult {
     isAuthenticated: boolean;
@@ -22,6 +21,7 @@ const SESSION_TIMEOUT_MS = 6000;
 const PORTAL_SESSION_CACHE_MS = 10000;
 let portalSessionCache: { key: string; expiresAt: number; result: PortalSessionResult } | null = null;
 let portalSessionPromise: { key: string; promise: Promise<PortalSessionResult> } | null = null;
+let supabaseClientPromise: Promise<SupabaseClient | null> | null = null;
 
 function dlog(...args: any[]) {
     if (import.meta.env.DEV || window.location.host.includes('localhost')) {
@@ -29,11 +29,41 @@ function dlog(...args: any[]) {
     }
 }
 
+async function loadSupabaseBrowserClient(): Promise<SupabaseClient | null> {
+    if (!supabaseClientPromise) {
+        supabaseClientPromise = import('./supabaseBrowser')
+            .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient())
+            .catch((error) => {
+                supabaseClientPromise = null;
+                throw error;
+            });
+    }
+    return supabaseClientPromise;
+}
+
+function warmSupabaseClientSoon() {
+    if (typeof window === 'undefined') return;
+    const start = () => {
+        void loadSupabaseBrowserClient().catch((error) => {
+            console.warn(DEBUG_PREFIX, 'Supabase background warmup failed:', error);
+        });
+    };
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(start, { timeout: 3000 });
+        return;
+    }
+    window.setTimeout(start, 1500);
+}
+
+function getSupabaseUrlFromEnv(): string | null {
+    return import.meta.env?.PUBLIC_SUPABASE_URL
+        ?? import.meta.env?.SUPABASE_URL
+        ?? null;
+}
+
 function getSupabaseStorageKey(): string | null {
     try {
-        const url = import.meta.env?.PUBLIC_SUPABASE_URL
-            ?? import.meta.env?.SUPABASE_URL
-            ?? getSupabaseBrowserClient()?.supabaseUrl;
+        const url = getSupabaseUrlFromEnv();
         if (!url) return null;
         const host = new URL(url).hostname;
         const ref = host.split('.')[0];
@@ -166,9 +196,51 @@ export async function getPortalSession(options: {
 export async function ensureAuthenticated(): Promise<PortalAuthResult> {
     dlog('Starting authentication check...');
 
-    // 1. Try Supabase SDK (Fast & Standard)
+    // 1. Try LocalStorage first. The API validates the bearer token server-side.
     try {
-        const supabase = getSupabaseBrowserClient();
+        const key = getSupabaseStorageKey();
+        const sessionObj = parseStoredSession(key ? localStorage.getItem(key) : null);
+        if (sessionObj?.access_token) {
+            if (!isSessionExpired(sessionObj)) {
+                dlog('Authenticated via LocalStorage token');
+                warmSupabaseClientSoon();
+                return {
+                    isAuthenticated: true,
+                    token: sessionObj.access_token,
+                    mode: 'supabase',
+                    user: sessionObj.user || { email: 'recovered@session', role: 'authenticated' },
+                };
+            }
+
+            const supabase = await loadSupabaseBrowserClient();
+            if (supabase && sessionObj.refresh_token) {
+                const { data, error } = await withTimeout(
+                    supabase.auth.setSession({
+                        access_token: sessionObj.access_token,
+                        refresh_token: sessionObj.refresh_token,
+                    }),
+                    AUTH_TIMEOUT_MS,
+                    'La restauración de sesión',
+                );
+                if (!error && data?.session?.access_token) {
+                    dlog('Authenticated via LocalStorage (refreshed)');
+                    return {
+                        isAuthenticated: true,
+                        token: data.session.access_token,
+                        mode: 'supabase',
+                        user: data.session.user,
+                    };
+                }
+            }
+            if (key) localStorage.removeItem(key);
+        }
+    } catch (err) {
+        console.error(DEBUG_PREFIX, 'LocalStorage check failed:', err);
+    }
+
+    // 2. Try Supabase SDK when storage is empty or needs URL-session handling.
+    try {
+        const supabase = await loadSupabaseBrowserClient();
         if (supabase) {
             const { data } = await withTimeout(
                 supabase.auth.getSession(),
@@ -204,85 +276,6 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
         }
     } catch (err) {
         console.warn(DEBUG_PREFIX, 'Supabase SDK check failed:', err);
-    }
-
-    // 2. Try LocalStorage Fallback (Robust against SDK race conditions)
-    try {
-        const key = getSupabaseStorageKey();
-        const sessionObj = parseStoredSession(key ? localStorage.getItem(key) : null);
-        if (sessionObj?.access_token) {
-            const supabase = (() => {
-                try {
-                    return getSupabaseBrowserClient();
-                } catch {
-                    return null;
-                }
-            })();
-
-            if (isSessionExpired(sessionObj)) {
-                if (supabase && sessionObj.refresh_token) {
-                    const { data, error } = await withTimeout(
-                        supabase.auth.setSession({
-                            access_token: sessionObj.access_token,
-                            refresh_token: sessionObj.refresh_token,
-                        }),
-                        AUTH_TIMEOUT_MS,
-                        'La restauración de sesión',
-                    );
-                    if (!error && data?.session?.access_token) {
-                        dlog('Authenticated via LocalStorage (refreshed)');
-                        return {
-                            isAuthenticated: true,
-                            token: data.session.access_token,
-                            mode: 'supabase',
-                            user: data.session.user
-                        };
-                    }
-                }
-                if (key) {
-                    localStorage.removeItem(key);
-                }
-            } else {
-                if (supabase) {
-                    const { data: userData, error: userError } = await withTimeout(
-                        supabase.auth.getUser(sessionObj.access_token),
-                        AUTH_TIMEOUT_MS,
-                        'La validación de sesión',
-                    ).catch((error) => {
-                        if (error?.name === 'TimeoutError') {
-                            console.warn(DEBUG_PREFIX, 'User validation timed out; sending token to API validation.');
-                            return {
-                                data: { user: sessionObj.user || null },
-                                error: null,
-                            };
-                        }
-                        throw error;
-                    });
-                    if (!userError && userData?.user) {
-                        dlog('Authenticated via LocalStorage Fallback (validated)');
-                        return {
-                            isAuthenticated: true,
-                            token: sessionObj.access_token,
-                            mode: 'supabase',
-                            user: userData.user,
-                        };
-                    }
-                    if (key) {
-                        localStorage.removeItem(key);
-                    }
-                } else {
-                    dlog('Authenticated via LocalStorage Fallback');
-                    return {
-                        isAuthenticated: true,
-                        token: sessionObj.access_token,
-                        mode: 'supabase',
-                        user: sessionObj.user || { email: 'recovered@session', role: 'authenticated' },
-                    };
-                }
-            }
-        }
-    } catch (err) {
-        console.error(DEBUG_PREFIX, 'LocalStorage check failed:', err);
     }
 
     // 3. Try Legacy Password Session (Cookie-based)

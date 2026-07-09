@@ -1,4 +1,3 @@
-import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 import { compareSpanishLabels, normalizeChurchContinent, normalizeChurchCountry } from '@lib/churchGeo';
 
@@ -697,15 +696,19 @@ function syncDeleteAccountAccess() {
   setDeleteAccountState('', 'neutral');
 }
 
-let supabase = null;
-let supabaseInitError = null;
-try {
-  supabase = getSupabaseBrowserClient();
-} catch (err) {
-  console.error('Supabase client initialization failed:', err);
-  supabaseInitError = err;
-  // Don't redirect or show errors here - let the auth flow handle it
+let supabaseClientPromise = null;
+async function getSupabaseClientForAction() {
+  if (!supabaseClientPromise) {
+    supabaseClientPromise = import('@lib/supabaseBrowser')
+      .then(({ getSupabaseBrowserClient }) => getSupabaseBrowserClient())
+      .catch((err) => {
+        supabaseClientPromise = null;
+        throw err;
+      });
+  }
+  return supabaseClientPromise;
 }
+
 let portalProfile = null;
 let portalAccountPayload = null;
 let portalMemberships = [];
@@ -1285,12 +1288,9 @@ async function loadDashboardData(authResult) {
 
     dlog('[DEBUG] Starting Promise.all for API requests...');
 
-    const [sessionResult, resumenResult, userResult] = await Promise.allSettled([
+    const [sessionResult, resumenResult] = await Promise.allSettled([
       getPortalSession({ auth: authResult }),
       fetch('/api/cuenta/resumen', { headers, credentials: 'include' }),
-      token && supabase
-        ? supabase.auth.getUser()
-        : Promise.resolve({ data: { user: null } }),
     ]);
 
     if (sessionResult.status !== 'fulfilled') {
@@ -1300,16 +1300,11 @@ async function loadDashboardData(authResult) {
     if (resumenResult.status === 'rejected') {
       console.error('[portal.dashboard] resumen request failed', resumenResult.reason);
     }
-    if (userResult.status === 'rejected') {
-      console.error('[portal.dashboard] user request failed', userResult.reason);
-    }
 
     const sessionInfo = sessionResult.value;
     const sessionRes = sessionInfo.response;
     const resumenRes = resumenResult.status === 'fulfilled' ? resumenResult.value : null;
-    const userData = userResult.status === 'fulfilled'
-      ? userResult.value?.data?.user || null
-      : null;
+    const userData = sessionUser || null;
     dlog('[DEBUG] Promise.all completed.');
 
     dlog('[DEBUG] sessionRes status:', sessionRes?.status);
@@ -5590,13 +5585,11 @@ async function updateProfile() {
   profileStatus.textContent = 'Guardando...';
   profileStatus.className = 'text-sm font-medium text-white/40';
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
     const res = await fetch('/api/portal/profile', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        ...portalAuthHeaders,
       },
       body: JSON.stringify({
         fullName: profileName.value.trim(),
@@ -5636,13 +5629,11 @@ async function handlePlanAction(event) {
   target.disabled = true;
 
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        ...portalAuthHeaders,
       },
       body: JSON.stringify({ planId }),
     });
@@ -6331,7 +6322,8 @@ logoutBtn?.addEventListener('click', async () => {
   logoutBtn.textContent = 'Saliendo...';
 
   try {
-    if (supabase) {
+    if (authMode !== 'password') {
+      const supabase = await getSupabaseClientForAction();
       await supabase.auth.signOut({ scope: 'local' });
     }
   } catch (err) {
@@ -6358,17 +6350,15 @@ profileAffiliation?.addEventListener('change', (event) => {
 onboardAffiliation?.addEventListener('change', (event) => {
   toggleOnboardingChurch(event.target.value);
 });
-onboardingForm?.addEventListener('submit', async (event) => {
+  onboardingForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   onboardingStatus.textContent = 'Guardando...';
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
     const res = await fetch('/api/portal/profile', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        ...portalAuthHeaders,
       },
       body: JSON.stringify({
         fullName: onboardName.value.trim(),
@@ -6424,7 +6414,7 @@ function formatPasswordStrengthErrors(errors) {
 
 updatePasswordBtn?.addEventListener('click', async () => {
   if (!newPasswordInput || !securityStatus) return;
-  if (!supabase) {
+  if (authMode === 'password') {
     securityStatus.textContent = 'Función no disponible en este modo.';
     securityStatus.className = 'text-sm font-medium text-red-500';
     return;
@@ -6445,6 +6435,7 @@ updatePasswordBtn?.addEventListener('click', async () => {
   updatePasswordBtn.textContent = 'Guardando...';
 
   try {
+    const supabase = await getSupabaseClientForAction();
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
 
@@ -6509,7 +6500,8 @@ deleteAccountBtn?.addEventListener('click', async () => {
     setDeleteAccountState('Cuenta eliminada. Cerrando sesión...', 'success');
 
     try {
-      if (supabase) {
+      if (authMode !== 'password') {
+        const supabase = await getSupabaseClientForAction();
         await supabase.auth.signOut({ scope: 'local' });
       }
       await fetch('/api/portal/password-logout', { method: 'POST', credentials: 'include' });
@@ -6532,7 +6524,7 @@ const passkeyStatus = document.getElementById('passkey-status');
 
 registerPasskeyBtn?.addEventListener('click', async () => {
   if (!passkeyStatus) return;
-  if (!supabase) {
+  if (authMode === 'password') {
     passkeyStatus.textContent = 'Passkeys no disponible en este modo.';
     passkeyStatus.className = 'text-xs text-center mt-2 font-medium text-red-500';
     return;
@@ -6543,6 +6535,7 @@ registerPasskeyBtn?.addEventListener('click', async () => {
   registerPasskeyBtn.classList.add('opacity-50');
 
   try {
+    const supabase = await getSupabaseClientForAction();
     // 1. Initialize enrollment
     const { data, error } = await supabase.auth.mfa.enroll({
       factorType: 'webauthn',
