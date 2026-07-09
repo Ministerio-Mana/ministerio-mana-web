@@ -3,7 +3,7 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
 
-<BaseLayout title="Gestión de Contenido | Portal Maná" description="CMS para administrar contenido público del sitio." hideHeader hideFooter>
+<BaseLayout title="Gestión de Contenido | Portal Maná" description="CMS para administrar contenido público del sitio." hideHeader hideFooter enableClientRouter={false}>
   <main class="min-h-screen bg-gradient-to-b from-[#F8FAFC] via-[#F8FAFC] to-[#EEF3FF] text-slate-800 selection:bg-[#293C74]/20">
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />

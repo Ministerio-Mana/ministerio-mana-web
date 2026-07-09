@@ -2,7 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
-<BaseLayout title="Campus | Portal Maná" description="Gestión de donantes Campus" hideHeader hideFooter>
+<BaseLayout title="Campus | Portal Maná" description="Gestión de donantes Campus" hideHeader hideFooter enableClientRouter={false}>
   <main class="min-h-screen bg-[#F8FAFC]">
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />

@@ -3,7 +3,7 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
 
-<BaseLayout title="Peticiones | Portal Maná" description="Revisión e intercesión de peticiones de oración." hideHeader hideFooter>
+<BaseLayout title="Peticiones | Portal Maná" description="Revisión e intercesión de peticiones de oración." hideHeader hideFooter enableClientRouter={false}>
   <main class="min-h-screen bg-[#F8FAFC]">
     <div class="flex min-h-screen flex-col lg:flex-row">
       <Sidebar />

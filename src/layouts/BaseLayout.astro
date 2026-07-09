@@ -22,6 +22,7 @@ const {
   hideFooter = false,
   disableSmoothScroll = true,
   includeTurnstile = false,
+  enableClientRouter = true,
 } = Astro.props;
 const cspNonce = Astro.locals?.cspNonce;
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? import.meta.env.SUPABASE_URL;
@@ -42,7 +43,7 @@ const cspFrameSrc = "'self' https://challenges.cloudflare.com https://checkout.s
 <html lang="es" class="scroll-smooth">
   <head>
     <SEO {title} {description} {image} {imageAlt} {imageWidth} {imageHeight} {imageType} {type} {structuredData} {noindex} />
-    <ClientRouter fallback="swap" />
+    {enableClientRouter && <ClientRouter fallback="swap" />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta http-equiv="Content-Security-Policy" content={`default-src 'self'; img-src 'self' data: https://*.openstreetmap.org https://*.basemaps.cartocdn.com https://unpkg.com https://*.transparenttextures.com https://i.ytimg.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://unpkg.com https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; connect-src ${cspConnectSrc}; media-src 'self' blob: https://*.googlevideo.com; frame-src ${cspFrameSrc};`}>
     {includeTurnstile && (
