@@ -343,6 +343,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   let userId: string | null = null;
   const activationRedirectTo = `${baseUrl}/portal/activar?next=${encodeURIComponent('/portal')}`;
+  let accessEmailSent = false;
+  let accessEmailMethod: string | null = null;
+  let accessEmailError: string | null = null;
 
   if (hasInitialPassword) {
     if (campusSlugOwnerUserId) {
@@ -399,6 +402,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     userId = existingUser?.id || linkResult.userId || null;
+    accessEmailSent = true;
+    accessEmailMethod = linkResult.method;
     if (!userId) {
       return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear usuario' }), { status: 500 });
     }
@@ -448,16 +453,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (hasInitialPassword) {
     try {
       const emailResult = await sendAuthLink({
-        kind: 'magiclink',
+        kind: 'recovery',
         email: normalizedEmail,
-        redirectTo: `${baseUrl}/portal`,
+        redirectTo: activationRedirectTo,
       });
 
+      accessEmailSent = emailResult.ok;
+      accessEmailMethod = emailResult.method;
+      accessEmailError = emailResult.ok ? null : emailResult.error || 'No se pudo enviar el correo';
       if (!emailResult.ok) {
-        console.warn('[create-user] Email not sent:', emailResult.error);
+        console.warn('[create-user] access email not sent:', emailResult.error);
       }
     } catch (emailErr) {
       console.error('[create-user] Email error:', emailErr);
+      accessEmailSent = false;
+      accessEmailError = emailErr instanceof Error ? emailErr.message : 'No se pudo enviar el correo';
     }
   }
 
@@ -465,6 +475,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ok: true,
     userId,
     inviteSent: !hasInitialPassword,
+    accessEmailSent,
+    accessEmailMethod,
+    accessEmailError,
     campusMissionarySlug: resolvedCampusMissionarySlug,
   }), { status: 200 });
 };

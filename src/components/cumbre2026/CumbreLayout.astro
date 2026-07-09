@@ -276,5 +276,15 @@ const cspNonce = Astro.locals?.cspNonce;
     #cumbre-account-shell #account-name {
       display: none !important;
     }
+
+    #cumbre-account-shell:has(#account-logged[open]) {
+      max-width: min(15rem, calc(100vw - 2.5rem)) !important;
+      overflow: visible !important;
+    }
+
+    #cumbre-account-shell #account-logged[open],
+    #cumbre-account-shell #account-logged[open] > div {
+      overflow: visible !important;
+    }
   }
 </style>

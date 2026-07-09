@@ -1049,9 +1049,17 @@ function setupModal(token) {
 
             if (!res.ok || !data.ok) throw new Error(data.error || 'Error al crear');
 
-            alert(data.inviteSent
-                ? 'Usuario creado. Le enviamos un enlace para activar su cuenta y crear su contraseña.'
-                : 'Usuario creado exitosamente.');
+            let successMessage = 'Usuario creado exitosamente.';
+            if (data.inviteSent) {
+                successMessage = data.accessEmailSent
+                    ? 'Usuario creado. Le enviamos un enlace para activar su cuenta y crear su contraseña.'
+                    : 'Usuario creado, pero no se pudo enviar el correo de activación. Usa Reenviar acceso.';
+            } else if (data.accessEmailSent) {
+                successMessage = 'Usuario creado con contraseña temporal. También enviamos un enlace para activar o cambiar su contraseña.';
+            } else {
+                successMessage = 'Usuario creado con contraseña temporal, pero no se pudo enviar el correo. Entrégale la contraseña temporal o usa Reenviar acceso.';
+            }
+            alert(successMessage);
             modal?.classList.add('hidden');
             form.reset();
             loadUsers(token); // Reload list

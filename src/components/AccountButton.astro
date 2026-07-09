@@ -80,6 +80,7 @@ const logoutClass = isDark
   const container = document.getElementById('account-button-container');
   const guestBtn = document.getElementById('account-guest');
   const loggedBtn = document.getElementById('account-logged');
+  const loggedSummary = loggedBtn?.querySelector('summary');
   const accountName = document.getElementById('account-name');
   const accountInitials = document.getElementById('account-initials');
   const logoutBtn = document.getElementById('btn-logout-header');
@@ -153,6 +154,12 @@ const logoutClass = isDark
       window.location.href = '/';
     });
   }
+
+  loggedSummary?.addEventListener('click', (event) => {
+    if (!window.matchMedia('(max-width: 680px)').matches) return;
+    event.preventDefault();
+    window.location.href = '/portal/';
+  });
 
   checkSession();
 </script>

@@ -45,7 +45,23 @@ export async function sendSendgridEmail(params: {
       signal: controller.signal,
     });
 
-    return res.ok;
+    if (!res.ok) {
+      let body = '';
+      try {
+        body = (await res.text()).slice(0, 500);
+      } catch {
+        body = '';
+      }
+      console.warn('[sendgrid] email send failed', {
+        status: res.status,
+        statusText: res.statusText,
+        body,
+        templateId: params.templateId || null,
+      });
+      return false;
+    }
+
+    return true;
   } catch (err: any) {
     console.warn('[sendgrid] email send failed', err?.name === 'AbortError' ? 'timeout' : err?.message || 'unknown');
     return false;
