@@ -103,16 +103,16 @@
         content?.classList.toggle('hidden');
     });
 
-    const restrictedLinks = {
-        'nav-link-events': ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor'],
-        'nav-link-users': ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'leader'],
-        'nav-link-campus': ['superadmin', 'admin', 'campus_missionary'],
-        'nav-link-donations': ['superadmin', 'admin'],
-        'nav-link-finances': ['superadmin', 'admin'],
-        'nav-link-regions': ['superadmin', 'admin'],
-        'nav-link-prayers': ['superadmin', 'admin', 'intercessor'],
-        'nav-link-content': ['superadmin', 'admin'],
-    };
+    const restrictedLinks = [
+        'nav-link-events',
+        'nav-link-users',
+        'nav-link-campus',
+        'nav-link-donations',
+        'nav-link-finances',
+        'nav-link-regions',
+        'nav-link-prayers',
+        'nav-link-content',
+    ];
 
     function setRestrictedLinkVisibility(id, visible) {
         const link = document.getElementById(id);
@@ -136,19 +136,37 @@
         return effectiveRole;
     }
 
+    function canShowRestrictedLink(id, role, permissions = {}) {
+        if (id === 'nav-link-events') {
+            return Boolean(
+                permissions.can_manage_local_events
+                || permissions.can_manage_regional_events
+                || permissions.can_manage_national_events
+                || permissions.can_manage_global_events
+            );
+        }
+        if (id === 'nav-link-users') return Boolean(permissions.can_manage_users);
+        if (id === 'nav-link-campus') return Boolean(permissions.can_access_campus);
+        if (id === 'nav-link-donations' || id === 'nav-link-finances') return Boolean(permissions.can_access_finances);
+        if (id === 'nav-link-prayers') return Boolean(permissions.can_access_prayers);
+        if (id === 'nav-link-regions' || id === 'nav-link-content') return ['superadmin', 'admin'].includes(role);
+        return false;
+    }
+
     async function applySidebarPermissions() {
-        Object.keys(restrictedLinks).forEach((id) => setRestrictedLinkVisibility(id, false));
+        restrictedLinks.forEach((id) => setRestrictedLinkVisibility(id, false));
 
         try {
             const { auth, data: payload } = await getPortalSession();
             if (!auth.isAuthenticated || !payload?.ok) return;
             const role = resolveSidebarRole(payload.profile || {}, payload.memberships || []);
+            const permissions = payload.permissions || {};
 
-            Object.entries(restrictedLinks).forEach(([id, roles]) => {
-                setRestrictedLinkVisibility(id, roles.includes(role));
+            restrictedLinks.forEach((id) => {
+                setRestrictedLinkVisibility(id, canShowRestrictedLink(id, role, permissions));
             });
         } catch {
-            Object.keys(restrictedLinks).forEach((id) => setRestrictedLinkVisibility(id, false));
+            restrictedLinks.forEach((id) => setRestrictedLinkVisibility(id, false));
         }
     }
 

@@ -188,6 +188,24 @@ export function getRoleCapabilities(role?: string | null): PortalCapabilities {
   return ROLE_CAPABILITIES[normalizePortalRole(role)] || BASE_USER_CAPABILITIES;
 }
 
+export function mergePortalCapabilities(roles: Array<string | null | undefined>): PortalCapabilities {
+  return roles.reduce<PortalCapabilities>((merged, role) => {
+    const capabilities = getRoleCapabilities(role);
+    return {
+      can_manage_users: merged.can_manage_users || capabilities.can_manage_users,
+      can_create_users: merged.can_create_users || capabilities.can_create_users,
+      can_manage_local_events: merged.can_manage_local_events || capabilities.can_manage_local_events,
+      can_manage_regional_events: merged.can_manage_regional_events || capabilities.can_manage_regional_events,
+      can_manage_national_events: merged.can_manage_national_events || capabilities.can_manage_national_events,
+      can_manage_global_events: merged.can_manage_global_events || capabilities.can_manage_global_events,
+      can_register_people: merged.can_register_people || capabilities.can_register_people,
+      can_access_finances: merged.can_access_finances || capabilities.can_access_finances,
+      can_access_campus: merged.can_access_campus || capabilities.can_access_campus,
+      can_access_prayers: merged.can_access_prayers || capabilities.can_access_prayers,
+    };
+  }, { ...BASE_USER_CAPABILITIES });
+}
+
 export function getRoleScope(role?: string | null): PortalScope {
   return ROLE_SCOPE[normalizePortalRole(role)] || 'self';
 }

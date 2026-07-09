@@ -7,6 +7,7 @@ import {
 } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { getUserFromRequest } from '@lib/supabaseAuth';
+import { getSupportedSecondaryRoles, listActivePortalRoleAssignments } from '@lib/portalRoleAssignments';
 
 export type PortalPrayerGuardResult = {
   ok: boolean;
@@ -47,9 +48,14 @@ async function getPortalPrayerContext(request: Request): Promise<PortalPrayerGua
       };
     }
 
-    const memberships = await listUserMemberships(user.id);
+    const [memberships, roleAssignments] = await Promise.all([
+      listUserMemberships(user.id),
+      listActivePortalRoleAssignments(user.id),
+    ]);
     const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
-    if (!canAccessPrayerPanel(effectiveRole)) {
+    const secondaryRoles = getSupportedSecondaryRoles(roleAssignments);
+    const hasSecondaryPrayerAccess = secondaryRoles.includes('intercessor');
+    if (!canAccessPrayerPanel(effectiveRole) && !hasSecondaryPrayerAccess) {
       return {
         ok: false,
         status: 403,
@@ -66,7 +72,7 @@ async function getPortalPrayerContext(request: Request): Promise<PortalPrayerGua
       ok: true,
       status: 200,
       error: null,
-      role: effectiveRole,
+      role: canAccessPrayerPanel(effectiveRole) ? effectiveRole : 'intercessor',
       profile,
       userId: user.id,
       email: user.email.toLowerCase(),

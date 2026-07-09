@@ -2,8 +2,9 @@ import type { APIRoute } from 'astro';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, listUserMemberships, resolveEffectivePortalRole, resolveEffectiveChurchId } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
-import { getCreatableRoles, getRoleCapabilities, getRoleScope } from '@lib/portalRbac';
+import { getCreatableRoles, getRoleCapabilities, getRoleScope, mergePortalCapabilities } from '@lib/portalRbac';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
+import { getSupportedSecondaryRoles, listActivePortalRoleAssignments } from '@lib/portalRoleAssignments';
 
 export const prerender = false;
 
@@ -80,9 +81,10 @@ export const GET: APIRoute = async ({ request }) => {
     });
   }
 
-  const [profile, memberships] = await Promise.all([
+  const [profile, memberships, roleAssignments] = await Promise.all([
     ensureUserProfile(user),
     listUserMemberships(user.id),
+    listActivePortalRoleAssignments(user.id),
   ]);
   if (!profile) {
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear perfil' }), {
@@ -93,8 +95,11 @@ export const GET: APIRoute = async ({ request }) => {
 
   const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
   const effectiveChurchId = resolveEffectiveChurchId(profile.church_id || profile.portal_church_id || null, memberships);
+  const secondaryRoles = getSupportedSecondaryRoles(roleAssignments);
   const scope = getRoleScope(effectiveRole);
-  const permissions = getRoleCapabilities(effectiveRole);
+  const permissions = secondaryRoles.length
+    ? mergePortalCapabilities([effectiveRole, ...secondaryRoles])
+    : getRoleCapabilities(effectiveRole);
   const allowedRegionIds = await resolveAllowedRegionIds(user.id, effectiveRole, profile.region_id || null);
 
   return new Response(JSON.stringify({
@@ -103,8 +108,10 @@ export const GET: APIRoute = async ({ request }) => {
       ...profile,
       effective_role: effectiveRole,
       effective_church_id: effectiveChurchId,
+      secondary_roles: secondaryRoles,
     },
     memberships,
+    role_assignments: roleAssignments,
     scope,
     permissions,
     creatable_roles: getCreatableRoles(effectiveRole),
