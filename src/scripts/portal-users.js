@@ -203,7 +203,7 @@ function getSearchableUserText(user) {
     ].join(' '));
 }
 
-function applySidebarPermissions(role, memberships = []) {
+function applySidebarPermissions(role, memberships = [], permissions = {}) {
     const membershipRoles = (memberships || []).map((m) => m?.role).filter(Boolean);
     let effectiveRole = role || 'user';
     if (effectiveRole === 'user') {
@@ -220,14 +220,35 @@ function applySidebarPermissions(role, memberships = []) {
     const financeRoles = ['superadmin', 'admin'];
     const regionsRoles = ['superadmin', 'admin'];
     const prayerRoles = ['superadmin', 'admin', 'intercessor'];
+    const hasPermissionPayload = permissions && typeof permissions === 'object' && Object.keys(permissions).length > 0;
+    const canManageEvents = hasPermissionPayload
+        ? Boolean(
+            permissions.can_manage_local_events
+            || permissions.can_manage_regional_events
+            || permissions.can_manage_national_events
+            || permissions.can_manage_global_events
+        )
+        : eventManagementRoles.includes(effectiveRole);
+    const canManageUsers = hasPermissionPayload
+        ? Boolean(permissions.can_manage_users)
+        : userManagementRoles.includes(effectiveRole);
+    const canAccessCampus = hasPermissionPayload
+        ? Boolean(permissions.can_access_campus)
+        : campusRoles.includes(effectiveRole);
+    const canAccessFinances = hasPermissionPayload
+        ? Boolean(permissions.can_access_finances)
+        : financeRoles.includes(effectiveRole);
+    const canAccessPrayers = hasPermissionPayload
+        ? Boolean(permissions.can_access_prayers)
+        : prayerRoles.includes(effectiveRole);
 
-    if (navLinkEvents) navLinkEvents.style.display = eventManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
-    if (navLinkUsers) navLinkUsers.style.display = userManagementRoles.includes(effectiveRole) ? 'flex' : 'none';
-    if (navLinkCampus) navLinkCampus.style.display = campusRoles.includes(effectiveRole) ? 'flex' : 'none';
-    if (navLinkFinances) navLinkFinances.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
-    if (navLinkDonations) navLinkDonations.style.display = financeRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkEvents) navLinkEvents.style.display = canManageEvents ? 'flex' : 'none';
+    if (navLinkUsers) navLinkUsers.style.display = canManageUsers ? 'flex' : 'none';
+    if (navLinkCampus) navLinkCampus.style.display = canAccessCampus ? 'flex' : 'none';
+    if (navLinkFinances) navLinkFinances.style.display = canAccessFinances ? 'flex' : 'none';
+    if (navLinkDonations) navLinkDonations.style.display = canAccessFinances ? 'flex' : 'none';
     if (navLinkRegions) navLinkRegions.style.display = regionsRoles.includes(effectiveRole) ? 'flex' : 'none';
-    if (navLinkPrayers) navLinkPrayers.style.display = prayerRoles.includes(effectiveRole) ? 'flex' : 'none';
+    if (navLinkPrayers) navLinkPrayers.style.display = canAccessPrayers ? 'flex' : 'none';
     return effectiveRole;
 }
 
@@ -263,7 +284,7 @@ async function init() {
                 || '';
             currentCreatableRoles = Array.isArray(payload.creatable_roles) ? payload.creatable_roles : [];
 
-            currentUserRole = applySidebarPermissions(currentUserRole, memberships);
+            currentUserRole = applySidebarPermissions(currentUserRole, memberships, payload.permissions || {});
 
             // Hide Create Button for Roles that cannot create users
             if (btnOpen) btnOpen.style.display = currentCreatableRoles.length ? '' : 'none';
