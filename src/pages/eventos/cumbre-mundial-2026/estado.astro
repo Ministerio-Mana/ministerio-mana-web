@@ -14,7 +14,7 @@ const subtitle = isPayment
 const cspNonce = Astro.locals?.cspNonce;
 ---
 
-<CumbreLayout title={isPayment ? 'Pago recibido | Cumbre 2026' : '¡Todo listo! | Cumbre 2026'}>
+<CumbreLayout title={isPayment ? 'Pago recibido | Cumbre 2026' : '¡Todo listo! | Cumbre 2026'} includeTurnstile={!isPayment}>
   <div class="min-h-screen flex items-center justify-center p-6">
     <div class="relative bg-white/5 border border-white/10 p-12 rounded-[3rem] backdrop-blur-md max-w-lg w-full text-center space-y-8 animate-fade-in-up">
        

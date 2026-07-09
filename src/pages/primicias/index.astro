@@ -8,7 +8,7 @@ import { preferredGatewayForCountry } from '@lib/geo';
 const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO'; // Default to CO if unknown
 ---
 
-<BaseLayout title="Primicias y Diezmos | Ministerio Maná" description="Honra a Dios con tus primicias. Plataforma segura de donaciones.">
+<BaseLayout title="Primicias y Diezmos | Ministerio Maná" description="Honra a Dios con tus primicias. Plataforma segura de donaciones." includeTurnstile>
   <main class="relative min-h-screen bg-brand-void overflow-x-hidden text-white selection:bg-brand-gold selection:text-brand-void">
     
     <!-- Background Effects (Night Wheat Field) -->
@@ -134,4 +134,3 @@ const country = Astro.request.headers.get('x-vercel-ip-country') || 'CO'; // Def
     }
   });
 </script>
-

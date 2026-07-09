@@ -23,6 +23,7 @@ const {
   backLabel = 'Volver',
   useHistoryBack = true,
   noindex = false,
+  includeTurnstile = false,
 } = Astro.props;
 
 const isLight = variant === 'light';
@@ -43,6 +44,7 @@ const cspNonce = Astro.locals?.cspNonce;
   noindex={noindex}
   hideHeader
   hideFooter
+  includeTurnstile={includeTurnstile}
   disableSmoothScroll={!enableSmoothScroll}
 >
   <div class={`relative min-h-screen ${mainBg} ${overflowMode}`}>

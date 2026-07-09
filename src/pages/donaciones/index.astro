@@ -15,7 +15,7 @@ const preferred = requestedGateway === 'stripe' || requestedGateway === 'wompi'
   : preferredGatewayForCountry(geo.country);
 export const prerender = false;
 ---
-<BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión de Ministerio Maná.">
+<BaseLayout title="Donaciones — Ministerio Maná" description="Dona para expandir la misión de Ministerio Maná." includeTurnstile>
   <VenAyudanosBackLink tone="dark" />
   <DonationGateway preferred={preferred} country={geo.country} initialDonationType={initialDonationType} />
 </BaseLayout>

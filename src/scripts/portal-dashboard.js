@@ -1593,9 +1593,6 @@ async function loadDashboardData(authResult) {
     if (hasChurchAccess) {
       scheduleAdvancedComponentsInit();
     }
-    if (hasChurchAccess) {
-      void loadChurchCatalog(headers);
-    }
 
     // Inject Admin Filters if applicable
     if (portalProfile?.role === 'admin' || portalProfile?.role === 'superadmin') {
@@ -1621,16 +1618,25 @@ async function loadDashboardData(authResult) {
     // 6. Background Initialization (Parallelized)
     const backgroundTasks = [];
     if (hasChurchAccess) {
-      try {
-        await loadChurchSelector(headers);
-      } catch (err) {
-        console.error('Error cargando selector de iglesias:', err);
-      }
-      backgroundTasks.push(loadChurchBookings(headers));
-      backgroundTasks.push(loadChurchParticipants(headers));
-      backgroundTasks.push(loadChurchPayments(headers));
-      backgroundTasks.push(loadChurchInstallments(headers));
-      backgroundTasks.push(loadChurchMembers(headers));
+      backgroundTasks.push(new Promise((resolve) => {
+        setTimeout(() => {
+          void (async () => {
+            try {
+              await loadChurchSelector(headers);
+            } catch (err) {
+              console.error('Error cargando selector de iglesias:', err);
+            }
+
+            await Promise.allSettled([
+              loadChurchBookings(headers),
+              loadChurchParticipants(headers),
+              loadChurchPayments(headers),
+              loadChurchInstallments(headers),
+              loadChurchMembers(headers),
+            ]);
+          })().finally(resolve);
+        }, 0);
+      }));
     }
     if (portalIsSuperadmin) {
       backgroundTasks.push(loadAdminUsers(headers));
