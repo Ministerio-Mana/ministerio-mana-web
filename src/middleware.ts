@@ -76,7 +76,14 @@ function computeLanguage(code: string): 'es' | 'en' {
   return ENGLISH_COUNTRIES.has(code) ? 'en' : 'es';
 }
 
-async function lookupCountry(request: Request): Promise<GeoCookie> {
+function shouldSkipExternalGeoLookup(pathname: string): boolean {
+  return pathname.startsWith('/portal') || pathname.startsWith('/api/');
+}
+
+async function lookupCountry(
+  request: Request,
+  options: { skipExternalLookup?: boolean } = {},
+): Promise<GeoCookie> {
   const fallback: GeoCookie = {
     country: 'CO',
     lang: 'es',
@@ -87,6 +94,10 @@ async function lookupCountry(request: Request): Promise<GeoCookie> {
   if (cfIpCountry && cfIpCountry !== 'XX') {
     const country = cfIpCountry.toUpperCase();
     return { country, lang: computeLanguage(country), ts: Date.now() };
+  }
+
+  if (options.skipExternalLookup) {
+    return fallback;
   }
 
   const ip = getRequestIp(request);
@@ -182,7 +193,9 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
   const isExpired = geo ? (Date.now() - geo.ts) / 1000 > GEO_COOKIE_TTL : true;
 
   if (!geo || isExpired) {
-    geo = await lookupCountry(request);
+    geo = await lookupCountry(request, {
+      skipExternalLookup: shouldSkipExternalGeoLookup(url.pathname),
+    });
     cookies.set(GEO_COOKIE_NAME, JSON.stringify(geo), {
       path: '/',
       maxAge: GEO_COOKIE_TTL,
