@@ -173,6 +173,14 @@ function appendVary(response: Response, values: string[]) {
   response.headers.set('Vary', Array.from(existing).join(', '));
 }
 
+function withMutableHeaders(response: Response): Response {
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
 const appMiddleware: MiddlewareHandler = async (context, next) => {
   const { cookies, locals, request } = context;
   const url = new URL(request.url);
@@ -225,7 +233,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     });
   }
 
-  const response = await next();
+  const response = withMutableHeaders(await next());
 
   if (isPrivateApiPath(url.pathname)) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');
