@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { MISIONEROS } from '@data/misioneros';
+import { getRoleCapabilities } from '@lib/portalRbac';
 import {
     attachCampusAllocationsToDonations,
     loadCampusAllocationsByDonationIds,
@@ -314,14 +315,13 @@ export const GET: APIRoute = async ({ request }) => {
 
     const role = passwordSession ? 'superadmin' : (userProfile?.role || 'user');
 
-    // Only campus missionaries and admins can access this endpoint
-    const allowedRoles = ['campus_missionary', 'admin', 'superadmin'];
-    if (!allowedRoles.includes(role)) {
+    const capabilities = getRoleCapabilities(role);
+    if (!capabilities.can_access_campus) {
         return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
     }
 
-    const isAdmin = role === 'admin' || role === 'superadmin';
     const isCampusMissionary = role === 'campus_missionary';
+    const isAdmin = capabilities.can_access_campus && !isCampusMissionary;
 
     let donations: any[] = [];
     let error: any = null;
@@ -383,7 +383,7 @@ export const GET: APIRoute = async ({ request }) => {
             }
         }
     } else {
-        // Admins/Superadmins: Campus-only view. The global donations ledger lives in /portal/donations.
+        // Administrative Campus view. The global donations ledger lives in /portal/donations.
         const campusRows = await loadCampusDonationsBase();
         error = campusRows.error;
         donations = campusRows.data || [];
@@ -495,9 +495,13 @@ export const GET: APIRoute = async ({ request }) => {
         donors,
         stats,
         isAdmin,
-        isCampusMissionary
+        isCampusMissionary,
+        viewMode: isCampusMissionary ? 'missionary' : 'administrative',
     }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'private, no-store, max-age=0',
+        }
     });
 };

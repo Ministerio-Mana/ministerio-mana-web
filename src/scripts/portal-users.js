@@ -77,6 +77,7 @@ const roleTranslations = {
     'regional_pastor': 'Pastor Regional',
     'regional_collaborator': 'Colaborador Regional',
     'campus_missionary': 'Misionero Campus',
+    'finance': 'Equipo Financiero',
     'intercessor': 'Intercesor',
     'pastor': 'Pastor Local',
     'local_collaborator': 'Colaborador Local',
@@ -92,6 +93,7 @@ const roleOrder = [
     'regional_pastor',
     'regional_collaborator',
     'campus_missionary',
+    'finance',
     'intercessor',
     'pastor',
     'local_collaborator',
@@ -103,6 +105,7 @@ const quickRoleChangeRoles = new Set([
     'superadmin',
     'admin',
     'campus_missionary',
+    'finance',
     'intercessor',
     'user',
 ]);
@@ -179,7 +182,7 @@ function getUserCity(user) {
 
 function getScopeCategory(user) {
     const role = String(user?.role || 'user');
-    if (role === 'superadmin' || role === 'admin') return 'global';
+    if (role === 'superadmin' || role === 'admin' || role === 'finance') return 'global';
     if (role === 'national_pastor' || role === 'national_collaborator') return 'national';
     if (role === 'regional_pastor' || role === 'regional_collaborator') return 'regional';
     if (role === 'pastor' || role === 'local_collaborator' || role === 'leader') return 'church';
@@ -231,8 +234,8 @@ function applySidebarPermissions(role, memberships = [], permissions = {}) {
 
     const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor'];
     const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'leader'];
-    const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
-    const financeRoles = ['superadmin', 'admin'];
+    const campusRoles = ['superadmin', 'admin', 'finance', 'campus_missionary'];
+    const financeRoles = ['superadmin', 'admin', 'finance'];
     const regionsRoles = ['superadmin', 'admin'];
     const prayerRoles = ['superadmin', 'admin', 'intercessor'];
     const hasPermissionPayload = permissions && typeof permissions === 'object' && Object.keys(permissions).length > 0;
@@ -665,6 +668,7 @@ function applyFilters() {
 
 function roleBadgeClass(role) {
     if (role === 'admin' || role === 'superadmin') return 'bg-purple-100 text-purple-700';
+    if (role === 'finance') return 'bg-amber-100 text-amber-800';
     if (role === 'intercessor') return 'bg-rose-100 text-rose-700';
     if (role === 'pastor' || role === 'national_pastor' || role === 'regional_pastor') return 'bg-blue-100 text-blue-700';
     if (role === 'local_collaborator' || role === 'national_collaborator' || role === 'regional_collaborator') return 'bg-teal-100 text-teal-700';
@@ -775,7 +779,7 @@ function renderRoleCell(user) {
     `;
 }
 
-function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
+function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmailAttr, resetLabel) {
     const pendingRole = pendingRoleChanges.get(user.user_id);
     const isDeleted = user?.access_status === 'deleted' || user?.is_account_deleted === true;
     const isBlocked = user?.access_status === 'blocked' || user?.is_blocked === true;
@@ -786,6 +790,9 @@ function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
         ? (isDeleted
             ? '<span class="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cuenta eliminada</span>'
             : `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`)
+        : '';
+    const accessLinkButton = canCopyAccessLink && !isDeleted
+        ? `<button data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="px-3 py-2 rounded-lg border border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100">Copiar enlace</button>`
         : '';
     let lifecycleButtons = '';
     if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
@@ -802,7 +809,7 @@ function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
     }
 
     if (!pendingRole) {
-        const combined = [lifecycleButtons, resetButton].filter(Boolean).join('');
+        const combined = [lifecycleButtons, accessLinkButton, resetButton].filter(Boolean).join('');
         if (!combined) {
             return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
         }
@@ -814,6 +821,7 @@ function renderActionsCell(user, canSendAccessLink, safeEmailAttr, resetLabel) {
             <button data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
             ${lifecycleButtons}
+            ${accessLinkButton}
             ${resetButton}
         </div>
     `;
@@ -851,6 +859,9 @@ function renderTable(users) {
             const safeScope = escapeHtml(scopeLabel);
             const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
             const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
+            const protectedAccessLinkRoles = ['superadmin', 'admin', 'finance'];
+            const canCopyAccessLink = ['superadmin', 'admin'].includes(currentUserRole)
+                && (currentUserRole === 'superadmin' || !protectedAccessLinkRoles.includes(u.role));
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
                     <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
@@ -866,7 +877,7 @@ function renderTable(users) {
                     </td>
                     <td class="py-3 text-slate-400 text-xs">${safeLastSignIn}</td>
                     <td class="py-3 text-right pr-2">
-                        ${renderActionsCell(u, canSendAccessLink, safeEmailAttr, resetLabel)}
+                        ${renderActionsCell(u, canSendAccessLink, canCopyAccessLink, safeEmailAttr, resetLabel)}
                     </td>
                 </tr>
             `;
@@ -911,6 +922,38 @@ tbody?.addEventListener('click', async (event) => {
     const target = event.target.closest('[data-action]');
     if (!target || !currentToken) return;
     const action = target.dataset.action;
+
+    if (action === 'copy-access-link') {
+        const email = target.dataset.email;
+        if (!email) return;
+        const originalText = target.textContent;
+        target.textContent = 'Generando...';
+        target.setAttribute('disabled', 'disabled');
+        try {
+            const res = await fetch('/api/portal/admin/access-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
+                credentials: 'include',
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok || !data.actionUrl) {
+                throw new Error(data.error || 'No se pudo generar el enlace');
+            }
+            await copySensitiveText(data.actionUrl);
+            target.textContent = 'Enlace copiado';
+            window.setTimeout(() => {
+                target.textContent = originalText;
+                target.removeAttribute('disabled');
+            }, 2500);
+        } catch (err) {
+            console.error(err);
+            target.textContent = originalText;
+            target.removeAttribute('disabled');
+            alert(err.message || 'No se pudo generar el enlace.');
+        }
+        return;
+    }
 
     if (action === 'save-role') {
         const userId = target.dataset.userId;
@@ -1048,6 +1091,24 @@ tbody?.addEventListener('click', async (event) => {
         alert(err.message || 'No se pudo enviar.');
     }
 });
+
+async function copySensitiveText(value) {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return;
+    }
+
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.setAttribute('readonly', 'readonly');
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    const copied = document.execCommand('copy');
+    input.remove();
+    if (!copied) throw new Error('El navegador no permitió copiar el enlace');
+}
 
 function setupModal(token) {
     btnOpen?.addEventListener('click', () => {

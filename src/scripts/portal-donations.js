@@ -26,6 +26,7 @@ let paginationState = {
 };
 let loadedPageTotalsByCurrency = {};
 let financeSessionChecked = false;
+let canManageDonations = false;
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -183,6 +184,9 @@ async function ensureFinanceAccess() {
         return false;
     }
 
+    const effectiveRole = String(data.profile?.effective_role || data.profile?.role || 'user');
+    canManageDonations = effectiveRole === 'admin' || effectiveRole === 'superadmin';
+
     financeSessionChecked = true;
     showSecureContent();
     return true;
@@ -264,7 +268,8 @@ function donationRowsHtml(donations) {
         const reference = donation.reference
             ? `<p class="text-[11px] text-slate-400 mt-1">Ref: ${escapeHtml(donation.reference)}</p>`
             : '';
-        const canSyncWompi = String(donation.provider || '').toLowerCase() === 'wompi'
+        const canSyncWompi = canManageDonations
+            && String(donation.provider || '').toLowerCase() === 'wompi'
             && String(donation.status || '').toUpperCase() === 'PENDING'
             && donation.reference;
         const syncAction = canSyncWompi

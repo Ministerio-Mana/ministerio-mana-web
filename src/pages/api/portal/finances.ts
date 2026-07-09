@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getRoleCapabilities } from '@lib/portalRbac';
 
 export const prerender = false;
 
@@ -57,7 +58,10 @@ const ISSUE_FALLBACK_FIELDS = `${TRANSACTION_FALLBACK_FIELDS}, raw_event`;
 function json(payload: any, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'private, no-store, max-age=0',
+    },
   });
 }
 
@@ -65,10 +69,6 @@ function parseBoundedInt(value: string | null, fallback: number, min: number, ma
   const parsed = Number(value || fallback);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(Math.max(Math.floor(parsed), min), max);
-}
-
-function isAdminRole(role?: string | null): boolean {
-  return role === 'admin' || role === 'superadmin';
 }
 
 function isMissingColumnError(error: any): boolean {
@@ -150,20 +150,21 @@ function makePagination(count: number | null | undefined, rowCount: number, page
 export const GET: APIRoute = async ({ request }) => {
   const startedAt = Date.now();
   if (!supabaseAdmin) return json({ ok: false, error: 'Server Config Error' }, 500);
+  const db = supabaseAdmin;
 
   const user = await getUserFromRequest(request);
   const passwordSession = user ? null : readPasswordSession(request);
   if (!user && !passwordSession) return json({ ok: false, error: 'Unauthorized' }, 401);
 
   const { data: profile } = user
-    ? await supabaseAdmin
+    ? await db
       .from('user_profiles')
       .select('church_id, role')
       .eq('user_id', user.id)
       .single()
     : { data: { role: 'superadmin', church_id: null } };
 
-  if (!profile || !isAdminRole(profile.role)) {
+  if (!profile || !getRoleCapabilities(profile.role).can_access_finances) {
     return json({ ok: false, error: 'Forbidden' }, 403);
   }
 
@@ -178,7 +179,7 @@ export const GET: APIRoute = async ({ request }) => {
   const buildQuery = (fields: string, statuses: string[], currentPage: number, currentPageSize: number) => {
     const rangeFrom = (currentPage - 1) * currentPageSize;
     const rangeTo = rangeFrom + currentPageSize - 1;
-    return supabaseAdmin
+    return db
       .from('donations')
       .select(fields, { count: 'exact' })
       .in('status', statuses)

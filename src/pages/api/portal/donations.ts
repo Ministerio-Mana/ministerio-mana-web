@@ -2,15 +2,12 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getRoleCapabilities } from '@lib/portalRbac';
 
 export const prerender = false;
 
 const APPROVED_STATUSES = ['PAID', 'APPROVED'];
 const ISSUE_STATUSES = ['PENDING', 'FAILED'];
-
-function isAdminRole(role?: string | null): boolean {
-  return role === 'admin' || role === 'superadmin';
-}
 
 function isMissingColumnError(error: any): boolean {
   const code = String(error?.code || '');
@@ -90,6 +87,7 @@ export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
   }
+  const db = supabaseAdmin;
 
   const user = await getUserFromRequest(request);
   const passwordSession = user ? null : readPasswordSession(request);
@@ -99,7 +97,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   let role = 'superadmin';
   if (user) {
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await db
       .from('user_profiles')
       .select('role')
       .eq('user_id', user.id)
@@ -107,7 +105,7 @@ export const GET: APIRoute = async ({ request }) => {
     role = profile?.role || 'user';
   }
 
-  if (!isAdminRole(role)) {
+  if (!getRoleCapabilities(role).can_access_finances) {
     return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
   }
 
@@ -155,7 +153,7 @@ export const GET: APIRoute = async ({ request }) => {
     .replace(', missionary_name', '');
 
   const buildQuery = (fields: string) => {
-    let query = supabaseAdmin
+    let query = db
       .from('donations')
       .select(fields, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -170,7 +168,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   let result = await buildQuery(selectFields);
   if (result.error && isMissingColumnError(result.error)) {
-    let fallbackQuery = supabaseAdmin
+    let fallbackQuery = db
       .from('donations')
       .select(fallbackFields, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -230,6 +228,9 @@ export const GET: APIRoute = async ({ request }) => {
     },
   }), {
     status: 200,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'private, no-store, max-age=0',
+    },
   });
 };

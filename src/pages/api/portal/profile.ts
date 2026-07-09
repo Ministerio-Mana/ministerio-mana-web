@@ -116,6 +116,7 @@ export const POST: APIRoute = async ({ request }) => {
   const lockedScopeRoles = new Set([
     'superadmin',
     'admin',
+    'finance',
     'national_pastor',
     'national_collaborator',
     'regional_pastor',

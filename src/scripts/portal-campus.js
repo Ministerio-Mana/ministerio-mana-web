@@ -8,6 +8,8 @@ const emptyEl = document.getElementById('donors-empty');
 const subtitleEl = document.getElementById('campus-subtitle');
 const donorStatsEl = document.getElementById('donor-stats');
 const searchEl = document.getElementById('donor-search');
+const missionaryFilterContainerEl = document.getElementById('donor-missionary-filter-container');
+const missionaryFilterEl = document.getElementById('donor-missionary-filter');
 const resultCountEl = document.getElementById('donors-result-count');
 const loadMoreEl = document.getElementById('donors-load-more');
 const filterButtons = Array.from(document.querySelectorAll('[data-donor-filter]'));
@@ -28,6 +30,7 @@ const DONORS_PAGE_SIZE = 20;
 let campusSessionChecked = false;
 let allDonors = [];
 let currentFilter = 'all';
+let currentMissionarySlug = 'all';
 let visibleDonorLimit = DONORS_PAGE_SIZE;
 let isAdminView = false;
 
@@ -160,10 +163,57 @@ function updateFilterState() {
     });
 }
 
+function getDonorMissionarySlugs(donor) {
+    const slugs = new Set();
+    (donor?.donations || []).forEach((donation) => {
+        (donation?.missionary?.slugs || []).forEach((slug) => {
+            const normalized = String(slug || '').trim();
+            if (normalized) slugs.add(normalized);
+        });
+    });
+    return slugs;
+}
+
+function populateMissionaryFilter(donors, showFilter) {
+    missionaryFilterContainerEl?.classList.toggle('hidden', !showFilter);
+    if (!missionaryFilterEl || !showFilter) return;
+
+    const missionaries = new Map();
+    donors.forEach((donor) => {
+        (donor?.donations || []).forEach((donation) => {
+            const slugs = donation?.missionary?.slugs || [];
+            const names = donation?.missionary?.names || [];
+            slugs.forEach((slug, index) => {
+                const normalizedSlug = String(slug || '').trim();
+                if (!normalizedSlug) return;
+                const name = String(names[index] || normalizedSlug).trim();
+                missionaries.set(normalizedSlug, name || normalizedSlug);
+            });
+        });
+    });
+
+    missionaryFilterEl.replaceChildren();
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'Todos los misioneros';
+    missionaryFilterEl.appendChild(allOption);
+    Array.from(missionaries.entries())
+        .sort(([, left], [, right]) => left.localeCompare(right, 'es'))
+        .forEach(([slug, name]) => {
+            const option = document.createElement('option');
+            option.value = slug;
+            option.textContent = name;
+            missionaryFilterEl.appendChild(option);
+        });
+    currentMissionarySlug = 'all';
+    missionaryFilterEl.value = currentMissionarySlug;
+}
+
 function getFilteredDonors() {
     const query = normalizeSearch(searchEl?.value);
     return allDonors.filter((donor) => {
         if (currentFilter !== 'all' && donor.givingType !== currentFilter) return false;
+        if (currentMissionarySlug !== 'all' && !getDonorMissionarySlugs(donor).has(currentMissionarySlug)) return false;
         if (!query) return true;
         return normalizeSearch([
             donor.name,
@@ -176,6 +226,7 @@ function getFilteredDonors() {
 
 function getEmptyMessage() {
     if (searchEl?.value?.trim()) return 'No hay donantes que coincidan con la búsqueda.';
+    if (currentMissionarySlug !== 'all') return 'Este misionero todavía no tiene donantes en el filtro seleccionado.';
     if (currentFilter === 'recurring') return 'Todavía no hay donantes recurrentes en este alcance.';
     if (currentFilter === 'one_time') return 'Todavía no hay personas con donación única en este alcance.';
     return 'No se encontraron donantes todavía.';
@@ -393,11 +444,12 @@ async function loadDonors() {
         isAdminView = Boolean(data.isAdmin);
         allDonors = Array.isArray(data.donors) ? data.donors : [];
         visibleDonorLimit = DONORS_PAGE_SIZE;
+        populateMissionaryFilter(allDonors, isAdminView);
 
         if (data.isCampusMissionary) {
             subtitleEl.textContent = 'Tus donantes recurrentes y de una sola vez';
-        } else if (data.isAdmin) {
-            subtitleEl.textContent = 'Donantes Campus por frecuencia, moneda y misionero';
+        } else if (data.viewMode === 'administrative' || data.isAdmin) {
+            subtitleEl.textContent = 'Vista administrativa de donantes Campus';
         }
 
         updateStats(data.stats, isAdminView);
@@ -422,6 +474,12 @@ filterButtons.forEach((button) => {
 });
 
 searchEl?.addEventListener('input', () => {
+    visibleDonorLimit = DONORS_PAGE_SIZE;
+    renderDonors();
+});
+
+missionaryFilterEl?.addEventListener('change', () => {
+    currentMissionarySlug = missionaryFilterEl.value || 'all';
     visibleDonorLimit = DONORS_PAGE_SIZE;
     renderDonors();
 });

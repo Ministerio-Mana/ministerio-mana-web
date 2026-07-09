@@ -183,6 +183,69 @@ export async function sendAuthEmail(params: {
   });
 }
 
+export async function generateAuthActionLink(params: {
+  kind: AuthEmailKind;
+  email: string;
+  redirectTo?: string;
+}): Promise<{ ok: boolean; actionUrl?: string; userId?: string | null; error?: string }> {
+  if (!supabaseAdmin) {
+    return { ok: false, error: 'Supabase no configurado' };
+  }
+
+  const redirectTo = normalizeTrustedRedirectTo(params.redirectTo);
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: params.kind,
+    email: params.email,
+    options: redirectTo ? { redirectTo } : undefined,
+  });
+
+  if (error || !data?.properties?.action_link) {
+    console.error('[auth.generateLink] failed', {
+      kind: params.kind,
+      email: maskEmail(params.email),
+      has_redirect_to: Boolean(redirectTo),
+      error: error?.message || 'Undefined error from Supabase',
+      hasProperties: Boolean(data?.properties),
+      hasActionLink: Boolean(data?.properties?.action_link),
+    });
+    return { ok: false, error: 'No se pudo generar el enlace' };
+  }
+
+  const actionUrl = buildPortalActivationUrl({
+    redirectTo,
+    email: params.email,
+    verificationType: data.properties.verification_type,
+    hashedToken: data.properties.hashed_token,
+    fallbackActionLink: data.properties.action_link,
+  });
+  let actionPath = '';
+  try {
+    actionPath = new URL(actionUrl).pathname;
+  } catch {
+    actionPath = '';
+  }
+
+  void logSecurityEvent({
+    type: 'maintenance',
+    identifier: 'auth.action-link.generated',
+    detail: 'Auth link generado via generateLink',
+    meta: {
+      kind: params.kind,
+      email: maskEmail(params.email),
+      verification_type: normalizeVerificationType(data.properties.verification_type || ''),
+      has_hashed_token: Boolean(data.properties.hashed_token),
+      has_action_link: Boolean(data.properties.action_link),
+      action_path: actionPath || null,
+    },
+  });
+
+  return {
+    ok: true,
+    actionUrl,
+    userId: data.user?.id ?? null,
+  };
+}
+
 export async function sendAuthLink(params: {
   kind: AuthEmailKind;
   email: string;
@@ -257,52 +320,22 @@ export async function sendAuthLink(params: {
     }
   }
 
-  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-    type: params.kind,
+  const generated = await generateAuthActionLink({
+    kind: params.kind,
     email: params.email,
-    options: redirectTo ? { redirectTo } : undefined,
+    redirectTo,
   });
-
-  if (error || !data?.properties?.action_link) {
-    console.error('[auth.generateLink] failed', {
-      kind: params.kind,
-      email: maskEmail(params.email),
-      has_redirect_to: Boolean(redirectTo),
-      error: error?.message || 'Undefined error from Supabase',
-      hasProperties: Boolean(data?.properties),
-      hasActionLink: Boolean(data?.properties?.action_link),
-    });
-
-    return { ok: false, method: 'sendgrid', error: 'No se pudo enviar' };
+  if (!generated.ok || !generated.actionUrl) {
+    return { ok: false, method: 'sendgrid', error: generated.error || 'No se pudo enviar' };
   }
 
-  const actionUrl = buildPortalActivationUrl({
-    redirectTo,
-    email: params.email,
-    verificationType: data?.properties?.verification_type,
-    hashedToken: data?.properties?.hashed_token,
-    fallbackActionLink: data?.properties?.action_link,
-  });
+  const actionUrl = generated.actionUrl;
   let actionPath = '';
   try {
     actionPath = new URL(actionUrl).pathname;
   } catch {
     actionPath = '';
   }
-  void logSecurityEvent({
-    type: 'maintenance',
-    identifier: 'auth.send-link.generated',
-    detail: 'Auth link generado via generateLink',
-    meta: {
-      kind: params.kind,
-      email: maskEmail(params.email),
-      verification_type: normalizeVerificationType(data?.properties?.verification_type || ''),
-      has_hashed_token: Boolean(data?.properties?.hashed_token),
-      has_action_link: Boolean(data?.properties?.action_link),
-      action_path: actionPath || null,
-    },
-  });
-
   const sent = await sendAuthEmail({
     kind: params.kind,
     email: params.email,
@@ -333,5 +366,5 @@ export async function sendAuthLink(params: {
     },
   });
 
-  return { ok: true, method: 'sendgrid', userId: data.user?.id ?? null };
+  return { ok: true, method: 'sendgrid', userId: generated.userId ?? null };
 }

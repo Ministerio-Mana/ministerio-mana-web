@@ -77,7 +77,10 @@ export const GET: APIRoute = async ({ request }) => {
       },
     }), {
       status: 200,
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        'cache-control': 'private, no-store, max-age=0',
+      },
     });
   }
 
@@ -122,6 +125,9 @@ export const GET: APIRoute = async ({ request }) => {
     },
   }), {
     status: 200,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'private, no-store, max-age=0',
+    },
   });
 };

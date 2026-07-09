@@ -70,7 +70,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const desiredRole = String(payload.role);
-  const ALLOWED_ROLE_CHANGES = new Set(['user', 'admin', 'superadmin', 'campus_missionary', 'intercessor']);
+  const ALLOWED_ROLE_CHANGES = new Set(['user', 'admin', 'superadmin', 'campus_missionary', 'finance', 'intercessor']);
   if (!ALLOWED_ROLE_CHANGES.has(desiredRole)) {
     return new Response(JSON.stringify({ ok: false, error: 'Rol no permitido en este flujo' }), {
       status: 400,

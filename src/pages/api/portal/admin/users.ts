@@ -102,6 +102,9 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
 
   return new Response(JSON.stringify({ ok: true, users: response }), {
     status: 200,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'private, no-store, max-age=0',
+    },
   });
 };
