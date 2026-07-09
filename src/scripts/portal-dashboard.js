@@ -712,6 +712,7 @@ async function getSupabaseClientForAction() {
 let portalProfile = null;
 let portalAccountPayload = null;
 let portalMemberships = [];
+let portalPermissions = {};
 let authMode = 'supabase';
 let churchParticipantsCount = 0;
 let portalAuthHeaders = {};
@@ -1346,6 +1347,9 @@ async function loadDashboardData(authResult) {
     authMode = sessionPayload.mode || 'supabase';
     portalProfile = (sessionPayload.profile && typeof sessionPayload.profile === 'object') ? sessionPayload.profile : {};
     portalMemberships = Array.isArray(sessionPayload.memberships) ? sessionPayload.memberships : [];
+    portalPermissions = (sessionPayload.permissions && typeof sessionPayload.permissions === 'object')
+      ? sessionPayload.permissions
+      : {};
     portalRole = portalProfile?.role || 'user';
     portalIsAdmin = portalRole === 'admin' || portalRole === 'superadmin';
     portalIsSuperadmin = portalRole === 'superadmin';
@@ -1376,10 +1380,10 @@ async function loadDashboardData(authResult) {
     const myRole = portalProfile?.role || 'user';
     const membershipRoles = portalMemberships.map((m) => m?.role).filter(Boolean);
     const hasChurchMembership = membershipRoles.some((role) => ['church_admin', 'church_member'].includes(role));
-    const allowedDashboardRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator', 'church_admin'];
+    const canRegisterPeople = Boolean(portalPermissions.can_register_people);
 
     // Tab Iglesia (Eventos) - Show to ALL users, but content varies by role
-    const isManagementRole = allowedDashboardRoles.includes(myRole) || hasChurchMembership;
+    const isManagementRole = portalIsAdmin || canRegisterPeople || hasChurchMembership;
 
 
     if (tabIglesia) {
@@ -1402,46 +1406,43 @@ async function loadDashboardData(authResult) {
       }
     }
 
-    // Gestión de Eventos: Only Pastors and Admins (can create local/national events)
-    const eventManagementRoles = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor'];
-
-    // Usuarios: Only Pastors and Admins
-    const userManagementRoles = ['superadmin', 'admin', 'national_pastor', 'national_collaborator', 'regional_pastor', 'regional_collaborator', 'pastor', 'local_collaborator'];
-
-    // Campus: Campus Missionaries + Admins (donor management)
-    const campusRoles = ['superadmin', 'admin', 'campus_missionary'];
-
-    // Finanzas: ONLY Superadmin and Admin
-    const financeRoles = ['superadmin', 'admin'];
-    const regionsRoles = ['superadmin', 'admin'];
-    const prayerRoles = ['superadmin', 'admin', 'intercessor'];
+    const canManageEvents = Boolean(
+      portalPermissions.can_manage_local_events
+      || portalPermissions.can_manage_regional_events
+      || portalPermissions.can_manage_national_events
+      || portalPermissions.can_manage_global_events,
+    );
+    const canManageUsers = Boolean(portalPermissions.can_manage_users);
+    const canAccessCampus = Boolean(portalPermissions.can_access_campus);
+    const canAccessFinances = Boolean(portalPermissions.can_access_finances);
+    const canAccessPrayers = Boolean(portalPermissions.can_access_prayers);
 
     if (myRole) {
-      if (eventManagementRoles.includes(myRole) && navLinkEventManagement) {
+      if (canManageEvents && navLinkEventManagement) {
         navLinkEventManagement.style.display = 'flex';
       }
 
-      if (userManagementRoles.includes(myRole) && navLinkUsers) {
+      if (canManageUsers && navLinkUsers) {
         navLinkUsers.style.display = 'flex';
       }
 
-      if (campusRoles.includes(myRole) && navLinkCampus) {
+      if (canAccessCampus && navLinkCampus) {
         navLinkCampus.style.display = 'flex';
       }
 
-      if (financeRoles.includes(myRole) && navLinkFinances) {
+      if (canAccessFinances && navLinkFinances) {
         navLinkFinances.style.display = 'flex';
       }
 
-      if (financeRoles.includes(myRole) && navLinkDonations) {
+      if (canAccessFinances && navLinkDonations) {
         navLinkDonations.style.display = 'flex';
       }
 
-      if (regionsRoles.includes(myRole) && navLinkRegions) {
+      if (portalIsAdmin && navLinkRegions) {
         navLinkRegions.style.display = 'flex';
       }
 
-      if (prayerRoles.includes(myRole) && navLinkPrayers) {
+      if (canAccessPrayers && navLinkPrayers) {
         navLinkPrayers.style.display = 'flex';
       }
     }
@@ -1456,7 +1457,7 @@ async function loadDashboardData(authResult) {
     const hasChurchAccess = portalIsAdmin
       || (canUseChurchManagement && (
         hasChurchRole
-        || ['national_pastor', 'pastor', 'local_collaborator'].includes(myRole)
+        || canRegisterPeople
       ));
     const membershipChurch = portalMemberships.find((item) => item?.church?.id)?.church || null;
 
@@ -1690,7 +1691,8 @@ function setupInviteAccess() {
   if (!inviteCard) return;
   const profileRole = portalProfile?.role || 'user';
   const membershipRoles = (portalMemberships || []).map((m) => m?.role);
-  const canInvite = ['admin', 'superadmin', 'national_pastor', 'pastor'].includes(profileRole)
+  const canInvite = Boolean(portalPermissions.can_register_people)
+    || ['admin', 'superadmin', 'national_pastor', 'pastor'].includes(profileRole)
     || membershipRoles.includes('church_admin');
   if (!canInvite) {
     inviteCard.classList.add('hidden');
