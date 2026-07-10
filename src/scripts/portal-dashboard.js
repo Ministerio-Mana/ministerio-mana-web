@@ -934,11 +934,12 @@ function renderOperationsEvent(event) {
     const showChurchSelector = isCumbre && portalHasChurchAccess && portalCanSelectChurch;
     churchSelector.classList.toggle('hidden', !showChurchSelector);
   }
-  if (churchFormToggle) {
-    churchFormToggle.disabled = isClosed;
-    churchFormToggle.classList.toggle('opacity-50', isClosed);
-    churchFormToggle.classList.toggle('cursor-not-allowed', isClosed);
-    churchFormToggle.textContent = isClosed ? 'Inscripciones cerradas' : 'Registrar participante';
+  document.getElementById('church-registration-action')?.classList.toggle('hidden', isClosed);
+  const activeChurchFormToggle = document.getElementById('church-form-toggle');
+  if (activeChurchFormToggle) {
+    activeChurchFormToggle.disabled = isClosed;
+    activeChurchFormToggle.classList.toggle('opacity-50', isClosed);
+    activeChurchFormToggle.classList.toggle('cursor-not-allowed', isClosed);
   }
 }
 
@@ -4652,9 +4653,6 @@ function initChurchManualForm() {
       churchFormStatus.textContent = 'Selecciona una iglesia en el panel superior antes de registrar.';
     }
     churchForm.classList.add('hidden');
-    if (churchFormToggle) {
-      churchFormToggle.textContent = 'Abrir formulario';
-    }
   }
   if (!participantsList.children.length) {
     participantsList.appendChild(buildParticipantRow());

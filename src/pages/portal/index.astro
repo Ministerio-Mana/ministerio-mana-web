@@ -517,7 +517,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           <p class="portal-stat-value" id="stat-church-total">0</p>
                       </div>
                       <div class="portal-stat">
-                          <p class="portal-stat-label">Recaudado</p>
+                          <p class="portal-stat-label">Abonos</p>
                           <p class="portal-stat-value !text-brand-teal" id="stat-church-paid">0</p>
                       </div>
                       <div class="portal-stat">
@@ -758,30 +758,29 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <div class="lg:col-span-4 space-y-6">
                   
                   <!-- Primary Action (New Reg) -->
-                  <div class="bg-[#293C74] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl shadow-[#293C74]/30 group">
-                    <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                       <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <div id="church-registration-action" class="portal-panel p-5 sm:p-6">
+                    <div class="flex items-start gap-3">
+                      <span class="flex h-10 w-10 flex-none items-center justify-center rounded-md bg-[#293C74]/10 text-[#293C74]"><PortalIcon name="plus" size={20} /></span>
+                      <div>
+                        <p class="text-xs font-bold uppercase text-slate-500">Acción rápida</p>
+                        <h3 class="mt-1 text-lg font-bold text-[#293C74]">Nueva inscripción</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-slate-600">Registra participantes y pagos manuales sin salir del evento.</p>
+                      </div>
                     </div>
-                    <div class="relative z-10">
-                        <span class="inline-block px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 border border-white/20">Acción Rápida</span>
-                        <h3 class="text-xl font-bold mb-2">Nueva Inscripción</h3>
-                        <p class="text-white/70 text-sm mb-8 leading-relaxed">Registra participantes manualmente y gestiona pagos en efectivo directamente.</p>
-                        
-                        <button id="church-form-toggle" class="w-full py-4 bg-white text-[#293C74] rounded-2xl font-bold text-sm hover:bg-brand-teal hover:text-white hover:shadow-lg hover:shadow-brand-teal/20 transition-all flex items-center justify-center gap-2 group-hover:scale-[1.02]">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                          Registrar Ahora
-                        </button>
-                    </div>
+                    <button id="church-form-toggle" class="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]">
+                      <PortalIcon name="plus" size={18} />
+                      Registrar participante
+                    </button>
                   </div>
 
                   <!-- Quick Tools Panel -->
-                  <div class="bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-lg shadow-slate-200/50 space-y-6">
+                  <div class="portal-panel space-y-6 p-5 sm:p-6">
                       <!-- Team Section -->
                       <div>
                          <div class="flex items-center justify-between mb-4">
                             <h3 class="text-sm font-bold text-[#293C74]">Equipo</h3>
-                            <button id="btn-toggle-invite" class="w-8 h-8 rounded-full bg-slate-50 text-[#293C74] hover:bg-brand-teal hover:text-white flex items-center justify-center transition-colors font-bold custom-transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            <button id="btn-toggle-invite" type="button" aria-label="Invitar integrante" class="flex h-9 w-9 items-center justify-center rounded-md bg-slate-50 text-[#293C74] transition-colors hover:bg-[#293C74] hover:text-white">
+                                <PortalIcon name="plus" size={17} />
                             </button>
                          </div>
                          
@@ -823,7 +822,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   </div>
 
                   <!-- Admin Followups -->
-                  <div id="admin-followups-card" class="hidden bg-white border border-slate-100 rounded-[2.5rem] p-6 shadow-lg shadow-slate-200/50 space-y-4">
+                  <div id="admin-followups-card" class="portal-panel hidden space-y-4 p-5 sm:p-6">
                       <div class="flex items-start justify-between gap-4">
                         <div>
                           <h3 class="text-sm font-bold text-[#293C74]">Centro de Soluciones</h3>
