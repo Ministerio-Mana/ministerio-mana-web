@@ -1,12 +1,8 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import { isCumbreRegistrationClosed } from '@lib/cumbreLifecycle';
 const cspNonce = Astro.locals?.cspNonce;
-
-const eventDetails = {
-  date: "6 al 8 de junio de 2026",
-  location: "Rionegro, Colombia",
-  price: "Desde $170 USD"
-};
+const eventClosed = isCumbreRegistrationClosed();
 
 const whatsappOnly =
   (import.meta.env?.PUBLIC_CUMBRE_WHATSAPP_ONLY ?? process.env?.PUBLIC_CUMBRE_WHATSAPP_ONLY) === 'true';
@@ -83,18 +79,24 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
          <p class="text-lg md:text-2xl text-white/80 font-light max-w-2xl text-center leading-relaxed">
             Un tiempo sobrenatural de conexión, visión y renovación espiritual.
          </p>
-         <p class="max-w-2xl rounded-2xl border border-brand-gold/30 bg-brand-gold/10 px-5 py-3 text-sm font-bold text-brand-gold">
-            Hospedaje dentro del evento agotado. Las inscripciones continúan abiertas sin alojamiento.
-         </p>
+	         <p class="max-w-2xl rounded-2xl border border-brand-gold/30 bg-brand-gold/10 px-5 py-3 text-sm font-bold text-brand-gold">
+	            {eventClosed ? 'La Cumbre Mundial 2026 finalizó. Conservamos aquí su información y cronograma.' : 'Hospedaje dentro del evento agotado. Las inscripciones continúan abiertas sin alojamiento.'}
+	         </p>
          
          <div class="flex flex-col sm:flex-row gap-4">
              <!-- Primary CTA -->
-             <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--teal group relative inline-flex px-10 py-4 font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] hover:shadow-[0_0_60px_rgba(40,166,189,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+	             {eventClosed ? (
+	               <span class="cumbre-action cumbre-action--teal relative inline-flex px-10 py-4 font-black text-lg rounded-full">
+	                 EVENTO FINALIZADO
+	               </span>
+	             ) : (
+	             <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--teal group relative inline-flex px-10 py-4 font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] hover:shadow-[0_0_60px_rgba(40,166,189,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 <span class="relative z-10 flex items-center gap-2 uppercase tracking-wider">
                   {ctaLabel}
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                 </span>
-             </a>
+	             </a>
+	             )}
 
              <!-- More Info -->
              <a href="#detalles" class="cumbre-action cumbre-action--dark-ghost px-10 py-4 font-medium rounded-full transition-colors uppercase tracking-wide text-sm flex items-center">
@@ -141,9 +143,9 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-white">Inscripción sin alojamiento</h3>
-          <p class="text-white/60 leading-relaxed text-sm">
-            El hospedaje dentro del evento ya está agotado. Puedes asistir a la Cumbre y gestionar tu estadía por fuera.
+	          <h3 class="text-xl font-bold text-white">{eventClosed ? 'Evento realizado' : 'Inscripción sin alojamiento'}</h3>
+	          <p class="text-white/60 leading-relaxed text-sm">
+	            {eventClosed ? 'La Cumbre se realizó del 6 al 8 de junio de 2026 en Rionegro, Colombia.' : 'El hospedaje dentro del evento ya está agotado. Puedes asistir a la Cumbre y gestionar tu estadía por fuera.'}
           </p>
         </div>
 
@@ -154,10 +156,9 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 class="text-xl font-bold text-white">Pago flexible</h3>
-          <p class="text-white/60 leading-relaxed text-sm">
-            Puedes pagar a cuotas o de forma diferida. La reserva cubre la asistencia a la Cumbre según el paquete
-            que selecciones.
+	          <h3 class="text-xl font-bold text-white">{eventClosed ? 'Información histórica' : 'Pago flexible'}</h3>
+	          <p class="text-white/60 leading-relaxed text-sm">
+	            {eventClosed ? 'El portal conserva cronograma, registros y pagos para consulta y conciliación administrativa.' : 'Puedes pagar a cuotas o de forma diferida. La reserva cubre la asistencia a la Cumbre según el paquete que selecciones.'}
           </p>
         </div>
       </div>
@@ -167,16 +168,25 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
   <!-- CTA Section -->
   <section class="py-24 px-6 text-center">
     <div class="max-w-2xl mx-auto space-y-8 bg-gradient-to-b from-white/5 to-transparent p-12 rounded-[3rem] border border-white/10 backdrop-blur-md">
-      <h2 class="text-3xl md:text-4xl font-bold text-white">¿Listo para ser parte?</h2>
-      <p class="text-white/70">
-        Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.
-      </p>
-      <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--white inline-flex px-10 py-5 font-black text-xl rounded-full hover:scale-105 transition-transform">
-        {ctaLabelCaps}
-      </a>
-      <a id="cta-registro" href="#" class="hidden cumbre-inline-link text-sm underline">
-        ¿Ya pagaste? Completa o modifica tu registro
-      </a>
+	      <h2 class="text-3xl md:text-4xl font-bold text-white">{eventClosed ? 'Cumbre Mundial 2026 finalizada' : '¿Listo para ser parte?'}</h2>
+	      <p class="text-white/70">
+	        {eventClosed ? 'Consulta el cronograma del encuentro o ingresa al portal para revisar tu información.' : 'Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.'}
+	      </p>
+	      {eventClosed ? (
+	        <div class="flex flex-wrap justify-center gap-3">
+	          <a href="/eventos/cumbre-mundial-2026/cronograma" class="cumbre-action cumbre-action--white inline-flex px-8 py-4 font-bold rounded-full">Ver cronograma</a>
+	          <a href="/portal" class="cumbre-action cumbre-action--dark-ghost inline-flex px-8 py-4 font-bold rounded-full">Ir al portal</a>
+	        </div>
+	      ) : (
+	        <>
+	          <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--white inline-flex px-10 py-5 font-black text-xl rounded-full hover:scale-105 transition-transform">
+	            {ctaLabelCaps}
+	          </a>
+	          <a id="cta-registro" href="#" class="hidden cumbre-inline-link text-sm underline">
+	            ¿Ya pagaste? Completa o modifica tu registro
+	          </a>
+	        </>
+	      )}
       <p class="text-xs text-white/50">
         <a href="/eventos/cumbre-mundial-2026/condiciones" class="cumbre-inline-link underline underline-offset-4 transition-colors">Ver condiciones comerciales</a>.
       </p>

@@ -14,6 +14,16 @@ import {
 } from '@lib/cms';
 
 export const prerender = false;
+const MAX_SECTION_REQUEST_CHARS = 70_000;
+const MAX_SECTION_PAYLOAD_CHARS = 50_000;
+
+function payloadIsTooLarge(value: unknown): boolean {
+  try {
+    return JSON.stringify(value ?? {}).length > MAX_SECTION_PAYLOAD_CHARS;
+  } catch {
+    return true;
+  }
+}
 
 export const GET: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) return jsonResponse({ ok: false, error: 'Supabase no configurado' }, 500);
@@ -44,7 +54,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const auth = await requireCmsAdmin({ request, clientAddress, identifier: 'portal.content.sections.create' });
   if (!auth.ok) return jsonResponse({ ok: false, error: auth.error || 'No autorizado' }, auth.status);
 
-  const body = parseJsonBody(await request.text());
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_SECTION_REQUEST_CHARS) {
+    return jsonResponse({ ok: false, error: 'El bloque supera el tamaño permitido' }, 413);
+  }
+  const body = parseJsonBody(rawBody);
 
   const pageId = cleanText(body.page_id, 60);
   const sectionKey = normalizeKey(body.section_key || body.key || '', 100);
@@ -57,6 +71,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+  if (payloadIsTooLarge(payload)) {
+    return jsonResponse({ ok: false, error: 'El contenido del bloque supera el tamaño permitido' }, 413);
+  }
 
   const { data: section, error } = await supabaseAdmin
     .from('cms_sections')
@@ -107,7 +124,11 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
   const auth = await requireCmsAdmin({ request, clientAddress, identifier: 'portal.content.sections.update' });
   if (!auth.ok) return jsonResponse({ ok: false, error: auth.error || 'No autorizado' }, auth.status);
 
-  const body = parseJsonBody(await request.text());
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_SECTION_REQUEST_CHARS) {
+    return jsonResponse({ ok: false, error: 'El bloque supera el tamaño permitido' }, 413);
+  }
+  const body = parseJsonBody(rawBody);
   const sectionId = cleanText(body.section_id || body.id, 60);
   if (!sectionId) return jsonResponse({ ok: false, error: 'section_id es obligatorio' }, 400);
 
@@ -138,7 +159,11 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
   }
 
   if (body.payload !== undefined) {
-    updates.payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+    const payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+    if (payloadIsTooLarge(payload)) {
+      return jsonResponse({ ok: false, error: 'El contenido del bloque supera el tamaño permitido' }, 413);
+    }
+    updates.payload = payload;
   }
 
   const { data: section, error } = await supabaseAdmin

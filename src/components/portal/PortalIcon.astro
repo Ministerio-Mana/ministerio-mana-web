@@ -1,0 +1,91 @@
+---
+import archive from 'lucide-static/icons/archive.svg?raw';
+import arrowLeft from 'lucide-static/icons/arrow-left.svg?raw';
+import calendarCheck from 'lucide-static/icons/calendar-check.svg?raw';
+import calendarCog from 'lucide-static/icons/calendar-cog.svg?raw';
+import calendarDays from 'lucide-static/icons/calendar-days.svg?raw';
+import chevronDown from 'lucide-static/icons/chevron-down.svg?raw';
+import chevronUp from 'lucide-static/icons/chevron-up.svg?raw';
+import circleUserRound from 'lucide-static/icons/circle-user-round.svg?raw';
+import eye from 'lucide-static/icons/eye.svg?raw';
+import filePenLine from 'lucide-static/icons/file-pen-line.svg?raw';
+import handCoins from 'lucide-static/icons/hand-coins.svg?raw';
+import heartHandshake from 'lucide-static/icons/heart-handshake.svg?raw';
+import image from 'lucide-static/icons/image.svg?raw';
+import layoutDashboard from 'lucide-static/icons/layout-dashboard.svg?raw';
+import logOut from 'lucide-static/icons/log-out.svg?raw';
+import mapPinned from 'lucide-static/icons/map-pinned.svg?raw';
+import menu from 'lucide-static/icons/menu.svg?raw';
+import messagesSquare from 'lucide-static/icons/messages-square.svg?raw';
+import plus from 'lucide-static/icons/plus.svg?raw';
+import receiptText from 'lucide-static/icons/receipt-text.svg?raw';
+import search from 'lucide-static/icons/search.svg?raw';
+import settings2 from 'lucide-static/icons/settings-2.svg?raw';
+import upload from 'lucide-static/icons/upload.svg?raw';
+import users from 'lucide-static/icons/users.svg?raw';
+import walletCards from 'lucide-static/icons/wallet-cards.svg?raw';
+import x from 'lucide-static/icons/x.svg?raw';
+
+const icons = {
+  archive,
+  'arrow-left': arrowLeft,
+  'calendar-check': calendarCheck,
+  'calendar-cog': calendarCog,
+  'calendar-days': calendarDays,
+  'chevron-down': chevronDown,
+  'chevron-up': chevronUp,
+  'circle-user-round': circleUserRound,
+  eye,
+  'file-pen-line': filePenLine,
+  'hand-coins': handCoins,
+  'heart-handshake': heartHandshake,
+  image,
+  'layout-dashboard': layoutDashboard,
+  'log-out': logOut,
+  'map-pinned': mapPinned,
+  menu,
+  'messages-square': messagesSquare,
+  plus,
+  'receipt-text': receiptText,
+  search,
+  'settings-2': settings2,
+  upload,
+  users,
+  'wallet-cards': walletCards,
+  x,
+} as const;
+
+type IconName = keyof typeof icons;
+
+interface Props {
+  name: IconName;
+  size?: number;
+  class?: string;
+}
+
+const { name, size = 20, class: className = '' } = Astro.props;
+const markup = icons[name];
+---
+
+<span
+  class:list={['portal-icon', className]}
+  style={`width:${size}px;height:${size}px`}
+  aria-hidden="true"
+  set:html={markup}
+></span>
+
+<style>
+  .portal-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+  }
+
+  .portal-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    stroke: currentColor;
+  }
+</style>

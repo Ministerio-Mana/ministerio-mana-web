@@ -1,6 +1,11 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
 import InscripcionForm from '@components/cumbre2026/InscripcionForm.astro';
+import { isCumbreRegistrationClosed } from '@lib/cumbreLifecycle';
+
+if (isCumbreRegistrationClosed()) {
+  return Astro.redirect('/eventos/cumbre-mundial-2026?estado=finalizado', 302);
+}
 
 const geo = Astro.locals?.geo ?? { country: 'CO' };
 const countryGroup = geo.country === 'CO' ? 'CO' : 'INT';

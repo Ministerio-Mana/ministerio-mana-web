@@ -2,6 +2,20 @@ import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/por
 
 const SECTION_KINDS = ['hero', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'];
 const SECTION_STATUSES = ['draft', 'published', 'archived'];
+const SECTION_KIND_LABELS = {
+  hero: 'Portada',
+  rich_text: 'Texto',
+  gallery: 'Galería',
+  cta: 'Llamado a la acción',
+  video: 'Video',
+  cards: 'Tarjetas',
+  custom: 'Avanzado',
+};
+const STATUS_LABELS = {
+  draft: 'Borrador',
+  published: 'Publicado',
+  archived: 'Archivado',
+};
 const REQUEST_TIMEOUT_MS = 15000;
 const UPLOAD_TIMEOUT_MS = 45000;
 
@@ -25,6 +39,8 @@ const el = {
   secureContent: document.getElementById('cms-secure-content'),
   alert: document.getElementById('cms-alert'),
   busy: document.getElementById('cms-busy'),
+  setup: document.getElementById('cms-setup'),
+  workbench: document.getElementById('cms-workbench'),
   filter: document.getElementById('cms-filter'),
   pages: document.getElementById('cms-pages'),
   pagesEmpty: document.getElementById('cms-pages-empty'),
@@ -118,9 +134,22 @@ function setBusy(flag, message = 'Procesando...') {
   }
 
   document.querySelectorAll('[data-cms-action]').forEach((btn) => {
-    btn.disabled = isBusy;
-    btn.classList.toggle('opacity-60', isBusy);
-    btn.classList.toggle('cursor-not-allowed', isBusy);
+    const disabled = isBusy || state.cmsSchemaReady === false;
+    btn.disabled = disabled;
+    btn.classList.toggle('opacity-60', disabled);
+    btn.classList.toggle('cursor-not-allowed', disabled);
+  });
+}
+
+function applySchemaState() {
+  const ready = state.cmsSchemaReady !== false;
+  const disabled = !ready || state.busyCount > 0;
+  el.setup?.classList.toggle('hidden', ready);
+  el.workbench?.classList.toggle('hidden', !ready);
+  document.querySelectorAll('[data-cms-action]').forEach((btn) => {
+    btn.disabled = disabled;
+    btn.classList.toggle('opacity-60', disabled);
+    btn.classList.toggle('cursor-not-allowed', disabled);
   });
 }
 
@@ -176,7 +205,7 @@ function clearAlert() {
 }
 
 function setPageActionAvailability() {
-  const hasPage = Boolean(state.selectedPageId);
+  const hasPage = Boolean(state.selectedPageId) && state.cmsSchemaReady !== false;
   [el.pageSave, el.pagePublish, el.pageUnpublish, el.pagePreview, el.newSection].forEach((node) => {
     if (!node) return;
     node.disabled = !hasPage;
@@ -240,7 +269,7 @@ function applyPageToForm(page) {
   el.pageSeoTitle.value = seo.title || '';
   el.pageSeoDescription.value = seo.description || '';
   el.pageSeoImage.value = seo.image || '';
-  el.pageMeta.textContent = `Estado: ${page.status || 'draft'} | Versión: ${page.version || 1} | Actualizado: ${page.updated_at ? new Date(page.updated_at).toLocaleString('es-CO') : '-'}`;
+  el.pageMeta.textContent = `Estado: ${STATUS_LABELS[page.status] || page.status || 'Borrador'} · Versión ${page.version || 1} · Actualizado ${page.updated_at ? new Date(page.updated_at).toLocaleString('es-CO') : '-'}`;
 
   if (el.mediaFolder && !el.mediaFolder.value) {
     el.mediaFolder.value = page.page_key || '';
@@ -272,7 +301,7 @@ function renderPages() {
         <button type="button" data-page-id="${escapeAttr(page.id)}" class="cms-page-item w-full text-left rounded-xl border px-3 py-3 transition ${active ? 'border-[#293C74]/40 bg-[#293C74]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm font-bold text-[#293C74]">${escapeHtml(page.title || page.page_key)}</p>
-            <span class="inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusTone}">${escapeHtml(page.status || 'draft')}</span>
+            <span class="portal-chip border ${statusTone}">${escapeHtml(STATUS_LABELS[page.status] || page.status || 'Borrador')}</span>
           </div>
           <p class="text-xs text-slate-500 mt-1">${escapeHtml(page.route_path || '/')}</p>
         </button>
@@ -295,13 +324,13 @@ function renderPages() {
 
 function renderKindOptions(value) {
   return SECTION_KINDS
-    .map((kind) => `<option value="${escapeAttr(kind)}"${kind === value ? ' selected' : ''}>${escapeHtml(kind)}</option>`)
+    .map((kind) => `<option value="${escapeAttr(kind)}"${kind === value ? ' selected' : ''}>${escapeHtml(SECTION_KIND_LABELS[kind] || kind)}</option>`)
     .join('');
 }
 
 function renderStatusOptions(value) {
   return SECTION_STATUSES
-    .map((status) => `<option value="${escapeAttr(status)}"${status === value ? ' selected' : ''}>${escapeHtml(status)}</option>`)
+    .map((status) => `<option value="${escapeAttr(status)}"${status === value ? ' selected' : ''}>${escapeHtml(STATUS_LABELS[status] || status)}</option>`)
     .join('');
 }
 
@@ -335,6 +364,63 @@ async function swapSectionsOrder(sectionId, direction) {
   }
 }
 
+function renderPayloadField(label, key, value, options = {}) {
+  const inputClass = 'mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm';
+  if (options.multiline) {
+    return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
+      <textarea data-payload-field="${escapeAttr(key)}" rows="${options.rows || 3}" class="${inputClass}">${escapeHtml(value || '')}</textarea>
+    </label>`;
+  }
+  return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
+    <input data-payload-field="${escapeAttr(key)}" type="${options.type || 'text'}" class="${inputClass}" value="${escapeAttr(value || '')}" />
+  </label>`;
+}
+
+function renderPayloadEditor(section) {
+  const payload = section.payload || {};
+  let fields = '';
+
+  if (section.kind === 'hero') {
+    fields = [
+      renderPayloadField('Texto superior', 'eyebrow', payload.eyebrow),
+      renderPayloadField('Título principal', 'title', payload.title),
+      renderPayloadField('Descripción', 'subtitle', payload.subtitle, { multiline: true, wide: true }),
+      renderPayloadField('Imagen', 'image', payload.image, { type: 'url', wide: true }),
+      renderPayloadField('Texto del botón', 'ctaLabel', payload.ctaLabel),
+      renderPayloadField('Enlace del botón', 'ctaHref', payload.ctaHref, { type: 'url' }),
+    ].join('');
+  } else if (section.kind === 'rich_text') {
+    fields = [
+      renderPayloadField('Título', 'title', payload.title, { wide: true }),
+      renderPayloadField('Texto', 'text', payload.text, { multiline: true, rows: 6, wide: true }),
+    ].join('');
+  } else if (section.kind === 'video') {
+    fields = [
+      renderPayloadField('Título', 'title', payload.title, { wide: true }),
+      renderPayloadField('Enlace de YouTube o Vimeo', 'url', payload.url || payload.videoUrl, { type: 'url', wide: true }),
+    ].join('');
+  } else if (section.kind === 'cta') {
+    fields = [
+      renderPayloadField('Título', 'title', payload.title, { wide: true }),
+      renderPayloadField('Texto', 'text', payload.text, { multiline: true, wide: true }),
+      renderPayloadField('Botón principal', 'primaryLabel', payload.primaryLabel),
+      renderPayloadField('Enlace principal', 'primaryHref', payload.primaryHref, { type: 'url' }),
+      renderPayloadField('Botón secundario', 'secondaryLabel', payload.secondaryLabel),
+      renderPayloadField('Enlace secundario', 'secondaryHref', payload.secondaryHref, { type: 'url' }),
+    ].join('');
+  }
+
+  const payloadText = JSON.stringify(payload, null, 2);
+  const visualFields = fields ? `<div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">${fields}</div>` : '';
+  return `${visualFields}
+    <details class="mt-3 rounded-lg border border-slate-200 bg-white">
+      <summary class="cursor-pointer px-3 py-2 text-xs font-bold text-slate-600">Opciones avanzadas</summary>
+      <div class="border-t border-slate-200 p-3">
+        <textarea data-field="payload" rows="7" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono">${escapeHtml(payloadText)}</textarea>
+      </div>
+    </details>`;
+}
+
 function renderSections() {
   if (!el.sections || !el.sectionsEmpty) return;
 
@@ -346,7 +432,6 @@ function renderSections() {
 
   el.sections.innerHTML = state.sections
     .map((section, index) => {
-      const payloadText = JSON.stringify(section.payload || {}, null, 2);
       return `
       <article class="rounded-2xl border border-slate-200 p-4 md:p-5 bg-slate-50/50" data-section-id="${escapeAttr(section.id)}">
         <div class="flex items-center justify-between gap-2 mb-3">
@@ -357,7 +442,7 @@ function renderSections() {
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <label class="text-xs font-bold text-slate-600">Key
+          <label class="text-xs font-bold text-slate-600">Nombre interno
             <input data-field="section_key" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value="${escapeAttr(section.section_key || '')}" />
           </label>
           <label class="text-xs font-bold text-slate-600">Tipo
@@ -373,9 +458,7 @@ function renderSections() {
         <label class="mt-3 block text-xs font-bold text-slate-600">Título
           <input data-field="title" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value="${escapeAttr(section.title || '')}" />
         </label>
-        <label class="mt-3 block text-xs font-bold text-slate-600">Payload JSON
-          <textarea data-field="payload" rows="7" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono">${escapeHtml(payloadText)}</textarea>
-        </label>
+        ${renderPayloadEditor(section)}
         <div class="mt-3 flex flex-wrap items-center gap-2">
           <button type="button" class="cms-section-save px-3 py-2 rounded-lg bg-brand-teal text-white text-xs font-bold" data-cms-action>Guardar sección</button>
           <button type="button" class="cms-section-delete px-3 py-2 rounded-lg border border-red-300 text-red-600 text-xs font-bold" data-cms-action>Eliminar</button>
@@ -415,9 +498,17 @@ function renderSections() {
       try {
         payload = JSON.parse(payloadRaw);
       } catch {
-        showAlert('El payload JSON tiene formato inválido.', 'error', 6000);
+        showAlert('El contenido avanzado tiene un formato inválido.', 'error', 6000);
         return;
       }
+
+      card.querySelectorAll('[data-payload-field]').forEach((field) => {
+        const key = field.getAttribute('data-payload-field');
+        if (!key) return;
+        const value = String(field.value || '').trim();
+        if (value) payload[key] = value;
+        else delete payload[key];
+      });
 
       const body = {
         section_id: sectionId,
@@ -575,7 +666,7 @@ async function loadMedia(silent = false) {
   const data = await fetchJson(`/api/portal/content/media${query}`);
   state.media = data.files || [];
 
-  el.mediaStatus.textContent = `Bucket: ${data.bucket || 'cms-media'} | Prefijo: ${prefix || 'general'} | Archivos: ${state.media.length}`;
+  el.mediaStatus.textContent = `Carpeta: ${prefix || 'general'} · ${state.media.length} archivo${state.media.length === 1 ? '' : 's'}`;
   renderMedia();
 
   if (!silent) {
@@ -586,6 +677,7 @@ async function loadMedia(silent = false) {
 async function loadPages(selectFirst = false) {
   const data = await fetchJson('/api/portal/content/pages');
   state.cmsSchemaReady = data.schemaReady !== false;
+  applySchemaState();
   state.pages = Array.isArray(data.pages) ? data.pages : [];
 
   if (state.selectedPageId && !state.pages.some((p) => p.id === state.selectedPageId)) {
@@ -896,11 +988,7 @@ async function boot() {
     state.permissionValidated = true;
     showSecureContent();
     await loadPages(true);
-    if (state.cmsSchemaReady === false) {
-      showAlert('CMS pendiente de configurar. Ejecuta docs/sql/cms_schema.sql para activar edición de contenido.', 'error', 0);
-    } else {
-      clearAlert();
-    }
+    clearAlert();
   } catch (error) {
     if (state.permissionValidated) {
       showSecureContent();
@@ -910,6 +998,7 @@ async function boot() {
     }
   } finally {
     setBusy(false);
+    applySchemaState();
   }
 }
 

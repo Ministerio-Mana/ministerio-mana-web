@@ -33,6 +33,10 @@ const CUMBRE_EVENT = {
   banner_url: '/images/cumbre/fishermen-bg-highres.jpg',
 };
 
+const EVENT_SCOPES = new Set(['LOCAL', 'REGIONAL', 'NATIONAL', 'GLOBAL']);
+const EVENT_STATUSES = new Set(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+const MAX_EVENT_REQUEST_CHARS = 12_000;
+
 type EventActorContext = {
   ok: boolean;
   status: number;
@@ -94,19 +98,45 @@ function sanitizeEventPayload(body: Record<string, any>) {
     if (value === undefined || value === '') return;
     if (field === 'banner_url') {
       const raw = String(value || '').trim();
-      const safeUrl = raw.startsWith('/') || raw.startsWith('https://') || raw.startsWith('http://') ? raw : '';
+      const safeUrl = raw.length <= 500 && ((raw.startsWith('/') && !raw.startsWith('//')) || /^https:\/\//i.test(raw)) ? raw : '';
       if (safeUrl) {
         payload[field] = safeUrl;
       }
       return;
     }
-    const maxLength = field === 'description' ? 600 : 160;
+    const maxLength = field === 'description' ? 600 : field === 'banner_url' ? 500 : 160;
     const safeValue = sanitizePlainText(String(value ?? ''), maxLength);
     if (safeValue) payload[field] = safeValue;
   });
   if (payload.scope) payload.scope = String(payload.scope).toUpperCase();
   if (payload.status) payload.status = String(payload.status).toUpperCase();
   return payload;
+}
+
+function validateEventPayload(payload: Record<string, any>): string | null {
+  if (payload.scope && !EVENT_SCOPES.has(String(payload.scope))) {
+    return 'Alcance de evento inválido.';
+  }
+  if (payload.status && !EVENT_STATUSES.has(String(payload.status))) {
+    return 'Estado de evento inválido.';
+  }
+  return null;
+}
+
+function validateEventDates(startDate: unknown, endDate?: unknown): string | null {
+  const start = new Date(String(startDate || '')).getTime();
+  if (!Number.isFinite(start)) return 'La fecha de inicio no es válida.';
+  if (endDate === undefined || endDate === null || endDate === '') return null;
+  const end = new Date(String(endDate)).getTime();
+  if (!Number.isFinite(end)) return 'La fecha de fin no es válida.';
+  if (end < start) return 'La fecha de fin debe ser posterior al inicio.';
+  return null;
+}
+
+function hasInvalidBannerUrl(body: Record<string, any>): boolean {
+  const raw = String(body?.banner_url || '').trim();
+  if (!raw) return false;
+  return raw.length > 500 || !((raw.startsWith('/') && !raw.startsWith('//')) || /^https:\/\//i.test(raw));
 }
 
 function isUuid(value: string | null | undefined): boolean {
@@ -152,11 +182,13 @@ async function resolveRegionalScope(userId: string, profileRegionId: string | nu
 async function isChurchInRegions(churchId: string, regionIds: string[], fallbackCountry?: string | null): Promise<boolean> {
   if (!supabaseAdmin || !churchId || !regionIds.length) return false;
 
-  let { data: church, error } = await supabaseAdmin
+  const initial = await supabaseAdmin
     .from('churches')
     .select('id, region_id, country')
     .eq('id', churchId)
     .maybeSingle();
+  let church: any = initial.data;
+  let error = initial.error;
 
   if (error?.code === '42703') {
     const fallback = await supabaseAdmin
@@ -344,7 +376,9 @@ export const GET: APIRoute = async ({ request }) => {
       if (ctx.churchId) {
         orParts.push(`and(scope.eq.LOCAL,church_id.eq.${ctx.churchId})`);
       } else if (ctx.isNational || ctx.isRegional) {
-        let churchQuery = supabaseAdmin.from('churches').select('id');
+        const scopedClient = supabaseAdmin;
+        if (!scopedClient) return orParts;
+        let churchQuery = scopedClient.from('churches').select('id');
         if (ctx.isRegional && preferRegionalColumn && ctx.regionIds.length) {
           churchQuery = churchQuery.in('region_id', ctx.regionIds);
         } else if (ctx.country) {
@@ -423,7 +457,16 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), { status: 403 });
   }
 
-  const body = await request.json();
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_EVENT_REQUEST_CHARS) {
+    return new Response(JSON.stringify({ ok: false, error: 'El evento supera el tamaño permitido.' }), { status: 413 });
+  }
+  let body: Record<string, any>;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: 'Solicitud inválida.' }), { status: 400 });
+  }
   const payload = sanitizeEventPayload(body);
   const requestedChurchId = String(body?.church_id || body?.churchId || '').trim() || null;
   const requestedRegionIdRaw = String(body?.region_id || body?.regionId || '').trim() || null;
@@ -431,6 +474,21 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!payload.title || !payload.start_date || !payload.scope) {
     return new Response(JSON.stringify({ ok: false, error: 'Missing fields' }), { status: 400 });
+  }
+
+  const payloadError = validateEventPayload(payload);
+  if (payloadError) {
+    return new Response(JSON.stringify({ ok: false, error: payloadError }), { status: 400 });
+  }
+  const dateError = validateEventDates(payload.start_date, payload.end_date);
+  if (dateError) {
+    return new Response(JSON.stringify({ ok: false, error: dateError }), { status: 400 });
+  }
+  if (hasInvalidBannerUrl(body)) {
+    return new Response(JSON.stringify({ ok: false, error: 'La imagen debe usar HTTPS o una ruta interna.' }), { status: 400 });
+  }
+  if (payload.status === 'ARCHIVED') {
+    return new Response(JSON.stringify({ ok: false, error: 'Un evento nuevo debe guardarse como borrador o publicado.' }), { status: 400 });
   }
 
   if (!canManageEventScope(ctx.role, payload.scope)) {
@@ -535,7 +593,7 @@ export const POST: APIRoute = async ({ request }) => {
     .insert({
       ...payload,
       created_by: ctx.userId,
-      status: 'PUBLISHED',
+      status: payload.status || 'DRAFT',
     })
     .select()
     .single();
@@ -547,7 +605,7 @@ export const POST: APIRoute = async ({ request }) => {
       .insert({
         ...fallbackPayload,
         created_by: ctx.userId,
-        status: 'PUBLISHED',
+        status: payload.status || 'DRAFT',
       })
       .select()
       .single();
@@ -574,7 +632,16 @@ export const PATCH: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), { status: 403 });
   }
 
-  const body = await request.json();
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_EVENT_REQUEST_CHARS) {
+    return new Response(JSON.stringify({ ok: false, error: 'El evento supera el tamaño permitido.' }), { status: 413 });
+  }
+  let body: Record<string, any>;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: 'Solicitud inválida.' }), { status: 400 });
+  }
   const eventId = body?.id ? String(body.id) : '';
   const requestedChurchId = String(body?.church_id || body?.churchId || '').trim() || null;
   const requestedRegionIdRaw = String(body?.region_id || body?.regionId || '').trim() || null;
@@ -585,20 +652,27 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
 
   const payload = sanitizeEventPayload(body);
+  const payloadError = validateEventPayload(payload);
+  if (payloadError) {
+    return new Response(JSON.stringify({ ok: false, error: payloadError }), { status: 400 });
+  }
+  if (hasInvalidBannerUrl(body)) {
+    return new Response(JSON.stringify({ ok: false, error: 'La imagen debe usar HTTPS o una ruta interna.' }), { status: 400 });
+  }
   if (!Object.keys(payload).length && !requestedChurchId && !requestedRegionId) {
     return new Response(JSON.stringify({ ok: false, error: 'No changes provided' }), { status: 400 });
   }
 
   let { data: eventRow, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id, created_by, scope, church_id, country, region_id')
+    .select('id, created_by, scope, church_id, country, region_id, start_date, end_date')
     .eq('id', eventId)
     .single();
 
   if (eventError && eventError.code === '42703' && /region_id/i.test(eventError.message || '')) {
     const fallback = await supabaseAdmin
       .from('events')
-      .select('id, created_by, scope, church_id, country')
+      .select('id, created_by, scope, church_id, country, start_date, end_date')
       .eq('id', eventId)
       .single();
     eventRow = fallback.data ? { ...fallback.data, region_id: null } : null;
@@ -656,6 +730,12 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
 
   const resultingScope = String(payload.scope || eventRow.scope || '').toUpperCase();
+  const resultingStartDate = payload.start_date || eventRow.start_date;
+  const resultingEndDate = payload.end_date === undefined ? eventRow.end_date : payload.end_date;
+  const dateError = validateEventDates(resultingStartDate, resultingEndDate);
+  if (dateError) {
+    return new Response(JSON.stringify({ ok: false, error: dateError }), { status: 400 });
+  }
 
   if (resultingScope === 'GLOBAL') {
     payload.country = null;

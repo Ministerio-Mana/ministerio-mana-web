@@ -20,6 +20,7 @@ import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
 import { buildIdempotencyKey, isSafeTokenCandidate } from '@lib/cumbreIdempotency';
+import { cumbreRegistrationClosedResponse, isCumbreRegistrationClosed } from '@lib/cumbreLifecycle';
 
 export const prerender = false;
 
@@ -94,6 +95,8 @@ async function findIdempotentBooking(idempotencyKey: string | null) {
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
+  if (isCumbreRegistrationClosed()) return cumbreRegistrationClosedResponse();
+
   const contentType = request.headers.get('content-type') || '';
   let payload: any = {};
 

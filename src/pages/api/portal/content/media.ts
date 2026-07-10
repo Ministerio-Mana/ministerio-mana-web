@@ -37,6 +37,7 @@ function cleanFileName(name: string): string {
 
 export const GET: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) return jsonResponse({ ok: false, error: 'Supabase no configurado' }, 500);
+  const db = supabaseAdmin;
 
   const auth = await requireCmsAdmin({ request, clientAddress, identifier: 'portal.content.media.get' });
   if (!auth.ok) return jsonResponse({ ok: false, error: auth.error || 'No autorizado' }, auth.status);
@@ -48,7 +49,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   const limitRaw = Number(url.searchParams.get('limit') || 60);
   const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(200, Math.floor(limitRaw))) : 60;
 
-  const { data, error } = await supabaseAdmin.storage.from(BUCKET).list(prefix, {
+  const { data, error } = await db.storage.from(BUCKET).list(prefix, {
     limit,
     sortBy: { column: 'created_at', order: 'desc' },
   });
@@ -59,7 +60,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
     .filter((item: any) => item?.id)
     .map((item: any) => {
       const path = [prefix, item.name].filter(Boolean).join('/');
-      const publicUrl = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      const publicUrl = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
       return {
         name: item.name,
         path,

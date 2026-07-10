@@ -40,20 +40,16 @@ alter table public.events enable row level security;
 create policy "Public read valid events"
   on public.events for select
   using (
-    (scope = 'GLOBAL') OR
-    (scope = 'NATIONAL' AND country = (select country from user_profiles where user_id = auth.uid())) OR
-    (scope = 'LOCAL' AND church_id = (select church_id from user_profiles where user_id = auth.uid())) OR
-    (created_by = auth.uid()) -- Creator always sees
+    (created_by = auth.uid()) OR
+    (
+      status = 'PUBLISHED' AND (
+        (scope = 'GLOBAL') OR
+        (scope = 'NATIONAL' AND country = (select country from user_profiles where user_id = auth.uid())) OR
+        (scope = 'LOCAL' AND church_id = (select church_id from user_profiles where user_id = auth.uid()))
+      )
+    )
   );
 
--- Policy: Write Access
--- Only Admins or Pastors (for their scope)
--- Simplifying to: Authenticated users can create (validated by app logic)
-create policy "Auth users can insert events"
-  on public.events for insert
-  with check (auth.role() = 'authenticated'); 
-
--- Ideally restrict Update to Creator or Admin
-create policy "Creator can update events"
-  on public.events for update
-  using (created_by = auth.uid());
+-- Las escrituras se realizan exclusivamente por /api/portal/events.
+-- No crear politicas INSERT/UPDATE/DELETE para anon o authenticated.
+revoke insert, update, delete, truncate, references, trigger on table public.events from authenticated;

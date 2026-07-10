@@ -1,152 +1,302 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import PortalIcon from '@components/portal/PortalIcon.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
 
-<BaseLayout title="Gestión Eventos | Portal Maná" description="Crea y administra eventos globales y locales." hideHeader hideFooter noindex>
-  <div class="portal-shell min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
-    <div class="flex flex-col lg:flex-row min-h-screen">
-      
-      <!-- Shared Sidebar -->
+<BaseLayout title="Gestión de Eventos | Portal Maná" description="Crea y administra eventos según tu alcance pastoral." hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F5F7FA] text-slate-800">
+    <div class="flex min-h-screen flex-col lg:flex-row">
       <Sidebar />
 
-      <!-- Main Content -->
-      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
-        <div id="events-gate" class="max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
+      <main class="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10">
+        <div id="events-gate" class="portal-panel mx-auto max-w-xl px-6 py-8 text-center text-slate-500">
           Validando permisos...
         </div>
 
-        <div id="events-secure-content" class="hidden max-w-6xl mx-auto space-y-8">
-            
-            <!-- Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-display font-bold text-[#293C74]">Gestión de Eventos</h1>
-                    <p class="text-slate-600">Administra eventos, conferencias y reuniones.</p>
+        <div id="events-secure-content" class="mx-auto hidden max-w-7xl space-y-6">
+          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="mb-1 text-xs font-bold uppercase text-slate-500">Operación y seguimiento</p>
+              <h1 class="font-display text-3xl font-bold text-[#293C74]">Eventos</h1>
+              <p class="mt-1 max-w-2xl text-sm text-slate-600">Organiza el calendario de tu iglesia, región o país según tus permisos.</p>
+            </div>
+            <button id="btn-new-event" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#20315f]">
+              <PortalIcon name="plus" size={18} />
+              Nuevo evento
+            </button>
+          </header>
+
+          <section aria-label="Resumen de eventos" class="portal-stat-grid grid-cols-2 lg:grid-cols-4">
+            <div class="portal-stat"><p class="portal-stat-label">Visibles</p><p id="event-stat-visible" class="portal-stat-value">0</p></div>
+            <div class="portal-stat"><p class="portal-stat-label">Próximos</p><p id="event-stat-upcoming" class="portal-stat-value">0</p></div>
+            <div class="portal-stat"><p class="portal-stat-label">Terminados</p><p id="event-stat-completed" class="portal-stat-value">0</p></div>
+            <div class="portal-stat"><p class="portal-stat-label">Borradores</p><p id="event-stat-drafts" class="portal-stat-value">0</p></div>
+          </section>
+
+          <section class="portal-panel p-3 sm:p-4" aria-label="Filtros de eventos">
+            <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div id="event-filters" class="flex max-w-full gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Estado del evento">
+                <button type="button" class="event-filter is-active" data-event-filter="active" role="tab" aria-selected="true">Activos <span data-filter-count="active">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="upcoming" role="tab" aria-selected="false">Próximos <span data-filter-count="upcoming">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="live" role="tab" aria-selected="false">En curso <span data-filter-count="live">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="completed" role="tab" aria-selected="false">Terminados <span data-filter-count="completed">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="draft" role="tab" aria-selected="false">Borradores <span data-filter-count="draft">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="archived" role="tab" aria-selected="false">Archivados <span data-filter-count="archived">0</span></button>
+              </div>
+
+              <div class="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_160px] xl:w-[470px]">
+                <label class="relative block">
+                  <span class="sr-only">Buscar evento</span>
+                  <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
+                  <input id="event-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm" placeholder="Buscar evento o lugar" autocomplete="off" />
+                </label>
+                <label>
+                  <span class="sr-only">Filtrar por alcance</span>
+                  <select id="event-scope-filter" class="w-full border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <option value="">Todo alcance</option>
+                    <option value="LOCAL">Local</option>
+                    <option value="REGIONAL">Regional</option>
+                    <option value="NATIONAL">Nacional</option>
+                    <option value="GLOBAL">Global</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <div id="events-loading" class="space-y-3" aria-live="polite">
+            {[1, 2, 3].map(() => (
+              <div class="portal-panel flex animate-pulse gap-4 p-4">
+                <div class="h-20 w-20 flex-none bg-slate-100 sm:w-28"></div>
+                <div class="min-w-0 flex-1 space-y-3 py-1">
+                  <div class="h-4 w-2/5 bg-slate-100"></div>
+                  <div class="h-3 w-3/4 bg-slate-100"></div>
+                  <div class="h-3 w-1/2 bg-slate-100"></div>
                 </div>
-                <button id="btn-new-event" class="px-6 py-3 bg-[#293C74] text-white rounded-xl font-bold hover:bg-[#1e2b58] transition-all shadow-lg shadow-[#293C74]/30 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                    Crear Evento
-                </button>
-            </div>
+              </div>
+            ))}
+          </div>
 
-            <!-- Event List -->
-            <div id="events-loading" class="py-20 text-center animate-pulse">
-                <div class="h-6 w-48 bg-slate-200 rounded mx-auto mb-4"></div>
-                <p class="text-slate-400">Cargando eventos...</p>
-            </div>
+          <div id="events-list" class="hidden space-y-3" aria-live="polite"></div>
 
-            <div id="events-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 hidden">
-                <!-- Event Cards will be injected here -->
-            </div>
-            
-            <div id="events-empty" class="hidden flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <div class="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                </div>
-                <h3 class="text-lg font-bold text-slate-800">No hay eventos creados</h3>
-                <p class="text-slate-500 text-sm">Comienza creando tu primer evento.</p>
-            </div>
-
+          <div id="events-empty" class="portal-panel hidden px-5 py-12 text-center">
+            <span class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="calendar-days" size={22} /></span>
+            <h2 class="text-base font-bold text-slate-800">No hay eventos en esta vista</h2>
+            <p class="mt-1 text-sm text-slate-500">Cambia el filtro o crea un evento nuevo.</p>
+          </div>
         </div>
-      </section>
-
+      </main>
     </div>
   </div>
 
-  <!-- Create/Edit Event Modal -->
-  <div id="event-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div class="w-full max-w-lg bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-8">
-          <div class="flex justify-between items-center mb-6">
-              <h2 class="text-xl font-bold text-[#293C74]">Nuevo Evento</h2>
-              <button id="close-modal" class="text-slate-400 hover:text-slate-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-          </div>
-          
-          <form id="event-form" class="space-y-4">
-              <input type="hidden" name="id" id="event-id">
-              <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Título del Evento</label>
-                  <input type="text" name="title" required class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#293C74]/20" placeholder="Ej: Ayuno Congregacional">
-              </div>
-
-              <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Descripción</label>
-                  <textarea name="description" rows="3" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#293C74]/20" placeholder="Descripción breve del evento"></textarea>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Inicio</label>
-                    <input type="datetime-local" name="start_date" required class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
-                  </div>
-                  <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Fin</label>
-                    <input type="datetime-local" name="end_date" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
-                  </div>
-              </div>
-
-              <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Alcance (Scope)</label>
-                  <select name="scope" id="event-scope" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
-                      <option value="LOCAL">Local (Mi Iglesia)</option>
-                      <option value="REGIONAL">Regional</option>
-                      <!-- Only Admins should see these, handled by JS logic ideally, or validation -->
-                      <option value="NATIONAL">Nacional</option>
-                      <option value="GLOBAL">Global</option>
-                  </select>
-              </div>
-
-              <div id="event-scope-region-wrapper" class="hidden">
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Región</label>
-                  <select name="region_id" id="event-region-select" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
-                      <option value="">Selecciona una región</option>
-                  </select>
-              </div>
-
-              <div id="event-scope-church-wrapper" class="hidden">
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Iglesia</label>
-                  <select name="church_id" id="event-church-select" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm">
-                      <option value="">Selecciona una iglesia</option>
-                  </select>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del lugar</label>
-                  <input type="text" name="location_name" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Auditorio principal">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Dirección</label>
-                  <input type="text" name="location_address" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Calle 123 #45-67">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Ciudad</label>
-                  <input type="text" name="city" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="Ciudad">
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">País</label>
-                  <input type="text" name="country" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="País">
-                </div>
-              </div>
-
-              <div>
-                  <label class="block text-xs font-bold text-slate-700 mb-1">Imagen / Banner (URL)</label>
-                  <input type="url" name="banner_url" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm" placeholder="https://...">
-              </div>
-
-              <div class="pt-4">
-                  <button type="submit" class="w-full py-3 bg-brand-teal text-white font-bold rounded-xl shadow-lg shadow-brand-teal/30 hover:shadow-brand-teal/40 transition-all">
-                      Guardar Evento
-                  </button>
-              </div>
-          </form>
+  <div id="event-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/55 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+    <div class="my-auto w-full max-w-6xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+        <div>
+          <p class="text-xs font-bold uppercase text-slate-500">Gestión de eventos</p>
+          <h2 id="event-modal-title" class="text-xl font-bold text-[#293C74]">Nuevo evento</h2>
+        </div>
+        <button id="close-modal" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Cerrar">
+          <PortalIcon name="x" size={22} />
+        </button>
       </div>
+
+      <div class="grid lg:grid-cols-[minmax(0,1fr)_390px]">
+        <form id="event-form" class="space-y-5 p-4 sm:p-6">
+          <input type="hidden" name="id" id="event-id" />
+
+          <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+            <label class="event-field">Título
+              <input type="text" name="title" required maxlength="160" placeholder="Encuentro de familias" />
+            </label>
+            <label class="event-field">Publicación
+              <select name="status" id="event-status">
+                <option value="DRAFT">Borrador</option>
+                <option value="PUBLISHED">Publicado</option>
+                <option value="ARCHIVED">Archivado</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="event-field">Descripción
+            <textarea name="description" rows="3" maxlength="600" placeholder="Información principal para los asistentes"></textarea>
+          </label>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="event-field">Inicio
+              <input type="datetime-local" name="start_date" required />
+            </label>
+            <label class="event-field">Fin
+              <input type="datetime-local" name="end_date" />
+            </label>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="event-field">Alcance
+              <select name="scope" id="event-scope">
+                <option value="LOCAL">Local</option>
+                <option value="REGIONAL">Regional</option>
+                <option value="NATIONAL">Nacional</option>
+                <option value="GLOBAL">Global</option>
+              </select>
+            </label>
+            <div id="event-scope-region-wrapper" class="hidden">
+              <label class="event-field">Región
+                <select name="region_id" id="event-region-select"><option value="">Selecciona una región</option></select>
+              </label>
+            </div>
+            <div id="event-scope-church-wrapper" class="hidden">
+              <label class="event-field">Iglesia
+                <select name="church_id" id="event-church-select"><option value="">Selecciona una iglesia</option></select>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="event-field">Lugar
+              <input type="text" name="location_name" maxlength="160" placeholder="Auditorio principal" />
+            </label>
+            <label class="event-field">Dirección
+              <input type="text" name="location_address" maxlength="160" placeholder="Dirección del encuentro" />
+            </label>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="event-field">Ciudad
+              <input type="text" name="city" maxlength="160" placeholder="Ciudad" />
+            </label>
+            <label class="event-field">País
+              <input type="text" name="country" maxlength="160" placeholder="País" />
+            </label>
+          </div>
+
+          <label class="event-field">Imagen de invitación
+            <input type="url" name="banner_url" maxlength="500" placeholder="https://..." />
+          </label>
+
+          <div id="event-form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert"></div>
+
+          <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+            <button id="event-cancel" type="button" class="min-h-11 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+            <button type="submit" class="min-h-11 rounded-md bg-[#293C74] px-5 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
+          </div>
+        </form>
+
+        <aside class="border-t border-slate-200 bg-slate-50 p-4 sm:p-6 lg:border-l lg:border-t-0">
+          <p class="mb-3 text-xs font-bold uppercase text-slate-500">Vista previa de la invitación</p>
+          <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div id="event-preview-media" class="relative aspect-[16/9] bg-[#293C74]">
+              <img id="event-preview-image" class="hidden h-full w-full object-cover" alt="" />
+              <div id="event-preview-date" class="absolute bottom-3 left-3 rounded-md bg-white px-3 py-2 text-center shadow-sm">
+                <span class="block text-xs font-bold uppercase text-slate-500">Fecha</span>
+                <strong class="block text-lg text-[#293C74]">Por definir</strong>
+              </div>
+            </div>
+            <div class="space-y-3 p-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="event-preview-scope" class="portal-chip bg-[#293C74]/10 text-[#293C74]">Local</span>
+                <span id="event-preview-status" class="portal-chip bg-amber-50 text-amber-700">Borrador</span>
+              </div>
+              <h3 id="event-preview-title" class="text-xl font-bold leading-tight text-[#293C74]">Título del evento</h3>
+              <p id="event-preview-description" class="text-sm leading-relaxed text-slate-600">La descripción aparecerá aquí.</p>
+              <p id="event-preview-location" class="border-t border-slate-100 pt-3 text-sm font-medium text-slate-700">Lugar por definir</p>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </div>
   </div>
+
+  <style>
+    .event-filter {
+      display: inline-flex;
+      min-height: 40px;
+      flex: none;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 5px;
+      padding: 0.45rem 0.7rem;
+      color: #5d687a;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .event-filter span {
+      min-width: 1.25rem;
+      border-radius: 4px;
+      background: #eef1f5;
+      padding: 0.12rem 0.3rem;
+      color: #4b5563;
+      font-size: 0.7rem;
+      text-align: center;
+    }
+
+    .event-filter:hover,
+    .event-filter.is-active {
+      background: #293c74;
+      color: #fff;
+    }
+
+    .event-filter.is-active span {
+      background: rgb(255 255 255 / 16%);
+      color: #fff;
+    }
+
+    .event-field {
+      display: block;
+      color: #475569;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .event-field :is(input, select, textarea) {
+      display: block;
+      width: 100%;
+      margin-top: 0.35rem;
+      border: 1px solid #dce2ea;
+      background: #fff;
+      padding: 0.65rem 0.75rem;
+      color: #172033;
+      font-size: 0.875rem;
+      font-weight: 400;
+    }
+
+    .event-field textarea {
+      resize: vertical;
+    }
+
+    :global(.event-action) {
+      display: inline-flex;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      border: 1px solid #dce2ea;
+      border-radius: 5px;
+      background: #fff;
+      padding: 0.45rem 0.7rem;
+      color: #293c74;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    :global(.event-action:hover) {
+      border-color: #aab4c4;
+      background: #f8fafc;
+    }
+
+    :global(.event-action-primary) {
+      border-color: #293c74;
+      background: #293c74;
+      color: #fff;
+    }
+
+    :global(.event-action-primary img) {
+      filter: invert(1);
+    }
+  </style>
 
   <script src="../../scripts/portal-events.js"></script>
 </BaseLayout>
