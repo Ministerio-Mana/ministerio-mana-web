@@ -26,6 +26,7 @@ function json(payload: Record<string, unknown>, status = 200): Response {
     headers: {
       'content-type': 'application/json',
       'cache-control': 'no-store, max-age=0',
+      'x-content-type-options': 'nosniff',
     },
   });
 }

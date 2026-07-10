@@ -263,6 +263,14 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     'https://www.youtube-nocookie.com',
     'https://*.googlevideo.com',
   ];
+  const imageSrc = [
+    "'self'",
+    'data:',
+    'https://tile.openstreetmap.org',
+    'https://*.tile.openstreetmap.org',
+    'https://*.basemaps.cartocdn.com',
+    'https://i.ytimg.com',
+  ];
   const frameSrc = [...FRAME_SRC];
   if (IS_VERCEL_PREVIEW) {
     frameSrc.push('https://vercel.live');
@@ -277,8 +285,20 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
       const supabaseOrigin = new URL(supabaseUrl).origin;
       connectSrc.push(supabaseOrigin);
       connectSrc.push(supabaseOrigin.replace('https://', 'wss://'));
+      imageSrc.push(supabaseOrigin);
     } catch {
       // ignore malformed supabase url
+    }
+  }
+
+  const imageKitUrlEndpoint = import.meta.env?.IMAGEKIT_URL_ENDPOINT
+    ?? process.env?.IMAGEKIT_URL_ENDPOINT;
+  if (imageKitUrlEndpoint) {
+    try {
+      imageSrc.push(new URL(imageKitUrlEndpoint).origin);
+      connectSrc.push('https://upload.imagekit.io');
+    } catch {
+      // ignore malformed ImageKit URL endpoint
     }
   }
 
@@ -286,7 +306,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     "default-src 'self'",
     `script-src ${scriptSrc.join(' ')}`,
     "style-src 'self' 'unsafe-inline' https://unpkg.com",
-    "img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://i.ytimg.com",
+    `img-src ${imageSrc.join(' ')}`,
     "font-src 'self' data:",
     `connect-src ${connectSrc.join(' ')}`,
     "media-src 'self' blob: https://*.googlevideo.com",

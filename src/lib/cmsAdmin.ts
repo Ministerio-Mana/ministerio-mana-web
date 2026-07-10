@@ -17,6 +17,10 @@ export async function requireCmsAdmin(params: {
 export function jsonResponse(payload: Record<string, any>, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'no-store, max-age=0',
+      'x-content-type-options': 'nosniff',
+    },
   });
 }
