@@ -5,7 +5,7 @@ date: "2025-10-21"
 category: "peregrinacion"
 location: "Israel"
 summary: "Viaje de fe por lugares bíblicos en Israel junto al equipo del Ministerio Maná."
-heroImage: "/images/events/israel-2025-cover.jpg"       # luego ponemos la imagen real
+heroImage: "/images/events/israel-2025-cover.svg"       # luego ponemos la imagen real
 brochurePdf: "/brochures/israel-2025.pdf"                # luego subimos el PDF real
 highlight: true
 ---

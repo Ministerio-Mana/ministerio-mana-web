@@ -1,0 +1,51 @@
+---
+type Props = {
+  title: string;
+  summary?: string | null;
+  startDate: string;
+  endDate?: string | null;
+  location?: string | null;
+  image?: string | null;
+  href: string;
+  category?: string | null;
+};
+
+const { title, summary, startDate, endDate, location, image, href, category } = Astro.props;
+const start = new Date(startDate);
+const end = new Date(endDate || startDate);
+const isPast = Number.isFinite(end.getTime()) && end.getTime() < Date.now();
+const dateLabel = Number.isFinite(start.getTime())
+  ? new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(start)
+  : 'Fecha por confirmar';
+const monthLabel = Number.isFinite(start.getTime())
+  ? new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(start).replace('.', '').toUpperCase()
+  : 'EVENTO';
+const dayLabel = Number.isFinite(start.getTime()) ? String(start.getDate()) : '—';
+---
+
+<article class="group grid min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md sm:grid-cols-[180px_minmax(0,1fr)]">
+  <a href={href} class="relative block min-h-40 overflow-hidden bg-[#293C74]" aria-label={`Ver ${title}`}>
+    {image ? (
+      <img src={image} alt="" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+    ) : (
+      <span class="absolute inset-0 flex flex-col items-center justify-center text-white">
+        <span class="text-xs font-bold text-white/80">{monthLabel}</span>
+        <strong class="text-4xl leading-none text-white">{dayLabel}</strong>
+      </span>
+    )}
+  </a>
+  <div class="flex min-w-0 flex-col justify-between gap-4 p-5">
+    <div>
+      <div class="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold uppercase text-slate-500">
+        <span>{isPast ? 'Finalizado' : 'Próximo'}</span>
+        {category && <><span aria-hidden="true">·</span><span>{category}</span></>}
+      </div>
+      <h2 class="text-xl font-bold leading-tight text-[#293C74]"><a href={href} class="hover:underline">{title}</a></h2>
+      {summary && <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">{summary}</p>}
+    </div>
+    <div class="flex flex-col gap-1 border-t border-slate-100 pt-3 text-sm text-slate-600">
+      <span class="font-semibold text-slate-800">{dateLabel}</span>
+      {location && <span>{location}</span>}
+    </div>
+  </div>
+</article>

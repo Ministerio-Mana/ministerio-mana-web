@@ -35,6 +35,8 @@ const CUMBRE_EVENT = {
 
 const EVENT_SCOPES = new Set(['LOCAL', 'REGIONAL', 'NATIONAL', 'GLOBAL']);
 const EVENT_STATUSES = new Set(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+const EVENT_VISIBILITIES = new Set(['PUBLIC', 'UNLISTED', 'PRIVATE']);
+const EVENT_REGISTRATION_MODES = new Set(['NONE', 'EXTERNAL', 'INTERNAL']);
 const MAX_EVENT_REQUEST_CHARS = 12_000;
 
 type EventActorContext = {
@@ -89,27 +91,74 @@ const EVENT_FIELDS = [
   'country',
   'banner_url',
   'status',
+  'slug',
+  'visibility',
+  'category',
+  'registration_mode',
+  'registration_url',
+  'registration_opens_at',
+  'registration_closes_at',
+  'capacity',
+  'contact_email',
+  'timezone',
 ];
+
+const PLATFORM_EVENT_FIELDS = new Set([
+  'slug',
+  'visibility',
+  'category',
+  'registration_mode',
+  'registration_url',
+  'registration_opens_at',
+  'registration_closes_at',
+  'capacity',
+  'contact_email',
+  'timezone',
+]);
+
+function isSafeInternalOrHttpsUrl(value: string): boolean {
+  return value.length <= 500
+    && ((value.startsWith('/') && !value.startsWith('//')) || /^https:\/\//i.test(value));
+}
 
 function sanitizeEventPayload(body: Record<string, any>) {
   const payload: Record<string, any> = {};
   EVENT_FIELDS.forEach((field) => {
     const value = body?.[field];
     if (value === undefined || value === '') return;
-    if (field === 'banner_url') {
+    if (field === 'banner_url' || field === 'registration_url') {
       const raw = String(value || '').trim();
-      const safeUrl = raw.length <= 500 && ((raw.startsWith('/') && !raw.startsWith('//')) || /^https:\/\//i.test(raw)) ? raw : '';
+      const safeUrl = isSafeInternalOrHttpsUrl(raw) ? raw : '';
       if (safeUrl) {
         payload[field] = safeUrl;
       }
       return;
     }
-    const maxLength = field === 'description' ? 600 : field === 'banner_url' ? 500 : 160;
+    if (field === 'capacity') {
+      const capacity = Number(value);
+      if (Number.isInteger(capacity) && capacity >= 0 && capacity <= 1_000_000) {
+        payload.capacity = capacity;
+      }
+      return;
+    }
+    if (field === 'slug') {
+      const slug = String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 180);
+      if (slug) payload.slug = slug;
+      return;
+    }
+    if (field === 'contact_email') {
+      const email = String(value).trim().toLowerCase().slice(0, 254);
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) payload.contact_email = email;
+      return;
+    }
+    const maxLength = field === 'description' ? 600 : field === 'category' || field === 'timezone' ? 80 : 160;
     const safeValue = sanitizePlainText(String(value ?? ''), maxLength);
     if (safeValue) payload[field] = safeValue;
   });
   if (payload.scope) payload.scope = String(payload.scope).toUpperCase();
   if (payload.status) payload.status = String(payload.status).toUpperCase();
+  if (payload.visibility) payload.visibility = String(payload.visibility).toUpperCase();
+  if (payload.registration_mode) payload.registration_mode = String(payload.registration_mode).toUpperCase();
   return payload;
 }
 
@@ -119,6 +168,18 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   }
   if (payload.status && !EVENT_STATUSES.has(String(payload.status))) {
     return 'Estado de evento inválido.';
+  }
+  if (payload.visibility && !EVENT_VISIBILITIES.has(String(payload.visibility))) {
+    return 'Visibilidad de evento inválida.';
+  }
+  if (payload.registration_mode && !EVENT_REGISTRATION_MODES.has(String(payload.registration_mode))) {
+    return 'Modalidad de inscripción inválida.';
+  }
+  if (payload.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(payload.slug))) {
+    return 'El enlace público no es válido.';
+  }
+  if (payload.capacity !== undefined && (!Number.isInteger(payload.capacity) || payload.capacity < 0)) {
+    return 'El cupo debe ser un número válido.';
   }
   return null;
 }
@@ -136,7 +197,31 @@ function validateEventDates(startDate: unknown, endDate?: unknown): string | nul
 function hasInvalidBannerUrl(body: Record<string, any>): boolean {
   const raw = String(body?.banner_url || '').trim();
   if (!raw) return false;
-  return raw.length > 500 || !((raw.startsWith('/') && !raw.startsWith('//')) || /^https:\/\//i.test(raw));
+  return !isSafeInternalOrHttpsUrl(raw);
+}
+
+function hasInvalidRegistrationUrl(body: Record<string, any>): boolean {
+  const raw = String(body?.registration_url || '').trim();
+  if (!raw) return false;
+  return !isSafeInternalOrHttpsUrl(raw);
+}
+
+function validateRegistrationDates(openDate: unknown, closeDate: unknown): string | null {
+  if (!openDate && !closeDate) return null;
+  const opens = openDate ? new Date(String(openDate)).getTime() : null;
+  const closes = closeDate ? new Date(String(closeDate)).getTime() : null;
+  if (opens !== null && !Number.isFinite(opens)) return 'La apertura de inscripciones no es válida.';
+  if (closes !== null && !Number.isFinite(closes)) return 'El cierre de inscripciones no es válido.';
+  if (opens !== null && closes !== null && closes < opens) return 'El cierre de inscripciones debe ser posterior a la apertura.';
+  return null;
+}
+
+function hasPlatformFields(body: Record<string, any>): boolean {
+  return Object.keys(body || {}).some((key) => PLATFORM_EVENT_FIELDS.has(key) && body[key] !== undefined && body[key] !== '');
+}
+
+function isMissingPlatformColumn(error: any): boolean {
+  return error?.code === '42703' && !/region_id/i.test(error?.message || '');
 }
 
 function isUuid(value: string | null | undefined): boolean {
@@ -350,7 +435,8 @@ export const GET: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ ok: false, error: 'Error loading events' }), { status: 500 });
     }
 
-    return new Response(JSON.stringify({ ok: true, events }), { status: 200 });
+    const platformReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'visibility')));
+    return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady }), { status: 200 });
   }
 
   await ensureCumbreEvent(ctx.userId);
@@ -443,7 +529,8 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Error loading events' }), { status: 500 });
   }
 
-  return new Response(JSON.stringify({ ok: true, events }), { status: 200 });
+  const platformReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'visibility')));
+  return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady }), { status: 200 });
 };
 
 export const POST: APIRoute = async ({ request }) => {
@@ -486,6 +573,16 @@ export const POST: APIRoute = async ({ request }) => {
   }
   if (hasInvalidBannerUrl(body)) {
     return new Response(JSON.stringify({ ok: false, error: 'La imagen debe usar HTTPS o una ruta interna.' }), { status: 400 });
+  }
+  if (hasInvalidRegistrationUrl(body)) {
+    return new Response(JSON.stringify({ ok: false, error: 'El enlace de inscripción debe usar HTTPS o una ruta interna.' }), { status: 400 });
+  }
+  const registrationDateError = validateRegistrationDates(payload.registration_opens_at, payload.registration_closes_at);
+  if (registrationDateError) {
+    return new Response(JSON.stringify({ ok: false, error: registrationDateError }), { status: 400 });
+  }
+  if (payload.registration_mode === 'EXTERNAL' && !payload.registration_url) {
+    return new Response(JSON.stringify({ ok: false, error: 'Agrega el enlace externo de inscripción.' }), { status: 400 });
   }
   if (payload.status === 'ARCHIVED') {
     return new Response(JSON.stringify({ ok: false, error: 'Un evento nuevo debe guardarse como borrador o publicado.' }), { status: 400 });
@@ -613,6 +710,14 @@ export const POST: APIRoute = async ({ request }) => {
     error = fallback.error;
   }
 
+  if (error && isMissingPlatformColumn(error) && hasPlatformFields(body)) {
+    return new Response(JSON.stringify({
+      ok: false,
+      code: 'EVENT_PLATFORM_SETUP_REQUIRED',
+      error: 'La configuración avanzada de eventos todavía no está activada.',
+    }), { status: 409 });
+  }
+
   if (error) {
     console.error('Event Create Error:', error);
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo crear el evento' }), { status: 500 });
@@ -658,6 +763,16 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
   if (hasInvalidBannerUrl(body)) {
     return new Response(JSON.stringify({ ok: false, error: 'La imagen debe usar HTTPS o una ruta interna.' }), { status: 400 });
+  }
+  if (hasInvalidRegistrationUrl(body)) {
+    return new Response(JSON.stringify({ ok: false, error: 'El enlace de inscripción debe usar HTTPS o una ruta interna.' }), { status: 400 });
+  }
+  const registrationDateError = validateRegistrationDates(payload.registration_opens_at, payload.registration_closes_at);
+  if (registrationDateError) {
+    return new Response(JSON.stringify({ ok: false, error: registrationDateError }), { status: 400 });
+  }
+  if (payload.registration_mode === 'EXTERNAL' && !payload.registration_url) {
+    return new Response(JSON.stringify({ ok: false, error: 'Agrega el enlace externo de inscripción.' }), { status: 400 });
   }
   if (!Object.keys(payload).length && !requestedChurchId && !requestedRegionId) {
     return new Response(JSON.stringify({ ok: false, error: 'No changes provided' }), { status: 400 });
@@ -838,6 +953,14 @@ export const PATCH: APIRoute = async ({ request }) => {
       .single();
     data = fallback.data;
     error = fallback.error;
+  }
+
+  if (error && isMissingPlatformColumn(error) && hasPlatformFields(body)) {
+    return new Response(JSON.stringify({
+      ok: false,
+      code: 'EVENT_PLATFORM_SETUP_REQUIRED',
+      error: 'La configuración avanzada de eventos todavía no está activada.',
+    }), { status: 409 });
   }
 
   if (error) {

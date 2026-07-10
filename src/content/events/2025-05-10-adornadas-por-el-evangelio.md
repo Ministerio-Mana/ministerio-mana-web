@@ -5,7 +5,7 @@ date: "2025-05-10"
 category: "mujeres"
 location: "Colombia / sedes varias"
 summary: "Encuentro para redescubrir el diseño divino de la mujer y vivir una feminidad bíblica que deja legado."
-heroImage: "/images/events/adornadas-2025-cover.jpg"
+heroImage: "/images/events/adornadas-2025-cover.svg"
 brochurePdf: "/brochures/adornadas-2025.pdf"
 highlight: true
 ---

@@ -5,7 +5,7 @@ date: "2025-09-21"
 category: "peregrinacion"
 location: "Turquía"
 summary: "Recorrido por las 7 iglesias del Apocalipsis, conectando historia, Biblia y misión actual."
-heroImage: "/images/events/turquia-7-iglesias-2025-cover.jpg"
+heroImage: "/images/events/turquia-7-iglesias-2025-cover.svg"
 brochurePdf: "/brochures/turquia-7-iglesias-2025.pdf"
 highlight: true
 ---

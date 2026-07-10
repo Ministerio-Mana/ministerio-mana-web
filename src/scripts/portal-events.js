@@ -1,6 +1,7 @@
 import archiveIconUrl from 'lucide-static/icons/archive.svg?url';
 import archiveRestoreIconUrl from 'lucide-static/icons/archive-restore.svg?url';
 import calendarIconUrl from 'lucide-static/icons/calendar-days.svg?url';
+import externalLinkIconUrl from 'lucide-static/icons/external-link.svg?url';
 import mapPinIconUrl from 'lucide-static/icons/map-pin.svg?url';
 import pencilIconUrl from 'lucide-static/icons/pencil.svg?url';
 import sendIconUrl from 'lucide-static/icons/send.svg?url';
@@ -30,6 +31,10 @@ const eventRegionWrapper = document.getElementById('event-scope-region-wrapper')
 const eventRegionSelect = document.getElementById('event-region-select');
 const eventChurchWrapper = document.getElementById('event-scope-church-wrapper');
 const eventChurchSelect = document.getElementById('event-church-select');
+const eventPlatformPending = document.getElementById('event-platform-pending');
+const eventPlatformSettings = document.getElementById('event-platform-settings');
+const eventRegistrationMode = document.getElementById('event-registration-mode');
+const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
 const previewImage = document.getElementById('event-preview-image');
 const previewDate = document.getElementById('event-preview-date');
 const previewScope = document.getElementById('event-preview-scope');
@@ -37,6 +42,7 @@ const previewStatus = document.getElementById('event-preview-status');
 const previewTitle = document.getElementById('event-preview-title');
 const previewDescription = document.getElementById('event-preview-description');
 const previewLocation = document.getElementById('event-preview-location');
+const previewCta = document.getElementById('event-preview-cta');
 
 const REQUEST_TIMEOUT_MS = 15000;
 const SCOPE_LABELS = {
@@ -77,6 +83,7 @@ let currentPermissions = {
     can_manage_global_events: false,
 };
 let eventPermissionValidated = false;
+let eventPlatformReady = false;
 
 const churchesById = new Map();
 const regionsById = new Map();
@@ -118,6 +125,33 @@ function sanitizeUrl(value) {
     if (url.startsWith('/') && !url.startsWith('//')) return url;
     if (/^https:\/\//i.test(url)) return url;
     return '';
+}
+
+function getPublicEventPath(event) {
+    if (event?.id === '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202') return '/eventos/cumbre-mundial-2026';
+    const identifier = String(event?.slug || event?.id || '').trim();
+    return identifier ? `/eventos/${encodeURIComponent(identifier)}` : '';
+}
+
+function syncRegistrationFields() {
+    const isExternal = eventPlatformReady && eventRegistrationMode?.value === 'EXTERNAL';
+    eventRegistrationUrlWrapper?.classList.toggle('hidden', !isExternal);
+    const urlInput = eventForm?.querySelector('[name="registration_url"]');
+    if (urlInput) {
+        urlInput.disabled = !isExternal;
+        urlInput.required = isExternal;
+    }
+    previewCta?.classList.toggle('hidden', !isExternal);
+    previewCta?.classList.toggle('inline-flex', isExternal);
+}
+
+function syncPlatformFields() {
+    eventPlatformPending?.classList.toggle('hidden', eventPlatformReady);
+    eventPlatformSettings?.classList.toggle('hidden', !eventPlatformReady);
+    eventForm?.querySelectorAll('[data-platform-field]').forEach((field) => {
+        field.disabled = !eventPlatformReady;
+    });
+    syncRegistrationFields();
 }
 
 function normalizeCountry(value) {
@@ -467,6 +501,12 @@ function renderEvents() {
         const editAction = canEditEvent(event)
             ? `<button type="button" class="event-edit event-action" data-event-id="${escapeAttr(event.id || '')}">${icon(pencilIconUrl)} Editar</button>`
             : '';
+        const publicPath = String(event.status || '').toUpperCase() === 'PUBLISHED' && event.visibility !== 'PRIVATE'
+            ? getPublicEventPath(event)
+            : '';
+        const publicAction = publicPath
+            ? `<a href="${escapeAttr(publicPath)}" target="_blank" rel="noopener noreferrer" class="event-action">${icon(externalLinkIconUrl)} Ver invitación</a>`
+            : '';
 
         return `
           <article class="portal-panel overflow-hidden" data-event-row="${escapeAttr(event.id || '')}">
@@ -487,6 +527,7 @@ function renderEvents() {
                     </div>
                   </div>
                   <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                    ${publicAction}
                     ${editAction}
                     ${lifecycleAction(event, lifecycle)}
                   </div>
@@ -543,6 +584,8 @@ async function loadEvents(shouldRender = true) {
         const { res, data } = await fetchJsonWithTimeout('/api/portal/events', { headers: authHeaders, credentials: 'include' }, REQUEST_TIMEOUT_MS, 'La carga de eventos');
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudieron cargar eventos');
         eventsCache = Array.isArray(data.events) ? data.events : [];
+        eventPlatformReady = data.platform_ready === true;
+        syncPlatformFields();
         if (shouldRender) renderEvents();
     } catch (error) {
         showEventsError(error);
@@ -587,6 +630,7 @@ function updateEventPreview() {
         previewImage.src = imageUrl || '';
         previewImage.alt = imageUrl ? title || 'Imagen del evento' : '';
     }
+    syncRegistrationFields();
 }
 
 function openEventModal(mode, eventData = null) {
@@ -613,6 +657,15 @@ function openEventModal(mode, eventData = null) {
         country: eventData?.country || '',
         banner_url: eventData?.banner_url || '',
         status: String(eventData?.status || 'DRAFT').toUpperCase(),
+        slug: eventData?.slug || '',
+        visibility: String(eventData?.visibility || 'UNLISTED').toUpperCase(),
+        category: eventData?.category || '',
+        registration_mode: String(eventData?.registration_mode || 'NONE').toUpperCase(),
+        registration_url: eventData?.registration_url || '',
+        registration_opens_at: toInputDateTime(eventData?.registration_opens_at),
+        registration_closes_at: toInputDateTime(eventData?.registration_closes_at),
+        capacity: eventData?.capacity ?? '',
+        contact_email: eventData?.contact_email || '',
     };
     Object.entries(fieldValues).forEach(([name, value]) => {
         const field = eventForm.querySelector(`[name="${name}"]`);
@@ -630,6 +683,7 @@ function openEventModal(mode, eventData = null) {
         eventChurchSelect.value = eventData.church_id;
     }
     syncScopeInputs({ preserveSelections: true });
+    syncPlatformFields();
     updateEventPreview();
 
     eventModal.classList.remove('hidden');
@@ -707,6 +761,7 @@ eventRegionSelect?.addEventListener('change', () => {
     syncCountryFromRegion();
     updateEventPreview();
 });
+eventRegistrationMode?.addEventListener('change', syncRegistrationFields);
 eventForm?.addEventListener('input', updateEventPreview);
 eventForm?.addEventListener('change', updateEventPreview);
 

@@ -175,6 +175,69 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <input type="url" name="banner_url" maxlength="500" placeholder="https://..." />
           </label>
 
+          <div id="event-platform-pending" class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-sm font-bold text-slate-700">Configuración pública avanzada pendiente de activar</p>
+            <p class="mt-1 text-xs leading-relaxed text-slate-500">El evento puede seguir guardándose y publicándose con la configuración actual.</p>
+          </div>
+
+          <section id="event-platform-settings" class="hidden space-y-4 border-t border-slate-200 pt-5" aria-labelledby="event-platform-title">
+            <div>
+              <h3 id="event-platform-title" class="text-sm font-bold text-[#293C74]">Invitación pública</h3>
+              <p class="mt-1 text-xs text-slate-500">Controla dónde aparece el evento y cómo se registran los asistentes.</p>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Visibilidad
+                <select name="visibility" data-platform-field disabled>
+                  <option value="UNLISTED">Solo por enlace</option>
+                  <option value="PUBLIC">Público en la agenda</option>
+                  <option value="PRIVATE">Privado</option>
+                </select>
+              </label>
+              <label class="event-field">Categoría
+                <input type="text" name="category" data-platform-field disabled maxlength="80" placeholder="Familias, jóvenes, formación..." />
+              </label>
+            </div>
+
+            <label class="event-field">Enlace público
+              <div class="mt-1 flex min-w-0 items-center rounded-md border border-slate-200 bg-white focus-within:border-[#293C74]">
+                <span class="hidden flex-none border-r border-slate-200 px-3 text-sm text-slate-500 sm:inline">/eventos/</span>
+                <input class="min-w-0 flex-1 border-0 !mt-0 focus:ring-0" type="text" name="slug" data-platform-field disabled maxlength="180" placeholder="encuentro-de-familias" />
+              </div>
+            </label>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Inscripción
+                <select name="registration_mode" id="event-registration-mode" data-platform-field disabled>
+                  <option value="NONE">Sin inscripción</option>
+                  <option value="EXTERNAL">Enlace externo</option>
+                </select>
+              </label>
+              <label class="event-field">Cupo
+                <input type="number" name="capacity" data-platform-field disabled min="0" max="1000000" step="1" placeholder="Sin límite" />
+              </label>
+            </div>
+
+            <div id="event-registration-url-wrapper" class="hidden">
+              <label class="event-field">Enlace de inscripción
+                <input type="text" name="registration_url" data-platform-field disabled maxlength="500" placeholder="https://..." />
+              </label>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Abre inscripciones
+                <input type="datetime-local" name="registration_opens_at" data-platform-field disabled />
+              </label>
+              <label class="event-field">Cierra inscripciones
+                <input type="datetime-local" name="registration_closes_at" data-platform-field disabled />
+              </label>
+            </div>
+
+            <label class="event-field">Correo de contacto
+              <input type="email" name="contact_email" data-platform-field disabled maxlength="254" placeholder="eventos@ministeriomana.org" />
+            </label>
+          </section>
+
           <div id="event-form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert"></div>
 
           <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
@@ -201,6 +264,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <h3 id="event-preview-title" class="text-xl font-bold leading-tight text-[#293C74]">Título del evento</h3>
               <p id="event-preview-description" class="text-sm leading-relaxed text-slate-600">La descripción aparecerá aquí.</p>
               <p id="event-preview-location" class="border-t border-slate-100 pt-3 text-sm font-medium text-slate-700">Lugar por definir</p>
+              <span id="event-preview-cta" class="hidden min-h-10 items-center justify-center rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Inscribirme</span>
             </div>
           </article>
         </aside>
