@@ -814,6 +814,12 @@ function toInputDateTime(value) {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function toIsoDateTime(value) {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 function updateEventPreview() {
     if (!eventForm) return;
     const value = (name) => String(eventForm.querySelector(`[name="${name}"]`)?.value || '').trim();
@@ -1047,6 +1053,14 @@ eventForm?.addEventListener('submit', async (event) => {
         if (end && (Number.isNaN(end.getTime()) || end.getTime() < start.getTime())) {
             throw new Error('La fecha de fin debe ser posterior al inicio.');
         }
+        payload.start_date = start.toISOString();
+        if (end) payload.end_date = end.toISOString();
+        ['registration_opens_at', 'registration_closes_at'].forEach((field) => {
+            if (!payload[field]) return;
+            const isoValue = toIsoDateTime(payload[field]);
+            if (!isoValue) throw new Error('Revisa las fechas de apertura y cierre de inscripciones.');
+            payload[field] = isoValue;
+        });
         if (
             eventFinanceReady
             && payload.registration_mode === 'INTERNAL'
