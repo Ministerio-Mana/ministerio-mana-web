@@ -179,7 +179,11 @@ function syncFinanceFields() {
         if (isFree || !usesInternalRegistration) eventOnlineProvider.value = 'NONE';
         eventOnlineProvider.disabled = isFree || !usesInternalRegistration;
     }
-    eventOnlineProviderWrapper?.classList.toggle('event-provider-hidden', isFree || !usesInternalRegistration);
+    if (eventOnlineProviderWrapper) {
+        const hideProvider = isFree || !usesInternalRegistration;
+        eventOnlineProviderWrapper.hidden = hideProvider;
+        eventOnlineProviderWrapper.style.display = hideProvider ? 'none' : '';
+    }
 }
 
 async function loadEventPaymentOption(eventData) {
@@ -208,7 +212,10 @@ async function loadEventPaymentOption(eventData) {
             && eventRegistrationMode?.value === 'INTERNAL';
         if (!canUseOnlineProvider) eventOnlineProvider.value = 'NONE';
         eventOnlineProvider.disabled = !canUseOnlineProvider;
-        eventOnlineProviderWrapper?.classList.toggle('event-provider-hidden', !canUseOnlineProvider);
+        if (eventOnlineProviderWrapper) {
+            eventOnlineProviderWrapper.hidden = !canUseOnlineProvider;
+            eventOnlineProviderWrapper.style.display = canUseOnlineProvider ? '' : 'none';
+        }
     }
 }
 
