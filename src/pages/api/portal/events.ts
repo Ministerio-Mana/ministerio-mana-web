@@ -37,6 +37,7 @@ const EVENT_SCOPES = new Set(['LOCAL', 'REGIONAL', 'NATIONAL', 'GLOBAL']);
 const EVENT_STATUSES = new Set(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 const EVENT_VISIBILITIES = new Set(['PUBLIC', 'UNLISTED', 'PRIVATE']);
 const EVENT_REGISTRATION_MODES = new Set(['NONE', 'EXTERNAL', 'INTERNAL']);
+const EVENT_CURRENCIES = new Set(['COP', 'USD', 'EUR']);
 const MAX_EVENT_REQUEST_CHARS = 12_000;
 
 type EventActorContext = {
@@ -101,6 +102,8 @@ const EVENT_FIELDS = [
   'capacity',
   'contact_email',
   'timezone',
+  'price',
+  'currency',
 ];
 
 const PLATFORM_EVENT_FIELDS = new Set([
@@ -134,10 +137,11 @@ function sanitizeEventPayload(body: Record<string, any>) {
       }
       return;
     }
-    if (field === 'capacity') {
-      const capacity = Number(value);
-      if (Number.isInteger(capacity) && capacity >= 0 && capacity <= 1_000_000) {
-        payload.capacity = capacity;
+    if (field === 'capacity' || field === 'price') {
+      const amount = Number(value);
+      const valid = field === 'capacity' ? Number.isInteger(amount) : Number.isFinite(amount);
+      if (valid && amount >= 0 && amount <= 1_000_000_000) {
+        payload[field] = amount;
       }
       return;
     }
@@ -159,6 +163,7 @@ function sanitizeEventPayload(body: Record<string, any>) {
   if (payload.status) payload.status = String(payload.status).toUpperCase();
   if (payload.visibility) payload.visibility = String(payload.visibility).toUpperCase();
   if (payload.registration_mode) payload.registration_mode = String(payload.registration_mode).toUpperCase();
+  if (payload.currency) payload.currency = String(payload.currency).toUpperCase();
   return payload;
 }
 
@@ -180,6 +185,12 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   }
   if (payload.capacity !== undefined && (!Number.isInteger(payload.capacity) || payload.capacity < 0)) {
     return 'El cupo debe ser un número válido.';
+  }
+  if (payload.price !== undefined && (!Number.isFinite(payload.price) || payload.price < 0)) {
+    return 'El precio debe ser un número válido.';
+  }
+  if (payload.currency && !EVENT_CURRENCIES.has(String(payload.currency))) {
+    return 'La moneda del evento no es válida.';
   }
   return null;
 }

@@ -218,6 +218,19 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Precio por persona
+                <input type="number" name="price" data-platform-field disabled min="0" max="1000000000" step="0.01" placeholder="0 para evento gratuito" />
+              </label>
+              <label class="event-field">Moneda
+                <select name="currency" data-platform-field disabled>
+                  <option value="COP">COP · Peso colombiano</option>
+                  <option value="USD">USD · Dólar estadounidense</option>
+                  <option value="EUR">EUR · Euro</option>
+                </select>
+              </label>
+            </div>
+
             <div id="event-registration-url-wrapper" class="hidden">
               <label class="event-field">Enlace de inscripción
                 <input type="text" name="registration_url" data-platform-field disabled maxlength="500" placeholder="https://..." />
@@ -264,6 +277,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <h3 id="event-preview-title" class="text-xl font-bold leading-tight text-[#293C74]">Título del evento</h3>
               <p id="event-preview-description" class="text-sm leading-relaxed text-slate-600">La descripción aparecerá aquí.</p>
               <p id="event-preview-location" class="border-t border-slate-100 pt-3 text-sm font-medium text-slate-700">Lugar por definir</p>
+              <p id="event-preview-price" class="text-sm font-bold text-[#293C74]">Evento gratuito</p>
               <span id="event-preview-cta" class="hidden min-h-10 items-center justify-center rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Inscribirme</span>
             </div>
           </article>

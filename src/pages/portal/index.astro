@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import ChurchSelector from '@components/portal/ChurchSelector.astro';
+import PortalIcon from '@components/portal/PortalIcon.astro';
 import RegistrationModal from '@components/portal/RegistrationModal.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
@@ -49,11 +50,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-7 9 7M4 10v10a1 1 0 001 1h5m4 0h5a1 1 0 001-1V10" />
                   </svg>
                 </a>
-                <a href="/eventos/cumbre-mundial-2026" class="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase text-[#293C74] transition hover:border-[#293C74]/60 hover:bg-[#293C74]/5">
-                  Volver a la Cumbre
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
-                  </svg>
+                <a href="/eventos" class="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase text-[#293C74] transition hover:border-[#293C74]/60 hover:bg-[#293C74]/5">
+                  <PortalIcon name="calendar-days" size={16} />
+                  Agenda pública
                 </a>
               </div>
             </div>
@@ -395,64 +394,65 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <!-- Tab: Eventos (Antes Iglesia) -->
             <div id="tab-iglesia" class="tab-content hidden space-y-8">
-              <!-- Header & Event Selector -->
-              <header class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between p-1">
-                <div>
-                  <div class="flex items-center gap-3 mb-2">
-                    <span class="px-3 py-1 rounded-full bg-brand-teal/10 text-brand-teal text-[10px] font-bold uppercase tracking-widest border border-brand-teal/20">Evento Activo</span>
-                    <span id="church-selector-status" class="text-xs text-slate-400"></span>
+              <header class="portal-panel p-5 sm:p-6">
+                <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                  <div class="min-w-0">
+                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                      <span id="event-operation-state" class="portal-chip bg-slate-100 text-slate-700">Cargando</span>
+                      <span id="church-selector-status" class="text-xs text-slate-500"></span>
+                    </div>
+                    <h1 id="iglesia-title" class="text-2xl font-display font-bold text-[#293C74] sm:text-3xl">Cumbre Mundial 2026</h1>
+                    <p id="iglesia-subtitle" class="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600">Gestión operativa y control de asistencia.</p>
+                    <div id="event-operation-meta" class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
+                      <span id="event-operation-date">Fecha por confirmar</span>
+                      <span id="event-operation-scope">Alcance global</span>
+                      <span id="event-operation-location">Lugar por confirmar</span>
+                      <span id="event-operation-economy">Configuración de cobro</span>
+                    </div>
                   </div>
-                  <h1 id="iglesia-title" class="text-3xl lg:text-4xl font-display font-bold text-[#293C74]">Cumbre Mundial 2026</h1>
-                  <p id="iglesia-subtitle" class="text-slate-600 mt-1">Gestión operativa y control de asistencia.</p>
-                </div>
-                
-                <div class="flex flex-wrap items-center gap-3">
-                   <!-- Church Selector (For Admin) -->
-                   <div id="church-selector" class="hidden relative z-20 w-full lg:w-auto">
-                     <div class="grid grid-cols-1 lg:grid-cols-[180px_180px_minmax(240px,1fr)] gap-2 w-full">
-                       <div class="relative lg:col-span-3">
-                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                         </div>
-                         <input id="church-selector-search" type="search" placeholder="Buscar iglesia, ciudad o país..." class="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm font-semibold text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all shadow-sm hover:shadow-md" autocomplete="off" />
-                       </div>
-                       <div class="relative">
-                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12l-9-9-9 9 9 9 9-9z" /></svg>
-                         </div>
-                         <select id="church-selector-continent" class="appearance-none w-full bg-white border border-slate-200 rounded-xl pl-10 pr-8 py-3 text-sm font-bold text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all shadow-sm hover:shadow-md cursor-pointer">
-                           <option value="">Continente: todos</option>
-                         </select>
-                       </div>
-                       <div class="relative">
-                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 012 15.382V4.618a2 2 0 011.553-1.894L9 0l6 3 6-3v15l-6 3-6-3z" /></svg>
-                         </div>
-                         <select id="church-selector-country" class="appearance-none w-full bg-white border border-slate-200 rounded-xl pl-10 pr-8 py-3 text-sm font-bold text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all shadow-sm hover:shadow-md cursor-pointer">
-                           <option value="">País: todos</option>
-                         </select>
-                       </div>
-                       <div class="relative">
-                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#293C74]">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                         </div>
-                         <select id="church-selector-input" class="appearance-none w-full bg-white border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-sm font-bold text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all shadow-sm hover:shadow-md cursor-pointer min-w-[240px]">
-                           <option value="">Selecciona una iglesia</option>
-                         </select>
-                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                         </div>
-                       </div>
-                     </div>
-                   </div>
 
-                   <!-- Event Selector (Mockup for now) -->
-                   <button class="hidden md:flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#293C74] text-xs font-bold uppercase tracking-widest transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      Cambiar Evento
-                   </button>
+                  <div id="event-operations-controls" class="hidden w-full flex-col gap-2 sm:flex-row xl:w-auto">
+                    <label class="min-w-0 sm:min-w-[280px]">
+                      <span class="sr-only">Seleccionar evento</span>
+                      <select id="event-operations-selector" class="w-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]">
+                        <option value="">Cargando eventos...</option>
+                      </select>
+                    </label>
+                    <a href="/portal/events" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
+                      <PortalIcon name="settings-2" size={17} />
+                      Configurar
+                    </a>
+                  </div>
                 </div>
               </header>
+
+              <div id="event-closed-banner" class="hidden border-l-4 border-slate-400 bg-white px-5 py-4 shadow-sm">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="flex min-w-0 gap-3">
+                    <span class="mt-0.5 text-slate-500"><PortalIcon name="archive" size={20} /></span>
+                    <div>
+                      <p class="font-bold text-slate-800">Evento finalizado: expediente histórico</p>
+                      <p class="mt-1 text-sm text-slate-600">Las inscripciones están cerradas. Los pagos, participantes, saldos y reportes permanecen disponibles para conciliación.</p>
+                    </div>
+                  </div>
+                  <a id="event-public-page-link" href="/eventos" class="inline-flex min-h-10 flex-none items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
+                    <PortalIcon name="external-link" size={16} />
+                    Ver página
+                  </a>
+                </div>
+              </div>
+
+              <section id="church-selector" class="portal-panel hidden relative z-20 p-4" aria-label="Filtrar operación por iglesia">
+                <div class="grid w-full grid-cols-1 gap-2 lg:grid-cols-[180px_180px_minmax(240px,1fr)]">
+                  <div class="relative lg:col-span-3">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
+                    <input id="church-selector-search" type="search" placeholder="Buscar iglesia, ciudad o país..." class="w-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold text-[#293C74]" autocomplete="off" />
+                  </div>
+                  <select id="church-selector-continent" class="w-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]"><option value="">Continente: todos</option></select>
+                  <select id="church-selector-country" class="w-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]"><option value="">País: todos</option></select>
+                  <select id="church-selector-input" class="w-full min-w-0 border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]"><option value="">Selecciona una iglesia</option></select>
+                </div>
+              </section>
 
               <!-- USER VIEW: Personal Event Info (For Regular Users) -->
               <div id="church-dashboard-user" class="hidden space-y-6">
@@ -470,6 +470,27 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 
                 <!-- Policies and Conditions -->
                 <div id="event-policies"></div>
+              </div>
+
+              <div id="event-generic-dashboard" class="portal-panel hidden overflow-hidden">
+                <div class="grid lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <div class="p-6 sm:p-8">
+                    <p class="text-xs font-bold uppercase text-slate-500">Operación del evento</p>
+                    <h2 id="event-generic-heading" class="mt-2 text-2xl font-bold text-[#293C74]">Configura inscripciones y recaudo</h2>
+                    <p id="event-generic-description" class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">Este evento ya tiene calendario y página pública. Define entradas, moneda y métodos de pago antes de abrir registros.</p>
+                    <div class="mt-6 flex flex-wrap gap-2">
+                      <a href="/portal/events" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]"><PortalIcon name="settings-2" size={17} /> Configurar evento</a>
+                      <a id="event-generic-public-link" href="/eventos" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-slate-300 px-4 py-2.5 text-sm font-bold text-[#293C74] hover:bg-slate-50"><PortalIcon name="external-link" size={17} /> Ver invitación</a>
+                    </div>
+                  </div>
+                  <aside class="border-t border-slate-200 bg-slate-50 p-6 lg:border-l lg:border-t-0">
+                    <dl class="space-y-4 text-sm">
+                      <div><dt class="text-xs font-bold uppercase text-slate-500">Inscripción</dt><dd id="event-generic-registration" class="mt-1 font-bold text-slate-800">Sin configurar</dd></div>
+                      <div><dt class="text-xs font-bold uppercase text-slate-500">Precio</dt><dd id="event-generic-price" class="mt-1 font-bold text-slate-800">Gratuito</dd></div>
+                      <div><dt class="text-xs font-bold uppercase text-slate-500">Cobro</dt><dd id="event-generic-payment" class="mt-1 font-bold text-slate-800">No requerido</dd></div>
+                    </dl>
+                  </aside>
+                </div>
               </div>
 
               <!-- MANAGEMENT VIEW: Church Management (For Pastors/Admins) -->
@@ -490,27 +511,27 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <div class="lg:col-span-8 space-y-8">
                   
                   <!-- Quick Stats / Overview Cards -->
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
-                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Inscritos</p>
-                          <p class="text-2xl font-bold text-[#293C74]" id="stat-church-total">0</p>
+                  <div class="portal-stat-grid grid-cols-2 md:grid-cols-4">
+                      <div class="portal-stat">
+                          <p class="portal-stat-label">Inscritos</p>
+                          <p class="portal-stat-value" id="stat-church-total">0</p>
                       </div>
-                      <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
-                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Abonos</p>
-                          <p class="text-2xl font-bold text-brand-teal" id="stat-church-paid">0</p>
+                      <div class="portal-stat">
+                          <p class="portal-stat-label">Recaudado</p>
+                          <p class="portal-stat-value !text-brand-teal" id="stat-church-paid">0</p>
                       </div>
-                      <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
-                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pendientes</p>
-                          <p class="text-2xl font-bold text-yellow-500" id="stat-church-pending">0</p>
+                      <div class="portal-stat">
+                          <p class="portal-stat-label">Pendiente</p>
+                          <p class="portal-stat-value !text-amber-600" id="stat-church-pending">0</p>
                       </div>
-                       <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('church-participants-search')?.focus()">
-                          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Acción</p>
-                          <p class="text-xs font-bold text-[#293C74] mt-2">Buscar Inscrito</p>
-                      </div>
+                      <button type="button" class="portal-stat text-left hover:bg-slate-50" onclick="document.getElementById('church-participants-search')?.focus()">
+                          <p class="portal-stat-label">Acción rápida</p>
+                          <p class="mt-2 text-sm font-bold text-[#293C74]">Buscar inscrito</p>
+                      </button>
                   </div>
 
                    <!-- Unified Participant Table -->
-                   <div class="bg-white border border-slate-100 rounded-[2.5rem] shadow-xl shadow-slate-200/50 overflow-hidden">
+                   <div class="portal-panel overflow-hidden">
                       <div class="px-8 py-6 border-b border-slate-50 flex flex-col gap-4">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                           <div>
@@ -597,9 +618,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
                    </div>
 
                    <!-- Secondary Sections Grid -->
-                   <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div class="grid grid-cols-1 gap-6">
                        <!-- Installments -->
-                       <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-lg shadow-slate-200/50">
+                       <div class="portal-panel p-5 sm:p-6">
                           <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
                             <h3 class="text-sm font-bold text-[#293C74]">Cuotas Pendientes</h3>
                             <div class="flex items-center gap-2">
@@ -661,10 +682,26 @@ import Sidebar from '@components/portal/Sidebar.astro';
                        </div>
                        
                        <!-- Payments History -->
-                       <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-lg shadow-slate-200/50">
+                       <div class="portal-panel p-5 sm:p-6">
                           <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-sm font-bold text-[#293C74]">Últimos Pagos</h3>
-                            <button class="text-xs font-bold text-slate-400 hover:text-[#293C74]">Ver todos</button>
+                            <div>
+                              <h3 class="text-sm font-bold text-[#293C74]">Movimientos y pagos</h3>
+                              <p class="mt-1 text-xs text-slate-500">Conciliación por proveedor, estado y referencia.</p>
+                            </div>
+                          </div>
+                          <div class="mb-5 grid grid-cols-3 overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                            <div class="border-r border-slate-200 p-3">
+                              <p class="text-[10px] font-bold uppercase text-slate-500">Aprobados</p>
+                              <p id="event-payment-approved" class="mt-1 text-lg font-bold text-emerald-700">0</p>
+                            </div>
+                            <div class="border-r border-slate-200 p-3">
+                              <p class="text-[10px] font-bold uppercase text-slate-500">Pendientes</p>
+                              <p id="event-payment-pending" class="mt-1 text-lg font-bold text-amber-700">0</p>
+                            </div>
+                            <div class="p-3">
+                              <p class="text-[10px] font-bold uppercase text-slate-500">Manuales</p>
+                              <p id="event-payment-manual" class="mt-1 text-lg font-bold text-[#293C74]">0</p>
+                            </div>
                           </div>
                           <div class="space-y-3 mb-4">
                             <div class="relative">
@@ -711,7 +748,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                             </div>
                           </div>
                           <div id="church-payments-empty" class="text-center text-xs text-slate-500 py-4">No hay pagos recientes.</div>
-                          <div id="church-payments-list" class="hidden space-y-2"></div>
+                          <div id="church-payments-list" class="hidden divide-y divide-slate-100 overflow-hidden rounded-md border border-slate-200 bg-white"></div>
                           <div id="church-payments-pagination" class="hidden mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500"></div>
                        </div>
                    </div>

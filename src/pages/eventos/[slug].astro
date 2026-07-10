@@ -108,6 +108,7 @@ const structured = (contentEntry || databaseEvent) ? {
             <h2 class="text-sm font-bold uppercase text-slate-500">Estado</h2>
             <p class="mt-2 text-lg font-bold text-slate-900">{isCompleted ? 'Finalizado' : 'Programado'}</p>
             {databaseEvent?.capacity != null && databaseEvent.capacity > 0 && <p class="mt-2 text-sm text-slate-600">Cupo: {databaseEvent.capacity} personas</p>}
+            {databaseEvent?.price != null && databaseEvent.price > 0 && <p class="mt-2 text-sm font-bold text-[#293C74]">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: databaseEvent.currency || 'COP', maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2 }).format(databaseEvent.price)}</p>}
             {databaseEvent?.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-5 inline-block text-sm font-bold text-[#293C74] hover:underline">Contactar al organizador</a>}
           </aside>
         </div>

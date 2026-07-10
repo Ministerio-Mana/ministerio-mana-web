@@ -172,6 +172,26 @@ const inviteChurchInput = document.getElementById('church-invite-church');
 const iglesiaNavLabel = document.getElementById('nav-iglesia-label');
 const iglesiaTitle = document.getElementById('iglesia-title');
 const iglesiaSubtitle = document.getElementById('iglesia-subtitle');
+const eventOperationsControls = document.getElementById('event-operations-controls');
+const eventOperationsSelector = document.getElementById('event-operations-selector');
+const eventOperationState = document.getElementById('event-operation-state');
+const eventOperationDate = document.getElementById('event-operation-date');
+const eventOperationScope = document.getElementById('event-operation-scope');
+const eventOperationLocation = document.getElementById('event-operation-location');
+const eventOperationEconomy = document.getElementById('event-operation-economy');
+const eventClosedBanner = document.getElementById('event-closed-banner');
+const eventPublicPageLink = document.getElementById('event-public-page-link');
+const eventGenericDashboard = document.getElementById('event-generic-dashboard');
+const eventGenericPublicLink = document.getElementById('event-generic-public-link');
+const eventGenericHeading = document.getElementById('event-generic-heading');
+const eventGenericDescription = document.getElementById('event-generic-description');
+const eventGenericRegistration = document.getElementById('event-generic-registration');
+const eventGenericPrice = document.getElementById('event-generic-price');
+const eventGenericPayment = document.getElementById('event-generic-payment');
+const churchDashboardManagement = document.getElementById('church-dashboard-management');
+const eventPaymentApproved = document.getElementById('event-payment-approved');
+const eventPaymentPending = document.getElementById('event-payment-pending');
+const eventPaymentManual = document.getElementById('event-payment-manual');
 const churchMembersEmpty = document.getElementById('church-members-empty');
 const churchMembersList = document.getElementById('church-members-list');
 const churchMembersSearch = document.getElementById('church-members-search');
@@ -719,6 +739,8 @@ let portalIsAdmin = false;
 let portalIsSuperadmin = false;
 let portalIsCountryPastor = false;
 let portalRole = 'user';
+let portalCanManageEvents = false;
+let portalHasChurchAccess = false;
 let portalScope = 'church';
 let portalCanSelectChurch = false;
 let portalAllowAllChurches = false;
@@ -745,6 +767,21 @@ let adminIssuesCounts = {};
 let adminIssuesPage = 1;
 let churchManualFormInitialized = false;
 let inviteFormInitialized = false;
+let eventOperationsData = [];
+let selectedOperationsEventId = '';
+const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
+const CUMBRE_FALLBACK_EVENT = {
+  id: CUMBRE_EVENT_ID,
+  title: 'Cumbre Mundial 2026',
+  description: 'Encuentro global de la familia Maná.',
+  scope: 'GLOBAL',
+  status: 'PUBLISHED',
+  start_date: '2026-06-06T09:00:00-05:00',
+  end_date: '2026-06-08T18:00:00-05:00',
+  location_name: 'Rionegro, Colombia',
+  city: 'Rionegro',
+  country: 'Colombia',
+};
 const ALL_CHURCHES_VALUE = '__all__';
 const CUSTOM_CHURCH_VALUE = '__custom__';
 const PAID_PAYMENT_STATUSES = new Set(['APPROVED', 'PAID']);
@@ -788,6 +825,214 @@ async function getActionAuthHeaders() {
   }
   return headers;
 }
+
+function resolveOperationsEventLifecycle(event, now = Date.now()) {
+  const status = String(event?.status || 'DRAFT').toUpperCase();
+  if (status === 'ARCHIVED') return 'archived';
+  if (status === 'DRAFT') return 'draft';
+  const start = toDate(event?.start_date)?.getTime();
+  const end = toDate(event?.end_date || event?.start_date)?.getTime();
+  if (Number.isFinite(end) && end < now) return 'completed';
+  if (Number.isFinite(start) && start <= now && (!Number.isFinite(end) || end >= now)) return 'live';
+  return 'upcoming';
+}
+
+function getOperationsEventPublicPath(event) {
+  if (event?.id === CUMBRE_EVENT_ID) return '/eventos/cumbre-mundial-2026';
+  const identifier = String(event?.slug || event?.id || '').trim();
+  return identifier ? `/eventos/${encodeURIComponent(identifier)}` : '/eventos';
+}
+
+function formatOperationsEventDate(event) {
+  const start = toDate(event?.start_date);
+  if (!start) return 'Fecha por confirmar';
+  const end = toDate(event?.end_date);
+  const startLabel = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).format(start);
+  if (!end || start.toDateString() === end.toDateString()) return startLabel;
+  const endLabel = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }).format(end);
+  return `${startLabel} - ${endLabel}`;
+}
+
+function getOperationsEventEconomyLabel(event) {
+  if (event?.id === CUMBRE_EVENT_ID) return 'COP / USD · Wompi, Stripe y manual';
+  const price = Number(event?.price || 0);
+  if (price <= 0) return 'Evento gratuito';
+  return `${formatCurrency(price, event?.currency || 'COP')} · Evento pagado`;
+}
+
+function getOperationsRegistrationLabel(event) {
+  const mode = String(event?.registration_mode || 'NONE').toUpperCase();
+  if (event?.id === CUMBRE_EVENT_ID) return 'Inscripción cerrada';
+  if (mode === 'EXTERNAL') return 'Enlace externo';
+  if (mode === 'INTERNAL') return 'Inscripción en el portal';
+  return 'Sin inscripción';
+}
+
+function getOperationsPaymentLabel(event) {
+  if (event?.id === CUMBRE_EVENT_ID) return 'Histórico conciliable';
+  const price = Number(event?.price || 0);
+  if (price <= 0) return 'No requerido';
+  const currency = String(event?.currency || 'COP').toUpperCase();
+  if (currency === 'COP') return 'Wompi o pago manual';
+  if (currency === 'USD') return 'Stripe o pago manual';
+  return 'Proveedor por configurar';
+}
+
+function renderOperationsEvent(event) {
+  if (!event) return;
+  const lifecycle = resolveOperationsEventLifecycle(event);
+  const lifecycleMeta = {
+    upcoming: { label: 'Próximo', className: 'portal-chip bg-blue-50 text-blue-700' },
+    live: { label: 'En curso', className: 'portal-chip bg-teal-50 text-teal-700' },
+    completed: { label: 'Finalizado', className: 'portal-chip bg-slate-200 text-slate-700' },
+    draft: { label: 'Borrador', className: 'portal-chip bg-amber-50 text-amber-700' },
+    archived: { label: 'Archivado', className: 'portal-chip bg-slate-200 text-slate-600' },
+  }[lifecycle];
+  const isCumbre = event.id === CUMBRE_EVENT_ID;
+  const isClosed = lifecycle === 'completed' || lifecycle === 'archived';
+  const scopeLabels = { LOCAL: 'Local', REGIONAL: 'Regional', NATIONAL: 'Nacional', GLOBAL: 'Global' };
+  const publicPath = getOperationsEventPublicPath(event);
+
+  selectedOperationsEventId = String(event.id || '');
+  if (eventOperationState) {
+    eventOperationState.textContent = lifecycleMeta.label;
+    eventOperationState.className = lifecycleMeta.className;
+  }
+  if (iglesiaTitle) iglesiaTitle.textContent = event.title || 'Evento';
+  if (iglesiaSubtitle) {
+    iglesiaSubtitle.textContent = isClosed
+      ? 'Expediente histórico para consulta, conciliación y reportes.'
+      : 'Gestión operativa de inscripciones, participantes y recaudo.';
+  }
+  if (eventOperationDate) eventOperationDate.textContent = formatOperationsEventDate(event);
+  if (eventOperationScope) eventOperationScope.textContent = `Alcance ${String(scopeLabels[String(event.scope || '').toUpperCase()] || event.scope || 'sin definir').toLowerCase()}`;
+  if (eventOperationLocation) {
+    eventOperationLocation.textContent = [event.location_name, event.city, event.country].filter(Boolean).join(' · ') || 'Lugar por confirmar';
+  }
+  if (eventOperationEconomy) eventOperationEconomy.textContent = getOperationsEventEconomyLabel(event);
+  if (eventPublicPageLink) eventPublicPageLink.href = publicPath;
+  if (eventGenericPublicLink) eventGenericPublicLink.href = publicPath;
+  eventClosedBanner?.classList.toggle('hidden', !isClosed);
+
+  if (eventGenericRegistration) eventGenericRegistration.textContent = getOperationsRegistrationLabel(event);
+  if (eventGenericPrice) eventGenericPrice.textContent = Number(event.price || 0) > 0 ? formatCurrency(event.price, event.currency || 'COP') : 'Gratuito';
+  if (eventGenericPayment) eventGenericPayment.textContent = getOperationsPaymentLabel(event);
+  if (eventGenericHeading) {
+    eventGenericHeading.textContent = isClosed ? 'Expediente del evento' : 'Configura inscripciones y recaudo';
+  }
+  if (eventGenericDescription) {
+    eventGenericDescription.textContent = isClosed
+      ? 'El evento terminó. Conserva aquí su configuración y, cuando se active la operación financiera genérica, sus registros, pagos, comprobantes y reportes.'
+      : 'Este evento ya tiene calendario y página pública. Define entradas, moneda y métodos de pago antes de abrir registros.';
+  }
+
+  if (portalCanManageEvents) {
+    eventGenericDashboard?.classList.toggle('hidden', isCumbre);
+    churchDashboardManagement?.classList.toggle('hidden', !isCumbre || !portalHasChurchAccess);
+  }
+  if (churchSelector) {
+    const showChurchSelector = isCumbre && portalHasChurchAccess && portalCanSelectChurch;
+    churchSelector.classList.toggle('hidden', !showChurchSelector);
+  }
+  if (churchFormToggle) {
+    churchFormToggle.disabled = isClosed;
+    churchFormToggle.classList.toggle('opacity-50', isClosed);
+    churchFormToggle.classList.toggle('cursor-not-allowed', isClosed);
+    churchFormToggle.textContent = isClosed ? 'Inscripciones cerradas' : 'Registrar participante';
+  }
+}
+
+function sortOperationsEvents(events) {
+  return [...events].sort((left, right) => {
+    const leftLifecycle = resolveOperationsEventLifecycle(left);
+    const rightLifecycle = resolveOperationsEventLifecycle(right);
+    const order = { live: 0, upcoming: 1, draft: 2, completed: 3, archived: 4 };
+    const lifecycleDiff = order[leftLifecycle] - order[rightLifecycle];
+    if (lifecycleDiff !== 0) return lifecycleDiff;
+    const leftDate = toDate(left.start_date)?.getTime() || 0;
+    const rightDate = toDate(right.start_date)?.getTime() || 0;
+    return leftLifecycle === 'completed' ? rightDate - leftDate : leftDate - rightDate;
+  });
+}
+
+function populateOperationsEventSelector(events) {
+  if (!eventOperationsSelector) return;
+  eventOperationsSelector.innerHTML = '';
+  events.forEach((event) => {
+    const option = document.createElement('option');
+    option.value = event.id;
+    const lifecycle = resolveOperationsEventLifecycle(event);
+    const suffix = lifecycle === 'completed' ? 'Finalizado' : lifecycle === 'live' ? 'En curso' : lifecycle === 'draft' ? 'Borrador' : 'Próximo';
+    option.textContent = `${event.title || 'Evento'} · ${suffix}`;
+    eventOperationsSelector.appendChild(option);
+  });
+  eventOperationsSelector.value = selectedOperationsEventId;
+}
+
+async function selectOperationsEvent(eventId, options = {}) {
+  const selected = eventOperationsData.find((event) => event.id === eventId) || CUMBRE_FALLBACK_EVENT;
+  renderOperationsEvent(selected);
+  if (options.persist !== false && portalCanManageEvents) {
+    try {
+      window.localStorage.setItem('mana.portal.operationsEventId', selected.id);
+    } catch {
+      // Storage is optional.
+    }
+  }
+  if (selected.id === CUMBRE_EVENT_ID && portalHasChurchAccess && options.reloadLegacyData) {
+    await Promise.allSettled([
+      loadChurchBookings(portalAuthHeaders),
+      loadChurchParticipants(portalAuthHeaders),
+      loadChurchPayments(portalAuthHeaders),
+      loadChurchInstallments(portalAuthHeaders),
+      loadChurchMembers(portalAuthHeaders),
+    ]);
+  }
+}
+
+async function loadOperationsEvents(headers = {}) {
+  if (!portalCanManageEvents) {
+    eventOperationsControls?.classList.add('hidden');
+    eventOperationsControls?.classList.remove('flex');
+    renderOperationsEvent(CUMBRE_FALLBACK_EVENT);
+    return;
+  }
+  eventOperationsControls?.classList.remove('hidden');
+  eventOperationsControls?.classList.add('flex');
+  let events = [];
+  try {
+    const res = await fetch('/api/portal/events', { headers, credentials: 'include' });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok || !payload.ok) throw new Error(payload.error || 'No se pudieron cargar eventos');
+    events = Array.isArray(payload.events) ? payload.events : [];
+  } catch (error) {
+    console.error('[portal.events.operations] load error', error);
+  }
+  if (!events.some((event) => event.id === CUMBRE_EVENT_ID)) events.push(CUMBRE_FALLBACK_EVENT);
+  eventOperationsData = sortOperationsEvents(events);
+
+  let savedEventId = '';
+  const requestedEventId = new URLSearchParams(window.location.search).get('event') || '';
+  try {
+    savedEventId = window.localStorage.getItem('mana.portal.operationsEventId') || '';
+  } catch {
+    savedEventId = '';
+  }
+  const initialId = eventOperationsData.some((event) => event.id === requestedEventId)
+    ? requestedEventId
+    : eventOperationsData.some((event) => event.id === savedEventId)
+      ? savedEventId
+    : eventOperationsData.some((event) => event.id === CUMBRE_EVENT_ID)
+      ? CUMBRE_EVENT_ID
+      : eventOperationsData[0]?.id;
+  selectedOperationsEventId = initialId || CUMBRE_EVENT_ID;
+  populateOperationsEventSelector(eventOperationsData);
+  await selectOperationsEvent(selectedOperationsEventId, { persist: false });
+}
+
+eventOperationsSelector?.addEventListener('change', () => {
+  void selectOperationsEvent(eventOperationsSelector.value, { reloadLegacyData: true });
+});
 
 function isAllChurchesSelected() {
   return portalSelectedChurchId === ALL_CHURCHES_VALUE;
@@ -1003,10 +1248,17 @@ function renderChurchSelectorOptions({ allowAll = false, allowCustom = false, sc
 
 function formatCurrency(value, currency) {
   if (!currency) return value;
-  if (currency === 'COP') {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value || 0);
+  const normalizedCurrency = String(currency).toUpperCase();
+  try {
+    return new Intl.NumberFormat(normalizedCurrency === 'COP' ? 'es-CO' : 'en-US', {
+      style: 'currency',
+      currency: normalizedCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: normalizedCurrency === 'COP' ? 0 : 2,
+    }).format(Number(value || 0));
+  } catch {
+    return `${normalizedCurrency} ${Number(value || 0).toLocaleString('es-CO')}`;
   }
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value || 0);
 }
 
 function formatCurrencyBreakdown(totals) {
@@ -1407,6 +1659,7 @@ async function loadDashboardData(authResult) {
       || portalPermissions.can_manage_national_events
       || portalPermissions.can_manage_global_events,
     );
+    portalCanManageEvents = canManageEvents;
     const canManageUsers = Boolean(portalPermissions.can_manage_users);
     const canAccessCampus = Boolean(portalPermissions.can_access_campus);
     const canAccessFinances = Boolean(portalPermissions.can_access_finances);
@@ -1454,6 +1707,8 @@ async function loadDashboardData(authResult) {
         hasChurchRole
         || canRegisterPeople
       ));
+    portalHasChurchAccess = hasChurchAccess;
+    renderOperationsEvent(CUMBRE_FALLBACK_EVENT);
     const membershipChurch = portalMemberships.find((item) => item?.church?.id)?.church || null;
 
     if (!portalSelectedChurchId && membershipChurch?.id && !portalIsAdmin) {
@@ -1649,6 +1904,8 @@ async function loadDashboardData(authResult) {
 
     // 6. Background Initialization (Parallelized)
     const backgroundTasks = [];
+    const operationsTask = loadOperationsEvents(headers);
+    backgroundTasks.push(operationsTask);
     if (hasChurchAccess) {
       backgroundTasks.push(new Promise((resolve) => {
         setTimeout(() => {
@@ -1897,7 +2154,7 @@ async function loadChurchSelector(headers = {}) {
       }
     }
 
-    if (canSelect) {
+    if (canSelect && selectedOperationsEventId === CUMBRE_EVENT_ID) {
       churchSelector.classList.remove('hidden');
     } else {
       churchSelector.classList.add('hidden');
@@ -3003,8 +3260,24 @@ function updateChurchPaymentsView(options = {}) {
   if (options.resetPage) {
     churchPaymentsPage = 1;
   }
+  updateChurchPaymentSummary(churchPaymentsData);
   const filtered = filterChurchPayments(churchPaymentsData);
   renderChurchPayments(filtered);
+}
+
+function updateChurchPaymentSummary(list) {
+  const summary = (list || []).reduce((acc, payment) => {
+    const status = String(payment?.status || 'PENDING').toUpperCase();
+    const provider = String(payment?.provider || '').toLowerCase();
+    const method = String(payment?.method || '').toLowerCase();
+    if (PAID_PAYMENT_STATUSES.has(status)) acc.approved += 1;
+    else if (status === 'PENDING') acc.pending += 1;
+    if (provider === 'manual' || provider === 'cash' || method.includes('cash') || method.includes('efectivo')) acc.manual += 1;
+    return acc;
+  }, { approved: 0, pending: 0, manual: 0 });
+  if (eventPaymentApproved) eventPaymentApproved.textContent = String(summary.approved);
+  if (eventPaymentPending) eventPaymentPending.textContent = String(summary.pending);
+  if (eventPaymentManual) eventPaymentManual.textContent = String(summary.manual);
 }
 
 function updateChurchInstallmentsView(options = {}) {
@@ -3292,26 +3565,27 @@ function renderChurchPayments(list) {
     const contactLabel = booking.contact_name || booking.contact_email || 'Sin nombre';
     const safeContactLabel = safeText(contactLabel);
     const safeContactEmail = booking.contact_email ? safeText(booking.contact_email) : '';
+    const statusTone = PAID_PAYMENT_STATUSES.has(String(payment.status || '').toUpperCase())
+      ? 'bg-emerald-50 text-emerald-700'
+      : String(payment.status || '').toUpperCase() === 'PENDING'
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-rose-50 text-rose-700';
     const card = document.createElement('div');
-    card.className = 'rounded-2xl border border-slate-200 bg-white px-4 py-4';
+    card.className = 'grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center';
     card.innerHTML = `
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pago</p>
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
           <p class="text-sm font-bold text-[#293C74]">${safeText(formatCurrency(payment.amount, payment.currency))}</p>
-          <p class="text-xs text-slate-500">${safeProviderLabel} · ${safeStatusLabel}</p>
+          <span class="portal-chip ${statusTone}">${safeStatusLabel}</span>
         </div>
-        <div class="text-right">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Referencia</p>
-          <p class="text-xs font-bold text-[#293C74]">#${safeReferenceLabel}</p>
-          <p class="text-xs text-slate-500">${safeText(formatDate(payment.created_at))}</p>
-        </div>
+        <p class="mt-1 truncate text-xs font-semibold text-slate-700">${safeContactLabel}</p>
+        ${safeContactEmail ? `<p class="truncate text-xs text-slate-500">${safeContactEmail}</p>` : ''}
       </div>
-      <div class="mt-2 text-xs text-slate-500">
-        ${safeContactLabel}
-        ${safeContactEmail ? ` · ${safeContactEmail}` : ''}
+      <div class="min-w-0 sm:text-right">
+        <p class="text-xs font-bold text-[#293C74]">#${safeReferenceLabel}</p>
+        <p class="mt-1 text-xs text-slate-500">${safeText(formatDate(payment.created_at))}</p>
+        <p class="mt-1 text-[11px] text-slate-400">${safeProviderLabel} · ${safeMethodLabel}</p>
       </div>
-      <div class="mt-2 text-[11px] text-slate-400">Método: ${safeMethodLabel}</div>
     `;
     churchPaymentsList.appendChild(card);
   });

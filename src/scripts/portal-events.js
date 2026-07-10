@@ -42,6 +42,7 @@ const previewStatus = document.getElementById('event-preview-status');
 const previewTitle = document.getElementById('event-preview-title');
 const previewDescription = document.getElementById('event-preview-description');
 const previewLocation = document.getElementById('event-preview-location');
+const previewPrice = document.getElementById('event-preview-price');
 const previewCta = document.getElementById('event-preview-cta');
 
 const REQUEST_TIMEOUT_MS = 15000;
@@ -426,6 +427,28 @@ function getLocationLabel(event) {
     return [event?.location_name, event?.city, event?.country].filter(Boolean).join(' · ') || 'Lugar por definir';
 }
 
+function getEventEconomyLabel(event) {
+    const price = Number(event?.price || 0);
+    if (price <= 0) return 'Gratuito';
+    const currency = String(event?.currency || 'COP').toUpperCase();
+    try {
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency,
+            maximumFractionDigits: currency === 'COP' ? 0 : 2,
+        }).format(price);
+    } catch {
+        return `${currency} ${price.toLocaleString('es-CO')}`;
+    }
+}
+
+function getEventRegistrationLabel(event) {
+    const mode = String(event?.registration_mode || 'NONE').toUpperCase();
+    if (mode === 'EXTERNAL') return 'Registro externo';
+    if (mode === 'INTERNAL') return 'Registro interno';
+    return 'Sin registro';
+}
+
 function getFilteredEvents() {
     const query = String(eventSearch?.value || '').trim().toLowerCase();
     const scope = String(eventScopeFilter?.value || '').toUpperCase();
@@ -518,6 +541,8 @@ function renderEvents() {
                     <div class="mb-2 flex flex-wrap items-center gap-2">
                       <span class="portal-chip ${LIFECYCLE_TONES[lifecycle]}">${escapeHtml(LIFECYCLE_LABELS[lifecycle])}</span>
                       <span class="portal-chip border border-slate-200 bg-white text-slate-600">${escapeHtml(SCOPE_LABELS[getEventScope(event)] || getEventScope(event))}</span>
+                      <span class="portal-chip border border-slate-200 bg-white text-slate-600">${escapeHtml(getEventEconomyLabel(event))}</span>
+                      <span class="portal-chip border border-slate-200 bg-white text-slate-600">${escapeHtml(getEventRegistrationLabel(event))}</span>
                     </div>
                     <h2 class="truncate text-lg font-bold text-[#293C74]">${escapeHtml(event.title || 'Evento')}</h2>
                     ${description}
@@ -527,6 +552,7 @@ function renderEvents() {
                     </div>
                   </div>
                   <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <a href="/portal?tab=iglesia&amp;event=${escapeAttr(event.id || '')}" class="event-action event-action-primary">Abrir operación</a>
                     ${publicAction}
                     ${editAction}
                     ${lifecycleAction(event, lifecycle)}
@@ -611,6 +637,8 @@ function updateEventPreview() {
     const start = new Date(value('start_date'));
     const imageUrl = sanitizeUrl(value('banner_url'));
     const location = [value('location_name'), value('city'), value('country')].filter(Boolean).join(' · ');
+    const price = Number(value('price') || 0);
+    const currency = value('currency').toUpperCase() || 'COP';
 
     if (previewTitle) previewTitle.textContent = title || 'Título del evento';
     if (previewDescription) previewDescription.textContent = description || 'La descripción aparecerá aquí.';
@@ -625,6 +653,11 @@ function updateEventPreview() {
             : `<span class="block text-xs font-bold uppercase text-slate-500">${escapeHtml(new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(start))}</span><strong class="block text-2xl leading-none text-[#293C74]">${escapeHtml(start.getDate())}</strong>`;
     }
     if (previewLocation) previewLocation.textContent = location || 'Lugar por definir';
+    if (previewPrice) {
+        previewPrice.textContent = price > 0
+            ? new Intl.NumberFormat('es-CO', { style: 'currency', currency, maximumFractionDigits: currency === 'COP' ? 0 : 2 }).format(price)
+            : 'Evento gratuito';
+    }
     if (previewImage) {
         previewImage.classList.toggle('hidden', !imageUrl);
         previewImage.src = imageUrl || '';
@@ -666,6 +699,8 @@ function openEventModal(mode, eventData = null) {
         registration_closes_at: toInputDateTime(eventData?.registration_closes_at),
         capacity: eventData?.capacity ?? '',
         contact_email: eventData?.contact_email || '',
+        price: eventData?.price ?? 0,
+        currency: String(eventData?.currency || 'COP').toUpperCase(),
     };
     Object.entries(fieldValues).forEach(([name, value]) => {
         const field = eventForm.querySelector(`[name="${name}"]`);
