@@ -73,11 +73,11 @@ export const GET: APIRoute = async ({ request }) => {
   const recurringQuery = user?.id
     ? supabaseAdmin
         .from('donation_recurring_subscriptions')
-        .select('*')
+        .select('id, status, provider, amount, currency, frequency, donation_type, project_name, event_name, campus, church, next_charge_at, current_period_end, pause_until, created_at')
         .eq('user_id', user.id)
     : supabaseAdmin
         .from('donation_recurring_subscriptions')
-        .select('*')
+        .select('id, status, provider, amount, currency, frequency, donation_type, project_name, event_name, campus, church, next_charge_at, current_period_end, pause_until, created_at')
         .eq('donor_email', email);
   const donationRecurringSubscriptionsPromise = runOptionalQuery(
     'donation recurring subscriptions',
@@ -87,11 +87,11 @@ export const GET: APIRoute = async ({ request }) => {
   const campusQuery = user?.id
     ? supabaseAdmin
         .from('campus_donation_subscriptions')
-        .select('*, allocations:campus_donation_subscription_allocations(*)')
+        .select('id, status, provider, amount, currency, frequency, next_charge_at, current_period_end, pause_until, created_at, allocations:campus_donation_subscription_allocations(id, missionary_slug, missionary_name, amount, currency)')
         .eq('user_id', user.id)
     : supabaseAdmin
         .from('campus_donation_subscriptions')
-        .select('*, allocations:campus_donation_subscription_allocations(*)')
+        .select('id, status, provider, amount, currency, frequency, next_charge_at, current_period_end, pause_until, created_at, allocations:campus_donation_subscription_allocations(id, missionary_slug, missionary_name, amount, currency)')
         .eq('donor_email', email);
   const campusSubscriptionsPromise = runOptionalQuery(
     'campus subscriptions',
@@ -120,17 +120,17 @@ export const GET: APIRoute = async ({ request }) => {
     const [plansData, installmentsData, paymentsData] = await Promise.all([
       runOptionalQuery('payment plans', supabaseAdmin
         .from('cumbre_payment_plans')
-        .select('*')
+        .select('id, booking_id, status, frequency, start_date, end_date, currency, installment_count, installment_amount, provider, provider_payment_method_id, provider_subscription_id, next_due_date, created_at')
         .in('booking_id', bookingIds)
         .order('created_at', { ascending: false })),
       runOptionalQuery('installments', supabaseAdmin
         .from('cumbre_installments')
-        .select('*')
+        .select('id, plan_id, booking_id, installment_index, due_date, amount, currency, status, provider_reference, provider_tx_id, created_at')
         .in('booking_id', bookingIds)
         .order('due_date', { ascending: true })),
       runOptionalQuery('payments', supabaseAdmin
         .from('cumbre_payments')
-        .select('*')
+        .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, created_at')
         .in('booking_id', bookingIds)
         .order('created_at', { ascending: false })),
     ]);

@@ -3,27 +3,11 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
 ---
 
-<BaseLayout title="Accede al Portal Maná | Ministerio Maná" description="Ingresa al Portal Maná para ver tus aportes y gestionar tu inscripción." hideFooter>
-  <main class="relative min-h-screen flex items-center justify-center p-4 overflow-x-hidden bg-[#EBF1F6]">
-    <!-- Corporate Clean Background -->
-    <div class="absolute inset-0 z-0 overflow-hidden">
-      <!-- Subtle Pattern -->
-      <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23293C74\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
-      
-      <!-- Stars Container for GSAP -->
-      <div id="stars-container" class="absolute inset-0 z-0 pointer-events-none"></div>
-
-      <!-- Elegant Gradient Mesh -->
-      <div class="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-[#293C74]/5"></div>
-      
-      <!-- Accent Shapes -->
-      <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#293C74]/10 to-transparent rounded-bl-[100%]"></div>
-      <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#F2C94C]/10 to-transparent rounded-tr-[100%]"></div>
-    </div>
-
+<BaseLayout title="Accede al Portal Maná | Ministerio Maná" description="Ingresa al Portal Maná para ver tus aportes y gestionar tu inscripción." hideHeader hideFooter noindex>
+  <div class="portal-auth-shell relative flex min-h-screen items-center justify-center overflow-x-hidden">
     <!-- Login Card -->
     <div id="login-card" class="relative z-10 w-full max-w-md">
-      <div class="bg-white border border-white/40 rounded-[2rem] p-8 md:p-12 shadow-[0_20px_60px_-15px_rgba(41,60,116,0.1)] overflow-hidden">
+      <div class="portal-auth-card overflow-hidden bg-white p-7 md:p-10">
         
         <header class="relative mb-8 text-center">
           <div class="inline-flex items-center justify-center mb-6">
@@ -31,7 +15,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
           </div>
           <h1 class="text-3xl font-display font-bold text-[#293C74] mb-2">Portal Maná</h1>
           <p class="text-slate-600 text-sm leading-relaxed">Bienvenido al portal de usuarios del Ministerio Maná.</p>
-          <a href="/eventos/cumbre-mundial-2026" class="mt-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#293C74]/80 hover:text-[#293C74]">
+          <a href="/eventos/cumbre-mundial-2026" class="mt-3 inline-flex min-h-8 items-center gap-2 px-2 text-xs font-bold uppercase text-[#293C74]/80 hover:text-[#293C74]">
             Volver a la Cumbre
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
@@ -45,7 +29,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
             <div class="space-y-4">
               <div>
                 <label for="password-email" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Email</label>
-                <input type="email" id="password-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
+                <input type="email" id="password-email" required autocomplete="email" inputmode="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
               </div>
               <div>
                 <label for="login-password" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Contraseña</label>
@@ -53,10 +37,12 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
                   <input 
                     type="password" 
                     id="login-password"
+                    required
+                    autocomplete="current-password"
                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] placeholder-slate-500 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all pr-12" 
                     placeholder="••••••••"
                   >
-                  <button type="button" id="toggle-password-view" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#293C74] transition-colors focus:outline-none">
+                  <button type="button" id="toggle-password-view" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-[#293C74] transition-colors focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                   </button>
                 </div>
@@ -65,14 +51,14 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
                 Iniciar Sesión
               </button>
               
-              <p class="text-center text-xs text-slate-500 mt-4">
+              <p class="mt-3 flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-slate-500">
                  ¿No tienes cuenta? 
-                 <a href="/portal/registro" class="font-bold text-[#293C74] hover:underline">Regístrate aquí</a>
+                 <a href="/portal/registro" class="inline-flex min-h-8 items-center font-bold text-[#293C74] hover:underline">Regístrate aquí</a>
               </p>
             </div>
             
             <div class="pt-2 text-center">
-               <button type="button" id="btn-toggle-magic" class="text-xs font-bold text-slate-400 hover:text-[#293C74] underline">
+               <button type="button" id="btn-toggle-magic" class="min-h-10 px-2 text-xs font-bold text-slate-600 hover:text-[#293C74] underline">
                  Olvidé mi contraseña (Restablecer)
                </button>
             </div>
@@ -81,7 +67,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
           <div class="relative py-4">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
             <div class="relative flex justify-center">
-              <span class="bg-white px-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest">O continuar con</span>
+              <span class="bg-white px-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest">O continuar con</span>
             </div>
           </div>
 
@@ -114,7 +100,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
              </div>
              <div>
                 <label for="magic-email" class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Correo Electrónico</label>
-                <input type="email" name="email" id="magic-email" 
+                <input type="email" name="email" id="magic-email" required autocomplete="email" inputmode="email"
                        class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] font-medium outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400"
                        placeholder="tu@correo.com">
              </div>
@@ -128,7 +114,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
 
         </div>
 
-        <div id="login-status-container" class="hidden mt-6 text-center">
+        <div id="login-status-container" class="hidden mt-6 text-center" role="status" aria-live="polite">
            <div id="login-status-wrapper" class="inline-flex items-center gap-2 px-4 py-3 rounded-full">
               <span id="login-status-icon" class="w-2 h-2 rounded-full animate-ping"></span>
               <p id="login-status" class="text-sm font-semibold"></p>
@@ -136,7 +122,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
         </div>
 
         <footer class="mt-10 pt-6 border-t border-slate-100 text-center">
-          <a href="https://wa.me/573148297534" class="inline-flex items-center gap-2 text-slate-600 hover:text-[#293C74] transition-colors text-xs font-bold">
+          <a href="https://wa.me/573148297534" class="inline-flex min-h-8 items-center gap-2 px-2 text-slate-600 hover:text-[#293C74] transition-colors text-xs font-bold">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.855-1.246L3 20l1.246-4.855A9.863 9.863 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
@@ -145,7 +131,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
         </footer>
       </div>
       <!-- Footer removed -->
-  </main>
+  </div>
 
   <script>
     import '@scripts/portal-ingresar.js';

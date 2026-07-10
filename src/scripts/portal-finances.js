@@ -18,8 +18,8 @@ const issuesPageInfoEl = document.getElementById('finances-issues-page-info');
 const issuesLoadMoreBtn = document.getElementById('finances-issues-load-more');
 
 const REQUEST_TIMEOUT_MS = 15000;
-const TRANSACTIONS_PAGE_SIZE = 50;
-const ISSUES_PAGE_SIZE = 20;
+const TRANSACTIONS_PAGE_SIZE = 25;
+const ISSUES_PAGE_SIZE = 10;
 const DEFAULT_CATEGORIES = [
   'Diezmos',
   'Ofrendas',
@@ -325,11 +325,11 @@ function renderTransactions(transactions, pagination, { append = false } = {}) {
   if (tbody) {
     const rows = transactions.map((t) => `
       <tr>
-        <td class="py-3 pl-2">${formatDate(t.created_at)}</td>
-        <td class="py-3 font-medium text-[#293C74]">${escapeHtml(t.concept_label || 'Aporte')}</td>
-        <td class="py-3 text-slate-500">${escapeHtml(t.donor_name || 'Anónimo')}</td>
-        <td class="py-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700">${escapeHtml(t.status || 'APROBADO')}</span></td>
-        <td class="py-3 text-right font-bold pr-2">${formatCurrency(t.amount, t.currency)}</td>
+        <td data-label="Fecha" class="py-3 pl-2">${formatDate(t.created_at)}</td>
+        <td data-label="Concepto" class="py-3 font-medium text-[#293C74]">${escapeHtml(t.concept_label || 'Aporte')}</td>
+        <td data-label="Donante" class="py-3 text-slate-500">${escapeHtml(t.donor_name || 'Anónimo')}</td>
+        <td data-label="Estado" class="py-3"><span class="portal-chip bg-green-100 text-green-800">${escapeHtml(t.status || 'APROBADO')}</span></td>
+        <td data-label="Monto" class="py-3 text-right font-bold pr-2">${formatCurrency(t.amount, t.currency)}</td>
       </tr>
     `).join('');
 
@@ -399,8 +399,8 @@ function renderCategories(byCategory) {
     const usdLine = usdValue ? `<span class="text-sm font-bold text-[#293C74]">${formatCurrency(usdValue, 'USD')}</span>` : '';
     const emptyLine = (!copValue && !usdValue) ? `<span class="text-sm font-bold text-[#293C74]">${formatCurrency(0, 'COP')}</span>` : '';
     return `
-      <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
-        <p class="text-[10px] uppercase tracking-widest text-slate-400">${escapeHtml(label)}</p>
+      <div class="rounded-md border border-slate-200 bg-slate-50/70 p-3">
+        <p class="text-xs font-bold uppercase text-slate-500">${escapeHtml(label)}</p>
         <div class="mt-2 flex flex-col gap-1">
           ${copLine}
           ${usdLine}
@@ -483,17 +483,17 @@ function issueCardHtml(issue) {
     : '';
 
   const actions = [
-    mailto ? `<a class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
-    whatsapp ? `<a class="px-3 py-1.5 rounded-full bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600" href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>` : '',
-    `<button class="px-3 py-1.5 rounded-full border border-slate-200 text-xs font-semibold text-slate-600 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`,
+    mailto ? `<a class="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
+    whatsapp ? `<a class="inline-flex min-h-10 items-center rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>` : '',
+    `<button class="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`,
   ].filter(Boolean).join('');
 
   return `
-    <div class="border border-slate-100 rounded-2xl p-4 md:p-5">
+    <div class="rounded-md border border-slate-200 p-4">
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div class="flex items-center gap-2">
-            <span class="px-2 py-1 rounded-full text-[10px] font-bold ${statusClass}">${statusLabel}</span>
+            <span class="portal-chip ${statusClass}">${statusLabel}</span>
             ${provider ? `<span class="text-[10px] uppercase tracking-widest text-slate-400">${escapeHtml(provider)}</span>` : ''}
           </div>
           <p class="text-base font-semibold text-slate-800 mt-2">${escapeHtml(name)}</p>
@@ -504,7 +504,7 @@ function issueCardHtml(issue) {
           <p class="text-xs text-slate-400">${escapeHtml(reference || dateLabel)}</p>
         </div>
       </div>
-      <div class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+      <div class="mt-3 border-l-2 border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
         Motivo: ${escapeHtml(reason)}
       </div>
       <div class="mt-3 flex flex-wrap gap-2">

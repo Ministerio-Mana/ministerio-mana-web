@@ -245,8 +245,8 @@ function buildDonorCard(donor) {
         day: 'numeric',
     });
     const relationshipBadge = isRecurring
-        ? '<span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Donante recurrente</span>'
-        : '<span class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">Donación única</span>';
+        ? '<span class="portal-chip border border-emerald-200 bg-emerald-50 text-emerald-800">Donante recurrente</span>'
+        : '<span class="portal-chip border border-sky-200 bg-sky-50 text-sky-800">Donación única</span>';
     const thanksText = isRecurring
         ? `Hola ${donorNameRaw}, gracias por tu apoyo constante a Campus Maná. Tu compromiso mensual nos ayuda a sostener la misión en las universidades. Cuenta con nuestra gratitud y oraciones.`
         : `Hola ${donorNameRaw}, gracias por tu siembra a Campus Maná. Tu generosidad nos ayuda a compartir el evangelio en las universidades. Si deseas seguir caminando con esta misión, será una alegría contar nuevamente contigo.`;
@@ -257,21 +257,21 @@ function buildDonorCard(donor) {
     const phoneDigits = String(donor.phone || '').replace(/\D/g, '');
     const contactActions = [
         donor.email
-            ? `<a class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-[#293C74]/30 hover:text-[#293C74]" href="mailto:${encodeURIComponent(donor.email)}?subject=${subject}&body=${thanksMessage}">Correo</a>`
+            ? `<a class="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-[#293C74]/30 hover:text-[#293C74]" href="mailto:${encodeURIComponent(donor.email)}?subject=${subject}&body=${thanksMessage}">Correo</a>`
             : '',
         phoneDigits.length >= 8
-            ? `<a class="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noreferrer">WhatsApp</a>`
+            ? `<a class="inline-flex min-h-10 items-center rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noreferrer">WhatsApp</a>`
             : '',
     ].filter(Boolean).join('');
 
     const donationLines = Array.isArray(donor.donations) && donor.donations.length
         ? `
-            <div class="mt-4 space-y-2 rounded-lg bg-slate-50 p-4">
+            <div class="mt-4 space-y-2 border-t border-slate-100 pt-4">
                 ${donor.donations.slice(0, 4).map((donation) => {
                     const recurringDonation = donation.frequency === 'recurring';
                     const typeBadge = recurringDonation
-                        ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">Mensual</span>'
-                        : '<span class="rounded-full bg-sky-100 px-2 py-0.5 font-bold text-sky-700">Una vez</span>';
+                        ? '<span class="portal-chip bg-emerald-100 text-emerald-800">Mensual</span>'
+                        : '<span class="portal-chip bg-sky-100 text-sky-800">Una vez</span>';
                     const date = donation.created_at
                         ? new Date(donation.created_at).toLocaleDateString('es-CO')
                         : '';
@@ -304,7 +304,7 @@ function buildDonorCard(donor) {
 
     const amountDisplay = isAdminView && donor.totalsByCurrency
         ? `
-            <div class="w-full rounded-lg bg-slate-50 p-4 sm:w-auto sm:min-w-[160px] sm:text-right">
+            <div class="w-full border-t border-slate-100 pt-4 sm:w-auto sm:min-w-[160px] sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0 sm:text-right">
                 <p class="mb-1 text-xs font-bold uppercase text-slate-400">Total donado</p>
                 ${formatTotals(donor.totalsByCurrency, 'break-words text-lg font-bold text-brand-teal')}
             </div>
@@ -312,10 +312,10 @@ function buildDonorCard(donor) {
         : '';
 
     return `
-        <article class="rounded-lg border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md md:p-6">
-            <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <article class="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm md:p-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 flex-1 items-start gap-4">
-                    <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-teal to-[#293C74] text-xl font-bold text-white">
+                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#293C74] text-lg font-bold text-white">
                         ${donorInitial}
                     </div>
                     <div class="min-w-0 flex-1">
@@ -335,7 +335,7 @@ function buildDonorCard(donor) {
 
                         ${donor.missionary?.name ? `
                             <div class="mt-3">
-                                <span class="inline-flex items-center rounded-full bg-[#293C74]/10 px-3 py-1 text-xs font-bold text-[#293C74]">
+                                <span class="portal-chip bg-[#293C74]/10 text-[#293C74]">
                                     ${escapeHtml(donor.missionary.name)}
                                 </span>
                             </div>
@@ -415,12 +415,21 @@ async function loadDonors() {
         }
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
 
-        if (!campusSessionChecked) {
-            const { ok, data } = await getPortalSession({ auth });
-            if (!ok || !data?.ok) {
-                throw new Error(data?.error || 'No se pudo validar la sesión.');
+        const sessionRequest = campusSessionChecked
+            ? Promise.resolve(null)
+            : getPortalSession({ auth });
+        const donorsRequest = fetchJsonWithTimeout('/api/portal/campus/donors', {
+            headers,
+            credentials: 'include',
+        }, REQUEST_TIMEOUT_MS, 'La carga de donantes');
+        const [sessionResult, donorsResult] = await Promise.all([sessionRequest, donorsRequest]);
+
+        if (sessionResult) {
+            const { ok, data: sessionData } = sessionResult;
+            if (!ok || !sessionData?.ok) {
+                throw new Error(sessionData?.error || 'No se pudo validar la sesión.');
             }
-            if (!data.permissions?.can_access_campus) {
+            if (!sessionData.permissions?.can_access_campus) {
                 window.location.replace('/portal');
                 return;
             }
@@ -428,10 +437,7 @@ async function loadDonors() {
             showSecureContent();
         }
 
-        const { response, data } = await fetchJsonWithTimeout('/api/portal/campus/donors', {
-            headers,
-            credentials: 'include',
-        }, REQUEST_TIMEOUT_MS, 'La carga de donantes');
+        const { response, data } = donorsResult;
 
         if (!response.ok || !data.ok) {
             if (response.status === 403) {

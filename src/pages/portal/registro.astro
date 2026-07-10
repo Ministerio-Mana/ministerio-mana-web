@@ -3,20 +3,11 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
 ---
 
-<BaseLayout title="Crear Cuenta | Portal Maná" description="Regístrate en el Portal Maná." hideFooter includeTurnstile>
-  <main class="relative min-h-screen flex items-center justify-center p-4 overflow-x-hidden bg-[#EBF1F6]">
-    <div class="absolute inset-0 z-0 overflow-hidden">
-      <!-- Background elements same as login -->
-      <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23293C74\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
-      <div id="stars-container" class="absolute inset-0 z-0 pointer-events-none"></div>
-      <div class="absolute inset-0 bg-gradient-to-br from-white/80 via-transparent to-[#293C74]/5"></div>
-      <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#293C74]/10 to-transparent rounded-bl-[100%]"></div>
-      <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#F2C94C]/10 to-transparent rounded-tr-[100%]"></div>
-    </div>
-
+<BaseLayout title="Crear Cuenta | Portal Maná" description="Regístrate en el Portal Maná." hideHeader hideFooter includeTurnstile noindex>
+  <div class="portal-auth-shell relative flex min-h-screen items-center justify-center overflow-x-hidden">
     <!-- Register Card -->
     <div id="register-card" class="relative z-10 w-full max-w-md">
-      <div class="bg-white border border-white/40 rounded-[2rem] p-8 md:p-12 shadow-[0_20px_60px_-15px_rgba(41,60,116,0.1)] overflow-hidden">
+      <div class="portal-auth-card overflow-hidden bg-white p-7 md:p-10">
         
         <header class="relative mb-8 text-center">
           <div class="inline-flex items-center justify-center mb-6">
@@ -30,24 +21,24 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
           <div class="grid grid-cols-2 gap-4">
              <div>
                 <label for="reg-name" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Nombre</label>
-                <input type="text" id="reg-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] text-sm" placeholder="Tu Nombre">
+                <input type="text" id="reg-name" required autocomplete="given-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] text-sm" placeholder="Tu Nombre">
              </div>
              <div>
                 <label for="reg-lastname" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Apellido</label>
-                <input type="text" id="reg-lastname" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] text-sm" placeholder="Tu Apellido">
+                <input type="text" id="reg-lastname" required autocomplete="family-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] text-sm" placeholder="Tu Apellido">
              </div>
           </div>
 
           <div>
             <label for="reg-email" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Email</label>
-            <input type="email" id="reg-email" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
+            <input type="email" id="reg-email" required autocomplete="email" inputmode="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
           </div>
 
           <div>
              <label for="reg-password" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Contraseña</label>
              <div class="relative">
-                <input type="password" id="reg-password" required minlength="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] pr-12" placeholder="••••••••">
-                <button type="button" id="toggle-password-reg" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#293C74] transition-colors focus:outline-none">
+                <input type="password" id="reg-password" required minlength="10" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] pr-12" placeholder="Mínimo 10 caracteres">
+                <button type="button" id="toggle-password-reg" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-[#293C74] transition-colors focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 </button>
              </div>
@@ -63,18 +54,18 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
           </button>
         </form>
 
-        <div id="register-status" class="hidden mt-4 p-4 rounded-xl text-center text-sm font-bold"></div>
+        <div id="register-status" class="hidden mt-4 p-4 rounded-xl text-center text-sm font-bold" role="status" aria-live="polite"></div>
 
         <div class="mt-6 text-center border-t border-slate-100 pt-6">
-            <p class="text-xs text-slate-500">
+            <p class="flex flex-wrap items-center justify-center gap-x-1 text-xs text-slate-500">
                 ¿Ya tienes cuenta? 
-                <a href="/portal/ingresar" class="font-bold text-[#293C74] hover:underline">Iniciar Sesión</a>
+                <a href="/portal/ingresar" class="inline-flex min-h-8 items-center font-bold text-[#293C74] hover:underline">Iniciar Sesión</a>
             </p>
         </div>
 
       </div>
     </div>
-  </main>
+  </div>
   <script>
     import '@scripts/portal-registro.js';
   </script>

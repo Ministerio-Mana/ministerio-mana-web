@@ -162,9 +162,9 @@ function actionButtons(row) {
   const id = escapeAttr(row.id);
   return `
     <div class="flex flex-wrap gap-2">
-      <button type="button" data-prayer-action="approve" data-prayer-id="${id}" class="rounded-xl bg-brand-teal px-3 py-2 text-xs font-black uppercase tracking-widest text-white hover:brightness-105">Publicar</button>
-      <button type="button" data-prayer-action="keep_private" data-prayer-id="${id}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-[#293C74] hover:bg-slate-50">Pasar a privada</button>
-      <button type="button" data-prayer-action="reject" data-prayer-id="${id}" class="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-black uppercase tracking-widest text-red-700 hover:bg-red-100">Rechazar</button>
+      <button type="button" data-prayer-action="approve" data-prayer-id="${id}" class="min-h-10 rounded-md bg-brand-teal px-3 py-2 text-xs font-black uppercase text-white hover:brightness-105">Publicar</button>
+      <button type="button" data-prayer-action="keep_private" data-prayer-id="${id}" class="min-h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-black uppercase text-[#293C74] hover:bg-slate-50">Pasar a privada</button>
+      <button type="button" data-prayer-action="reject" data-prayer-id="${id}" class="min-h-10 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-xs font-black uppercase text-red-700 hover:bg-red-100">Rechazar</button>
     </div>
   `;
 }
@@ -190,19 +190,19 @@ function renderRows(rows) {
     const status = String(row.moderation_status || '');
     const visibility = String(row.visibility || 'private');
     return `
-      <article class="rounded-[1.75rem] border border-slate-100 bg-white p-5 shadow-sm">
+      <article class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-5">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div class="min-w-0 space-y-3">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${statusClass(status, visibility)}">${escapeHtml(statusLabel(status))}</span>
-              <span class="rounded-full border border-slate-100 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-500">${escapeHtml(visibilityLabel(visibility))}</span>
+              <span class="portal-chip border uppercase ${statusClass(status, visibility)}">${escapeHtml(statusLabel(status))}</span>
+              <span class="portal-chip border border-slate-200 bg-slate-50 uppercase text-slate-600">${escapeHtml(visibilityLabel(visibility))}</span>
             </div>
             <div>
               <h3 class="font-display text-xl font-black text-[#293C74]">${escapeHtml(row.first_name || 'Alguien')}</h3>
               <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">${escapeHtml(locationLabel(row))} · ${escapeHtml(formatDate(row.created_at))}</p>
             </div>
             <p class="max-w-4xl whitespace-pre-wrap text-sm leading-6 text-slate-700">${escapeHtml(row.request_text || '')}</p>
-            ${row.admin_note ? `<p class="rounded-2xl bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-500">Nota: ${escapeHtml(row.admin_note)}</p>` : ''}
+            ${row.admin_note ? `<p class="border-l-2 border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-600">Nota: ${escapeHtml(row.admin_note)}</p>` : ''}
           </div>
           <div class="shrink-0 lg:min-w-64">${actionButtons(row)}</div>
         </div>

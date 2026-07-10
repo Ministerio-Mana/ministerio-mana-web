@@ -145,17 +145,9 @@ function isLocalhost(request: Request): boolean {
 
 function isPrivateApiPath(pathname: string): boolean {
   if (pathname.startsWith('/api/cuenta')) return true;
-  if (pathname.startsWith('/api/portal/admin')) return true;
-  if (pathname.startsWith('/api/portal/campus')) return true;
-  if (pathname.startsWith('/api/portal/content')) return true;
-  if (pathname.startsWith('/api/portal/donations')) return true;
-  if (pathname.startsWith('/api/portal/finances')) return true;
-  if (pathname.startsWith('/api/portal/iglesia')) return true;
-  if (pathname.startsWith('/api/portal/password-')) return true;
-  if (pathname.startsWith('/api/portal/profile')) return true;
-  if (pathname.startsWith('/api/portal/regions')) return true;
-  if (pathname.startsWith('/api/portal/session')) return true;
-  if (pathname.startsWith('/api/portal/client-error')) return true;
+  if (pathname === '/api/portal/churches' || pathname === '/api/portal/churches/') return false;
+  if (pathname.startsWith('/api/portal/')) return true;
+  if (pathname.startsWith('/api/prayer/admin')) return true;
   return false;
 }
 
@@ -177,7 +169,7 @@ function withMutableHeaders(response: Response): Response {
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers: response.headers,
+    headers: new Headers(response.headers),
   });
 }
 

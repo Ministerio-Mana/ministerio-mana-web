@@ -1245,6 +1245,26 @@ function runSafe(label, fn) {
   }
 }
 
+const ACCOUNT_SUMMARY_TIMEOUT_MS = 10000;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = ACCOUNT_SUMMARY_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function setAccountDataWarning(visible) {
+  document.getElementById('account-data-warning')?.classList.toggle('hidden', !visible);
+}
+
+document.getElementById('account-data-retry')?.addEventListener('click', () => {
+  window.location.reload();
+});
+
 async function loadChurchCatalog(headers = {}) {
   try {
     const churchesRes = await fetch('/api/portal/churches', { headers, credentials: 'include' });
@@ -1288,26 +1308,19 @@ async function loadDashboardData(authResult) {
     window.portalAuthHeaders = headers;
     // 2. Parallelized Initial Data Fetching
 
-    dlog('[DEBUG] Starting Promise.all for API requests...');
+    dlog('[DEBUG] Starting session and account requests...');
 
-    const [sessionResult, resumenResult] = await Promise.allSettled([
-      getPortalSession({ auth: authResult }),
-      fetch('/api/cuenta/resumen', { headers, credentials: 'include' }),
-    ]);
-
-    if (sessionResult.status !== 'fulfilled') {
-      throw new Error('No se pudo validar la sesión');
-    }
-
-    if (resumenResult.status === 'rejected') {
-      console.error('[portal.dashboard] resumen request failed', resumenResult.reason);
-    }
-
-    const sessionInfo = sessionResult.value;
+    const resumenPromise = fetchWithTimeout('/api/cuenta/resumen', {
+      headers,
+      credentials: 'include',
+    }).catch((err) => {
+      console.error('[portal.dashboard] resumen request failed', err);
+      return null;
+    });
+    const sessionInfo = await getPortalSession({ auth: authResult });
     const sessionRes = sessionInfo.response;
-    const resumenRes = resumenResult.status === 'fulfilled' ? resumenResult.value : null;
     const userData = sessionUser || null;
-    dlog('[DEBUG] Promise.all completed.');
+    dlog('[DEBUG] Session request completed.');
 
     dlog('[DEBUG] sessionRes status:', sessionRes?.status);
     dlog('[DEBUG] userData:', userData);
@@ -1325,25 +1338,6 @@ async function loadDashboardData(authResult) {
     dlog('[DEBUG] sessionPayload:', sessionPayload);
     if (!sessionInfo.ok || !sessionPayload.ok) throw new Error(sessionPayload.error || 'No se pudo cargar el perfil');
     sessionValidated = true;
-
-    let payload = { ok: true, user: {}, bookings: [], plans: [], payments: [] };
-    if (resumenRes?.ok) {
-      const resData = await resumenRes.json().catch((err) => {
-        console.error('[portal.dashboard] resumen payload parse error', err);
-        return { ok: false, error: 'Respuesta inválida de resumen' };
-      });
-      dlog('[DEBUG] resData (resumen):', resData);
-      if (!resData.ok) {
-        dwarn('Could not load resumen:', resData.error);
-      } else {
-        payload = resData;
-      }
-    } else if (resumenRes) {
-      dwarn('Could not load resumen:', `status ${resumenRes.status}`);
-    } else {
-      dwarn('Could not load resumen:', 'request failed');
-    }
-    portalAccountPayload = payload;
 
     authMode = sessionPayload.mode || 'supabase';
     portalProfile = (sessionPayload.profile && typeof sessionPayload.profile === 'object') ? sessionPayload.profile : {};
@@ -1471,6 +1465,45 @@ async function loadDashboardData(authResult) {
       churchNameInput.classList.add('bg-slate-100', 'cursor-not-allowed');
     }
 
+    const shellName = String(
+      portalProfile?.full_name
+      || sessionUser?.user_metadata?.full_name
+      || sessionUser?.email
+      || 'Usuario',
+    ).trim();
+    if (welcomeName) welcomeName.textContent = shellName.split(' ')[0] || 'Usuario';
+    loadingEl?.classList.add('hidden');
+    contentEl?.classList.remove('hidden');
+    animateIn(contentEl, { y: 20, duration: 260 });
+
+    let payload = { ok: true, user: {}, bookings: [], plans: [], payments: [] };
+    let resumenFailed = false;
+    try {
+      const resumenRes = await resumenPromise;
+      if (resumenRes?.ok) {
+        const resData = await resumenRes.json().catch((err) => {
+          console.error('[portal.dashboard] resumen payload parse error', err);
+          return { ok: false, error: 'Respuesta inválida de resumen' };
+        });
+        dlog('[DEBUG] resData (resumen):', resData);
+        if (resData.ok) {
+          payload = resData;
+        } else {
+          resumenFailed = true;
+          dwarn('Could not load resumen:', resData.error);
+        }
+      } else {
+        resumenFailed = true;
+        dwarn('Could not load resumen:', `status ${resumenRes?.status || 'unknown'}`);
+      }
+    } catch (err) {
+      resumenFailed = true;
+      console.error('[portal.dashboard] resumen request failed', err);
+    }
+    portalAccountPayload = payload;
+    contentEl?.setAttribute('aria-busy', 'false');
+    setAccountDataWarning(resumenFailed);
+
     const user = userData;
 
     const bookings = Array.isArray(payload.bookings) ? payload.bookings.filter(Boolean) : [];
@@ -1589,9 +1622,6 @@ async function loadDashboardData(authResult) {
     runSafe('renderMemberships', () => renderMemberships(portalMemberships));
     runSafe('setupInviteAccess', () => setupInviteAccess());
     runSafe('initAdminInvite', () => initAdminInvite());
-    // 5. Reveal Dashboard (Eager Loading)
-    loadingEl.classList.add('hidden');
-    contentEl.classList.remove('hidden');
     if (hasChurchAccess) {
       runSafe('initChurchManualForm', () => initChurchManualForm());
       runSafe('initInviteForm', () => initInviteForm());
@@ -1616,8 +1646,6 @@ async function loadDashboardData(authResult) {
     // Note: renderBookings will reuse portalGlobalBookings if we don't pass filtered, so let's update calling convention
     // But renderPlans/etc might also need filtering. For now, focus on Bookings list.
     runSafe('renderBookings(filtered)', () => renderBookings(displayedBookings));
-
-    animateIn(contentEl, { y: 30, duration: 420 });
 
     // 6. Background Initialization (Parallelized)
     const backgroundTasks = [];

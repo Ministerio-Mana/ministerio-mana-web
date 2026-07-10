@@ -2,8 +2,8 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
-<BaseLayout title="Campus | Portal Maná" description="Gestión de donantes Campus" hideHeader hideFooter>
-  <main class="min-h-screen bg-[#F8FAFC]">
+<BaseLayout title="Campus | Portal Maná" description="Gestión de donantes Campus" hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F8FAFC]">
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />
       
@@ -21,31 +21,31 @@ import Sidebar from '@components/portal/Sidebar.astro';
                </div>
             </div>
 
-            <div id="donor-stats" class="hidden grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm md:grid-cols-3 lg:grid-cols-5">
-                <div class="min-h-28 border-b border-r border-slate-100 p-5 md:border-b-0">
-                    <p class="mb-2 text-xs font-bold uppercase text-slate-400">Total donantes</p>
-                    <p class="text-3xl font-bold text-[#293C74]" id="stat-total-donors">0</p>
+            <div id="donor-stats" class="portal-stat-grid hidden grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                <div class="portal-stat">
+                    <p class="portal-stat-label">Total donantes</p>
+                    <p class="portal-stat-value" id="stat-total-donors">0</p>
                 </div>
-                <div class="min-h-28 border-b border-slate-100 p-5 md:border-b-0 md:border-r">
-                    <p class="mb-2 text-xs font-bold uppercase text-slate-400">Recurrentes</p>
-                    <p class="text-3xl font-bold text-emerald-600" id="stat-recurring-donors">0</p>
+                <div class="portal-stat">
+                    <p class="portal-stat-label">Recurrentes</p>
+                    <p class="portal-stat-value !text-emerald-700" id="stat-recurring-donors">0</p>
                 </div>
-                <div class="min-h-28 border-b border-r border-slate-100 p-5 md:border-b-0">
-                    <p class="mb-2 text-xs font-bold uppercase text-slate-400">Donación única</p>
-                    <p class="text-3xl font-bold text-sky-600" id="stat-one-time-donors">0</p>
+                <div class="portal-stat">
+                    <p class="portal-stat-label">Donación única</p>
+                    <p class="portal-stat-value !text-sky-700" id="stat-one-time-donors">0</p>
                 </div>
-                <div class="admin-campus-stat hidden min-h-28 border-r border-slate-100 p-5">
-                    <p class="mb-2 text-xs font-bold uppercase text-slate-400">Total Campus</p>
+                <div class="admin-campus-stat portal-stat hidden">
+                    <p class="portal-stat-label">Total Campus</p>
                     <div class="text-sm font-bold text-brand-teal" id="stat-campus-totals">—</div>
                 </div>
-                <div class="admin-campus-stat hidden min-h-28 p-5">
-                    <p class="mb-2 text-xs font-bold uppercase text-slate-400">Misioneros activos</p>
-                    <p class="text-3xl font-bold text-[#293C74]" id="stat-active-missionaries">0</p>
+                <div class="admin-campus-stat portal-stat hidden">
+                    <p class="portal-stat-label">Misioneros activos</p>
+                    <p class="portal-stat-value" id="stat-active-missionaries">0</p>
                 </div>
             </div>
 
             <!-- Donors List -->
-            <div class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <div class="portal-panel p-4 md:p-6">
                 <div class="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-5 xl:flex-row xl:items-center xl:justify-between">
                     <div class="inline-flex w-full rounded-lg bg-slate-100 p-1 sm:w-auto" role="group" aria-label="Filtrar donantes">
                         <button type="button" class="donor-filter flex-1 rounded-md bg-white px-3 py-2 text-xs font-bold text-[#293C74] shadow-sm sm:flex-none" data-donor-filter="all" aria-pressed="true">
@@ -75,7 +75,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <p id="donors-result-count" class="mb-4 hidden text-xs font-semibold text-slate-400"></p>
                 <div id="donors-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando donantes...</div>
                 
-                <div id="donors-content" class="hidden space-y-6">
+                <div id="donors-content" class="hidden space-y-3">
                     <!-- Donor cards will be injected here by JS -->
                 </div>
                 
@@ -93,7 +93,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
          </div>
       </section>
     </div>
-  </main>
+  </div>
   <script>
       import '@scripts/portal-campus.js';
   </script>

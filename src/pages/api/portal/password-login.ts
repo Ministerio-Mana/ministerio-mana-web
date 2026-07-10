@@ -34,7 +34,7 @@ function maskEmail(email: string): string {
 
 function isEmergencyLoginEnabled(): boolean {
   const raw = env('PORTAL_PASSWORD_LOGIN_ENABLED');
-  if (raw == null) return true;
+  if (raw == null) return !isProduction();
   return ['1', 'true', 'yes', 'on'].includes(raw.trim().toLowerCase());
 }
 

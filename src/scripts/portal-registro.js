@@ -1,12 +1,6 @@
-import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
-import gsap from 'gsap';
-
-const supabase = getSupabaseBrowserClient();
-
 const form = document.getElementById('register-form');
 const btnSubmit = document.getElementById('btn-submit-register');
 const statusEl = document.getElementById('register-status');
-const starsContainer = document.getElementById('stars-container');
 const passwordInput = document.getElementById('reg-password');
 const toggleBtn = document.getElementById('toggle-password-reg');
 const TURNSTILE_RENDER_WAIT_MS = 3000;
@@ -34,6 +28,28 @@ function resetTurnstile() {
     if (window.turnstile && typeof window.turnstile.reset === 'function') {
         window.turnstile.reset();
     }
+}
+
+function showRegistrationResult(title, message, tone) {
+    if (!statusEl) return;
+    statusEl.replaceChildren();
+    const heading = document.createElement('strong');
+    heading.textContent = title;
+    const detail = document.createElement('span');
+    detail.className = 'mt-1 block text-sm';
+    detail.textContent = message;
+    statusEl.append(heading, detail);
+    statusEl.classList.remove(
+        'hidden',
+        'bg-red-50',
+        'text-red-600',
+        'text-red-800',
+        'bg-amber-50',
+        'text-amber-700',
+        'bg-green-50',
+        'text-green-600',
+    );
+    statusEl.classList.add(...tone);
 }
 
 function sleep(ms) {
@@ -102,31 +118,10 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = SIGNUP_TIMEOUT_MS
 toggleBtn?.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password';
     passwordInput.type = type;
+    const isVisible = type === 'text';
+    toggleBtn.setAttribute('aria-pressed', String(isVisible));
+    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
 });
-
-// Background Animation (simplified)
-if (starsContainer) {
-    for (let i = 0; i < 50; i++) {
-        const star = document.createElement('div');
-        star.classList.add('absolute', 'bg-white', 'rounded-full');
-        const size = Math.random() * 2 + 1;
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        star.style.opacity = Math.random() * 0.5 + 0.1;
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        starsContainer.appendChild(star);
-
-        gsap.to(star, {
-            y: `-=${Math.random() * 100 + 50}`,
-            opacity: 0,
-            duration: Math.random() * 3 + 2,
-            repeat: -1,
-            ease: 'linear',
-            delay: Math.random() * 5
-        });
-    }
-}
 
 syncLoginLink();
 
@@ -175,17 +170,17 @@ form?.addEventListener('submit', async (e) => {
         form.reset();
 
         if (data.alreadyExists) {
-            statusEl.classList.add('bg-amber-50', 'text-amber-700');
-            statusEl.innerHTML = `
-                <strong>Cuenta ya registrada</strong><br>
-                <span class="text-sm">${data.message || 'Tu correo ya existe. Usa "Olvidé mi contraseña" para recuperar acceso.'}</span>
-            `;
+            showRegistrationResult(
+                'Cuenta ya registrada',
+                data.message || 'Tu correo ya existe. Usa "Olvidé mi contraseña" para recuperar acceso.',
+                ['bg-amber-50', 'text-amber-700'],
+            );
         } else {
-            statusEl.classList.add('bg-green-50', 'text-green-600');
-            statusEl.innerHTML = `
-                <strong>¡Cuenta creada!</strong><br>
-                <span class="text-sm">Revisa tu correo <strong>${email}</strong> para activar tu cuenta y establecer tu acceso.</span>
-            `;
+            showRegistrationResult(
+                '¡Cuenta creada!',
+                `Revisa tu correo ${email} para activar tu cuenta y establecer tu acceso.`,
+                ['bg-green-50', 'text-green-600'],
+            );
         }
         btnSubmit.textContent = 'Ir a Login';
         btnSubmit.disabled = false;

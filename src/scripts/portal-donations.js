@@ -17,7 +17,7 @@ const statUsdEl = document.getElementById('donations-stat-usd');
 let currentAuthHeaders = {};
 let paginationState = {
     page: 1,
-    pageSize: 50,
+    pageSize: 25,
     totalRows: 0,
     totalPages: 0,
     visibleFrom: 0,
@@ -131,7 +131,7 @@ function statusBadge(status) {
         : normalized === 'PENDING'
             ? 'bg-amber-100 text-amber-700'
             : 'bg-green-100 text-green-700';
-    return `<span class="px-2 py-1 rounded-full text-[10px] font-bold ${color}">${label}</span>`;
+    return `<span class="portal-chip ${color}">${label}</span>`;
 }
 
 function resetLoadedTotals() {
@@ -193,7 +193,7 @@ async function ensureFinanceAccess() {
 }
 
 async function loadDonations({ append = false } = {}) {
-    const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 50);
+    const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 25);
     const page = append ? paginationState.page + 1 : 1;
 
     if (!append) {
@@ -264,7 +264,7 @@ async function loadDonations({ append = false } = {}) {
 function donationRowsHtml(donations) {
     return donations.map((donation) => {
         const contact = [donation.donor_email, donation.donor_phone].filter(Boolean).join(' · ');
-        const recurring = donation.is_recurring ? '<span class="ml-2 text-[10px] font-bold text-brand-teal">RECURRENTE</span>' : '';
+        const recurring = donation.is_recurring ? '<span class="portal-chip ml-2 bg-teal-50 text-teal-800">Recurrente</span>' : '';
         const reference = donation.reference
             ? `<p class="text-[11px] text-slate-400 mt-1">Ref: ${escapeHtml(donation.reference)}</p>`
             : '';
@@ -273,24 +273,24 @@ function donationRowsHtml(donations) {
             && String(donation.status || '').toUpperCase() === 'PENDING'
             && donation.reference;
         const syncAction = canSyncWompi
-            ? `<button class="mt-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
+            ? `<button class="mt-2 min-h-10 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
             : '';
 
         return `
             <tr>
-                <td class="py-3 pl-2 align-top">${formatDate(donation.created_at)}</td>
-                <td class="py-3 align-top">
+                <td data-label="Fecha" class="py-3 pl-2 align-top">${formatDate(donation.created_at)}</td>
+                <td data-label="Concepto" class="py-3 align-top">
                     <p class="font-semibold text-[#293C74]">${escapeHtml(donation.concept_label || 'Otros')}${recurring}</p>
                     <p class="text-[11px] text-slate-400 uppercase">${escapeHtml(donation.provider || '')}</p>
                 </td>
-                <td class="py-3 align-top">
+                <td data-label="Destino" class="py-3 align-top">
                     <p class="font-medium text-slate-700">${escapeHtml(donation.destination || '-')}</p>
                     ${reference}
                 </td>
-                <td class="py-3 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
-                <td class="py-3 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
-                <td class="py-3 align-top">${statusBadge(donation.status)}${syncAction}</td>
-                <td class="py-3 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
+                <td data-label="Donante" class="py-3 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
+                <td data-label="Contacto" class="py-3 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
+                <td data-label="Estado" class="py-3 align-top">${statusBadge(donation.status)}${syncAction}</td>
+                <td data-label="Monto" class="py-3 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
             </tr>
         `;
     }).join('');
@@ -300,7 +300,7 @@ function renderDonations(donations, stats, pagination, { append = false } = {}) 
     if (loadingEl) loadingEl.classList.add('hidden');
     paginationState = {
         page: Number(pagination.page || (append ? paginationState.page + 1 : 1)),
-        pageSize: Number(pagination.pageSize || pageSizeEl?.value || 50),
+        pageSize: Number(pagination.pageSize || pageSizeEl?.value || 25),
         totalRows: Number(pagination.totalRows || stats.totalRows || donations.length || 0),
         totalPages: Number(pagination.totalPages || 0),
         visibleFrom: append

@@ -15,11 +15,15 @@ function showModal({ title = 'Aviso', message = '', items = [] } = {}) {
     modal.message.classList.toggle('hidden', !message);
   }
   if (modal.list) {
+    modal.list.replaceChildren();
     if (items?.length) {
-      modal.list.innerHTML = items.map((item) => `<li>${item}</li>`).join('');
+      items.forEach((item) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = String(item ?? '');
+        modal.list.appendChild(listItem);
+      });
       modal.list.classList.remove('hidden');
     } else {
-      modal.list.innerHTML = '';
       modal.list.classList.add('hidden');
     }
   }

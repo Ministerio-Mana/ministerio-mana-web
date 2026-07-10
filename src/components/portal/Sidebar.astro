@@ -1,19 +1,19 @@
 ---
 ---
-<aside class="w-full lg:w-72 bg-[#293C74] text-white z-20 shadow-xl">
-<div class="p-8 lg:sticky lg:top-0 flex flex-col h-full">
+<aside class="portal-sidebar z-20 w-full border-r border-[#20315f] bg-[#293C74] text-white lg:w-64">
+<div class="flex h-full flex-col p-4 sm:p-6 lg:sticky lg:top-0 lg:h-screen">
     
     <!-- Mobile Header -->
-    <div class="flex items-center justify-between mb-8 lg:mb-12 px-2">
+    <div class="mb-4 flex items-center justify-between px-1 lg:mb-8">
         <div class="flex items-center gap-4">
             <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="h-10 lg:h-12 w-auto">
             <div class="border-l border-white/20 pl-4">
-                <p class="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1">Portal Maná</p>
+                <p class="mb-1 text-[10px] font-bold uppercase text-white/70">Portal Maná</p>
                 <h2 class="text-xs font-display font-bold text-white">Panel General</h2>
             </div>
         </div>
         <!-- Mobile Toggle Button -->
-        <button id="sidebar-toggle" class="lg:hidden text-white/80 hover:text-white">
+        <button id="sidebar-toggle" type="button" aria-label="Abrir navegación" aria-controls="sidebar-content" aria-expanded="false" class="flex h-11 w-11 items-center justify-center rounded-md text-white/80 hover:bg-white/10 hover:text-white lg:hidden">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -21,70 +21,70 @@
     </div>
 
     <!-- Collapsible Content -->
-    <div id="sidebar-content" class="hidden lg:flex flex-col h-full space-y-2">
-        <nav class="space-y-2">
-        <a href="/portal" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10" data-tab="resumen">
+    <div id="sidebar-content" class="hidden h-full flex-col space-y-2 lg:flex">
+        <nav aria-label="Navegación del portal" class="max-h-[calc(100vh-11rem)] space-y-1 overflow-y-auto pr-1">
+        <a href="/portal" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="resumen">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Resumen</span>
         </a>
-        <a href="/portal?tab=reservas" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10" data-tab="reservas">
+        <a href="/portal?tab=reservas" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="reservas">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mis Eventos</span>
         </a>
-        <a href="/portal?tab=pagos" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10" data-tab="pagos">
+        <a href="/portal?tab=pagos" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="pagos">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mis Aportes</span>
         </a>
-        <a href="/portal?tab=perfil" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10" data-tab="perfil">
+        <a href="/portal?tab=perfil" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="perfil">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mi Perfil</span>
         </a>
         <!-- Eventos (Visible for ALL users - Cumbre registration) -->
-        <a href="/portal?tab=iglesia" class="nav-link w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10" data-tab="iglesia">
+        <a href="/portal?tab=iglesia" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="iglesia">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             <span id="nav-iglesia-label" class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Eventos</span>
         </a>
         <!-- Gestión de Eventos (Restricted - Pastors/Admins) -->
-        <a href="/portal/events" id="nav-link-events" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/events" id="nav-link-events" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Gestión de Eventos</span>
         </a>
         <!-- Usuarios (Restricted - Pastors/Admins) -->
-        <a href="/portal/users" id="nav-link-users" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/users" id="nav-link-users" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Usuarios</span>
         </a>
-        <a href="/portal/regions" id="nav-link-regions" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/regions" id="nav-link-regions" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 12.414m0 0L9.172 8.172m4.242 4.242L9.172 16.657m4.242-4.243l4.243-4.242M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Regiones</span>
         </a>
         <!-- Campus Link (Campus Missionaries + Admins) -->
-        <a href="/portal/campus" id="nav-link-campus" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/campus" id="nav-link-campus" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Campus</span>
         </a>
         <!-- Donaciones Link (Admins) -->
-        <a href="/portal/donations" id="nav-link-donations" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/donations" id="nav-link-donations" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a5 5 0 00-10 0v2M5 9h14l-1 11H6L5 9z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Donaciones</span>
         </a>
-        <a href="/portal/peticiones" id="nav-link-prayers" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/peticiones" id="nav-link-prayers" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11h8M8 15h5M7 4h10a2 2 0 012 2v12.5a1 1 0 01-1.447.894L12 16.618l-5.553 2.776A1 1 0 015 18.5V6a2 2 0 012-2z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Peticiones</span>
         </a>
         <!-- Finances Link (Admins/Pastors) -->
-        <a href="/portal/finances" id="nav-link-finances" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/finances" id="nav-link-finances" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Finanzas</span>
         </a>
-        <a href="/portal/content" id="nav-link-content" class="nav-link hidden w-full items-center gap-3 px-4 py-3 rounded-xl transition-all group hover:bg-white/10">
+        <a href="/portal/content" id="nav-link-content" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white/70 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Contenido</span>
         </a>
         </nav>
 
-        <div class="mt-auto pt-10">
-        <button id="btn-logout" type="button" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/20 text-white/80 hover:text-white hover:bg-white/10 transition-all text-sm font-bold">
+        <div class="mt-auto pt-6">
+        <button id="btn-logout" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-white/20 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors hover:bg-white/10 hover:text-white">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
             Cerrar sesión
         </button>
@@ -99,10 +99,43 @@
     const toggleBtn = document.getElementById('sidebar-toggle');
     const content = document.getElementById('sidebar-content');
     const logoutBtn = document.getElementById('btn-logout');
-    
+
+    function setMobileMenuOpen(open) {
+        content?.classList.toggle('hidden', !open);
+        content?.classList.toggle('flex', open);
+        toggleBtn?.setAttribute('aria-expanded', String(open));
+        toggleBtn?.setAttribute('aria-label', open ? 'Cerrar navegación' : 'Abrir navegación');
+    }
+
     toggleBtn?.addEventListener('click', () => {
-        content?.classList.toggle('hidden');
+        setMobileMenuOpen(content?.classList.contains('hidden'));
     });
+
+    content?.querySelectorAll('a.nav-link').forEach((link) => {
+        link.addEventListener('click', () => setMobileMenuOpen(false));
+    });
+
+    function applyActiveLink() {
+        const currentUrl = new URL(window.location.href);
+        const currentTab = currentUrl.searchParams.get('tab') || 'resumen';
+
+        content?.querySelectorAll('a.nav-link').forEach((link) => {
+            const linkUrl = new URL(link.href, window.location.origin);
+            const isPortalHomeLink = linkUrl.pathname === '/portal';
+            const isActive = isPortalHomeLink
+                ? currentUrl.pathname === '/portal' && link.dataset.tab === currentTab
+                : linkUrl.pathname === currentUrl.pathname;
+            link.classList.toggle('bg-white/15', isActive);
+            link.classList.toggle('text-white', isActive);
+            if (isActive) {
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
+    }
+
+    applyActiveLink();
 
     logoutBtn?.addEventListener('click', async () => {
         if (logoutBtn instanceof HTMLButtonElement) {

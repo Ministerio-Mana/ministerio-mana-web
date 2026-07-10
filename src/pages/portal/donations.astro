@@ -3,13 +3,13 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
 
-<BaseLayout title="Donaciones | Portal Maná" description="Todas las donaciones del ministerio." hideHeader hideFooter>
-  <main class="min-h-screen bg-[#F8FAFC]">
+<BaseLayout title="Donaciones | Portal Maná" description="Todas las donaciones del ministerio." hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F8FAFC]">
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />
 
       <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
-        <div id="donations-gate" class="max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
+        <div id="donations-gate" class="portal-panel max-w-xl mx-auto px-6 py-8 text-center text-slate-500">
           Validando permisos...
         </div>
 
@@ -19,14 +19,14 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <h1 class="text-3xl font-display font-bold text-[#293C74]">Donaciones</h1>
               <p class="text-slate-600">Todas las donaciones con su concepto, destino y donante.</p>
             </div>
-            <div class="flex flex-wrap gap-3">
-              <select id="donations-status" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+            <div class="grid w-full gap-2 sm:grid-cols-3 lg:w-auto">
+              <select id="donations-status" aria-label="Filtrar donaciones por estado" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
                 <option value="all">Todos los estados</option>
                 <option value="approved">Aprobadas</option>
                 <option value="pending">Pendientes</option>
                 <option value="failed">Fallidas</option>
               </select>
-              <select id="donations-domain" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+              <select id="donations-domain" aria-label="Filtrar donaciones por concepto" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
                 <option value="">Todos los conceptos</option>
                 <option value="DONATION">Donaciones generales</option>
                 <option value="CAMPUS">Campus</option>
@@ -34,29 +34,29 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <option value="PRIMICIAS">Primicias</option>
                 <option value="OTHER">Otros</option>
               </select>
-              <select id="donations-page-size" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+              <select id="donations-page-size" aria-label="Cantidad de donaciones por carga" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
+                <option value="25">25 por carga</option>
                 <option value="50">50 por carga</option>
-                <option value="100">100 por carga</option>
               </select>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Registros filtrados</p>
-              <p class="text-3xl font-bold text-[#293C74]" id="donations-stat-count">0</p>
+          <div class="portal-stat-grid grid-cols-2 sm:grid-cols-3">
+            <div class="portal-stat">
+              <p class="portal-stat-label">Registros filtrados</p>
+              <p class="portal-stat-value" id="donations-stat-count">0</p>
             </div>
-            <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">COP en esta carga</p>
-              <p class="text-3xl font-bold text-brand-teal" id="donations-stat-cop">$ 0</p>
+            <div class="portal-stat">
+              <p class="portal-stat-label">COP en esta carga</p>
+              <p class="portal-stat-value !text-brand-teal" id="donations-stat-cop">$ 0</p>
             </div>
-            <div class="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
-              <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">USD en esta carga</p>
-              <p class="text-3xl font-bold text-[#293C74]" id="donations-stat-usd">$ 0</p>
+            <div class="portal-stat col-span-2 sm:col-span-1">
+              <p class="portal-stat-label">USD en esta carga</p>
+              <p class="portal-stat-value" id="donations-stat-usd">$ 0</p>
             </div>
           </div>
 
-          <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-6 md:p-8">
+          <div class="portal-panel p-4 md:p-6">
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p id="donations-page-info" class="text-xs font-bold uppercase tracking-widest text-slate-400">
                 Preparando donaciones...
@@ -64,8 +64,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
             <div id="donations-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando donaciones...</div>
 
-            <div class="overflow-x-auto">
-              <table id="donations-table" class="w-full min-w-[980px] text-left border-collapse hidden">
+            <div class="portal-table-frame">
+              <table id="donations-table" class="portal-responsive-table hidden w-full text-left border-collapse">
                 <thead>
                   <tr class="text-xs text-slate-400 border-b border-slate-100">
                     <th class="font-bold uppercase tracking-widest py-3 pl-2">Fecha</th>
@@ -86,7 +86,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <div class="mt-6 flex justify-center">
-              <button id="donations-load-more" type="button" class="hidden rounded-full border border-[#293C74]/20 px-5 py-2 text-xs font-bold uppercase tracking-widest text-[#293C74] hover:bg-[#293C74]/5 disabled:cursor-wait disabled:opacity-60">
+              <button id="donations-load-more" type="button" class="hidden min-h-10 rounded-md border border-[#293C74]/20 px-5 py-2 text-xs font-bold uppercase text-[#293C74] hover:bg-[#293C74]/5 disabled:cursor-wait disabled:opacity-60">
                 Cargar más
               </button>
             </div>
@@ -94,7 +94,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
         </div>
       </section>
     </div>
-  </main>
+  </div>
   <script>
     import '@scripts/portal-donations.js';
   </script>

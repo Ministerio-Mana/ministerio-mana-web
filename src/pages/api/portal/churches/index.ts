@@ -8,7 +8,10 @@ const supabaseKey = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || process.env.PUB
 
 export const GET: APIRoute = async () => {
     if (!supabaseUrl || !supabaseKey) {
-        return new Response(JSON.stringify({ error: 'Missing DB configuration' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'No se pudo cargar el listado de iglesias' }), {
+            status: 500,
+            headers: { 'content-type': 'application/json' },
+        });
     }
 
     const sb = createClient(supabaseUrl, supabaseKey);
@@ -46,7 +49,14 @@ export const GET: APIRoute = async () => {
     }
 
     if (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        console.error('[portal.churches] query failed', {
+            code: error.code,
+            message: error.message,
+        });
+        return new Response(JSON.stringify({ error: 'No se pudo cargar el listado de iglesias' }), {
+            status: 500,
+            headers: { 'content-type': 'application/json' },
+        });
     }
 
     return new Response(JSON.stringify(data), {

@@ -3,13 +3,13 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
 
-<BaseLayout title="Peticiones | Portal Maná" description="Revisión e intercesión de peticiones de oración." hideHeader hideFooter>
-  <main class="min-h-screen bg-[#F8FAFC]">
+<BaseLayout title="Peticiones | Portal Maná" description="Revisión e intercesión de peticiones de oración." hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F8FAFC]">
     <div class="flex min-h-screen flex-col lg:flex-row">
       <Sidebar />
 
       <section class="relative flex-1 overflow-y-auto p-4 md:p-10 lg:p-16">
-        <div id="prayers-gate" class="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
+        <div id="prayers-gate" class="portal-panel mx-auto max-w-xl px-6 py-8 text-center text-slate-500">
           Validando permisos...
         </div>
 
@@ -23,8 +23,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </p>
             </div>
 
-            <div class="flex flex-wrap gap-3">
-              <select id="prayers-status" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+            <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:w-auto">
+              <select id="prayers-status" aria-label="Filtrar peticiones por estado" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
                 <option value="all">Todos los estados</option>
                 <option value="private">Privadas</option>
                 <option value="pending">Pendientes</option>
@@ -32,7 +32,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <option value="approved">Aprobadas</option>
                 <option value="rejected">Rechazadas</option>
               </select>
-              <select id="prayers-visibility" class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+              <select id="prayers-visibility" aria-label="Filtrar peticiones por visibilidad" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">
                 <option value="all">Todas</option>
                 <option value="private">Solo privadas</option>
                 <option value="public">Solo públicas</option>
@@ -40,28 +40,28 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
           </div>
 
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-              <p class="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">Recibidas</p>
-              <p id="prayers-stat-total" class="text-3xl font-black text-[#293C74]">0</p>
+          <div class="portal-stat-grid grid-cols-3">
+            <div class="portal-stat">
+              <p class="portal-stat-label">Recibidas</p>
+              <p id="prayers-stat-total" class="portal-stat-value">0</p>
             </div>
-            <div class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-              <p class="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">Privadas</p>
-              <p id="prayers-stat-private" class="text-3xl font-black text-brand-teal">0</p>
+            <div class="portal-stat">
+              <p class="portal-stat-label">Privadas</p>
+              <p id="prayers-stat-private" class="portal-stat-value !text-brand-teal">0</p>
             </div>
-            <div class="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
-              <p class="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">Por revisar</p>
-              <p id="prayers-stat-review" class="text-3xl font-black text-[#293C74]">0</p>
+            <div class="portal-stat">
+              <p class="portal-stat-label">Por revisar</p>
+              <p id="prayers-stat-review" class="portal-stat-value">0</p>
             </div>
           </div>
 
-          <div class="rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div class="portal-panel p-4 md:p-6">
             <div class="mb-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 class="font-display text-xl font-black text-[#293C74]">Bandeja de peticiones</h2>
                 <p id="prayers-role-note" class="text-sm text-slate-500">Cargando permisos...</p>
               </div>
-              <button id="prayers-refresh" type="button" class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-widest text-[#293C74] hover:bg-slate-100">
+              <button id="prayers-refresh" type="button" class="min-h-10 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-black uppercase text-[#293C74] hover:bg-slate-100">
                 Actualizar
               </button>
             </div>
@@ -73,7 +73,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
         </div>
       </section>
     </div>
-  </main>
+  </div>
 
   <script>
     import '@scripts/portal-prayers.js';

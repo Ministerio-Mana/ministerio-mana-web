@@ -4,30 +4,30 @@ import Sidebar from '@components/portal/Sidebar.astro';
 import { MISIONEROS } from '@data/misioneros';
 ---
 
-<BaseLayout title="Usuarios | Portal Maná" description="Gestión de usuarios." hideHeader hideFooter>
-  <main class="min-h-screen bg-[#F8FAFC]">
+<BaseLayout title="Usuarios | Portal Maná" description="Gestión de usuarios." hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F8FAFC]">
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />
       
       <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
-         <div id="users-gate" class="max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
+         <div id="users-gate" class="portal-panel max-w-xl mx-auto px-6 py-8 text-center text-slate-500">
             Validando permisos...
          </div>
 
          <div id="users-secure-content" class="hidden max-w-6xl mx-auto space-y-8">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                <div>
                    <h1 class="text-3xl font-display font-bold text-[#293C74]">Usuarios</h1>
                    <p class="text-slate-600">Gestiona los miembros de tu iglesia/red.</p>
                </div>
-               <button id="btn-open-create-user" class="bg-[#293C74] text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
+               <button id="btn-open-create-user" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#20315f] sm:w-auto">
                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
                    Nuevo Usuario
                </button>
             </div>
 
             <!-- Users List -->
-            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-8">
+            <div class="portal-panel p-4 md:p-6">
                 <div class="mb-5">
                     <div id="users-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
                 </div>
@@ -36,10 +36,10 @@ import { MISIONEROS } from '@data/misioneros';
                     <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                             <div class="relative">
-                                <input id="users-search" type="search" class="bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20 w-72" placeholder="Buscar nombre, email, iglesia, región, ciudad...">
+                                <input id="users-search" type="search" autocomplete="off" aria-label="Buscar usuarios" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20 sm:w-80" placeholder="Buscar nombre, email, iglesia, región, ciudad...">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                             </div>
-                            <select id="users-role-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
+                            <select id="users-role-filter" aria-label="Filtrar usuarios por rol" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 sm:w-auto">
                                 <option value="">Todos los roles</option>
                                 <option value="superadmin">Superadmin</option>
                                 <option value="admin">Admin</option>
@@ -55,7 +55,7 @@ import { MISIONEROS } from '@data/misioneros';
                                 <option value="leader">Líder</option>
                                 <option value="user">Usuario (Asistente)</option>
                             </select>
-                            <select id="users-status-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
+                            <select id="users-status-filter" aria-label="Filtrar usuarios por estado" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 sm:w-auto">
                                 <option value="">Todos los estados</option>
                                 <option value="active">Activo</option>
                                 <option value="invited">Invitado</option>
@@ -70,13 +70,13 @@ import { MISIONEROS } from '@data/misioneros';
                     </div>
 
                     <div class="flex flex-col lg:flex-row lg:items-center gap-3">
-                        <select id="users-country-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[200px]">
+                        <select id="users-country-filter" aria-label="Filtrar usuarios por país" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 lg:w-auto lg:min-w-[200px]">
                             <option value="">Todos los países</option>
                         </select>
-                        <select id="users-city-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[200px]">
+                        <select id="users-city-filter" aria-label="Filtrar usuarios por ciudad" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 lg:w-auto lg:min-w-[200px]">
                             <option value="">Todas las ciudades</option>
                         </select>
-                        <select id="users-scope-filter" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 min-w-[210px]">
+                        <select id="users-scope-filter" aria-label="Filtrar usuarios por alcance" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 lg:w-auto lg:min-w-[210px]">
                             <option value="">Todas las categorías</option>
                             <option value="global">Global (Administración/Finanzas)</option>
                             <option value="national">Nacional</option>
@@ -85,15 +85,15 @@ import { MISIONEROS } from '@data/misioneros';
                             <option value="campus">Campus</option>
                             <option value="assistant">Asistente/usuario base</option>
                         </select>
-                        <button id="users-clear-filters" type="button" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50">
+                        <button id="users-clear-filters" type="button" class="min-h-11 w-full rounded-md border border-slate-200 px-4 py-2 text-xs font-bold uppercase text-slate-700 hover:bg-slate-50 lg:w-auto">
                             Limpiar filtros
                         </button>
                     </div>
                 </div>
                 <div id="users-loading" class="py-12 text-center text-slate-400 animate-pulse">Cargando usuarios...</div>
                 
-                <div class="overflow-x-auto">
-                    <table id="users-table" class="w-full text-left border-collapse hidden">
+                <div class="portal-table-frame">
+                    <table id="users-table" class="portal-responsive-table hidden w-full text-left border-collapse">
                         <thead>
                             <tr class="text-xs text-slate-400 border-b border-slate-100">
                                 <th class="font-bold uppercase tracking-widest py-3 pl-2">Nombre</th>
@@ -191,7 +191,7 @@ import { MISIONEROS } from '@data/misioneros';
         </div>
     </div>
 
-  </main>
+  </div>
   <script>
       import '@scripts/portal-users.js';
   </script>

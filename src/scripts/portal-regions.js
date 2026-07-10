@@ -1,6 +1,4 @@
-import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
-
-const supabase = getSupabaseBrowserClient();
+import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const errorBox = document.getElementById('regions-error');
 const gateEl = document.getElementById('regions-gate');
@@ -16,7 +14,7 @@ const assignmentsTableBody = document.getElementById('assignments-table-body');
 const cityRegionSelect = document.getElementById('city-region-select');
 const assignmentRegionSelect = document.getElementById('assignment-region-select');
 
-let token = '';
+let authHeaders = {};
 let regions = [];
 let cities = [];
 let assignments = [];
@@ -60,7 +58,7 @@ async function api(path, options = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...authHeaders,
       ...(options.headers || {}),
     },
   });
@@ -160,15 +158,21 @@ async function reloadAll() {
 
 async function bootstrap() {
   showGate();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    window.location.href = '/portal/ingresar';
+  const auth = await ensureAuthenticated();
+  if (!auth.isAuthenticated) {
+    redirectToLogin();
     return;
   }
-  token = session.access_token;
+  authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
 
   try {
-    const sessionData = await api('/api/portal/session');
+    const sessionResult = await getPortalSession({ auth });
+    if (!sessionResult.ok) {
+      const error = new Error(sessionResult.data?.error || 'No se pudieron validar permisos.');
+      error.status = sessionResult.response?.status || 500;
+      throw error;
+    }
+    const sessionData = sessionResult.data;
     const role = String(sessionData?.profile?.effective_role || sessionData?.profile?.role || 'user');
     if (!['admin', 'superadmin'].includes(role)) {
       window.location.replace('/portal');

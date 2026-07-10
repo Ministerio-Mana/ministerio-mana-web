@@ -5,8 +5,8 @@ import RegistrationModal from '@components/portal/RegistrationModal.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 ---
 
-<BaseLayout title="Portal Maná | Ministerio Maná" description="Gestiona tus aportes y eventos en el Portal Maná." hideHeader hideFooter>
-  <main class="min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
+<BaseLayout title="Portal Maná | Ministerio Maná" description="Gestiona tus aportes y eventos en el Portal Maná." hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
     <div class="flex flex-col lg:flex-row min-h-screen">
       
       <!-- Sidebar / Navigation -->
@@ -36,26 +36,33 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <button onclick="window.location.reload()" class="mt-6 px-6 py-2 bg-[#293C74] text-white rounded-xl hover:bg-[#293C74]/90 transition-all">Reintentar</button>
           </div>
 
-          <div id="account-content" class="hidden space-y-12">
+          <div id="account-content" class="hidden space-y-12" aria-busy="true">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <p class="text-[10px] font-bold text-slate-600 uppercase tracking-[0.3em]">Portal Maná</p>
                 <h1 class="text-2xl font-display font-bold text-[#293C74]">Panel General</h1>
               </div>
               <div class="flex flex-wrap items-center gap-3">
-                <a href="/" class="inline-flex items-center gap-2 rounded-full bg-brand-teal text-white px-4 py-2 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-brand-teal/90 transition">
+                <a href="/" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-brand-teal px-4 py-2 text-xs font-bold uppercase text-white shadow-sm transition hover:bg-brand-teal/90">
                   Ir al Inicio
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-7 9 7M4 10v10a1 1 0 001 1h5m4 0h5a1 1 0 001-1V10" />
                   </svg>
                 </a>
-                <a href="/eventos/cumbre-mundial-2026" class="inline-flex items-center gap-2 rounded-full border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#293C74] hover:border-[#293C74]/60 hover:bg-[#293C74]/5 transition">
+                <a href="/eventos/cumbre-mundial-2026" class="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase text-[#293C74] transition hover:border-[#293C74]/60 hover:bg-[#293C74]/5">
                   Volver a la Cumbre
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
                   </svg>
                 </a>
               </div>
+            </div>
+
+            <div id="account-data-warning" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+              No se pudo cargar toda la información actualizada.
+              <button id="account-data-retry" type="button" class="ml-2 min-h-8 rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100">
+                Reintentar
+              </button>
             </div>
             
             <!-- Tab: Resumen -->
@@ -65,41 +72,34 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <p class="text-slate-600">Este es el resumen de tu participación en los eventos Maná.</p>
               </header>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                 <!-- Status Card 1 -->
-                <div class="bg-white border border-slate-100 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-slate-200/50">
-                  <div class="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-110 transition-transform text-[#293C74]">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                  <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4">Total Aportado</p>
-                  <h3 id="stat-total-paid" class="text-4xl font-display font-bold text-[#293C74] leading-none">$0</h3>
+                <div class="portal-panel p-5">
+                  <p class="mb-2 text-[10px] font-bold uppercase text-slate-600">Total aportado</p>
+                  <h3 id="stat-total-paid" class="text-2xl font-display font-bold text-[#293C74] leading-tight">$0</h3>
                   <p class="text-xs text-brand-teal mt-2 font-bold">En todos tus eventos</p>
                 </div>
 
                 <!-- Status Card 2 -->
-                <div class="bg-white border border-slate-100 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-slate-200/50">
-                   <div class="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-110 transition-transform text-[#F2C94C]">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  </div>
-                  <p class="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4">Próximo Abono</p>
-                  <h3 id="stat-next-due" class="text-4xl font-display font-bold text-[#293C74] leading-none">-</h3>
+                <div class="portal-panel p-5">
+                  <p class="mb-2 text-[10px] font-bold uppercase text-slate-600">Próximo abono</p>
+                  <h3 id="stat-next-due" class="text-2xl font-display font-bold text-[#293C74] leading-tight">-</h3>
                   <p id="stat-next-note" class="text-xs text-[#F2C94C] mt-2 font-bold">Plan de cuotas activo</p>
                 </div>
 
                 <!-- Support Card -->
-                <div class="bg-white border border-slate-200 rounded-[2rem] p-8 relative overflow-hidden group shadow-lg shadow-slate-200/50">
-                  <div class="absolute inset-0 bg-gradient-to-br from-[#293C74]/5 to-transparent"></div>
-                  <h3 class="relative text-lg font-black mb-2 text-[#293C74]">¿Necesitas ayuda?</h3>
-                  <p class="relative text-xs text-slate-800 font-bold leading-relaxed mb-6">Si tienes dudas con tus aportes, nuestro equipo de soporte está listo para asistirte.</p>
-                  <a href="https://wa.me/573148297534" class="relative inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#293C74]/90 transition-all shadow-lg shadow-[#293C74]/20">
+                <div class="portal-panel p-5">
+                  <h3 class="mb-2 text-lg font-black text-[#293C74]">¿Necesitas ayuda?</h3>
+                  <p class="mb-4 text-xs font-bold leading-relaxed text-slate-700">Si tienes dudas con tus aportes, nuestro equipo de soporte está listo para asistirte.</p>
+                  <a href="https://wa.me/573148297534" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#293C74]/90">
                     Soporte WhatsApp
                   </a>
                 </div>
               </div>
 
               <!-- Important Alerts / Next Step -->
-              <div id="plan-highlight" class="hidden relative p-1 rounded-[2rem] bg-gradient-to-r from-brand-teal/20 via-brand-gold/20 to-brand-teal/20 animate-border-flow overflow-hidden shadow-lg shadow-brand-teal/5">
-                <div class="bg-white rounded-[calc(2rem-2px)] p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
+              <div id="plan-highlight" class="portal-panel hidden overflow-hidden border-l-4 !border-l-brand-teal p-5 md:p-6">
+                <div class="flex flex-col items-center gap-5 md:flex-row">
                    <div class="w-16 h-16 rounded-2xl bg-[#F2C94C]/10 flex items-center justify-center text-[#F2C94C] shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1.5m.5 0v-4.5m0 0V11m0 5h1m2-1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
                    </div>
@@ -1008,7 +1008,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     <!-- Advanced Registration Modal -->
     <RegistrationModal />
-  </main>
+  </div>
 
   <style>
     .nav-link.active {

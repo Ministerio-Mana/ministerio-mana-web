@@ -9,3 +9,6 @@ dist
 tmp/
 *.bak*
 scripts/debug-auth.mjs
+.env
+.env.*
+!.env.example

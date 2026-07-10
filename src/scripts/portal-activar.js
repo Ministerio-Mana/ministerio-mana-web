@@ -3,7 +3,6 @@ import { getSupabaseBrowserClient } from '@lib/supabaseBrowser';
 let supabase = null;
 try {
   supabase = getSupabaseBrowserClient();
-  console.log('[Activar] Supabase client initialized');
 } catch (err) {
   console.error('[Activar] Supabase client error:', err);
 }
@@ -235,6 +234,7 @@ function normalizeHash() {
 }
 
 async function resolveSessionFromUrl() {
+  if (!supabase) return false;
   const { data } = await supabase.auth.getSession();
   if (data?.session) return true;
 
@@ -311,6 +311,12 @@ async function resolveSessionFromUrl() {
 }
 
 async function validateRecoveryLink() {
+  if (!supabase) {
+    setGuardMessage('El portal no está configurado para activar cuentas. Contacta a soporte.');
+    setFormDisabled(true);
+    showRetry(false);
+    return false;
+  }
   setFormDisabled(true);
   showRetry(false);
   showStatus('Validando enlace...', 'loading');
@@ -359,6 +365,7 @@ async function validateRecoveryLink() {
 }
 
 async function ensureSessionReady() {
+  if (!supabase) return { ok: false, error: new Error('Portal no configurado') };
   const { data, error } = await supabase.auth.getSession();
   if (data?.session) return { ok: true };
   if (error) return { ok: false, error };
@@ -384,6 +391,9 @@ async function withTimeout(promise, timeoutMs = 12000) {
 togglePasswordBtn?.addEventListener('click', () => {
   const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
   password.setAttribute('type', type);
+  const isVisible = type === 'text';
+  togglePasswordBtn.setAttribute('aria-pressed', String(isVisible));
+  togglePasswordBtn.setAttribute('aria-label', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
   if (type === 'text') {
     eyeIcon?.classList.add('hidden');
     eyeOffIcon?.classList.remove('hidden');
@@ -396,6 +406,9 @@ togglePasswordBtn?.addEventListener('click', () => {
 toggleConfirmBtn?.addEventListener('click', () => {
   const type = confirm.getAttribute('type') === 'password' ? 'text' : 'password';
   confirm.setAttribute('type', type);
+  const isVisible = type === 'text';
+  toggleConfirmBtn.setAttribute('aria-pressed', String(isVisible));
+  toggleConfirmBtn.setAttribute('aria-label', isVisible ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña');
   if (type === 'text') {
     eyeConfirm?.classList.add('hidden');
     eyeOffConfirm?.classList.remove('hidden');
@@ -441,6 +454,13 @@ async function guardSession() {
     return;
   }
 
+  if (!supabase) {
+    setGuardMessage('El portal no está configurado para activar cuentas. Contacta a soporte.');
+    setFormDisabled(true);
+    showRetry(false);
+    return;
+  }
+
   const { data } = await supabase.auth.getSession();
   if (data?.session) {
     setGuardMessage('Para cambiar tu contraseña, abre el enlace de recuperación enviado a tu correo.');
@@ -482,6 +502,10 @@ form?.addEventListener('submit', async (event) => {
     showStatus('Debes abrir el enlace de recuperación para cambiar la contraseña.', 'error');
     return;
   }
+  if (!supabase) {
+    showStatus('El portal no está configurado para activar cuentas. Contacta a soporte.', 'error');
+    return;
+  }
 
   const captcha = await verifyTurnstileIfPresent();
   if (!captcha.ok) {
@@ -498,11 +522,8 @@ form?.addEventListener('submit', async (event) => {
   setFormDisabled(true);
   showStatus('Guardando contraseña...', 'loading');
 
-  console.log('[Activar] Starting password update...');
-
   try {
     const sessionCheck = await ensureSessionReady();
-    console.log('[Activar] Session check:', sessionCheck);
 
     if (!sessionCheck.ok) {
       const recovered = await validateRecoveryLink();
@@ -515,9 +536,7 @@ form?.addEventListener('submit', async (event) => {
       }
     }
 
-    console.log('[Activar] Calling updateUser...');
     const result = await withTimeout(supabase.auth.updateUser({ password: value }), 12000);
-    console.log('[Activar] updateUser result:', result);
 
     const { error } = result || {};
     if (error) {
@@ -525,7 +544,6 @@ form?.addEventListener('submit', async (event) => {
       throw error;
     }
 
-    console.log('[Activar] Password updated successfully, redirecting...');
     showStatus('¡Contraseña guardada! Redirigiendo...', 'success');
 
   } catch (err) {
@@ -539,8 +557,6 @@ form?.addEventListener('submit', async (event) => {
   // Redirect with a small delay to ensure the message is visible
   const url = new URL(window.location.href);
   const next = normalizeSafePortalPath(url.searchParams.get('next'));
-  console.log('[Activar] Redirecting to:', next);
-
   setTimeout(() => {
     window.location.href = next;
   }, 500);

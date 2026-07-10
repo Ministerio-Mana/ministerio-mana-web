@@ -530,6 +530,9 @@ togglePasswordViewBtn?.addEventListener('click', () => {
   const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
   passwordInput.setAttribute('type', type);
   togglePasswordViewBtn.classList.toggle('text-[#293C74]');
+  const isVisible = type === 'text';
+  togglePasswordViewBtn.setAttribute('aria-pressed', String(isVisible));
+  togglePasswordViewBtn.setAttribute('aria-label', isVisible ? 'Ocultar contraseña' : 'Mostrar contraseña');
 });
 
 oauthGoogleBtn?.addEventListener('click', () => {

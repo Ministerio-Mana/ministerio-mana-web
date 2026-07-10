@@ -633,7 +633,7 @@ function renderSummaryCards() {
             <button
                 type="button"
                 data-summary-status="${escapeAttr(isAll ? '' : statusKey)}"
-                class="text-left rounded-xl border px-3 py-2 transition-colors ${style}"
+                class="min-h-16 rounded-md border px-3 py-2 text-left transition-colors ${style}"
             >
                 <p class="text-[10px] uppercase tracking-widest font-bold">${escapeHtml(title)}</p>
                 <p class="text-lg font-black leading-tight">${escapeHtml(count)}</p>
@@ -773,7 +773,7 @@ function renderRoleCell(user) {
     const label = escapeHtml(roleTranslations[selectedRole] || selectedRole || 'Usuario');
     const badgeClass = roleBadgeClass(selectedRole);
     return `
-        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${badgeClass}">
+        <span class="portal-chip uppercase ${badgeClass}">
             ${label}
         </span>
     `;
@@ -832,7 +832,14 @@ function renderTable(users) {
     if (countEl) {
         const total = allUsers.length;
         const count = users.length;
-        const hasFilters = Boolean(searchInput?.value || roleFilter?.value || statusFilter?.value);
+        const hasFilters = Boolean(
+            searchInput?.value
+            || roleFilter?.value
+            || statusFilter?.value
+            || countryFilter?.value
+            || cityFilter?.value
+            || scopeFilter?.value
+        );
         countEl.textContent = hasFilters ? `${count} de ${total} usuarios` : `${total} usuarios`;
     }
     if (users.length === 0) {
@@ -864,19 +871,19 @@ function renderTable(users) {
                 && (currentUserRole === 'superadmin' || !protectedAccessLinkRoles.includes(u.role));
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
-                    <td class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
-                    <td class="py-3 text-slate-500">${safeEmail}</td>
-                    <td class="py-3">
+                    <td data-label="Nombre" class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
+                    <td data-label="Email" class="py-3 text-slate-500">${safeEmail}</td>
+                    <td data-label="Rol" class="py-3">
                         ${renderRoleCell(u)}
                     </td>
-                    <td class="py-3 text-slate-500 text-xs font-semibold">${safeScope}</td>
-                    <td class="py-3">
-                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${accessStatusClass}">
+                    <td data-label="Alcance" class="py-3 text-slate-500 text-xs font-semibold">${safeScope}</td>
+                    <td data-label="Estado acceso" class="py-3">
+                        <span class="portal-chip uppercase ${accessStatusClass}">
                             ${safeStatusLabel}
                         </span>
                     </td>
-                    <td class="py-3 text-slate-400 text-xs">${safeLastSignIn}</td>
-                    <td class="py-3 text-right pr-2">
+                    <td data-label="Último ingreso" class="py-3 text-slate-500 text-xs">${safeLastSignIn}</td>
+                    <td data-label="Acciones" class="py-3 text-right pr-2">
                         ${renderActionsCell(u, canSendAccessLink, canCopyAccessLink, safeEmailAttr, resetLabel)}
                     </td>
                 </tr>
