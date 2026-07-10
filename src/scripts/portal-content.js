@@ -28,6 +28,8 @@ const state = {
   revisions: [],
   logs: [],
   media: [],
+  mediaProvider: 'supabase',
+  mediaMaxBytes: 4 * 1024 * 1024,
   cmsSchemaReady: true,
   permissionValidated: false,
   busyCount: 0,
@@ -120,7 +122,7 @@ function safeFolder(input) {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9/_-]/g, '-')
-    .replace(/\/+/, '/')
+    .replace(/\/+/g, '/')
     .replace(/^\/+|\/+$/g, '');
 }
 
@@ -600,14 +602,17 @@ function renderMedia() {
   el.mediaList.innerHTML = state.media
     .map((file) => {
       const isImage = String(file.mime_type || '').startsWith('image/');
+      const previewUrl = file.thumbnail_url || file.public_url;
+      const providerLabel = file.provider === 'imagekit' ? 'ImageKit' : 'Supabase';
+      const dimensions = file.width && file.height ? ` · ${file.width} × ${file.height}px` : '';
       return `
       <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-        ${isImage ? `<img src="${escapeAttr(file.public_url)}" alt="${escapeAttr(file.name)}" class="h-28 w-full object-cover rounded-lg border border-slate-200 bg-white" />` : ''}
+        ${isImage ? `<img src="${escapeAttr(previewUrl)}" alt="${escapeAttr(file.name)}" loading="lazy" decoding="async" class="h-28 w-full object-cover rounded-lg border border-slate-200 bg-white" />` : ''}
         <p class="text-xs font-bold text-[#293C74] break-all">${escapeHtml(file.name || '')}</p>
-        <p class="text-[11px] text-slate-500">${escapeHtml(formatBytes(file.size))} · ${escapeHtml(file.mime_type || 'archivo')}</p>
+        <p class="text-[11px] text-slate-500">${escapeHtml(providerLabel)} · ${escapeHtml(formatBytes(file.size))}${escapeHtml(dimensions)} · ${escapeHtml(file.mime_type || 'archivo')}</p>
         <div class="flex flex-wrap gap-2">
           <button type="button" class="cms-media-copy px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-bold" data-url="${escapeAttr(file.public_url)}" data-cms-action>Copiar URL</button>
-          <button type="button" class="cms-media-delete px-2.5 py-1.5 rounded-lg border border-red-300 text-red-600 text-xs font-bold" data-path="${escapeAttr(file.path)}" data-cms-action>Eliminar</button>
+          <button type="button" class="cms-media-delete px-2.5 py-1.5 rounded-lg border border-red-300 text-red-600 text-xs font-bold" data-media-id="${escapeAttr(file.media_id || '')}" data-path="${escapeAttr(file.path)}" data-cms-action>Eliminar</button>
         </div>
       </article>
       `;
@@ -636,8 +641,9 @@ function renderMedia() {
 
   el.mediaList.querySelectorAll('.cms-media-delete').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      const mediaId = btn.getAttribute('data-media-id') || '';
       const path = btn.getAttribute('data-path') || '';
-      if (!path) return;
+      if (!mediaId && !path) return;
       const ok = window.confirm('¿Eliminar este archivo de la biblioteca?');
       if (!ok) return;
 
@@ -645,7 +651,7 @@ function renderMedia() {
       try {
         await fetchJson('/api/portal/content/media', {
           method: 'DELETE',
-          body: JSON.stringify({ path }),
+          body: JSON.stringify({ media_id: mediaId, path }),
         });
         await loadMedia(true);
         showAlert('Archivo eliminado.', 'success');
@@ -665,8 +671,11 @@ async function loadMedia(silent = false) {
   const query = prefix ? `?prefix=${encodeURIComponent(prefix)}&limit=80` : '?limit=80';
   const data = await fetchJson(`/api/portal/content/media${query}`);
   state.media = data.files || [];
+  state.mediaProvider = data.provider === 'imagekit' ? 'imagekit' : 'supabase';
+  state.mediaMaxBytes = Number(data.max_bytes || (state.mediaProvider === 'imagekit' ? 5 * 1024 * 1024 : 4 * 1024 * 1024));
 
-  el.mediaStatus.textContent = `Carpeta: ${prefix || 'general'} · ${state.media.length} archivo${state.media.length === 1 ? '' : 's'}`;
+  const providerLabel = state.mediaProvider === 'imagekit' ? 'ImageKit' : 'Supabase';
+  el.mediaStatus.textContent = `${providerLabel} · Carpeta: ${prefix || 'general'} · ${state.media.length} archivo${state.media.length === 1 ? '' : 's'}`;
   renderMedia();
 
   if (!silent) {
@@ -898,9 +907,80 @@ async function uploadMedia(event) {
     return;
   }
 
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  if (!allowedTypes.has(file.type)) {
+    showAlert('Usa una imagen JPG, PNG o WebP.', 'error', 5000);
+    return;
+  }
+  if (file.size <= 0 || file.size > state.mediaMaxBytes) {
+    showAlert(`La imagen debe pesar máximo ${formatBytes(state.mediaMaxBytes)}.`, 'error', 5000);
+    return;
+  }
+
+  const folder = safeFolder(el.mediaFolder?.value || state.page?.page_key || 'general');
+
+  if (state.mediaProvider === 'imagekit') {
+    setBusy(true, 'Subiendo imagen optimizada...');
+    try {
+      const authorization = await fetchJson('/api/portal/content/media-upload-token', {
+        method: 'POST',
+        body: JSON.stringify({
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          folder,
+          page_key: String(state.page?.page_key || ''),
+        }),
+      });
+
+      const imageKitForm = new FormData();
+      imageKitForm.append('file', file);
+      Object.entries(authorization.upload_payload || {}).forEach(([key, value]) => {
+        imageKitForm.append(key, String(value));
+      });
+      imageKitForm.append('token', authorization.token);
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+      let uploaded;
+      try {
+        const response = await fetch(authorization.upload_url, {
+          method: 'POST',
+          body: imageKitForm,
+          signal: controller.signal,
+        });
+        uploaded = await response.json().catch(() => ({}));
+        if (!response.ok || !uploaded?.fileId) {
+          throw new Error(uploaded?.message || uploaded?.error?.message || 'ImageKit rechazó la imagen.');
+        }
+      } catch (error) {
+        if (error?.name === 'AbortError') throw makeTimeoutError('La subida de la imagen');
+        throw error;
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+
+      await fetchJson('/api/portal/content/media-register', {
+        method: 'POST',
+        body: JSON.stringify({
+          file_id: uploaded.fileId,
+          registration_token: authorization.registration_token,
+          original_name: file.name,
+        }),
+      });
+
+      if (el.mediaFile) el.mediaFile.value = '';
+      await loadMedia(true);
+      showAlert('Imagen subida y verificada correctamente.', 'success');
+    } finally {
+      setBusy(false);
+    }
+    return;
+  }
+
   const form = new FormData();
   form.append('file', file);
-  form.append('folder', safeFolder(el.mediaFolder?.value || 'general'));
+  form.append('folder', folder);
   form.append('page_key', String(state.page?.page_key || ''));
 
   setBusy(true, 'Subiendo archivo...');

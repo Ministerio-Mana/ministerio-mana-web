@@ -117,10 +117,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   <button id="cms-media-refresh" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Actualizar</button>
                 </div>
                 <form id="cms-media-upload-form" class="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-3">
-                  <input id="cms-media-file" type="file" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                  <input id="cms-media-file" type="file" accept="image/jpeg,image/png,image/webp" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
                   <input id="cms-media-folder" type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="Carpeta (ej: inicio)" />
                   <button type="submit" data-cms-action class="inline-flex min-h-10 items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition"><PortalIcon name="upload" size={17} /> Subir</button>
                 </form>
+                <p class="text-xs text-slate-500">Imágenes JPG, PNG o WebP. El sistema valida tipo, peso y dimensiones antes de publicarlas.</p>
                 <div id="cms-media-status" class="text-xs text-slate-500"></div>
                 <div id="cms-media-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
                 <div id="cms-media-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No hay archivos cargados aún.</div>
