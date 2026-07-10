@@ -175,9 +175,10 @@ export async function getWompiTransaction(transactionId: string): Promise<any | 
   if (!normalizedId) return null;
 
   const publicKey = getPublicKey();
-  const apiBase = env('WOMPI_API_BASE') ?? DEFAULT_API_BASE;
+  const apiBase = getApiBase();
   const res = await fetch(`${apiBase}/transactions/${encodeURIComponent(normalizedId)}`, {
     method: 'GET',
+    signal: AbortSignal.timeout(8_000),
     headers: {
       Authorization: `Bearer ${publicKey}`,
       'Content-Type': 'application/json',

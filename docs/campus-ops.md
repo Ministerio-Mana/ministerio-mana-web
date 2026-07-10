@@ -25,6 +25,7 @@ Ejecutar en Supabase:
 - `docs/sql/campus_donation_subscriptions.sql`
 - `docs/sql/campus_donation_allocations.sql`
 - `docs/sql/campus_missionary_slugs_seed.sql`
+- `docs/sql/wompi_reliability_upgrade.sql`
 
 ## Stripe
 
@@ -48,6 +49,18 @@ webhook guarda una fuente de pago para cobros posteriores.
 Si el pago inicial fue por PSE, Nequi u otro metodo sin fuente automatica, la
 suscripcion queda en `PENDING_SETUP` y requiere seguimiento manual.
 
+Configura en el Dashboard Wompi de **Producción** una sola URL de eventos:
+
+- `https://ministeriomana.org/api/wompi/events-forwarded`
+
+El valor de `WOMPI_WEBHOOK_SECRET` debe ser el **Secreto de Eventos** de ese mismo
+ambiente, no la llave privada ni el secreto de integridad. Sandbox debe usar su
+propia URL y sus propias llaves.
+
+Wompi agrega el parámetro `id` al regreso del checkout. Las páginas de gracias lo
+usan para consultar el estado actual y conciliar el pago aunque el webhook se
+retrase. La conciliación manual del portal queda únicamente como contingencia.
+
 ## Cron Wompi Campus
 
 Endpoint:
@@ -67,6 +80,9 @@ Programacion sugerida:
 Este cron envia los cobros Wompi vencidos. Tambien intenta reconciliar
 suscripciones en `PENDING_SETUP` cuando el webhook inicial guardo el evento crudo
 de Wompi en la donacion inicial.
+
+Además, `/api/wompi/reconcile-pending` corre cada 10 minutos y recupera eventos
+que fallaron y donaciones `PENDING` que ya tengan un ID de transacción Wompi.
 
 Ejemplo manual:
 

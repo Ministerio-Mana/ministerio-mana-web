@@ -216,7 +216,7 @@ export async function updateDonationByReference(params: {
   providerTxId?: string | null;
   paymentMethod?: string | null;
   rawEvent?: unknown;
-}): Promise<void> {
+}): Promise<number> {
   const supabase = ensureSupabase();
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -226,15 +226,17 @@ export async function updateDonationByReference(params: {
   if (params.paymentMethod !== undefined) updates.payment_method = params.paymentMethod;
   if (params.rawEvent !== undefined) updates.raw_event = params.rawEvent;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('donations')
     .update(updates)
     .eq('provider', params.provider)
-    .eq('reference', params.reference);
+    .eq('reference', params.reference)
+    .select('id');
 
   if (error) {
     throw new Error('No se pudo actualizar la donacion');
   }
+  return Array.isArray(data) ? data.length : 0;
 }
 
 export async function updateDonationById(params: {
@@ -289,7 +291,7 @@ export async function getDonationByReference(provider: string, reference: string
 
   if (error) {
     console.error('[donations] lookup error', error);
-    return null;
+    throw new Error('No se pudo consultar la donacion');
   }
   return data as DonationRecord | null;
 }

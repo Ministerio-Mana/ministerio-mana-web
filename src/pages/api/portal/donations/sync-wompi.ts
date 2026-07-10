@@ -5,10 +5,9 @@ import { readPasswordSession } from '@lib/portalPasswordSession';
 import {
   getDonationByReference,
   updateDonationByReference,
-  type DonationRecord,
-  type DonationStatus,
 } from '@lib/donationsStore';
 import { getWompiTransaction } from '@lib/wompi';
+import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 
 export const prerender = false;
 
@@ -24,80 +23,13 @@ function allowsManualApproval(): boolean {
   return env('ALLOW_MANUAL_WOMPI_APPROVAL') === 'true';
 }
 
-function normalizeWompiStatus(status: unknown): DonationStatus {
-  const normalized = String(status || '').toUpperCase();
-  if (normalized === 'APPROVED') return 'APPROVED';
-  if (['DECLINED', 'VOIDED', 'ERROR', 'FAILED'].includes(normalized)) return 'FAILED';
-  return 'PENDING';
-}
-
-function resolvePaymentMethod(transaction: any): string | null {
-  const value = transaction?.payment_method?.type ?? transaction?.payment_method_type ?? null;
-  return value ? String(value) : null;
-}
-
-function expectedAmountInCents(donation: DonationRecord): number | null {
-  const amount = Number(donation.amount);
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-  return Math.round(amount * 100);
-}
-
-function validateTransactionMatchesDonation(params: {
-  transaction: any;
-  donation: DonationRecord;
-  reference: string;
-}): { ok: true } | { ok: false; error: string; detail: Record<string, unknown> } {
-  const transactionReference = String(params.transaction?.reference || '').trim();
-  if (!transactionReference || transactionReference !== params.reference) {
-    return {
-      ok: false,
-      error: 'La transacción de Wompi no corresponde a la referencia local',
-      detail: {
-        expectedReference: params.reference,
-        transactionReference: transactionReference || null,
-      },
-    };
-  }
-
-  const expectedCurrency = String(params.donation.currency || '').trim().toUpperCase();
-  const transactionCurrency = String(params.transaction?.currency || '').trim().toUpperCase();
-  if (!transactionCurrency || transactionCurrency !== expectedCurrency) {
-    return {
-      ok: false,
-      error: 'La moneda de la transacción no coincide con la donación local',
-      detail: {
-        expectedCurrency,
-        transactionCurrency: transactionCurrency || null,
-      },
-    };
-  }
-
-  const expectedAmount = expectedAmountInCents(params.donation);
-  const transactionAmount = Number(params.transaction?.amount_in_cents);
-  if (
-    expectedAmount == null ||
-    !Number.isFinite(transactionAmount) ||
-    Math.round(transactionAmount) !== expectedAmount
-  ) {
-    return {
-      ok: false,
-      error: 'El monto de la transacción no coincide con la donación local',
-      detail: {
-        expectedAmountInCents: expectedAmount,
-        transactionAmountInCents: Number.isFinite(transactionAmount) ? Math.round(transactionAmount) : null,
-      },
-    };
-  }
-
-  return { ok: true };
-}
-
 async function findStoredWompiEvent(reference: string): Promise<any | null> {
+  if (!supabaseAdmin) return null;
   const { data, error } = await supabaseAdmin
     .from('mm_wompi_event_inbox')
-    .select('tx_id, payload, created_at')
+    .select('tx_id, payload, received_at')
     .eq('reference', reference)
-    .order('created_at', { ascending: false })
+    .order('received_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -129,6 +61,9 @@ export const POST: APIRoute = async ({ request }) => {
       status: 403,
       headers: { 'content-type': 'application/json' },
     });
+  }
+  if (!user) {
+    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
   }
 
   const { data: profile } = await supabaseAdmin
@@ -162,20 +97,22 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const storedEvent = await findStoredWompiEvent(reference);
-  let transaction = storedEvent?.payload?.data?.transaction || null;
+  const storedTransaction = storedEvent?.payload?.data?.transaction || null;
+  let transaction: any = null;
   let transactionId = submittedTransactionId
     || extractTransactionId(donation.provider_tx_id)
-    || extractTransactionId(transaction?.id)
+    || extractTransactionId(storedTransaction?.id)
     || extractTransactionId(storedEvent?.tx_id);
 
   let lookupError: string | null = null;
-  if (!transaction && transactionId) {
+  if (transactionId) {
     try {
       transaction = await getWompiTransaction(transactionId);
     } catch (error: any) {
       lookupError = error?.message || 'No se pudo consultar Wompi';
     }
   }
+  transaction ||= storedTransaction;
 
   if (!transaction) {
     if (manualApprove && transactionId) {
@@ -191,7 +128,7 @@ export const POST: APIRoute = async ({ request }) => {
         });
       }
 
-      await updateDonationByReference({
+      const updatedRows = await updateDonationByReference({
         provider: 'wompi',
         reference,
         status: 'APPROVED',
@@ -209,6 +146,12 @@ export const POST: APIRoute = async ({ request }) => {
           approvedAt: new Date().toISOString(),
         },
       });
+      if (updatedRows !== 1) {
+        return new Response(JSON.stringify({ ok: false, error: 'La referencia local no es única' }), {
+          status: 409,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
 
       return new Response(JSON.stringify({
         ok: true,
@@ -235,33 +178,38 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const transactionMatch = validateTransactionMatchesDonation({ transaction, donation, reference });
-  if (!transactionMatch.ok) {
+  const event = transaction === storedTransaction && storedEvent?.payload
+    ? storedEvent.payload
+    : {
+        event: 'transaction.reconciled',
+        timestamp: Date.now(),
+        source: 'manual_wompi_sync',
+        data: { transaction },
+      };
+  const result = await processWompiDonationTransaction({ event, transaction });
+  if (result.outcome === 'REJECTED') {
     return new Response(JSON.stringify({
       ok: false,
       code: 'WOMPI_TRANSACTION_MISMATCH',
-      error: transactionMatch.error,
-      detail: transactionMatch.detail,
+      error: 'La transacción de Wompi no coincide con la referencia, el monto o la moneda local',
+      detail: result.reason || null,
     }), {
+      status: 409,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (!result.processed) {
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudo conciliar la donación local' }), {
       status: 409,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   transactionId = extractTransactionId(transaction.id) || transactionId;
-  const status = normalizeWompiStatus(transaction.status);
-  await updateDonationByReference({
-    provider: 'wompi',
-    reference,
-    status,
-    providerTxId: transactionId,
-    paymentMethod: resolvePaymentMethod(transaction),
-    rawEvent: { source: 'manual_wompi_sync', storedEvent: Boolean(storedEvent), transaction },
-  });
 
   return new Response(JSON.stringify({
     ok: true,
-    status,
+    status: result.status,
     providerTxId: transactionId,
   }), {
     status: 200,

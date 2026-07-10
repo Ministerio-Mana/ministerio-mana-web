@@ -13,7 +13,7 @@ export const prerender = false;
   <section class="container-tight py-12 space-y-6 text-center">
     <p class="eyebrow">Donaciones</p>
     <h1 class="h1">¡Gracias por tu generosidad!</h1>
-    <p class="max-w-2xl mx-auto text-slate-600">
+    <p id="payment-status-message" class="max-w-2xl mx-auto text-slate-600" role="status" aria-live="polite">
       Recibimos tu aporte. En cuanto el pago quede confirmado por la pasarela, lo verás reflejado
       en nuestros registros. Si tienes alguna duda, escríbenos a
       <a class="text-sky-700 font-semibold" href="mailto:info@ministeriomana.org">
@@ -75,12 +75,41 @@ export const prerender = false;
   const provider = params.get('provider');
   const recurring = params.get('recurring');
   const type = params.get('type');
+  const transactionId = params.get('id');
+  const paymentStatusMessage = document.getElementById('payment-status-message');
 
   const reminderCard = document.getElementById('reminder-card');
   const reminderForm = document.getElementById('reminder-form');
-  const reminderProvider = document.getElementById('reminder-provider');
-  const reminderReference = document.getElementById('reminder-reference');
+  const reminderProvider = document.getElementById('reminder-provider') as HTMLInputElement | null;
+  const reminderReference = document.getElementById('reminder-reference') as HTMLInputElement | null;
   const reminderStatus = document.getElementById('reminder-status');
+
+  async function reconcileWompiPayment(attempt = 0) {
+    if (!ref || provider !== 'wompi' || !transactionId) return;
+    try {
+      const response = await fetch('/api/wompi/reconcile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reference: ref, transactionId }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok) return;
+
+      if (paymentStatusMessage && payload.status === 'APPROVED') {
+        paymentStatusMessage.textContent = 'Tu pago fue aprobado y ya quedó registrado. Gracias por tu generosidad.';
+        return;
+      }
+      if (paymentStatusMessage && payload.status === 'FAILED') {
+        paymentStatusMessage.textContent = 'Wompi no aprobó este intento. No se registró una donación pagada.';
+        return;
+      }
+      if (attempt < 2) {
+        window.setTimeout(() => reconcileWompiPayment(attempt + 1), 4_000 * (attempt + 1));
+      }
+    } catch {
+      // El webhook y el reconciliador programado siguen funcionando si el navegador se cierra.
+    }
+  }
 
   async function initReminder() {
     if (!ref || provider !== 'wompi' || recurring !== '1' || type !== 'diezmos') return;
@@ -95,9 +124,11 @@ export const prerender = false;
         return;
       }
 
-      reminderProvider.value = provider;
-      reminderReference.value = ref;
-      reminderCard.classList.remove('hidden');
+      if (reminderProvider && reminderReference && reminderCard) {
+        reminderProvider.value = provider;
+        reminderReference.value = ref;
+        reminderCard.classList.remove('hidden');
+      }
     } catch (err) {
       console.warn('[donation.reminder] no se pudo validar la donacion');
     }
@@ -108,9 +139,11 @@ export const prerender = false;
     if (!reminderStatus) return;
     reminderStatus.textContent = 'Activando recordatorio...';
 
-    const channels = Array.from(reminderForm.querySelectorAll('input[name="channels"]:checked'))
+    const channels = Array.from(reminderForm.querySelectorAll<HTMLInputElement>('input[name="channels"]:checked'))
       .map((input) => input.value);
-    const months = reminderForm.querySelector('input[name="months"]')?.value || '1';
+    const months = reminderForm.querySelector<HTMLInputElement>('input[name="months"]')?.value || '1';
+
+    if (!reminderProvider || !reminderReference) return;
 
     try {
       const res = await fetch('/api/donations/reminders/opt-in', {
@@ -128,10 +161,10 @@ export const prerender = false;
         throw new Error(payload?.error || 'No se pudo activar');
       }
       reminderStatus.textContent = '¡Recordatorio activado! Gracias por tu generosidad.';
-    } catch (err) {
+    } catch (err: any) {
       reminderStatus.textContent = err?.message || 'No se pudo activar el recordatorio.';
     }
   });
 
-  initReminder();
+  reconcileWompiPayment().finally(initReminder);
 </script>

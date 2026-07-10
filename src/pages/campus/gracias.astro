@@ -73,7 +73,7 @@ const description = "Tu siembra hace posible llevar el evangelio a las universid
         <p class="font-intro-reg text-white text-lg leading-relaxed mb-4">
           Tu siembra está haciendo posible que el evangelio llegue a las universidades de Colombia.
         </p>
-        <p class="font-intro-reg text-white/70 text-sm leading-relaxed">
+        <p id="payment-status-message" class="font-intro-reg text-white/70 text-sm leading-relaxed" role="status" aria-live="polite">
           Tu pago está siendo procesado. Recibirás una confirmación una vez la pasarela lo apruebe.
           Si tienes alguna pregunta, escríbenos a
           <a href="mailto:info@ministeriomana.org" class="text-white font-intro underline underline-offset-4 decoration-white/40 hover:decoration-white transition-all">
@@ -180,6 +180,9 @@ const description = "Tu siembra hace posible llevar el evangelio a las universid
   // Show reference if present in URL
   const params = new URLSearchParams(window.location.search);
   const ref = params.get('ref');
+  const provider = params.get('provider');
+  const transactionId = params.get('id');
+  const paymentStatusMessage = document.getElementById('payment-status-message');
   if (ref) {
     const refDisplay = document.getElementById('ref-display');
     const refCode = document.getElementById('ref-code');
@@ -188,6 +191,35 @@ const description = "Tu siembra hace posible llevar el evangelio a las universid
       refDisplay.classList.remove('hidden');
     }
   }
+
+  async function reconcileWompiPayment(attempt = 0) {
+    if (!ref || provider !== 'wompi' || !transactionId) return;
+    try {
+      const response = await fetch('/api/wompi/reconcile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ reference: ref, transactionId }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok) return;
+
+      if (paymentStatusMessage && payload.status === 'APPROVED') {
+        paymentStatusMessage.textContent = 'Tu pago fue aprobado y ya quedó registrado. Gracias por sembrar en Campus Maná.';
+        return;
+      }
+      if (paymentStatusMessage && payload.status === 'FAILED') {
+        paymentStatusMessage.textContent = 'Wompi no aprobó este intento. No se registró una donación pagada.';
+        return;
+      }
+      if (attempt < 2) {
+        window.setTimeout(() => reconcileWompiPayment(attempt + 1), 4_000 * (attempt + 1));
+      }
+    } catch {
+      // El webhook y el reconciliador programado siguen funcionando si el navegador se cierra.
+    }
+  }
+
+  reconcileWompiPayment();
 
   // Copy link button
   const copyBtn = document.getElementById('copy-link-btn');

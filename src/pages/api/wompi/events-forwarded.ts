@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { createWompiPaymentSource, verifyWompiWebhook } from '@lib/wompi';
 import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 import { logSecurityEvent } from '@lib/securityEvents';
-import { supabaseAdmin } from '@lib/supabaseAdmin';
+import { markWompiEventProcessed, storeWompiEvent } from '@lib/wompiEventInbox';
 import { parseReferenceBookingId, parseReferencePlanId } from '@lib/cumbre2026';
 import { formatCurrency } from '@lib/fx';
 import {
@@ -45,10 +45,6 @@ function validInternalSignature(payload: string, signature: string | null): bool
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(normalized));
 }
 
-function sha256Hex(payload: string): string {
-  return crypto.createHash('sha256').update(payload).digest('hex');
-}
-
 export const POST: APIRoute = async ({ request }) => {
   const payload = await request.text();
   const internalSignature = request.headers.get('x-internal-signature');
@@ -85,58 +81,32 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   let event: any = null;
-  let parseError: string | null = null;
   try {
     event = JSON.parse(payload);
   } catch (error: any) {
-    parseError = error?.message ?? 'JSON parse error';
+    void logSecurityEvent({
+      type: 'webhook_invalid',
+      identifier: 'wompi.forwarded',
+      detail: error?.message || 'JSON Wompi inválido',
+    });
+    return new Response(JSON.stringify({ ok: false, error: 'JSON inválido' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    });
   }
 
   const transaction = event?.data?.transaction;
   const reference = transaction?.reference ?? null;
-  const status = transaction?.status ?? null;
-  const currency = transaction?.currency ?? null;
   const amountInCents = transaction?.amount_in_cents ?? null;
   const txId = transaction?.id ?? null;
-  const bodySha256 = sha256Hex(payload);
-
-  if (!supabaseAdmin) {
-    console.error('[wompi.forwarded] missing supabase admin env vars');
-    return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
-
-  const { error: inboxError } = await supabaseAdmin
-    .from('mm_wompi_event_inbox')
-    .upsert(
-      {
-        body_sha256: bodySha256,
-        tx_id: txId ? String(txId) : null,
-        reference,
-        status,
-        currency,
-        amount_in_cents: amountInCents ? Number(amountInCents) : null,
-        raw_body: payload,
-        payload: event ?? null,
-        parse_error: parseError,
-      },
-      { onConflict: 'body_sha256', ignoreDuplicates: true }
-    );
-
-  if (inboxError) {
-    console.error('[wompi.forwarded] inbox insert error', inboxError);
-    return new Response(JSON.stringify({ ok: false, error: 'DB error' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
-
-  if (parseError || !event) {
-    return new Response(JSON.stringify({ ok: true, stored: true, parse_error: true }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
+  const storedEvent = await storeWompiEvent({ payload, event, source: 'FORWARDED' });
+  const bodySha256 = storedEvent.bodySha256;
+  if (!storedEvent.stored) {
+    void logSecurityEvent({
+      type: 'payment_error',
+      identifier: 'wompi.forwarded.inbox',
+      detail: 'No se pudo guardar el evento Wompi en el buzón',
+      meta: { reference, transactionId: txId ? String(txId) : null },
     });
   }
 
@@ -145,10 +115,24 @@ export const POST: APIRoute = async ({ request }) => {
     const planId = parseReferencePlanId(reference);
 
     if (!bookingId && !planId) {
-      await processWompiDonationTransaction({ event, transaction });
-      return new Response(JSON.stringify({ ok: true, stored: true, ignored: true }), {
+      const result = await processWompiDonationTransaction({ event, transaction });
+      await markWompiEventProcessed({
+        bodySha256,
+        status: result.outcome === 'PROCESSED'
+          ? 'PROCESSED'
+          : result.outcome === 'REJECTED'
+            ? 'REJECTED'
+            : 'IGNORED',
+        error: result.reason || null,
+      });
+      return new Response(JSON.stringify({
+        ok: true,
+        stored: storedEvent.stored,
+        processed: result.processed,
+        outcome: result.outcome,
+      }), {
         status: 200,
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
       });
     }
 
@@ -377,17 +361,27 @@ export const POST: APIRoute = async ({ request }) => {
         }
       }
     }
+    await markWompiEventProcessed({ bodySha256, status: 'PROCESSED' });
   } catch (error: any) {
     console.error('[wompi.forwarded] processing error', error);
+    await markWompiEventProcessed({
+      bodySha256,
+      status: 'FAILED',
+      error: error?.message || 'Forwarded webhook processing error',
+    });
     void logSecurityEvent({
-      type: 'webhook_invalid',
+      type: 'payment_error',
       identifier: 'wompi.forwarded',
       detail: error?.message || 'Forwarded webhook processing error',
+    });
+    return new Response(JSON.stringify({ ok: false, stored: storedEvent.stored, error: 'Processing error' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
     });
   }
 
   return new Response(JSON.stringify({ ok: true, stored: true }), {
     status: 200,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
   });
 };
