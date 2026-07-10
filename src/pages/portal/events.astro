@@ -275,7 +275,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </select>
               </label>
             </div>
-            <label id="event-online-provider-wrapper" class="event-field hidden">Cobro en línea
+            <label id="event-online-provider-wrapper" class="event-field event-provider-hidden">Cobro en línea
               <select id="event-online-provider" data-finance-field disabled>
                 <option value="NONE">Sin cobro en línea</option>
                 <option value="WOMPI">Wompi</option>
@@ -410,6 +410,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     :global(.event-action-primary img) {
       filter: invert(1);
+    }
+
+    :global(.event-provider-hidden) {
+      display: none;
     }
   </style>
 
