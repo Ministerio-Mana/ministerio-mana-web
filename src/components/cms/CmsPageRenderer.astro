@@ -1,4 +1,6 @@
 ---
+import { optimizedPublicImageUrl, responsivePublicImageSrcset } from '@lib/publicMedia';
+
 type CmsSection = {
   id: string;
   kind: string;
@@ -60,10 +62,12 @@ function toEmbedUrl(raw: string): string {
 
     if (kind === 'hero') {
       const image = safeUrl(payload.image);
+      const heroSrc = image ? optimizedPublicImageUrl(image, 1600, 82) : '';
+      const heroSrcset = image ? responsivePublicImageSrcset(image, [640, 960, 1280, 1600, 1920], 82) : undefined;
       const ctaHref = safeUrl(payload.ctaHref || payload.cta_url || '/');
       return (
         <section class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br from-[#293C74] via-[#304B8D] to-[#2E7FA3] text-white px-6 py-14 md:px-10 md:py-20">
-          {image && <img src={image} alt={String(payload.imageAlt || payload.title || 'Hero')} class="absolute inset-0 h-full w-full object-cover opacity-25" loading="lazy" />}
+          {image && <img src={heroSrc} srcset={heroSrcset} sizes="100vw" alt={String(payload.imageAlt || payload.title || 'Hero')} class="absolute inset-0 h-full w-full object-cover opacity-25" loading="eager" decoding="async" fetchpriority="high" />}
           <div class="relative z-10 max-w-3xl space-y-4">
             {payload.eyebrow && <p class="text-xs font-bold uppercase tracking-[0.3em] text-white/80">{String(payload.eyebrow)}</p>}
             <h1 class="text-3xl md:text-5xl font-display font-bold leading-tight">{String(payload.title || section.title || 'Ministerio Maná')}</h1>
@@ -96,9 +100,11 @@ function toEmbedUrl(raw: string): string {
             {images.map((img: any) => {
               const src = safeUrl(img?.src);
               if (!src) return null;
+              const displaySrc = optimizedPublicImageUrl(src, 720, 80);
+              const srcset = responsivePublicImageSrcset(src, [320, 480, 720, 960], 80);
               return (
                 <figure class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                  <img src={src} alt={String(img?.alt || 'Imagen')} class="h-36 md:h-44 w-full object-cover" loading="lazy" />
+                  <img src={displaySrc} srcset={srcset} sizes="(min-width: 768px) 33vw, 50vw" alt={String(img?.alt || 'Imagen')} class="h-36 md:h-44 w-full object-cover" loading="lazy" decoding="async" />
                 </figure>
               );
             })}
