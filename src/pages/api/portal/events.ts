@@ -107,6 +107,15 @@ function isSafeInternalOrHttpsUrl(value: string): boolean {
     && ((value.startsWith('/') && !value.startsWith('//')) || /^https:\/\//i.test(value));
 }
 
+function isValidTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: value }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function sanitizeEventPayload(body: Record<string, any>) {
   const payload: Record<string, any> = {};
   EVENT_FIELDS.forEach((field) => {
@@ -186,6 +195,9 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   }
   if (payload.pricing_model && !EVENT_PRICING_MODELS.has(String(payload.pricing_model))) {
     return 'El modelo de precio no es válido.';
+  }
+  if (payload.timezone && !isValidTimeZone(String(payload.timezone))) {
+    return 'La zona horaria del evento no es válida.';
   }
   if (payload.pricing_model === 'FREE' && Number(payload.price || 0) > 0) {
     return 'Un evento gratuito debe tener precio cero.';

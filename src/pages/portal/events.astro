@@ -234,6 +234,23 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
+            <label class="event-field">Zona horaria
+              <select name="timezone" data-platform-field disabled>
+                <option value="America/Bogota">Colombia · Bogotá</option>
+                <option value="America/Guayaquil">Ecuador · Guayaquil</option>
+                <option value="America/Mexico_City">México · Ciudad de México</option>
+                <option value="America/Panama">Centroamérica · Panamá</option>
+                <option value="America/New_York">Estados Unidos · Este</option>
+                <option value="America/Chicago">Estados Unidos · Centro</option>
+                <option value="America/Denver">Estados Unidos · Montaña</option>
+                <option value="America/Los_Angeles">Estados Unidos · Pacífico</option>
+                <option value="Europe/Madrid">Europa · Madrid</option>
+                <option value="Europe/Paris">Europa · París</option>
+                <option value="Australia/Sydney">Australia · Sídney</option>
+                <option value="UTC">UTC</option>
+              </select>
+            </label>
+
             <label class="event-field">Correo de contacto
               <input type="email" name="contact_email" data-platform-field disabled maxlength="254" placeholder="eventos@ministeriomana.org" />
             </label>

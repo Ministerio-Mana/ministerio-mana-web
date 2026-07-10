@@ -63,6 +63,7 @@ const previewPrice = document.getElementById('event-preview-price');
 const previewCta = document.getElementById('event-preview-cta');
 
 const REQUEST_TIMEOUT_MS = 15000;
+const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
 const SCOPE_LABELS = {
     LOCAL: 'Local',
     REGIONAL: 'Regional',
@@ -603,8 +604,9 @@ function getLifecycle(event, now = Date.now()) {
 function formatEventDate(event) {
     const start = new Date(event?.start_date || '');
     if (Number.isNaN(start.getTime())) return 'Fecha por definir';
-    const date = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(start);
-    const time = new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit' }).format(start);
+    const timeZone = String(event?.timezone || DEFAULT_EVENT_TIMEZONE);
+    const date = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeZone }).format(start);
+    const time = new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone }).format(start);
     return `${date}, ${time}`;
 }
 
@@ -806,18 +808,68 @@ async function loadEvents(shouldRender = true) {
     }
 }
 
-function toInputDateTime(value) {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    const pad = (number) => String(number).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+function getDateTimeParts(value, timeZone) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+    }).formatToParts(date);
+    return Object.fromEntries(parts.map((part) => [part.type, part.value]));
 }
 
-function toIsoDateTime(value) {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+function toInputDateTime(value, timeZone = DEFAULT_EVENT_TIMEZONE) {
+    if (!value) return '';
+    try {
+        const parts = getDateTimeParts(value, timeZone);
+        return parts ? `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}` : '';
+    } catch {
+        return '';
+    }
+}
+
+function getTimeZoneOffsetMs(timestamp, timeZone) {
+    const parts = getDateTimeParts(new Date(timestamp), timeZone);
+    if (!parts) return null;
+    const representedAsUtc = Date.UTC(
+        Number(parts.year),
+        Number(parts.month) - 1,
+        Number(parts.day),
+        Number(parts.hour),
+        Number(parts.minute),
+        Number(parts.second),
+    );
+    return representedAsUtc - timestamp;
+}
+
+function toIsoDateTime(value, timeZone = DEFAULT_EVENT_TIMEZONE) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(String(value || ''));
+    if (!match) return null;
+    try {
+        const wallTimeAsUtc = Date.UTC(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3]),
+            Number(match[4]),
+            Number(match[5]),
+        );
+        const firstOffset = getTimeZoneOffsetMs(wallTimeAsUtc, timeZone);
+        if (firstOffset === null) return null;
+        let instant = wallTimeAsUtc - firstOffset;
+        const resolvedOffset = getTimeZoneOffsetMs(instant, timeZone);
+        if (resolvedOffset === null) return null;
+        if (resolvedOffset !== firstOffset) instant = wallTimeAsUtc - resolvedOffset;
+        const date = new Date(instant);
+        return toInputDateTime(date, timeZone) === value ? date.toISOString() : null;
+    } catch {
+        return null;
+    }
 }
 
 function updateEventPreview() {
@@ -872,11 +924,12 @@ function openEventModal(mode, eventData = null) {
         archivedOption.disabled = mode !== 'edit';
     }
 
+    const eventTimeZone = String(eventData?.timezone || DEFAULT_EVENT_TIMEZONE);
     const fieldValues = {
         title: eventData?.title || '',
         description: eventData?.description || '',
-        start_date: toInputDateTime(eventData?.start_date),
-        end_date: toInputDateTime(eventData?.end_date),
+        start_date: toInputDateTime(eventData?.start_date, eventTimeZone),
+        end_date: toInputDateTime(eventData?.end_date, eventTimeZone),
         location_name: eventData?.location_name || '',
         location_address: eventData?.location_address || '',
         city: eventData?.city || '',
@@ -888,10 +941,11 @@ function openEventModal(mode, eventData = null) {
         category: eventData?.category || '',
         registration_mode: String(eventData?.registration_mode || 'NONE').toUpperCase(),
         registration_url: eventData?.registration_url || '',
-        registration_opens_at: toInputDateTime(eventData?.registration_opens_at),
-        registration_closes_at: toInputDateTime(eventData?.registration_closes_at),
+        registration_opens_at: toInputDateTime(eventData?.registration_opens_at, eventTimeZone),
+        registration_closes_at: toInputDateTime(eventData?.registration_closes_at, eventTimeZone),
         capacity: eventData?.capacity ?? '',
         contact_email: eventData?.contact_email || '',
+        timezone: eventTimeZone,
         price: eventData?.price ?? 0,
         currency: String(eventData?.currency || 'COP').toUpperCase(),
         attendance_mode: String(eventData?.attendance_mode || 'IN_PERSON').toUpperCase(),
@@ -1047,17 +1101,21 @@ eventForm?.addEventListener('submit', async (event) => {
             if (payload[key] === '') delete payload[key];
         });
 
-        const start = new Date(payload.start_date || '');
-        const end = payload.end_date ? new Date(payload.end_date) : null;
-        if (Number.isNaN(start.getTime())) throw new Error('Selecciona una fecha de inicio válida.');
-        if (end && (Number.isNaN(end.getTime()) || end.getTime() < start.getTime())) {
+        const timeZone = String(payload.timezone || DEFAULT_EVENT_TIMEZONE);
+        const startIso = toIsoDateTime(payload.start_date, timeZone);
+        const endIso = payload.end_date ? toIsoDateTime(payload.end_date, timeZone) : null;
+        if (!startIso) throw new Error('Selecciona una fecha y zona horaria válidas.');
+        const start = new Date(startIso);
+        const end = endIso ? new Date(endIso) : null;
+        if (payload.end_date && !endIso) throw new Error('Selecciona una fecha de fin válida.');
+        if (end && end.getTime() < start.getTime()) {
             throw new Error('La fecha de fin debe ser posterior al inicio.');
         }
-        payload.start_date = start.toISOString();
-        if (end) payload.end_date = end.toISOString();
+        payload.start_date = startIso;
+        if (endIso) payload.end_date = endIso;
         ['registration_opens_at', 'registration_closes_at'].forEach((field) => {
             if (!payload[field]) return;
-            const isoValue = toIsoDateTime(payload[field]);
+            const isoValue = toIsoDateTime(payload[field], timeZone);
             if (!isoValue) throw new Error('Revisa las fechas de apertura y cierre de inscripciones.');
             payload[field] = isoValue;
         });

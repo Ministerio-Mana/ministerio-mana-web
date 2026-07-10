@@ -53,11 +53,12 @@ const internalRegistrationReady = internalRegistrationIsOpen
 const registrationHref = externalRegistrationIsOpen ? registrationUrl : internalRegistrationReady ? '#inscripcion' : '';
 const paymentReturnRaw = String(Astro.url.searchParams.get('payment') || '').toLowerCase();
 const paymentReturnState = ['success', 'return', 'cancelled'].includes(paymentReturnRaw) ? paymentReturnRaw : '';
+const eventTimeZone = databaseEvent?.timezone || 'America/Bogota';
 const formattedDate = isValidDate
-  ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(startDate)
+  ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: eventTimeZone }).format(startDate)
   : 'Fecha por confirmar';
 const formattedTime = isValidDate
-  ? new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit' }).format(startDate)
+  ? new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: eventTimeZone }).format(startDate)
   : '';
 const canonical = `${Astro.url.origin}/eventos/${slug}`;
 const structured = (contentEntry || databaseEvent) ? {

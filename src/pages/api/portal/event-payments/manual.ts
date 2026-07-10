@@ -23,7 +23,7 @@ async function loadEvent(eventId: string) {
   if (!supabaseAdmin) return { data: null, error: new Error('Server Config Error') };
   return supabaseAdmin
     .from('events')
-    .select('id, title, scope, church_id, region_id, country, start_date, end_date, status, capacity, currency')
+    .select('id, title, scope, church_id, region_id, country, start_date, end_date, timezone, status, capacity, currency')
     .eq('id', eventId)
     .maybeSingle();
 }

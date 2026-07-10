@@ -162,6 +162,9 @@ if (registrationForm) {
         'success',
       );
       completed = true;
+      if (submitButton) {
+        submitButton.textContent = data.requires_manual_review ? 'Reporte enviado' : 'Inscripción completada';
+      }
       registrationForm.querySelectorAll('input, select, button').forEach((field) => {
         field.disabled = true;
       });

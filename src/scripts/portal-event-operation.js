@@ -25,6 +25,7 @@ const reviewCancel = document.getElementById('event-review-cancel');
 
 const eventId = String(root?.dataset.eventId || '');
 const REQUEST_TIMEOUT_MS = 15_000;
+const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
 const STATUS_LABELS = {
   UNDER_REVIEW: 'Por verificar',
   CONFIRMED: 'Confirmada',
@@ -78,10 +79,10 @@ function formatAmount(amount, currency = 'COP') {
   }
 }
 
-function formatDate(value) {
+function formatDate(value, timeZone = DEFAULT_EVENT_TIMEZONE) {
   const date = new Date(value || '');
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(date);
 }
 
 async function fetchJson(url, options = {}) {
@@ -205,7 +206,7 @@ async function loadOperation(page = currentPage) {
   const title = document.getElementById('event-operation-title');
   const meta = document.getElementById('event-operation-meta');
   if (title) title.textContent = event.title || 'Evento';
-  if (meta) meta.textContent = [formatDate(event.start_date), event.status].filter(Boolean).join(' · ');
+  if (meta) meta.textContent = [formatDate(event.start_date, event.timezone || DEFAULT_EVENT_TIMEZONE), event.status].filter(Boolean).join(' · ');
   setStat('event-operation-total', data.summary?.total);
   setStat('event-operation-review', data.summary?.under_review);
   setStat('event-operation-confirmed', data.summary?.confirmed);
