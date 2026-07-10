@@ -153,7 +153,7 @@ const structured = (contentEntry || databaseEvent) ? {
               <p class="mt-3 leading-relaxed text-slate-600">
                 {pricingModel === 'FREE'
                   ? 'Completa tus datos para registrar la asistencia.'
-                  : 'El cupo quedará reservado mientras completas el pago.'}
+                  : 'Elige un método de pago. Las transferencias manuales se confirman después de que el organizador las revise.'}
               </p>
               <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-1">
                 <div>
@@ -204,12 +204,55 @@ const structured = (contentEntry || databaseEvent) ? {
                     <label class="text-sm font-bold text-slate-700 sm:col-span-2">Método de pago
                       <select name="provider" required class="mt-1 block min-h-11 w-full rounded-md border-slate-300">
                         {eventPaymentOptions.map((option) => (
-                          <option value={option.provider} data-option-id={option.id}>{option.label}</option>
+                          <option value={option.id} data-provider={option.provider} data-kind={option.kind}>{option.label}</option>
                         ))}
                       </select>
                     </label>
                   )}
                 </div>
+
+                {pricingModel !== 'FREE' && eventPaymentOptions.some((option) => option.kind !== 'ONLINE') && (
+                  <div class="mt-4 space-y-3">
+                    {eventPaymentOptions.filter((option) => option.kind !== 'ONLINE').map((option) => (
+                      <article
+                        class="hidden rounded-md border border-slate-200 bg-slate-50 p-4"
+                        data-manual-payment-details
+                        data-option-id={option.id}>
+                        <p class="text-sm font-bold text-slate-800">{option.label}</p>
+                        {option.instructions && <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">{option.instructions}</p>}
+                        {option.qr_url && (
+                          <img
+                            src={option.qr_url}
+                            alt={`Código QR para ${option.label}`}
+                            class="mx-auto mt-4 aspect-square w-full max-w-64 rounded-md border border-slate-200 bg-white object-contain p-2"
+                            loading="lazy"
+                            decoding="async" />
+                        )}
+                        {option.external_url && (
+                          <a
+                            href={option.external_url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            class="mt-4 inline-flex min-h-11 items-center justify-center rounded-md border border-[#293C74] px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-white">
+                            Abrir enlace seguro · {new URL(option.external_url).hostname}
+                          </a>
+                        )}
+                        <p class="mt-3 text-xs leading-relaxed text-slate-500">Este pago no se confirma automáticamente. El organizador revisará el movimiento en su cuenta.</p>
+                      </article>
+                    ))}
+                    <label id="event-manual-reference-wrapper" class="hidden text-sm font-bold text-slate-700">Referencia del pago
+                      <input
+                        name="manual_reference"
+                        type="text"
+                        minlength="3"
+                        maxlength="120"
+                        autocomplete="off"
+                        placeholder="Referencia, titular o últimos 4 dígitos"
+                        class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                      <span class="mt-1 block text-xs font-normal text-slate-500">No escribas claves, números completos de tarjeta ni información bancaria privada.</span>
+                    </label>
+                  </div>
+                )}
 
                 {pricingModel !== 'FREE' && (
                   <div class="mt-5 flex items-center justify-between border-y border-slate-200 py-3 text-sm">

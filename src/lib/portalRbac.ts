@@ -67,6 +67,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_register_people: true,
     can_view_event_finances: true,
     can_manage_event_finances: true,
+    can_approve_event_payments: true,
   },
   regional_collaborator: {
     ...BASE_USER_CAPABILITIES,
@@ -83,6 +84,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_register_people: true,
     can_view_event_finances: true,
     can_manage_event_finances: true,
+    can_approve_event_payments: true,
   },
   national_collaborator: {
     ...BASE_USER_CAPABILITIES,
@@ -100,6 +102,7 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_register_people: true,
     can_view_event_finances: true,
     can_manage_event_finances: true,
+    can_approve_event_payments: true,
   },
   campus_missionary: {
     ...BASE_USER_CAPABILITIES,

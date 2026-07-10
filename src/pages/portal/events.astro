@@ -275,13 +275,47 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </select>
               </label>
             </div>
-            <label id="event-online-provider-wrapper" class="event-field" hidden style="display: none;">Cobro en línea
+            <label id="event-online-provider-wrapper" class="event-field" hidden style="display: none;">Cobro automático
               <select id="event-online-provider" data-finance-field disabled>
                 <option value="NONE">Sin cobro en línea</option>
                 <option value="WOMPI">Wompi</option>
                 <option value="STRIPE">Stripe</option>
               </select>
             </label>
+            <div id="event-manual-payment-panel" class="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <label class="flex min-h-11 items-center gap-3 text-sm font-semibold text-slate-700">
+                <input id="event-manual-payment-enabled" type="checkbox" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                Aceptar pago verificado manualmente
+              </label>
+              <div id="event-manual-payment-settings" class="hidden space-y-4 border-t border-slate-200 pt-4">
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <label class="event-field">Tipo de pago
+                    <select id="event-manual-payment-kind" data-finance-field disabled>
+                      <option value="QR_TRANSFER">Código QR</option>
+                      <option value="BANK_TRANSFER">Transferencia bancaria</option>
+                      <option value="EXTERNAL">Enlace de pago externo</option>
+                      <option value="CASH">Efectivo</option>
+                    </select>
+                  </label>
+                  <label class="event-field">Nombre visible
+                    <input id="event-manual-payment-label" type="text" data-finance-field disabled maxlength="80" placeholder="Transferencia a la iglesia" />
+                  </label>
+                </div>
+                <label class="event-field">Instrucciones
+                  <textarea id="event-manual-payment-instructions" data-finance-field disabled rows="3" maxlength="700" placeholder="Indica el titular, banco o pasos de pago sin publicar claves privadas."></textarea>
+                </label>
+                <label id="event-manual-payment-url-wrapper" class="event-field hidden">Enlace HTTPS de pago
+                  <input id="event-manual-payment-url" type="url" data-finance-field disabled maxlength="500" placeholder="https://..." />
+                </label>
+                <div id="event-manual-payment-qr-wrapper" class="hidden space-y-3">
+                  <label class="event-field">Imagen del código QR
+                    <input id="event-manual-payment-qr" type="file" data-finance-field disabled accept="image/png,image/jpeg,image/webp" />
+                  </label>
+                  <input id="event-manual-payment-qr-path" type="hidden" />
+                  <img id="event-manual-payment-qr-preview" class="hidden aspect-square w-full max-w-48 rounded-md border border-slate-200 bg-white object-contain p-2" alt="Vista previa del código QR" />
+                </div>
+              </div>
+            </div>
             <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
               <input type="checkbox" name="registration_requires_approval" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
               Aprobar inscripciones antes de confirmarlas

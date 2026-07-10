@@ -41,6 +41,17 @@ const eventOnlineProvider = document.getElementById('event-online-provider');
 const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
 const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
+const eventManualPaymentEnabled = document.getElementById('event-manual-payment-enabled');
+const eventManualPaymentSettings = document.getElementById('event-manual-payment-settings');
+const eventManualPaymentKind = document.getElementById('event-manual-payment-kind');
+const eventManualPaymentLabel = document.getElementById('event-manual-payment-label');
+const eventManualPaymentInstructions = document.getElementById('event-manual-payment-instructions');
+const eventManualPaymentUrlWrapper = document.getElementById('event-manual-payment-url-wrapper');
+const eventManualPaymentUrl = document.getElementById('event-manual-payment-url');
+const eventManualPaymentQrWrapper = document.getElementById('event-manual-payment-qr-wrapper');
+const eventManualPaymentQr = document.getElementById('event-manual-payment-qr');
+const eventManualPaymentQrPath = document.getElementById('event-manual-payment-qr-path');
+const eventManualPaymentQrPreview = document.getElementById('event-manual-payment-qr-preview');
 const previewImage = document.getElementById('event-preview-image');
 const previewDate = document.getElementById('event-preview-date');
 const previewScope = document.getElementById('event-preview-scope');
@@ -92,6 +103,7 @@ let currentPermissions = {
 let eventPermissionValidated = false;
 let eventPlatformReady = false;
 let eventFinanceReady = false;
+let manualQrPreviewObjectUrl = '';
 
 const churchesById = new Map();
 const regionsById = new Map();
@@ -184,11 +196,43 @@ function syncFinanceFields() {
         eventOnlineProviderWrapper.hidden = hideProvider;
         eventOnlineProviderWrapper.style.display = hideProvider ? 'none' : '';
     }
+    syncManualPaymentFields();
+}
+
+function syncManualPaymentFields() {
+    const available = eventFinanceReady
+        && eventPricingModel?.value !== 'FREE'
+        && eventRegistrationMode?.value === 'INTERNAL';
+    if (eventManualPaymentEnabled) {
+        if (!available) eventManualPaymentEnabled.checked = false;
+        eventManualPaymentEnabled.disabled = !available;
+    }
+    const enabled = available && Boolean(eventManualPaymentEnabled?.checked);
+    eventManualPaymentSettings?.classList.toggle('hidden', !enabled);
+    const kind = String(eventManualPaymentKind?.value || 'QR_TRANSFER').toUpperCase();
+    const usesQr = enabled && kind === 'QR_TRANSFER';
+    const usesUrl = enabled && kind === 'EXTERNAL';
+    eventManualPaymentQrWrapper?.classList.toggle('hidden', !usesQr);
+    eventManualPaymentUrlWrapper?.classList.toggle('hidden', !usesUrl);
+    [eventManualPaymentKind, eventManualPaymentLabel, eventManualPaymentInstructions].forEach((field) => {
+        if (field) field.disabled = !enabled;
+    });
+    if (eventManualPaymentUrl) {
+        eventManualPaymentUrl.disabled = !usesUrl;
+        eventManualPaymentUrl.required = usesUrl;
+    }
+    if (eventManualPaymentQr) eventManualPaymentQr.disabled = !usesQr;
 }
 
 async function loadEventPaymentOption(eventData) {
     if (!eventOnlineProvider) return;
     eventOnlineProvider.value = 'NONE';
+    if (eventManualPaymentEnabled) eventManualPaymentEnabled.checked = false;
+    if (eventManualPaymentQrPath) eventManualPaymentQrPath.value = '';
+    if (eventManualPaymentQrPreview) {
+        eventManualPaymentQrPreview.removeAttribute('src');
+        eventManualPaymentQrPreview.classList.add('hidden');
+    }
     if (!eventFinanceReady || !eventData?.id || eventData?.registration_mode !== 'INTERNAL') return;
     eventOnlineProvider.disabled = true;
     try {
@@ -203,7 +247,22 @@ async function loadEventPaymentOption(eventData) {
         const activeOnline = (Array.isArray(data.options) ? data.options : []).find(
             (option) => option?.kind === 'ONLINE' && option?.is_active,
         );
+        const activeManual = (Array.isArray(data.options) ? data.options : []).find(
+            (option) => option?.kind !== 'ONLINE' && ['MANUAL', 'EXTERNAL'].includes(option?.provider) && option?.is_active,
+        );
         eventOnlineProvider.value = activeOnline?.provider || 'NONE';
+        if (activeManual && eventManualPaymentEnabled) {
+            eventManualPaymentEnabled.checked = true;
+            if (eventManualPaymentKind) eventManualPaymentKind.value = activeManual.kind || 'QR_TRANSFER';
+            if (eventManualPaymentLabel) eventManualPaymentLabel.value = activeManual.label || '';
+            if (eventManualPaymentInstructions) eventManualPaymentInstructions.value = activeManual.instructions || '';
+            if (eventManualPaymentUrl) eventManualPaymentUrl.value = activeManual.external_url || '';
+            if (eventManualPaymentQrPath) eventManualPaymentQrPath.value = activeManual.qr_asset_path || '';
+            if (eventManualPaymentQrPreview && activeManual.qr_signed_url) {
+                eventManualPaymentQrPreview.src = activeManual.qr_signed_url;
+                eventManualPaymentQrPreview.classList.remove('hidden');
+            }
+        }
     } catch (error) {
         showFormError(error?.message || 'No se pudo cargar el método de pago.');
     } finally {
@@ -216,6 +275,7 @@ async function loadEventPaymentOption(eventData) {
             eventOnlineProviderWrapper.hidden = !canUseOnlineProvider;
             eventOnlineProviderWrapper.style.display = canUseOnlineProvider ? '' : 'none';
         }
+        syncManualPaymentFields();
     }
 }
 
@@ -227,6 +287,50 @@ async function saveEventPaymentOption(eventId, provider) {
         body: JSON.stringify({ event_id: eventId, provider }),
     }, REQUEST_TIMEOUT_MS, 'La configuración del método de pago');
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el método de pago.');
+}
+
+async function uploadManualPaymentQr(eventId) {
+    const file = eventManualPaymentQr?.files?.[0];
+    if (!file) return String(eventManualPaymentQrPath?.value || '');
+    if (file.size > 3 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+        throw new Error('El QR debe ser una imagen PNG, JPG o WebP de máximo 3 MB.');
+    }
+    const payload = new FormData();
+    payload.append('event_id', eventId);
+    payload.append('file', file);
+    const { res, data } = await fetchJsonWithTimeout('/api/portal/event-payments/qr', {
+        method: 'POST',
+        headers: authHeaders,
+        credentials: 'include',
+        body: payload,
+    }, REQUEST_TIMEOUT_MS, 'La carga del código QR');
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el código QR.');
+    if (eventManualPaymentQrPath) eventManualPaymentQrPath.value = data.path || '';
+    return String(data.path || '');
+}
+
+async function saveManualPaymentOption(eventId) {
+    const enabled = Boolean(eventManualPaymentEnabled?.checked)
+        && eventPricingModel?.value !== 'FREE'
+        && eventRegistrationMode?.value === 'INTERNAL';
+    let qrAssetPath = String(eventManualPaymentQrPath?.value || '');
+    const kind = String(eventManualPaymentKind?.value || 'QR_TRANSFER').toUpperCase();
+    if (enabled && kind === 'QR_TRANSFER') qrAssetPath = await uploadManualPaymentQr(eventId);
+    const { res, data } = await fetchJsonWithTimeout('/api/portal/event-payments/options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        credentials: 'include',
+        body: JSON.stringify({
+            event_id: eventId,
+            enabled,
+            kind,
+            label: String(eventManualPaymentLabel?.value || '').trim(),
+            instructions: String(eventManualPaymentInstructions?.value || '').trim(),
+            external_url: String(eventManualPaymentUrl?.value || '').trim(),
+            qr_asset_path: qrAssetPath,
+        }),
+    }, REQUEST_TIMEOUT_MS, 'La configuración del pago manual');
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el pago manual.');
 }
 
 function normalizeCountry(value) {
@@ -633,7 +737,7 @@ function renderEvents() {
                     </div>
                   </div>
                   <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-                    <a href="/portal?tab=iglesia&amp;event=${escapeAttr(event.id || '')}" class="event-action event-action-primary">Abrir operación</a>
+                    <a href="/portal/events/${escapeAttr(event.id || '')}" class="event-action event-action-primary">Abrir operación</a>
                     ${publicAction}
                     ${editAction}
                     ${lifecycleAction(event, lifecycle)}
@@ -889,6 +993,21 @@ eventRegistrationMode?.addEventListener('change', () => {
     syncRegistrationFields();
     syncFinanceFields();
 });
+eventManualPaymentEnabled?.addEventListener('change', syncManualPaymentFields);
+eventManualPaymentKind?.addEventListener('change', syncManualPaymentFields);
+eventManualPaymentQr?.addEventListener('change', () => {
+    if (manualQrPreviewObjectUrl) URL.revokeObjectURL(manualQrPreviewObjectUrl);
+    manualQrPreviewObjectUrl = '';
+    const file = eventManualPaymentQr.files?.[0];
+    if (!eventManualPaymentQrPreview) return;
+    if (!file) {
+        eventManualPaymentQrPreview.classList.toggle('hidden', !eventManualPaymentQrPreview.getAttribute('src'));
+        return;
+    }
+    manualQrPreviewObjectUrl = URL.createObjectURL(file);
+    eventManualPaymentQrPreview.src = manualQrPreviewObjectUrl;
+    eventManualPaymentQrPreview.classList.remove('hidden');
+});
 eventPricingModel?.addEventListener('change', () => {
     syncFinanceFields();
     updateEventPreview();
@@ -933,8 +1052,24 @@ eventForm?.addEventListener('submit', async (event) => {
             && payload.registration_mode === 'INTERNAL'
             && payload.pricing_model !== 'FREE'
             && (!eventOnlineProvider || eventOnlineProvider.value === 'NONE')
+            && !eventManualPaymentEnabled?.checked
         ) {
-            throw new Error('Selecciona Wompi o Stripe para cobrar la inscripción.');
+            throw new Error('Selecciona un cobro automático o activa un pago verificado manualmente.');
+        }
+        if (eventFinanceReady && eventManualPaymentEnabled?.checked) {
+            const manualKind = String(eventManualPaymentKind?.value || '').toUpperCase();
+            if (String(eventManualPaymentLabel?.value || '').trim().length < 3) {
+                throw new Error('Escribe el nombre visible del pago manual.');
+            }
+            if (String(eventManualPaymentInstructions?.value || '').trim().length < 5) {
+                throw new Error('Escribe las instrucciones del pago manual.');
+            }
+            if (manualKind === 'QR_TRANSFER' && !eventManualPaymentQr?.files?.[0] && !eventManualPaymentQrPath?.value) {
+                throw new Error('Sube la imagen del código QR.');
+            }
+            if (manualKind === 'EXTERNAL' && !String(eventManualPaymentUrl?.value || '').trim().startsWith('https://')) {
+                throw new Error('El enlace de pago manual debe comenzar por https://');
+            }
         }
 
         const { res, data } = await fetchJsonWithTimeout('/api/portal/events', {
@@ -957,6 +1092,7 @@ eventForm?.addEventListener('submit', async (event) => {
                     ? eventOnlineProvider.value || 'NONE'
                     : 'NONE';
                 await saveEventPaymentOption(savedEvent.id, provider);
+                await saveManualPaymentOption(savedEvent.id);
             } catch (paymentError) {
                 if (eventIdInput) eventIdInput.value = savedEvent.id;
                 if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';

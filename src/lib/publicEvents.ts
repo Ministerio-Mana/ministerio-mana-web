@@ -1,6 +1,9 @@
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 
 export const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
+const EVENT_PAYMENT_ASSETS_BUCKET = String(
+  import.meta.env.EVENT_PAYMENT_ASSETS_BUCKET || process.env.EVENT_PAYMENT_ASSETS_BUCKET || 'event-payment-assets',
+).trim();
 
 const LEGACY_PUBLIC_FIELDS = [
   'id',
@@ -68,9 +71,14 @@ export type PublicEvent = {
 
 export type PublicEventPaymentOption = {
   id: string;
-  provider: 'WOMPI' | 'STRIPE';
+  kind: 'ONLINE' | 'CASH' | 'BANK_TRANSFER' | 'QR_TRANSFER' | 'EXTERNAL';
+  provider: 'WOMPI' | 'STRIPE' | 'MANUAL' | 'EXTERNAL';
   currency: string;
   label: string;
+  instructions: string | null;
+  external_url: string | null;
+  qr_url: string | null;
+  requires_evidence: boolean;
 };
 
 function isExpectedSchemaError(error: any): boolean {
@@ -171,17 +179,42 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
 
 export async function listPublicEventPaymentOptions(eventId: string): Promise<PublicEventPaymentOption[]> {
   if (!supabaseAdmin || !isUuid(eventId)) return [];
-  const { data, error } = await supabaseAdmin
+  const db = supabaseAdmin;
+  const { data, error } = await db
     .from('event_payment_options')
-    .select('id, provider, currency, label')
+    .select('id, kind, provider, currency, label, instructions, external_url, qr_asset_path, requires_evidence')
     .eq('event_id', eventId)
-    .eq('kind', 'ONLINE')
     .eq('is_active', true)
-    .in('provider', ['WOMPI', 'STRIPE'])
+    .in('provider', ['WOMPI', 'STRIPE', 'MANUAL', 'EXTERNAL'])
     .order('created_at', { ascending: true });
   if (error) {
     if (error.code !== '42P01') console.error('[public-events] payment options error', error);
     return [];
   }
-  return (data || []) as PublicEventPaymentOption[];
+  const options = await Promise.all((data || []).map(async (row: any) => {
+    const externalUrl = typeof row.external_url === 'string' && /^https:\/\//i.test(row.external_url)
+      ? row.external_url
+      : null;
+    let qrUrl: string | null = null;
+    if (row.kind === 'QR_TRANSFER' && row.qr_asset_path) {
+      const signed = await db.storage
+        .from(EVENT_PAYMENT_ASSETS_BUCKET)
+        .createSignedUrl(String(row.qr_asset_path), 3600);
+      qrUrl = signed.data?.signedUrl || null;
+    }
+    return {
+      id: String(row.id),
+      kind: row.kind,
+      provider: row.provider,
+      currency: String(row.currency || ''),
+      label: String(row.label || 'Método de pago'),
+      instructions: row.instructions ? String(row.instructions) : null,
+      external_url: externalUrl,
+      qr_url: qrUrl,
+      requires_evidence: Boolean(row.requires_evidence),
+    } as PublicEventPaymentOption;
+  }));
+  return options.filter((option) => option.kind === 'ONLINE' || option.kind === 'CASH' || option.kind === 'BANK_TRANSFER'
+    || (option.kind === 'QR_TRANSFER' && option.qr_url)
+    || (option.kind === 'EXTERNAL' && option.external_url));
 }

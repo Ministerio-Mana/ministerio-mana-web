@@ -67,11 +67,38 @@ async function fetchJson(url, options = {}) {
 if (registrationForm) {
   let registrationId = createRequestId();
   let idempotencyKey = createRequestId();
+  let completed = false;
   const submitButton = registrationForm.querySelector('button[type="submit"]');
+  const providerSelect = registrationForm.elements.provider;
+  const manualReferenceWrapper = document.getElementById('event-manual-reference-wrapper');
+  const manualReferenceInput = registrationForm.elements.manual_reference;
+  const manualPaymentDetails = [...registrationForm.querySelectorAll('[data-manual-payment-details]')];
+
+  function syncPaymentMethod() {
+    const selectedOption = providerSelect?.selectedOptions?.[0];
+    const selectedOptionId = String(selectedOption?.value || '');
+    const kind = String(selectedOption?.dataset.kind || 'ONLINE').toUpperCase();
+    const isManual = Boolean(selectedOptionId && kind !== 'ONLINE');
+    manualPaymentDetails.forEach((panel) => {
+      panel.classList.toggle('hidden', panel.dataset.optionId !== selectedOptionId);
+    });
+    manualReferenceWrapper?.classList.toggle('hidden', !isManual);
+    if (manualReferenceInput) {
+      manualReferenceInput.disabled = !isManual;
+      manualReferenceInput.required = isManual;
+    }
+    if (providerSelect && submitButton && !submitButton.disabled) {
+      submitButton.textContent = isManual ? 'Reportar pago para revisión' : 'Continuar al pago';
+    }
+  }
 
   registrationForm.addEventListener('input', updateRegistrationTotal);
-  registrationForm.addEventListener('change', updateRegistrationTotal);
+  registrationForm.addEventListener('change', () => {
+    updateRegistrationTotal();
+    syncPaymentMethod();
+  });
   updateRegistrationTotal();
+  syncPaymentMethod();
 
   registrationForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -82,7 +109,6 @@ if (registrationForm) {
     }
 
     const formData = new FormData(registrationForm);
-    const providerSelect = registrationForm.elements.provider;
     const selectedProviderOption = providerSelect?.selectedOptions?.[0];
     const originalText = submitButton?.textContent || '';
     if (submitButton) {
@@ -104,8 +130,9 @@ if (registrationForm) {
           contact_phone: formData.get('contact_phone'),
           quantity: Number(formData.get('quantity') || 1),
           donation_amount: formData.get('donation_amount') || null,
-          provider: formData.get('provider') || null,
-          payment_option_id: selectedProviderOption?.dataset.optionId || null,
+          provider: selectedProviderOption?.dataset.provider || null,
+          payment_option_id: formData.get('provider') || null,
+          manual_reference: formData.get('manual_reference') || null,
           privacy_accepted: formData.get('privacy_accepted') === 'on',
           turnstile_token: formData.get('cf-turnstile-response') || '',
         }),
@@ -125,13 +152,16 @@ if (registrationForm) {
         return;
       }
 
-      const underReview = data.status === 'UNDER_REVIEW';
+      const underReview = data.status === 'UNDER_REVIEW' || data.requires_manual_review;
       showRegistrationStatus(
-        underReview
+        data.requires_manual_review
+          ? `Pago reportado con referencia ${data.reference}. El organizador verificará el movimiento antes de confirmar tu asistencia.`
+          : underReview
           ? 'Recibimos tu inscripción. El equipo del evento la revisará.'
           : 'Inscripción confirmada. Tu lugar quedó reservado.',
         'success',
       );
+      completed = true;
       registrationForm.querySelectorAll('input, select, button').forEach((field) => {
         field.disabled = true;
       });
@@ -139,9 +169,10 @@ if (registrationForm) {
       showRegistrationStatus(error?.message || 'No se pudo completar la inscripción.');
       window.turnstile?.reset?.();
     } finally {
-      if (submitButton && !registrationForm.querySelector('input:disabled')) {
+      if (submitButton && !completed) {
         submitButton.disabled = false;
         submitButton.textContent = originalText;
+        syncPaymentMethod();
       }
     }
   });

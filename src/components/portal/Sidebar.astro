@@ -123,7 +123,9 @@ import PortalIcon from './PortalIcon.astro';
             const isPortalHomeLink = linkUrl.pathname === '/portal';
             const isActive = isPortalHomeLink
                 ? currentUrl.pathname === '/portal' && link.dataset.tab === currentTab
-                : linkUrl.pathname === currentUrl.pathname;
+                : linkUrl.pathname === '/portal/events'
+                  ? currentUrl.pathname === '/portal/events' || currentUrl.pathname.startsWith('/portal/events/')
+                  : linkUrl.pathname === currentUrl.pathname;
             link.classList.toggle('bg-white/15', isActive);
             link.classList.toggle('text-white', isActive);
             if (isActive) {

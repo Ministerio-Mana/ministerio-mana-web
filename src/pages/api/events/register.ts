@@ -10,7 +10,9 @@ export const prerender = false;
 const MAX_BODY_CHARS = 6_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PROVIDERS = new Set(['WOMPI', 'STRIPE']);
+const ONLINE_PROVIDERS = new Set(['WOMPI', 'STRIPE']);
+const MANUAL_PROVIDERS = new Set(['MANUAL', 'EXTERNAL']);
+const PROVIDERS = new Set([...ONLINE_PROVIDERS, ...MANUAL_PROVIDERS]);
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -62,6 +64,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     ? null
     : Number(body.donation_amount);
   const privacyAccepted = body.privacy_accepted === true;
+  const manualReference = sanitizePlainText(String(body.manual_reference || ''), 120);
 
   if (!UUID_PATTERN.test(eventId) || !UUID_PATTERN.test(registrationId)) {
     return json({ ok: false, error: 'Identificador de evento inválido.' }, 400);
@@ -107,6 +110,64 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const registrationKey = `event-registration:${eventId}:${clientKey}`;
+  const cleanup = await supabaseAdmin.rpc('expire_event_manual_holds_secure', { p_event_id: eventId });
+  if (cleanup.error && !['42883', 'PGRST202'].includes(String(cleanup.error.code || ''))) {
+    console.error('[events.register] stale manual hold cleanup failed', cleanup.error);
+  }
+  if (MANUAL_PROVIDERS.has(provider)) {
+    if (!manualReference || manualReference.length < 3 || containsBlockedSequence(String(body.manual_reference || ''))) {
+      return json({ ok: false, error: 'Escribe la referencia o descripción de la transferencia.' }, 400);
+    }
+    const paymentId = crypto.randomUUID();
+    const { data: manualData, error: manualError } = await supabaseAdmin.rpc('create_event_manual_registration_secure', {
+      p_event_id: eventId,
+      p_registration_id: registrationId,
+      p_payment_id: paymentId,
+      p_idempotency_key: registrationKey,
+      p_contact_name: contactName,
+      p_contact_email: contactEmail,
+      p_contact_phone: contactPhone || '',
+      p_quantity: quantity,
+      p_donation_amount: donationAmount,
+      p_payment_option_id: paymentOptionId,
+      p_reported_reference: manualReference,
+    });
+    if (manualError) {
+      console.error('[events.register] manual registration rpc failed', manualError);
+      const mapped = manualError.message?.includes('create_event_manual_registration_secure')
+        ? { status: 503, message: 'El pago manual todavía no está activado.' }
+        : registrationErrorMessage(manualError.message || '');
+      return json({ ok: false, error: mapped.message }, mapped.status);
+    }
+    const manualRegistration = Array.isArray(manualData) ? manualData[0] : manualData;
+    if (!manualRegistration?.registration_id || !manualRegistration?.payment_id) {
+      return json({ ok: false, error: 'No se pudo registrar el pago reportado.' }, 500);
+    }
+    await supabaseAdmin.from('event_finance_audit_logs').insert({
+      event_id: eventId,
+      registration_id: manualRegistration.registration_id,
+      payment_id: manualRegistration.payment_id,
+      action: manualRegistration.reused ? 'MANUAL_PAYMENT_REPORT_REUSED' : 'MANUAL_PAYMENT_REPORTED',
+      after_data: {
+        status: manualRegistration.registration_status,
+        quantity,
+        total_amount: manualRegistration.total_amount,
+        currency: manualRegistration.currency,
+      },
+    });
+    return json({
+      ok: true,
+      registration_id: manualRegistration.registration_id,
+      payment_id: manualRegistration.payment_id,
+      reference: manualRegistration.payment_reference,
+      status: manualRegistration.registration_status,
+      requires_payment: false,
+      requires_manual_review: true,
+      review_expires_at: manualRegistration.expires_at,
+      reused: manualRegistration.reused,
+    }, manualRegistration.reused ? 200 : 201);
+  }
+
   const { data, error } = await supabaseAdmin.rpc('create_event_registration_secure', {
     p_event_id: eventId,
     p_registration_id: registrationId,
@@ -151,7 +212,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }, registration.reused ? 200 : 201);
   }
 
-  if (!paymentOptionId || !PROVIDERS.has(provider)) {
+  if (!paymentOptionId || !ONLINE_PROVIDERS.has(provider)) {
     return json({ ok: false, error: 'Selecciona un método de pago.' }, 400);
   }
 
