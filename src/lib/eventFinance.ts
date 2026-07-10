@@ -194,7 +194,7 @@ export async function processEventProviderPayment(params: {
   }
 
   if (incomingStatus === 'APPROVED' || incomingStatus === 'REFUNDED') {
-    const [{ data: approvedPayments }, { data: registration }] = await Promise.all([
+    const [{ data: approvedPayments }, { data: registration }, { data: eventSettings }] = await Promise.all([
       supabaseAdmin
         .from('event_payments')
         .select('amount')
@@ -202,19 +202,43 @@ export async function processEventProviderPayment(params: {
         .eq('status', 'APPROVED'),
       supabaseAdmin
         .from('event_registrations')
-        .select('id, total_amount, status')
+        .select('id, total_amount, status, expires_at')
         .eq('id', payment.registration_id)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('events')
+        .select('registration_requires_approval')
+        .eq('id', payment.event_id)
         .maybeSingle(),
     ]);
     const approvedTotal = (approvedPayments || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
     if (registration) {
       const totalAmount = Number(registration.total_amount || 0);
+      const expiry = new Date(registration.expires_at || '').getTime();
+      const isExpired = registration.status === 'EXPIRED' || (Number.isFinite(expiry) && expiry <= Date.now());
       if (approvedTotal + 0.005 >= totalAmount) {
-        await supabaseAdmin
-          .from('event_registrations')
-          .update({ status: 'CONFIRMED', confirmed_at: now, updated_at: now })
-          .eq('id', registration.id)
-          .not('status', 'in', '(CANCELLED,REFUNDED)');
+        if (isExpired) {
+          await writeAudit({
+            eventId: payment.event_id,
+            registrationId: payment.registration_id,
+            paymentId: payment.id,
+            action: 'PROVIDER_PAYMENT_AFTER_EXPIRY',
+            before: { registration_status: registration.status, expires_at: registration.expires_at },
+            after: { payment_status: incomingStatus, provider_tx_id: providerTxId },
+            requestId: params.requestId,
+          });
+        } else {
+          const requiresApproval = Boolean(eventSettings?.registration_requires_approval);
+          await supabaseAdmin
+            .from('event_registrations')
+            .update({
+              status: requiresApproval ? 'UNDER_REVIEW' : 'CONFIRMED',
+              confirmed_at: requiresApproval ? null : now,
+              updated_at: now,
+            })
+            .eq('id', registration.id)
+            .not('status', 'in', '(CANCELLED,REFUNDED,EXPIRED)');
+        }
       } else if (incomingStatus === 'REFUNDED') {
         await supabaseAdmin
           .from('event_registrations')

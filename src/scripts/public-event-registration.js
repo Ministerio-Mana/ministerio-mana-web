@@ -1,0 +1,192 @@
+const registrationForm = document.getElementById('public-event-registration-form');
+const registrationStatus = document.getElementById('event-registration-status');
+const registrationTotal = document.getElementById('event-registration-total');
+const paymentResult = document.getElementById('event-payment-result');
+
+const REQUEST_TIMEOUT_MS = 20_000;
+
+function createRequestId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const value = Math.floor(Math.random() * 16);
+    return (char === 'x' ? value : (value & 0x3) | 0x8).toString(16);
+  });
+}
+
+function showRegistrationStatus(message = '', tone = 'error') {
+  if (!registrationStatus) return;
+  registrationStatus.textContent = message;
+  registrationStatus.classList.toggle('hidden', !message);
+  registrationStatus.classList.toggle('border', Boolean(message));
+  registrationStatus.classList.toggle('border-red-200', Boolean(message) && tone === 'error');
+  registrationStatus.classList.toggle('bg-red-50', Boolean(message) && tone === 'error');
+  registrationStatus.classList.toggle('text-red-700', Boolean(message) && tone === 'error');
+  registrationStatus.classList.toggle('border-emerald-200', Boolean(message) && tone === 'success');
+  registrationStatus.classList.toggle('bg-emerald-50', Boolean(message) && tone === 'success');
+  registrationStatus.classList.toggle('text-emerald-800', Boolean(message) && tone === 'success');
+}
+
+function formatAmount(amount, currency) {
+  try {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: currency === 'COP' ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${Number(amount || 0).toLocaleString('es-CO')}`;
+  }
+}
+
+function updateRegistrationTotal() {
+  if (!registrationForm || !registrationTotal) return;
+  const pricingModel = String(registrationForm.dataset.pricingModel || 'FREE').toUpperCase();
+  const currency = String(registrationForm.dataset.currency || 'COP').toUpperCase();
+  const quantity = Math.max(1, Number(registrationForm.elements.quantity?.value || 1));
+  const amount = pricingModel === 'DONATION'
+    ? Number(registrationForm.elements.donation_amount?.value || 0)
+    : Number(registrationForm.dataset.unitPrice || 0) * quantity;
+  registrationTotal.textContent = amount > 0 ? formatAmount(amount, currency) : '—';
+}
+
+async function fetchJson(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('La solicitud tardó demasiado. Intenta nuevamente.');
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+if (registrationForm) {
+  let registrationId = createRequestId();
+  let idempotencyKey = createRequestId();
+  const submitButton = registrationForm.querySelector('button[type="submit"]');
+
+  registrationForm.addEventListener('input', updateRegistrationTotal);
+  registrationForm.addEventListener('change', updateRegistrationTotal);
+  updateRegistrationTotal();
+
+  registrationForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    showRegistrationStatus();
+    if (!registrationForm.checkValidity()) {
+      registrationForm.reportValidity();
+      return;
+    }
+
+    const formData = new FormData(registrationForm);
+    const providerSelect = registrationForm.elements.provider;
+    const selectedProviderOption = providerSelect?.selectedOptions?.[0];
+    const originalText = submitButton?.textContent || '';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Procesando...';
+    }
+
+    try {
+      const { response, data } = await fetchJson('/api/events/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          event_id: registrationForm.dataset.eventId,
+          registration_id: registrationId,
+          idempotency_key: idempotencyKey,
+          contact_name: formData.get('contact_name'),
+          contact_email: formData.get('contact_email'),
+          contact_phone: formData.get('contact_phone'),
+          quantity: Number(formData.get('quantity') || 1),
+          donation_amount: formData.get('donation_amount') || null,
+          provider: formData.get('provider') || null,
+          payment_option_id: selectedProviderOption?.dataset.optionId || null,
+          privacy_accepted: formData.get('privacy_accepted') === 'on',
+          turnstile_token: formData.get('cf-turnstile-response') || '',
+        }),
+      });
+      if (!response.ok || !data.ok) {
+        if (data.retry_new_registration) {
+          registrationId = createRequestId();
+          idempotencyKey = createRequestId();
+        }
+        throw new Error(data.error || 'No se pudo completar la inscripción.');
+      }
+
+      if (data.checkout_url) {
+        const checkout = new URL(data.checkout_url, window.location.origin);
+        if (checkout.protocol !== 'https:') throw new Error('El proveedor devolvió un enlace inválido.');
+        window.location.assign(checkout.toString());
+        return;
+      }
+
+      const underReview = data.status === 'UNDER_REVIEW';
+      showRegistrationStatus(
+        underReview
+          ? 'Recibimos tu inscripción. El equipo del evento la revisará.'
+          : 'Inscripción confirmada. Tu lugar quedó reservado.',
+        'success',
+      );
+      registrationForm.querySelectorAll('input, select, button').forEach((field) => {
+        field.disabled = true;
+      });
+    } catch (error) {
+      showRegistrationStatus(error?.message || 'No se pudo completar la inscripción.');
+      window.turnstile?.reset?.();
+    } finally {
+      if (submitButton && !registrationForm.querySelector('input:disabled')) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  });
+}
+
+async function refreshPaymentResult() {
+  if (!paymentResult || paymentResult.dataset.paymentState === 'cancelled') return;
+  const reference = new URLSearchParams(window.location.search).get('reference') || '';
+  const eventId = paymentResult.dataset.eventId || '';
+  if (!/^MM-EVT-[A-F0-9]{32}$/i.test(reference) || !eventId) return;
+  const message = paymentResult.querySelector('[data-payment-result-message]');
+  const heading = paymentResult.querySelector('h2');
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const params = new URLSearchParams({ event_id: eventId, reference });
+      const { response, data } = await fetchJson(`/api/events/payment-status?${params}`);
+      if (response.ok && data.ok) {
+        const paymentStatus = String(data.payment_status || '').toUpperCase();
+        const registrationStatusValue = String(data.registration_status || '').toUpperCase();
+        if (paymentStatus === 'APPROVED') {
+          if (heading) heading.textContent = registrationStatusValue === 'CONFIRMED' ? 'Pago e inscripción confirmados' : 'Pago recibido';
+          if (message) {
+            message.textContent = registrationStatusValue === 'CONFIRMED'
+              ? 'Tu lugar quedó reservado correctamente.'
+              : registrationStatusValue === 'UNDER_REVIEW'
+                ? 'El pago está aprobado y la inscripción está pendiente de revisión.'
+                : registrationStatusValue === 'EXPIRED'
+                  ? 'El pago llegó después de vencer la reserva. El equipo del evento revisará tu caso.'
+                  : 'El pago fue aprobado y estamos terminando la confirmación.';
+          }
+          return;
+        }
+        if (['DECLINED', 'FAILED', 'VOIDED'].includes(paymentStatus)) {
+          if (heading) heading.textContent = 'Pago no aprobado';
+          if (message) message.textContent = 'Puedes iniciar nuevamente la inscripción para volver a intentarlo.';
+          return;
+        }
+      }
+    } catch {
+      // El siguiente intento puede recibir el webhook que aún está en tránsito.
+    }
+    if (attempt < 5) await new Promise((resolve) => window.setTimeout(resolve, 1500));
+  }
+  if (message) message.textContent = 'El proveedor todavía está procesando el pago. Vuelve a consultar esta página en unos minutos.';
+}
+
+void refreshPaymentResult();

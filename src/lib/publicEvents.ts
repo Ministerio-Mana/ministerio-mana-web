@@ -31,6 +31,9 @@ const PLATFORM_PUBLIC_FIELDS = [
   'capacity',
   'contact_email',
   'timezone',
+  'attendance_mode',
+  'pricing_model',
+  'registration_requires_approval',
 ].join(',');
 
 export type PublicEvent = {
@@ -58,6 +61,16 @@ export type PublicEvent = {
   capacity?: number | null;
   contact_email?: string | null;
   timezone?: string | null;
+  attendance_mode?: 'IN_PERSON' | 'ONLINE' | 'HYBRID' | null;
+  pricing_model?: 'FREE' | 'PAID' | 'DONATION' | null;
+  registration_requires_approval?: boolean | null;
+};
+
+export type PublicEventPaymentOption = {
+  id: string;
+  provider: 'WOMPI' | 'STRIPE';
+  currency: string;
+  label: string;
 };
 
 function isExpectedSchemaError(error: any): boolean {
@@ -113,7 +126,7 @@ export async function listPublicDatabaseEvents(): Promise<PublicEvent[]> {
   if (legacy.error && legacy.error.code !== 'PGRST116' && legacy.error.code !== '42P01') {
     console.error('[public-events] legacy list error', legacy.error);
   }
-  return legacy.data ? [legacy.data as PublicEvent] : [];
+  return legacy.data ? [legacy.data as unknown as PublicEvent] : [];
 }
 
 export async function getPublicDatabaseEvent(identifier: string): Promise<PublicEvent | null> {
@@ -154,4 +167,21 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
     return null;
   }
   return legacy.data as PublicEvent | null;
+}
+
+export async function listPublicEventPaymentOptions(eventId: string): Promise<PublicEventPaymentOption[]> {
+  if (!supabaseAdmin || !isUuid(eventId)) return [];
+  const { data, error } = await supabaseAdmin
+    .from('event_payment_options')
+    .select('id, provider, currency, label')
+    .eq('event_id', eventId)
+    .eq('kind', 'ONLINE')
+    .eq('is_active', true)
+    .in('provider', ['WOMPI', 'STRIPE'])
+    .order('created_at', { ascending: true });
+  if (error) {
+    if (error.code !== '42P01') console.error('[public-events] payment options error', error);
+    return [];
+  }
+  return (data || []) as PublicEventPaymentOption[];
 }

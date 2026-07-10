@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 
-const API_VERSION: Stripe.StripeConfig['apiVersion'] = '2023-10-16';
+const API_VERSION = '2023-10-16' as Stripe.StripeConfig['apiVersion'];
 
 function getSecret(): string {
   const secret = import.meta.env?.STRIPE_SECRET_KEY ?? process.env.STRIPE_SECRET_KEY;
@@ -37,6 +37,7 @@ export interface StripeSessionParams {
   clientReferenceId?: string;
   idempotencyKey?: string;
   allowPromotionCodes?: boolean;
+  expiresAt?: number;
   customerEmail?: string;
   customerId?: string;
 }
@@ -55,6 +56,7 @@ export async function createStripeDonationSession(params: StripeSessionParams): 
     payment_method_types: ['card'],
     currency: params.currency.toLowerCase(),
     allow_promotion_codes: params.allowPromotionCodes ?? true,
+    expires_at: params.expiresAt,
     metadata: params.metadata,
     client_reference_id: params.clientReferenceId,
     payment_intent_data: params.metadata ? { metadata: params.metadata } : undefined,

@@ -18,7 +18,7 @@ async function loadEvent(eventId: string) {
   if (!supabaseAdmin) return { data: null, error: new Error('Server Config Error') };
   return supabaseAdmin
     .from('events')
-    .select('id, title, scope, church_id, region_id, country, currency, price, pricing_model')
+    .select('id, title, scope, church_id, region_id, country, currency, price, pricing_model, registration_mode')
     .eq('id', eventId)
     .maybeSingle();
 }
@@ -79,6 +79,9 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   const currency = String(event.currency || 'COP').toUpperCase();
+  if (provider !== 'NONE' && String(event.registration_mode || 'NONE').toUpperCase() !== 'INTERNAL') {
+    return json({ ok: false, error: 'El cobro en línea requiere inscripción en Maná.' }, 409);
+  }
   if (provider !== 'NONE' && String(event.pricing_model || 'FREE').toUpperCase() === 'FREE') {
     return json({ ok: false, error: 'Un evento gratuito no puede activar cobro en línea.' }, 409);
   }

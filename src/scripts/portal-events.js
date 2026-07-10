@@ -38,6 +38,7 @@ const eventFinanceSettings = document.getElementById('event-finance-settings');
 const eventPricingModel = document.getElementById('event-pricing-model');
 const eventPriceInput = document.getElementById('event-price');
 const eventOnlineProvider = document.getElementById('event-online-provider');
+const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
 const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
 const previewImage = document.getElementById('event-preview-image');
@@ -142,14 +143,15 @@ function getPublicEventPath(event) {
 
 function syncRegistrationFields() {
     const isExternal = eventPlatformReady && eventRegistrationMode?.value === 'EXTERNAL';
+    const hasRegistration = eventPlatformReady && ['EXTERNAL', 'INTERNAL'].includes(eventRegistrationMode?.value);
     eventRegistrationUrlWrapper?.classList.toggle('hidden', !isExternal);
     const urlInput = eventForm?.querySelector('[name="registration_url"]');
     if (urlInput) {
         urlInput.disabled = !isExternal;
         urlInput.required = isExternal;
     }
-    previewCta?.classList.toggle('hidden', !isExternal);
-    previewCta?.classList.toggle('inline-flex', isExternal);
+    previewCta?.classList.toggle('hidden', !hasRegistration);
+    previewCta?.classList.toggle('inline-flex', hasRegistration);
 }
 
 function syncPlatformFields() {
@@ -169,19 +171,21 @@ function syncFinanceFields() {
     });
     if (!eventFinanceReady || !eventPriceInput) return;
     const isFree = eventPricingModel?.value === 'FREE';
+    const usesInternalRegistration = eventRegistrationMode?.value === 'INTERNAL';
     if (isFree) eventPriceInput.value = '0';
     eventPriceInput.readOnly = isFree;
     eventPriceInput.classList.toggle('bg-slate-100', isFree);
     if (eventOnlineProvider) {
-        if (isFree) eventOnlineProvider.value = 'NONE';
-        eventOnlineProvider.disabled = isFree;
+        if (isFree || !usesInternalRegistration) eventOnlineProvider.value = 'NONE';
+        eventOnlineProvider.disabled = isFree || !usesInternalRegistration;
     }
+    eventOnlineProviderWrapper?.classList.toggle('hidden', isFree || !usesInternalRegistration);
 }
 
 async function loadEventPaymentOption(eventData) {
     if (!eventOnlineProvider) return;
     eventOnlineProvider.value = 'NONE';
-    if (!eventFinanceReady || !eventData?.id) return;
+    if (!eventFinanceReady || !eventData?.id || eventData?.registration_mode !== 'INTERNAL') return;
     eventOnlineProvider.disabled = true;
     try {
         const params = new URLSearchParams({ event_id: eventData.id });
@@ -199,8 +203,12 @@ async function loadEventPaymentOption(eventData) {
     } catch (error) {
         showFormError(error?.message || 'No se pudo cargar el método de pago.');
     } finally {
-        if (eventPricingModel?.value === 'FREE') eventOnlineProvider.value = 'NONE';
-        eventOnlineProvider.disabled = !eventFinanceReady || eventPricingModel?.value === 'FREE';
+        const canUseOnlineProvider = eventFinanceReady
+            && eventPricingModel?.value !== 'FREE'
+            && eventRegistrationMode?.value === 'INTERNAL';
+        if (!canUseOnlineProvider) eventOnlineProvider.value = 'NONE';
+        eventOnlineProvider.disabled = !canUseOnlineProvider;
+        eventOnlineProviderWrapper?.classList.toggle('hidden', !canUseOnlineProvider);
     }
 }
 
@@ -870,7 +878,10 @@ eventRegionSelect?.addEventListener('change', () => {
     syncCountryFromRegion();
     updateEventPreview();
 });
-eventRegistrationMode?.addEventListener('change', syncRegistrationFields);
+eventRegistrationMode?.addEventListener('change', () => {
+    syncRegistrationFields();
+    syncFinanceFields();
+});
 eventPricingModel?.addEventListener('change', () => {
     syncFinanceFields();
     updateEventPreview();
@@ -910,6 +921,14 @@ eventForm?.addEventListener('submit', async (event) => {
         if (end && (Number.isNaN(end.getTime()) || end.getTime() < start.getTime())) {
             throw new Error('La fecha de fin debe ser posterior al inicio.');
         }
+        if (
+            eventFinanceReady
+            && payload.registration_mode === 'INTERNAL'
+            && payload.pricing_model !== 'FREE'
+            && (!eventOnlineProvider || eventOnlineProvider.value === 'NONE')
+        ) {
+            throw new Error('Selecciona Wompi o Stripe para cobrar la inscripción.');
+        }
 
         const { res, data } = await fetchJsonWithTimeout('/api/portal/events', {
             method: eventId ? 'PATCH' : 'POST',
@@ -927,7 +946,10 @@ eventForm?.addEventListener('submit', async (event) => {
         }
         if (eventFinanceReady && savedEvent?.id && eventOnlineProvider) {
             try {
-                await saveEventPaymentOption(savedEvent.id, eventOnlineProvider.value || 'NONE');
+                const provider = payload.registration_mode === 'INTERNAL' && payload.pricing_model !== 'FREE'
+                    ? eventOnlineProvider.value || 'NONE'
+                    : 'NONE';
+                await saveEventPaymentOption(savedEvent.id, provider);
             } catch (paymentError) {
                 if (eventIdInput) eventIdInput.value = savedEvent.id;
                 if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';

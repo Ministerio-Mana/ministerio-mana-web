@@ -1,7 +1,9 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import { getEntry, render } from 'astro:content';
-import { getPublicDatabaseEvent } from '@lib/publicEvents';
+import { getPublicDatabaseEvent, listPublicEventPaymentOptions } from '@lib/publicEvents';
+import TurnstileProvider from '@components/TurnstileProvider.astro';
+import TurnstileWidget from '@components/TurnstileWidget.astro';
 
 export const prerender = false;
 
@@ -26,20 +28,31 @@ const address = databaseEvent?.location_address || '';
 const image = contentEntry?.data.heroImage || databaseEvent?.banner_url || undefined;
 const useImageHero = Boolean(image && !image.toLowerCase().endsWith('.svg'));
 const brochure = contentEntry?.data.brochurePdf;
-const registrationUrl = databaseEvent?.registration_mode === 'EXTERNAL'
-  && databaseEvent.registration_url
+const registrationMode = String(databaseEvent?.registration_mode || 'NONE').toUpperCase();
+const registrationUrl = registrationMode === 'EXTERNAL'
+  && databaseEvent?.registration_url
   && (/^https:\/\//i.test(databaseEvent.registration_url) || (databaseEvent.registration_url.startsWith('/') && !databaseEvent.registration_url.startsWith('//')))
   ? databaseEvent.registration_url
   : '';
 const registrationOpens = databaseEvent?.registration_opens_at ? new Date(databaseEvent.registration_opens_at).getTime() : null;
 const registrationCloses = databaseEvent?.registration_closes_at ? new Date(databaseEvent.registration_closes_at).getTime() : null;
 const now = Date.now();
-const registrationIsOpen = Boolean(
-  registrationUrl
-  && !isCompleted
+const registrationWindowIsOpen = Boolean(
+  !isCompleted
   && (registrationOpens === null || registrationOpens <= now)
   && (registrationCloses === null || registrationCloses >= now)
 );
+const externalRegistrationIsOpen = Boolean(registrationUrl && registrationWindowIsOpen);
+const internalRegistrationIsOpen = Boolean(databaseEvent && registrationMode === 'INTERNAL' && registrationWindowIsOpen);
+const pricingModel = String(databaseEvent?.pricing_model || (Number(databaseEvent?.price || 0) > 0 ? 'PAID' : 'FREE')).toUpperCase();
+const eventPaymentOptions = internalRegistrationIsOpen && databaseEvent
+  ? await listPublicEventPaymentOptions(databaseEvent.id)
+  : [];
+const internalRegistrationReady = internalRegistrationIsOpen
+  && (pricingModel === 'FREE' || eventPaymentOptions.length > 0);
+const registrationHref = externalRegistrationIsOpen ? registrationUrl : internalRegistrationReady ? '#inscripcion' : '';
+const paymentReturnRaw = String(Astro.url.searchParams.get('payment') || '').toLowerCase();
+const paymentReturnState = ['success', 'return', 'cancelled'].includes(paymentReturnRaw) ? paymentReturnRaw : '';
 const formattedDate = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(startDate)
   : 'Fecha por confirmar';
@@ -88,7 +101,7 @@ const structured = (contentEntry || databaseEvent) ? {
             {address && <p class="text-sm text-slate-500">{address}</p>}
           </div>
           <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-            {registrationIsOpen && <a href={registrationUrl} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
+            {registrationHref && <a href={registrationHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
             {brochure && <a href={brochure} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Ver brochure</a>}
           </div>
         </div>
@@ -113,6 +126,120 @@ const structured = (contentEntry || databaseEvent) ? {
           </aside>
         </div>
       </section>
+
+      {paymentReturnState && databaseEvent && (
+        <section class="border-t border-slate-200 bg-white" aria-labelledby="event-payment-result-title">
+          <div class="container-tight py-6">
+            <div id="event-payment-result" data-event-id={databaseEvent.id} data-payment-state={paymentReturnState} class="rounded-md border border-slate-200 bg-slate-50 px-4 py-4" role="status" aria-live="polite">
+              <h2 id="event-payment-result-title" class="text-base font-bold text-[#293C74]">
+                {paymentReturnState === 'cancelled' ? 'Pago no completado' : 'Validando tu pago'}
+              </h2>
+              <p data-payment-result-message class="mt-1 text-sm text-slate-600">
+                {paymentReturnState === 'cancelled'
+                  ? 'Tu inscripción todavía no está confirmada.'
+                  : 'Estamos esperando la confirmación segura del proveedor.'}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {internalRegistrationIsOpen && databaseEvent && (
+        <section id="inscripcion" class="scroll-mt-24 border-t border-slate-200 bg-white" aria-labelledby="event-registration-title">
+          <div class="container-tight grid gap-8 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(320px,520px)] lg:items-start">
+            <div class="max-w-xl">
+              <p class="text-xs font-bold uppercase text-slate-500">Inscripción</p>
+              <h2 id="event-registration-title" class="mt-2 text-2xl font-bold text-[#293C74] sm:text-3xl">Reserva tu lugar</h2>
+              <p class="mt-3 leading-relaxed text-slate-600">
+                {pricingModel === 'FREE'
+                  ? 'Completa tus datos para registrar la asistencia.'
+                  : 'El cupo quedará reservado mientras completas el pago.'}
+              </p>
+              <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-1">
+                <div>
+                  <dt class="font-bold text-slate-500">Modalidad</dt>
+                  <dd class="mt-1 text-slate-900">{databaseEvent.attendance_mode === 'ONLINE' ? 'Virtual' : databaseEvent.attendance_mode === 'HYBRID' ? 'Híbrido' : 'Presencial'}</dd>
+                </div>
+                <div>
+                  <dt class="font-bold text-slate-500">Valor</dt>
+                  <dd class="mt-1 text-slate-900">
+                    {pricingModel === 'DONATION'
+                      ? 'Aporte voluntario'
+                      : Number(databaseEvent.price || 0) > 0
+                        ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: databaseEvent.currency || 'COP', maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2 }).format(Number(databaseEvent.price))
+                        : 'Sin costo'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {internalRegistrationReady ? (
+              <form
+                id="public-event-registration-form"
+                class="rounded-md border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+                data-event-id={databaseEvent.id}
+                data-pricing-model={pricingModel}
+                data-unit-price={Number(databaseEvent.price || 0)}
+                data-currency={databaseEvent.currency || 'COP'}
+                novalidate>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <label class="text-sm font-bold text-slate-700 sm:col-span-2">Nombre completo
+                    <input name="contact_name" type="text" required minlength="3" maxlength="120" autocomplete="name" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                  </label>
+                  <label class="text-sm font-bold text-slate-700">Correo
+                    <input name="contact_email" type="email" required maxlength="254" autocomplete="email" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                  </label>
+                  <label class="text-sm font-bold text-slate-700">Teléfono
+                    <input name="contact_phone" type="tel" maxlength="40" autocomplete="tel" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                  </label>
+                  <label class="text-sm font-bold text-slate-700">Asistentes
+                    <input name="quantity" type="number" required min="1" max={Math.min(100, Number(databaseEvent.capacity || 100))} step="1" value="1" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                  </label>
+                  {pricingModel === 'DONATION' && (
+                    <label class="text-sm font-bold text-slate-700">Valor del aporte
+                      <input name="donation_amount" type="number" required min="1" max="1000000000" step={databaseEvent.currency === 'COP' ? '1000' : '1'} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                    </label>
+                  )}
+                  {pricingModel !== 'FREE' && (
+                    <label class="text-sm font-bold text-slate-700 sm:col-span-2">Método de pago
+                      <select name="provider" required class="mt-1 block min-h-11 w-full rounded-md border-slate-300">
+                        {eventPaymentOptions.map((option) => (
+                          <option value={option.provider} data-option-id={option.id}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+
+                {pricingModel !== 'FREE' && (
+                  <div class="mt-5 flex items-center justify-between border-y border-slate-200 py-3 text-sm">
+                    <span class="font-semibold text-slate-600">Total</span>
+                    <strong id="event-registration-total" class="text-base text-[#293C74]">—</strong>
+                  </div>
+                )}
+
+                <label class="mt-5 flex items-start gap-3 text-sm text-slate-600">
+                  <input name="privacy_accepted" type="checkbox" required class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                  <span>Autorizo el tratamiento de mis datos según la <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="font-bold text-[#293C74] underline">política de privacidad</a>.</span>
+                </label>
+
+                <TurnstileProvider />
+                <TurnstileWidget id="event-registration-turnstile" appearance="interaction-only" theme="light" />
+
+                <p id="event-registration-status" class="mt-4 hidden rounded-md px-3 py-2 text-sm" role="status" aria-live="polite"></p>
+                <button type="submit" class="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60">
+                  {pricingModel === 'FREE' ? 'Confirmar inscripción' : 'Continuar al pago'}
+                </button>
+              </form>
+            ) : (
+              <div class="rounded-md border border-slate-200 bg-slate-50 px-5 py-6">
+                <p class="font-bold text-slate-800">Inscripciones temporalmente no disponibles</p>
+                {databaseEvent.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-3 inline-block text-sm font-bold text-[#293C74] underline">Contactar al organizador</a>}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   ) : (
     <div class="container-tight py-20 text-center">
@@ -121,4 +248,7 @@ const structured = (contentEntry || databaseEvent) ? {
       <a href="/eventos" class="mt-6 inline-flex min-h-11 items-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white">Ver eventos</a>
     </div>
   )}
+  <script>
+    import '@scripts/public-event-registration.js';
+  </script>
 </BaseLayout>

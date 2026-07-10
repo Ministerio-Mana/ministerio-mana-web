@@ -210,6 +210,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <label class="event-field">Inscripción
                 <select name="registration_mode" id="event-registration-mode" data-platform-field disabled>
                   <option value="NONE">Sin inscripción</option>
+                  <option value="INTERNAL">Inscripción en Maná</option>
                   <option value="EXTERNAL">Enlace externo</option>
                 </select>
               </label>
@@ -274,7 +275,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </select>
               </label>
             </div>
-            <label class="event-field">Cobro en línea
+            <label id="event-online-provider-wrapper" class="event-field hidden">Cobro en línea
               <select id="event-online-provider" data-finance-field disabled>
                 <option value="NONE">Sin cobro en línea</option>
                 <option value="WOMPI">Wompi</option>
