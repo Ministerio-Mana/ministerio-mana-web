@@ -18,7 +18,7 @@ const issuesPageInfoEl = document.getElementById('finances-issues-page-info');
 const issuesLoadMoreBtn = document.getElementById('finances-issues-load-more');
 
 const REQUEST_TIMEOUT_MS = 15000;
-const TRANSACTIONS_PAGE_SIZE = 25;
+const TRANSACTIONS_PAGE_SIZE = 10;
 const ISSUES_PAGE_SIZE = 10;
 const DEFAULT_CATEGORIES = [
   'Diezmos',

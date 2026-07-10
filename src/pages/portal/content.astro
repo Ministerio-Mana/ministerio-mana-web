@@ -50,10 +50,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Configuración de Página</h2>
                   <div class="flex flex-wrap items-center gap-2">
-                    <button id="cms-page-save" data-cms-action class="px-4 py-2 rounded-xl bg-brand-teal text-white text-sm font-bold hover:bg-brand-teal/90 transition">Guardar</button>
-                    <button id="cms-page-publish" data-cms-action class="px-4 py-2 rounded-xl border border-[#293C74]/30 text-[#293C74] text-sm font-bold hover:bg-[#293C74]/5 transition">Publicar</button>
-                    <button id="cms-page-unpublish" data-cms-action class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Borrador</button>
-                    <button id="cms-page-preview" data-cms-action class="px-4 py-2 rounded-xl border border-brand-teal/40 text-brand-teal text-sm font-bold hover:bg-brand-teal/10 transition">Preview</button>
+                    <button id="cms-page-save" data-cms-action class="min-h-10 px-4 py-2 rounded-xl bg-brand-teal text-white text-sm font-bold hover:bg-brand-teal/90 transition">Guardar</button>
+                    <button id="cms-page-publish" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-[#293C74]/30 text-[#293C74] text-sm font-bold hover:bg-[#293C74]/5 transition">Publicar</button>
+                    <button id="cms-page-unpublish" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Borrador</button>
+                    <button id="cms-page-preview" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-brand-teal/40 text-brand-teal text-sm font-bold hover:bg-brand-teal/10 transition">Preview</button>
                   </div>
                 </div>
 
@@ -90,7 +90,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-5">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Secciones</h2>
-                  <button id="cms-section-new" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">Agregar sección</button>
+                  <button id="cms-section-new" data-cms-action class="min-h-10 px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">Agregar sección</button>
                 </div>
 
                 <div id="cms-sections" class="space-y-3"></div>
@@ -100,12 +100,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-4">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Biblioteca Multimedia</h2>
-                  <button id="cms-media-refresh" data-cms-action class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Actualizar</button>
+                  <button id="cms-media-refresh" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Actualizar</button>
                 </div>
                 <form id="cms-media-upload-form" class="grid grid-cols-1 md:grid-cols-[1fr_180px_auto] gap-3">
                   <input id="cms-media-file" type="file" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
                   <input id="cms-media-folder" type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="folder (ej: home)" />
-                  <button type="submit" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">Subir</button>
+                  <button type="submit" data-cms-action class="min-h-10 px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">Subir</button>
                 </form>
                 <div id="cms-media-status" class="text-xs text-slate-500"></div>
                 <div id="cms-media-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>

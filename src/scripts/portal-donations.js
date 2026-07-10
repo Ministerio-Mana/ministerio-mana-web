@@ -17,7 +17,7 @@ const statUsdEl = document.getElementById('donations-stat-usd');
 let currentAuthHeaders = {};
 let paginationState = {
     page: 1,
-    pageSize: 25,
+    pageSize: 10,
     totalRows: 0,
     totalPages: 0,
     visibleFrom: 0,
@@ -193,7 +193,7 @@ async function ensureFinanceAccess() {
 }
 
 async function loadDonations({ append = false } = {}) {
-    const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 25);
+    const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 10);
     const page = append ? paginationState.page + 1 : 1;
 
     if (!append) {
@@ -300,7 +300,7 @@ function renderDonations(donations, stats, pagination, { append = false } = {}) 
     if (loadingEl) loadingEl.classList.add('hidden');
     paginationState = {
         page: Number(pagination.page || (append ? paginationState.page + 1 : 1)),
-        pageSize: Number(pagination.pageSize || pageSizeEl?.value || 25),
+        pageSize: Number(pagination.pageSize || pageSizeEl?.value || 10),
         totalRows: Number(pagination.totalRows || stats.totalRows || donations.length || 0),
         totalPages: Number(pagination.totalPages || 0),
         visibleFrom: append

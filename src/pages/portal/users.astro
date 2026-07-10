@@ -111,6 +111,20 @@ import { MISIONEROS } from '@data/misioneros';
                     </table>
                 </div>
                 <div id="users-empty" class="hidden text-center py-10 text-slate-400 text-sm">No se encontraron usuarios.</div>
+                <div id="users-pagination" class="mt-5 hidden flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span id="users-page-info" class="text-xs font-semibold text-slate-500">Mostrando 0 usuarios</span>
+                        <select id="users-page-size" aria-label="Usuarios por página" class="min-h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                            <option value="10">10 por página</option>
+                            <option value="20">20 por página</option>
+                            <option value="50">50 por página</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 sm:flex">
+                        <button id="users-page-prev" type="button" class="min-h-10 rounded-md border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Anterior</button>
+                        <button id="users-page-next" type="button" class="min-h-10 rounded-md border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">Siguiente</button>
+                    </div>
+                </div>
             </div>
 
          </div>

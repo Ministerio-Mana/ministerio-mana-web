@@ -672,7 +672,7 @@ function renderEvents(events) {
 
                 <div class="mt-4 flex items-center justify-between">
                     ${canEditEvent(event) ? `
-                    <button type="button" class="event-edit text-xs font-bold text-[#293C74] hover:underline" data-event-id="${safeEventId}">
+                    <button type="button" class="event-edit min-h-10 rounded-md px-3 py-2 text-xs font-bold text-[#293C74] hover:bg-[#293C74]/5" data-event-id="${safeEventId}">
                         Editar evento
                     </button>` : '<span></span>'}
                     <span class="text-[10px] uppercase tracking-widest text-slate-400">${safeStatus}</span>

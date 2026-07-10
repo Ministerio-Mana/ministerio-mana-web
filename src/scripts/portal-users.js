@@ -15,6 +15,11 @@ const scopeFilter = document.getElementById('users-scope-filter');
 const clearFiltersBtn = document.getElementById('users-clear-filters');
 const usersSummaryEl = document.getElementById('users-summary');
 const countEl = document.getElementById('users-count');
+const paginationEl = document.getElementById('users-pagination');
+const pageInfoEl = document.getElementById('users-page-info');
+const pageSizeEl = document.getElementById('users-page-size');
+const pagePrevBtn = document.getElementById('users-page-prev');
+const pageNextBtn = document.getElementById('users-page-next');
 
 // Modal Elements
 const modal = document.getElementById('create-user-modal');
@@ -54,6 +59,7 @@ let churchesCatalog = [];
 let regionsCatalog = [];
 let scopeListenerAttached = false;
 let scopeCatalogsPromise = null;
+let usersPage = 1;
 const pendingRoleChanges = new Map();
 
 function showSecureContent() {
@@ -368,6 +374,20 @@ async function init() {
         if (cityFilter) cityFilter.value = '';
         applyFilters();
     });
+
+    pageSizeEl?.addEventListener('change', () => {
+        usersPage = 1;
+        applyFilters({ resetPage: false });
+    });
+    pagePrevBtn?.addEventListener('click', () => {
+        if (usersPage <= 1) return;
+        usersPage -= 1;
+        applyFilters({ resetPage: false });
+    });
+    pageNextBtn?.addEventListener('click', () => {
+        usersPage += 1;
+        applyFilters({ resetPage: false });
+    });
 }
 
 async function loadChurches() {
@@ -642,7 +662,7 @@ function renderSummaryCards() {
     }).join('');
 }
 
-function applyFilters() {
+function applyFilters(options = {}) {
     const query = normalizeSearchText(searchInput?.value || '');
     const roleValue = roleFilter?.value || '';
     const statusValue = statusFilter?.value || '';
@@ -651,6 +671,7 @@ function applyFilters() {
     const scopeValue = scopeFilter?.value || '';
     const queryTokens = query ? query.split(/\s+/).filter(Boolean) : [];
 
+    if (options.resetPage !== false) usersPage = 1;
     renderSummaryCards();
 
     const filtered = (allUsers || []).filter((user) => {
@@ -845,14 +866,32 @@ function renderTable(users) {
     if (users.length === 0) {
         if (emptyEl) emptyEl.classList.remove('hidden');
         if (tableEl) tableEl.classList.add('hidden');
+        if (paginationEl) {
+            paginationEl.classList.add('hidden');
+            paginationEl.classList.remove('flex');
+        }
         return;
     }
 
     if (tableEl) tableEl.classList.remove('hidden');
     if (emptyEl) emptyEl.classList.add('hidden');
+    const pageSize = Math.max(1, Number(pageSizeEl?.value || 10));
+    const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+    usersPage = Math.min(Math.max(1, usersPage), totalPages);
+    const pageStart = (usersPage - 1) * pageSize;
+    const pageEnd = Math.min(pageStart + pageSize, users.length);
+    const visibleUsers = users.slice(pageStart, pageEnd);
+
+    if (paginationEl) {
+        paginationEl.classList.remove('hidden');
+        paginationEl.classList.add('flex');
+    }
+    if (pageInfoEl) pageInfoEl.textContent = `Mostrando ${pageStart + 1}-${pageEnd} de ${users.length}`;
+    if (pagePrevBtn) pagePrevBtn.disabled = usersPage <= 1;
+    if (pageNextBtn) pageNextBtn.disabled = usersPage >= totalPages;
 
     if (tbody) {
-        tbody.innerHTML = users.map(u => {
+        tbody.innerHTML = visibleUsers.map(u => {
             const fullName = u.full_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Sin nombre';
             const safeFullName = escapeHtml(fullName);
             const safeEmail = escapeHtml(u.email || '');
@@ -909,7 +948,7 @@ tbody?.addEventListener('change', async (event) => {
         };
         pending.campusMissionarySlug = target.value;
         pendingRoleChanges.set(userId, pending);
-        applyFilters();
+        applyFilters({ resetPage: false });
         return;
     }
 
@@ -922,7 +961,7 @@ tbody?.addEventListener('change', async (event) => {
             campusMissionarySlug: role === 'campus_missionary' ? (user.campus_missionary_slug || '') : null,
         });
     }
-    applyFilters();
+    applyFilters({ resetPage: false });
 });
 
 tbody?.addEventListener('click', async (event) => {
@@ -999,7 +1038,7 @@ tbody?.addEventListener('click', async (event) => {
                     : null;
             }
             pendingRoleChanges.delete(userId);
-            applyFilters();
+            applyFilters({ resetPage: false });
         } catch (err) {
             console.error(err);
             target.textContent = originalText;
@@ -1013,7 +1052,7 @@ tbody?.addEventListener('click', async (event) => {
         const userId = target.dataset.userId;
         if (!userId) return;
         pendingRoleChanges.delete(userId);
-        applyFilters();
+        applyFilters({ resetPage: false });
         return;
     }
 
