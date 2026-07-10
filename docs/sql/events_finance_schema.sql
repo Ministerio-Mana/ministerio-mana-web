@@ -242,6 +242,8 @@ create index if not exists idx_event_ticket_types_event
   on public.event_ticket_types(event_id, is_active, sort_order);
 create index if not exists idx_event_payment_options_event
   on public.event_payment_options(event_id, is_active, currency);
+create unique index if not exists idx_event_payment_options_unique
+  on public.event_payment_options(event_id, kind, provider, currency);
 create index if not exists idx_event_registrations_event_status
   on public.event_registrations(event_id, status, created_at desc);
 create index if not exists idx_event_registrations_contact_email

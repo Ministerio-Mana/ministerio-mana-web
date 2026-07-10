@@ -1,21 +1,16 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
 import {
-  ensureUserProfile,
-  listUserMemberships,
-  resolveEffectivePortalRole,
-  resolveEffectiveChurchId,
-} from '@lib/portalAuth';
+  canActorManageEvent,
+  getEventAccessContext,
+  isChurchInCountry,
+  isChurchInRegions,
+} from '@lib/eventAccess';
 import {
   canManageEventScope,
-  getRoleCapabilities,
-  getRoleScope,
-  isNationalScopedRole,
-  isRegionalScopedRole,
 } from '@lib/portalRbac';
 import { sanitizePlainText } from '@lib/validation';
+import { enforceRateLimit } from '@lib/rateLimit';
 
 const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
 const CUMBRE_EVENT = {
@@ -38,24 +33,9 @@ const EVENT_STATUSES = new Set(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 const EVENT_VISIBILITIES = new Set(['PUBLIC', 'UNLISTED', 'PRIVATE']);
 const EVENT_REGISTRATION_MODES = new Set(['NONE', 'EXTERNAL', 'INTERNAL']);
 const EVENT_CURRENCIES = new Set(['COP', 'USD', 'EUR']);
+const EVENT_ATTENDANCE_MODES = new Set(['IN_PERSON', 'ONLINE', 'HYBRID']);
+const EVENT_PRICING_MODELS = new Set(['FREE', 'PAID', 'DONATION']);
 const MAX_EVENT_REQUEST_CHARS = 12_000;
-
-type EventActorContext = {
-  ok: boolean;
-  status: number;
-  error: string;
-  role: string;
-  scope: string;
-  userId: string | null;
-  isAdmin: boolean;
-  isPasswordSession: boolean;
-  country: string | null;
-  churchId: string | null;
-  isNational: boolean;
-  isRegional: boolean;
-  regionIds: string[];
-  capabilities: ReturnType<typeof getRoleCapabilities>;
-};
 
 async function ensureCumbreEvent(userId?: string | null) {
   if (!supabaseAdmin) return;
@@ -104,6 +84,9 @@ const EVENT_FIELDS = [
   'timezone',
   'price',
   'currency',
+  'attendance_mode',
+  'pricing_model',
+  'registration_requires_approval',
 ];
 
 const PLATFORM_EVENT_FIELDS = new Set([
@@ -145,6 +128,10 @@ function sanitizeEventPayload(body: Record<string, any>) {
       }
       return;
     }
+    if (field === 'registration_requires_approval') {
+      payload[field] = value === true || ['true', '1', 'on', 'yes'].includes(String(value).toLowerCase());
+      return;
+    }
     if (field === 'slug') {
       const slug = String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 180);
       if (slug) payload.slug = slug;
@@ -164,6 +151,8 @@ function sanitizeEventPayload(body: Record<string, any>) {
   if (payload.visibility) payload.visibility = String(payload.visibility).toUpperCase();
   if (payload.registration_mode) payload.registration_mode = String(payload.registration_mode).toUpperCase();
   if (payload.currency) payload.currency = String(payload.currency).toUpperCase();
+  if (payload.attendance_mode) payload.attendance_mode = String(payload.attendance_mode).toUpperCase();
+  if (payload.pricing_model) payload.pricing_model = String(payload.pricing_model).toUpperCase();
   return payload;
 }
 
@@ -192,6 +181,27 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   if (payload.currency && !EVENT_CURRENCIES.has(String(payload.currency))) {
     return 'La moneda del evento no es válida.';
   }
+  if (payload.attendance_mode && !EVENT_ATTENDANCE_MODES.has(String(payload.attendance_mode))) {
+    return 'La modalidad del evento no es válida.';
+  }
+  if (payload.pricing_model && !EVENT_PRICING_MODELS.has(String(payload.pricing_model))) {
+    return 'El modelo de precio no es válido.';
+  }
+  if (payload.pricing_model === 'FREE' && Number(payload.price || 0) > 0) {
+    return 'Un evento gratuito debe tener precio cero.';
+  }
+  if (payload.pricing_model === 'PAID' && payload.price !== undefined && Number(payload.price || 0) <= 0) {
+    return 'Un evento con precio fijo debe tener un valor mayor que cero.';
+  }
+  return null;
+}
+
+function validateResultingPricing(pricingModel: unknown, price: unknown): string | null {
+  const model = String(pricingModel || 'FREE').toUpperCase();
+  const amount = Number(price || 0);
+  if (!Number.isFinite(amount) || amount < 0) return 'El precio del evento no es válido.';
+  if (model === 'FREE' && amount > 0) return 'Un evento gratuito debe tener precio cero.';
+  if (model === 'PAID' && amount <= 0) return 'Un evento con precio fijo debe tener un valor mayor que cero.';
   return null;
 }
 
@@ -240,184 +250,10 @@ function isUuid(value: string | null | undefined): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-async function isChurchInCountry(churchId: string, country: string | null): Promise<boolean> {
-  if (!supabaseAdmin || !churchId || !country) return false;
-  const { data: church } = await supabaseAdmin
-    .from('churches')
-    .select('id, country')
-    .eq('id', churchId)
-    .maybeSingle();
-  return Boolean(church?.id && church.country === country);
-}
-
-async function resolveRegionalScope(userId: string, profileRegionId: string | null | undefined): Promise<string[]> {
-  const fromProfile = profileRegionId ? [profileRegionId] : [];
-  if (!supabaseAdmin) return fromProfile;
-
-  const { data, error } = await supabaseAdmin
-    .from('region_leadership_assignments')
-    .select('region_id, role, status')
-    .eq('user_id', userId)
-    .eq('status', 'active');
-
-  if (error) {
-    if (error.code === '42P01' || error.code === '42703') {
-      return fromProfile;
-    }
-    console.error('[portal.events] regional assignments error', error);
-    return fromProfile;
-  }
-
-  const fromAssignments = (data || [])
-    .map((row: any) => String(row?.region_id || '').trim())
-    .filter(Boolean);
-
-  return Array.from(new Set([...fromProfile, ...fromAssignments]));
-}
-
-async function isChurchInRegions(churchId: string, regionIds: string[], fallbackCountry?: string | null): Promise<boolean> {
-  if (!supabaseAdmin || !churchId || !regionIds.length) return false;
-
-  const initial = await supabaseAdmin
-    .from('churches')
-    .select('id, region_id, country')
-    .eq('id', churchId)
-    .maybeSingle();
-  let church: any = initial.data;
-  let error = initial.error;
-
-  if (error?.code === '42703') {
-    const fallback = await supabaseAdmin
-      .from('churches')
-      .select('id, country')
-      .eq('id', churchId)
-      .maybeSingle();
-    church = fallback.data;
-    error = fallback.error;
-  }
-
-  if (error || !church?.id) return false;
-  if ((church as any).region_id) {
-    return regionIds.includes((church as any).region_id);
-  }
-  if (fallbackCountry) {
-    return church.country === fallbackCountry;
-  }
-  return false;
-}
-
-async function getEventActorContext(request: Request): Promise<EventActorContext> {
-  const user = await getUserFromRequest(request);
-  if (!user?.email) {
-    const passwordSession = readPasswordSession(request);
-    if (!passwordSession?.email) {
-      return {
-        ok: false,
-        status: 401,
-        error: 'Unauthorized',
-        role: 'user',
-        scope: 'self',
-        userId: null,
-        isAdmin: false,
-        isPasswordSession: false,
-        country: null,
-        churchId: null,
-        isNational: false,
-        isRegional: false,
-        regionIds: [],
-        capabilities: getRoleCapabilities('user'),
-      };
-    }
-
-    return {
-      ok: true,
-      status: 200,
-      error: '',
-      role: 'superadmin',
-      scope: 'global',
-      userId: null,
-      isAdmin: true,
-      isPasswordSession: true,
-      country: null,
-      churchId: null,
-      isNational: false,
-      isRegional: false,
-      regionIds: [],
-      capabilities: getRoleCapabilities('superadmin'),
-    };
-  }
-
-  const profile = await ensureUserProfile(user);
-  if (!profile) {
-    return {
-      ok: false,
-      status: 403,
-      error: 'Profile not found',
-      role: 'user',
-      scope: 'self',
-      userId: user.id,
-      isAdmin: false,
-      isPasswordSession: false,
-      country: null,
-      churchId: null,
-      isNational: false,
-      isRegional: false,
-      regionIds: [],
-      capabilities: getRoleCapabilities('user'),
-    };
-  }
-
-  const memberships = await listUserMemberships(user.id);
-  const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
-  const effectiveChurchId = resolveEffectiveChurchId(
-    profile.church_id || profile.portal_church_id || null,
-    memberships,
-  );
-  const isRegional = isRegionalScopedRole(effectiveRole);
-  const isNational = isNationalScopedRole(effectiveRole);
-  const regionIds = isRegional ? await resolveRegionalScope(user.id, profile.region_id || null) : [];
-
-  if (isRegional && !regionIds.length) {
-    return {
-      ok: false,
-      status: 403,
-      error: 'Sin región asignada',
-      role: effectiveRole,
-      scope: getRoleScope(effectiveRole),
-      userId: user.id,
-      isAdmin: false,
-      isPasswordSession: false,
-      country: profile.country || null,
-      churchId: effectiveChurchId,
-      isNational,
-      isRegional,
-      regionIds: [],
-      capabilities: getRoleCapabilities(effectiveRole),
-    };
-  }
-
-  return {
-    ok: true,
-    status: 200,
-    error: '',
-    role: effectiveRole,
-    scope: getRoleScope(effectiveRole),
-    userId: user.id,
-    isAdmin: effectiveRole === 'admin' || effectiveRole === 'superadmin',
-    isPasswordSession: false,
-    country: profile.country || null,
-    churchId: effectiveChurchId,
-    isNational,
-    isRegional,
-    regionIds,
-    capabilities: getRoleCapabilities(effectiveRole),
-  };
-}
-
 export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
-  const ctx = await getEventActorContext(request);
+  const ctx = await getEventAccessContext(request);
   if (!ctx.ok) {
     return new Response(JSON.stringify({ ok: false, error: ctx.error }), { status: ctx.status });
   }
@@ -427,6 +263,7 @@ export const GET: APIRoute = async ({ request }) => {
     || ctx.capabilities.can_manage_regional_events
     || ctx.capabilities.can_manage_national_events
     || ctx.capabilities.can_manage_global_events
+    || ctx.capabilities.can_view_event_finances
   );
 
   if (!canAccessEventManagement) {
@@ -447,9 +284,9 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     const platformReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'visibility')));
-    return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady }), { status: 200 });
+    const financeReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'pricing_model')));
+    return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady, finance_ready: financeReady }), { status: 200 });
   }
-
   await ensureCumbreEvent(ctx.userId);
 
   let eventsQuery = supabaseAdmin
@@ -457,7 +294,8 @@ export const GET: APIRoute = async ({ request }) => {
     .select('*')
     .order('start_date', { ascending: true });
 
-  if (!ctx.isAdmin) {
+  const canViewAllEventFinances = ctx.capabilities.can_view_event_finances && ctx.scope === 'global';
+  if (!ctx.isAdmin && !canViewAllEventFinances) {
     const buildOrParts = async (preferRegionalColumn: boolean) => {
       const orParts = ['scope.eq.GLOBAL'];
 
@@ -541,18 +379,22 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   const platformReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'visibility')));
-  return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady }), { status: 200 });
+  const financeReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'pricing_model')));
+  return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady, finance_ready: financeReady }), { status: 200 });
 };
 
 export const POST: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
-  const ctx = await getEventActorContext(request);
+  const ctx = await getEventAccessContext(request);
   if (!ctx.ok) {
     return new Response(JSON.stringify({ ok: false, error: ctx.error }), { status: ctx.status });
   }
   if (ctx.isPasswordSession) {
     return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), { status: 403 });
+  }
+  if (!ctx.userId || !(await enforceRateLimit(`portal-events-write:${ctx.userId}`, 60, 30, { failOpen: false }))) {
+    return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes. Intenta más tarde.' }), { status: 429 });
   }
 
   const rawBody = await request.text();
@@ -566,6 +408,8 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Solicitud inválida.' }), { status: 400 });
   }
   const payload = sanitizeEventPayload(body);
+  if (!payload.pricing_model) payload.pricing_model = Number(payload.price || 0) > 0 ? 'PAID' : 'FREE';
+  if (payload.pricing_model === 'FREE') payload.price = 0;
   const requestedChurchId = String(body?.church_id || body?.churchId || '').trim() || null;
   const requestedRegionIdRaw = String(body?.region_id || body?.regionId || '').trim() || null;
   const requestedRegionId = isUuid(requestedRegionIdRaw) ? requestedRegionIdRaw : null;
@@ -577,6 +421,10 @@ export const POST: APIRoute = async ({ request }) => {
   const payloadError = validateEventPayload(payload);
   if (payloadError) {
     return new Response(JSON.stringify({ ok: false, error: payloadError }), { status: 400 });
+  }
+  const pricingError = validateResultingPricing(payload.pricing_model, payload.price);
+  if (pricingError) {
+    return new Response(JSON.stringify({ ok: false, error: pricingError }), { status: 400 });
   }
   const dateError = validateEventDates(payload.start_date, payload.end_date);
   if (dateError) {
@@ -740,12 +588,15 @@ export const POST: APIRoute = async ({ request }) => {
 export const PATCH: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
 
-  const ctx = await getEventActorContext(request);
+  const ctx = await getEventAccessContext(request);
   if (!ctx.ok) {
     return new Response(JSON.stringify({ ok: false, error: ctx.error }), { status: ctx.status });
   }
   if (ctx.isPasswordSession) {
     return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), { status: 403 });
+  }
+  if (!ctx.userId || !(await enforceRateLimit(`portal-events-write:${ctx.userId}`, 60, 30, { failOpen: false }))) {
+    return new Response(JSON.stringify({ ok: false, error: 'Demasiadas solicitudes. Intenta más tarde.' }), { status: 429 });
   }
 
   const rawBody = await request.text();
@@ -791,14 +642,14 @@ export const PATCH: APIRoute = async ({ request }) => {
 
   let { data: eventRow, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id, created_by, scope, church_id, country, region_id, start_date, end_date')
+    .select('id, created_by, scope, church_id, country, region_id, start_date, end_date, price, pricing_model')
     .eq('id', eventId)
     .single();
 
   if (eventError && eventError.code === '42703' && /region_id/i.test(eventError.message || '')) {
     const fallback = await supabaseAdmin
       .from('events')
-      .select('id, created_by, scope, church_id, country, start_date, end_date')
+      .select('id, created_by, scope, church_id, country, start_date, end_date, price, pricing_model')
       .eq('id', eventId)
       .single();
     eventRow = fallback.data ? { ...fallback.data, region_id: null } : null;
@@ -820,31 +671,8 @@ export const PATCH: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para editar eventos.' }), { status: 403 });
   }
 
-  if (!ctx.isAdmin) {
-    let scopedAccess = eventRow.created_by === ctx.userId;
-
-    if (!scopedAccess && eventRow.scope === 'LOCAL') {
-      if (ctx.churchId && eventRow.church_id === ctx.churchId) scopedAccess = true;
-      if (!scopedAccess && ctx.isRegional && eventRow.church_id) {
-        scopedAccess = await isChurchInRegions(eventRow.church_id, ctx.regionIds, ctx.country);
-      }
-      if (!scopedAccess && ctx.isNational && eventRow.church_id) {
-        scopedAccess = await isChurchInCountry(eventRow.church_id, ctx.country);
-      }
-    }
-
-    if (!scopedAccess && (eventRow.scope === 'NATIONAL' || eventRow.scope === 'REGIONAL')) {
-      if (ctx.isRegional && eventRow.scope === 'REGIONAL' && ctx.regionIds.length && eventRow.region_id && ctx.regionIds.includes(eventRow.region_id)) {
-        scopedAccess = true;
-      }
-      if (!scopedAccess && ctx.isNational && ctx.country && eventRow.country === ctx.country) {
-        scopedAccess = true;
-      }
-    }
-
-    if (!scopedAccess) {
-      return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para editar este evento.' }), { status: 403 });
-    }
+  if (!(await canActorManageEvent(ctx, eventRow))) {
+    return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para editar este evento.' }), { status: 403 });
   }
 
   if (payload.scope && !canManageEventScope(ctx.role, payload.scope)) {
@@ -856,6 +684,12 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
 
   const resultingScope = String(payload.scope || eventRow.scope || '').toUpperCase();
+  const resultingPricingModel = String(payload.pricing_model || eventRow.pricing_model || 'FREE').toUpperCase();
+  if (resultingPricingModel === 'FREE') payload.price = 0;
+  const pricingError = validateResultingPricing(resultingPricingModel, payload.price === undefined ? eventRow.price : payload.price);
+  if (pricingError) {
+    return new Response(JSON.stringify({ ok: false, error: pricingError }), { status: 400 });
+  }
   const resultingStartDate = payload.start_date || eventRow.start_date;
   const resultingEndDate = payload.end_date === undefined ? eventRow.end_date : payload.end_date;
   const dateError = validateEventDates(resultingStartDate, resultingEndDate);

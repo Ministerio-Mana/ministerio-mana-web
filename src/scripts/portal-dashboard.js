@@ -174,6 +174,7 @@ const iglesiaTitle = document.getElementById('iglesia-title');
 const iglesiaSubtitle = document.getElementById('iglesia-subtitle');
 const eventOperationsControls = document.getElementById('event-operations-controls');
 const eventOperationsSelector = document.getElementById('event-operations-selector');
+const eventOperationsConfigure = document.getElementById('event-operations-configure');
 const eventOperationState = document.getElementById('event-operation-state');
 const eventOperationDate = document.getElementById('event-operation-date');
 const eventOperationScope = document.getElementById('event-operation-scope');
@@ -183,12 +184,14 @@ const eventClosedBanner = document.getElementById('event-closed-banner');
 const eventPublicPageLink = document.getElementById('event-public-page-link');
 const eventGenericDashboard = document.getElementById('event-generic-dashboard');
 const eventGenericPublicLink = document.getElementById('event-generic-public-link');
+const eventGenericConfigure = document.getElementById('event-generic-configure');
 const eventGenericHeading = document.getElementById('event-generic-heading');
 const eventGenericDescription = document.getElementById('event-generic-description');
 const eventGenericRegistration = document.getElementById('event-generic-registration');
 const eventGenericPrice = document.getElementById('event-generic-price');
 const eventGenericPayment = document.getElementById('event-generic-payment');
 const churchDashboardManagement = document.getElementById('church-dashboard-management');
+const eventPersonalDashboard = document.getElementById('church-dashboard-user');
 const eventPaymentApproved = document.getElementById('event-payment-approved');
 const eventPaymentPending = document.getElementById('event-payment-pending');
 const eventPaymentManual = document.getElementById('event-payment-manual');
@@ -740,6 +743,7 @@ let portalIsSuperadmin = false;
 let portalIsCountryPastor = false;
 let portalRole = 'user';
 let portalCanManageEvents = false;
+let portalCanViewEventOperations = false;
 let portalHasChurchAccess = false;
 let portalScope = 'church';
 let portalCanSelectChurch = false;
@@ -918,18 +922,28 @@ function renderOperationsEvent(event) {
   if (eventGenericPrice) eventGenericPrice.textContent = Number(event.price || 0) > 0 ? formatCurrency(event.price, event.currency || 'COP') : 'Gratuito';
   if (eventGenericPayment) eventGenericPayment.textContent = getOperationsPaymentLabel(event);
   if (eventGenericHeading) {
-    eventGenericHeading.textContent = isClosed ? 'Expediente del evento' : 'Configura inscripciones y recaudo';
+    eventGenericHeading.textContent = isClosed
+      ? 'Expediente del evento'
+      : portalCanManageEvents
+        ? 'Configura inscripciones y recaudo'
+        : 'Resumen financiero del evento';
   }
   if (eventGenericDescription) {
     eventGenericDescription.textContent = isClosed
       ? 'El evento terminó. Conserva aquí su configuración y, cuando se active la operación financiera genérica, sus registros, pagos, comprobantes y reportes.'
-      : 'Este evento ya tiene calendario y página pública. Define entradas, moneda y métodos de pago antes de abrir registros.';
+      : portalCanManageEvents
+        ? 'Este evento ya tiene calendario y página pública. Define entradas, moneda y métodos de pago antes de abrir registros.'
+        : 'Consulta la modalidad, el valor configurado y el estado operativo del evento.';
   }
 
-  if (portalCanManageEvents) {
-    eventGenericDashboard?.classList.toggle('hidden', isCumbre);
+  if (portalCanViewEventOperations) {
+    const showGenericDashboard = !isCumbre || !portalHasChurchAccess;
+    eventGenericDashboard?.classList.toggle('hidden', !showGenericDashboard);
+    eventPersonalDashboard?.classList.add('hidden');
     churchDashboardManagement?.classList.toggle('hidden', !isCumbre || !portalHasChurchAccess);
   }
+  eventOperationsConfigure?.classList.toggle('hidden', !portalCanManageEvents);
+  eventGenericConfigure?.classList.toggle('hidden', !portalCanManageEvents);
   if (churchSelector) {
     const showChurchSelector = isCumbre && portalHasChurchAccess && portalCanSelectChurch;
     churchSelector.classList.toggle('hidden', !showChurchSelector);
@@ -973,7 +987,7 @@ function populateOperationsEventSelector(events) {
 async function selectOperationsEvent(eventId, options = {}) {
   const selected = eventOperationsData.find((event) => event.id === eventId) || CUMBRE_FALLBACK_EVENT;
   renderOperationsEvent(selected);
-  if (options.persist !== false && portalCanManageEvents) {
+  if (options.persist !== false && portalCanViewEventOperations) {
     try {
       window.localStorage.setItem('mana.portal.operationsEventId', selected.id);
     } catch {
@@ -992,7 +1006,7 @@ async function selectOperationsEvent(eventId, options = {}) {
 }
 
 async function loadOperationsEvents(headers = {}) {
-  if (!portalCanManageEvents) {
+  if (!portalCanViewEventOperations) {
     eventOperationsControls?.classList.add('hidden');
     eventOperationsControls?.classList.remove('flex');
     renderOperationsEvent(CUMBRE_FALLBACK_EVENT);
@@ -1661,6 +1675,7 @@ async function loadDashboardData(authResult) {
       || portalPermissions.can_manage_global_events,
     );
     portalCanManageEvents = canManageEvents;
+    portalCanViewEventOperations = canManageEvents || Boolean(portalPermissions.can_view_event_finances);
     const canManageUsers = Boolean(portalPermissions.can_manage_users);
     const canAccessCampus = Boolean(portalPermissions.can_access_campus);
     const canAccessFinances = Boolean(portalPermissions.can_access_finances);

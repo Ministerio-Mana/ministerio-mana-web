@@ -38,6 +38,7 @@ import {
   updateCampusSubscriptionById,
 } from '@lib/campusSubscriptions';
 import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
+import { isEventPaymentReference, processEventProviderPayment } from '@lib/eventFinance';
 
 export const prerender = false;
 
@@ -131,6 +132,30 @@ async function processEvent(event: Stripe.Event): Promise<void> {
         customer_email: session.customer_details?.email ?? session.customer_email,
         payment_status: session.payment_status,
       });
+
+      const eventPaymentReference = session.metadata?.event_payment_reference;
+      if (isEventPaymentReference(eventPaymentReference)) {
+        await processEventProviderPayment({
+          provider: 'STRIPE',
+          reference: String(eventPaymentReference),
+          providerTxId: session.payment_intent ? String(session.payment_intent) : session.id,
+          amount: Number(session.amount_total || 0) / 100,
+          currency: String(session.currency || '').toUpperCase(),
+          status: session.payment_status === 'paid' ? 'APPROVED' : 'PENDING',
+          method: 'CARD',
+          expectedPaymentId: session.metadata?.event_payment_id || null,
+          requestId: event.id,
+          payload: {
+            event: event.type,
+            checkout_session_id: session.id,
+            payment_intent_id: session.payment_intent ? String(session.payment_intent) : null,
+            client_reference_id: session.client_reference_id,
+            payment_status: session.payment_status,
+            amount_total: session.amount_total,
+            currency: session.currency,
+          },
+        });
+      }
 
       const bookingId = session.metadata?.cumbre_booking_id;
       const isSubscription = session.mode === 'subscription' || Boolean(session.subscription);
@@ -566,6 +591,35 @@ async function processEvent(event: Stripe.Event): Promise<void> {
   }
   if (event.type.startsWith('payment_intent.') && event.data.object) {
     const intent = event.data.object as Stripe.PaymentIntent;
+    const eventPaymentReference = intent.metadata?.event_payment_reference;
+    if (isEventPaymentReference(eventPaymentReference)) {
+      const status = event.type === 'payment_intent.succeeded'
+        ? 'APPROVED'
+        : event.type === 'payment_intent.payment_failed'
+          ? 'FAILED'
+          : event.type === 'payment_intent.canceled'
+            ? 'VOIDED'
+            : 'PENDING';
+      await processEventProviderPayment({
+        provider: 'STRIPE',
+        reference: String(eventPaymentReference),
+        providerTxId: intent.id,
+        amount: Number(intent.amount_received || intent.amount || 0) / 100,
+        currency: String(intent.currency || '').toUpperCase(),
+        status,
+        method: Array.isArray(intent.payment_method_types) ? intent.payment_method_types[0]?.toUpperCase() : null,
+        expectedPaymentId: intent.metadata?.event_payment_id || null,
+        requestId: event.id,
+        payload: {
+          event: event.type,
+          payment_intent_id: intent.id,
+          status: intent.status,
+          amount: intent.amount,
+          amount_received: intent.amount_received,
+          currency: intent.currency,
+        },
+      });
+    }
     if (intent.metadata?.checkout_session_id) {
       const session = await stripe.checkout.sessions.retrieve(intent.metadata.checkout_session_id).catch(() => null);
       if (session) {

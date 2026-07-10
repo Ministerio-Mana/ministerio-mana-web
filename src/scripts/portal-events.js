@@ -33,6 +33,11 @@ const eventChurchWrapper = document.getElementById('event-scope-church-wrapper')
 const eventChurchSelect = document.getElementById('event-church-select');
 const eventPlatformPending = document.getElementById('event-platform-pending');
 const eventPlatformSettings = document.getElementById('event-platform-settings');
+const eventFinancePending = document.getElementById('event-finance-pending');
+const eventFinanceSettings = document.getElementById('event-finance-settings');
+const eventPricingModel = document.getElementById('event-pricing-model');
+const eventPriceInput = document.getElementById('event-price');
+const eventOnlineProvider = document.getElementById('event-online-provider');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
 const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
 const previewImage = document.getElementById('event-preview-image');
@@ -71,7 +76,6 @@ let authHeaders = {};
 let eventsCache = [];
 let churchesCatalog = [];
 let regionsCatalog = [];
-let currentUserId = '';
 let currentRole = 'user';
 let currentCountry = '';
 let currentChurchId = '';
@@ -82,9 +86,11 @@ let currentPermissions = {
     can_manage_regional_events: false,
     can_manage_national_events: false,
     can_manage_global_events: false,
+    can_view_event_finances: false,
 };
 let eventPermissionValidated = false;
 let eventPlatformReady = false;
+let eventFinanceReady = false;
 
 const churchesById = new Map();
 const regionsById = new Map();
@@ -153,6 +159,59 @@ function syncPlatformFields() {
         field.disabled = !eventPlatformReady;
     });
     syncRegistrationFields();
+}
+
+function syncFinanceFields() {
+    eventFinancePending?.classList.toggle('hidden', eventFinanceReady);
+    eventFinanceSettings?.classList.toggle('hidden', !eventFinanceReady);
+    eventForm?.querySelectorAll('[data-finance-field]').forEach((field) => {
+        field.disabled = !eventFinanceReady;
+    });
+    if (!eventFinanceReady || !eventPriceInput) return;
+    const isFree = eventPricingModel?.value === 'FREE';
+    if (isFree) eventPriceInput.value = '0';
+    eventPriceInput.readOnly = isFree;
+    eventPriceInput.classList.toggle('bg-slate-100', isFree);
+    if (eventOnlineProvider) {
+        if (isFree) eventOnlineProvider.value = 'NONE';
+        eventOnlineProvider.disabled = isFree;
+    }
+}
+
+async function loadEventPaymentOption(eventData) {
+    if (!eventOnlineProvider) return;
+    eventOnlineProvider.value = 'NONE';
+    if (!eventFinanceReady || !eventData?.id) return;
+    eventOnlineProvider.disabled = true;
+    try {
+        const params = new URLSearchParams({ event_id: eventData.id });
+        const { res, data } = await fetchJsonWithTimeout(
+            `/api/portal/event-payments/options?${params}`,
+            { headers: authHeaders, credentials: 'include' },
+            REQUEST_TIMEOUT_MS,
+            'La carga de métodos de pago',
+        );
+        if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo cargar el método de pago.');
+        const activeOnline = (Array.isArray(data.options) ? data.options : []).find(
+            (option) => option?.kind === 'ONLINE' && option?.is_active,
+        );
+        eventOnlineProvider.value = activeOnline?.provider || 'NONE';
+    } catch (error) {
+        showFormError(error?.message || 'No se pudo cargar el método de pago.');
+    } finally {
+        if (eventPricingModel?.value === 'FREE') eventOnlineProvider.value = 'NONE';
+        eventOnlineProvider.disabled = !eventFinanceReady || eventPricingModel?.value === 'FREE';
+    }
+}
+
+async function saveEventPaymentOption(eventId, provider) {
+    const { res, data } = await fetchJsonWithTimeout('/api/portal/event-payments/options', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        credentials: 'include',
+        body: JSON.stringify({ event_id: eventId, provider }),
+    }, REQUEST_TIMEOUT_MS, 'La configuración del método de pago');
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el método de pago.');
 }
 
 function normalizeCountry(value) {
@@ -232,7 +291,12 @@ function hasAnyEventManagementPermission() {
     return hasPermission('can_manage_local_events')
         || hasPermission('can_manage_regional_events')
         || hasPermission('can_manage_national_events')
-        || hasPermission('can_manage_global_events');
+        || hasPermission('can_manage_global_events')
+        || hasPermission('can_view_event_finances');
+}
+
+function canEditAnyEvent() {
+    return getAllowedScopes().length > 0;
 }
 
 function getAllowedScopes() {
@@ -380,15 +444,13 @@ function canEditEvent(event) {
     if (!event || !hasAnyEventManagementPermission()) return false;
     const scope = getEventScope(event);
 
-    if (currentUserId && event.created_by === currentUserId) return true;
     if (scope === 'GLOBAL') return hasPermission('can_manage_global_events');
     if (scope === 'NATIONAL') return hasPermission('can_manage_national_events') && (isAdminRole() || sameCountry(event.country, currentCountry));
     if (scope === 'REGIONAL') {
-        return hasPermission('can_manage_regional_events') && (
-            isAdminRole()
-            || (event.region_id && currentAllowedRegionIds.includes(event.region_id))
-            || sameCountry(event.country, currentCountry)
-        );
+        if (!hasPermission('can_manage_regional_events')) return false;
+        if (isAdminRole()) return true;
+        if (isRegionalRole()) return Boolean(event.region_id && currentAllowedRegionIds.includes(event.region_id));
+        return isNationalRole() && sameCountry(event.country, currentCountry);
     }
     if (scope !== 'LOCAL' || !hasPermission('can_manage_local_events')) return false;
     if (isAdminRole()) return true;
@@ -398,8 +460,12 @@ function canEditEvent(event) {
     if (currentChurchId && churchId === currentChurchId) return true;
     const church = churchesById.get(churchId);
     if (!church) return false;
-    if (isRegionalRole() && church.region_id && currentAllowedRegionIds.includes(church.region_id)) return true;
-    return (isRegionalRole() || isNationalRole()) && sameCountry(church.country, currentCountry);
+    if (isRegionalRole()) {
+        return church.region_id
+            ? currentAllowedRegionIds.includes(church.region_id)
+            : sameCountry(church.country, currentCountry);
+    }
+    return isNationalRole() && sameCountry(church.country, currentCountry);
 }
 
 function getLifecycle(event, now = Date.now()) {
@@ -570,12 +636,12 @@ async function loadProfile(auth) {
     if (!ok || !data?.ok) throw new Error(data?.error || 'No se pudo validar el perfil.');
     const profile = data.profile || {};
     const scopeContext = data.scope_context || {};
-    currentUserId = profile.user_id || '';
     currentRole = profile.effective_role || profile.role || 'user';
     currentCountry = scopeContext.allowed_country || profile.country || '';
     currentChurchId = scopeContext.allowed_church_id || profile.church_id || profile.portal_church_id || '';
     currentAllowedRegionIds = Array.isArray(scopeContext.allowed_region_ids) ? scopeContext.allowed_region_ids.filter(Boolean) : [];
     currentPermissions = { ...currentPermissions, ...(data.permissions || {}) };
+    btnNewEvent?.classList.toggle('hidden', !canEditAnyEvent());
 }
 
 async function loadChurchesCatalog() {
@@ -611,7 +677,9 @@ async function loadEvents(shouldRender = true) {
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudieron cargar eventos');
         eventsCache = Array.isArray(data.events) ? data.events : [];
         eventPlatformReady = data.platform_ready === true;
+        eventFinanceReady = data.finance_ready === true;
         syncPlatformFields();
+        syncFinanceFields();
         if (shouldRender) renderEvents();
     } catch (error) {
         showEventsError(error);
@@ -701,11 +769,15 @@ function openEventModal(mode, eventData = null) {
         contact_email: eventData?.contact_email || '',
         price: eventData?.price ?? 0,
         currency: String(eventData?.currency || 'COP').toUpperCase(),
+        attendance_mode: String(eventData?.attendance_mode || 'IN_PERSON').toUpperCase(),
+        pricing_model: String(eventData?.pricing_model || (Number(eventData?.price || 0) > 0 ? 'PAID' : 'FREE')).toUpperCase(),
     };
     Object.entries(fieldValues).forEach(([name, value]) => {
         const field = eventForm.querySelector(`[name="${name}"]`);
         if (field) field.value = value;
     });
+    const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
+    if (approvalField) approvalField.checked = Boolean(eventData?.registration_requires_approval);
 
     const presetScope = String(eventData?.scope || getAllowedScopes()[0] || 'LOCAL').toUpperCase();
     if (eventScopeSelect) eventScopeSelect.value = presetScope;
@@ -719,11 +791,13 @@ function openEventModal(mode, eventData = null) {
     }
     syncScopeInputs({ preserveSelections: true });
     syncPlatformFields();
+    syncFinanceFields();
     updateEventPreview();
 
     eventModal.classList.remove('hidden');
     eventModal.classList.add('flex');
     document.body.style.overflow = 'hidden';
+    void loadEventPaymentOption(eventData);
     window.setTimeout(() => eventForm.querySelector('[name="title"]')?.focus(), 0);
 }
 
@@ -797,6 +871,15 @@ eventRegionSelect?.addEventListener('change', () => {
     updateEventPreview();
 });
 eventRegistrationMode?.addEventListener('change', syncRegistrationFields);
+eventPricingModel?.addEventListener('change', () => {
+    syncFinanceFields();
+    updateEventPreview();
+});
+eventForm?.querySelector('[name="currency"]')?.addEventListener('change', () => {
+    if (eventOnlineProvider?.value === 'WOMPI' && eventForm.querySelector('[name="currency"]')?.value !== 'COP') {
+        eventOnlineProvider.value = 'NONE';
+    }
+});
 eventForm?.addEventListener('input', updateEventPreview);
 eventForm?.addEventListener('change', updateEventPreview);
 
@@ -811,6 +894,10 @@ eventForm?.addEventListener('submit', async (event) => {
     try {
         const formData = new FormData(eventForm);
         const payload = Object.fromEntries(formData.entries());
+        const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
+        if (eventFinanceReady && approvalField) {
+            payload.registration_requires_approval = approvalField.checked;
+        }
         const eventId = String(payload.id || '');
         delete payload.id;
         Object.keys(payload).forEach((key) => {
@@ -832,10 +919,22 @@ eventForm?.addEventListener('submit', async (event) => {
         }, REQUEST_TIMEOUT_MS, 'El guardado del evento');
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el evento.');
 
+        const savedEvent = data.event;
         if (eventId) {
-            eventsCache = eventsCache.map((item) => item.id === eventId ? data.event : item);
+            eventsCache = eventsCache.map((item) => item.id === eventId ? savedEvent : item);
         } else {
-            eventsCache = [...eventsCache, data.event];
+            eventsCache = [...eventsCache, savedEvent];
+        }
+        if (eventFinanceReady && savedEvent?.id && eventOnlineProvider) {
+            try {
+                await saveEventPaymentOption(savedEvent.id, eventOnlineProvider.value || 'NONE');
+            } catch (paymentError) {
+                if (eventIdInput) eventIdInput.value = savedEvent.id;
+                if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';
+                renderEvents();
+                showFormError(`El evento quedó guardado, pero ${paymentError?.message || 'no se pudo configurar el cobro.'}`);
+                return;
+            }
         }
         closeEventModal();
         renderEvents();

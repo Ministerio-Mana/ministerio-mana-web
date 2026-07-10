@@ -11,6 +11,9 @@ export type PortalCapabilities = {
   can_manage_national_events: boolean;
   can_manage_global_events: boolean;
   can_register_people: boolean;
+  can_view_event_finances: boolean;
+  can_manage_event_finances: boolean;
+  can_approve_event_payments: boolean;
   can_access_finances: boolean;
   can_access_campus: boolean;
   can_access_prayers: boolean;
@@ -40,6 +43,9 @@ const BASE_USER_CAPABILITIES: PortalCapabilities = {
   can_manage_national_events: false,
   can_manage_global_events: false,
   can_register_people: false,
+  can_view_event_finances: false,
+  can_manage_event_finances: false,
+  can_approve_event_payments: false,
   can_access_finances: false,
   can_access_campus: false,
   can_access_prayers: false,
@@ -59,6 +65,8 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_create_users: true,
     can_manage_local_events: true,
     can_register_people: true,
+    can_view_event_finances: true,
+    can_manage_event_finances: true,
   },
   regional_collaborator: {
     ...BASE_USER_CAPABILITIES,
@@ -73,6 +81,8 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_manage_local_events: true,
     can_manage_regional_events: true,
     can_register_people: true,
+    can_view_event_finances: true,
+    can_manage_event_finances: true,
   },
   national_collaborator: {
     ...BASE_USER_CAPABILITIES,
@@ -88,6 +98,8 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_manage_regional_events: true,
     can_manage_national_events: true,
     can_register_people: true,
+    can_view_event_finances: true,
+    can_manage_event_finances: true,
   },
   campus_missionary: {
     ...BASE_USER_CAPABILITIES,
@@ -95,6 +107,9 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
   },
   finance: {
     ...BASE_USER_CAPABILITIES,
+    can_view_event_finances: true,
+    can_manage_event_finances: true,
+    can_approve_event_payments: true,
     can_access_finances: true,
     can_access_campus: true,
   },
@@ -116,6 +131,9 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_manage_national_events: true,
     can_manage_global_events: true,
     can_register_people: true,
+    can_view_event_finances: true,
+    can_manage_event_finances: true,
+    can_approve_event_payments: true,
     can_access_finances: true,
     can_access_campus: true,
     can_access_prayers: true,
@@ -128,6 +146,9 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
     can_manage_national_events: true,
     can_manage_global_events: true,
     can_register_people: true,
+    can_view_event_finances: true,
+    can_manage_event_finances: true,
+    can_approve_event_payments: true,
     can_access_finances: true,
     can_access_campus: true,
     can_access_prayers: true,
@@ -208,6 +229,9 @@ export function mergePortalCapabilities(roles: Array<string | null | undefined>)
       can_manage_national_events: merged.can_manage_national_events || capabilities.can_manage_national_events,
       can_manage_global_events: merged.can_manage_global_events || capabilities.can_manage_global_events,
       can_register_people: merged.can_register_people || capabilities.can_register_people,
+      can_view_event_finances: merged.can_view_event_finances || capabilities.can_view_event_finances,
+      can_manage_event_finances: merged.can_manage_event_finances || capabilities.can_manage_event_finances,
+      can_approve_event_payments: merged.can_approve_event_payments || capabilities.can_approve_event_payments,
       can_access_finances: merged.can_access_finances || capabilities.can_access_finances,
       can_access_campus: merged.can_access_campus || capabilities.can_access_campus,
       can_access_prayers: merged.can_access_prayers || capabilities.can_access_prayers,

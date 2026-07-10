@@ -3,6 +3,7 @@ import { verifyWompiWebhook } from '@lib/wompi';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 import { markWompiEventProcessed, storeWompiEvent } from '@lib/wompiEventInbox';
+import { isEventPaymentReference, processEventProviderPayment } from '@lib/eventFinance';
 
 export const prerender = false;
 
@@ -35,7 +36,33 @@ export const POST: APIRoute = async ({ request }) => {
 
     await logPaymentEvent('wompi', eventName, reference, event);
 
-    const result = await processWompiDonationTransaction({ event, transaction });
+    const isGenericEventPayment = isEventPaymentReference(reference);
+    const eventResult = isGenericEventPayment
+      ? await processEventProviderPayment({
+          provider: 'WOMPI',
+          reference,
+          providerTxId: String(transaction?.id || ''),
+          amount: Number(transaction?.amount_in_cents || 0) / 100,
+          currency: String(transaction?.currency || 'COP'),
+          status: String(transaction?.status || 'PENDING'),
+          method: transaction?.payment_method_type ? String(transaction.payment_method_type) : null,
+          requestId: bodySha256 || null,
+          payload: {
+            event: eventName,
+            environment: event?.environment || null,
+            transaction_id: transaction?.id || null,
+            reference,
+            status: transaction?.status || null,
+            amount_in_cents: transaction?.amount_in_cents || null,
+            currency: transaction?.currency || null,
+            payment_method_type: transaction?.payment_method_type || null,
+            finalized_at: transaction?.finalized_at || null,
+          },
+        })
+      : { processed: false, outcome: 'IGNORED' as const };
+    const result = isGenericEventPayment
+      ? eventResult
+      : await processWompiDonationTransaction({ event, transaction });
     const processingStatus = result.outcome === 'PROCESSED'
       ? 'PROCESSED'
       : result.outcome === 'REJECTED'

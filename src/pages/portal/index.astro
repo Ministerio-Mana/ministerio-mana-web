@@ -418,7 +418,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         <option value="">Cargando eventos...</option>
                       </select>
                     </label>
-                    <a href="/portal/events" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
+                    <a id="event-operations-configure" href="/portal/events" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
                       <PortalIcon name="settings-2" size={17} />
                       Configurar
                     </a>
@@ -479,7 +479,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                     <h2 id="event-generic-heading" class="mt-2 text-2xl font-bold text-[#293C74]">Configura inscripciones y recaudo</h2>
                     <p id="event-generic-description" class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">Este evento ya tiene calendario y página pública. Define entradas, moneda y métodos de pago antes de abrir registros.</p>
                     <div class="mt-6 flex flex-wrap gap-2">
-                      <a href="/portal/events" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]"><PortalIcon name="settings-2" size={17} /> Configurar evento</a>
+                      <a id="event-generic-configure" href="/portal/events" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]"><PortalIcon name="settings-2" size={17} /> Configurar evento</a>
                       <a id="event-generic-public-link" href="/eventos" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-slate-300 px-4 py-2.5 text-sm font-bold text-[#293C74] hover:bg-slate-50"><PortalIcon name="external-link" size={17} /> Ver invitación</a>
                     </div>
                   </div>

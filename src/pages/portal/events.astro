@@ -218,19 +218,6 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-              <label class="event-field">Precio por persona
-                <input type="number" name="price" data-platform-field disabled min="0" max="1000000000" step="0.01" placeholder="0 para evento gratuito" />
-              </label>
-              <label class="event-field">Moneda
-                <select name="currency" data-platform-field disabled>
-                  <option value="COP">COP · Peso colombiano</option>
-                  <option value="USD">USD · Dólar estadounidense</option>
-                  <option value="EUR">EUR · Euro</option>
-                </select>
-              </label>
-            </div>
-
             <div id="event-registration-url-wrapper" class="hidden">
               <label class="event-field">Enlace de inscripción
                 <input type="text" name="registration_url" data-platform-field disabled maxlength="500" placeholder="https://..." />
@@ -248,6 +235,55 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <label class="event-field">Correo de contacto
               <input type="email" name="contact_email" data-platform-field disabled maxlength="254" placeholder="eventos@ministeriomana.org" />
+            </label>
+          </section>
+
+          <div id="event-finance-pending" class="hidden rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-sm font-bold text-slate-700">Operación financiera pendiente de activar</p>
+          </div>
+
+          <section id="event-finance-settings" class="hidden space-y-4 border-t border-slate-200 pt-5" aria-labelledby="event-finance-title">
+            <div>
+              <h3 id="event-finance-title" class="text-sm font-bold text-[#293C74]">Modalidad y cobro</h3>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Modalidad
+                <select name="attendance_mode" data-finance-field disabled>
+                  <option value="IN_PERSON">Presencial</option>
+                  <option value="ONLINE">Virtual</option>
+                  <option value="HYBRID">Híbrido</option>
+                </select>
+              </label>
+              <label class="event-field">Tipo de precio
+                <select id="event-pricing-model" name="pricing_model" data-finance-field disabled>
+                  <option value="FREE">Gratuito</option>
+                  <option value="PAID">Precio fijo</option>
+                  <option value="DONATION">Aporte voluntario</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Precio por persona
+                <input id="event-price" type="number" name="price" data-finance-field disabled min="0" max="1000000000" step="0.01" placeholder="0" />
+              </label>
+              <label class="event-field">Moneda
+                <select id="event-currency" name="currency" data-finance-field disabled>
+                  <option value="COP">COP · Peso colombiano</option>
+                  <option value="USD">USD · Dólar estadounidense</option>
+                  <option value="EUR">EUR · Euro</option>
+                </select>
+              </label>
+            </div>
+            <label class="event-field">Cobro en línea
+              <select id="event-online-provider" data-finance-field disabled>
+                <option value="NONE">Sin cobro en línea</option>
+                <option value="WOMPI">Wompi</option>
+                <option value="STRIPE">Stripe</option>
+              </select>
+            </label>
+            <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+              <input type="checkbox" name="registration_requires_approval" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+              Aprobar inscripciones antes de confirmarlas
             </label>
           </section>
 

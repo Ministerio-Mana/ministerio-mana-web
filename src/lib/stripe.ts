@@ -34,6 +34,9 @@ export interface StripeSessionParams {
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
+  clientReferenceId?: string;
+  idempotencyKey?: string;
+  allowPromotionCodes?: boolean;
   customerEmail?: string;
   customerId?: string;
 }
@@ -51,8 +54,10 @@ export async function createStripeDonationSession(params: StripeSessionParams): 
     mode: 'payment',
     payment_method_types: ['card'],
     currency: params.currency.toLowerCase(),
-    allow_promotion_codes: true,
+    allow_promotion_codes: params.allowPromotionCodes ?? true,
     metadata: params.metadata,
+    client_reference_id: params.clientReferenceId,
+    payment_intent_data: params.metadata ? { metadata: params.metadata } : undefined,
     ...customerParams,
     line_items: [
       {
@@ -68,7 +73,7 @@ export async function createStripeDonationSession(params: StripeSessionParams): 
     ],
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
-  });
+  }, params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined);
 }
 
 export async function createStripeInstallmentSession(params: {
