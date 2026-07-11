@@ -68,7 +68,9 @@ const el = {
 
   mediaRefresh: document.getElementById('cms-media-refresh'),
   mediaUploadForm: document.getElementById('cms-media-upload-form'),
+  mediaDropzone: document.getElementById('cms-media-dropzone'),
   mediaFile: document.getElementById('cms-media-file'),
+  mediaFileName: document.getElementById('cms-media-file-name'),
   mediaFolder: document.getElementById('cms-media-folder'),
   mediaStatus: document.getElementById('cms-media-status'),
   mediaList: document.getElementById('cms-media-list'),
@@ -596,6 +598,23 @@ function formatBytes(bytes) {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function renderSelectedMediaFile() {
+  const file = el.mediaFile?.files?.[0];
+  if (!el.mediaFileName || !el.mediaDropzone) return;
+  el.mediaFileName.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : '';
+  el.mediaFileName.classList.toggle('hidden', !file);
+  el.mediaDropzone.classList.toggle('border-[#293C74]', Boolean(file));
+  el.mediaDropzone.classList.toggle('bg-[#293C74]/5', Boolean(file));
+}
+
+function setDroppedMediaFile(file) {
+  if (!file || !el.mediaFile) return;
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  el.mediaFile.files = transfer.files;
+  renderSelectedMediaFile();
+}
+
 function renderMedia() {
   if (!el.mediaList || !el.mediaEmpty) return;
 
@@ -970,6 +989,7 @@ async function uploadMedia(event) {
       });
 
       if (el.mediaFile) el.mediaFile.value = '';
+      renderSelectedMediaFile();
       await loadMedia(true);
       showAlert('Imagen subida y verificada correctamente.', 'success');
     } finally {
@@ -991,6 +1011,7 @@ async function uploadMedia(event) {
     });
 
     if (el.mediaFile) el.mediaFile.value = '';
+    renderSelectedMediaFile();
     await loadMedia(true);
     showAlert(`Archivo subido: ${data.path}`, 'success');
   } finally {
@@ -1112,6 +1133,28 @@ el.mediaRefresh?.addEventListener('click', () => {
 el.mediaUploadForm?.addEventListener('submit', (event) => {
   uploadMedia(event).catch((error) => {
     showAlert(parseError(error, 'No se pudo subir el archivo.'), 'error', 6000);
+  });
+});
+
+el.mediaFile?.addEventListener('change', renderSelectedMediaFile);
+
+['dragenter', 'dragover'].forEach((eventName) => {
+  el.mediaDropzone?.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    el.mediaDropzone.classList.add('border-[#293C74]', 'bg-[#293C74]/10');
+  });
+});
+
+['dragleave', 'drop'].forEach((eventName) => {
+  el.mediaDropzone?.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    el.mediaDropzone.classList.remove('bg-[#293C74]/10');
+    if (eventName === 'drop') {
+      const file = event.dataTransfer?.files?.[0];
+      if (file) setDroppedMediaFile(file);
+    } else if (!el.mediaFile?.files?.length) {
+      el.mediaDropzone.classList.remove('border-[#293C74]');
+    }
   });
 });
 

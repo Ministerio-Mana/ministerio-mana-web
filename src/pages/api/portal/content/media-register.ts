@@ -13,7 +13,6 @@ import {
   getImageKitConfig,
   getImageKitFileDetails,
   isImageKitDeliveryUrl,
-  publishImageKitFile,
   verifyCmsMediaRegistrationToken,
 } from '@lib/imageKit';
 import { enforceRateLimit } from '@lib/rateLimit';
@@ -95,7 +94,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const exactIssuedFile = file.name === claims.fileName && file.filePath === expectedPath;
   const mimeType = String(file.mime || '').toLowerCase();
   const validImage = file.fileType === 'image'
-    && file.isPublished === false
+    && file.isPublished !== false
     && CMS_IMAGE_MIME_SET.has(mimeType)
     && Number(file.size || 0) > 0
     && Number(file.size || 0) <= CMS_IMAGEKIT_MAX_BYTES
@@ -150,15 +149,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
     console.error('[cms-media] ImageKit record insert failed', inserted.error);
     return json({ ok: false, error: 'No se pudo registrar la imagen.' }, 500);
-  }
-
-  try {
-    await publishImageKitFile(config, fileId);
-  } catch (error) {
-    await supabaseAdmin.from('cms_media').delete().eq('id', inserted.data.id);
-    await deleteImageKitFile(config, fileId).catch(() => {});
-    console.error('[cms-media] ImageKit publication failed', error);
-    return json({ ok: false, error: 'La imagen se verificó, pero no pudo publicarse.' }, 502);
   }
 
   await insertCmsAuditLog({

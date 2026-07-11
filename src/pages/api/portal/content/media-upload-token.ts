@@ -82,7 +82,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     useUniqueFileName: 'false',
     folder: remoteFolder,
     isPrivateFile: 'false',
-    isPublished: 'false',
     tags: 'cms,portal',
     checks: cmsImageKitChecks(),
   };
