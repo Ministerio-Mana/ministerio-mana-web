@@ -1,8 +1,30 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
 import { isCumbreRegistrationClosed } from '@lib/cumbreLifecycle';
+import { CUMBRE_GALLERY_ALBUMS, cumbreGalleryFolder } from '@lib/cumbreGallery';
+import { optimizedPublicImageUrl, responsivePublicImageSrcset } from '@lib/publicMedia';
+import { supabaseAdmin } from '@lib/supabaseAdmin';
 const cspNonce = Astro.locals?.cspNonce;
 const eventClosed = isCumbreRegistrationClosed();
+
+const galleryAlbums = eventClosed && supabaseAdmin
+  ? await Promise.all(CUMBRE_GALLERY_ALBUMS.map(async (album) => {
+      const result = await supabaseAdmin
+        .from('cms_media')
+        .select('public_url', { count: 'exact' })
+        .eq('provider', 'imagekit')
+        .eq('folder', cumbreGalleryFolder(album.slug))
+        .order('path', { ascending: true })
+        .range(0, 0);
+      return {
+        ...album,
+        count: Number(result.count || 0),
+        cover: result.data?.[0]?.public_url || null,
+      };
+    }))
+  : [];
+const galleryPhotoCount = galleryAlbums.reduce((total, album) => total + album.count, 0);
+const galleryCovers = galleryAlbums.filter((album) => album.cover);
 
 const whatsappOnly =
   (import.meta.env?.PUBLIC_CUMBRE_WHATSAPP_ONLY ?? process.env?.PUBLIC_CUMBRE_WHATSAPP_ONLY) === 'true';
@@ -86,9 +108,9 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
          <div class="flex flex-col sm:flex-row gap-4">
              <!-- Primary CTA -->
 	             {eventClosed ? (
-	               <span class="cumbre-action cumbre-action--teal relative inline-flex px-10 py-4 font-black text-lg rounded-full">
-	                 EVENTO FINALIZADO
-	               </span>
+	               <a href="/galeria/cumbre-mundial-2026" class="cumbre-action cumbre-action--teal group relative inline-flex px-10 py-4 font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] transition-all duration-300 hover:-translate-y-1">
+	                 VER GALERÍA
+	               </a>
 	             ) : (
 	             <a href={ctaHref} {...(whatsappOnly ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="cumbre-action cumbre-action--teal group relative inline-flex px-10 py-4 font-black text-lg rounded-full shadow-[0_0_40px_rgba(40,166,189,0.3)] hover:shadow-[0_0_60px_rgba(40,166,189,0.5)] hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                 <span class="relative z-10 flex items-center gap-2 uppercase tracking-wider">
@@ -165,6 +187,52 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
     </div>
   </section>
 
+  {eventClosed && galleryCovers.length > 0 && (
+    <section class="relative border-y border-white/10 bg-white/[0.03] px-6 py-20" aria-labelledby="cumbre-gallery-title">
+      <div class="mx-auto max-w-6xl">
+        <header class="max-w-3xl">
+          <p class="cumbre-memory-script">Nuestra memoria</p>
+          <h2 id="cumbre-gallery-title" class="cumbre-memory-title text-4xl font-black uppercase text-white md:text-6xl">
+            <span class="block">Revive la</span>
+            <span class="cumbre-memory-outline block">Cumbre</span>
+          </h2>
+          <p class="mt-5 max-w-2xl text-base leading-relaxed text-white/70">
+            {galleryPhotoCount} fotografías organizadas en {galleryCovers.length} álbumes para recordar lo que vivimos juntos.
+          </p>
+        </header>
+
+        <div class="mt-10 grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3">
+          {galleryCovers.slice(0, 6).map((album, index) => (
+            <a
+              href={`/galeria/cumbre-mundial-2026#${album.slug}`}
+              class:list={[
+                'group relative overflow-hidden bg-white/5',
+                index === 0 ? 'col-span-2 row-span-2 min-h-72 md:col-span-2 md:min-h-[520px]' : 'min-h-40 md:min-h-[254px]',
+              ]}
+              aria-label={`Ver álbum ${album.title}`}
+            >
+              <img
+                src={optimizedPublicImageUrl(album.cover, index === 0 ? 1280 : 720, 82)}
+                srcset={responsivePublicImageSrcset(album.cover, index === 0 ? [640, 960, 1280] : [320, 480, 720], 82)}
+                sizes={index === 0 ? '(min-width: 768px) 66vw, 100vw' : '(min-width: 768px) 33vw, 50vw'}
+                alt={album.title}
+                class="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]"
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+              <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-12 text-sm font-bold text-white md:px-5 md:pb-5">{album.title} · {album.count}</span>
+            </a>
+          ))}
+        </div>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href="/galeria/cumbre-mundial-2026" class="cumbre-action cumbre-action--teal inline-flex rounded-full px-8 py-4 text-sm font-black uppercase">Ver galería completa</a>
+          <a href="/eventos" class="cumbre-action cumbre-action--dark-ghost inline-flex rounded-full px-8 py-4 text-sm font-bold uppercase">Volver a eventos</a>
+        </div>
+      </div>
+    </section>
+  )}
+
   <!-- CTA Section -->
   <section class="py-24 px-6 text-center">
     <div class="max-w-2xl mx-auto space-y-8 bg-gradient-to-b from-white/5 to-transparent p-12 rounded-[3rem] border border-white/10 backdrop-blur-md">
@@ -174,7 +242,8 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
 	      </p>
 	      {eventClosed ? (
 	        <div class="flex flex-wrap justify-center gap-3">
-	          <a href="/eventos/cumbre-mundial-2026/cronograma" class="cumbre-action cumbre-action--white inline-flex px-8 py-4 font-bold rounded-full">Ver cronograma</a>
+	          <a href="/galeria/cumbre-mundial-2026" class="cumbre-action cumbre-action--white inline-flex px-8 py-4 font-bold rounded-full">Ver galería</a>
+	          <a href="/eventos/cumbre-mundial-2026/cronograma" class="cumbre-action cumbre-action--dark-ghost inline-flex px-8 py-4 font-bold rounded-full">Ver cronograma</a>
 	          <a href="/portal" class="cumbre-action cumbre-action--dark-ghost inline-flex px-8 py-4 font-bold rounded-full">Ir al portal</a>
 	        </div>
 	      ) : (
@@ -210,3 +279,33 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
     }
   }
 </script>
+
+<style>
+  @font-face {
+    font-family: 'Summer Loving';
+    src: url('/fonts/SUMMER FONT/Summer Loving Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .cumbre-memory-script {
+    margin: 0 0 -0.12em;
+    color: #fff;
+    font-family: 'Summer Loving', 'Brush Script MT', cursive;
+    font-size: 3rem;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .cumbre-memory-title {
+    font-family: 'Intro', ui-sans-serif, system-ui, sans-serif;
+    line-height: 0.88;
+    letter-spacing: 0;
+  }
+
+  .cumbre-memory-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px #66c7db;
+  }
+</style>

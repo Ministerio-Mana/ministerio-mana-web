@@ -29,11 +29,13 @@ const albumSummaries = await Promise.all(CUMBRE_GALLERY_ALBUMS.map(async (album)
 const availableAlbums = albumSummaries.filter((album) => album.count > 0);
 const firstAlbum = availableAlbums[0] || albumSummaries[0];
 const totalPhotos = albumSummaries.reduce((total, album) => total + album.count, 0);
-const heroImage = firstAlbum?.cover ? optimizedPublicImageUrl(firstAlbum.cover, 1920, 84) : null;
+const preferredCover = albumSummaries.find((album) => album.slug === 'noche-de-las-naciones' && album.cover)?.cover
+  || firstAlbum?.cover;
+const heroImage = preferredCover ? optimizedPublicImageUrl(preferredCover, 1920, 84) : null;
 ---
 
 <BaseLayout title="Cumbre Mundial Maná 2026 — Galería" description="Memoria fotográfica de la Cumbre Mundial Maná 2026.">
-  <main class="bg-slate-50 text-slate-900">
+  <main class="cumbre-gallery bg-slate-50 text-slate-900">
     <header class="relative isolate min-h-[56vh] overflow-hidden bg-[#293C74] text-white">
       {heroImage && <img src={heroImage} alt="Cumbre Mundial Maná 2026" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" decoding="async" />}
       <div class="absolute inset-0 bg-slate-950/55"></div>
@@ -41,8 +43,11 @@ const heroImage = firstAlbum?.cover ? optimizedPublicImageUrl(firstAlbum.cover, 
         <a href="/eventos" class="mb-auto inline-flex w-fit items-center gap-2 text-sm font-bold text-white/85 hover:text-white">
           <PortalIcon name="arrow-left" size={18} /> Eventos
         </a>
-        <p class="text-xs font-bold uppercase text-white/75">Memoria del encuentro</p>
-        <h1 class="mt-2 max-w-4xl text-3xl font-bold text-white sm:text-5xl">Cumbre Mundial Maná 2026</h1>
+        <p class="gallery-script">Nuestra memoria</p>
+        <h1 class="gallery-title mt-2 max-w-4xl text-4xl font-extrabold uppercase text-white sm:text-6xl">
+          <span class="block">Cumbre Mundial</span>
+          <span class="gallery-title-outline block">Maná 2026</span>
+        </h1>
         <p class="mt-3 max-w-2xl text-base leading-relaxed text-white/85">Una mirada a los encuentros, celebraciones y personas que hicieron parte de la Cumbre.</p>
         <p class="mt-5 text-sm font-bold text-white/80">{totalPhotos} fotografías · {availableAlbums.length} álbumes</p>
       </div>
@@ -107,3 +112,54 @@ const heroImage = firstAlbum?.cover ? optimizedPublicImageUrl(firstAlbum.cover, 
 
   <script src="../../scripts/public-cumbre-gallery.js"></script>
 </BaseLayout>
+
+<style>
+  @font-face {
+    font-family: 'Summer Loving';
+    src: url('/fonts/SUMMER FONT/Summer Loving Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .cumbre-gallery {
+    font-family: 'Intro', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .cumbre-gallery :is(h1, h2, h3, p, a, button, span) {
+    letter-spacing: 0;
+  }
+
+  .gallery-script {
+    margin: 0 0 -0.1em;
+    color: #fff;
+    font-family: 'Summer Loving', 'Brush Script MT', cursive;
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  .gallery-title {
+    line-height: 0.9;
+  }
+
+  .gallery-title-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px #7dd3e4;
+  }
+
+  .gallery-album-tab[aria-selected='true'] {
+    border-color: #293c74;
+    background: #293c74;
+    color: #fff;
+  }
+
+  .gallery-album-tab[aria-selected='true'] span {
+    color: rgb(255 255 255 / 0.75);
+  }
+
+  @media (max-width: 640px) {
+    .gallery-script {
+      font-size: 2.25rem;
+    }
+  }
+</style>

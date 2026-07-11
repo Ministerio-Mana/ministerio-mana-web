@@ -12,8 +12,20 @@ const lightboxClose = document.getElementById('gallery-lightbox-close');
 const lightboxPrev = document.getElementById('gallery-lightbox-prev');
 const lightboxNext = document.getElementById('gallery-lightbox-next');
 
+function requestedAlbumFromHash() {
+  try {
+    return decodeURIComponent(window.location.hash.replace(/^#/, ''));
+  } catch {
+    return '';
+  }
+}
+
+const requestedAlbum = requestedAlbumFromHash();
+const initialTab = tabs.find((tab) => !tab.disabled && tab.dataset.album === requestedAlbum)
+  || tabs.find((tab) => !tab.disabled);
+
 const state = {
-  album: tabs.find((tab) => !tab.disabled)?.dataset.album || '',
+  album: initialTab?.dataset.album || '',
   offset: 0,
   hasMore: false,
   loading: false,
@@ -27,8 +39,6 @@ function setActiveTab(album) {
     const active = tab.dataset.album === album;
     tab.setAttribute('aria-selected', active ? 'true' : 'false');
     tab.classList.toggle('border-[#293C74]', active);
-    tab.classList.toggle('bg-[#293C74]', active);
-    tab.classList.toggle('text-white', active);
   });
   const tab = tabs.find((item) => item.dataset.album === album);
   if (title) title.textContent = tab?.dataset.title || 'Galería';
@@ -121,10 +131,21 @@ tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
     if (tab.disabled || tab.dataset.album === state.album) return;
     state.album = tab.dataset.album || '';
+    window.history.replaceState(null, '', `#${state.album}`);
     state.hasMore = true;
     setActiveTab(state.album);
     loadImages(true);
   });
+});
+
+window.addEventListener('hashchange', () => {
+  const album = requestedAlbumFromHash();
+  const tab = tabs.find((item) => !item.disabled && item.dataset.album === album);
+  if (!tab || album === state.album) return;
+  state.album = album;
+  state.hasMore = true;
+  setActiveTab(album);
+  loadImages(true);
 });
 
 loadMore?.addEventListener('click', () => loadImages(false));
