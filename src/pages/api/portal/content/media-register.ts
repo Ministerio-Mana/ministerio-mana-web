@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   const config = getImageKitConfig();
   if (!config) return json({ ok: false, error: 'ImageKit no está configurado completamente.' }, 503);
-  const allowed = await enforceRateLimit(`cms-media-register:${auth.userId}`, 600, 20, { failOpen: false });
+  const allowed = await enforceRateLimit(`cms-media-register:${auth.userId}`, 86_400, 2_000, { failOpen: false });
   if (!allowed) return json({ ok: false, error: 'Demasiadas cargas. Intenta de nuevo más tarde.' }, 429);
 
   const body = await request.json().catch(() => ({}));

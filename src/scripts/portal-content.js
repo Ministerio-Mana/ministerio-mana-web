@@ -72,6 +72,10 @@ const el = {
   mediaFile: document.getElementById('cms-media-file'),
   mediaFileName: document.getElementById('cms-media-file-name'),
   mediaFolder: document.getElementById('cms-media-folder'),
+  mediaUploadProgress: document.getElementById('cms-media-upload-progress'),
+  mediaUploadProgressLabel: document.getElementById('cms-media-upload-progress-label'),
+  mediaUploadProgressCount: document.getElementById('cms-media-upload-progress-count'),
+  mediaUploadProgressBar: document.getElementById('cms-media-upload-progress-bar'),
   mediaStatus: document.getElementById('cms-media-status'),
   mediaList: document.getElementById('cms-media-list'),
   mediaEmpty: document.getElementById('cms-media-empty'),
@@ -599,20 +603,38 @@ function formatBytes(bytes) {
 }
 
 function renderSelectedMediaFile() {
-  const file = el.mediaFile?.files?.[0];
+  const files = Array.from(el.mediaFile?.files || []);
   if (!el.mediaFileName || !el.mediaDropzone) return;
-  el.mediaFileName.textContent = file ? `${file.name} · ${formatBytes(file.size)}` : '';
-  el.mediaFileName.classList.toggle('hidden', !file);
-  el.mediaDropzone.classList.toggle('border-[#293C74]', Boolean(file));
-  el.mediaDropzone.classList.toggle('bg-[#293C74]/5', Boolean(file));
+  const totalBytes = files.reduce((total, file) => total + file.size, 0);
+  el.mediaFileName.textContent = files.length === 1
+    ? `${files[0].name} · ${formatBytes(files[0].size)}`
+    : files.length > 1
+      ? `${files.length} imágenes · ${formatBytes(totalBytes)}`
+      : '';
+  el.mediaFileName.classList.toggle('hidden', files.length === 0);
+  el.mediaDropzone.classList.toggle('border-[#293C74]', files.length > 0);
+  el.mediaDropzone.classList.toggle('bg-[#293C74]/5', files.length > 0);
 }
 
-function setDroppedMediaFile(file) {
-  if (!file || !el.mediaFile) return;
+function setDroppedMediaFiles(files) {
+  if (!files?.length || !el.mediaFile) return;
   const transfer = new DataTransfer();
-  transfer.items.add(file);
+  Array.from(files).slice(0, 350).forEach((file) => transfer.items.add(file));
   el.mediaFile.files = transfer.files;
   renderSelectedMediaFile();
+}
+
+function updateMediaUploadProgress(completed, total, failed = 0) {
+  if (!el.mediaUploadProgress) return;
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  el.mediaUploadProgress.classList.toggle('hidden', total <= 1 && completed === 0);
+  if (el.mediaUploadProgressLabel) {
+    el.mediaUploadProgressLabel.textContent = failed
+      ? `${completed} de ${total} procesadas · ${failed} con error`
+      : `${completed} de ${total} procesadas`;
+  }
+  if (el.mediaUploadProgressCount) el.mediaUploadProgressCount.textContent = `${percent}%`;
+  if (el.mediaUploadProgressBar) el.mediaUploadProgressBar.style.width = `${percent}%`;
 }
 
 function renderMedia() {
@@ -918,102 +940,122 @@ async function createSectionFromModal() {
   }
 }
 
-async function uploadMedia(event) {
-  event.preventDefault();
-  const file = el.mediaFile?.files?.[0];
-  if (!file) {
-    showAlert('Selecciona un archivo antes de subir.', 'error', 5000);
-    return;
-  }
+async function uploadImageKitMedia(file, folder) {
+  const authorization = await fetchJson('/api/portal/content/media-upload-token', {
+    method: 'POST',
+    body: JSON.stringify({
+      file_name: file.name,
+      file_type: file.type,
+      file_size: file.size,
+      folder,
+      page_key: String(state.page?.page_key || ''),
+    }),
+  });
 
-  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  if (!allowedTypes.has(file.type)) {
-    showAlert('Usa una imagen JPG, PNG o WebP.', 'error', 5000);
-    return;
-  }
-  if (file.size <= 0 || file.size > state.mediaMaxBytes) {
-    showAlert(`La imagen debe pesar máximo ${formatBytes(state.mediaMaxBytes)}.`, 'error', 5000);
-    return;
-  }
+  const imageKitForm = new FormData();
+  imageKitForm.append('file', file);
+  Object.entries(authorization.upload_payload || {}).forEach(([key, value]) => {
+    imageKitForm.append(key, String(value));
+  });
+  imageKitForm.append('token', authorization.token);
 
-  const folder = safeFolder(el.mediaFolder?.value || state.page?.page_key || 'general');
-
-  if (state.mediaProvider === 'imagekit') {
-    setBusy(true, 'Subiendo imagen optimizada...');
-    try {
-      const authorization = await fetchJson('/api/portal/content/media-upload-token', {
-        method: 'POST',
-        body: JSON.stringify({
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-          folder,
-          page_key: String(state.page?.page_key || ''),
-        }),
-      });
-
-      const imageKitForm = new FormData();
-      imageKitForm.append('file', file);
-      Object.entries(authorization.upload_payload || {}).forEach(([key, value]) => {
-        imageKitForm.append(key, String(value));
-      });
-      imageKitForm.append('token', authorization.token);
-
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
-      let uploaded;
-      try {
-        const response = await fetch(authorization.upload_url, {
-          method: 'POST',
-          body: imageKitForm,
-          signal: controller.signal,
-        });
-        uploaded = await response.json().catch(() => ({}));
-        if (!response.ok || !uploaded?.fileId) {
-          throw new Error(uploaded?.message || uploaded?.error?.message || 'ImageKit rechazó la imagen.');
-        }
-      } catch (error) {
-        if (error?.name === 'AbortError') throw makeTimeoutError('La subida de la imagen');
-        throw error;
-      } finally {
-        window.clearTimeout(timeoutId);
-      }
-
-      await fetchJson('/api/portal/content/media-register', {
-        method: 'POST',
-        body: JSON.stringify({
-          file_id: uploaded.fileId,
-          registration_token: authorization.registration_token,
-          original_name: file.name,
-        }),
-      });
-
-      if (el.mediaFile) el.mediaFile.value = '';
-      renderSelectedMediaFile();
-      await loadMedia(true);
-      showAlert('Imagen subida y verificada correctamente.', 'success');
-    } finally {
-      setBusy(false);
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+  let uploaded;
+  try {
+    const response = await fetch(authorization.upload_url, {
+      method: 'POST',
+      body: imageKitForm,
+      signal: controller.signal,
+    });
+    uploaded = await response.json().catch(() => ({}));
+    if (!response.ok || !uploaded?.fileId) {
+      throw new Error(uploaded?.message || uploaded?.error?.message || 'ImageKit rechazó la imagen.');
     }
-    return;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw makeTimeoutError(`La subida de ${file.name}`);
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
+  await fetchJson('/api/portal/content/media-register', {
+    method: 'POST',
+    body: JSON.stringify({
+      file_id: uploaded.fileId,
+      registration_token: authorization.registration_token,
+      original_name: file.name,
+    }),
+  });
+}
+
+async function uploadSupabaseMedia(file, folder) {
   const form = new FormData();
   form.append('file', file);
   form.append('folder', folder);
   form.append('page_key', String(state.page?.page_key || ''));
+  await fetchJson('/api/portal/content/media', { method: 'POST', body: form });
+}
 
-  setBusy(true, 'Subiendo archivo...');
+async function uploadMedia(event) {
+  event.preventDefault();
+  const files = Array.from(el.mediaFile?.files || []);
+  if (!files.length) {
+    showAlert('Selecciona una o más imágenes antes de subir.', 'error', 5000);
+    return;
+  }
+  if (files.length > 350) {
+    showAlert('Sube máximo 350 imágenes por lote.', 'error', 6000);
+    return;
+  }
+
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const invalid = files.filter((file) => (
+    !allowedTypes.has(file.type) || file.size <= 0 || file.size > state.mediaMaxBytes
+  ));
+  if (invalid.length) {
+    showAlert(`${invalid.length} archivo(s) no cumplen tipo o peso máximo de ${formatBytes(state.mediaMaxBytes)}.`, 'error', 7000);
+    return;
+  }
+
+  const folder = safeFolder(el.mediaFolder?.value || state.page?.page_key || 'general');
+  const failures = [];
+  let cursor = 0;
+  let completed = 0;
+  const workerCount = Math.min(state.mediaProvider === 'imagekit' ? 3 : 2, files.length);
+
+  setBusy(true, `Subiendo ${files.length} imagen${files.length === 1 ? '' : 'es'}...`);
+  updateMediaUploadProgress(0, files.length);
   try {
-    const data = await fetchJson('/api/portal/content/media', {
-      method: 'POST',
-      body: form,
-    });
+    async function worker() {
+      while (true) {
+        const index = cursor++;
+        if (index >= files.length) return;
+        const file = files[index];
+        try {
+          if (state.mediaProvider === 'imagekit') await uploadImageKitMedia(file, folder);
+          else await uploadSupabaseMedia(file, folder);
+        } catch (error) {
+          console.error('[cms-media] bulk upload item failed', file.name, error);
+          failures.push({ file, message: parseError(error, 'No se pudo subir.') });
+        }
+        completed += 1;
+        updateMediaUploadProgress(completed, files.length, failures.length);
+      }
+    }
 
-    if (el.mediaFile) el.mediaFile.value = '';
-    renderSelectedMediaFile();
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
     await loadMedia(true);
-    showAlert(`Archivo subido: ${data.path}`, 'success');
+
+    if (failures.length) {
+      setDroppedMediaFiles(failures.map((failure) => failure.file));
+      const examples = failures.slice(0, 3).map((failure) => failure.file.name).join(', ');
+      showAlert(`${files.length - failures.length} subidas; ${failures.length} pendientes para reintentar: ${examples}`, 'error', 12000);
+    } else {
+      if (el.mediaFile) el.mediaFile.value = '';
+      renderSelectedMediaFile();
+      showAlert(`${files.length} imagen${files.length === 1 ? '' : 'es'} subidas y verificadas correctamente.`, 'success', 7000);
+    }
   } finally {
     setBusy(false);
   }
@@ -1150,8 +1192,8 @@ el.mediaFile?.addEventListener('change', renderSelectedMediaFile);
     event.preventDefault();
     el.mediaDropzone.classList.remove('bg-[#293C74]/10');
     if (eventName === 'drop') {
-      const file = event.dataTransfer?.files?.[0];
-      if (file) setDroppedMediaFile(file);
+      const files = event.dataTransfer?.files;
+      if (files?.length) setDroppedMediaFiles(files);
     } else if (!el.mediaFile?.files?.length) {
       el.mediaDropzone.classList.remove('border-[#293C74]');
     }

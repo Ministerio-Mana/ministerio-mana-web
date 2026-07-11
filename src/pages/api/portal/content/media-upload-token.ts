@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ ok: false, error: 'No se pudo verificar la biblioteca multimedia.' }, 500);
   }
 
-  const allowed = await enforceRateLimit(`cms-media-token:${auth.userId}`, 600, 20, { failOpen: false });
+  const allowed = await enforceRateLimit(`cms-media-token:${auth.userId}`, 86_400, 2_000, { failOpen: false });
   if (!allowed) return json({ ok: false, error: 'Demasiadas cargas. Intenta de nuevo más tarde.' }, 429);
 
   const body = await request.json().catch(() => ({}));

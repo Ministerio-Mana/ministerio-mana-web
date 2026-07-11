@@ -1,0 +1,109 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import PortalIcon from '@components/portal/PortalIcon.astro';
+import {
+  CUMBRE_GALLERY_ALBUMS,
+  cumbreGalleryFolder,
+} from '@lib/cumbreGallery';
+import { optimizedPublicImageUrl } from '@lib/publicMedia';
+import { supabaseAdmin } from '@lib/supabaseAdmin';
+
+export const prerender = false;
+
+const albumSummaries = await Promise.all(CUMBRE_GALLERY_ALBUMS.map(async (album) => {
+  if (!supabaseAdmin) return { ...album, count: 0, cover: null };
+  const result = await supabaseAdmin
+    .from('cms_media')
+    .select('public_url', { count: 'exact' })
+    .eq('provider', 'imagekit')
+    .eq('folder', cumbreGalleryFolder(album.slug))
+    .order('path', { ascending: true })
+    .range(0, 0);
+  return {
+    ...album,
+    count: Number(result.count || 0),
+    cover: result.data?.[0]?.public_url || null,
+  };
+}));
+
+const availableAlbums = albumSummaries.filter((album) => album.count > 0);
+const firstAlbum = availableAlbums[0] || albumSummaries[0];
+const totalPhotos = albumSummaries.reduce((total, album) => total + album.count, 0);
+const heroImage = firstAlbum?.cover ? optimizedPublicImageUrl(firstAlbum.cover, 1920, 84) : null;
+---
+
+<BaseLayout title="Cumbre Mundial Maná 2026 — Galería" description="Memoria fotográfica de la Cumbre Mundial Maná 2026.">
+  <main class="bg-slate-50 text-slate-900">
+    <header class="relative isolate min-h-[56vh] overflow-hidden bg-[#293C74] text-white">
+      {heroImage && <img src={heroImage} alt="Cumbre Mundial Maná 2026" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" decoding="async" />}
+      <div class="absolute inset-0 bg-slate-950/55"></div>
+      <div class="container-tight relative flex min-h-[56vh] flex-col justify-end py-10 sm:py-14">
+        <a href="/eventos" class="mb-auto inline-flex w-fit items-center gap-2 text-sm font-bold text-white/85 hover:text-white">
+          <PortalIcon name="arrow-left" size={18} /> Eventos
+        </a>
+        <p class="text-xs font-bold uppercase text-white/75">Memoria del encuentro</p>
+        <h1 class="mt-2 max-w-4xl text-3xl font-bold sm:text-5xl">Cumbre Mundial Maná 2026</h1>
+        <p class="mt-3 max-w-2xl text-base leading-relaxed text-white/85">Una mirada a los encuentros, celebraciones y personas que hicieron parte de la Cumbre.</p>
+        <p class="mt-5 text-sm font-bold text-white/80">{totalPhotos} fotografías · {availableAlbums.length} álbumes</p>
+      </div>
+    </header>
+
+    <section class="border-b border-slate-200 bg-white" aria-labelledby="gallery-albums-title">
+      <div class="container-tight py-7">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <h2 id="gallery-albums-title" class="text-xl font-bold text-[#293C74]">Álbumes</h2>
+            <p class="mt-1 text-sm text-slate-500">Selecciona una categoría para recorrer sus fotografías.</p>
+          </div>
+        </div>
+        <div id="gallery-album-tabs" class="mt-5 flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Álbumes de la Cumbre">
+          {albumSummaries.map((album, index) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={index === 0 ? 'true' : 'false'}
+              disabled={album.count === 0}
+              class="gallery-album-tab shrink-0 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-left text-sm font-bold text-slate-700 transition hover:border-[#293C74] hover:text-[#293C74] disabled:cursor-not-allowed disabled:opacity-40"
+              data-album={album.slug}
+              data-title={album.title}
+              data-description={album.description}
+              data-count={album.count}
+            >
+              {album.title} <span class="ml-1 text-xs text-slate-400">{album.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="container-tight py-8 sm:py-12" aria-labelledby="active-album-title">
+      <header class="mb-6 border-b border-slate-200 pb-5">
+        <h2 id="active-album-title" class="text-2xl font-bold text-[#293C74]">{firstAlbum?.title}</h2>
+        <p id="active-album-description" class="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600">{firstAlbum?.description}</p>
+      </header>
+
+      <div id="gallery-status" class="py-10 text-center text-sm font-semibold text-slate-500" aria-live="polite">Cargando fotografías...</div>
+      <div id="gallery-grid" class="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4" aria-live="polite"></div>
+      <div id="gallery-sentinel" class="h-8" aria-hidden="true"></div>
+      <div class="mt-5 flex justify-center">
+        <button id="gallery-load-more" type="button" class="hidden min-h-11 rounded-md border border-[#293C74]/30 bg-white px-5 py-2.5 text-sm font-bold text-[#293C74] hover:bg-[#293C74]/5">Cargar más</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="gallery-lightbox" class="m-0 h-full max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-slate-950/95">
+    <div class="flex h-full w-full flex-col bg-slate-950 text-white">
+      <div class="flex h-16 shrink-0 items-center justify-between gap-4 px-4 sm:px-6">
+        <span id="gallery-lightbox-count" class="text-sm font-bold text-white/70"></span>
+        <button id="gallery-lightbox-close" type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/20 text-white hover:bg-white/10" aria-label="Cerrar visor"><PortalIcon name="x" size={22} /></button>
+      </div>
+      <div class="relative flex min-h-0 flex-1 items-center justify-center px-14 pb-5 sm:px-20">
+        <img id="gallery-lightbox-image" src="" alt="" class="max-h-full max-w-full object-contain" />
+        <button id="gallery-lightbox-prev" type="button" class="absolute left-2 inline-flex h-12 w-12 items-center justify-center rounded-md border border-white/20 bg-slate-950/50 text-white hover:bg-white/10 sm:left-5" aria-label="Fotografía anterior"><PortalIcon name="arrow-left" size={24} /></button>
+        <button id="gallery-lightbox-next" type="button" class="absolute right-2 inline-flex h-12 w-12 rotate-180 items-center justify-center rounded-md border border-white/20 bg-slate-950/50 text-white hover:bg-white/10 sm:right-5" aria-label="Fotografía siguiente"><PortalIcon name="arrow-left" size={24} /></button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="../../scripts/public-cumbre-gallery.js"></script>
+</BaseLayout>
