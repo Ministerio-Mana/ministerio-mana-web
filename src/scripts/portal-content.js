@@ -28,6 +28,7 @@ const state = {
   revisions: [],
   logs: [],
   media: [],
+  mediaSelection: [],
   mediaProvider: 'supabase',
   mediaMaxBytes: 4 * 1024 * 1024,
   cmsSchemaReady: true,
@@ -71,6 +72,8 @@ const el = {
   mediaDropzone: document.getElementById('cms-media-dropzone'),
   mediaFile: document.getElementById('cms-media-file'),
   mediaFileName: document.getElementById('cms-media-file-name'),
+  mediaDirectory: document.getElementById('cms-media-directory'),
+  mediaDirectoryTrigger: document.getElementById('cms-media-directory-trigger'),
   mediaFolder: document.getElementById('cms-media-folder'),
   mediaUploadProgress: document.getElementById('cms-media-upload-progress'),
   mediaUploadProgressLabel: document.getElementById('cms-media-upload-progress-label'),
@@ -603,7 +606,7 @@ function formatBytes(bytes) {
 }
 
 function renderSelectedMediaFile() {
-  const files = Array.from(el.mediaFile?.files || []);
+  const files = state.mediaSelection;
   if (!el.mediaFileName || !el.mediaDropzone) return;
   const totalBytes = files.reduce((total, file) => total + file.size, 0);
   el.mediaFileName.textContent = files.length === 1
@@ -617,11 +620,17 @@ function renderSelectedMediaFile() {
 }
 
 function setDroppedMediaFiles(files) {
-  if (!files?.length || !el.mediaFile) return;
-  const transfer = new DataTransfer();
-  Array.from(files).slice(0, 350).forEach((file) => transfer.items.add(file));
-  el.mediaFile.files = transfer.files;
+  if (!files?.length) return;
+  state.mediaSelection = Array.from(files).slice(0, 1500);
   renderSelectedMediaFile();
+}
+
+function folderForSelectedMedia(file, baseFolder) {
+  const relativePath = String(file.webkitRelativePath || '').replace(/\\/g, '/');
+  const parts = relativePath.split('/').filter(Boolean);
+  if (parts.length < 3) return baseFolder;
+  const albumFolder = safeFolder(parts[parts.length - 2]);
+  return albumFolder ? `${baseFolder}/${albumFolder}` : baseFolder;
 }
 
 function updateMediaUploadProgress(completed, total, failed = 0) {
@@ -999,26 +1008,32 @@ async function uploadSupabaseMedia(file, folder) {
 
 async function uploadMedia(event) {
   event.preventDefault();
-  const files = Array.from(el.mediaFile?.files || []);
-  if (!files.length) {
+  const selectedFiles = state.mediaSelection;
+  if (!selectedFiles.length) {
     showAlert('Selecciona una o más imágenes antes de subir.', 'error', 5000);
     return;
   }
-  if (files.length > 350) {
-    showAlert('Sube máximo 350 imágenes por lote.', 'error', 6000);
+  if (selectedFiles.length > 1500) {
+    showAlert('Sube máximo 1.500 imágenes por lote.', 'error', 6000);
     return;
   }
 
   const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const files = selectedFiles.filter((file) => allowedTypes.has(file.type));
+  const ignoredCount = selectedFiles.length - files.length;
+  if (!files.length) {
+    showAlert('La selección no contiene imágenes JPG, PNG o WebP.', 'error', 6000);
+    return;
+  }
   const invalid = files.filter((file) => (
-    !allowedTypes.has(file.type) || file.size <= 0 || file.size > state.mediaMaxBytes
+    file.size <= 0 || file.size > state.mediaMaxBytes
   ));
   if (invalid.length) {
     showAlert(`${invalid.length} archivo(s) no cumplen tipo o peso máximo de ${formatBytes(state.mediaMaxBytes)}.`, 'error', 7000);
     return;
   }
 
-  const folder = safeFolder(el.mediaFolder?.value || state.page?.page_key || 'general');
+  const baseFolder = safeFolder(el.mediaFolder?.value || state.page?.page_key || 'general');
   const failures = [];
   let cursor = 0;
   let completed = 0;
@@ -1032,6 +1047,7 @@ async function uploadMedia(event) {
         const index = cursor++;
         if (index >= files.length) return;
         const file = files[index];
+        const folder = folderForSelectedMedia(file, baseFolder);
         try {
           if (state.mediaProvider === 'imagekit') await uploadImageKitMedia(file, folder);
           else await uploadSupabaseMedia(file, folder);
@@ -1053,8 +1069,11 @@ async function uploadMedia(event) {
       showAlert(`${files.length - failures.length} subidas; ${failures.length} pendientes para reintentar: ${examples}`, 'error', 12000);
     } else {
       if (el.mediaFile) el.mediaFile.value = '';
+      if (el.mediaDirectory) el.mediaDirectory.value = '';
+      state.mediaSelection = [];
       renderSelectedMediaFile();
-      showAlert(`${files.length} imagen${files.length === 1 ? '' : 'es'} subidas y verificadas correctamente.`, 'success', 7000);
+      const ignored = ignoredCount ? ` · ${ignoredCount} archivo no compatible ignorado` : '';
+      showAlert(`${files.length} imagen${files.length === 1 ? '' : 'es'} subidas y verificadas correctamente${ignored}.`, 'success', 7000);
     }
   } finally {
     setBusy(false);
@@ -1178,7 +1197,17 @@ el.mediaUploadForm?.addEventListener('submit', (event) => {
   });
 });
 
-el.mediaFile?.addEventListener('change', renderSelectedMediaFile);
+el.mediaFile?.addEventListener('change', () => {
+  state.mediaSelection = Array.from(el.mediaFile?.files || []);
+  renderSelectedMediaFile();
+});
+
+el.mediaDirectoryTrigger?.addEventListener('click', () => el.mediaDirectory?.click());
+el.mediaDirectory?.addEventListener('change', () => {
+  state.mediaSelection = Array.from(el.mediaDirectory?.files || [])
+    .filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type));
+  renderSelectedMediaFile();
+});
 
 ['dragenter', 'dragover'].forEach((eventName) => {
   el.mediaDropzone?.addEventListener(eventName, (event) => {
@@ -1194,7 +1223,7 @@ el.mediaFile?.addEventListener('change', renderSelectedMediaFile);
     if (eventName === 'drop') {
       const files = event.dataTransfer?.files;
       if (files?.length) setDroppedMediaFiles(files);
-    } else if (!el.mediaFile?.files?.length) {
+    } else if (!state.mediaSelection.length) {
       el.mediaDropzone.classList.remove('border-[#293C74]');
     }
   });
