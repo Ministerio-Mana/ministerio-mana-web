@@ -14,11 +14,11 @@ Guia para exportar donaciones (Wompi, Stripe, Fisicas) y sincronizar a OneDrive 
 
 ## Endpoints de export
 
-- Wompi: `/api/contabilidad/donaciones/export?provider=wompi&token=TU_SECRET`
-- Stripe: `/api/contabilidad/donaciones/export?provider=stripe&token=TU_SECRET`
-- Fisicas: `/api/contabilidad/donaciones/export?provider=physical&token=TU_SECRET`
+- Wompi: `/api/contabilidad/donaciones/export?provider=wompi`
+- Stripe: `/api/contabilidad/donaciones/export?provider=stripe`
+- Fisicas: `/api/contabilidad/donaciones/export?provider=physical`
 
-> Tip: En Vercel Cron no se pueden enviar headers, por eso usamos `token` en la URL.
+El secreto se envia exclusivamente en el header `x-export-secret`. No lo pongas en la URL: las URLs pueden quedar guardadas en historiales y logs.
 
 ## Power Automate (OneDrive)
 
@@ -26,6 +26,7 @@ Guia para exportar donaciones (Wompi, Stripe, Fisicas) y sincronizar a OneDrive 
 2. Agrega accion **HTTP**:
    - Method: `GET`
    - URL: usa uno de los endpoints arriba.
+   - Header: `x-export-secret` con el valor seguro de `DONATIONS_EXPORT_SECRET`.
 3. Agrega accion **Create file (OneDrive for Business)**:
    - Folder Path: `/Contabilidad/Donaciones/`
    - File Name: `donaciones_wompi.csv` (o stripe / fisicas)
