@@ -103,7 +103,7 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
             Un tiempo sobrenatural de conexión, visión y renovación espiritual.
          </p>
 	         <p class="max-w-2xl rounded-2xl border border-brand-gold/30 bg-brand-gold/10 px-5 py-3 text-sm font-bold text-brand-gold">
-	            {eventClosed ? 'La Cumbre Mundial 2026 finalizó. Conservamos aquí su información y cronograma.' : 'Hospedaje dentro del evento agotado. Las inscripciones continúan abiertas sin alojamiento.'}
+	            {eventClosed ? 'La Cumbre Mundial 2026 finalizó. Conservamos aquí la memoria de lo que vivimos juntos.' : 'Hospedaje dentro del evento agotado. Las inscripciones continúan abiertas sin alojamiento.'}
 	         </p>
          
          <div class="flex flex-col sm:flex-row gap-4">
@@ -120,16 +120,6 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
                 </span>
 	             </a>
 	             )}
-
-             <!-- More Info -->
-             <a href="#detalles" class="cumbre-action cumbre-action--dark-ghost px-10 py-4 font-medium rounded-full transition-colors uppercase tracking-wide text-sm flex items-center">
-                Más Información
-             </a>
-
-             <!-- Schedule -->
-             <a href="/eventos/cumbre-mundial-2026/cronograma" class="cumbre-action cumbre-action--dark-ghost px-10 py-4 font-medium rounded-full transition-colors uppercase tracking-wide text-sm flex items-center">
-                Cronograma
-             </a>
          </div>
       </div>
 
@@ -176,7 +166,7 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
           </div>
 	          <h3 class="text-xl font-bold text-white">{eventClosed ? 'Información histórica' : 'Pago flexible'}</h3>
 	          <p class="text-white/60 leading-relaxed text-sm">
-	            {eventClosed ? 'El portal conserva cronograma, registros y pagos para consulta y conciliación administrativa.' : 'Puedes pagar a cuotas o de forma diferida. La reserva cubre la asistencia a la Cumbre según el paquete que selecciones.'}
+	            {eventClosed ? 'El portal conserva registros y pagos para consulta y conciliación administrativa.' : 'Puedes pagar a cuotas o de forma diferida. La reserva cubre la asistencia a la Cumbre según el paquete que selecciones.'}
           </p>
         </div>
       </div>
@@ -253,12 +243,11 @@ const ctaLabelCaps = whatsappOnly ? 'INSCRIBIRME POR WHATSAPP' : 'COMENZAR REGIS
     <div class="max-w-2xl mx-auto space-y-8 bg-gradient-to-b from-white/5 to-transparent p-12 rounded-[3rem] border border-white/10 backdrop-blur-md">
 	      <h2 class="text-3xl md:text-4xl font-bold text-white">{eventClosed ? 'Cumbre Mundial 2026 finalizada' : '¿Listo para ser parte?'}</h2>
 	      <p class="text-white/70">
-	        {eventClosed ? 'Consulta el cronograma del encuentro o ingresa al portal para revisar tu información.' : 'Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.'}
+	        {eventClosed ? 'Revive el encuentro en la galería o ingresa al portal para revisar tu información.' : 'Los cupos son limitados. Asegura tu asistencia y la de tu familia hoy mismo.'}
 	      </p>
 	      {eventClosed ? (
 	        <div class="flex flex-wrap justify-center gap-3">
 	          <a href="#galeria" class="cumbre-action cumbre-action--white inline-flex px-8 py-4 font-bold rounded-full">Ver galería</a>
-	          <a href="/eventos/cumbre-mundial-2026/cronograma" class="cumbre-action cumbre-action--dark-ghost inline-flex px-8 py-4 font-bold rounded-full">Ver cronograma</a>
 	          <a href="/portal" class="cumbre-action cumbre-action--dark-ghost inline-flex px-8 py-4 font-bold rounded-full">Ir al portal</a>
 	        </div>
 	      ) : (
