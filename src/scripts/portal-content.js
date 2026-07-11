@@ -621,8 +621,16 @@ function renderSelectedMediaFile() {
 
 function setDroppedMediaFiles(files) {
   if (!files?.length) return;
-  state.mediaSelection = Array.from(files).slice(0, 1500);
+  state.mediaSelection = Array.from(files).filter(isSelectableMediaFile).slice(0, 1500);
   renderSelectedMediaFile();
+}
+
+function isSelectableMediaFile(file) {
+  const name = String(file?.name || '');
+  const relativePath = String(file?.webkitRelativePath || '').replace(/\\/g, '/');
+  return ['image/jpeg', 'image/png', 'image/webp'].includes(String(file?.type || ''))
+    && !name.startsWith('.')
+    && !relativePath.split('/').some((part) => part.startsWith('.'));
 }
 
 function folderForSelectedMedia(file, baseFolder) {
@@ -1018,8 +1026,7 @@ async function uploadMedia(event) {
     return;
   }
 
-  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-  const files = selectedFiles.filter((file) => allowedTypes.has(file.type));
+  const files = selectedFiles.filter(isSelectableMediaFile);
   const ignoredCount = selectedFiles.length - files.length;
   if (!files.length) {
     showAlert('La selección no contiene imágenes JPG, PNG o WebP.', 'error', 6000);
@@ -1205,7 +1212,7 @@ el.mediaFile?.addEventListener('change', () => {
 el.mediaDirectoryTrigger?.addEventListener('click', () => el.mediaDirectory?.click());
 el.mediaDirectory?.addEventListener('change', () => {
   state.mediaSelection = Array.from(el.mediaDirectory?.files || [])
-    .filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type));
+    .filter(isSelectableMediaFile);
   renderSelectedMediaFile();
 });
 
