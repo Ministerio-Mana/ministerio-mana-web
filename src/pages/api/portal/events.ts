@@ -102,6 +102,14 @@ const PLATFORM_EVENT_FIELDS = new Set([
   'timezone',
 ]);
 
+const NULLABLE_EVENT_FIELDS = new Set([
+  'end_date',
+  'registration_url',
+  'registration_opens_at',
+  'registration_closes_at',
+  'capacity',
+]);
+
 function isSafeInternalOrHttpsUrl(value: string): boolean {
   return value.length <= 500
     && ((value.startsWith('/') && !value.startsWith('//')) || /^https:\/\//i.test(value));
@@ -121,6 +129,10 @@ function sanitizeEventPayload(body: Record<string, any>) {
   EVENT_FIELDS.forEach((field) => {
     const value = body?.[field];
     if (value === undefined || value === '') return;
+    if (value === null && NULLABLE_EVENT_FIELDS.has(field)) {
+      payload[field] = null;
+      return;
+    }
     if (field === 'banner_url' || field === 'registration_url') {
       const raw = String(value || '').trim();
       const safeUrl = isSafeInternalOrHttpsUrl(raw) ? raw : '';
@@ -181,7 +193,7 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   if (payload.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(payload.slug))) {
     return 'El enlace público no es válido.';
   }
-  if (payload.capacity !== undefined && (!Number.isInteger(payload.capacity) || payload.capacity < 0)) {
+  if (payload.capacity !== undefined && payload.capacity !== null && (!Number.isInteger(payload.capacity) || payload.capacity < 0)) {
     return 'El cupo debe ser un número válido.';
   }
   if (payload.price !== undefined && (!Number.isFinite(payload.price) || payload.price < 0)) {
@@ -217,7 +229,22 @@ function validateResultingPricing(pricingModel: unknown, price: unknown): string
   return null;
 }
 
+function validateDateYear(value: unknown, label: string): string | null {
+  if (value === undefined || value === null || value === '') return null;
+  const raw = String(value);
+  const isoYear = /^(\d{4,})-/.exec(raw)?.[1];
+  const year = isoYear ? Number(isoYear) : new Date(raw).getUTCFullYear();
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+    return `La fecha de ${label} debe tener un año entre 2000 y 2100.`;
+  }
+  return null;
+}
+
 function validateEventDates(startDate: unknown, endDate?: unknown): string | null {
+  const startYearError = validateDateYear(startDate, 'inicio');
+  if (startYearError) return startYearError;
+  const endYearError = validateDateYear(endDate, 'fin');
+  if (endYearError) return endYearError;
   const start = new Date(String(startDate || '')).getTime();
   if (!Number.isFinite(start)) return 'La fecha de inicio no es válida.';
   if (endDate === undefined || endDate === null || endDate === '') return null;
@@ -241,12 +268,31 @@ function hasInvalidRegistrationUrl(body: Record<string, any>): boolean {
 
 function validateRegistrationDates(openDate: unknown, closeDate: unknown): string | null {
   if (!openDate && !closeDate) return null;
+  const openYearError = validateDateYear(openDate, 'apertura de inscripciones');
+  if (openYearError) return openYearError;
+  const closeYearError = validateDateYear(closeDate, 'cierre de inscripciones');
+  if (closeYearError) return closeYearError;
   const opens = openDate ? new Date(String(openDate)).getTime() : null;
   const closes = closeDate ? new Date(String(closeDate)).getTime() : null;
   if (opens !== null && !Number.isFinite(opens)) return 'La apertura de inscripciones no es válida.';
   if (closes !== null && !Number.isFinite(closes)) return 'El cierre de inscripciones no es válido.';
   if (opens !== null && closes !== null && closes < opens) return 'El cierre de inscripciones debe ser posterior a la apertura.';
   return null;
+}
+
+function normalizeRegistrationState(payload: Record<string, any>, registrationMode: unknown) {
+  const mode = String(registrationMode || 'NONE').toUpperCase();
+  if (mode !== 'INTERNAL') {
+    payload.pricing_model = 'FREE';
+    payload.price = 0;
+    payload.registration_requires_approval = false;
+    payload.capacity = null;
+  }
+  if (mode === 'NONE') {
+    payload.registration_url = null;
+    payload.registration_opens_at = null;
+    payload.registration_closes_at = null;
+  }
 }
 
 function hasPlatformFields(body: Record<string, any>): boolean {
@@ -420,6 +466,8 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Solicitud inválida.' }), { status: 400 });
   }
   const payload = sanitizeEventPayload(body);
+  if (!payload.registration_mode) payload.registration_mode = 'NONE';
+  normalizeRegistrationState(payload, payload.registration_mode);
   if (!payload.pricing_model) payload.pricing_model = Number(payload.price || 0) > 0 ? 'PAID' : 'FREE';
   if (payload.pricing_model === 'FREE') payload.price = 0;
   const requestedChurchId = String(body?.church_id || body?.churchId || '').trim() || null;
@@ -654,14 +702,14 @@ export const PATCH: APIRoute = async ({ request }) => {
 
   let { data: eventRow, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id, created_by, scope, church_id, country, region_id, start_date, end_date, price, pricing_model')
+    .select('id, created_by, scope, church_id, country, region_id, start_date, end_date, price, pricing_model, registration_mode')
     .eq('id', eventId)
     .single();
 
   if (eventError && eventError.code === '42703' && /region_id/i.test(eventError.message || '')) {
     const fallback = await supabaseAdmin
       .from('events')
-      .select('id, created_by, scope, church_id, country, start_date, end_date, price, pricing_model')
+      .select('id, created_by, scope, church_id, country, start_date, end_date, price, pricing_model, registration_mode')
       .eq('id', eventId)
       .single();
     eventRow = fallback.data ? { ...fallback.data, region_id: null } : null;
@@ -696,6 +744,15 @@ export const PATCH: APIRoute = async ({ request }) => {
   }
 
   const resultingScope = String(payload.scope || eventRow.scope || '').toUpperCase();
+  const resultingRegistrationMode = String(payload.registration_mode || eventRow.registration_mode || 'NONE').toUpperCase();
+  const touchesRegistrationOrPricing = [
+    'registration_mode',
+    'pricing_model',
+    'price',
+    'registration_requires_approval',
+    'capacity',
+  ].some((field) => Object.prototype.hasOwnProperty.call(body, field));
+  if (touchesRegistrationOrPricing) normalizeRegistrationState(payload, resultingRegistrationMode);
   const resultingPricingModel = String(payload.pricing_model || eventRow.pricing_model || 'FREE').toUpperCase();
   if (resultingPricingModel === 'FREE') payload.price = 0;
   const pricingError = validateResultingPricing(resultingPricingModel, payload.price === undefined ? eventRow.price : payload.price);

@@ -5,6 +5,9 @@ import externalLinkIconUrl from 'lucide-static/icons/external-link.svg?url';
 import mapPinIconUrl from 'lucide-static/icons/map-pin.svg?url';
 import pencilIconUrl from 'lucide-static/icons/pencil.svg?url';
 import sendIconUrl from 'lucide-static/icons/send.svg?url';
+import flatpickr from 'flatpickr';
+import { Spanish } from 'flatpickr/dist/l10n/es.js';
+import 'flatpickr/dist/flatpickr.min.css';
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
 const eventsGate = document.getElementById('events-gate');
@@ -24,6 +27,7 @@ const eventFormError = document.getElementById('event-form-error');
 const eventIdInput = document.getElementById('event-id');
 const eventModalTitle = document.getElementById('event-modal-title');
 const eventSubmitBtn = eventForm?.querySelector('button[type="submit"]');
+const eventTitleInput = eventForm?.querySelector('[name="title"]');
 const eventScopeSelect = eventForm?.querySelector('[name="scope"]');
 const eventStatusSelect = eventForm?.querySelector('[name="status"]');
 const eventCountryInput = eventForm?.querySelector('[name="country"]');
@@ -41,7 +45,14 @@ const eventOnlineProvider = document.getElementById('event-online-provider');
 const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
 const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
+const eventRegistrationWindow = document.getElementById('event-registration-window');
+const eventCapacityWrapper = document.getElementById('event-capacity-wrapper');
+const eventSlugInput = document.getElementById('event-slug');
+const eventSlugHint = document.getElementById('event-slug-hint');
+const eventFinanceRegistrationHint = document.getElementById('event-finance-registration-hint');
 const eventManualPaymentEnabled = document.getElementById('event-manual-payment-enabled');
+const eventManualPaymentPanel = document.getElementById('event-manual-payment-panel');
+const eventManualPaymentHint = document.getElementById('event-manual-payment-hint');
 const eventManualPaymentSettings = document.getElementById('event-manual-payment-settings');
 const eventManualPaymentKind = document.getElementById('event-manual-payment-kind');
 const eventManualPaymentLabel = document.getElementById('event-manual-payment-label');
@@ -64,6 +75,8 @@ const previewCta = document.getElementById('event-preview-cta');
 
 const REQUEST_TIMEOUT_MS = 15000;
 const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
+const MIN_EVENT_YEAR = 2000;
+const MAX_EVENT_YEAR = 2100;
 const SCOPE_LABELS = {
     LOCAL: 'Local',
     REGIONAL: 'Regional',
@@ -105,6 +118,8 @@ let eventPermissionValidated = false;
 let eventPlatformReady = false;
 let eventFinanceReady = false;
 let manualQrPreviewObjectUrl = '';
+let eventSlugManuallyEdited = false;
+const eventDatePickers = new Map();
 
 const churchesById = new Map();
 const regionsById = new Map();
@@ -154,15 +169,144 @@ function getPublicEventPath(event) {
     return identifier ? `/eventos/${encodeURIComponent(identifier)}` : '';
 }
 
+function normalizeEventSlug(value, { trimTrailing = true } = {}) {
+    const normalized = String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+/g, '')
+        .slice(0, 180);
+    return trimTrailing ? normalized.replace(/-+$/g, '') : normalized;
+}
+
+function syncSlugInput({ finalize = false } = {}) {
+    if (!eventSlugInput) return;
+    const normalized = normalizeEventSlug(eventSlugInput.value, { trimTrailing: finalize });
+    const finalSlug = normalizeEventSlug(normalized);
+    if (eventSlugInput.value !== normalized) eventSlugInput.value = normalized;
+    if (eventSlugHint) {
+        eventSlugHint.textContent = finalSlug
+            ? `Enlace final: /eventos/${finalSlug}`
+            : 'Los espacios se convierten automáticamente en guiones.';
+    }
+}
+
+function getDateTimeYear(value) {
+    const match = /^(\d{4,})-/.exec(String(value || '').trim());
+    return match ? Number(match[1]) : null;
+}
+
+function getDateTimeError(value, label, required = false) {
+    const raw = String(value || '').trim();
+    if (!raw) return required ? `Selecciona la fecha de ${label}.` : null;
+    const year = getDateTimeYear(raw);
+    if (year === null || year < MIN_EVENT_YEAR || year > MAX_EVENT_YEAR) {
+        return `La fecha de ${label} debe tener un año entre ${MIN_EVENT_YEAR} y ${MAX_EVENT_YEAR}.`;
+    }
+    return null;
+}
+
+function syncDatePickerDisabledState() {
+    eventDatePickers.forEach((picker) => {
+        if (picker?._input) picker._input.disabled = Boolean(picker.input?.disabled);
+    });
+}
+
+function setEventDateTimeValue(name, value) {
+    const picker = eventDatePickers.get(name);
+    const field = eventForm?.querySelector(`[name="${name}"]`);
+    if (picker) {
+        picker.setDate(value || null, false, 'Y-m-d\\TH:i');
+    } else if (field) {
+        field.value = value || '';
+    }
+}
+
+function initEventDatePickers() {
+    eventForm?.querySelectorAll('.js-event-datetime').forEach((input) => {
+        const name = String(input.name || '');
+        if (!name || eventDatePickers.has(name)) return;
+        const picker = flatpickr(input, {
+            locale: Spanish,
+            enableTime: true,
+            time_24hr: true,
+            minuteIncrement: 5,
+            dateFormat: 'Y-m-d\\TH:i',
+            altInput: true,
+            altFormat: 'd/m/Y · H:i',
+            allowInput: true,
+            disableMobile: true,
+            minDate: `${MIN_EVENT_YEAR}-01-01`,
+            maxDate: `${MAX_EVENT_YEAR}-12-31 23:59`,
+            monthSelectorType: 'static',
+            position: 'auto center',
+            onReady: (_dates, _value, instance) => {
+                instance.calendarContainer.classList.add('event-calendar');
+                if (instance._input) instance._input.placeholder = input.placeholder || 'Selecciona fecha y hora';
+            },
+            onChange: () => updateEventPreview(),
+        });
+        eventDatePickers.set(name, picker);
+    });
+    syncDatePickerDisabledState();
+}
+
+function parseMoneyInput(value, currency = 'COP') {
+    const raw = String(value || '').trim().replace(/\s/g, '').replace(/[^0-9.,-]/g, '');
+    if (!raw) return 0;
+    if (currency === 'COP') {
+        const digits = raw.replace(/[^0-9-]/g, '');
+        const amount = Number(digits);
+        return Number.isFinite(amount) ? amount : NaN;
+    }
+    const lastComma = raw.lastIndexOf(',');
+    const lastDot = raw.lastIndexOf('.');
+    let normalized = raw;
+    if (lastComma >= 0 && lastDot >= 0) {
+        const decimalSeparator = lastComma > lastDot ? ',' : '.';
+        const groupingSeparator = decimalSeparator === ',' ? /\./g : /,/g;
+        normalized = raw.replace(groupingSeparator, '').replace(decimalSeparator, '.');
+    } else if (lastComma >= 0) {
+        normalized = raw.replace(/\./g, '').replace(',', '.');
+    } else if (lastDot >= 0) {
+        const decimals = raw.length - lastDot - 1;
+        normalized = decimals <= 2 ? raw.replace(/,/g, '') : raw.replace(/[.,]/g, '');
+    }
+    const amount = Number(normalized);
+    return Number.isFinite(amount) ? amount : NaN;
+}
+
+function formatMoneyInput() {
+    if (!eventPriceInput) return;
+    const currency = String(eventForm?.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
+    const amount = parseMoneyInput(eventPriceInput.value, currency);
+    if (!Number.isFinite(amount)) return;
+    eventPriceInput.value = new Intl.NumberFormat('es-CO', {
+        minimumFractionDigits: currency === 'COP' ? 0 : 2,
+        maximumFractionDigits: currency === 'COP' ? 0 : 2,
+    }).format(amount);
+}
+
 function syncRegistrationFields() {
     const isExternal = eventPlatformReady && eventRegistrationMode?.value === 'EXTERNAL';
-    const hasRegistration = eventPlatformReady && ['EXTERNAL', 'INTERNAL'].includes(eventRegistrationMode?.value);
+    const isInternal = eventPlatformReady && eventRegistrationMode?.value === 'INTERNAL';
+    const hasRegistration = isExternal || isInternal;
     eventRegistrationUrlWrapper?.classList.toggle('hidden', !isExternal);
+    eventRegistrationWindow?.classList.toggle('hidden', !hasRegistration);
+    eventCapacityWrapper?.classList.toggle('hidden', !isInternal);
     const urlInput = eventForm?.querySelector('[name="registration_url"]');
+    const capacityInput = eventForm?.querySelector('[name="capacity"]');
+    const registrationDateInputs = eventForm?.querySelectorAll('[name="registration_opens_at"], [name="registration_closes_at"]') || [];
     if (urlInput) {
         urlInput.disabled = !isExternal;
         urlInput.required = isExternal;
     }
+    if (capacityInput) capacityInput.disabled = !isInternal;
+    registrationDateInputs.forEach((field) => {
+        field.disabled = !hasRegistration;
+    });
+    syncDatePickerDisabledState();
     previewCta?.classList.toggle('hidden', !hasRegistration);
     previewCta?.classList.toggle('inline-flex', hasRegistration);
 }
@@ -174,6 +318,7 @@ function syncPlatformFields() {
         field.disabled = !eventPlatformReady;
     });
     syncRegistrationFields();
+    syncDatePickerDisabledState();
 }
 
 function syncFinanceFields() {
@@ -185,9 +330,17 @@ function syncFinanceFields() {
     if (!eventFinanceReady || !eventPriceInput) return;
     const isFree = eventPricingModel?.value === 'FREE';
     const usesInternalRegistration = eventRegistrationMode?.value === 'INTERNAL';
+    if (eventPricingModel) eventPricingModel.disabled = !usesInternalRegistration;
+    const currencyField = eventForm?.querySelector('[name="currency"]');
+    if (currencyField) currencyField.disabled = !usesInternalRegistration || isFree;
+    const approvalField = eventForm?.querySelector('[name="registration_requires_approval"]');
+    if (approvalField) approvalField.disabled = !usesInternalRegistration;
+    if (eventFinanceRegistrationHint) {
+        eventFinanceRegistrationHint.classList.toggle('hidden', usesInternalRegistration);
+    }
     if (isFree) eventPriceInput.value = '0';
-    eventPriceInput.readOnly = isFree;
-    eventPriceInput.classList.toggle('bg-slate-100', isFree);
+    eventPriceInput.disabled = !usesInternalRegistration || isFree;
+    eventPriceInput.classList.toggle('bg-slate-100', isFree || !usesInternalRegistration);
     if (eventOnlineProvider) {
         if (isFree || !usesInternalRegistration) eventOnlineProvider.value = 'NONE';
         eventOnlineProvider.disabled = isFree || !usesInternalRegistration;
@@ -207,6 +360,12 @@ function syncManualPaymentFields() {
     if (eventManualPaymentEnabled) {
         if (!available) eventManualPaymentEnabled.checked = false;
         eventManualPaymentEnabled.disabled = !available;
+    }
+    eventManualPaymentPanel?.classList.toggle('opacity-60', !available);
+    if (eventManualPaymentHint) {
+        eventManualPaymentHint.textContent = available
+            ? 'Actívalo para recibir un QR, transferencia, enlace externo o efectivo y revisar el comprobante.'
+            : 'Selecciona “Inscripción en Maná” y un precio distinto de gratuito para habilitarlo.';
     }
     const enabled = available && Boolean(eventManualPaymentEnabled?.checked);
     eventManualPaymentSettings?.classList.toggle('hidden', !enabled);
@@ -879,11 +1038,12 @@ function updateEventPreview() {
     const description = value('description');
     const scope = value('scope').toUpperCase() || 'LOCAL';
     const status = value('status').toUpperCase() || 'DRAFT';
-    const start = new Date(value('start_date'));
+    const start = eventDatePickers.get('start_date')?.selectedDates?.[0] || null;
     const imageUrl = sanitizeUrl(value('banner_url'));
     const location = [value('location_name'), value('city'), value('country')].filter(Boolean).join(' · ');
-    const price = Number(value('price') || 0);
     const currency = value('currency').toUpperCase() || 'COP';
+    const price = parseMoneyInput(value('price'), currency);
+    const usesInternalRegistration = value('registration_mode').toUpperCase() === 'INTERNAL';
 
     if (previewTitle) previewTitle.textContent = title || 'Título del evento';
     if (previewDescription) previewDescription.textContent = description || 'La descripción aparecerá aquí.';
@@ -893,13 +1053,13 @@ function updateEventPreview() {
         previewStatus.className = `portal-chip ${status === 'PUBLISHED' ? 'bg-teal-50 text-teal-700' : status === 'ARCHIVED' ? 'bg-slate-200 text-slate-600' : 'bg-amber-50 text-amber-700'}`;
     }
     if (previewDate) {
-        previewDate.innerHTML = Number.isNaN(start.getTime())
+        previewDate.innerHTML = !start || Number.isNaN(start.getTime())
             ? '<span class="block text-xs font-bold uppercase text-slate-500">Fecha</span><strong class="block text-lg text-[#293C74]">Por definir</strong>'
             : `<span class="block text-xs font-bold uppercase text-slate-500">${escapeHtml(new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(start))}</span><strong class="block text-2xl leading-none text-[#293C74]">${escapeHtml(start.getDate())}</strong>`;
     }
     if (previewLocation) previewLocation.textContent = location || 'Lugar por definir';
     if (previewPrice) {
-        previewPrice.textContent = price > 0
+        previewPrice.textContent = usesInternalRegistration && Number.isFinite(price) && price > 0
             ? new Intl.NumberFormat('es-CO', { style: 'currency', currency, maximumFractionDigits: currency === 'COP' ? 0 : 2 }).format(price)
             : 'Evento gratuito';
     }
@@ -914,6 +1074,8 @@ function updateEventPreview() {
 function openEventModal(mode, eventData = null) {
     if (!eventModal || !eventForm) return;
     eventForm.reset();
+    eventDatePickers.forEach((picker) => picker.clear(false));
+    eventSlugManuallyEdited = Boolean(eventData?.slug);
     showFormError();
     if (eventIdInput) eventIdInput.value = eventData?.id || '';
     if (eventModalTitle) eventModalTitle.textContent = mode === 'edit' ? 'Editar evento' : 'Nuevo evento';
@@ -955,6 +1117,11 @@ function openEventModal(mode, eventData = null) {
         const field = eventForm.querySelector(`[name="${name}"]`);
         if (field) field.value = value;
     });
+    ['start_date', 'end_date', 'registration_opens_at', 'registration_closes_at'].forEach((name) => {
+        setEventDateTimeValue(name, fieldValues[name]);
+    });
+    syncSlugInput();
+    formatMoneyInput();
     const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
     if (approvalField) approvalField.checked = Boolean(eventData?.registration_requires_approval);
 
@@ -1053,6 +1220,16 @@ eventRegistrationMode?.addEventListener('change', () => {
     syncRegistrationFields();
     syncFinanceFields();
 });
+eventSlugInput?.addEventListener('input', () => {
+    eventSlugManuallyEdited = true;
+    syncSlugInput();
+});
+eventSlugInput?.addEventListener('blur', () => syncSlugInput({ finalize: true }));
+eventTitleInput?.addEventListener('input', () => {
+    if (!eventSlugInput || eventSlugManuallyEdited) return;
+    eventSlugInput.value = normalizeEventSlug(eventTitleInput.value);
+    syncSlugInput();
+});
 eventManualPaymentEnabled?.addEventListener('change', syncManualPaymentFields);
 eventManualPaymentKind?.addEventListener('change', syncManualPaymentFields);
 eventManualPaymentQr?.addEventListener('change', () => {
@@ -1076,6 +1253,17 @@ eventForm?.querySelector('[name="currency"]')?.addEventListener('change', () => 
     if (eventOnlineProvider?.value === 'WOMPI' && eventForm.querySelector('[name="currency"]')?.value !== 'COP') {
         eventOnlineProvider.value = 'NONE';
     }
+    formatMoneyInput();
+    updateEventPreview();
+});
+eventPriceInput?.addEventListener('focus', () => {
+    const currency = String(eventForm?.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
+    const amount = parseMoneyInput(eventPriceInput.value, currency);
+    if (Number.isFinite(amount)) eventPriceInput.value = String(amount);
+});
+eventPriceInput?.addEventListener('blur', () => {
+    formatMoneyInput();
+    updateEventPreview();
 });
 eventForm?.addEventListener('input', updateEventPreview);
 eventForm?.addEventListener('change', updateEventPreview);
@@ -1092,8 +1280,14 @@ eventForm?.addEventListener('submit', async (event) => {
         const formData = new FormData(eventForm);
         const payload = Object.fromEntries(formData.entries());
         const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
-        if (eventFinanceReady && approvalField) {
-            payload.registration_requires_approval = approvalField.checked;
+        const registrationMode = eventPlatformReady
+            ? String(eventRegistrationMode?.value || 'NONE').toUpperCase()
+            : String(payload.registration_mode || 'NONE').toUpperCase();
+        payload.registration_mode = registrationMode;
+        if (eventPlatformReady && eventSlugInput) {
+            payload.slug = normalizeEventSlug(eventSlugInput.value);
+            eventSlugInput.value = payload.slug;
+            syncSlugInput();
         }
         const eventId = String(payload.id || '');
         delete payload.id;
@@ -1102,33 +1296,77 @@ eventForm?.addEventListener('submit', async (event) => {
         });
 
         const timeZone = String(payload.timezone || DEFAULT_EVENT_TIMEZONE);
+        const startDateError = getDateTimeError(payload.start_date, 'inicio', true);
+        if (startDateError) throw new Error(startDateError);
+        const endDateError = getDateTimeError(payload.end_date, 'fin');
+        if (endDateError) throw new Error(endDateError);
         const startIso = toIsoDateTime(payload.start_date, timeZone);
         const endIso = payload.end_date ? toIsoDateTime(payload.end_date, timeZone) : null;
-        if (!startIso) throw new Error('Selecciona una fecha y zona horaria válidas.');
+        if (!startIso) throw new Error('La fecha de inicio o la zona horaria no son válidas.');
         const start = new Date(startIso);
         const end = endIso ? new Date(endIso) : null;
-        if (payload.end_date && !endIso) throw new Error('Selecciona una fecha de fin válida.');
+        if (payload.end_date && !endIso) throw new Error('La fecha de fin no es válida.');
         if (end && end.getTime() < start.getTime()) {
             throw new Error('La fecha de fin debe ser posterior al inicio.');
         }
         payload.start_date = startIso;
-        if (endIso) payload.end_date = endIso;
-        ['registration_opens_at', 'registration_closes_at'].forEach((field) => {
-            if (!payload[field]) return;
-            const isoValue = toIsoDateTime(payload[field], timeZone);
-            if (!isoValue) throw new Error('Revisa las fechas de apertura y cierre de inscripciones.');
-            payload[field] = isoValue;
-        });
+        payload.end_date = endIso;
+
+        if (registrationMode === 'NONE') {
+            payload.registration_url = null;
+            payload.registration_opens_at = null;
+            payload.registration_closes_at = null;
+            payload.capacity = null;
+        } else {
+            const registrationDateFields = [
+                ['registration_opens_at', 'apertura de inscripciones'],
+                ['registration_closes_at', 'cierre de inscripciones'],
+            ];
+            registrationDateFields.forEach(([field, label]) => {
+                const rawValue = String(eventForm.querySelector(`[name="${field}"]`)?.value || '').trim();
+                const dateError = getDateTimeError(rawValue, label);
+                if (dateError) throw new Error(dateError);
+                if (!rawValue) {
+                    payload[field] = null;
+                    return;
+                }
+                const isoValue = toIsoDateTime(rawValue, timeZone);
+                if (!isoValue) throw new Error(`La fecha de ${label} o la zona horaria no son válidas.`);
+                payload[field] = isoValue;
+            });
+            const opensAt = payload.registration_opens_at ? new Date(payload.registration_opens_at).getTime() : null;
+            const closesAt = payload.registration_closes_at ? new Date(payload.registration_closes_at).getTime() : null;
+            if (opensAt !== null && closesAt !== null && closesAt < opensAt) {
+                throw new Error('El cierre de inscripciones debe ser posterior a la apertura.');
+            }
+            if (registrationMode !== 'INTERNAL') payload.capacity = null;
+        }
+
+        const pricingModel = registrationMode === 'INTERNAL'
+            ? String(eventPricingModel?.value || 'FREE').toUpperCase()
+            : 'FREE';
+        const currency = String(eventForm.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
+        const parsedPrice = pricingModel === 'FREE' ? 0 : parseMoneyInput(eventPriceInput?.value, currency);
+        if (!Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 1_000_000_000) {
+            throw new Error('El precio por persona no es válido.');
+        }
+        if (pricingModel === 'PAID' && parsedPrice <= 0) {
+            throw new Error('El precio fijo debe ser mayor que cero.');
+        }
+        payload.pricing_model = pricingModel;
+        payload.price = parsedPrice;
+        payload.currency = currency;
+        payload.registration_requires_approval = registrationMode === 'INTERNAL' && Boolean(approvalField?.checked);
         if (
             eventFinanceReady
-            && payload.registration_mode === 'INTERNAL'
+            && registrationMode === 'INTERNAL'
             && payload.pricing_model !== 'FREE'
             && (!eventOnlineProvider || eventOnlineProvider.value === 'NONE')
             && !eventManualPaymentEnabled?.checked
         ) {
             throw new Error('Selecciona un cobro automático o activa un pago verificado manualmente.');
         }
-        if (eventFinanceReady && eventManualPaymentEnabled?.checked) {
+        if (eventFinanceReady && registrationMode === 'INTERNAL' && eventManualPaymentEnabled?.checked) {
             const manualKind = String(eventManualPaymentKind?.value || '').toUpperCase();
             if (String(eventManualPaymentLabel?.value || '').trim().length < 3) {
                 throw new Error('Escribe el nombre visible del pago manual.');
@@ -1189,6 +1427,7 @@ document.addEventListener('keydown', (event) => {
 
 async function init() {
     try {
+        initEventDatePickers();
         showGate();
         const auth = await ensureAuthenticated();
         if (!auth.isAuthenticated) {

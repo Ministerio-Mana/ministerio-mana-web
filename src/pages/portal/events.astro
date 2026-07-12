@@ -125,10 +125,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="event-field">Inicio
-              <input type="datetime-local" name="start_date" required />
+              <input class="js-event-datetime" type="text" name="start_date" required autocomplete="off" placeholder="Selecciona fecha y hora" />
             </label>
             <label class="event-field">Fin
-              <input type="datetime-local" name="end_date" />
+              <input class="js-event-datetime" type="text" name="end_date" autocomplete="off" placeholder="Selecciona fecha y hora" />
             </label>
           </div>
 
@@ -202,8 +202,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <label class="event-field">Enlace público
               <div class="mt-1 flex min-w-0 items-center rounded-md border border-slate-200 bg-white focus-within:border-[#293C74]">
                 <span class="hidden flex-none border-r border-slate-200 px-3 text-sm text-slate-500 sm:inline">/eventos/</span>
-                <input class="min-w-0 flex-1 border-0 !mt-0 focus:ring-0" type="text" name="slug" data-platform-field disabled maxlength="180" placeholder="encuentro-de-familias" />
+                <input id="event-slug" class="min-w-0 flex-1 border-0 !mt-0 focus:ring-0" type="text" name="slug" data-platform-field disabled maxlength="180" placeholder="encuentro-de-familias" autocapitalize="none" autocomplete="off" spellcheck="false" />
               </div>
+              <span id="event-slug-hint" class="mt-1.5 block text-xs font-medium text-slate-500">Los espacios se convierten automáticamente en guiones.</span>
             </label>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -214,7 +215,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   <option value="EXTERNAL">Enlace externo</option>
                 </select>
               </label>
-              <label class="event-field">Cupo
+              <label id="event-capacity-wrapper" class="event-field">Cupo
                 <input type="number" name="capacity" data-platform-field disabled min="0" max="1000000" step="1" placeholder="Sin límite" />
               </label>
             </div>
@@ -225,12 +226,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div id="event-registration-window" class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">Abre inscripciones
-                <input type="datetime-local" name="registration_opens_at" data-platform-field disabled />
+                <input class="js-event-datetime" type="text" name="registration_opens_at" data-platform-field disabled autocomplete="off" placeholder="Opcional" />
               </label>
               <label class="event-field">Cierra inscripciones
-                <input type="datetime-local" name="registration_closes_at" data-platform-field disabled />
+                <input class="js-event-datetime" type="text" name="registration_closes_at" data-platform-field disabled autocomplete="off" placeholder="Opcional" />
               </label>
             </div>
 
@@ -263,6 +264,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <section id="event-finance-settings" class="hidden space-y-4 border-t border-slate-200 pt-5" aria-labelledby="event-finance-title">
             <div>
               <h3 id="event-finance-title" class="text-sm font-bold text-[#293C74]">Modalidad y cobro</h3>
+              <p id="event-finance-registration-hint" class="mt-1 text-xs text-slate-500">Selecciona “Inscripción en Maná” para configurar cobros y aprobación.</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">Modalidad
@@ -282,7 +284,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">Precio por persona
-                <input id="event-price" type="number" name="price" data-finance-field disabled min="0" max="1000000000" step="0.01" placeholder="0" />
+                <input id="event-price" type="text" name="price" data-finance-field disabled inputmode="decimal" autocomplete="off" maxlength="24" placeholder="0" />
               </label>
               <label class="event-field">Moneda
                 <select id="event-currency" name="currency" data-finance-field disabled>
@@ -304,6 +306,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <input id="event-manual-payment-enabled" type="checkbox" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                 Aceptar pago verificado manualmente
               </label>
+              <p id="event-manual-payment-hint" class="text-xs leading-relaxed text-slate-500">Disponible para eventos con inscripción en Maná y precio fijo o aporte voluntario.</p>
               <div id="event-manual-payment-settings" class="hidden space-y-4 border-t border-slate-200 pt-4">
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="event-field">Tipo de pago
@@ -431,6 +434,63 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     .event-field textarea {
       resize: vertical;
+    }
+
+    .event-field :is(input, select, textarea):disabled {
+      cursor: not-allowed;
+      background: #f1f5f9;
+      color: #7b8798;
+    }
+
+    :global(.flatpickr-calendar.event-calendar) {
+      width: min(330px, calc(100vw - 24px));
+      border: 1px solid #dce2ea;
+      border-radius: 6px;
+      background: #fff;
+      padding: 8px;
+      box-shadow: 0 18px 45px rgb(23 32 51 / 18%);
+      color: #172033;
+      font-family: inherit;
+    }
+
+    :global(.event-calendar .flatpickr-months) {
+      padding: 4px 2px 8px;
+    }
+
+    :global(.event-calendar .flatpickr-current-month),
+    :global(.event-calendar .flatpickr-weekday) {
+      color: #475569;
+      font-weight: 700;
+    }
+
+    :global(.event-calendar .flatpickr-day) {
+      border-radius: 4px;
+      color: #334155;
+    }
+
+    :global(.event-calendar .flatpickr-day:hover) {
+      border-color: #dce2ea;
+      background: #eef3ff;
+    }
+
+    :global(.event-calendar .flatpickr-day.today) {
+      border-color: #26a9c3;
+    }
+
+    :global(.event-calendar .flatpickr-day.selected) {
+      border-color: #293c74;
+      background: #293c74;
+      color: #fff;
+    }
+
+    :global(.event-calendar .flatpickr-time) {
+      border-top-color: #e2e8f0;
+    }
+
+    :global(.event-calendar .flatpickr-time input),
+    :global(.event-calendar .flatpickr-time .flatpickr-time-separator) {
+      color: #172033;
+      font-weight: 700;
     }
 
     :global(.event-action) {
