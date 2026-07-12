@@ -301,13 +301,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <option value="STRIPE">Stripe</option>
               </select>
             </label>
-            <div id="event-manual-payment-panel" class="space-y-4 rounded-md border border-slate-200 bg-slate-50 p-4">
-              <label class="flex min-h-11 items-center gap-3 text-sm font-semibold text-slate-700">
+            <div id="event-manual-payment-panel" class="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <label class="flex min-h-9 items-center gap-2 text-sm font-semibold text-slate-700">
                 <input id="event-manual-payment-enabled" type="checkbox" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                 Aceptar pago verificado manualmente
               </label>
               <p id="event-manual-payment-hint" class="text-xs leading-relaxed text-slate-500">Disponible para eventos con inscripción en Maná y precio fijo o aporte voluntario.</p>
-              <div id="event-manual-payment-settings" class="hidden space-y-4 border-t border-slate-200 pt-4">
+              <div id="event-manual-payment-settings" class="hidden space-y-3 border-t border-slate-200 pt-3">
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="event-field">Tipo de pago
                     <select id="event-manual-payment-kind" data-finance-field disabled>
@@ -336,7 +336,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
               </div>
             </div>
-            <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            <label class="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
               <input type="checkbox" name="registration_requires_approval" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
               Aprobar inscripciones antes de confirmarlas
             </label>
@@ -345,8 +345,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <div id="event-form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert"></div>
 
           <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-            <button id="event-cancel" type="button" class="min-h-11 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" class="min-h-11 rounded-md bg-[#293C74] px-5 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
+            <button id="event-cancel" type="button" class="min-h-10 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+            <button type="submit" class="min-h-10 rounded-md bg-[#293C74] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
           </div>
         </form>
 
@@ -426,10 +426,14 @@ import Sidebar from '@components/portal/Sidebar.astro';
       margin-top: 0.35rem;
       border: 1px solid #dce2ea;
       background: #fff;
-      padding: 0.65rem 0.75rem;
+      padding: 0.5rem 0.65rem;
       color: #172033;
       font-size: 0.875rem;
       font-weight: 400;
+    }
+
+    .event-field :is(input, select) {
+      min-height: 2.5rem;
     }
 
     .event-field textarea {

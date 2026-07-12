@@ -1284,6 +1284,7 @@ eventForm?.addEventListener('submit', async (event) => {
             ? String(eventRegistrationMode?.value || 'NONE').toUpperCase()
             : String(payload.registration_mode || 'NONE').toUpperCase();
         payload.registration_mode = registrationMode;
+        payload.attendance_mode = String(eventForm.querySelector('[name="attendance_mode"]')?.value || 'IN_PERSON').toUpperCase();
         if (eventPlatformReady && eventSlugInput) {
             payload.slug = normalizeEventSlug(eventSlugInput.value);
             eventSlugInput.value = payload.slug;
