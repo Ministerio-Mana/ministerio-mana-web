@@ -35,11 +35,16 @@ const EVENT_REGISTRATION_MODES = new Set(['NONE', 'EXTERNAL', 'INTERNAL']);
 const EVENT_CURRENCIES = new Set(['COP', 'USD', 'EUR']);
 const EVENT_ATTENDANCE_MODES = new Set(['IN_PERSON', 'ONLINE', 'HYBRID']);
 const EVENT_ATTENDANCE_MODE_ALIASES = new Map([
+  ['INPERSON', 'IN_PERSON'],
+  ['IN_PERSON', 'IN_PERSON'],
+  ['ON_SITE', 'IN_PERSON'],
+  ['ONSITE', 'IN_PERSON'],
   ['PRESENCIAL', 'IN_PERSON'],
   ['PRESENTIAL', 'IN_PERSON'],
+  ['ONLINE', 'ONLINE'],
   ['VIRTUAL', 'ONLINE'],
+  ['HYBRID', 'HYBRID'],
   ['HIBRIDO', 'HYBRID'],
-  ['HÍBRIDO', 'HYBRID'],
 ]);
 const EVENT_PRICING_MODELS = new Set(['FREE', 'PAID', 'DONATION']);
 const MAX_EVENT_REQUEST_CHARS = 12_000;
@@ -131,6 +136,17 @@ function isValidTimeZone(value: string): boolean {
   }
 }
 
+function normalizeAttendanceMode(value: unknown): string {
+  const normalized = String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return EVENT_ATTENDANCE_MODE_ALIASES.get(normalized) || normalized;
+}
+
 function sanitizeEventPayload(body: Record<string, any>) {
   const payload: Record<string, any> = {};
   EVENT_FIELDS.forEach((field) => {
@@ -180,8 +196,7 @@ function sanitizeEventPayload(body: Record<string, any>) {
   if (payload.registration_mode) payload.registration_mode = String(payload.registration_mode).toUpperCase();
   if (payload.currency) payload.currency = String(payload.currency).toUpperCase();
   if (payload.attendance_mode) {
-    const attendanceMode = String(payload.attendance_mode).trim().toUpperCase();
-    payload.attendance_mode = EVENT_ATTENDANCE_MODE_ALIASES.get(attendanceMode) || attendanceMode;
+    payload.attendance_mode = normalizeAttendanceMode(payload.attendance_mode);
   }
   if (payload.pricing_model) payload.pricing_model = String(payload.pricing_model).toUpperCase();
   return payload;

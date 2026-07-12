@@ -123,11 +123,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <textarea name="description" rows="3" maxlength="600" placeholder="Información principal para los asistentes"></textarea>
           </label>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="event-field">Inicio
+          <div class="event-date-grid">
+            <label class="event-field event-date-field"><span>Inicio</span>
               <input class="js-event-datetime" type="text" name="start_date" required autocomplete="off" placeholder="Selecciona fecha y hora" />
             </label>
-            <label class="event-field">Fin
+            <label class="event-field event-date-field"><span>Fin</span>
               <input class="js-event-datetime" type="text" name="end_date" autocomplete="off" placeholder="Selecciona fecha y hora" />
             </label>
           </div>
@@ -226,11 +226,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
-            <div id="event-registration-window" class="grid gap-4 sm:grid-cols-2">
-              <label class="event-field">Abre inscripciones
+            <div id="event-registration-window" class="event-date-grid">
+              <label class="event-field event-date-field"><span>Abre inscripciones</span>
                 <input class="js-event-datetime" type="text" name="registration_opens_at" data-platform-field disabled autocomplete="off" placeholder="Opcional" />
               </label>
-              <label class="event-field">Cierra inscripciones
+              <label class="event-field event-date-field"><span>Cierra inscripciones</span>
                 <input class="js-event-datetime" type="text" name="registration_closes_at" data-platform-field disabled autocomplete="off" placeholder="Opcional" />
               </label>
             </div>
@@ -440,6 +440,27 @@ import Sidebar from '@components/portal/Sidebar.astro';
       resize: vertical;
     }
 
+    .event-date-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+      gap: 1rem;
+    }
+
+    .event-date-field {
+      min-width: 0;
+    }
+
+    .event-date-field > span {
+      display: block;
+    }
+
+    .event-date-field :global(.event-datetime-display) {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .event-field :is(input, select, textarea):disabled {
       cursor: not-allowed;
       background: #f1f5f9;
@@ -447,18 +468,18 @@ import Sidebar from '@components/portal/Sidebar.astro';
     }
 
     :global(.flatpickr-calendar.event-calendar) {
-      width: min(330px, calc(100vw - 24px));
+      width: min(286px, calc(100vw - 20px));
       border: 1px solid #dce2ea;
       border-radius: 6px;
       background: #fff;
-      padding: 8px;
+      padding: 6px;
       box-shadow: 0 18px 45px rgb(23 32 51 / 18%);
       color: #172033;
       font-family: inherit;
     }
 
     :global(.event-calendar .flatpickr-months) {
-      padding: 4px 2px 8px;
+      padding: 2px 0 6px;
     }
 
     :global(.event-calendar .flatpickr-current-month),
@@ -470,6 +491,20 @@ import Sidebar from '@components/portal/Sidebar.astro';
     :global(.event-calendar .flatpickr-day) {
       border-radius: 4px;
       color: #334155;
+      height: 32px;
+      max-width: none;
+      line-height: 32px;
+    }
+
+    :global(.event-calendar .flatpickr-days),
+    :global(.event-calendar .dayContainer) {
+      width: 100%;
+      min-width: 0;
+      max-width: none;
+    }
+
+    :global(.event-calendar .flatpickr-weekday) {
+      font-size: 0.7rem;
     }
 
     :global(.event-calendar .flatpickr-day:hover) {
@@ -489,6 +524,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     :global(.event-calendar .flatpickr-time) {
       border-top-color: #e2e8f0;
+      height: 36px;
+      line-height: 36px;
     }
 
     :global(.event-calendar .flatpickr-time input),

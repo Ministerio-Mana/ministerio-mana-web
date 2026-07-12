@@ -98,6 +98,30 @@ const LIFECYCLE_TONES = {
     archived: 'bg-slate-200 text-slate-600',
 };
 
+const ATTENDANCE_MODE_ALIASES = new Map([
+    ['INPERSON', 'IN_PERSON'],
+    ['IN_PERSON', 'IN_PERSON'],
+    ['ON_SITE', 'IN_PERSON'],
+    ['ONSITE', 'IN_PERSON'],
+    ['PRESENCIAL', 'IN_PERSON'],
+    ['PRESENTIAL', 'IN_PERSON'],
+    ['ONLINE', 'ONLINE'],
+    ['VIRTUAL', 'ONLINE'],
+    ['HYBRID', 'HYBRID'],
+    ['HIBRIDO', 'HYBRID'],
+]);
+
+function normalizeAttendanceMode(value) {
+    const normalized = String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    return ATTENDANCE_MODE_ALIASES.get(normalized) || 'IN_PERSON';
+}
+
 let authHeaders = {};
 let eventsCache = [];
 let churchesCatalog = [];
@@ -234,13 +258,14 @@ function initEventDatePickers() {
             minuteIncrement: 5,
             dateFormat: 'Y-m-d\\TH:i',
             altInput: true,
+            altInputClass: 'event-datetime-display',
             altFormat: 'd/m/Y · H:i',
             allowInput: true,
             disableMobile: true,
             minDate: `${MIN_EVENT_YEAR}-01-01`,
             maxDate: `${MAX_EVENT_YEAR}-12-31 23:59`,
             monthSelectorType: 'static',
-            position: 'auto center',
+            position: 'auto left',
             onReady: (_dates, _value, instance) => {
                 instance.calendarContainer.classList.add('event-calendar');
                 if (instance._input) instance._input.placeholder = input.placeholder || 'Selecciona fecha y hora';
@@ -1110,7 +1135,7 @@ function openEventModal(mode, eventData = null) {
         timezone: eventTimeZone,
         price: eventData?.price ?? 0,
         currency: String(eventData?.currency || 'COP').toUpperCase(),
-        attendance_mode: String(eventData?.attendance_mode || 'IN_PERSON').toUpperCase(),
+        attendance_mode: normalizeAttendanceMode(eventData?.attendance_mode),
         pricing_model: String(eventData?.pricing_model || (Number(eventData?.price || 0) > 0 ? 'PAID' : 'FREE')).toUpperCase(),
     };
     Object.entries(fieldValues).forEach(([name, value]) => {
@@ -1284,7 +1309,7 @@ eventForm?.addEventListener('submit', async (event) => {
             ? String(eventRegistrationMode?.value || 'NONE').toUpperCase()
             : String(payload.registration_mode || 'NONE').toUpperCase();
         payload.registration_mode = registrationMode;
-        payload.attendance_mode = String(eventForm.querySelector('[name="attendance_mode"]')?.value || 'IN_PERSON').toUpperCase();
+        payload.attendance_mode = normalizeAttendanceMode(eventForm.querySelector('[name="attendance_mode"]')?.value);
         if (eventPlatformReady && eventSlugInput) {
             payload.slug = normalizeEventSlug(eventSlugInput.value);
             eventSlugInput.value = payload.slug;
