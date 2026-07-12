@@ -44,8 +44,8 @@ const eventId = String(Astro.params.id || '');
             <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div>
                 <p class="text-xs font-bold uppercase text-slate-500">Microsoft 365</p>
-                <h2 id="event-documents-title" class="mt-1 text-xl font-bold text-[#293C74]">Archivos del evento</h2>
-                <p class="mt-1 text-sm text-slate-600">Comprobantes, permisos, piezas y documentos operativos.</p>
+                <h2 id="event-documents-title" class="mt-1 text-xl font-bold text-[#293C74]">Documentos internos del evento</h2>
+                <p class="mt-1 text-sm text-slate-600">Comprobantes, permisos, facturas, códigos QR y archivos operativos privados.</p>
               </div>
               <button id="event-documents-refresh" type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
                 <PortalIcon name="refresh-cw" size={16} />
@@ -66,7 +66,7 @@ const eventId = String(Astro.params.id || '');
                   Subir archivo
                 </button>
               </form>
-              <p id="event-documents-help" class="hidden text-xs text-slate-500">PDF, JPG, PNG o WebP. Máximo 4 MB.</p>
+              <p id="event-documents-help" class="hidden text-xs text-slate-500">PDF, JPG, PNG o WebP. Máximo 4 MB. Las galerías y fotografías públicas se administran con ImageKit.</p>
 
               <div id="event-documents-loading" class="space-y-2" aria-live="polite">
                 {[1, 2].map(() => <div class="h-16 animate-pulse rounded-md bg-slate-100"></div>)}
@@ -75,7 +75,7 @@ const eventId = String(Astro.params.id || '');
               <div id="event-documents-empty" class="hidden rounded-md border border-dashed border-slate-300 px-4 py-8 text-center">
                 <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="file-pen-line" size={20} /></span>
                 <p class="mt-3 text-sm font-bold text-slate-700">Todavía no hay archivos</p>
-                <p class="mt-1 text-xs text-slate-500">Los documentos aparecerán aquí sin mezclarse con otros eventos.</p>
+                <p class="mt-1 text-xs text-slate-500">Los documentos aparecerán aquí sin mezclarse con otros eventos. No uses esta sección para galerías públicas.</p>
               </div>
             </div>
           </section>

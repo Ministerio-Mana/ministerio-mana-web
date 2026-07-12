@@ -76,3 +76,9 @@ Antes de encenderla:
 6. Cambiar `MICROSOFT_SHAREPOINT_EVENTS_WRITE_ENABLED=true`, desplegar y probar con un archivo sin datos sensibles.
 
 La API exige una cuenta individual, aplica la misma jerarquia del evento, limita a 4 MB por el limite de entrada de Vercel Functions, acepta solo PDF/JPG/PNG/WebP, sanea imagenes y registra cada intento en auditoria. Los archivos permanecen en SharePoint; Supabase guarda solo metadatos e identificadores externos.
+
+### Limite con ImageKit
+
+- ImageKit conserva galerias, portadas, fotografias y medios publicos optimizados para el sitio.
+- SharePoint conserva documentos operativos privados. Las imagenes aceptadas aqui son comprobantes, codigos QR u otras evidencias internas, no fotografias para galerias.
+- Supabase conserva metadatos, permisos y auditoria; no duplica los archivos.
