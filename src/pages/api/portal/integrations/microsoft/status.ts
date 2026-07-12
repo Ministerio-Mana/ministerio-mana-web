@@ -3,6 +3,7 @@ import { enforcePortalAdminGuard } from '@lib/portalAdminGuard';
 import { enforceRateLimit } from '@lib/rateLimit';
 import {
   getMicrosoftGraphConfigurationStatus,
+  isMicrosoftEventsWriteEnabled,
   verifyMicrosoftSharePointConnection,
 } from '@lib/microsoftGraph';
 
@@ -31,9 +32,10 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const config = getMicrosoftGraphConfigurationStatus();
+  const eventsWriteEnabled = isMicrosoftEventsWriteEnabled();
   const url = new URL(request.url);
   if (url.searchParams.get('verify') !== '1') {
-    return json({ ok: true, provider: 'microsoft', ...config });
+    return json({ ok: true, provider: 'microsoft', ...config, events_write_enabled: eventsWriteEnabled });
   }
   if (!config.enabled || !config.configured) {
     return json({
@@ -41,6 +43,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       provider: 'microsoft',
       ...config,
       connected: false,
+      events_write_enabled: eventsWriteEnabled,
     });
   }
 
@@ -60,6 +63,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       enabled: true,
       configured: true,
       connected: true,
+      events_write_enabled: eventsWriteEnabled,
       site: connection.site,
       drives: connection.drives,
       selected_drive_id: connection.selectedDriveId,
@@ -73,6 +77,7 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       ok: false,
       provider: 'microsoft',
       connected: false,
+      events_write_enabled: eventsWriteEnabled,
       error: error instanceof Error ? error.message : 'No se pudo verificar Microsoft.',
     }, 502);
   }

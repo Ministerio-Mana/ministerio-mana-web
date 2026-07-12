@@ -1,4 +1,6 @@
 import checkCircleIconUrl from 'lucide-static/icons/circle-check-big.svg?url';
+import externalLinkIconUrl from 'lucide-static/icons/external-link.svg?url';
+import fileIconUrl from 'lucide-static/icons/file.svg?url';
 import userCheckIconUrl from 'lucide-static/icons/user-check.svg?url';
 import xCircleIconUrl from 'lucide-static/icons/circle-x.svg?url';
 import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
@@ -22,10 +24,20 @@ const reviewError = document.getElementById('event-review-error');
 const reviewConfirm = document.getElementById('event-review-confirm');
 const reviewClose = document.getElementById('event-review-close');
 const reviewCancel = document.getElementById('event-review-cancel');
+const documentsForm = document.getElementById('event-documents-form');
+const documentsFile = document.getElementById('event-documents-file');
+const documentsSubmit = document.getElementById('event-documents-submit');
+const documentsRefresh = document.getElementById('event-documents-refresh');
+const documentsMessage = document.getElementById('event-documents-message');
+const documentsHelp = document.getElementById('event-documents-help');
+const documentsLoading = document.getElementById('event-documents-loading');
+const documentsList = document.getElementById('event-documents-list');
+const documentsEmpty = document.getElementById('event-documents-empty');
 
 const eventId = String(root?.dataset.eventId || '');
 const REQUEST_TIMEOUT_MS = 15_000;
 const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
+const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 const STATUS_LABELS = {
   UNDER_REVIEW: 'Por verificar',
   CONFIRMED: 'Confirmada',
@@ -85,11 +97,134 @@ function formatDate(value, timeZone = DEFAULT_EVENT_TIMEZONE) {
   return new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(date);
 }
 
-async function fetchJson(url, options = {}) {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function safeHttpsUrl(value) {
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' && url.hostname.toLowerCase().endsWith('.sharepoint.com') ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function setDocumentsMessage(message = '', tone = 'info') {
+  if (!documentsMessage) return;
+  documentsMessage.textContent = message;
+  documentsMessage.className = message
+    ? `rounded-md border px-3 py-2 text-sm ${tone === 'error'
+      ? 'border-red-200 bg-red-50 text-red-700'
+      : tone === 'success'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : 'border-amber-200 bg-amber-50 text-amber-800'}`
+    : 'hidden rounded-md border px-3 py-2 text-sm';
+}
+
+function renderEventDocuments(documents) {
+  if (!documentsList || !documentsEmpty || !documentsLoading) return;
+  documentsLoading.classList.add('hidden');
+  documentsList.classList.toggle('hidden', documents.length === 0);
+  documentsEmpty.classList.toggle('hidden', documents.length > 0);
+  documentsList.innerHTML = documents.map((documentItem) => {
+    const url = safeHttpsUrl(documentItem.sharepoint_web_url);
+    const failed = documentItem.status === 'FAILED';
+    const action = url && !failed
+      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">${icon(externalLinkIconUrl)} Abrir</a>`
+      : '';
+    return `<div class="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex min-w-0 items-start gap-3">
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">${icon(fileIconUrl)}</span>
+        <div class="min-w-0">
+          <p class="break-words text-sm font-bold text-slate-800">${escapeHtml(documentItem.original_name || 'Archivo')}</p>
+          <p class="mt-1 text-xs ${failed ? 'font-bold text-red-700' : 'text-slate-500'}">${failed ? 'La carga no se completó' : `${escapeHtml(formatFileSize(documentItem.size_bytes))} · ${escapeHtml(formatDate(documentItem.created_at))}`}</p>
+        </div>
+      </div>
+      ${action}
+    </div>`;
+  }).join('');
+}
+
+async function loadEventDocuments({ quiet = false } = {}) {
+  if (!documentsLoading || !documentsList || !documentsEmpty) return;
+  if (!quiet) {
+    documentsLoading.classList.remove('hidden');
+    documentsList.classList.add('hidden');
+    documentsEmpty.classList.add('hidden');
+  }
+  const params = new URLSearchParams({ event_id: eventId });
+  const { response, data } = await fetchJson(`/api/portal/event-documents?${params}`, {
+    headers: authHeaders,
+    credentials: 'include',
+  });
+  if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudieron cargar los archivos del evento.');
+
+  if (data.setup_required) {
+    documentsLoading.classList.add('hidden');
+    documentsList.classList.add('hidden');
+    documentsEmpty.classList.remove('hidden');
+    documentsForm?.classList.add('hidden');
+    documentsForm?.classList.remove('grid');
+    documentsHelp?.classList.add('hidden');
+    setDocumentsMessage('Falta activar el registro seguro de documentos en la base de datos.', 'info');
+    return;
+  }
+
+  documentsForm?.classList.toggle('hidden', !data.write_enabled);
+  documentsForm?.classList.toggle('grid', Boolean(data.write_enabled));
+  documentsHelp?.classList.toggle('hidden', !data.write_enabled);
+  setDocumentsMessage(data.write_enabled ? '' : 'La biblioteca está conectada en lectura. Las cargas se habilitarán cuando termine el permiso mínimo de Microsoft.', 'info');
+  renderEventDocuments(Array.isArray(data.documents) ? data.documents : []);
+}
+
+async function uploadEventDocument(event) {
+  event.preventDefault();
+  const file = documentsFile?.files?.[0];
+  if (!file) {
+    setDocumentsMessage('Selecciona un archivo.', 'error');
+    return;
+  }
+  if (file.size <= 0 || file.size > MAX_DOCUMENT_BYTES) {
+    setDocumentsMessage('El archivo debe pesar máximo 4 MB.', 'error');
+    return;
+  }
+  documentsSubmit.disabled = true;
+  const originalMarkup = documentsSubmit.innerHTML;
+  documentsSubmit.textContent = 'Subiendo...';
+  setDocumentsMessage('');
+  try {
+    const formData = new FormData();
+    formData.set('event_id', eventId);
+    formData.set('file', file, file.name);
+    const { response, data } = await fetchJson('/api/portal/event-documents', {
+      method: 'POST',
+      headers: authHeaders,
+      credentials: 'include',
+      body: formData,
+      timeoutMs: 45_000,
+    });
+    if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo subir el archivo.');
+    documentsForm.reset();
+    await loadEventDocuments({ quiet: true });
+    setDocumentsMessage('Archivo guardado en la biblioteca del evento.', 'success');
+  } catch (error) {
+    setDocumentsMessage(error?.message || 'No se pudo subir el archivo.', 'error');
+  } finally {
+    documentsSubmit.disabled = false;
+    documentsSubmit.innerHTML = originalMarkup;
+  }
+}
+
+async function fetchJson(url, options = {}) {
+  const { timeoutMs = REQUEST_TIMEOUT_MS, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
     const data = await response.json().catch(() => ({}));
     return { response, data };
   } catch (error) {
@@ -326,7 +461,15 @@ statusFilter?.addEventListener('change', () => {
   currentPage = 1;
   void loadOperation(1).catch(showFatalError);
 });
-refreshButton?.addEventListener('click', () => void loadOperation(currentPage).catch(showFatalError));
+refreshButton?.addEventListener('click', () => {
+  void loadOperation(currentPage).catch(showFatalError);
+  void loadEventDocuments({ quiet: true }).catch((error) => setDocumentsMessage(error?.message || 'No se pudieron actualizar los archivos.', 'error'));
+});
+documentsRefresh?.addEventListener('click', () => void loadEventDocuments().catch((error) => {
+  documentsLoading?.classList.add('hidden');
+  setDocumentsMessage(error?.message || 'No se pudieron cargar los archivos.', 'error');
+}));
+documentsForm?.addEventListener('submit', (event) => void uploadEventDocument(event));
 pagination?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-page-action]');
   if (!button || button.disabled) return;
@@ -362,6 +505,10 @@ async function init() {
     }
     authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
     await loadOperation(1);
+    await loadEventDocuments().catch((error) => {
+      documentsLoading?.classList.add('hidden');
+      setDocumentsMessage(error?.message || 'No se pudieron cargar los archivos del evento.', 'error');
+    });
   } catch (error) {
     showFatalError(error);
   }

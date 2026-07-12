@@ -6,6 +6,7 @@ const alertBox = document.getElementById('integrations-alert');
 const configuredValue = document.getElementById('microsoft-configured');
 const enabledValue = document.getElementById('microsoft-enabled');
 const connectedValue = document.getElementById('microsoft-connected');
+const eventsWriteValue = document.getElementById('microsoft-events-write');
 const refreshButton = document.getElementById('microsoft-refresh');
 const verifyButton = document.getElementById('microsoft-verify');
 const siteBox = document.getElementById('microsoft-site');
@@ -92,6 +93,7 @@ function renderStatus(data, verified) {
     verified ? (data?.connected ? 'Conectada' : 'Sin conexión') : 'Sin probar',
     verified ? Boolean(data?.connected) : null,
   );
+  setText(eventsWriteValue, data?.events_write_enabled ? 'Activada' : 'Apagada', Boolean(data?.events_write_enabled));
 
   if (verifyButton instanceof HTMLButtonElement) {
     verifyButton.disabled = !data?.enabled || !data?.configured;

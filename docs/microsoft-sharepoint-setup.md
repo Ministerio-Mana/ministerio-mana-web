@@ -32,6 +32,8 @@ MICROSOFT_GRAPH_CLIENT_ID=
 MICROSOFT_GRAPH_CLIENT_SECRET=
 MICROSOFT_SHAREPOINT_SITE_ID=
 MICROSOFT_SHAREPOINT_DRIVE_ID=
+MICROSOFT_SHAREPOINT_EVENTS_DRIVE_ID=
+MICROSOFT_SHAREPOINT_EVENTS_WRITE_ENABLED=false
 ```
 
 Primero se cargan los identificadores y el secreto manteniendo `MICROSOFT_GRAPH_ENABLED=false`. Al final se cambia a `true` y se prueba el endpoint de diagnostico.
@@ -55,3 +57,22 @@ Despues de verificar lectura:
 2. Guardar en Supabase solo metadatos e identificadores externos, nunca archivos ni tokens de Microsoft.
 3. Mapear cada recurso al alcance de los roles del portal.
 4. Activar carga con permiso `write`, validacion de archivos, auditoria y papelera.
+
+## Piloto seguro de documentos de Eventos
+
+El portal puede guardar documentos operativos de cada evento en la biblioteca `Eventos`. La carga permanece apagada aunque Microsoft este conectado mientras:
+
+```text
+MICROSOFT_SHAREPOINT_EVENTS_WRITE_ENABLED=false
+```
+
+Antes de encenderla:
+
+1. Ejecutar `docs/sql/event_documents_sharepoint.sql` en Supabase.
+2. Agregar a la aplicacion Entra el permiso Application `Lists.SelectedOperations.Selected` y conceder consentimiento administrativo.
+3. Conceder a la aplicacion el rol `write` exclusivamente sobre la biblioteca `Eventos` con `POST /sites/{site-id}/lists/{list-id}/permissions`.
+4. No conceder `Sites.ReadWrite.All`, `Sites.Manage.All` ni `Sites.FullControl.All` a la aplicacion del portal.
+5. Configurar `MICROSOFT_SHAREPOINT_EVENTS_DRIVE_ID` con el identificador exacto de la biblioteca Eventos.
+6. Cambiar `MICROSOFT_SHAREPOINT_EVENTS_WRITE_ENABLED=true`, desplegar y probar con un archivo sin datos sensibles.
+
+La API exige una cuenta individual, aplica la misma jerarquia del evento, limita a 4 MB por el limite de entrada de Vercel Functions, acepta solo PDF/JPG/PNG/WebP, sanea imagenes y registra cada intento en auditoria. Los archivos permanecen en SharePoint; Supabase guarda solo metadatos e identificadores externos.
