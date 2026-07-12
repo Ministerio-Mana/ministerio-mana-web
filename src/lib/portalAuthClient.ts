@@ -316,6 +316,48 @@ export async function ensureAuthenticated(): Promise<PortalAuthResult> {
     };
 }
 
+/**
+ * Renews the Supabase session before retrying a request rejected by the API.
+ * Password sessions cannot be renewed client-side and are validated as-is.
+ */
+export async function refreshPortalAuthentication(): Promise<PortalAuthResult> {
+    const current = await ensureAuthenticated();
+    if (!current.isAuthenticated || current.mode !== 'supabase') return current;
+
+    try {
+        const supabase = await loadSupabaseBrowserClient();
+        if (!supabase) throw new Error('Supabase no está disponible.');
+
+        const { data, error } = await withTimeout(
+            supabase.auth.refreshSession(),
+            AUTH_TIMEOUT_MS,
+            'La renovación de sesión',
+        );
+        if (error || !data?.session?.access_token) {
+            throw error || new Error('No se pudo renovar la sesión.');
+        }
+
+        portalSessionCache = null;
+        portalSessionPromise = null;
+        return {
+            isAuthenticated: true,
+            token: data.session.access_token,
+            mode: 'supabase',
+            user: data.session.user,
+        };
+    } catch (error) {
+        console.warn(DEBUG_PREFIX, 'Supabase session refresh failed:', error);
+        portalSessionCache = null;
+        portalSessionPromise = null;
+        return {
+            isAuthenticated: false,
+            token: null,
+            mode: null,
+            user: null,
+        };
+    }
+}
+
 export function redirectToLogin() {
     window.location.href = '/portal/ingresar';
 }

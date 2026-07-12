@@ -8,7 +8,12 @@ import sendIconUrl from 'lucide-static/icons/send.svg?url';
 import flatpickr from 'flatpickr';
 import { Spanish } from 'flatpickr/dist/l10n/es.js';
 import 'flatpickr/dist/flatpickr.min.css';
-import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
+import {
+    ensureAuthenticated,
+    getPortalSession,
+    redirectToLogin,
+    refreshPortalAuthentication,
+} from '@lib/portalAuthClient';
 
 const eventsGate = document.getElementById('events-gate');
 const eventsSecureContent = document.getElementById('events-secure-content');
@@ -465,10 +470,9 @@ async function loadEventPaymentOption(eventData) {
 }
 
 async function saveEventPaymentOption(eventId, provider) {
-    const { res, data } = await fetchJsonWithTimeout('/api/portal/event-payments/options', {
+    const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/event-payments/options', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event_id: eventId, provider }),
     }, REQUEST_TIMEOUT_MS, 'La configuración del método de pago');
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el método de pago.');
@@ -483,10 +487,8 @@ async function uploadManualPaymentQr(eventId) {
     const payload = new FormData();
     payload.append('event_id', eventId);
     payload.append('file', file);
-    const { res, data } = await fetchJsonWithTimeout('/api/portal/event-payments/qr', {
+    const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/event-payments/qr', {
         method: 'POST',
-        headers: authHeaders,
-        credentials: 'include',
         body: payload,
     }, REQUEST_TIMEOUT_MS, 'La carga del código QR');
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el código QR.');
@@ -501,10 +503,9 @@ async function saveManualPaymentOption(eventId) {
     let qrAssetPath = String(eventManualPaymentQrPath?.value || '');
     const kind = String(eventManualPaymentKind?.value || 'QR_TRANSFER').toUpperCase();
     if (enabled && kind === 'QR_TRANSFER') qrAssetPath = await uploadManualPaymentQr(eventId);
-    const { res, data } = await fetchJsonWithTimeout('/api/portal/event-payments/options', {
+    const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/event-payments/options', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             event_id: eventId,
             enabled,
@@ -546,6 +547,32 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
     } finally {
         window.clearTimeout(timeoutId);
     }
+}
+
+async function fetchAuthorizedJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+    const withAuth = () => ({
+        ...options,
+        headers: { ...(options.headers || {}), ...authHeaders },
+        credentials: 'include',
+    });
+    let result = await fetchJsonWithTimeout(url, withAuth(), timeoutMs, label);
+    if (result.res.status !== 401) return result;
+
+    const refreshedAuth = await refreshPortalAuthentication();
+    if (!refreshedAuth.isAuthenticated) {
+        redirectToLogin();
+        throw new Error('Tu sesión venció. Inicia sesión nuevamente.');
+    }
+
+    const session = await getPortalSession({ auth: refreshedAuth, force: true, cacheMs: 0 });
+    if (!session.ok) {
+        if (session.response?.status === 401 || session.response?.status === 403) redirectToLogin();
+        throw new Error(session.data?.error || 'No se pudo renovar la sesión del portal.');
+    }
+
+    authHeaders = session.headers;
+    result = await fetchJsonWithTimeout(url, withAuth(), timeoutMs, label);
+    return result;
 }
 
 function showEventsError(error) {
@@ -1189,10 +1216,9 @@ async function changeEventStatus(eventId, status) {
     const button = eventsList?.querySelector(`[data-event-id="${CSS.escape(eventId)}"][data-event-status]`);
     if (button) button.disabled = true;
     try {
-        const { res, data } = await fetchJsonWithTimeout('/api/portal/events', {
+        const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/events', {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
-            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: eventId, status }),
         }, REQUEST_TIMEOUT_MS, 'El cambio de estado');
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo cambiar el estado.');
@@ -1408,10 +1434,9 @@ eventForm?.addEventListener('submit', async (event) => {
             }
         }
 
-        const { res, data } = await fetchJsonWithTimeout('/api/portal/events', {
+        const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/events', {
             method: eventId ? 'PATCH' : 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders },
-            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(eventId ? { id: eventId, ...payload } : payload),
         }, REQUEST_TIMEOUT_MS, 'El guardado del evento');
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el evento.');
