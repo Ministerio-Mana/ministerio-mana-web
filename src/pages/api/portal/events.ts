@@ -47,6 +47,15 @@ const EVENT_ATTENDANCE_MODE_ALIASES = new Map([
   ['HIBRIDO', 'HYBRID'],
 ]);
 const EVENT_PRICING_MODELS = new Set(['FREE', 'PAID', 'DONATION']);
+const EVENT_ENUM_FIELDS = new Set([
+  'scope',
+  'status',
+  'visibility',
+  'registration_mode',
+  'currency',
+  'attendance_mode',
+  'pricing_model',
+]);
 const MAX_EVENT_REQUEST_CHARS = 12_000;
 
 async function ensureCumbreEvent(userId?: string | null) {
@@ -184,6 +193,16 @@ function sanitizeEventPayload(body: Record<string, any>) {
     if (field === 'contact_email') {
       const email = String(value).trim().toLowerCase().slice(0, 254);
       if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) payload.contact_email = email;
+      return;
+    }
+    if (EVENT_ENUM_FIELDS.has(field)) {
+      const technicalValue = String(value).trim().slice(0, 80);
+      if (technicalValue) payload[field] = technicalValue;
+      return;
+    }
+    if (field === 'timezone') {
+      const timezone = String(value).trim().slice(0, 80);
+      if (/^[A-Za-z0-9._+\-/]+$/.test(timezone)) payload.timezone = timezone;
       return;
     }
     const maxLength = field === 'description' ? 600 : field === 'category' || field === 'timezone' ? 80 : 160;
