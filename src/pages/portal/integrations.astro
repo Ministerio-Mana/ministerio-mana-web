@@ -1,0 +1,85 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import PortalIcon from '@components/portal/PortalIcon.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+---
+
+<BaseLayout title="Integraciones | Portal Maná" description="Diagnóstico privado de integraciones del Portal Maná." hideHeader hideFooter noindex>
+  <div class="portal-shell min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
+    <div class="flex min-h-screen flex-col lg:flex-row">
+      <Sidebar />
+
+      <main class="relative flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 xl:p-14">
+        <div id="integrations-gate" class="mx-auto max-w-xl rounded-md border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
+          Validando permisos...
+        </div>
+
+        <div id="integrations-content" class="mx-auto hidden max-w-5xl space-y-6">
+          <header class="border-b border-slate-200 pb-5">
+            <p class="text-xs font-bold uppercase text-slate-500">Configuración privada</p>
+            <h1 class="mt-1 text-2xl font-display font-bold text-[#293C74] md:text-4xl">Integraciones</h1>
+            <p class="mt-1 text-sm text-slate-600 md:text-base">Estado técnico de servicios externos autorizados.</p>
+          </header>
+
+          <div id="integrations-alert" class="hidden rounded-md border px-4 py-3 text-sm" role="alert"></div>
+
+          <section class="portal-panel overflow-hidden">
+            <div class="grid md:grid-cols-[190px_1fr]">
+              <div class="flex min-h-40 items-center justify-center bg-[#293C74] text-white">
+                <PortalIcon name="settings-2" size={46} />
+              </div>
+              <div class="space-y-5 p-6 md:p-8">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p class="text-xs font-bold uppercase text-slate-500">Microsoft 365</p>
+                    <h2 class="mt-1 text-xl font-bold text-[#293C74]">SharePoint</h2>
+                    <p class="mt-1 text-sm text-slate-600">Acceso restringido al sitio Portal Maná.</p>
+                  </div>
+                  <button id="microsoft-refresh" type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                    <PortalIcon name="refresh-cw" size={17} />
+                    Actualizar
+                  </button>
+                </div>
+
+                <dl class="grid gap-3 sm:grid-cols-3">
+                  <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
+                    <dt class="text-xs font-bold uppercase text-slate-500">Variables</dt>
+                    <dd id="microsoft-configured" class="mt-1 text-sm font-bold text-slate-700">Pendiente</dd>
+                  </div>
+                  <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
+                    <dt class="text-xs font-bold uppercase text-slate-500">Integración</dt>
+                    <dd id="microsoft-enabled" class="mt-1 text-sm font-bold text-slate-700">Pendiente</dd>
+                  </div>
+                  <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
+                    <dt class="text-xs font-bold uppercase text-slate-500">Conexión</dt>
+                    <dd id="microsoft-connected" class="mt-1 text-sm font-bold text-slate-700">Sin probar</dd>
+                  </div>
+                </dl>
+
+                <div id="microsoft-site" class="hidden rounded-md border border-slate-200 px-4 py-3">
+                  <p id="microsoft-site-name" class="text-sm font-bold text-[#293C74]"></p>
+                  <a id="microsoft-site-link" class="mt-1 hidden text-xs font-bold text-brand-teal hover:underline" target="_blank" rel="noopener noreferrer">Abrir SharePoint</a>
+                </div>
+
+                <div id="microsoft-drives-wrap" class="hidden space-y-2">
+                  <h3 class="text-sm font-bold text-[#293C74]">Bibliotecas disponibles</h3>
+                  <ul id="microsoft-drives" class="grid gap-2 sm:grid-cols-2"></ul>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <button id="microsoft-verify" type="button" disabled class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1f2f63] disabled:cursor-not-allowed disabled:opacity-50">
+                    <PortalIcon name="eye" size={17} />
+                    Probar conexión de lectura
+                  </button>
+                </div>
+                <p class="text-xs text-slate-500">La prueba consulta el sitio y sus bibliotecas. No crea, modifica ni elimina archivos.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="../../scripts/portal-integrations.js"></script>
+</BaseLayout>
