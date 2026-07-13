@@ -24,6 +24,7 @@ import {
     getRequiredEventProviderCurrency,
     normalizeEventOnlinePaymentProvider,
 } from '@lib/eventPaymentContract.js';
+import { normalizeEventInvitationLayout } from '@lib/eventInvitationLayout.js';
 
 const eventsGate = document.getElementById('events-gate');
 const eventsSecureContent = document.getElementById('events-secure-content');
@@ -945,12 +946,13 @@ function renderEvents() {
     eventsList.innerHTML = events.map((event) => {
         const lifecycle = getLifecycle(event);
         const bannerUrl = sanitizeUrl(event.banner_url);
+        const bannerLayout = normalizeEventInvitationLayout(event.banner_layout);
         const start = new Date(event.start_date || '');
         const month = Number.isNaN(start.getTime()) ? 'EVENTO' : new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(start).replace('.', '').toUpperCase();
         const day = Number.isNaN(start.getTime()) ? '—' : String(start.getDate());
         const media = bannerUrl
-            ? `<img src="${escapeAttr(bannerUrl)}" alt="" loading="lazy" decoding="async" class="h-24 w-full object-cover sm:h-28 sm:w-48" />`
-            : `<div class="flex h-24 w-full flex-col items-center justify-center bg-[#293C74] text-white sm:h-28 sm:w-28"><span class="text-xs font-bold text-white">${escapeHtml(month)}</span><strong class="text-3xl leading-none text-white">${escapeHtml(day)}</strong></div>`;
+            ? `<div class="event-list-media event-list-media--${escapeAttr(bannerLayout.toLowerCase())}"><img src="${escapeAttr(bannerUrl)}" alt="" loading="lazy" decoding="async" /></div>`
+            : `<div class="event-list-media event-list-media--horizontal flex flex-col items-center justify-center bg-[#293C74] text-white"><span class="text-xs font-bold text-white">${escapeHtml(month)}</span><strong class="text-3xl leading-none text-white">${escapeHtml(day)}</strong></div>`;
         const description = event.description ? `<p class="mt-1 line-clamp-1 text-sm text-slate-500">${escapeHtml(event.description)}</p>` : '';
         const editAction = canEditEvent(event)
             ? `<button type="button" class="event-edit event-action" data-event-id="${escapeAttr(event.id || '')}">${icon(pencilIconUrl)} Editar</button>`
@@ -1200,7 +1202,10 @@ async function uploadInvitationImage(eventId) {
     const bannerField = eventForm?.querySelector('[name="banner_url"]');
     if (bannerField) bannerField.value = String(data.banner_url || '');
     clearPendingInvitationImage();
-    return String(data.banner_url || '');
+    return {
+        bannerUrl: String(data.banner_url || ''),
+        layout: normalizeEventInvitationLayout(data.layout),
+    };
 }
 
 function openEventModal(mode, eventData = null) {
@@ -1549,9 +1554,10 @@ eventForm?.addEventListener('submit', async (event) => {
         }
         if (savedEvent?.id && pendingInvitationImageFile) {
             try {
-                const bannerUrl = await uploadInvitationImage(savedEvent.id);
-                if (bannerUrl) {
-                    savedEvent.banner_url = bannerUrl;
+                const invitationImage = await uploadInvitationImage(savedEvent.id);
+                if (invitationImage?.bannerUrl) {
+                    savedEvent.banner_url = invitationImage.bannerUrl;
+                    savedEvent.banner_layout = invitationImage.layout;
                     eventsCache = eventsCache.map((item) => item.id === savedEvent.id ? savedEvent : item);
                 }
             } catch (imageError) {

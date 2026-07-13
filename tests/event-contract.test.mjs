@@ -11,6 +11,7 @@ import {
   getRequiredEventProviderCurrency,
   isValidEventProviderCurrency,
 } from '../src/lib/eventPaymentContract.js';
+import { getEventInvitationBounds, getEventInvitationLayout } from '../src/lib/eventInvitationLayout.js';
 
 test('normaliza etiquetas visibles de zona horaria al identificador IANA', () => {
   assert.equal(normalizeEventTimeZone('Colombia · Bogotá'), 'America/Bogota');
@@ -41,4 +42,13 @@ test('aplica la moneda obligatoria de cada cobro automático', () => {
   assert.equal(isValidEventProviderCurrency('WOMPI', 'USD'), false);
   assert.equal(isValidEventProviderCurrency('STRIPE', 'USD'), true);
   assert.equal(isValidEventProviderCurrency('STRIPE', 'COP'), false);
+});
+
+test('elige la plantilla de invitación sin pedir medidas al usuario', () => {
+  assert.equal(getEventInvitationLayout(1600, 900), 'HORIZONTAL');
+  assert.equal(getEventInvitationLayout(1080, 1080), 'SQUARE');
+  assert.equal(getEventInvitationLayout(1080, 1350), 'VERTICAL');
+  assert.deepEqual(getEventInvitationBounds('HORIZONTAL'), { width: 1600, height: 1200 });
+  assert.deepEqual(getEventInvitationBounds('SQUARE'), { width: 1200, height: 1200 });
+  assert.deepEqual(getEventInvitationBounds('VERTICAL'), { width: 1080, height: 1350 });
 });

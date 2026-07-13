@@ -6,11 +6,13 @@ type Props = {
   endDate?: string | null;
   location?: string | null;
   image?: string | null;
+  imageLayout?: string | null;
   href: string;
   category?: string | null;
 };
 
-const { title, summary, startDate, endDate, location, image, href, category } = Astro.props;
+const { title, summary, startDate, endDate, location, image, imageLayout, href, category } = Astro.props;
+const mediaLayout = imageLayout === 'SQUARE' || imageLayout === 'VERTICAL' ? imageLayout.toLowerCase() : 'horizontal';
 const start = new Date(startDate);
 const end = new Date(endDate || startDate);
 const isPast = Number.isFinite(end.getTime()) && end.getTime() < Date.now();
@@ -23,10 +25,10 @@ const monthLabel = Number.isFinite(start.getTime())
 const dayLabel = Number.isFinite(start.getTime()) ? String(start.getDate()) : 'â€”';
 ---
 
-<article class="group grid min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md sm:grid-cols-[180px_minmax(0,1fr)]">
-  <a href={href} class="relative block min-h-40 overflow-hidden bg-[#293C74]" aria-label={`Ver ${title}`}>
+<article class:list={["event-public-card group grid min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md", `event-public-card--${mediaLayout}`]}>
+  <a href={href} class:list={["event-public-card-media relative block overflow-hidden bg-[#293C74]", `event-public-card-media--${mediaLayout}`]} aria-label={`Ver ${title}`}>
     {image ? (
-      <img src={image} alt="" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+      <img src={image} alt="" loading="lazy" decoding="async" class:list={["absolute inset-0 h-full w-full transition duration-300 group-hover:scale-[1.02]", mediaLayout === 'horizontal' ? 'object-cover' : 'object-contain']} />
     ) : (
       <span class="absolute inset-0 flex flex-col items-center justify-center text-white">
         <span class="text-xs font-bold text-white/80">{monthLabel}</span>
@@ -49,3 +51,20 @@ const dayLabel = Number.isFinite(start.getTime()) ? String(start.getDate()) : 'â
     </div>
   </div>
 </article>
+
+<style>
+  .event-public-card {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .event-public-card-media { min-height: 10rem; }
+  .event-public-card-media--square { aspect-ratio: 1; min-height: 0; }
+  .event-public-card-media--vertical { aspect-ratio: 4 / 5; min-height: 0; }
+
+  @media (max-width: 639px) {
+    .event-public-card { grid-template-columns: 1fr; }
+    .event-public-card-media--horizontal { min-height: 10rem; }
+    .event-public-card-media--square { width: min(100%, 300px); margin-inline: auto; }
+    .event-public-card-media--vertical { width: min(100%, 240px); margin-inline: auto; }
+  }
+</style>

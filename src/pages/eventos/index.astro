@@ -31,6 +31,7 @@ const events = [
     endDate: event.end_date,
     location: [event.location_name, event.city, event.country].filter(Boolean).join(' · '),
     image: event.banner_url,
+    imageLayout: event.banner_layout,
     href: getPublicEventPath(event),
     category: event.category || event.scope?.toLowerCase(),
   })),

@@ -26,6 +26,7 @@ const isCompleted = Number.isFinite(endDate.getTime()) && endDate.getTime() < Da
 const location = contentEntry?.data.location || [databaseEvent?.location_name, databaseEvent?.city, databaseEvent?.country].filter(Boolean).join(' · ');
 const address = databaseEvent?.location_address || '';
 const image = contentEntry?.data.heroImage || databaseEvent?.banner_url || undefined;
+const imageLayout = contentEntry ? 'HORIZONTAL' : databaseEvent?.banner_layout || 'HORIZONTAL';
 const useImageHero = Boolean(image && !image.toLowerCase().endsWith('.svg'));
 const brochure = contentEntry?.data.brochurePdf;
 const registrationMode = String(databaseEvent?.registration_mode || 'NONE').toUpperCase();
@@ -78,10 +79,11 @@ const structured = (contentEntry || databaseEvent) ? {
 <BaseLayout title={`${title} — Evento`} description={description} image={image} type="event" structuredData={structured} noindex={!contentEntry && databaseEvent?.visibility === 'UNLISTED'}>
   {(contentEntry || databaseEvent) ? (
     <div class="bg-slate-50">
-      <header class:list={["relative flex min-h-[420px] items-end overflow-hidden", !useImageHero && "bg-[#293C74]"]}>
-        {useImageHero && <img src={image} alt="" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" />}
-        {useImageHero && <div class="absolute inset-0 bg-slate-950/55"></div>}
-        <div class="container-tight relative z-10 w-full py-10 text-white sm:py-14">
+      <header class:list={["event-public-hero relative overflow-hidden", `event-public-hero--${imageLayout.toLowerCase()}`, !useImageHero && "bg-[#293C74]"]}>
+        {useImageHero && imageLayout === 'HORIZONTAL' && <img src={image} alt="" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" />}
+        {useImageHero && imageLayout === 'HORIZONTAL' && <div class="absolute inset-0 bg-slate-950/55"></div>}
+        <div class:list={["container-tight relative z-10 w-full py-10 text-white sm:py-14", imageLayout !== 'HORIZONTAL' && "event-public-hero-poster"]}>
+          {useImageHero && imageLayout !== 'HORIZONTAL' && <div class:list={["event-public-hero-image", `event-public-hero-image--${imageLayout.toLowerCase()}`]}><img src={image} alt="" fetchpriority="high" /></div>}
           <div class="max-w-4xl">
             <p class="mb-3 text-xs font-bold uppercase text-white/80">{isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná'}</p>
             <h1 class="text-3xl font-bold leading-tight text-white sm:text-5xl">{title}</h1>
@@ -296,3 +298,56 @@ const structured = (contentEntry || databaseEvent) ? {
     import '@scripts/public-event-registration.js';
   </script>
 </BaseLayout>
+
+<style>
+  .event-public-hero {
+    display: flex;
+    min-height: 420px;
+    align-items: end;
+  }
+
+  .event-public-hero--square,
+  .event-public-hero--vertical {
+    align-items: center;
+    background: linear-gradient(128deg, #172553 0%, #293c74 55%, #1d6f85 130%);
+  }
+
+  .event-public-hero-poster {
+    display: grid;
+    grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(1.5rem, 4vw, 4rem);
+  }
+
+  .event-public-hero-image {
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: 0.75rem;
+    background: rgb(15 23 42 / 42%);
+    box-shadow: 0 20px 45px rgb(15 23 42 / 35%);
+  }
+
+  .event-public-hero-image--square { aspect-ratio: 1; }
+  .event-public-hero-image--vertical { aspect-ratio: 4 / 5; }
+
+  .event-public-hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  @media (max-width: 639px) {
+    .event-public-hero {
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .event-public-hero-poster {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .event-public-hero-image--square { width: min(100%, 300px); margin-inline: auto; }
+    .event-public-hero-image--vertical { width: min(100%, 240px); margin-inline: auto; }
+  }
+</style>

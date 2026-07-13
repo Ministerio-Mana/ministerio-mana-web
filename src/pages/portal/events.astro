@@ -611,6 +611,42 @@ import Sidebar from '@components/portal/Sidebar.astro';
       outline: none;
     }
 
+    :global(.event-list-media) {
+      display: flex;
+      width: 12rem;
+      height: 7rem;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #293c74;
+    }
+
+    :global(.event-list-media img) {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    :global(.event-list-media--square) {
+      width: 7rem;
+    }
+
+    :global(.event-list-media--square img),
+    :global(.event-list-media--vertical img) {
+      object-fit: contain;
+      background: #f1f5f9;
+    }
+
+    :global(.event-list-media--vertical) {
+      width: 5.6rem;
+    }
+
+    @media (max-width: 639px) {
+      :global(.event-list-media) { width: 100%; height: 10rem; }
+      :global(.event-list-media--square) { width: min(100%, 12rem); height: 12rem; margin-inline: auto; }
+      :global(.event-list-media--vertical) { width: min(100%, 9rem); height: 11.25rem; margin-inline: auto; }
+    }
+
     :global(.event-action) {
       display: inline-flex;
       min-height: 40px;

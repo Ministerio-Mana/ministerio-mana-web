@@ -4,14 +4,13 @@ import sharp from 'sharp';
 import { canActorManageEvent, getEventAccessContext, type ScopedEvent } from '@lib/eventAccess';
 import { deleteMicrosoftEventDocument, isMicrosoftEventsWriteEnabled, uploadMicrosoftEventDocument } from '@lib/microsoftGraph';
 import { enforceRateLimit } from '@lib/rateLimit';
+import { getEventInvitationBounds, getEventInvitationLayout } from '@lib/eventInvitationLayout.js';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 
 export const prerender = false;
 
 const MAX_INPUT_BYTES = 4 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 750 * 1024;
-const TARGET_WIDTH = 1600;
-const TARGET_HEIGHT = 900;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const IMAGE_FORMATS = new Set(['jpeg', 'png', 'webp']);
@@ -49,6 +48,12 @@ function isSchemaMissing(error: any): boolean {
     || /relation .*event_invitation_images.*does not exist/i.test(String(error?.message || ''));
 }
 
+function isLayoutSchemaMissing(error: any): boolean {
+  return isSchemaMissing(error)
+    || error?.code === '42703'
+    || /column .*\b(layout|banner_layout)\b.* does not exist/i.test(String(error?.message || ''));
+}
+
 async function loadManageableEvent(request: Request, eventId: string) {
   if (!supabaseAdmin) return { error: json({ ok: false, error: 'Supabase no configurado.' }, 500) };
   const ctx = await getEventAccessContext(request);
@@ -70,7 +75,7 @@ async function loadManageableEvent(request: Request, eventId: string) {
   return { ctx, event: event as EventRecord };
 }
 
-async function prepareImage(file: File): Promise<Buffer> {
+async function prepareImage(file: File): Promise<{ content: Buffer; layout: string; width: number; height: number }> {
   if (!IMAGE_MIMES.has(String(file.type || '').toLowerCase()) || file.size <= 0 || file.size > MAX_INPUT_BYTES) {
     throw new Error('Usa una imagen JPG, PNG o WebP de máximo 4 MB.');
   }
@@ -84,30 +89,16 @@ async function prepareImage(file: File): Promise<Buffer> {
     throw new Error('La imagen es demasiado pequeña. Usa una de al menos 480 × 480 píxeles.');
   }
 
-  const optimize = async (quality: number) => {
-    const [background, foreground] = await Promise.all([
-      image.clone()
-        .rotate()
-        .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: 'cover', position: 'attention', withoutEnlargement: false })
-        .blur(28)
-        .modulate({ brightness: 0.72, saturation: 0.9 })
-        .webp({ quality: 56, effort: 5 })
-        .toBuffer(),
-      image.clone()
-        .rotate()
-        .resize(TARGET_WIDTH, TARGET_HEIGHT, {
-          fit: 'contain',
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-          withoutEnlargement: false,
-        })
-        .webp({ quality, effort: 5 })
-        .toBuffer(),
-    ]);
-    return sharp(background)
-      .composite([{ input: foreground, gravity: 'centre' }])
-      .webp({ quality, effort: 5 })
-      .toBuffer();
-  };
+  const orientation = Number(metadata.orientation || 1);
+  const sourceWidth = [5, 6, 7, 8].includes(orientation) ? metadata.height : metadata.width;
+  const sourceHeight = [5, 6, 7, 8].includes(orientation) ? metadata.width : metadata.height;
+  const layout = getEventInvitationLayout(sourceWidth, sourceHeight);
+  const bounds = getEventInvitationBounds(layout);
+  const optimize = (quality: number) => image.clone()
+    .rotate()
+    .resize(bounds.width, bounds.height, { fit: 'inside', withoutEnlargement: false })
+    .webp({ quality, effort: 5 })
+    .toBuffer();
   let output = await optimize(82);
   for (const quality of [74, 66, 58]) {
     if (output.byteLength <= MAX_OUTPUT_BYTES) break;
@@ -116,7 +107,9 @@ async function prepareImage(file: File): Promise<Buffer> {
   if (output.byteLength > MAX_OUTPUT_BYTES) {
     throw new Error('La imagen optimizada supera 750 KB. Usa una imagen con menos detalle.');
   }
-  return output;
+  const outputMetadata = await sharp(output).metadata();
+  if (!outputMetadata.width || !outputMetadata.height) throw new Error('No se pudieron leer las dimensiones de la imagen optimizada.');
+  return { content: output, layout, width: outputMetadata.width, height: outputMetadata.height };
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -143,9 +136,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const file = formData.get('file');
   if (!(file instanceof File)) return json({ ok: false, error: 'Selecciona una imagen.' }, 400);
 
-  let content: Buffer;
+  let prepared: Awaited<ReturnType<typeof prepareImage>>;
   try {
-    content = await prepareImage(file);
+    prepared = await prepareImage(file);
   } catch (error) {
     return json({ ok: false, error: error instanceof Error ? error.message : 'La imagen no es válida.' }, 400);
   }
@@ -166,7 +159,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       eventFolder: buildEventFolder(access.event),
       fileName: storedName,
       contentType: 'image/webp',
-      content,
+      content: prepared.content,
     });
     const now = new Date().toISOString();
     const { error: upsertError } = await supabaseAdmin
@@ -175,9 +168,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         event_id: eventId,
         original_name: String(file.name || 'invitacion').slice(0, 180),
         mime_type: 'image/webp',
-        size_bytes: content.byteLength,
-        width: TARGET_WIDTH,
-        height: TARGET_HEIGHT,
+        size_bytes: prepared.content.byteLength,
+        width: prepared.width,
+        height: prepared.height,
+        layout: prepared.layout,
         sharepoint_drive_id: uploaded.drive.id,
         sharepoint_item_id: uploaded.item.id,
         sharepoint_web_url: uploaded.item.webUrl,
@@ -186,8 +180,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       }, { onConflict: 'event_id' });
     if (upsertError) {
       await deleteMicrosoftEventDocument(uploaded.drive.id, uploaded.item.id).catch(() => undefined);
-      if (isSchemaMissing(upsertError)) {
-        return json({ ok: false, error: 'Ejecuta docs/sql/event_invitation_images_sharepoint.sql antes de cargar invitaciones.' }, 409);
+      if (isLayoutSchemaMissing(upsertError)) {
+        return json({ ok: false, error: 'Ejecuta docs/sql/event_invitation_image_layouts.sql antes de cargar invitaciones.' }, 409);
       }
       return json({ ok: false, error: 'No se pudo registrar la imagen de invitación.' }, 500);
     }
@@ -195,22 +189,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const bannerUrl = `/api/events/invitation-image?event_id=${encodeURIComponent(eventId)}&v=${encodeURIComponent(now)}`;
     const { error: eventUpdateError } = await supabaseAdmin
       .from('events')
-      .update({ banner_url: bannerUrl, updated_at: now })
+      .update({ banner_url: bannerUrl, banner_layout: prepared.layout, updated_at: now })
       .eq('id', eventId);
     if (eventUpdateError) {
+      if (isLayoutSchemaMissing(eventUpdateError)) {
+        return json({ ok: false, error: 'Ejecuta docs/sql/event_invitation_image_layouts.sql antes de cargar invitaciones.' }, 409);
+      }
       return json({ ok: false, error: 'La imagen quedó en SharePoint, pero no se pudo asociar al evento.' }, 500);
     }
     const { error: auditError } = await supabaseAdmin.from('event_invitation_image_audit_logs').insert({
       event_id: eventId,
       actor_user_id: access.ctx.userId,
       action: 'invitation.image.uploaded',
-      metadata: { size_bytes: content.byteLength, width: TARGET_WIDTH, height: TARGET_HEIGHT },
+      metadata: { size_bytes: prepared.content.byteLength, width: prepared.width, height: prepared.height, layout: prepared.layout },
     });
     if (auditError) console.error('[event-invitation-image] audit insert failed', auditError);
     if (previous?.sharepoint_drive_id && previous?.sharepoint_item_id) {
       await deleteMicrosoftEventDocument(String(previous.sharepoint_drive_id), String(previous.sharepoint_item_id)).catch(() => undefined);
     }
-    return json({ ok: true, banner_url: bannerUrl, size_bytes: content.byteLength, width: TARGET_WIDTH, height: TARGET_HEIGHT }, 201);
+    return json({ ok: true, banner_url: bannerUrl, size_bytes: prepared.content.byteLength, width: prepared.width, height: prepared.height, layout: prepared.layout }, 201);
   } catch (error) {
     console.error('[event-invitation-image] upload failed', error);
     return json({ ok: false, error: 'SharePoint no pudo guardar la imagen de invitación.' }, 502);

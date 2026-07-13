@@ -22,7 +22,7 @@ const LEGACY_PUBLIC_FIELDS = [
   'status',
 ].join(',');
 
-const PLATFORM_PUBLIC_FIELDS = [
+const PLATFORM_PUBLIC_FIELDS_BASE = [
   LEGACY_PUBLIC_FIELDS,
   'slug',
   'visibility',
@@ -39,6 +39,8 @@ const PLATFORM_PUBLIC_FIELDS = [
   'registration_requires_approval',
 ].join(',');
 
+const PLATFORM_PUBLIC_FIELDS = [PLATFORM_PUBLIC_FIELDS_BASE, 'banner_layout'].join(',');
+
 export type PublicEvent = {
   id: string;
   title: string;
@@ -47,6 +49,7 @@ export type PublicEvent = {
   start_date: string;
   end_date: string | null;
   banner_url: string | null;
+  banner_layout?: 'HORIZONTAL' | 'SQUARE' | 'VERTICAL' | null;
   location_name: string | null;
   location_address: string | null;
   city: string | null;
@@ -122,6 +125,17 @@ export async function listPublicDatabaseEvents(): Promise<PublicEvent[]> {
     return [];
   }
 
+  const beforeLayout = await supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS_BASE)
+    .eq('status', 'PUBLISHED')
+    .order('start_date', { ascending: true });
+  if (!beforeLayout.error) {
+    return normalizeRows(beforeLayout.data).filter((event) => (
+      event.visibility === 'PUBLIC' || event.id === CUMBRE_EVENT_ID
+    ));
+  }
+
   // Before the platform upgrade, only the known global Cumbre event is listed.
   // Other legacy events remain shareable by their UUID without becoming discoverable.
   const legacy = await supabaseAdmin
@@ -161,6 +175,20 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
     console.error('[public-events] detail error', enhanced.error);
     return null;
   }
+
+  let beforeLayoutQuery = supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS_BASE)
+    .eq('status', 'PUBLISHED');
+  beforeLayoutQuery = isUuid(normalized)
+    ? beforeLayoutQuery.eq('id', normalized)
+    : beforeLayoutQuery.eq('slug', normalized);
+  const beforeLayout = await beforeLayoutQuery.maybeSingle();
+  if (!beforeLayout.error) {
+    const event = beforeLayout.data as PublicEvent | null;
+    return event && event.visibility !== 'PRIVATE' ? event : null;
+  }
+
   if (!isUuid(normalized)) return null;
 
   const legacy = await supabaseAdmin
