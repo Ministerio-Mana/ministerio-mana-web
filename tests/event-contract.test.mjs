@@ -12,6 +12,7 @@ import {
   isValidEventProviderCurrency,
 } from '../src/lib/eventPaymentContract.js';
 import { getEventInvitationBounds, getEventInvitationLayout } from '../src/lib/eventInvitationLayout.js';
+import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '../src/lib/eventRegistrationForm.js';
 
 test('normaliza etiquetas visibles de zona horaria al identificador IANA', () => {
   assert.equal(normalizeEventTimeZone('Colombia · Bogotá'), 'America/Bogota');
@@ -51,4 +52,17 @@ test('elige la plantilla de invitación sin pedir medidas al usuario', () => {
   assert.deepEqual(getEventInvitationBounds('HORIZONTAL'), { width: 1600, height: 1200 });
   assert.deepEqual(getEventInvitationBounds('SQUARE'), { width: 1200, height: 1200 });
   assert.deepEqual(getEventInvitationBounds('VERTICAL'), { width: 1080, height: 1350 });
+});
+
+test('normaliza una configuración simple de formulario y WhatsApp', () => {
+  assert.deepEqual(normalizeEventRegistrationFormConfig({
+    phone: 'required',
+    church: 1,
+    whatsapp_updates: true,
+  }), { phone: 'REQUIRED', church: true, whatsapp_updates: true });
+  assert.deepEqual(normalizeEventRegistrationFormConfig({ phone: 'cualquiera' }), {
+    phone: 'OPTIONAL', church: false, whatsapp_updates: false,
+  });
+  assert.equal(normalizeWhatsAppNumber('+57 (300) 123-4567'), '573001234567');
+  assert.equal(normalizeWhatsAppNumber('123'), '');
 });

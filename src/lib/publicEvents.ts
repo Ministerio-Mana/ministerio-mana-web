@@ -39,7 +39,13 @@ const PLATFORM_PUBLIC_FIELDS_BASE = [
   'registration_requires_approval',
 ].join(',');
 
-const PLATFORM_PUBLIC_FIELDS = [PLATFORM_PUBLIC_FIELDS_BASE, 'banner_layout'].join(',');
+const PLATFORM_PUBLIC_FIELDS_BEFORE_EXPERIENCE = [PLATFORM_PUBLIC_FIELDS_BASE, 'banner_layout'].join(',');
+const PLATFORM_PUBLIC_FIELDS = [
+  PLATFORM_PUBLIC_FIELDS_BEFORE_EXPERIENCE,
+  'contact_whatsapp',
+  'contact_whatsapp_message',
+  'registration_form_config',
+].join(',');
 
 export type PublicEvent = {
   id: string;
@@ -66,6 +72,9 @@ export type PublicEvent = {
   registration_closes_at?: string | null;
   capacity?: number | null;
   contact_email?: string | null;
+  contact_whatsapp?: string | null;
+  contact_whatsapp_message?: string | null;
+  registration_form_config?: unknown;
   timezone?: string | null;
   attendance_mode?: 'IN_PERSON' | 'ONLINE' | 'HYBRID' | null;
   pricing_model?: 'FREE' | 'PAID' | 'DONATION' | null;
@@ -125,6 +134,17 @@ export async function listPublicDatabaseEvents(): Promise<PublicEvent[]> {
     return [];
   }
 
+  const beforeExperience = await supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS_BEFORE_EXPERIENCE)
+    .eq('status', 'PUBLISHED')
+    .order('start_date', { ascending: true });
+  if (!beforeExperience.error) {
+    return normalizeRows(beforeExperience.data).filter((event) => (
+      event.visibility === 'PUBLIC' || event.id === CUMBRE_EVENT_ID
+    ));
+  }
+
   const beforeLayout = await supabaseAdmin
     .from('events')
     .select(PLATFORM_PUBLIC_FIELDS_BASE)
@@ -174,6 +194,19 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
   if (!isExpectedSchemaError(enhanced.error)) {
     console.error('[public-events] detail error', enhanced.error);
     return null;
+  }
+
+  let beforeExperienceQuery = supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS_BEFORE_EXPERIENCE)
+    .eq('status', 'PUBLISHED');
+  beforeExperienceQuery = isUuid(normalized)
+    ? beforeExperienceQuery.eq('id', normalized)
+    : beforeExperienceQuery.eq('slug', normalized);
+  const beforeExperience = await beforeExperienceQuery.maybeSingle();
+  if (!beforeExperience.error) {
+    const event = beforeExperience.data as PublicEvent | null;
+    return event && event.visibility !== 'PRIVATE' ? event : null;
   }
 
   let beforeLayoutQuery = supabaseAdmin

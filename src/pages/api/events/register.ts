@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@lib/rateLimit';
 import { verifyTurnstile } from '@lib/turnstile';
 import { containsBlockedSequence, sanitizePlainText } from '@lib/validation';
 import { createEventCheckout, EventCheckoutError, type EventCheckoutProvider } from '@lib/eventCheckout';
+import { DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, normalizeEventRegistrationFormConfig } from '@lib/eventRegistrationForm.js';
 
 export const prerender = false;
 
@@ -36,6 +37,31 @@ function registrationErrorMessage(message: string): { status: number; message: s
   return { status: 500, message: 'No se pudo crear la inscripción.' };
 }
 
+async function getRegistrationFormConfig(eventId: string) {
+  if (!supabaseAdmin) return DEFAULT_EVENT_REGISTRATION_FORM_CONFIG;
+  const { data, error } = await supabaseAdmin
+    .from('events')
+    .select('registration_form_config')
+    .eq('id', eventId)
+    .maybeSingle();
+  // El formulario básico sigue funcionando mientras una instalación antigua
+  // termina de aplicar la migración de campos configurables.
+  if (error?.code === '42703') return DEFAULT_EVENT_REGISTRATION_FORM_CONFIG;
+  if (error) throw new Error('No se pudo validar la configuración del formulario.');
+  return normalizeEventRegistrationFormConfig(data?.registration_form_config);
+}
+
+async function persistRegistrationResponses(registrationId: string, responses: Record<string, unknown>) {
+  if (!supabaseAdmin || !Object.keys(responses).length) return;
+  const { error } = await supabaseAdmin
+    .from('event_registrations')
+    .update({ form_responses: responses })
+    .eq('id', registrationId);
+  if (error && error.code !== '42703') {
+    console.error('[events.register] optional responses persistence failed', error);
+  }
+}
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!supabaseAdmin) return json({ ok: false, error: 'Server Config Error' }, 500);
 
@@ -59,6 +85,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const contactName = sanitizePlainText(String(body.contact_name || ''), 120);
   const contactEmail = String(body.contact_email || '').trim().toLowerCase().slice(0, 254);
   const contactPhone = sanitizePlainText(String(body.contact_phone || ''), 40);
+  const requestedChurch = sanitizePlainText(String(body.church || ''), 120);
   const quantity = Number(body.quantity || 1);
   const donationAmount = body.donation_amount == null || body.donation_amount === ''
     ? null
@@ -85,6 +112,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return json({ ok: false, error: 'Ingresa un aporte válido.' }, 400);
   }
   if (!privacyAccepted) return json({ ok: false, error: 'Debes autorizar el tratamiento de datos.' }, 400);
+
+  let formConfig;
+  try {
+    formConfig = await getRegistrationFormConfig(eventId);
+  } catch (error: any) {
+    return json({ ok: false, error: error?.message || 'No se pudo validar el formulario.' }, 503);
+  }
+  if (formConfig.phone === 'REQUIRED' && !contactPhone) {
+    return json({ ok: false, error: 'Escribe tu número de WhatsApp o teléfono.' }, 400);
+  }
+  const formResponses: Record<string, unknown> = {};
+  if (formConfig.church && requestedChurch) formResponses.church = requestedChurch;
+  if (formConfig.whatsapp_updates) formResponses.whatsapp_updates = body.whatsapp_updates === true;
 
   const turnstileConfigured = Boolean(
     import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
@@ -143,6 +183,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!manualRegistration?.registration_id || !manualRegistration?.payment_id) {
       return json({ ok: false, error: 'No se pudo registrar el pago reportado.' }, 500);
     }
+    if (!manualRegistration.reused) {
+      await persistRegistrationResponses(String(manualRegistration.registration_id), formResponses);
+    }
     await supabaseAdmin.from('event_finance_audit_logs').insert({
       event_id: eventId,
       registration_id: manualRegistration.registration_id,
@@ -189,6 +232,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const registration = Array.isArray(data) ? data[0] : data;
   if (!registration?.registration_id) {
     return json({ ok: false, error: 'No se pudo confirmar la inscripción.' }, 500);
+  }
+  if (!registration.reused) {
+    await persistRegistrationResponses(String(registration.registration_id), formResponses);
   }
 
   await supabaseAdmin.from('event_finance_audit_logs').insert({

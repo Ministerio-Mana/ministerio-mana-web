@@ -2,6 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import { getEntry, render } from 'astro:content';
 import { getPublicDatabaseEvent, listPublicEventPaymentOptions } from '@lib/publicEvents';
+import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@lib/eventRegistrationForm.js';
 import TurnstileProvider from '@components/TurnstileProvider.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
 
@@ -55,6 +56,12 @@ const registrationHref = externalRegistrationIsOpen ? registrationUrl : internal
 const paymentReturnRaw = String(Astro.url.searchParams.get('payment') || '').toLowerCase();
 const paymentReturnState = ['success', 'return', 'cancelled'].includes(paymentReturnRaw) ? paymentReturnRaw : '';
 const eventTimeZone = databaseEvent?.timezone || 'America/Bogota';
+const registrationFormConfig = normalizeEventRegistrationFormConfig(databaseEvent?.registration_form_config);
+const contactWhatsApp = normalizeWhatsAppNumber(databaseEvent?.contact_whatsapp);
+const whatsappMessage = String(databaseEvent?.contact_whatsapp_message || `Hola, quiero información sobre ${title}.`).trim();
+const whatsappHref = contactWhatsApp
+  ? `https://wa.me/${contactWhatsApp}?text=${encodeURIComponent(whatsappMessage.slice(0, 280))}`
+  : '';
 const formattedDate = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: eventTimeZone }).format(startDate)
   : 'Fecha por confirmar';
@@ -108,6 +115,12 @@ const structured = (contentEntry || databaseEvent) ? {
                 </div>
               </div>
             )}
+            {(registrationHref || whatsappHref) && (
+              <div class="mt-6 flex flex-wrap gap-3">
+                {registrationHref && <a href={registrationHref} class="event-public-hero-action event-public-hero-action--primary">{registrationMode === 'INTERNAL' ? 'Reservar mi lugar' : 'Inscribirme'}</a>}
+                {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="event-public-hero-action event-public-hero-action--secondary">Hablar por WhatsApp</a>}
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -132,7 +145,8 @@ const structured = (contentEntry || databaseEvent) ? {
 
       <section class="container-tight py-10 sm:py-14">
         <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <article class="min-w-0">
+          <article class="event-public-about min-w-0">
+            <p class="event-public-section-label">Información del evento</p>
             {Content ? <div class="prose max-w-none prose-slate"><Content /></div> : (
               <div>
                 <h2 class="text-2xl font-bold text-[#293C74]">Acerca del evento</h2>
@@ -140,12 +154,21 @@ const structured = (contentEntry || databaseEvent) ? {
               </div>
             )}
           </article>
-          <aside class="border-l-0 border-slate-200 lg:border-l lg:pl-6">
+          <aside class="event-public-sidebar border-l-0 border-slate-200 lg:border-l lg:pl-6">
             <h2 class="text-sm font-bold uppercase text-slate-500">Estado</h2>
             <p class="mt-2 text-lg font-bold text-slate-900">{isCompleted ? 'Finalizado' : 'Programado'}</p>
             {databaseEvent?.capacity != null && databaseEvent.capacity > 0 && <p class="mt-2 text-sm text-slate-600">Cupo: {databaseEvent.capacity} personas</p>}
             {databaseEvent?.price != null && databaseEvent.price > 0 && <p class="mt-2 text-sm font-bold text-[#293C74]">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: databaseEvent.currency || 'COP', maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2 }).format(databaseEvent.price)}</p>}
-            {databaseEvent?.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-5 inline-block text-sm font-bold text-[#293C74] hover:underline">Contactar al organizador</a>}
+            {(whatsappHref || databaseEvent?.contact_email) && (
+              <div class="event-public-contact mt-6">
+                <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">¿Necesitas ayuda?</p>
+                <p class="mt-1 text-sm leading-relaxed text-slate-600">El equipo del evento está disponible para orientarte.</p>
+                <div class="mt-3 grid gap-2">
+                  {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="event-public-contact-action event-public-contact-action--whatsapp">Escribir por WhatsApp</a>}
+                  {databaseEvent?.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="event-public-contact-action">Enviar correo</a>}
+                </div>
+              </div>
+            )}
           </aside>
         </div>
       </section>
@@ -212,9 +235,16 @@ const structured = (contentEntry || databaseEvent) ? {
                   <label class="text-sm font-bold text-slate-700">Correo
                     <input name="contact_email" type="email" required maxlength="254" autocomplete="email" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
                   </label>
-                  <label class="text-sm font-bold text-slate-700">Teléfono
-                    <input name="contact_phone" type="tel" maxlength="40" autocomplete="tel" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
-                  </label>
+                  {registrationFormConfig.phone !== 'HIDDEN' && (
+                    <label class="text-sm font-bold text-slate-700">WhatsApp o teléfono {registrationFormConfig.phone === 'REQUIRED' ? '' : <span class="font-normal text-slate-500">(opcional)</span>}
+                      <input name="contact_phone" type="tel" maxlength="40" autocomplete="tel" required={registrationFormConfig.phone === 'REQUIRED'} placeholder="Ej. 573001234567" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                    </label>
+                  )}
+                  {registrationFormConfig.church && (
+                    <label class="text-sm font-bold text-slate-700">Iglesia o congregación <span class="font-normal text-slate-500">(opcional)</span>
+                      <input name="church" type="text" maxlength="120" autocomplete="organization" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                    </label>
+                  )}
                   <label class="text-sm font-bold text-slate-700">Asistentes
                     <input name="quantity" type="number" required min="1" max={Math.min(100, Number(databaseEvent.capacity || 100))} step="1" value="1" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
                   </label>
@@ -288,6 +318,13 @@ const structured = (contentEntry || databaseEvent) ? {
                   <input name="privacy_accepted" type="checkbox" required class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                   <span>Autorizo el tratamiento de mis datos según la <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="font-bold text-[#293C74] underline">política de privacidad</a>.</span>
                 </label>
+
+                {registrationFormConfig.whatsapp_updates && (
+                  <label class="mt-4 flex items-start gap-3 text-sm text-slate-600">
+                    <input name="whatsapp_updates" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                    <span>Quiero recibir recordatorios y novedades de este evento por WhatsApp.</span>
+                  </label>
+                )}
 
                 <TurnstileProvider />
                 <TurnstileWidget id="event-registration-turnstile" appearance="interaction-only" theme="light" />
@@ -400,6 +437,55 @@ const structured = (contentEntry || databaseEvent) ? {
 
   .event-public-hero-date strong { font-size: 1.3rem; }
   .event-public-hero-date span { margin-top: 0.15rem; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; }
+
+  .event-public-hero-action,
+  .event-public-contact-action {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.55rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+    transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+  }
+
+  .event-public-hero-action:hover { transform: translateY(-1px); }
+  .event-public-hero-action--primary { background: #3ac1d4; color: #102149; }
+  .event-public-hero-action--primary:hover { background: #64d1df; }
+  .event-public-hero-action--secondary { border: 1px solid rgb(255 255 255 / 36%); background: rgb(9 25 60 / 42%); color: white; }
+  .event-public-hero-action--secondary:hover { background: rgb(255 255 255 / 14%); }
+
+  .event-public-about {
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #fff 0%, #f7faff 100%);
+    padding: clamp(1.5rem, 3vw, 2.25rem);
+    box-shadow: 0 15px 35px rgb(41 60 116 / 6%);
+  }
+
+  .event-public-section-label {
+    margin-bottom: 0.6rem;
+    color: #2d7090;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .event-public-sidebar { align-self: start; padding-top: 1.25rem; }
+
+  .event-public-contact {
+    border: 1px solid rgb(58 193 212 / 25%);
+    border-radius: 0.85rem;
+    background: linear-gradient(145deg, #effbfc, #f6f8ff);
+    padding: 1rem;
+  }
+
+  .event-public-contact-action { border: 1px solid #d9e3f4; background: #fff; color: #293c74; }
+  .event-public-contact-action:hover { background: #f4f7fc; }
+  .event-public-contact-action--whatsapp { border-color: #24a957; background: #24a957; color: #fff; }
+  .event-public-contact-action--whatsapp:hover { background: #1f934b; }
 
   .event-public-hero--square,
   .event-public-hero--vertical {

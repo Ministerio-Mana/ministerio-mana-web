@@ -128,6 +128,8 @@ if (registrationForm) {
           contact_name: formData.get('contact_name'),
           contact_email: formData.get('contact_email'),
           contact_phone: formData.get('contact_phone'),
+          church: formData.get('church'),
+          whatsapp_updates: formData.get('whatsapp_updates') === 'on',
           quantity: Number(formData.get('quantity') || 1),
           donation_amount: formData.get('donation_amount') || null,
           provider: selectedProviderOption?.dataset.provider || null,

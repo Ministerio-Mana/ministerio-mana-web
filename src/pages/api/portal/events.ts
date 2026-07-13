@@ -18,6 +18,7 @@ import {
   normalizeAttendanceMode,
   normalizeEventTimeZone,
 } from '@lib/eventContract.js';
+import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@lib/eventRegistrationForm.js';
 
 const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
 const CUMBRE_EVENT = {
@@ -97,6 +98,9 @@ const EVENT_FIELDS = [
   'registration_closes_at',
   'capacity',
   'contact_email',
+  'contact_whatsapp',
+  'contact_whatsapp_message',
+  'registration_form_config',
   'timezone',
   'price',
   'currency',
@@ -115,6 +119,9 @@ const PLATFORM_EVENT_FIELDS = new Set([
   'registration_closes_at',
   'capacity',
   'contact_email',
+  'contact_whatsapp',
+  'contact_whatsapp_message',
+  'registration_form_config',
   'timezone',
 ]);
 
@@ -124,6 +131,8 @@ const NULLABLE_EVENT_FIELDS = new Set([
   'registration_opens_at',
   'registration_closes_at',
   'capacity',
+  'contact_whatsapp',
+  'contact_whatsapp_message',
 ]);
 
 function isSafeInternalOrHttpsUrl(value: string): boolean {
@@ -168,6 +177,20 @@ function sanitizeEventPayload(body: Record<string, any>) {
     if (field === 'contact_email') {
       const email = String(value).trim().toLowerCase().slice(0, 254);
       if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) payload.contact_email = email;
+      return;
+    }
+    if (field === 'contact_whatsapp') {
+      const phone = normalizeWhatsAppNumber(value);
+      if (phone) payload.contact_whatsapp = phone;
+      return;
+    }
+    if (field === 'contact_whatsapp_message') {
+      const message = sanitizePlainText(String(value ?? ''), 280);
+      if (message) payload.contact_whatsapp_message = message;
+      return;
+    }
+    if (field === 'registration_form_config') {
+      payload.registration_form_config = normalizeEventRegistrationFormConfig(value);
       return;
     }
     if (EVENT_ENUM_FIELDS.has(field)) {

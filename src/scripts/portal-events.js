@@ -25,6 +25,7 @@ import {
     normalizeEventOnlinePaymentProvider,
 } from '@lib/eventPaymentContract.js';
 import { normalizeEventInvitationLayout } from '@lib/eventInvitationLayout.js';
+import { normalizeEventRegistrationFormConfig } from '@lib/eventRegistrationForm.js';
 
 const eventsGate = document.getElementById('events-gate');
 const eventsSecureContent = document.getElementById('events-secure-content');
@@ -61,6 +62,10 @@ const eventCurrencyInput = document.getElementById('event-currency');
 const eventOnlineProvider = document.getElementById('event-online-provider');
 const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
+const eventRegistrationFormSettings = document.getElementById('event-registration-form-settings');
+const eventRegistrationPhoneMode = document.getElementById('event-registration-phone-mode');
+const eventRegistrationCollectChurch = document.getElementById('event-registration-collect-church');
+const eventRegistrationWhatsAppUpdates = document.getElementById('event-registration-whatsapp-updates');
 const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
 const eventRegistrationWindow = document.getElementById('event-registration-window');
 const eventCapacityWrapper = document.getElementById('event-capacity-wrapper');
@@ -356,6 +361,7 @@ function syncRegistrationFields() {
     eventRegistrationUrlWrapper?.classList.toggle('hidden', !isExternal);
     eventRegistrationWindow?.classList.toggle('hidden', !hasRegistration);
     eventCapacityWrapper?.classList.toggle('hidden', !isInternal);
+    eventRegistrationFormSettings?.classList.toggle('hidden', !isInternal);
     const urlInput = eventForm?.querySelector('[name="registration_url"]');
     const capacityInput = eventForm?.querySelector('[name="capacity"]');
     const registrationDateInputs = eventForm?.querySelectorAll('[name="registration_opens_at"], [name="registration_closes_at"]') || [];
@@ -366,6 +372,9 @@ function syncRegistrationFields() {
     if (capacityInput) capacityInput.disabled = !isInternal;
     registrationDateInputs.forEach((field) => {
         field.disabled = !hasRegistration;
+    });
+    [eventRegistrationPhoneMode, eventRegistrationCollectChurch, eventRegistrationWhatsAppUpdates].forEach((field) => {
+        if (field) field.disabled = !isInternal;
     });
     syncDatePickerDisabledState();
     previewCta?.classList.toggle('hidden', !hasRegistration);
@@ -1245,6 +1254,8 @@ function openEventModal(mode, eventData = null) {
         registration_closes_at: toInputDateTime(eventData?.registration_closes_at, eventTimeZone),
         capacity: eventData?.capacity ?? '',
         contact_email: eventData?.contact_email || '',
+        contact_whatsapp: eventData?.contact_whatsapp || '',
+        contact_whatsapp_message: eventData?.contact_whatsapp_message || '',
         timezone: eventTimeZone,
         price: eventData?.price ?? 0,
         currency: String(eventData?.currency || 'COP').toUpperCase(),
@@ -1262,6 +1273,10 @@ function openEventModal(mode, eventData = null) {
     formatMoneyInput();
     const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
     if (approvalField) approvalField.checked = Boolean(eventData?.registration_requires_approval);
+    const formConfig = normalizeEventRegistrationFormConfig(eventData?.registration_form_config);
+    if (eventRegistrationPhoneMode) eventRegistrationPhoneMode.value = formConfig.phone;
+    if (eventRegistrationCollectChurch) eventRegistrationCollectChurch.checked = formConfig.church;
+    if (eventRegistrationWhatsAppUpdates) eventRegistrationWhatsAppUpdates.checked = formConfig.whatsapp_updates;
 
     const presetScope = String(eventData?.scope || getAllowedScopes()[0] || 'LOCAL').toUpperCase();
     if (eventScopeSelect) eventScopeSelect.value = presetScope;
@@ -1437,6 +1452,13 @@ eventForm?.addEventListener('submit', async (event) => {
             ? String(eventRegistrationMode?.value || 'NONE').toUpperCase()
             : String(payload.registration_mode || 'NONE').toUpperCase();
         payload.registration_mode = registrationMode;
+        if (eventPlatformReady) {
+            payload.registration_form_config = {
+                phone: String(eventRegistrationPhoneMode?.value || 'OPTIONAL').toUpperCase(),
+                church: Boolean(eventRegistrationCollectChurch?.checked),
+                whatsapp_updates: Boolean(eventRegistrationWhatsAppUpdates?.checked),
+            };
+        }
         payload.attendance_mode = normalizeAttendanceMode(eventForm.querySelector('[name="attendance_mode"]')?.value);
         payload.timezone = normalizeEventTimeZone(
             payload.timezone || eventForm.querySelector('[name="timezone"]')?.value
@@ -1451,6 +1473,12 @@ eventForm?.addEventListener('submit', async (event) => {
         Object.keys(payload).forEach((key) => {
             if (payload[key] === '') delete payload[key];
         });
+        if (eventPlatformReady) {
+            ['contact_whatsapp', 'contact_whatsapp_message'].forEach((name) => {
+                const raw = String(eventForm.querySelector(`[name="${name}"]`)?.value || '').trim();
+                payload[name] = raw || null;
+            });
+        }
 
         const timeZone = payload.timezone;
         const startDateError = getDateTimeError(payload.start_date, 'inicio', true);
