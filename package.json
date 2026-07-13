@@ -10,6 +10,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "test:event-contract": "node --test tests/event-contract.test.mjs",
     "campaign:cumbre:welcome": "node scripts/cumbre-welcome-campaign.mjs",
     "security:scan": "node scripts/security-monitor.cjs",
     "security:alert": "node scripts/security-alert.cjs"

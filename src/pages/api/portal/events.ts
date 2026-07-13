@@ -11,6 +11,13 @@ import {
 } from '@lib/portalRbac';
 import { sanitizePlainText } from '@lib/validation';
 import { enforceRateLimit } from '@lib/rateLimit';
+import {
+  DEFAULT_EVENT_TIMEZONE,
+  EVENT_ATTENDANCE_MODES,
+  isValidEventTimeZone,
+  normalizeAttendanceMode,
+  normalizeEventTimeZone,
+} from '@lib/eventContract.js';
 
 const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
 const CUMBRE_EVENT = {
@@ -33,46 +40,7 @@ const EVENT_STATUSES = new Set(['DRAFT', 'PUBLISHED', 'ARCHIVED']);
 const EVENT_VISIBILITIES = new Set(['PUBLIC', 'UNLISTED', 'PRIVATE']);
 const EVENT_REGISTRATION_MODES = new Set(['NONE', 'EXTERNAL', 'INTERNAL']);
 const EVENT_CURRENCIES = new Set(['COP', 'USD', 'EUR']);
-const EVENT_ATTENDANCE_MODES = new Set(['IN_PERSON', 'ONLINE', 'HYBRID']);
-const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
-const EVENT_TIMEZONE_ALIASES = new Map([
-  ['AMERICABOGOTA', DEFAULT_EVENT_TIMEZONE],
-  ['BOGOTA', DEFAULT_EVENT_TIMEZONE],
-  ['COLOMBIABOGOTA', DEFAULT_EVENT_TIMEZONE],
-  ['AMERICAGUAYAQUIL', 'America/Guayaquil'],
-  ['ECUADORGUAYAQUIL', 'America/Guayaquil'],
-  ['AMERICAMEXICOCITY', 'America/Mexico_City'],
-  ['MEXICOCIUDADDEMEXICO', 'America/Mexico_City'],
-  ['AMERICAPANAMA', 'America/Panama'],
-  ['CENTROAMERICAPANAMA', 'America/Panama'],
-  ['AMERICANEWYORK', 'America/New_York'],
-  ['ESTADOSUNIDOSESTE', 'America/New_York'],
-  ['AMERICACHICAGO', 'America/Chicago'],
-  ['ESTADOSUNIDOSCENTRO', 'America/Chicago'],
-  ['AMERICADENVER', 'America/Denver'],
-  ['ESTADOSUNIDOSMONTANA', 'America/Denver'],
-  ['AMERICALOSANGELES', 'America/Los_Angeles'],
-  ['ESTADOSUNIDOSPACIFICO', 'America/Los_Angeles'],
-  ['EUROPEMADRID', 'Europe/Madrid'],
-  ['EUROPAMADRID', 'Europe/Madrid'],
-  ['EUROPEPARIS', 'Europe/Paris'],
-  ['EUROPAPARIS', 'Europe/Paris'],
-  ['AUSTRALIASYDNEY', 'Australia/Sydney'],
-  ['AUSTRALIASIDNEY', 'Australia/Sydney'],
-  ['UTC', 'UTC'],
-]);
-const EVENT_ATTENDANCE_MODE_ALIASES = new Map([
-  ['INPERSON', 'IN_PERSON'],
-  ['IN_PERSON', 'IN_PERSON'],
-  ['ON_SITE', 'IN_PERSON'],
-  ['ONSITE', 'IN_PERSON'],
-  ['PRESENCIAL', 'IN_PERSON'],
-  ['PRESENTIAL', 'IN_PERSON'],
-  ['ONLINE', 'ONLINE'],
-  ['VIRTUAL', 'ONLINE'],
-  ['HYBRID', 'HYBRID'],
-  ['HIBRIDO', 'HYBRID'],
-]);
+const EVENT_ATTENDANCE_MODE_VALUES = new Set(EVENT_ATTENDANCE_MODES);
 const EVENT_PRICING_MODELS = new Set(['FREE', 'PAID', 'DONATION']);
 const EVENT_ENUM_FIELDS = new Set([
   'scope',
@@ -161,39 +129,6 @@ const NULLABLE_EVENT_FIELDS = new Set([
 function isSafeInternalOrHttpsUrl(value: string): boolean {
   return value.length <= 500
     && ((value.startsWith('/') && !value.startsWith('//')) || /^https:\/\//i.test(value));
-}
-
-function isValidTimeZone(value: string): boolean {
-  try {
-    new Intl.DateTimeFormat('en', { timeZone: value }).format(new Date());
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function normalizeEventTimeZone(value: unknown): string {
-  const raw = String(value || '').trim().slice(0, 80);
-  if (!raw) return '';
-
-  const key = raw
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '');
-
-  return EVENT_TIMEZONE_ALIASES.get(key) || raw;
-}
-
-function normalizeAttendanceMode(value: unknown): string {
-  const normalized = String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return EVENT_ATTENDANCE_MODE_ALIASES.get(normalized) || normalized;
 }
 
 function sanitizeEventPayload(body: Record<string, any>) {
@@ -286,7 +221,7 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   if (payload.currency && !EVENT_CURRENCIES.has(String(payload.currency))) {
     return 'La moneda del evento no es válida.';
   }
-  if (payload.attendance_mode && !EVENT_ATTENDANCE_MODES.has(String(payload.attendance_mode))) {
+  if (payload.attendance_mode && !EVENT_ATTENDANCE_MODE_VALUES.has(String(payload.attendance_mode))) {
     return 'La modalidad del evento no es válida.';
   }
   if (payload.pricing_model && !EVENT_PRICING_MODELS.has(String(payload.pricing_model))) {
@@ -294,7 +229,7 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   }
   if (payload.timezone) {
     const timezone = normalizeEventTimeZone(payload.timezone);
-    if (!isValidTimeZone(timezone)) return 'La zona horaria del evento no es válida.';
+    if (!isValidEventTimeZone(timezone)) return 'La zona horaria del evento no es válida.';
     payload.timezone = timezone;
   }
   if (payload.pricing_model === 'FREE' && Number(payload.price || 0) > 0) {

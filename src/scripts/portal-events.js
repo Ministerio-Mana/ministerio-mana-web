@@ -14,6 +14,12 @@ import {
     redirectToLogin,
     refreshPortalAuthentication,
 } from '@lib/portalAuthClient';
+import {
+    DEFAULT_EVENT_ATTENDANCE_MODE,
+    DEFAULT_EVENT_TIMEZONE,
+    normalizeAttendanceMode as normalizeEventAttendanceMode,
+    normalizeEventTimeZone as normalizeContractTimeZone,
+} from '@lib/eventContract.js';
 
 const eventsGate = document.getElementById('events-gate');
 const eventsSecureContent = document.getElementById('events-secure-content');
@@ -79,33 +85,6 @@ const previewPrice = document.getElementById('event-preview-price');
 const previewCta = document.getElementById('event-preview-cta');
 
 const REQUEST_TIMEOUT_MS = 15000;
-const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
-const EVENT_TIMEZONE_ALIASES = new Map([
-    ['AMERICABOGOTA', DEFAULT_EVENT_TIMEZONE],
-    ['BOGOTA', DEFAULT_EVENT_TIMEZONE],
-    ['COLOMBIABOGOTA', DEFAULT_EVENT_TIMEZONE],
-    ['AMERICAGUAYAQUIL', 'America/Guayaquil'],
-    ['ECUADORGUAYAQUIL', 'America/Guayaquil'],
-    ['AMERICAMEXICOCITY', 'America/Mexico_City'],
-    ['MEXICOCIUDADDEMEXICO', 'America/Mexico_City'],
-    ['AMERICAPANAMA', 'America/Panama'],
-    ['CENTROAMERICAPANAMA', 'America/Panama'],
-    ['AMERICANEWYORK', 'America/New_York'],
-    ['ESTADOSUNIDOSESTE', 'America/New_York'],
-    ['AMERICACHICAGO', 'America/Chicago'],
-    ['ESTADOSUNIDOSCENTRO', 'America/Chicago'],
-    ['AMERICADENVER', 'America/Denver'],
-    ['ESTADOSUNIDOSMONTANA', 'America/Denver'],
-    ['AMERICALOSANGELES', 'America/Los_Angeles'],
-    ['ESTADOSUNIDOSPACIFICO', 'America/Los_Angeles'],
-    ['EUROPEMADRID', 'Europe/Madrid'],
-    ['EUROPAMADRID', 'Europe/Madrid'],
-    ['EUROPEPARIS', 'Europe/Paris'],
-    ['EUROPAPARIS', 'Europe/Paris'],
-    ['AUSTRALIASYDNEY', 'Australia/Sydney'],
-    ['AUSTRALIASIDNEY', 'Australia/Sydney'],
-    ['UTC', 'UTC'],
-]);
 const MIN_EVENT_YEAR = 2000;
 const MAX_EVENT_YEAR = 2100;
 const SCOPE_LABELS = {
@@ -129,41 +108,12 @@ const LIFECYCLE_TONES = {
     archived: 'bg-slate-200 text-slate-600',
 };
 
-const ATTENDANCE_MODE_ALIASES = new Map([
-    ['INPERSON', 'IN_PERSON'],
-    ['IN_PERSON', 'IN_PERSON'],
-    ['ON_SITE', 'IN_PERSON'],
-    ['ONSITE', 'IN_PERSON'],
-    ['PRESENCIAL', 'IN_PERSON'],
-    ['PRESENTIAL', 'IN_PERSON'],
-    ['ONLINE', 'ONLINE'],
-    ['VIRTUAL', 'ONLINE'],
-    ['HYBRID', 'HYBRID'],
-    ['HIBRIDO', 'HYBRID'],
-]);
-
 function normalizeAttendanceMode(value) {
-    const normalized = String(value || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-    return ATTENDANCE_MODE_ALIASES.get(normalized) || 'IN_PERSON';
+    return normalizeEventAttendanceMode(value, DEFAULT_EVENT_ATTENDANCE_MODE);
 }
 
 function normalizeEventTimeZone(value) {
-    const raw = String(value || '').trim();
-    if (!raw) return DEFAULT_EVENT_TIMEZONE;
-
-    const key = raw
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toUpperCase()
-        .replace(/[^A-Z0-9]+/g, '');
-
-    return EVENT_TIMEZONE_ALIASES.get(key) || raw;
+    return normalizeContractTimeZone(value, DEFAULT_EVENT_TIMEZONE);
 }
 
 let authHeaders = {};
