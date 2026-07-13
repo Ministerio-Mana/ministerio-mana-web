@@ -19,6 +19,11 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function isEvidenceSchemaMissing(error: any) {
+  return ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(String(error?.code || ''))
+    || /event_payment_evidence/i.test(String(error?.message || ''));
+}
+
 async function loadEvent(eventId: string) {
   if (!supabaseAdmin) return { data: null, error: new Error('Server Config Error') };
   return supabaseAdmin
@@ -64,7 +69,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     registrationsQuery,
     supabaseAdmin
       .from('event_payment_options')
-      .select('id, label, kind, provider')
+      .select('id, label, kind, provider, requires_evidence')
       .eq('event_id', event.id),
     supabaseAdmin.rpc('get_event_operation_summary_secure', { p_event_id: event.id }),
   ]);
@@ -92,6 +97,21 @@ export const GET: APIRoute = async ({ request, url }) => {
     return json({ ok: false, error: 'No se pudo cargar la operación del evento.' }, 500);
   }
 
+  const paymentIds = (paymentsResult.data || []).map((payment: any) => String(payment.id));
+  const evidenceResult = paymentIds.length
+    ? await supabaseAdmin
+      .from('event_payment_evidence')
+      .select('id,payment_id,original_filename,mime_type,size_bytes,status,created_at,reviewed_at')
+      .in('payment_id', paymentIds)
+      .is('deleted_at', null)
+    : { data: [], error: null };
+  if (evidenceResult.error && !isEvidenceSchemaMissing(evidenceResult.error)) {
+    return json({ ok: false, error: 'No se pudieron cargar los comprobantes.' }, 500);
+  }
+  const evidenceByPayment = new Map(
+    (evidenceResult.data || []).map((evidence: any) => [String(evidence.payment_id), evidence]),
+  );
+
   const paymentsByRegistration = new Map(
     (paymentsResult.data || []).map((payment: any) => [String(payment.registration_id), payment]),
   );
@@ -107,6 +127,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const registrations = (registrationsResult.data || []).map((registration: any) => {
     const payment = paymentsByRegistration.get(String(registration.id)) as any;
     const option = payment?.payment_option_id ? optionsById.get(String(payment.payment_option_id)) as any : null;
+    const evidence = payment?.id ? evidenceByPayment.get(String(payment.id)) as any : null;
     return {
       ...registration,
       checked_in_quantity: checkedByRegistration.get(String(registration.id)) || 0,
@@ -122,6 +143,17 @@ export const GET: APIRoute = async ({ request, url }) => {
         status: payment.status,
         received_at: payment.received_at,
         verified_at: payment.verified_at,
+        requires_evidence: Boolean(option?.requires_evidence),
+        evidence: evidence ? {
+          id: evidence.id,
+          original_filename: evidence.original_filename,
+          mime_type: evidence.mime_type,
+          size_bytes: evidence.size_bytes,
+          status: evidence.status,
+          created_at: evidence.created_at,
+          reviewed_at: evidence.reviewed_at,
+          view_url: `/api/portal/event-payments/evidence?evidence_id=${encodeURIComponent(evidence.id)}`,
+        } : null,
       } : null,
     };
   });
@@ -189,11 +221,40 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (!UUID_PATTERN.test(paymentId)) return json({ ok: false, error: 'Pago inválido.' }, 400);
     const paymentLookup = await supabaseAdmin
       .from('event_payments')
-      .select('id, event_id')
+      .select('id, event_id, payment_option_id')
       .eq('id', paymentId)
       .maybeSingle();
     if (paymentLookup.error || !paymentLookup.data || paymentLookup.data.event_id !== event.id) {
       return json({ ok: false, error: 'Pago no encontrado en este evento.' }, 404);
+    }
+    if (action === 'APPROVE' && paymentLookup.data.payment_option_id) {
+      const [optionResult, evidenceResult] = await Promise.all([
+        supabaseAdmin
+          .from('event_payment_options')
+          .select('requires_evidence')
+          .eq('id', paymentLookup.data.payment_option_id)
+          .eq('event_id', event.id)
+          .maybeSingle(),
+        supabaseAdmin
+          .from('event_payment_evidence')
+          .select('id,sharepoint_item_id')
+          .eq('payment_id', paymentId)
+          .is('deleted_at', null)
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (optionResult.error) {
+        return json({ ok: false, error: 'No se pudo validar el método de pago.' }, 500);
+      }
+      if (evidenceResult.error && !isEvidenceSchemaMissing(evidenceResult.error)) {
+        return json({ ok: false, error: 'No se pudo validar el comprobante.' }, 500);
+      }
+      if (optionResult.data?.requires_evidence && evidenceResult.error) {
+        return json({ ok: false, error: 'Falta activar el registro privado de comprobantes.' }, 409);
+      }
+      if (optionResult.data?.requires_evidence && !evidenceResult.data?.sharepoint_item_id) {
+        return json({ ok: false, error: 'Este pago requiere un comprobante antes de aprobarse.' }, 409);
+      }
     }
     const note = sanitizePlainText(String(body.note || ''), 500);
     const result = await supabaseAdmin.rpc('review_event_manual_payment_secure', {
@@ -205,6 +266,20 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (result.error) {
       const unavailable = result.error.message?.includes('review_event_manual_payment_secure');
       return json({ ok: false, error: unavailable ? 'La revisión manual todavía no está activada.' : 'No se pudo revisar el pago.' }, unavailable ? 503 : 409);
+    }
+    const evidenceStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    const { error: evidenceUpdateError } = await supabaseAdmin
+      .from('event_payment_evidence')
+      .update({
+        status: evidenceStatus,
+        reviewed_by: ctx.userId,
+        reviewed_at: new Date().toISOString(),
+        review_note: note || null,
+      })
+      .eq('payment_id', paymentId)
+      .eq('status', 'PENDING');
+    if (evidenceUpdateError && !isEvidenceSchemaMissing(evidenceUpdateError)) {
+      console.error('[event.manual-payment] evidence review update failed', evidenceUpdateError);
     }
     return json({ ok: true, result: Array.isArray(result.data) ? result.data[0] : result.data });
   }

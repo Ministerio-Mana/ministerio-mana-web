@@ -4,6 +4,9 @@ const registrationTotal = document.getElementById('event-registration-total');
 const paymentResult = document.getElementById('event-payment-result');
 
 const REQUEST_TIMEOUT_MS = 20_000;
+const MAX_EVIDENCE_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAX_EVIDENCE_PDF_BYTES = 2 * 1024 * 1024;
+const EVIDENCE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 
 function createRequestId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -77,9 +80,9 @@ function readCustomResponses(form) {
   return responses;
 }
 
-async function fetchJson(url, options = {}) {
+async function fetchJson(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     const data = await response.json().catch(() => ({}));
@@ -100,6 +103,8 @@ if (registrationForm) {
   const providerSelect = registrationForm.elements.provider;
   const manualReferenceWrapper = document.getElementById('event-manual-reference-wrapper');
   const manualReferenceInput = registrationForm.elements.manual_reference;
+  const evidenceWrapper = document.getElementById('event-payment-evidence-wrapper');
+  const evidenceInput = registrationForm.elements.payment_evidence;
   const manualPaymentDetails = [...registrationForm.querySelectorAll('[data-manual-payment-details]')];
 
   function syncPaymentMethod() {
@@ -107,6 +112,7 @@ if (registrationForm) {
     const selectedOptionId = String(selectedOption?.value || '');
     const kind = String(selectedOption?.dataset.kind || 'ONLINE').toUpperCase();
     const isManual = Boolean(selectedOptionId && kind !== 'ONLINE');
+    const requiresEvidence = isManual && selectedOption?.dataset.requiresEvidence === 'true';
     manualPaymentDetails.forEach((panel) => {
       panel.classList.toggle('hidden', panel.dataset.optionId !== selectedOptionId);
     });
@@ -114,6 +120,11 @@ if (registrationForm) {
     if (manualReferenceInput) {
       manualReferenceInput.disabled = !isManual;
       manualReferenceInput.required = isManual;
+    }
+    evidenceWrapper?.classList.toggle('hidden', !requiresEvidence);
+    if (evidenceInput) {
+      evidenceInput.disabled = !requiresEvidence;
+      evidenceInput.required = requiresEvidence;
     }
     if (providerSelect && submitButton && !submitButton.disabled) {
       submitButton.textContent = isManual ? 'Reportar pago para revisión' : 'Continuar al pago';
@@ -145,6 +156,21 @@ if (registrationForm) {
 
     const formData = new FormData(registrationForm);
     const selectedProviderOption = providerSelect?.selectedOptions?.[0];
+    const evidenceFile = evidenceInput?.files?.[0] || null;
+    if (evidenceFile) {
+      const maxBytes = evidenceFile.type === 'application/pdf'
+        ? MAX_EVIDENCE_PDF_BYTES
+        : MAX_EVIDENCE_IMAGE_BYTES;
+      if (!EVIDENCE_MIME_TYPES.has(evidenceFile.type) || evidenceFile.size <= 0 || evidenceFile.size > maxBytes) {
+        showRegistrationStatus(
+          evidenceFile.type === 'application/pdf'
+            ? 'El comprobante PDF debe pesar máximo 2 MB.'
+            : 'Usa una captura JPG, PNG o WebP de máximo 4 MB.',
+          'error',
+        );
+        return;
+      }
+    }
     const originalText = submitButton?.textContent || '';
     if (submitButton) {
       submitButton.disabled = true;
@@ -190,10 +216,30 @@ if (registrationForm) {
         return;
       }
 
+      if (data.requires_evidence) {
+        if (!evidenceFile || !data.evidence_upload_token || !data.payment_id) {
+          throw new Error('La inscripción quedó registrada, pero falta adjuntar el comprobante. Intenta enviarlo nuevamente.');
+        }
+        showRegistrationStatus('Guardando el comprobante de forma segura...', 'success');
+        const evidencePayload = new FormData();
+        evidencePayload.set('registration_id', data.registration_id);
+        evidencePayload.set('payment_id', data.payment_id);
+        evidencePayload.set('upload_token', data.evidence_upload_token);
+        evidencePayload.set('file', evidenceFile, evidenceFile.name);
+        const evidenceResult = await fetchJson('/api/events/payment-evidence', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: evidencePayload,
+        }, 45_000);
+        if (!evidenceResult.response.ok || !evidenceResult.data.ok) {
+          throw new Error(evidenceResult.data.error || 'La inscripción quedó registrada, pero el comprobante no pudo cargarse. Intenta nuevamente.');
+        }
+      }
+
       const underReview = data.status === 'UNDER_REVIEW' || data.requires_manual_review;
       showRegistrationStatus(
         data.requires_manual_review
-          ? `Pago reportado con referencia ${data.reference}. El organizador verificará el movimiento antes de confirmar tu asistencia.`
+          ? `${data.requires_evidence ? 'Comprobante recibido. ' : ''}Pago reportado con referencia ${data.reference}. El organizador verificará el movimiento antes de confirmar tu asistencia.`
           : underReview
           ? 'Recibimos tu inscripción. El equipo del evento la revisará.'
           : 'Inscripción confirmada. Tu lugar quedó reservado.',

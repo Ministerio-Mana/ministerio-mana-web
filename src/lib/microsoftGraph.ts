@@ -305,6 +305,7 @@ function normalizeDriveItem(item: any): MicrosoftGraphDriveItem {
 
 export async function uploadMicrosoftEventDocument(params: {
   eventFolder: string;
+  subfolder?: string;
   fileName: string;
   contentType: string;
   content: Uint8Array;
@@ -322,13 +323,22 @@ export async function uploadMicrosoftEventDocument(params: {
     params.eventFolder,
     rootFolder.id,
   );
+  const destinationFolder = params.subfolder
+    ? await ensureFolderPath(
+        config,
+        drive.id,
+        `Portal Eventos/${params.eventFolder}`,
+        params.subfolder,
+        eventFolder.id,
+      )
+    : eventFolder;
   const uploadBody = params.content.buffer.slice(
     params.content.byteOffset,
     params.content.byteOffset + params.content.byteLength,
   ) as ArrayBuffer;
   const response = await graphFetch(
     config,
-    `/drives/${encodeURIComponent(drive.id)}/items/${encodeURIComponent(eventFolder.id)}:/${encodeURIComponent(params.fileName)}:/content`,
+    `/drives/${encodeURIComponent(drive.id)}/items/${encodeURIComponent(destinationFolder.id)}:/${encodeURIComponent(params.fileName)}:/content`,
     {
       method: 'PUT',
       headers: { 'content-type': params.contentType },

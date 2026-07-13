@@ -354,9 +354,17 @@ function renderRegistrations() {
         <div><dt class="text-xs font-bold uppercase text-slate-500">Reportado</dt><dd class="mt-1 break-words font-semibold text-slate-800">${escapeHtml(payment.reported_reference || 'Sin referencia')}</dd></div>
         <div><dt class="text-xs font-bold uppercase text-slate-500">Referencia Maná</dt><dd class="mt-1 break-all font-mono text-xs text-slate-700">${escapeHtml(payment.reference || '')}</dd></div>
         <div><dt class="text-xs font-bold uppercase text-slate-500">Valor</dt><dd class="mt-1 font-bold text-[#293C74]">${escapeHtml(formatAmount(payment.amount, payment.currency))}</dd></div>
-      </dl>` : '';
+      </dl>
+      ${payment.evidence ? `<div class="flex flex-col gap-3 rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">Comprobante privado</p>
+          <p class="mt-1 break-words text-sm font-semibold text-slate-800">${escapeHtml(payment.evidence.original_filename || 'Comprobante')} · ${escapeHtml(formatFileSize(payment.evidence.size_bytes))}</p>
+        </div>
+        <a href="${escapeAttr(payment.evidence.view_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-3 py-2 text-sm font-bold text-[#293C74] hover:bg-[#EEF2FF]">${icon(externalLinkIconUrl)} Ver comprobante</a>
+      </div>` : payment.requires_evidence ? `<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Esta persona no adjuntó comprobante.</p>` : ''}` : '';
+    const missingRequiredEvidence = Boolean(payment?.requires_evidence && !payment?.evidence);
     const reviewActions = status === 'UNDER_REVIEW' && payment?.id && permissions.can_approve ? `
-      <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700" data-action="APPROVE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}">${icon(checkCircleIconUrl)} Aprobar pago</button>
+      <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300" data-action="APPROVE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}" ${missingRequiredEvidence ? 'disabled title="Falta el comprobante obligatorio"' : ''}>${icon(checkCircleIconUrl)} Aprobar pago</button>
       <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50" data-action="DECLINE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}">${icon(xCircleIconUrl)} Rechazar</button>` : '';
     const checkinAction = status === 'CONFIRMED' && permissions.can_check_in && remaining > 0 ? `
       <label class="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-slate-700">Asistentes

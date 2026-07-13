@@ -168,7 +168,7 @@ export const POST: APIRoute = async ({ request }) => {
     instructions,
     external_url: externalUrl,
     qr_asset_path: qrAssetPath,
-    requires_evidence: false,
+    requires_evidence: kind !== 'CASH',
     is_active: true,
     updated_at: now,
   };

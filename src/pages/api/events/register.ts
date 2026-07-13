@@ -5,6 +5,7 @@ import { verifyTurnstile } from '@lib/turnstile';
 import { containsBlockedSequence, sanitizePlainText } from '@lib/validation';
 import { createEventCheckout, EventCheckoutError, type EventCheckoutProvider } from '@lib/eventCheckout';
 import { DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, normalizeEventRegistrationFormConfig } from '@lib/eventRegistrationForm.js';
+import { createEvidenceUploadCredential } from '@lib/eventPaymentEvidence';
 
 export const prerender = false;
 
@@ -60,6 +61,67 @@ async function persistRegistrationResponses(registrationId: string, responses: R
   if (error && error.code !== '42703') {
     console.error('[events.register] optional responses persistence failed', error);
   }
+}
+
+type EvidenceUploadCredentialResult = {
+  required: boolean;
+  token: string | null;
+  expires_at: string | null;
+};
+
+async function issueEvidenceUploadCredential(
+  paymentId: string,
+  paymentOptionId: string | null,
+  eventId: string,
+): Promise<EvidenceUploadCredentialResult> {
+  const notRequired = { required: false, token: null, expires_at: null };
+  if (!supabaseAdmin || !paymentOptionId) return notRequired;
+  const { data: option, error: optionError } = await supabaseAdmin
+    .from('event_payment_options')
+    .select('requires_evidence')
+    .eq('id', paymentOptionId)
+    .eq('event_id', eventId)
+    .maybeSingle();
+  if (optionError) {
+    console.error('[events.register] evidence requirement lookup failed', optionError);
+    return { required: true, token: null, expires_at: null };
+  }
+  if (!option?.requires_evidence) return notRequired;
+
+  const { data: payment, error: paymentError } = await supabaseAdmin
+    .from('event_payments')
+    .select('provider_payload,status')
+    .eq('id', paymentId)
+    .maybeSingle();
+  if (paymentError || payment?.status !== 'UNDER_REVIEW') {
+    if (paymentError) console.error('[events.register] evidence payment lookup failed', paymentError);
+    return { required: true, token: null, expires_at: null };
+  }
+
+  const credential = createEvidenceUploadCredential();
+  const currentPayload = payment.provider_payload && typeof payment.provider_payload === 'object'
+    ? payment.provider_payload as Record<string, unknown>
+    : {};
+  const { error: updateError } = await supabaseAdmin
+    .from('event_payments')
+    .update({
+      provider_payload: {
+        ...currentPayload,
+        evidence_upload_sha256: credential.sha256,
+        evidence_upload_expires_at: credential.expiresAt,
+      },
+    })
+    .eq('id', paymentId)
+    .eq('status', 'UNDER_REVIEW');
+  if (updateError) {
+    console.error('[events.register] evidence credential persistence failed', updateError);
+    return { required: true, token: null, expires_at: null };
+  }
+  return {
+    required: true,
+    token: credential.token,
+    expires_at: credential.expiresAt,
+  };
 }
 
 function isIsoDate(value: string) {
@@ -258,6 +320,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         currency: manualRegistration.currency,
       },
     });
+    const evidenceCredential = await issueEvidenceUploadCredential(
+      String(manualRegistration.payment_id),
+      paymentOptionId,
+      eventId,
+    );
     return json({
       ok: true,
       registration_id: manualRegistration.registration_id,
@@ -266,6 +333,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       status: manualRegistration.registration_status,
       requires_payment: false,
       requires_manual_review: true,
+      requires_evidence: evidenceCredential.required,
+      evidence_upload_token: evidenceCredential.token,
+      evidence_upload_expires_at: evidenceCredential.expires_at,
       review_expires_at: manualRegistration.expires_at,
       reused: manualRegistration.reused,
     }, manualRegistration.reused ? 200 : 201);

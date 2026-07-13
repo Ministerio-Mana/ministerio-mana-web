@@ -320,7 +320,11 @@ const structured = (contentEntry || databaseEvent) ? {
                     <label class="text-sm font-bold text-slate-700 sm:col-span-2">Método de pago
                       <select name="provider" required class="mt-1 block min-h-11 w-full rounded-md border-slate-300">
                         {eventPaymentOptions.map((option) => (
-                          <option value={option.id} data-provider={option.provider} data-kind={option.kind}>{option.label}</option>
+                          <option
+                            value={option.id}
+                            data-provider={option.provider}
+                            data-kind={option.kind}
+                            data-requires-evidence={option.requires_evidence ? 'true' : 'false'}>{option.label}</option>
                         ))}
                       </select>
                     </label>
@@ -366,6 +370,14 @@ const structured = (contentEntry || databaseEvent) ? {
                         placeholder="Referencia, titular o últimos 4 dígitos"
                         class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
                       <span class="mt-1 block text-xs font-normal text-slate-500">No escribas claves, números completos de tarjeta ni información bancaria privada.</span>
+                    </label>
+                    <label id="event-payment-evidence-wrapper" class="hidden text-sm font-bold text-slate-700">Comprobante de pago
+                      <input
+                        name="payment_evidence"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        class="mt-1 block min-h-11 w-full rounded-md border border-slate-300 bg-white text-sm font-normal text-slate-700 file:mr-3 file:min-h-11 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-4 file:text-sm file:font-bold file:text-[#293C74]" />
+                      <span class="mt-1 block text-xs font-normal leading-relaxed text-slate-500">Captura JPG, PNG o WebP de máximo 4 MB, o PDF de máximo 2 MB. La imagen se optimiza y se guarda de forma privada.</span>
                     </label>
                   </div>
                 )}
