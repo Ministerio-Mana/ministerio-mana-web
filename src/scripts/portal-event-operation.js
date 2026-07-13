@@ -254,16 +254,23 @@ async function exportRegistrations() {
       const data = await response.json().catch(() => ({}));
       throw new Error(data.error || 'No se pudo generar el Excel.');
     }
+    const mirroredToOneDrive = response.headers.get('x-event-export-onedrive') === 'updated';
     const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    const disposition = String(response.headers.get('content-disposition') || '');
-    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'inscripciones-evento.xlsx';
-    link.download = filename;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    if (mirroredToOneDrive) {
+      await loadEventDocuments({ quiet: true });
+      setDocumentsMessage('Excel actualizado en OneDrive. Ábrelo desde “Documentos internos del evento”.', 'success');
+    } else {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      const disposition = String(response.headers.get('content-disposition') || '');
+      const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'inscripciones-evento.xlsx';
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+      setDocumentsMessage('No se pudo actualizar OneDrive; se descargó una copia del Excel.', 'info');
+    }
   } catch (error) {
     window.alert(error?.name === 'AbortError'
       ? 'La exportación tardó demasiado. Intenta nuevamente.'

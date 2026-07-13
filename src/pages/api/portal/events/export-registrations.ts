@@ -2,11 +2,13 @@ import type { APIRoute } from 'astro';
 import ExcelJS from 'exceljs';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { canActorOperateEventPayments, getEventAccessContext } from '@lib/eventAccess';
+import { isMicrosoftEventsWriteEnabled, uploadMicrosoftEventDocument } from '@lib/microsoftGraph';
 import { enforceRateLimit } from '@lib/rateLimit';
 
 export const prerender = false;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_MIRROR_BYTES = 4 * 1024 * 1024;
 
 function json(data: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -23,6 +25,69 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
     .slice(0, 60) || 'evento';
+}
+
+function buildEventFolder(event: { id: string; title?: string | null; slug?: string | null }) {
+  return `${slugify(String(event.slug || event.title || 'evento'))}-${event.id.slice(0, 8)}`;
+}
+
+function isDocumentsSchemaMissing(error: any) {
+  return error?.code === '42P01' || error?.code === 'PGRST205';
+}
+
+async function mirrorExportToOneDrive(params: {
+  event: { id: string; title?: string | null; slug?: string | null };
+  actorUserId: string;
+  content: Uint8Array;
+}) {
+  if (!supabaseAdmin || !isMicrosoftEventsWriteEnabled() || params.content.byteLength > MAX_MIRROR_BYTES) return null;
+  const storedName = 'inscripciones.xlsx';
+  const originalName = 'Inscripciones.xlsx';
+  const existing = await supabaseAdmin
+    .from('event_documents')
+    .select('id')
+    .eq('event_id', params.event.id)
+    .eq('stored_name', storedName)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing.error) {
+    if (!isDocumentsSchemaMissing(existing.error)) console.error('[event.export] document lookup failed', existing.error);
+    return null;
+  }
+
+  try {
+    const uploaded = await uploadMicrosoftEventDocument({
+      eventFolder: buildEventFolder(params.event),
+      fileName: storedName,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      content: params.content,
+    });
+    const record = {
+      status: 'READY',
+      original_name: originalName,
+      stored_name: storedName,
+      mime_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      size_bytes: params.content.byteLength,
+      sharepoint_drive_id: uploaded.drive.id,
+      sharepoint_item_id: uploaded.item.id,
+      sharepoint_web_url: uploaded.item.webUrl,
+      sharepoint_etag: uploaded.item.eTag,
+      error_code: null,
+      updated_at: new Date().toISOString(),
+    };
+    const write = existing.data?.id
+      ? await supabaseAdmin.from('event_documents').update(record).eq('id', existing.data.id)
+      : await supabaseAdmin.from('event_documents').insert({ ...record, event_id: params.event.id, uploaded_by: params.actorUserId });
+    if (write.error) {
+      console.error('[event.export] document registration failed', write.error);
+      return null;
+    }
+    return uploaded.item.webUrl;
+  } catch (error) {
+    console.error('[event.export] OneDrive mirror failed', error);
+    return null;
+  }
 }
 
 function safeCell(value: unknown): string | number {
@@ -85,7 +150,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   if (!UUID_PATTERN.test(eventId)) return json({ ok: false, error: 'Evento inválido.' }, 400);
   const { data: event, error: eventError } = await supabaseAdmin
     .from('events')
-    .select('id,title,scope,church_id,region_id,country')
+    .select('id,title,slug,scope,church_id,region_id,country')
     .eq('id', eventId)
     .maybeSingle();
   if (eventError) return json({ ok: false, error: 'No se pudo consultar el evento.' }, 500);
@@ -163,8 +228,9 @@ export const GET: APIRoute = async ({ request, url }) => {
     column.width = Math.max(14, Math.min(42, longest + 2));
   });
 
-  const bytes = await workbook.xlsx.writeBuffer();
+  const bytes = new Uint8Array(await workbook.xlsx.writeBuffer() as ArrayBuffer);
   const filename = `inscripciones-${slugify(event.title)}.xlsx`;
+  const oneDriveUrl = await mirrorExportToOneDrive({ event, actorUserId: ctx.userId, content: bytes });
   void supabaseAdmin.from('event_finance_audit_logs').insert({
     event_id: event.id,
     action: 'EVENT_REGISTRATIONS_EXPORTED',
@@ -176,6 +242,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       'content-disposition': `attachment; filename="${filename}"`,
       'cache-control': 'private, no-store, max-age=0',
       'x-content-type-options': 'nosniff',
+      'x-event-export-onedrive': oneDriveUrl ? 'updated' : 'unavailable',
     },
   });
 };
