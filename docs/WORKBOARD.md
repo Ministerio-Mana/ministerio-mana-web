@@ -36,6 +36,12 @@
   - Description: Crear una pregunta adicional, publicar el evento y enviar una inscripción de prueba desde celular.
   - Notes: Pendiente para cuando el usuario tenga acceso; no bloquea el avance técnico.
 
+- MANA-012 Revisión de Excel en línea para Eventos
+  - Owner: Usuario
+  - Scope: `/portal/events/:id` → Operación del evento
+  - Description: Usar “Actualizar Excel en OneDrive”, abrir `Inscripciones.xlsx` desde Documentos internos y comprobar que las respuestas del formulario aparecen en columnas.
+  - Notes: “Descargar una copia” queda disponible solo para trabajo fuera de línea. Requiere haber ejecutado `docs/sql/event_documents_sharepoint.sql` y tener habilitada la escritura de Eventos en Microsoft 365.
+
 - MANA-007 Verificar build en producción
   - Owner: DELTA
   - Scope: CI/CD, Vercel deployment
@@ -49,7 +55,7 @@
   - Branch: `main`
   - Scope: exportación Excel y futura sincronización segura con SharePoint
   - Description: Entregar registros con preguntas configurables sin alterar cobros, ImageKit, Campus ni los permisos actuales.
-  - Status: En curso — Excel generado y respuestas visibles en la operación. La actualización automática en OneDrive/SharePoint queda lista para activarse al ejecutar `docs/sql/event_documents_sharepoint.sql`; luego faltará conectar una Lista de SharePoint autorizada para la vista compartida en tiempo real.
+  - Status: En curso — Excel generado y respuestas visibles en la operación. “Actualizar Excel en OneDrive” reemplaza el mismo archivo en la biblioteca del evento; “Descargar una copia” es secundaria. La activación requiere `docs/sql/event_documents_sharepoint.sql`; una Lista de SharePoint autorizada sigue siendo el siguiente paso para una vista compartida en tiempo real.
 
 - MANA-008 Backend Cumbre Mundial 2026
   - Owner: DELTA
