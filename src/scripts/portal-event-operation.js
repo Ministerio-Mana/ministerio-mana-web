@@ -15,6 +15,7 @@ const search = document.getElementById('event-operation-search');
 const statusFilter = document.getElementById('event-operation-status');
 const refreshButton = document.getElementById('event-operation-refresh');
 const exportButton = document.getElementById('event-operation-export');
+const downloadButton = document.getElementById('event-operation-download');
 const pagination = document.getElementById('event-operation-pagination');
 const pageLabel = document.getElementById('event-operation-page');
 const reviewModal = document.getElementById('event-review-modal');
@@ -254,11 +255,27 @@ async function fetchJson(url, options = {}) {
   }
 }
 
-async function exportRegistrations() {
-  if (!exportButton) return;
-  const originalText = exportButton.textContent;
-  exportButton.disabled = true;
-  exportButton.textContent = 'Generando Excel...';
+function downloadExcelCopy(blob, response) {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const disposition = String(response.headers.get('content-disposition') || '');
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'inscripciones-evento.xlsx';
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+
+async function exportRegistrations({ download = false } = {}) {
+  const actionButton = download ? downloadButton : exportButton;
+  if (!actionButton) return;
+  const originalTexts = new Map([
+    [exportButton, exportButton?.textContent],
+    [downloadButton, downloadButton?.textContent],
+  ]);
+  [exportButton, downloadButton].filter(Boolean).forEach((button) => { button.disabled = true; });
+  actionButton.textContent = 'Generando Excel...';
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS * 2);
   try {
@@ -276,17 +293,14 @@ async function exportRegistrations() {
     const blob = await response.blob();
     if (mirroredToOneDrive) {
       await loadEventDocuments({ quiet: true });
-      setDocumentsMessage('Excel actualizado en OneDrive. Ábrelo desde “Documentos internos del evento”.', 'success');
+      if (download) {
+        downloadExcelCopy(blob, response);
+        setDocumentsMessage('Excel actualizado en OneDrive y se descargó una copia.', 'success');
+      } else {
+        setDocumentsMessage('Excel actualizado en OneDrive. Ábrelo desde “Documentos internos del evento”.', 'success');
+      }
     } else {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      const disposition = String(response.headers.get('content-disposition') || '');
-      const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'inscripciones-evento.xlsx';
-      link.download = filename;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+      downloadExcelCopy(blob, response);
       setDocumentsMessage('No se pudo actualizar OneDrive; se descargó una copia del Excel.', 'info');
     }
   } catch (error) {
@@ -295,8 +309,11 @@ async function exportRegistrations() {
       : error?.message || 'No se pudo generar el Excel.');
   } finally {
     window.clearTimeout(timeout);
-    exportButton.disabled = false;
-    exportButton.textContent = originalText;
+    originalTexts.forEach((text, button) => {
+      if (!button) return;
+      button.disabled = false;
+      button.textContent = text || '';
+    });
   }
 }
 
@@ -316,7 +333,8 @@ function renderRegistrations() {
   const visible = registrations.filter((registration) => {
     if (!query) return true;
     const payment = registration.payment || {};
-    return `${registration.contact_name || ''} ${registration.contact_email || ''} ${registration.contact_phone || ''} ${payment.reported_reference || ''} ${payment.reference || ''}`
+    const additionalAnswers = getRegistrationExtraDetails(registration).map((detail) => `${detail.label} ${detail.value}`).join(' ');
+    return `${registration.contact_name || ''} ${registration.contact_email || ''} ${registration.contact_phone || ''} ${payment.reported_reference || ''} ${payment.reference || ''} ${additionalAnswers}`
       .toLowerCase()
       .includes(query);
   });
@@ -537,6 +555,7 @@ refreshButton?.addEventListener('click', () => {
   void loadEventDocuments({ quiet: true }).catch((error) => setDocumentsMessage(error?.message || 'No se pudieron actualizar los archivos.', 'error'));
 });
 exportButton?.addEventListener('click', () => void exportRegistrations());
+downloadButton?.addEventListener('click', () => void exportRegistrations({ download: true }));
 documentsRefresh?.addEventListener('click', () => void loadEventDocuments().catch((error) => {
   documentsLoading?.classList.add('hidden');
   setDocumentsMessage(error?.message || 'No se pudieron cargar los archivos.', 'error');
