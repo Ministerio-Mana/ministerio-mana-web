@@ -84,6 +84,18 @@ const heroDay = isValidDate
 const heroMonth = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { month: 'short', timeZone: eventTimeZone }).format(startDate).replace('.', '').toUpperCase()
   : '';
+const attendanceLabel = databaseEvent?.attendance_mode === 'ONLINE'
+  ? 'Virtual'
+  : databaseEvent?.attendance_mode === 'HYBRID'
+    ? 'Híbrido'
+    : 'Presencial';
+const priceLabel = databaseEvent?.price != null && databaseEvent.price > 0
+  ? new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: databaseEvent.currency || 'COP',
+    maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2,
+  }).format(databaseEvent.price)
+  : 'Sin costo';
 const canonical = `${Astro.url.origin}/eventos/${slug}`;
 const structured = (contentEntry || databaseEvent) ? {
   '@context': 'https://schema.org',
@@ -111,8 +123,8 @@ const structured = (contentEntry || databaseEvent) ? {
           {useImageHero && imageLayout !== 'HORIZONTAL' && <div class:list={["event-public-hero-image", `event-public-hero-image--${imageLayout.toLowerCase()}`]}><img src={image} alt="" fetchpriority="high" /></div>}
           <div class="event-public-hero-copy max-w-4xl">
             <p class="event-public-hero-kicker mb-3 text-xs font-bold uppercase text-white/90"><span aria-hidden="true"></span>{isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná'}</p>
-            <h1 class="text-3xl font-bold leading-tight text-white sm:text-5xl">{title}</h1>
-            <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg">{description}</p>
+            <h1 class="event-public-title text-white">{title}</h1>
+            <p class="event-public-lead mt-4 max-w-2xl text-white/90">{description}</p>
             {isValidDate && (
               <div class="event-public-hero-details mt-7" aria-label={`Detalles de ${title}`}>
                 <div class="event-public-hero-date" aria-hidden="true">
@@ -135,18 +147,23 @@ const structured = (contentEntry || databaseEvent) ? {
         </div>
       </header>
 
-      <section class="border-b border-slate-200 bg-white">
-        <div class="container-tight grid gap-5 py-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-center">
-          <div>
-            <p class="text-xs font-bold uppercase text-slate-500">Fecha</p>
-            <p class="mt-1 font-semibold capitalize text-slate-900">{formattedDate}{formattedTime && ` · ${formattedTime}`}</p>
-          </div>
-          <div>
-            <p class="text-xs font-bold uppercase text-slate-500">Lugar</p>
-            <p class="mt-1 font-semibold text-slate-900">{location || 'Lugar por confirmar'}</p>
-            {address && <p class="text-sm text-slate-500">{address}</p>}
-          </div>
-          <div class="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
+      <section class="event-public-facts-band border-b border-slate-200 bg-white">
+        <div class="container-tight grid gap-3 py-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.78fr_auto] lg:items-stretch">
+          <article class="event-public-fact">
+            <p>Fecha</p>
+            <strong class="capitalize">{formattedDate}{formattedTime && ` · ${formattedTime}`}</strong>
+          </article>
+          <article class="event-public-fact">
+            <p>Lugar</p>
+            <strong>{location || 'Lugar por confirmar'}</strong>
+            {address && <span>{address}</span>}
+          </article>
+          <article class="event-public-fact">
+            <p>Modalidad</p>
+            <strong>{attendanceLabel}</strong>
+            <span>{databaseEvent?.capacity ? `${databaseEvent.capacity} cupos` : 'Cupo abierto'}</span>
+          </article>
+          <div class="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
             {registrationHref && <a href={registrationHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
             {brochure && <a href={brochure} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Ver brochure</a>}
           </div>
@@ -165,10 +182,10 @@ const structured = (contentEntry || databaseEvent) ? {
             )}
           </article>
           <aside class="event-public-sidebar border-l-0 border-slate-200 lg:border-l lg:pl-6">
-            <h2 class="text-sm font-bold uppercase text-slate-500">Estado</h2>
+            <h2 class="text-sm font-bold uppercase tracking-[0.12em] text-slate-500">Estado</h2>
             <p class="mt-2 text-lg font-bold text-slate-900">{isCompleted ? 'Finalizado' : 'Programado'}</p>
             {databaseEvent?.capacity != null && databaseEvent.capacity > 0 && <p class="mt-2 text-sm text-slate-600">Cupo: {databaseEvent.capacity} personas</p>}
-            {databaseEvent?.price != null && databaseEvent.price > 0 && <p class="mt-2 text-sm font-bold text-[#293C74]">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: databaseEvent.currency || 'COP', maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2 }).format(databaseEvent.price)}</p>}
+            <p class="mt-2 text-sm font-bold text-[#293C74]">{priceLabel}</p>
             {(whatsappHref || databaseEvent?.contact_email) && (
               <div class="event-public-contact mt-6">
                 <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">¿Necesitas ayuda?</p>
@@ -232,7 +249,7 @@ const structured = (contentEntry || databaseEvent) ? {
             {internalRegistrationReady ? (
               <form
                 id="public-event-registration-form"
-                class="rounded-md border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+                class="event-public-registration-card rounded-md border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
                 data-event-id={databaseEvent.id}
                 data-pricing-model={pricingModel}
                 data-unit-price={Number(databaseEvent.price || 0)}
@@ -445,6 +462,21 @@ const structured = (contentEntry || databaseEvent) ? {
     text-wrap: balance;
   }
 
+  .event-public-title {
+    max-width: 12ch;
+    font-family: var(--font-display, "Intro", sans-serif);
+    font-size: clamp(2.55rem, 6vw, 5.25rem);
+    font-weight: 800;
+    letter-spacing: -0.055em;
+    line-height: 0.96;
+    text-wrap: balance;
+  }
+
+  .event-public-lead {
+    font-size: clamp(1rem, 1.5vw, 1.18rem);
+    line-height: 1.62;
+  }
+
   .event-public-hero-kicker {
     display: flex;
     align-items: center;
@@ -503,6 +535,45 @@ const structured = (contentEntry || databaseEvent) ? {
   .event-public-hero-action--secondary { border: 1px solid rgb(255 255 255 / 36%); background: rgb(9 25 60 / 42%); color: white; }
   .event-public-hero-action--secondary:hover { background: rgb(255 255 255 / 14%); }
 
+  .event-public-facts-band {
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 12px 35px rgb(15 31 70 / 7%);
+  }
+
+  .event-public-fact {
+    min-height: 6.2rem;
+    border-left: 3px solid #3ac1d4;
+    border-radius: 0.35rem;
+    background: linear-gradient(135deg, #fbfdff, #f4f8ff);
+    padding: 0.9rem 1rem;
+  }
+
+  .event-public-fact p {
+    margin: 0;
+    color: #61708a;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .event-public-fact strong {
+    display: block;
+    margin-top: 0.38rem;
+    color: #172553;
+    font-size: 0.93rem;
+    line-height: 1.35;
+  }
+
+  .event-public-fact span {
+    display: block;
+    margin-top: 0.22rem;
+    color: #66758f;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
   .event-public-about {
     border-radius: 1rem;
     background: linear-gradient(135deg, #fff 0%, #f7faff 100%);
@@ -520,6 +591,23 @@ const structured = (contentEntry || databaseEvent) ? {
   }
 
   .event-public-sidebar { align-self: start; padding-top: 1.25rem; }
+
+  .event-public-registration-card {
+    position: relative;
+    overflow: hidden;
+    border-color: rgb(41 60 116 / 20%);
+    box-shadow: 0 20px 50px rgb(24 40 87 / 10%);
+  }
+
+  .event-public-registration-card::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #293c74, #3ac1d4);
+    content: '';
+  }
 
   .event-public-contact {
     border: 1px solid rgb(58 193 212 / 25%);
@@ -577,6 +665,7 @@ const structured = (contentEntry || databaseEvent) ? {
     .event-public-hero-image--square { width: min(100%, 300px); margin-inline: auto; }
     .event-public-hero-image--vertical { width: min(100%, 240px); margin-inline: auto; }
     .event-public-hero-details { display: flex; width: 100%; }
+    .event-public-title { max-width: 100%; font-size: clamp(2.45rem, 13vw, 3.5rem); }
     .event-public-hero-orbit--one { right: -14rem; }
     .event-public-hero-orbit--two { right: -4rem; }
   }
