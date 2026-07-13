@@ -34,6 +34,33 @@ const EVENT_VISIBILITIES = new Set(['PUBLIC', 'UNLISTED', 'PRIVATE']);
 const EVENT_REGISTRATION_MODES = new Set(['NONE', 'EXTERNAL', 'INTERNAL']);
 const EVENT_CURRENCIES = new Set(['COP', 'USD', 'EUR']);
 const EVENT_ATTENDANCE_MODES = new Set(['IN_PERSON', 'ONLINE', 'HYBRID']);
+const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
+const EVENT_TIMEZONE_ALIASES = new Map([
+  ['AMERICABOGOTA', DEFAULT_EVENT_TIMEZONE],
+  ['BOGOTA', DEFAULT_EVENT_TIMEZONE],
+  ['COLOMBIABOGOTA', DEFAULT_EVENT_TIMEZONE],
+  ['AMERICAGUAYAQUIL', 'America/Guayaquil'],
+  ['ECUADORGUAYAQUIL', 'America/Guayaquil'],
+  ['AMERICAMEXICOCITY', 'America/Mexico_City'],
+  ['MEXICOCIUDADDEMEXICO', 'America/Mexico_City'],
+  ['AMERICAPANAMA', 'America/Panama'],
+  ['CENTROAMERICAPANAMA', 'America/Panama'],
+  ['AMERICANEWYORK', 'America/New_York'],
+  ['ESTADOSUNIDOSESTE', 'America/New_York'],
+  ['AMERICACHICAGO', 'America/Chicago'],
+  ['ESTADOSUNIDOSCENTRO', 'America/Chicago'],
+  ['AMERICADENVER', 'America/Denver'],
+  ['ESTADOSUNIDOSMONTANA', 'America/Denver'],
+  ['AMERICALOSANGELES', 'America/Los_Angeles'],
+  ['ESTADOSUNIDOSPACIFICO', 'America/Los_Angeles'],
+  ['EUROPEMADRID', 'Europe/Madrid'],
+  ['EUROPAMADRID', 'Europe/Madrid'],
+  ['EUROPEPARIS', 'Europe/Paris'],
+  ['EUROPAPARIS', 'Europe/Paris'],
+  ['AUSTRALIASYDNEY', 'Australia/Sydney'],
+  ['AUSTRALIASIDNEY', 'Australia/Sydney'],
+  ['UTC', 'UTC'],
+]);
 const EVENT_ATTENDANCE_MODE_ALIASES = new Map([
   ['INPERSON', 'IN_PERSON'],
   ['IN_PERSON', 'IN_PERSON'],
@@ -145,6 +172,19 @@ function isValidTimeZone(value: string): boolean {
   }
 }
 
+function normalizeEventTimeZone(value: unknown): string {
+  const raw = String(value || '').trim().slice(0, 80);
+  if (!raw) return '';
+
+  const key = raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '');
+
+  return EVENT_TIMEZONE_ALIASES.get(key) || raw;
+}
+
 function normalizeAttendanceMode(value: unknown): string {
   const normalized = String(value || '')
     .normalize('NFD')
@@ -201,7 +241,7 @@ function sanitizeEventPayload(body: Record<string, any>) {
       return;
     }
     if (field === 'timezone') {
-      const timezone = String(value).trim().slice(0, 80);
+      const timezone = normalizeEventTimeZone(value);
       if (/^[A-Za-z0-9._+\-/]+$/.test(timezone)) payload.timezone = timezone;
       return;
     }
@@ -252,8 +292,10 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   if (payload.pricing_model && !EVENT_PRICING_MODELS.has(String(payload.pricing_model))) {
     return 'El modelo de precio no es válido.';
   }
-  if (payload.timezone && !isValidTimeZone(String(payload.timezone))) {
-    return 'La zona horaria del evento no es válida.';
+  if (payload.timezone) {
+    const timezone = normalizeEventTimeZone(payload.timezone);
+    if (!isValidTimeZone(timezone)) return 'La zona horaria del evento no es válida.';
+    payload.timezone = timezone;
   }
   if (payload.pricing_model === 'FREE' && Number(payload.price || 0) > 0) {
     return 'Un evento gratuito debe tener precio cero.';
@@ -510,6 +552,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ ok: false, error: 'Solicitud inválida.' }), { status: 400 });
   }
   const payload = sanitizeEventPayload(body);
+  if (!payload.timezone) payload.timezone = DEFAULT_EVENT_TIMEZONE;
   if (!payload.registration_mode) payload.registration_mode = 'NONE';
   normalizeRegistrationState(payload, payload.registration_mode);
   if (!payload.pricing_model) payload.pricing_model = Number(payload.price || 0) > 0 ? 'PAID' : 'FREE';

@@ -80,6 +80,32 @@ const previewCta = document.getElementById('event-preview-cta');
 
 const REQUEST_TIMEOUT_MS = 15000;
 const DEFAULT_EVENT_TIMEZONE = 'America/Bogota';
+const EVENT_TIMEZONE_ALIASES = new Map([
+    ['AMERICABOGOTA', DEFAULT_EVENT_TIMEZONE],
+    ['BOGOTA', DEFAULT_EVENT_TIMEZONE],
+    ['COLOMBIABOGOTA', DEFAULT_EVENT_TIMEZONE],
+    ['AMERICAGUAYAQUIL', 'America/Guayaquil'],
+    ['ECUADORGUAYAQUIL', 'America/Guayaquil'],
+    ['AMERICAMEXICOCITY', 'America/Mexico_City'],
+    ['MEXICOCIUDADDEMEXICO', 'America/Mexico_City'],
+    ['AMERICAPANAMA', 'America/Panama'],
+    ['CENTROAMERICAPANAMA', 'America/Panama'],
+    ['AMERICANEWYORK', 'America/New_York'],
+    ['ESTADOSUNIDOSESTE', 'America/New_York'],
+    ['AMERICACHICAGO', 'America/Chicago'],
+    ['ESTADOSUNIDOSCENTRO', 'America/Chicago'],
+    ['AMERICADENVER', 'America/Denver'],
+    ['ESTADOSUNIDOSMONTANA', 'America/Denver'],
+    ['AMERICALOSANGELES', 'America/Los_Angeles'],
+    ['ESTADOSUNIDOSPACIFICO', 'America/Los_Angeles'],
+    ['EUROPEMADRID', 'Europe/Madrid'],
+    ['EUROPAMADRID', 'Europe/Madrid'],
+    ['EUROPEPARIS', 'Europe/Paris'],
+    ['EUROPAPARIS', 'Europe/Paris'],
+    ['AUSTRALIASYDNEY', 'Australia/Sydney'],
+    ['AUSTRALIASIDNEY', 'Australia/Sydney'],
+    ['UTC', 'UTC'],
+]);
 const MIN_EVENT_YEAR = 2000;
 const MAX_EVENT_YEAR = 2100;
 const SCOPE_LABELS = {
@@ -125,6 +151,19 @@ function normalizeAttendanceMode(value) {
         .replace(/[^A-Z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '');
     return ATTENDANCE_MODE_ALIASES.get(normalized) || 'IN_PERSON';
+}
+
+function normalizeEventTimeZone(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return DEFAULT_EVENT_TIMEZONE;
+
+    const key = raw
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '');
+
+    return EVENT_TIMEZONE_ALIASES.get(key) || raw;
 }
 
 let authHeaders = {};
@@ -815,7 +854,7 @@ function getLifecycle(event, now = Date.now()) {
 function formatEventDate(event) {
     const start = new Date(event?.start_date || '');
     if (Number.isNaN(start.getTime())) return 'Fecha por definir';
-    const timeZone = String(event?.timezone || DEFAULT_EVENT_TIMEZONE);
+    const timeZone = normalizeEventTimeZone(event?.timezone);
     const date = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeZone }).format(start);
     const time = new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone }).format(start);
     return `${date}, ${time}`;
@@ -1022,8 +1061,9 @@ async function loadEvents(shouldRender = true) {
 function getDateTimeParts(value, timeZone) {
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return null;
+    const normalizedTimeZone = normalizeEventTimeZone(timeZone);
     const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone,
+        timeZone: normalizedTimeZone,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -1138,7 +1178,7 @@ function openEventModal(mode, eventData = null) {
         archivedOption.disabled = mode !== 'edit';
     }
 
-    const eventTimeZone = String(eventData?.timezone || DEFAULT_EVENT_TIMEZONE);
+    const eventTimeZone = normalizeEventTimeZone(eventData?.timezone);
     const fieldValues = {
         title: eventData?.title || '',
         description: eventData?.description || '',
@@ -1336,6 +1376,9 @@ eventForm?.addEventListener('submit', async (event) => {
             : String(payload.registration_mode || 'NONE').toUpperCase();
         payload.registration_mode = registrationMode;
         payload.attendance_mode = normalizeAttendanceMode(eventForm.querySelector('[name="attendance_mode"]')?.value);
+        payload.timezone = normalizeEventTimeZone(
+            payload.timezone || eventForm.querySelector('[name="timezone"]')?.value
+        );
         if (eventPlatformReady && eventSlugInput) {
             payload.slug = normalizeEventSlug(eventSlugInput.value);
             eventSlugInput.value = payload.slug;
@@ -1347,7 +1390,7 @@ eventForm?.addEventListener('submit', async (event) => {
             if (payload[key] === '') delete payload[key];
         });
 
-        const timeZone = String(payload.timezone || DEFAULT_EVENT_TIMEZONE);
+        const timeZone = payload.timezone;
         const startDateError = getDateTimeError(payload.start_date, 'inicio', true);
         if (startDateError) throw new Error(startDateError);
         const endDateError = getDateTimeError(payload.end_date, 'fin');
