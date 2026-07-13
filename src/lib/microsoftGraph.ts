@@ -144,7 +144,7 @@ async function graphFetch(
       authorization: `Bearer ${token}`,
       ...(init.headers || {}),
     },
-    redirect: 'error',
+    redirect: init.redirect || 'error',
     signal: init.signal || AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 
@@ -368,19 +368,41 @@ export async function downloadMicrosoftEventDocument(params: {
 
   const itemResponse = await graphFetch(
     config,
-    `/drives/${encodeURIComponent(drive.id)}/items/${encodeURIComponent(params.itemId)}?$select=id,file,@microsoft.graph.downloadUrl`,
+    `/drives/${encodeURIComponent(drive.id)}/items/${encodeURIComponent(params.itemId)}`,
     { method: 'GET' },
   );
   if (!itemResponse.ok) throw new Error(await readSafeError(itemResponse));
   const item = await itemResponse.json() as Record<string, unknown>;
   const downloadUrl = String(item['@microsoft.graph.downloadUrl'] || '');
-  if (!downloadUrl.startsWith('https://')) throw new Error('Microsoft no devolvió un enlace de descarga válido.');
 
-  const response = await fetch(downloadUrl, {
-    method: 'GET',
-    redirect: 'error',
-    signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
-  });
-  if (!response.ok) throw new Error(`Microsoft no pudo descargar la imagen (${response.status}).`);
-  return new Uint8Array(await response.arrayBuffer());
+  // Graph devuelve un enlace temporal en la mayoría de las bibliotecas. Si esa
+  // anotación no viene incluida, /content redirige al mismo enlace autenticado.
+  // Ambas rutas se mantienen en el servidor: nunca se expone el vínculo de
+  // SharePoint ni las credenciales al navegador.
+  if (downloadUrl.startsWith('https://')) {
+    const response = await fetch(downloadUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+    });
+    if (response.ok) return new Uint8Array(await response.arrayBuffer());
+  }
+
+  const contentResponse = await graphFetch(
+    config,
+    `/drives/${encodeURIComponent(drive.id)}/items/${encodeURIComponent(params.itemId)}/content`,
+    { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS) },
+  );
+  const redirectUrl = String(contentResponse.headers.get('location') || '');
+  if (redirectUrl.startsWith('https://')) {
+    const response = await fetch(redirectUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+    });
+    if (response.ok) return new Uint8Array(await response.arrayBuffer());
+  }
+
+  if (contentResponse.ok) return new Uint8Array(await contentResponse.arrayBuffer());
+  throw new Error(`Microsoft no pudo descargar la imagen (${contentResponse.status}).`);
 }

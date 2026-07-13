@@ -61,6 +61,12 @@ const formattedDate = isValidDate
 const formattedTime = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: eventTimeZone }).format(startDate)
   : '';
+const heroDay = isValidDate
+  ? new Intl.DateTimeFormat('es-CO', { day: '2-digit', timeZone: eventTimeZone }).format(startDate)
+  : '';
+const heroMonth = isValidDate
+  ? new Intl.DateTimeFormat('es-CO', { month: 'short', timeZone: eventTimeZone }).format(startDate).replace('.', '').toUpperCase()
+  : '';
 const canonical = `${Astro.url.origin}/eventos/${slug}`;
 const structured = (contentEntry || databaseEvent) ? {
   '@context': 'https://schema.org',
@@ -80,14 +86,28 @@ const structured = (contentEntry || databaseEvent) ? {
   {(contentEntry || databaseEvent) ? (
     <div class="bg-slate-50">
       <header class:list={["event-public-hero relative overflow-hidden", `event-public-hero--${imageLayout.toLowerCase()}`, !useImageHero && "bg-[#293C74]"]}>
-        {useImageHero && imageLayout === 'HORIZONTAL' && <img src={image} alt="" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" />}
-        {useImageHero && imageLayout === 'HORIZONTAL' && <div class="absolute inset-0 bg-slate-950/55"></div>}
+        {useImageHero && imageLayout === 'HORIZONTAL' && <img src={image} alt="" class="absolute inset-0 z-0 h-full w-full object-cover" fetchpriority="high" />}
+        <div class="event-public-hero-scrim absolute inset-0 z-0" aria-hidden="true"></div>
+        <div class="event-public-hero-orbit event-public-hero-orbit--one" aria-hidden="true"></div>
+        <div class="event-public-hero-orbit event-public-hero-orbit--two" aria-hidden="true"></div>
         <div class:list={["container-tight relative z-10 w-full py-10 text-white sm:py-14", imageLayout !== 'HORIZONTAL' && "event-public-hero-poster"]}>
           {useImageHero && imageLayout !== 'HORIZONTAL' && <div class:list={["event-public-hero-image", `event-public-hero-image--${imageLayout.toLowerCase()}`]}><img src={image} alt="" fetchpriority="high" /></div>}
-          <div class="max-w-4xl">
-            <p class="mb-3 text-xs font-bold uppercase text-white/80">{isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná'}</p>
+          <div class="event-public-hero-copy max-w-4xl">
+            <p class="event-public-hero-kicker mb-3 text-xs font-bold uppercase text-white/90"><span aria-hidden="true"></span>{isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná'}</p>
             <h1 class="text-3xl font-bold leading-tight text-white sm:text-5xl">{title}</h1>
-            <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">{description}</p>
+            <p class="mt-4 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg">{description}</p>
+            {isValidDate && (
+              <div class="event-public-hero-details mt-7" aria-label={`Detalles de ${title}`}>
+                <div class="event-public-hero-date" aria-hidden="true">
+                  <strong>{heroDay}</strong>
+                  <span>{heroMonth}</span>
+                </div>
+                <div>
+                  <p class="font-semibold capitalize text-white">{formattedDate}{formattedTime && ` · ${formattedTime}`}</p>
+                  {location && <p class="mt-1 text-sm text-white/75">{location}</p>}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -304,12 +324,87 @@ const structured = (contentEntry || databaseEvent) ? {
     display: flex;
     min-height: 420px;
     align-items: end;
+    isolation: isolate;
+    background: #172553;
   }
+
+  .event-public-hero-scrim {
+    background:
+      linear-gradient(90deg, rgb(9 21 54 / 96%) 0%, rgb(19 38 82 / 82%) 47%, rgb(14 29 59 / 58%) 100%),
+      linear-gradient(0deg, rgb(9 21 54 / 60%), transparent 60%);
+  }
+
+  .event-public-hero-orbit {
+    position: absolute;
+    z-index: 1;
+    border: 1px solid rgb(74 205 218 / 30%);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  .event-public-hero-orbit--one {
+    top: -12rem;
+    right: -7rem;
+    width: 28rem;
+    height: 28rem;
+    box-shadow: inset 0 0 0 3.5rem rgb(61 183 202 / 7%);
+  }
+
+  .event-public-hero-orbit--two {
+    right: 19%;
+    bottom: -9rem;
+    width: 17rem;
+    height: 17rem;
+    border-color: rgb(255 255 255 / 14%);
+  }
+
+  .event-public-hero-copy {
+    text-wrap: balance;
+  }
+
+  .event-public-hero-kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    letter-spacing: 0.12em;
+  }
+
+  .event-public-hero-kicker span {
+    width: 1.75rem;
+    height: 2px;
+    background: #3ac1d4;
+  }
+
+  .event-public-hero-details {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.5rem 1rem 0.5rem 0.55rem;
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 0.75rem;
+    background: rgb(11 28 65 / 48%);
+    backdrop-filter: blur(8px);
+  }
+
+  .event-public-hero-date {
+    display: grid;
+    width: 3.2rem;
+    min-height: 3.2rem;
+    place-content: center;
+    border-radius: 0.5rem;
+    background: #32acc3;
+    color: #102149;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .event-public-hero-date strong { font-size: 1.3rem; }
+  .event-public-hero-date span { margin-top: 0.15rem; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; }
 
   .event-public-hero--square,
   .event-public-hero--vertical {
     align-items: center;
-    background: linear-gradient(128deg, #172553 0%, #293c74 55%, #1d6f85 130%);
+    background: linear-gradient(128deg, #102149 0%, #293c74 55%, #1d6f85 130%);
   }
 
   .event-public-hero-poster {
@@ -349,5 +444,8 @@ const structured = (contentEntry || databaseEvent) ? {
 
     .event-public-hero-image--square { width: min(100%, 300px); margin-inline: auto; }
     .event-public-hero-image--vertical { width: min(100%, 240px); margin-inline: auto; }
+    .event-public-hero-details { display: flex; width: 100%; }
+    .event-public-hero-orbit--one { right: -14rem; }
+    .event-public-hero-orbit--two { right: -4rem; }
   }
 </style>
