@@ -46,6 +46,7 @@ const PLATFORM_PUBLIC_FIELDS = [
   'contact_whatsapp_message',
   'registration_form_config',
 ].join(',');
+const PLATFORM_PUBLIC_FIELDS_DUAL = [PLATFORM_PUBLIC_FIELDS, 'price_cop', 'price_usd'].join(',');
 
 export type PublicEvent = {
   id: string;
@@ -61,6 +62,8 @@ export type PublicEvent = {
   city: string | null;
   country: string | null;
   price: number | null;
+  price_cop?: number | null;
+  price_usd?: number | null;
   currency: string | null;
   status: string;
   slug?: string | null;
@@ -119,7 +122,7 @@ export async function listPublicDatabaseEvents(): Promise<PublicEvent[]> {
 
   const enhanced = await supabaseAdmin
     .from('events')
-    .select(PLATFORM_PUBLIC_FIELDS)
+    .select(PLATFORM_PUBLIC_FIELDS_DUAL)
     .eq('status', 'PUBLISHED')
     .order('start_date', { ascending: true });
 
@@ -131,6 +134,21 @@ export async function listPublicDatabaseEvents(): Promise<PublicEvent[]> {
 
   if (!isExpectedSchemaError(enhanced.error)) {
     console.error('[public-events] list error', enhanced.error);
+    return [];
+  }
+
+  const beforeDual = await supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS)
+    .eq('status', 'PUBLISHED')
+    .order('start_date', { ascending: true });
+  if (!beforeDual.error) {
+    return normalizeRows(beforeDual.data).filter((event) => (
+      event.visibility === 'PUBLIC' || event.id === CUMBRE_EVENT_ID
+    ));
+  }
+  if (!isExpectedSchemaError(beforeDual.error)) {
+    console.error('[public-events] list fallback error', beforeDual.error);
     return [];
   }
 
@@ -178,7 +196,7 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
 
   let enhancedQuery = supabaseAdmin
     .from('events')
-    .select(PLATFORM_PUBLIC_FIELDS)
+    .select(PLATFORM_PUBLIC_FIELDS_DUAL)
     .eq('status', 'PUBLISHED');
 
   enhancedQuery = isUuid(normalized)
@@ -193,6 +211,23 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
 
   if (!isExpectedSchemaError(enhanced.error)) {
     console.error('[public-events] detail error', enhanced.error);
+    return null;
+  }
+
+  let beforeDualQuery = supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS)
+    .eq('status', 'PUBLISHED');
+  beforeDualQuery = isUuid(normalized)
+    ? beforeDualQuery.eq('id', normalized)
+    : beforeDualQuery.eq('slug', normalized);
+  const beforeDual = await beforeDualQuery.maybeSingle();
+  if (!beforeDual.error) {
+    const event = beforeDual.data as PublicEvent | null;
+    return event && event.visibility !== 'PRIVATE' ? event : null;
+  }
+  if (!isExpectedSchemaError(beforeDual.error)) {
+    console.error('[public-events] detail fallback error', beforeDual.error);
     return null;
   }
 

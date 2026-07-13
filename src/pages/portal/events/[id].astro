@@ -48,6 +48,15 @@ const eventId = String(Astro.params.id || '');
             <div class="portal-stat"><p class="portal-stat-label">Asistieron</p><p id="event-operation-checkins" class="portal-stat-value">0</p></div>
           </section>
 
+          <section id="event-finance-summary" class="portal-panel hidden overflow-hidden" aria-labelledby="event-finance-summary-title">
+            <div class="border-b border-slate-200 px-4 py-4 sm:px-5">
+              <p class="text-xs font-bold uppercase text-slate-500">Recaudo conciliado</p>
+              <h2 id="event-finance-summary-title" class="mt-1 text-xl font-bold text-[#293C74]">Resumen por proveedor y moneda</h2>
+              <p class="mt-1 text-sm text-slate-600">Cada moneda se muestra por separado. El portal nunca suma pesos con dólares.</p>
+            </div>
+            <div id="event-finance-summary-grid" class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
+          </section>
+
           <section id="event-documents-section" class="portal-panel overflow-hidden" aria-labelledby="event-documents-title">
             <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               <div>

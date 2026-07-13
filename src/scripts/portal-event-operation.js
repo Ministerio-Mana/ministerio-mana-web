@@ -35,6 +35,8 @@ const documentsHelp = document.getElementById('event-documents-help');
 const documentsLoading = document.getElementById('event-documents-loading');
 const documentsList = document.getElementById('event-documents-list');
 const documentsEmpty = document.getElementById('event-documents-empty');
+const financeSummarySection = document.getElementById('event-finance-summary');
+const financeSummaryGrid = document.getElementById('event-finance-summary-grid');
 
 const eventId = String(root?.dataset.eventId || '');
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -55,6 +57,21 @@ const STATUS_TONES = {
   EXPIRED: 'bg-slate-100 text-slate-600',
   PENDING_PAYMENT: 'bg-blue-50 text-blue-700',
   REFUNDED: 'bg-violet-50 text-violet-700',
+};
+const PAYMENT_STATUS_LABELS = {
+  APPROVED: 'Aprobado',
+  UNDER_REVIEW: 'Por verificar',
+  PENDING: 'Procesando',
+  DECLINED: 'Rechazado',
+  FAILED: 'Fallido',
+  VOIDED: 'Anulado',
+  REFUNDED: 'Reembolsado',
+};
+const PAYMENT_PROVIDER_LABELS = {
+  WOMPI: 'Wompi · recaudo nacional',
+  STRIPE: 'Stripe · internacional',
+  MANUAL: 'Pago local verificado',
+  EXTERNAL: 'Enlace externo verificado',
 };
 
 let authHeaders = {};
@@ -322,6 +339,25 @@ function setStat(id, value) {
   if (node) node.textContent = String(value || 0);
 }
 
+function renderFinanceSummary(rows) {
+  if (!financeSummarySection || !financeSummaryGrid) return;
+  const values = Array.isArray(rows)
+    ? rows.filter((row) => row?.currency && (Number(row.approved_count || 0) > 0 || Number(row.pending_count || 0) > 0))
+    : [];
+  financeSummarySection.classList.toggle('hidden', values.length === 0);
+  financeSummaryGrid.innerHTML = values.map((row) => {
+    const provider = String(row.provider || '').toUpperCase();
+    const currency = String(row.currency || 'COP').toUpperCase();
+    const approvedCount = Number(row.approved_count || 0);
+    const pendingCount = Number(row.pending_count || 0);
+    return `<article class="bg-white px-4 py-5 sm:px-5">
+      <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">${escapeHtml(PAYMENT_PROVIDER_LABELS[provider] || provider || 'Otro medio')}</p>
+      <p class="mt-2 text-2xl font-bold text-[#293C74]">${escapeHtml(formatAmount(row.approved_amount, currency))}</p>
+      <p class="mt-1 text-sm text-slate-600">${approvedCount} aprobado${approvedCount === 1 ? '' : 's'}${pendingCount ? ` · ${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}` : ''}</p>
+    </article>`;
+  }).join('');
+}
+
 function showContent() {
   gate?.classList.add('hidden');
   content?.classList.remove('hidden');
@@ -348,10 +384,14 @@ function renderRegistrations() {
     const quantity = Number(registration.quantity || 0);
     const checkedIn = Number(registration.checked_in_quantity || 0);
     const remaining = Math.max(0, quantity - checkedIn);
+    const paymentStatus = String(payment?.status || '').toUpperCase();
+    const paymentReferenceDetail = payment?.is_manual
+      ? `<div><dt class="text-xs font-bold uppercase text-slate-500">Referencia reportada</dt><dd class="mt-1 break-words font-semibold text-slate-800">${escapeHtml(payment.reported_reference || 'Sin referencia')}</dd></div>`
+      : `<div><dt class="text-xs font-bold uppercase text-slate-500">Estado del pago</dt><dd class="mt-1 font-semibold text-slate-800">${escapeHtml(PAYMENT_STATUS_LABELS[paymentStatus] || paymentStatus || 'Sin estado')}</dd></div>`;
     const paymentInfo = payment ? `
       <dl class="grid gap-3 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
         <div><dt class="text-xs font-bold uppercase text-slate-500">Método</dt><dd class="mt-1 font-semibold text-slate-800">${escapeHtml(payment.method_label || payment.method || 'Manual')}</dd></div>
-        <div><dt class="text-xs font-bold uppercase text-slate-500">Reportado</dt><dd class="mt-1 break-words font-semibold text-slate-800">${escapeHtml(payment.reported_reference || 'Sin referencia')}</dd></div>
+        ${paymentReferenceDetail}
         <div><dt class="text-xs font-bold uppercase text-slate-500">Referencia Maná</dt><dd class="mt-1 break-all font-mono text-xs text-slate-700">${escapeHtml(payment.reference || '')}</dd></div>
         <div><dt class="text-xs font-bold uppercase text-slate-500">Valor</dt><dd class="mt-1 font-bold text-[#293C74]">${escapeHtml(formatAmount(payment.amount, payment.currency))}</dd></div>
       </dl>
@@ -363,7 +403,7 @@ function renderRegistrations() {
         <a href="${escapeAttr(payment.evidence.view_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-3 py-2 text-sm font-bold text-[#293C74] hover:bg-[#EEF2FF]">${icon(externalLinkIconUrl)} Ver comprobante</a>
       </div>` : payment.requires_evidence ? `<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Esta persona no adjuntó comprobante.</p>` : ''}` : '';
     const missingRequiredEvidence = Boolean(payment?.requires_evidence && !payment?.evidence);
-    const reviewActions = status === 'UNDER_REVIEW' && payment?.id && permissions.can_approve ? `
+    const reviewActions = status === 'UNDER_REVIEW' && payment?.id && payment?.is_manual && permissions.can_approve ? `
       <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300" data-action="APPROVE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}" ${missingRequiredEvidence ? 'disabled title="Falta el comprobante obligatorio"' : ''}>${icon(checkCircleIconUrl)} Aprobar pago</button>
       <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50" data-action="DECLINE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}">${icon(xCircleIconUrl)} Rechazar</button>` : '';
     const checkinAction = status === 'CONFIRMED' && permissions.can_check_in && remaining > 0 ? `
@@ -443,6 +483,7 @@ async function loadOperation(page = currentPage) {
   setStat('event-operation-review', data.summary?.under_review);
   setStat('event-operation-confirmed', data.summary?.confirmed);
   setStat('event-operation-checkins', data.summary?.checked_in);
+  renderFinanceSummary(data.finance_summary);
   updatePagination(data.pagination);
   renderRegistrations();
   showContent();

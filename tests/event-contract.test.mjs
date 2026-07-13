@@ -8,10 +8,15 @@ import {
   normalizeEventTimeZone,
 } from '../src/lib/eventContract.js';
 import {
+  canUseEventPaymentModeForScope,
+  getEventPaymentProvidersForMode,
+  getEventProviderPrice,
   getRequiredEventProviderCurrency,
   isValidEventProviderCurrency,
+  normalizeEventOnlinePaymentMode,
 } from '../src/lib/eventPaymentContract.js';
 import { getEventInvitationBounds, getEventInvitationLayout } from '../src/lib/eventInvitationLayout.js';
+import { selectPreferredEventPayments, summarizeEventPayments } from '../src/lib/eventPaymentReporting.js';
 import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '../src/lib/eventRegistrationForm.js';
 
 test('normaliza etiquetas visibles de zona horaria al identificador IANA', () => {
@@ -43,6 +48,35 @@ test('aplica la moneda obligatoria de cada cobro automático', () => {
   assert.equal(isValidEventProviderCurrency('WOMPI', 'USD'), false);
   assert.equal(isValidEventProviderCurrency('STRIPE', 'USD'), true);
   assert.equal(isValidEventProviderCurrency('STRIPE', 'COP'), false);
+});
+
+test('configura cobro dual únicamente para eventos globales', () => {
+  assert.equal(normalizeEventOnlinePaymentMode('dual'), 'DUAL');
+  assert.deepEqual(getEventPaymentProvidersForMode('DUAL'), ['WOMPI', 'STRIPE']);
+  assert.deepEqual(getEventPaymentProvidersForMode('STRIPE'), ['STRIPE']);
+  assert.equal(canUseEventPaymentModeForScope('DUAL', 'GLOBAL'), true);
+  assert.equal(canUseEventPaymentModeForScope('DUAL', 'NATIONAL'), false);
+});
+
+test('mantiene precios COP y USD separados con respaldo para eventos anteriores', () => {
+  const dual = { price: 300000, currency: 'COP', price_cop: 300000, price_usd: 80 };
+  assert.equal(getEventProviderPrice(dual, 'WOMPI'), 300000);
+  assert.equal(getEventProviderPrice(dual, 'STRIPE'), 80);
+  assert.equal(getEventProviderPrice({ price: 55, currency: 'USD' }, 'STRIPE'), 55);
+  assert.equal(getEventProviderPrice({ price: 300000, currency: 'COP' }, 'STRIPE'), 0);
+});
+
+test('prioriza el pago aprobado y reporta cada moneda por separado', () => {
+  const payments = [
+    { registration_id: 'r1', provider: 'WOMPI', currency: 'COP', amount: 300000, status: 'APPROVED', created_at: '2026-07-13T10:00:00Z' },
+    { registration_id: 'r1', provider: 'WOMPI', currency: 'COP', amount: 300000, status: 'FAILED', created_at: '2026-07-13T10:05:00Z' },
+    { registration_id: 'r2', provider: 'STRIPE', currency: 'USD', amount: 80, status: 'APPROVED', created_at: '2026-07-13T10:02:00Z' },
+  ];
+  assert.equal(selectPreferredEventPayments(payments).get('r1').status, 'APPROVED');
+  assert.deepEqual(summarizeEventPayments(payments), [
+    { provider: 'WOMPI', currency: 'COP', payment_count: 2, approved_count: 1, approved_amount: 300000, pending_count: 0 },
+    { provider: 'STRIPE', currency: 'USD', payment_count: 1, approved_count: 1, approved_amount: 80, pending_count: 0 },
+  ]);
 });
 
 test('elige la plantilla de invitación sin pedir medidas al usuario', () => {

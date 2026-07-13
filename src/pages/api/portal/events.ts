@@ -103,6 +103,8 @@ const EVENT_FIELDS = [
   'registration_form_config',
   'timezone',
   'price',
+  'price_cop',
+  'price_usd',
   'currency',
   'attendance_mode',
   'pricing_model',
@@ -123,6 +125,8 @@ const PLATFORM_EVENT_FIELDS = new Set([
   'contact_whatsapp_message',
   'registration_form_config',
   'timezone',
+  'price_cop',
+  'price_usd',
 ]);
 
 const NULLABLE_EVENT_FIELDS = new Set([
@@ -133,6 +137,8 @@ const NULLABLE_EVENT_FIELDS = new Set([
   'capacity',
   'contact_whatsapp',
   'contact_whatsapp_message',
+  'price_cop',
+  'price_usd',
 ]);
 
 function isSafeInternalOrHttpsUrl(value: string): boolean {
@@ -157,7 +163,7 @@ function sanitizeEventPayload(body: Record<string, any>) {
       }
       return;
     }
-    if (field === 'capacity' || field === 'price') {
+    if (field === 'capacity' || field === 'price' || field === 'price_cop' || field === 'price_usd') {
       const amount = Number(value);
       const valid = field === 'capacity' ? Number.isInteger(amount) : Number.isFinite(amount);
       if (valid && amount >= 0 && amount <= 1_000_000_000) {
@@ -240,6 +246,12 @@ function validateEventPayload(payload: Record<string, any>): string | null {
   }
   if (payload.price !== undefined && (!Number.isFinite(payload.price) || payload.price < 0)) {
     return 'El precio debe ser un número válido.';
+  }
+  if (payload.price_cop !== undefined && payload.price_cop !== null && (!Number.isFinite(payload.price_cop) || payload.price_cop < 0)) {
+    return 'El precio en pesos debe ser un número válido.';
+  }
+  if (payload.price_usd !== undefined && payload.price_usd !== null && (!Number.isFinite(payload.price_usd) || payload.price_usd < 0)) {
+    return 'El precio en dólares debe ser un número válido.';
   }
   if (payload.currency && !EVENT_CURRENCIES.has(String(payload.currency))) {
     return 'La moneda del evento no es válida.';
@@ -387,7 +399,17 @@ export const GET: APIRoute = async ({ request }) => {
 
     const platformReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'visibility')));
     const financeReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'pricing_model')));
-    return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady, finance_ready: financeReady }), { status: 200 });
+    const dualFinanceReady = Boolean((events || []).some((event: any) => (
+      Object.prototype.hasOwnProperty.call(event, 'price_cop')
+      && Object.prototype.hasOwnProperty.call(event, 'price_usd')
+    )));
+    return new Response(JSON.stringify({
+      ok: true,
+      events,
+      platform_ready: platformReady,
+      finance_ready: financeReady,
+      dual_finance_ready: dualFinanceReady,
+    }), { status: 200 });
   }
   await ensureCumbreEvent(ctx.userId);
 
@@ -482,7 +504,17 @@ export const GET: APIRoute = async ({ request }) => {
 
   const platformReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'visibility')));
   const financeReady = Boolean((events || []).some((event: any) => Object.prototype.hasOwnProperty.call(event, 'pricing_model')));
-  return new Response(JSON.stringify({ ok: true, events, platform_ready: platformReady, finance_ready: financeReady }), { status: 200 });
+  const dualFinanceReady = Boolean((events || []).some((event: any) => (
+    Object.prototype.hasOwnProperty.call(event, 'price_cop')
+    && Object.prototype.hasOwnProperty.call(event, 'price_usd')
+  )));
+  return new Response(JSON.stringify({
+    ok: true,
+    events,
+    platform_ready: platformReady,
+    finance_ready: financeReady,
+    dual_finance_ready: dualFinanceReady,
+  }), { status: 200 });
 };
 
 export const POST: APIRoute = async ({ request }) => {

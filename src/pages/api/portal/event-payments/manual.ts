@@ -7,6 +7,7 @@ import {
 } from '@lib/eventAccess';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { sanitizePlainText } from '@lib/validation';
+import { selectPreferredEventPayments, summarizeEventPayments } from '@lib/eventPaymentReporting.js';
 
 export const prerender = false;
 
@@ -24,6 +25,11 @@ function isEvidenceSchemaMissing(error: any) {
     || /event_payment_evidence/i.test(String(error?.message || ''));
 }
 
+function isPaymentTotalsFunctionMissing(error: any) {
+  return ['42883', 'PGRST202'].includes(String(error?.code || ''))
+    || /get_event_payment_totals_secure/i.test(String(error?.message || ''));
+}
+
 async function loadEvent(eventId: string) {
   if (!supabaseAdmin) return { data: null, error: new Error('Server Config Error') };
   return supabaseAdmin
@@ -31,6 +37,27 @@ async function loadEvent(eventId: string) {
     .select('id, title, scope, church_id, region_id, country, start_date, end_date, timezone, status, capacity, currency')
     .eq('id', eventId)
     .maybeSingle();
+}
+
+async function loadEventFinanceTotals(eventId: string) {
+  if (!supabaseAdmin) return { data: [], error: new Error('Server Config Error') };
+  const totals = await supabaseAdmin.rpc('get_event_payment_totals_secure', { p_event_id: eventId });
+  if (!totals.error) return totals;
+  if (!isPaymentTotalsFunctionMissing(totals.error)) return totals;
+
+  const payments: any[] = [];
+  const pageSize = 1_000;
+  for (let from = 0; from < 10_000; from += pageSize) {
+    const result = await supabaseAdmin
+      .from('event_payments')
+      .select('provider,currency,status,amount')
+      .eq('event_id', eventId)
+      .range(from, from + pageSize - 1);
+    if (result.error) return { data: [], error: result.error };
+    payments.push(...(result.data || []));
+    if ((result.data || []).length < pageSize) break;
+  }
+  return { data: summarizeEventPayments(payments), error: null };
 }
 
 function canCheckIn(ctx: Awaited<ReturnType<typeof getEventAccessContext>>) {
@@ -65,16 +92,20 @@ export const GET: APIRoute = async ({ request, url }) => {
     .order('created_at', { ascending: false })
     .range((page - 1) * pageSize, page * pageSize - 1);
 
-  const [registrationsResult, optionsResult, summaryResult] = await Promise.all([
+  const [registrationsResult, optionsResult, summaryResult, financeTotalsResult] = await Promise.all([
     registrationsQuery,
     supabaseAdmin
       .from('event_payment_options')
       .select('id, label, kind, provider, requires_evidence')
       .eq('event_id', event.id),
     supabaseAdmin.rpc('get_event_operation_summary_secure', { p_event_id: event.id }),
+    loadEventFinanceTotals(event.id),
   ]);
   if (registrationsResult.error || optionsResult.error || summaryResult.error) {
     return json({ ok: false, error: 'No se pudo cargar la operación del evento.' }, 500);
+  }
+  if (financeTotalsResult.error && !isPaymentTotalsFunctionMissing(financeTotalsResult.error)) {
+    console.error('[event.operation] payment totals failed', financeTotalsResult.error);
   }
 
   const registrationIds = (registrationsResult.data || []).map((row: any) => String(row.id));
@@ -83,7 +114,6 @@ export const GET: APIRoute = async ({ request, url }) => {
       .from('event_payments')
       .select('id, registration_id, payment_option_id, provider, reference, method, amount, currency, status, provider_payload, received_at, verified_at, verified_by, created_at')
       .in('registration_id', registrationIds)
-      .in('provider', ['MANUAL', 'EXTERNAL'])
       .order('created_at', { ascending: false }),
     supabaseAdmin
       .from('event_checkins')
@@ -112,9 +142,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     (evidenceResult.data || []).map((evidence: any) => [String(evidence.payment_id), evidence]),
   );
 
-  const paymentsByRegistration = new Map(
-    (paymentsResult.data || []).map((payment: any) => [String(payment.registration_id), payment]),
-  );
+  const paymentsByRegistration = selectPreferredEventPayments(paymentsResult.data || []);
   const checkedByRegistration = new Map<string, number>();
   for (const checkin of checkinsResult.data || []) {
     const registrationId = String((checkin as any).registration_id || '');
@@ -141,6 +169,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         amount: payment.amount,
         currency: payment.currency,
         status: payment.status,
+        is_manual: ['MANUAL', 'EXTERNAL'].includes(String(payment.provider || '').toUpperCase()),
         received_at: payment.received_at,
         verified_at: payment.verified_at,
         requires_evidence: Boolean(option?.requires_evidence),
@@ -165,12 +194,23 @@ export const GET: APIRoute = async ({ request, url }) => {
     confirmed: Number(summaryRow?.confirmed_count || 0),
     checked_in: Number(summaryRow?.checked_in_count || 0),
   };
+  const financeSummary = financeTotalsResult.error
+    ? []
+    : (financeTotalsResult.data || []).map((row: any) => ({
+        provider: String(row.provider || '').toUpperCase(),
+        currency: String(row.currency || '').toUpperCase(),
+        payment_count: Number(row.payment_count || 0),
+        approved_count: Number(row.approved_count || 0),
+        approved_amount: Number(row.approved_amount || 0),
+        pending_count: Number(row.pending_count || 0),
+      }));
 
   return json({
     ok: true,
     event,
     registrations,
     summary,
+    finance_summary: financeSummary,
     pagination: {
       page,
       page_size: pageSize,
@@ -221,11 +261,14 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (!UUID_PATTERN.test(paymentId)) return json({ ok: false, error: 'Pago inválido.' }, 400);
     const paymentLookup = await supabaseAdmin
       .from('event_payments')
-      .select('id, event_id, payment_option_id')
+      .select('id, event_id, payment_option_id, provider')
       .eq('id', paymentId)
       .maybeSingle();
     if (paymentLookup.error || !paymentLookup.data || paymentLookup.data.event_id !== event.id) {
       return json({ ok: false, error: 'Pago no encontrado en este evento.' }, 404);
+    }
+    if (!['MANUAL', 'EXTERNAL'].includes(String(paymentLookup.data.provider || '').toUpperCase())) {
+      return json({ ok: false, error: 'Los pagos automáticos solo se actualizan mediante el proveedor firmado.' }, 409);
     }
     if (action === 'APPROVE' && paymentLookup.data.payment_option_id) {
       const [optionResult, evidenceResult] = await Promise.all([

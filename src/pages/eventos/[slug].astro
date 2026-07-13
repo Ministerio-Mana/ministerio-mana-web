@@ -2,6 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import { getEntry, render } from 'astro:content';
 import { getPublicDatabaseEvent, listPublicEventPaymentOptions } from '@lib/publicEvents';
+import { getEventProviderPrice } from '@lib/eventPaymentContract.js';
 import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@lib/eventRegistrationForm.js';
 import TurnstileProvider from '@components/TurnstileProvider.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
@@ -59,6 +60,25 @@ const pricingModel = String(databaseEvent?.pricing_model || (Number(databaseEven
 const eventPaymentOptions = internalRegistrationIsOpen && databaseEvent
   ? await listPublicEventPaymentOptions(databaseEvent.id)
   : [];
+const hasWompi = eventPaymentOptions.some((option) => option.kind === 'ONLINE' && option.provider === 'WOMPI');
+const hasStripe = eventPaymentOptions.some((option) => option.kind === 'ONLINE' && option.provider === 'STRIPE');
+const priceCop = databaseEvent ? getEventProviderPrice(databaseEvent, 'WOMPI') : 0;
+const priceUsd = databaseEvent ? getEventProviderPrice(databaseEvent, 'STRIPE') : 0;
+const formatEventPrice = (amount: number, currency: string) => new Intl.NumberFormat(
+  currency === 'USD' ? 'en-US' : 'es-CO',
+  { style: 'currency', currency, maximumFractionDigits: currency === 'COP' ? 0 : 2 },
+).format(amount);
+const getPaymentOptionUnitPrice = (option: typeof eventPaymentOptions[number]) => {
+  if (pricingModel !== 'PAID') return 0;
+  if (option.provider === 'WOMPI') return priceCop;
+  if (option.provider === 'STRIPE') return priceUsd;
+  const optionCurrency = String(option.currency || '').toUpperCase();
+  if (optionCurrency === 'COP' && priceCop > 0) return priceCop;
+  if (optionCurrency === 'USD' && priceUsd > 0) return priceUsd;
+  return optionCurrency === String(databaseEvent?.currency || '').toUpperCase()
+    ? Number(databaseEvent?.price || 0)
+    : 0;
+};
 const internalRegistrationReady = internalRegistrationIsOpen
   && (pricingModel === 'FREE' || eventPaymentOptions.length > 0);
 const registrationHref = externalRegistrationIsOpen ? registrationUrl : internalRegistrationReady ? '#inscripcion' : '';
@@ -89,13 +109,15 @@ const attendanceLabel = databaseEvent?.attendance_mode === 'ONLINE'
   : databaseEvent?.attendance_mode === 'HYBRID'
     ? 'Híbrido'
     : 'Presencial';
-const priceLabel = databaseEvent?.price != null && databaseEvent.price > 0
-  ? new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: databaseEvent.currency || 'COP',
-    maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2,
-  }).format(databaseEvent.price)
-  : 'Sin costo';
+const priceLabel = pricingModel === 'DONATION'
+  ? hasWompi && hasStripe
+    ? 'Aporte voluntario · COP en Colombia o USD desde el exterior'
+    : 'Aporte voluntario'
+  : priceCop > 0 && priceUsd > 0 && hasWompi && hasStripe
+    ? `${formatEventPrice(priceCop, 'COP')} en Colombia · ${formatEventPrice(priceUsd, 'USD')} desde el exterior`
+    : Number(databaseEvent?.price || 0) > 0
+      ? formatEventPrice(Number(databaseEvent?.price), databaseEvent?.currency || 'COP')
+      : 'Sin costo';
 const canonical = `${Astro.url.origin}/eventos/${slug}`;
 const structured = (contentEntry || databaseEvent) ? {
   '@context': 'https://schema.org',
@@ -235,13 +257,7 @@ const structured = (contentEntry || databaseEvent) ? {
                 </div>
                 <div>
                   <dt class="font-bold text-slate-500">Valor</dt>
-                  <dd class="mt-1 text-slate-900">
-                    {pricingModel === 'DONATION'
-                      ? 'Aporte voluntario'
-                      : Number(databaseEvent.price || 0) > 0
-                        ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: databaseEvent.currency || 'COP', maximumFractionDigits: databaseEvent.currency === 'COP' ? 0 : 2 }).format(Number(databaseEvent.price))
-                        : 'Sin costo'}
-                  </dd>
+                  <dd class="mt-1 text-slate-900">{priceLabel}</dd>
                 </div>
               </dl>
             </div>
@@ -253,6 +269,8 @@ const structured = (contentEntry || databaseEvent) ? {
                 data-event-id={databaseEvent.id}
                 data-pricing-model={pricingModel}
                 data-unit-price={Number(databaseEvent.price || 0)}
+                data-price-cop={priceCop}
+                data-price-usd={priceUsd}
                 data-currency={databaseEvent.currency || 'COP'}
                 novalidate>
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -324,6 +342,8 @@ const structured = (contentEntry || databaseEvent) ? {
                             value={option.id}
                             data-provider={option.provider}
                             data-kind={option.kind}
+                            data-currency={option.currency}
+                            data-unit-price={getPaymentOptionUnitPrice(option)}
                             data-requires-evidence={option.requires_evidence ? 'true' : 'false'}>{option.label}</option>
                         ))}
                       </select>

@@ -21,7 +21,10 @@ import {
     normalizeEventTimeZone as normalizeContractTimeZone,
 } from '@lib/eventContract.js';
 import {
+    canUseEventPaymentModeForScope,
+    getEventProviderPrice,
     getRequiredEventProviderCurrency,
+    normalizeEventOnlinePaymentMode,
     normalizeEventOnlinePaymentProvider,
 } from '@lib/eventPaymentContract.js';
 import { normalizeEventInvitationLayout } from '@lib/eventInvitationLayout.js';
@@ -63,8 +66,14 @@ const eventFinancePending = document.getElementById('event-finance-pending');
 const eventFinanceSettings = document.getElementById('event-finance-settings');
 const eventPricingModel = document.getElementById('event-pricing-model');
 const eventPriceInput = document.getElementById('event-price');
+const eventPriceCopInput = document.getElementById('event-price-cop');
+const eventPriceUsdInput = document.getElementById('event-price-usd');
 const eventCurrencyInput = document.getElementById('event-currency');
+const eventSinglePriceSettings = document.getElementById('event-single-price-settings');
+const eventDualPriceSettings = document.getElementById('event-dual-price-settings');
 const eventOnlineProvider = document.getElementById('event-online-provider');
+const eventOnlineProviderDual = document.getElementById('event-online-provider-dual');
+const eventOnlineProviderHint = document.getElementById('event-online-provider-hint');
 const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
 const eventRegistrationFormSettings = document.getElementById('event-registration-form-settings');
@@ -157,6 +166,7 @@ let currentPermissions = {
 let eventPermissionValidated = false;
 let eventPlatformReady = false;
 let eventFinanceReady = false;
+let eventDualFinanceReady = false;
 let manualQrPreviewObjectUrl = '';
 let invitationImagePreviewObjectUrl = '';
 let pendingInvitationImageFile = null;
@@ -349,18 +359,55 @@ function setMoneyCaretFromDigits(input, digitsBeforeCaret) {
     input.setSelectionRange(position, position);
 }
 
-function formatMoneyInput({ preserveCaret = false } = {}) {
-    if (!eventPriceInput) return;
-    const currency = String(eventForm?.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
-    const selectionStart = eventPriceInput.selectionStart ?? eventPriceInput.value.length;
-    const digitsBeforeCaret = eventPriceInput.value.slice(0, selectionStart).replace(/\D/g, '').length;
-    const amount = parseMoneyInput(eventPriceInput.value, currency);
+function formatMoneyField(input, currency, { preserveCaret = false } = {}) {
+    if (!input) return;
+    if (!String(input.value || '').trim()) return;
+    const selectionStart = input.selectionStart ?? input.value.length;
+    const digitsBeforeCaret = input.value.slice(0, selectionStart).replace(/\D/g, '').length;
+    const amount = parseMoneyInput(input.value, currency);
     if (!Number.isFinite(amount)) return;
-    eventPriceInput.value = new Intl.NumberFormat('es-CO', {
+    input.value = new Intl.NumberFormat('es-CO', {
         minimumFractionDigits: currency === 'COP' ? 0 : 2,
         maximumFractionDigits: currency === 'COP' ? 0 : 2,
     }).format(amount);
-    if (preserveCaret && currency === 'COP') setMoneyCaretFromDigits(eventPriceInput, digitsBeforeCaret);
+    if (preserveCaret && currency === 'COP') setMoneyCaretFromDigits(input, digitsBeforeCaret);
+}
+
+function formatMoneyInput({ preserveCaret = false } = {}) {
+    const currency = String(eventForm?.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
+    formatMoneyField(eventPriceInput, currency, { preserveCaret });
+    formatMoneyField(eventPriceCopInput, 'COP', { preserveCaret });
+    formatMoneyField(eventPriceUsdInput, 'USD');
+}
+
+function syncDedicatedPriceFromSingle() {
+    const mode = normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
+    if (mode === 'WOMPI' && eventPriceCopInput && eventPriceInput) {
+        eventPriceCopInput.value = eventPriceInput.value;
+    }
+    if (mode === 'STRIPE' && eventPriceUsdInput && eventPriceInput) {
+        eventPriceUsdInput.value = eventPriceInput.value;
+    }
+}
+
+function preparePriceFieldsForPaymentMode(mode) {
+    const normalizedMode = normalizeEventOnlinePaymentMode(mode);
+    if (normalizedMode === 'DUAL') {
+        const currency = String(eventCurrencyInput?.value || 'COP').toUpperCase();
+        if (currency === 'COP' && eventPriceCopInput && !eventPriceCopInput.value) {
+            eventPriceCopInput.value = eventPriceInput?.value || '';
+        }
+        if (currency === 'USD' && eventPriceUsdInput && !eventPriceUsdInput.value) {
+            eventPriceUsdInput.value = eventPriceInput?.value || '';
+        }
+        return;
+    }
+    if (normalizedMode === 'WOMPI' && eventPriceInput) {
+        eventPriceInput.value = eventPriceCopInput?.value || '';
+    }
+    if (normalizedMode === 'STRIPE' && eventPriceInput) {
+        eventPriceInput.value = eventPriceUsdInput?.value || '';
+    }
 }
 
 const CUSTOM_FIELD_TYPE_LABELS = {
@@ -561,25 +608,43 @@ function syncFinanceFields() {
         field.disabled = !eventFinanceReady;
     });
     if (!eventFinanceReady || !eventPriceInput) return;
-    const isFree = eventPricingModel?.value === 'FREE';
+    const pricingModel = String(eventPricingModel?.value || 'FREE').toUpperCase();
+    const isFree = pricingModel === 'FREE';
+    const hasFixedPrice = pricingModel === 'PAID';
     const usesInternalRegistration = eventRegistrationMode?.value === 'INTERNAL';
+    const scope = String(eventScopeSelect?.value || 'LOCAL').toUpperCase();
     if (eventPricingModel) eventPricingModel.disabled = !usesInternalRegistration;
+    let paymentMode = normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
+    const dualAllowed = eventDualFinanceReady && canUseEventPaymentModeForScope('DUAL', scope);
+    if (eventOnlineProviderDual) {
+        eventOnlineProviderDual.hidden = !dualAllowed;
+        eventOnlineProviderDual.disabled = !dualAllowed;
+    }
+    if (paymentMode === 'DUAL' && !dualAllowed) {
+        paymentMode = 'NONE';
+        if (eventOnlineProvider) eventOnlineProvider.value = 'NONE';
+    }
+    const usesDualPayment = paymentMode === 'DUAL' && usesInternalRegistration && !isFree;
     const currencyField = eventCurrencyInput;
-    const provider = normalizeEventOnlinePaymentProvider(eventOnlineProvider?.value);
+    const provider = normalizeEventOnlinePaymentProvider(paymentMode);
     const requiredProviderCurrency = getRequiredEventProviderCurrency(provider);
     if (currencyField && requiredProviderCurrency) currencyField.value = requiredProviderCurrency;
     if (currencyField) {
-        currencyField.disabled = !usesInternalRegistration || isFree || Boolean(requiredProviderCurrency);
-        currencyField.classList.toggle('bg-slate-100', !usesInternalRegistration || isFree || Boolean(requiredProviderCurrency));
+        currencyField.disabled = !usesInternalRegistration || isFree || usesDualPayment || Boolean(requiredProviderCurrency);
+        currencyField.classList.toggle('bg-slate-100', !usesInternalRegistration || isFree || usesDualPayment || Boolean(requiredProviderCurrency));
     }
     const approvalField = eventForm?.querySelector('[name="registration_requires_approval"]');
     if (approvalField) approvalField.disabled = !usesInternalRegistration;
     if (eventFinanceRegistrationHint) {
         eventFinanceRegistrationHint.classList.toggle('hidden', usesInternalRegistration);
     }
-    if (isFree) eventPriceInput.value = '0';
-    eventPriceInput.disabled = !usesInternalRegistration || isFree;
-    eventPriceInput.classList.toggle('bg-slate-100', isFree || !usesInternalRegistration);
+    if (!hasFixedPrice) eventPriceInput.value = '0';
+    eventSinglePriceSettings?.classList.toggle('hidden', usesDualPayment);
+    eventDualPriceSettings?.classList.toggle('hidden', !usesDualPayment || !hasFixedPrice);
+    eventPriceInput.disabled = !usesInternalRegistration || !hasFixedPrice || usesDualPayment;
+    eventPriceInput.classList.toggle('bg-slate-100', !hasFixedPrice || !usesInternalRegistration || usesDualPayment);
+    if (eventPriceCopInput) eventPriceCopInput.disabled = !usesDualPayment || !hasFixedPrice;
+    if (eventPriceUsdInput) eventPriceUsdInput.disabled = !usesDualPayment || !hasFixedPrice;
     if (eventOnlineProvider) {
         if (isFree || !usesInternalRegistration) eventOnlineProvider.value = 'NONE';
         eventOnlineProvider.disabled = isFree || !usesInternalRegistration;
@@ -589,13 +654,24 @@ function syncFinanceFields() {
         eventOnlineProviderWrapper.hidden = hideProvider;
         eventOnlineProviderWrapper.style.display = hideProvider ? 'none' : '';
     }
+    if (eventOnlineProviderHint) {
+        eventOnlineProviderHint.textContent = !eventDualFinanceReady && scope === 'GLOBAL'
+            ? 'El cobro dual aparecerá cuando ejecutes la migración pendiente en Supabase.'
+            : usesDualPayment
+            ? 'La persona elige Colombia/Wompi o exterior/Stripe antes de pagar.'
+            : paymentMode === 'WOMPI'
+            ? 'Wompi cobra siempre en pesos y se registra como recaudo nacional.'
+            : paymentMode === 'STRIPE'
+            ? 'Stripe cobra en dólares para pagos internacionales.'
+            : '';
+    }
     formatMoneyInput();
     syncManualPaymentFields();
 }
 
 function syncManualPaymentFields() {
-    const onlineProvider = normalizeEventOnlinePaymentProvider(eventOnlineProvider?.value);
-    const hasOnlineProvider = onlineProvider !== 'NONE';
+    const onlineMode = normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
+    const hasOnlineProvider = onlineMode !== 'NONE';
     const available = eventFinanceReady
         && eventPricingModel?.value !== 'FREE'
         && eventRegistrationMode?.value === 'INTERNAL'
@@ -607,7 +683,7 @@ function syncManualPaymentFields() {
     eventManualPaymentPanel?.classList.toggle('opacity-60', !available);
     if (eventManualPaymentHint) {
         eventManualPaymentHint.textContent = hasOnlineProvider
-            ? `${onlineProvider === 'WOMPI' ? 'Wompi' : 'Stripe'} procesa el cobro automático; el pago manual queda desactivado.`
+            ? `${onlineMode === 'DUAL' ? 'Wompi y Stripe procesan' : onlineMode === 'WOMPI' ? 'Wompi procesa' : 'Stripe procesa'} el cobro automático; el pago manual queda desactivado.`
             : available
             ? 'Actívalo para recibir un QR, transferencia, enlace externo o efectivo y revisar el comprobante.'
             : 'Selecciona “Inscripción en Maná” y un precio distinto de gratuito para habilitarlo.';
@@ -649,13 +725,17 @@ async function loadEventPaymentOption(eventData) {
             'La carga de métodos de pago',
         );
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo cargar el método de pago.');
-        const activeOnline = (Array.isArray(data.options) ? data.options : []).find(
-            (option) => option?.kind === 'ONLINE' && option?.is_active,
-        );
-        const activeManual = (Array.isArray(data.options) ? data.options : []).find(
+        const options = Array.isArray(data.options) ? data.options : [];
+        eventDualFinanceReady = eventDualFinanceReady && data.dual_payment_ready === true;
+        const activeOnline = options.filter((option) => option?.kind === 'ONLINE' && option?.is_active);
+        const activeProviders = new Set(activeOnline.map((option) => option?.provider));
+        const activeMode = activeProviders.has('WOMPI') && activeProviders.has('STRIPE')
+            ? 'DUAL'
+            : activeOnline[0]?.provider || 'NONE';
+        const activeManual = options.find(
             (option) => option?.kind !== 'ONLINE' && ['MANUAL', 'EXTERNAL'].includes(option?.provider) && option?.is_active,
         );
-        eventOnlineProvider.value = activeOnline?.provider || 'NONE';
+        eventOnlineProvider.value = activeMode;
         if (activeManual && eventManualPaymentEnabled) {
             eventManualPaymentEnabled.checked = true;
             if (eventManualPaymentKind) eventManualPaymentKind.value = activeManual.kind || 'QR_TRANSFER';
@@ -675,11 +755,11 @@ async function loadEventPaymentOption(eventData) {
     }
 }
 
-async function saveEventPaymentOption(eventId, provider) {
+async function saveEventPaymentOption(eventId, mode) {
     const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/event-payments/options', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_id: eventId, provider }),
+        body: JSON.stringify({ event_id: eventId, mode }),
     }, REQUEST_TIMEOUT_MS, 'La configuración del método de pago');
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el método de pago.');
 }
@@ -1032,6 +1112,11 @@ function getLocationLabel(event) {
 }
 
 function getEventEconomyLabel(event) {
+    const copPrice = getEventProviderPrice(event, 'WOMPI');
+    const usdPrice = getEventProviderPrice(event, 'STRIPE');
+    if (copPrice > 0 && usdPrice > 0) {
+        return `${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(copPrice)} · ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(usdPrice)}`;
+    }
     const price = Number(event?.price || 0);
     if (price <= 0) return 'Gratuito';
     const currency = String(event?.currency || 'COP').toUpperCase();
@@ -1217,6 +1302,7 @@ async function loadEvents(shouldRender = true) {
         eventsCache = Array.isArray(data.events) ? data.events : [];
         eventPlatformReady = data.platform_ready === true;
         eventFinanceReady = data.finance_ready === true;
+        eventDualFinanceReady = data.dual_finance_ready === true;
         syncPlatformFields();
         syncFinanceFields();
         if (shouldRender) renderEvents();
@@ -1303,6 +1389,9 @@ function updateEventPreview() {
     const location = [value('location_name'), value('city'), value('country')].filter(Boolean).join(' · ');
     const currency = value('currency').toUpperCase() || 'COP';
     const price = parseMoneyInput(value('price'), currency);
+    const paymentMode = normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
+    const copPrice = parseMoneyInput(eventPriceCopInput?.value, 'COP');
+    const usdPrice = parseMoneyInput(eventPriceUsdInput?.value, 'USD');
     const usesInternalRegistration = value('registration_mode').toUpperCase() === 'INTERNAL';
 
     if (previewTitle) previewTitle.textContent = title || 'Título del evento';
@@ -1319,7 +1408,9 @@ function updateEventPreview() {
     }
     if (previewLocation) previewLocation.textContent = location || 'Lugar por definir';
     if (previewPrice) {
-        previewPrice.textContent = usesInternalRegistration && Number.isFinite(price) && price > 0
+        previewPrice.textContent = usesInternalRegistration && paymentMode === 'DUAL' && copPrice > 0 && usdPrice > 0
+            ? `${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(copPrice)} Colombia · ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(usdPrice)} exterior`
+            : usesInternalRegistration && Number.isFinite(price) && price > 0
             ? new Intl.NumberFormat('es-CO', { style: 'currency', currency, maximumFractionDigits: currency === 'COP' ? 0 : 2 }).format(price)
             : 'Evento gratuito';
     }
@@ -1421,6 +1512,8 @@ function openEventModal(mode, eventData = null) {
         contact_whatsapp_message: eventData?.contact_whatsapp_message || '',
         timezone: eventTimeZone,
         price: eventData?.price ?? 0,
+        price_cop: eventData?.price_cop ?? (String(eventData?.currency || '').toUpperCase() === 'COP' ? eventData?.price ?? '' : ''),
+        price_usd: eventData?.price_usd ?? (String(eventData?.currency || '').toUpperCase() === 'USD' ? eventData?.price ?? '' : ''),
         currency: String(eventData?.currency || 'COP').toUpperCase(),
         attendance_mode: normalizeAttendanceMode(eventData?.attendance_mode),
         pricing_model: String(eventData?.pricing_model || (Number(eventData?.price || 0) > 0 ? 'PAID' : 'FREE')).toUpperCase(),
@@ -1529,7 +1622,11 @@ eventsList?.addEventListener('click', (event) => {
     if (statusButton) void changeEventStatus(statusButton.dataset.eventId, statusButton.dataset.eventStatus);
 });
 
-eventScopeSelect?.addEventListener('change', () => syncScopeInputs({ preserveSelections: true }));
+eventScopeSelect?.addEventListener('change', () => {
+    syncScopeInputs({ preserveSelections: true });
+    syncFinanceFields();
+    updateEventPreview();
+});
 eventRegionSelect?.addEventListener('change', () => {
     syncCountryFromRegion();
     updateEventPreview();
@@ -1602,6 +1699,7 @@ eventPricingModel?.addEventListener('change', () => {
     updateEventPreview();
 });
 eventOnlineProvider?.addEventListener('change', () => {
+    preparePriceFieldsForPaymentMode(eventOnlineProvider.value);
     syncFinanceFields();
     updateEventPreview();
 });
@@ -1609,9 +1707,23 @@ eventCurrencyInput?.addEventListener('change', () => {
     formatMoneyInput();
     updateEventPreview();
 });
-eventPriceInput?.addEventListener('input', () => formatMoneyInput({ preserveCaret: true }));
+eventPriceInput?.addEventListener('input', () => {
+    formatMoneyInput({ preserveCaret: true });
+    syncDedicatedPriceFromSingle();
+});
 eventPriceInput?.addEventListener('blur', () => {
     formatMoneyInput();
+    syncDedicatedPriceFromSingle();
+    updateEventPreview();
+});
+eventPriceCopInput?.addEventListener('input', () => formatMoneyField(eventPriceCopInput, 'COP', { preserveCaret: true }));
+eventPriceCopInput?.addEventListener('blur', () => {
+    formatMoneyField(eventPriceCopInput, 'COP');
+    updateEventPreview();
+});
+eventPriceUsdInput?.addEventListener('input', () => formatMoneyField(eventPriceUsdInput, 'USD'));
+eventPriceUsdInput?.addEventListener('blur', () => {
+    formatMoneyField(eventPriceUsdInput, 'USD');
     updateEventPreview();
 });
 eventInvitationImage?.addEventListener('change', () => setPendingInvitationImage(eventInvitationImage.files?.[0]));
@@ -1730,13 +1842,39 @@ eventForm?.addEventListener('submit', async (event) => {
         const pricingModel = registrationMode === 'INTERNAL'
             ? String(eventPricingModel?.value || 'FREE').toUpperCase()
             : 'FREE';
-        const currency = String(eventForm.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
-        const parsedPrice = pricingModel === 'FREE' ? 0 : parseMoneyInput(eventPriceInput?.value, currency);
-        if (!Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 1_000_000_000) {
-            throw new Error('El precio por persona no es válido.');
-        }
-        if (pricingModel === 'PAID' && parsedPrice <= 0) {
-            throw new Error('El precio fijo debe ser mayor que cero.');
+        const paymentMode = pricingModel === 'FREE'
+            ? 'NONE'
+            : normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
+        let currency = String(eventForm.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
+        let parsedPrice = pricingModel === 'PAID' ? parseMoneyInput(eventPriceInput?.value, currency) : 0;
+        if (paymentMode === 'DUAL') {
+            if (!eventDualFinanceReady) throw new Error('Falta ejecutar la migración de cobro dual en Supabase.');
+            if (!canUseEventPaymentModeForScope(paymentMode, payload.scope)) {
+                throw new Error('El cobro Wompi + Stripe está disponible únicamente para eventos globales.');
+            }
+            const priceCop = pricingModel === 'PAID' ? parseMoneyInput(eventPriceCopInput?.value, 'COP') : null;
+            const priceUsd = pricingModel === 'PAID' ? parseMoneyInput(eventPriceUsdInput?.value, 'USD') : null;
+            if (pricingModel === 'PAID' && (!Number.isFinite(priceCop) || priceCop <= 0 || priceCop > 1_000_000_000)) {
+                throw new Error('El precio para Colombia en pesos no es válido.');
+            }
+            if (pricingModel === 'PAID' && (!Number.isFinite(priceUsd) || priceUsd <= 0 || priceUsd > 1_000_000_000)) {
+                throw new Error('El precio internacional en dólares no es válido.');
+            }
+            currency = 'COP';
+            parsedPrice = pricingModel === 'PAID' ? priceCop : 0;
+            payload.price_cop = priceCop;
+            payload.price_usd = priceUsd;
+        } else {
+            if (!Number.isFinite(parsedPrice) || parsedPrice < 0 || parsedPrice > 1_000_000_000) {
+                throw new Error('El precio por persona no es válido.');
+            }
+            if (pricingModel === 'PAID' && parsedPrice <= 0) {
+                throw new Error('El precio fijo debe ser mayor que cero.');
+            }
+            if (eventDualFinanceReady) {
+                payload.price_cop = pricingModel === 'PAID' && currency === 'COP' ? parsedPrice : null;
+                payload.price_usd = pricingModel === 'PAID' && currency === 'USD' ? parsedPrice : null;
+            }
         }
         payload.pricing_model = pricingModel;
         payload.price = parsedPrice;
@@ -1746,7 +1884,7 @@ eventForm?.addEventListener('submit', async (event) => {
             eventFinanceReady
             && registrationMode === 'INTERNAL'
             && payload.pricing_model !== 'FREE'
-            && (!eventOnlineProvider || eventOnlineProvider.value === 'NONE')
+            && paymentMode === 'NONE'
             && !eventManualPaymentEnabled?.checked
         ) {
             throw new Error('Selecciona un cobro automático o activa un pago verificado manualmente.');
@@ -1798,10 +1936,10 @@ eventForm?.addEventListener('submit', async (event) => {
         }
         if (eventFinanceReady && savedEvent?.id && eventOnlineProvider) {
             try {
-                const provider = payload.registration_mode === 'INTERNAL' && payload.pricing_model !== 'FREE'
-                    ? eventOnlineProvider.value || 'NONE'
+                const mode = payload.registration_mode === 'INTERNAL' && payload.pricing_model !== 'FREE'
+                    ? paymentMode
                     : 'NONE';
-                await saveEventPaymentOption(savedEvent.id, provider);
+                await saveEventPaymentOption(savedEvent.id, mode);
                 await saveManualPaymentOption(savedEvent.id);
             } catch (paymentError) {
                 if (eventIdInput) eventIdInput.value = savedEvent.id;

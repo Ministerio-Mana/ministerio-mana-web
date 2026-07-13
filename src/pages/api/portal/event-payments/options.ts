@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
-import { isValidEventProviderCurrency } from '@lib/eventPaymentContract.js';
+import {
+  canUseEventPaymentModeForScope,
+  getEventPaymentProvidersForMode,
+  getEventProviderPrice,
+  isValidEventProviderCurrency,
+  normalizeEventOnlinePaymentMode,
+} from '@lib/eventPaymentContract.js';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { canActorOperateEventPayments, getEventAccessContext } from '@lib/eventAccess';
 import { enforceRateLimit } from '@lib/rateLimit';
@@ -24,9 +30,19 @@ async function loadEvent(eventId: string) {
   if (!supabaseAdmin) return { data: null, error: new Error('Server Config Error') };
   return supabaseAdmin
     .from('events')
-    .select('id, title, scope, church_id, region_id, country, currency, price, pricing_model, registration_mode')
+    .select('*')
     .eq('id', eventId)
     .maybeSingle();
+}
+
+function hasDualPaymentSchema(event: Record<string, unknown>): boolean {
+  return Object.prototype.hasOwnProperty.call(event, 'price_cop')
+    && Object.prototype.hasOwnProperty.call(event, 'price_usd');
+}
+
+function isMissingDualPaymentRpc(error: any): boolean {
+  return ['42883', 'PGRST202'].includes(String(error?.code || ''))
+    || /set_event_online_payment_options_secure/i.test(String(error?.message || ''));
 }
 
 export const GET: APIRoute = async ({ request, url }) => {
@@ -60,7 +76,11 @@ export const GET: APIRoute = async ({ request, url }) => {
     }
     return { ...option, qr_signed_url: qrSignedUrl };
   }));
-  return json({ ok: true, options: resolvedOptions });
+  return json({
+    ok: true,
+    options: resolvedOptions,
+    dual_payment_ready: hasDualPaymentSchema(event as Record<string, unknown>),
+  });
 };
 
 export const POST: APIRoute = async ({ request }) => {
@@ -224,10 +244,11 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   const eventId = String(body.event_id || '').trim();
-  const provider = String(body.provider || '').trim().toUpperCase();
-  if (!eventId || !PROVIDERS.has(provider)) {
-    return json({ ok: false, error: 'Evento o proveedor inválido.' }, 400);
+  const requestedMode = String(body.mode || body.provider || '').trim().toUpperCase();
+  if (!eventId || (!PROVIDERS.has(requestedMode) && requestedMode !== 'DUAL')) {
+    return json({ ok: false, error: 'Evento o modalidad de cobro inválida.' }, 400);
   }
+  const mode = normalizeEventOnlinePaymentMode(requestedMode);
 
   const { data: event, error } = await loadEvent(eventId);
   if (error) return json({ ok: false, error: 'No se pudo consultar el evento.' }, 500);
@@ -236,23 +257,72 @@ export const PUT: APIRoute = async ({ request }) => {
     return json({ ok: false, error: 'No tienes permisos financieros para este evento.' }, 403);
   }
 
-  const currency = String(event.currency || 'COP').toUpperCase();
-  if (provider !== 'NONE' && String(event.registration_mode || 'NONE').toUpperCase() !== 'INTERNAL') {
-    return json({ ok: false, error: 'El cobro en línea requiere inscripción en Maná.' }, 409);
+  const providers = getEventPaymentProvidersForMode(mode);
+  const dualPaymentReady = hasDualPaymentSchema(event as Record<string, unknown>);
+  if (!canUseEventPaymentModeForScope(mode, event.scope)) {
+    return json({ ok: false, error: 'El cobro Wompi + Stripe está disponible únicamente para eventos globales.' }, 409);
   }
-  if (provider !== 'NONE' && String(event.pricing_model || 'FREE').toUpperCase() === 'FREE') {
-    return json({ ok: false, error: 'Un evento gratuito no puede activar cobro en línea.' }, 409);
-  }
-  if (!isValidEventProviderCurrency(provider, currency)) {
+  if (mode === 'DUAL' && !dualPaymentReady) {
     return json({
       ok: false,
-      error: provider === 'WOMPI'
-        ? 'Wompi solo puede activarse para eventos en COP.'
-        : 'Stripe solo puede activarse para eventos en USD.',
-    }, 400);
+      code: 'EVENT_DUAL_PAYMENT_SETUP_REQUIRED',
+      error: 'Ejecuta docs/sql/events_dual_currency_payments.sql antes de activar el cobro dual.',
+    }, 409);
+  }
+  if (mode !== 'NONE' && String(event.registration_mode || 'NONE').toUpperCase() !== 'INTERNAL') {
+    return json({ ok: false, error: 'El cobro en línea requiere inscripción en Maná.' }, 409);
+  }
+  if (mode !== 'NONE' && String(event.pricing_model || 'FREE').toUpperCase() === 'FREE') {
+    return json({ ok: false, error: 'Un evento gratuito no puede activar cobro en línea.' }, 409);
+  }
+  if (String(event.pricing_model || '').toUpperCase() === 'PAID') {
+    const missingPrice = providers.find((provider: string) => getEventProviderPrice(event, provider) <= 0);
+    if (missingPrice) {
+      return json({
+        ok: false,
+        error: missingPrice === 'WOMPI'
+          ? 'Escribe el precio para Colombia en pesos.'
+          : 'Escribe el precio internacional en dólares.',
+      }, 400);
+    }
   }
 
   const now = new Date().toISOString();
+  if (dualPaymentReady) {
+    const configured = await supabaseAdmin.rpc('set_event_online_payment_options_secure', {
+      p_event_id: event.id,
+      p_mode: mode,
+      p_actor_user_id: ctx.userId,
+    });
+    if (!configured.error) {
+      await supabaseAdmin.from('event_finance_audit_logs').insert({
+        event_id: event.id,
+        actor_user_id: ctx.userId,
+        action: 'PAYMENT_OPTIONS_UPDATED',
+        after_data: { mode, providers },
+      });
+      return json({ ok: true, mode, providers });
+    }
+    if (!isMissingDualPaymentRpc(configured.error)) {
+      console.error('[event-payment-options] atomic update failed', configured.error);
+      return json({ ok: false, error: 'No se pudo actualizar el método de pago.' }, 500);
+    }
+    if (mode === 'DUAL') {
+      return json({
+        ok: false,
+        code: 'EVENT_DUAL_PAYMENT_SETUP_REQUIRED',
+        error: 'Ejecuta docs/sql/events_dual_currency_payments.sql antes de activar el cobro dual.',
+      }, 409);
+    }
+  }
+
+  const provider = providers[0] || 'NONE';
+  const currency = provider === 'NONE'
+    ? String(event.currency || 'COP').toUpperCase()
+    : provider === 'WOMPI' ? 'COP' : 'USD';
+  if (!isValidEventProviderCurrency(provider, currency)) {
+    return json({ ok: false, error: 'La moneda del proveedor no es válida.' }, 400);
+  }
   const { error: disableError } = await supabaseAdmin
     .from('event_payment_options')
     .update({ is_active: false, updated_at: now })
@@ -271,33 +341,29 @@ export const PUT: APIRoute = async ({ request }) => {
       .limit(1)
       .maybeSingle();
     if (existingError) return json({ ok: false, error: 'No se pudo consultar el método de pago.' }, 500);
-
-    if (existing?.id) {
-      const { error: updateError } = await supabaseAdmin
-        .from('event_payment_options')
-        .update({ is_active: true, updated_at: now })
-        .eq('id', existing.id);
-      if (updateError) return json({ ok: false, error: 'No se pudo activar el método de pago.' }, 500);
-    } else {
-      const { error: insertError } = await supabaseAdmin.from('event_payment_options').insert({
-        event_id: event.id,
-        kind: 'ONLINE',
-        provider,
-        currency,
-        label: provider === 'WOMPI' ? 'Pago en línea · Wompi' : 'Pago en línea · Stripe',
-        requires_evidence: false,
-        is_active: true,
-        created_by: ctx.userId,
-      });
-      if (insertError) return json({ ok: false, error: 'No se pudo activar el método de pago.' }, 500);
-    }
+    const label = provider === 'WOMPI'
+      ? 'Colombia · Pago en pesos con Wompi'
+      : 'Fuera de Colombia · Pago en dólares con Stripe';
+    const save = existing?.id
+      ? await supabaseAdmin.from('event_payment_options').update({ label, is_active: true, updated_at: now }).eq('id', existing.id)
+      : await supabaseAdmin.from('event_payment_options').insert({
+          event_id: event.id,
+          kind: 'ONLINE',
+          provider,
+          currency,
+          label,
+          requires_evidence: false,
+          is_active: true,
+          created_by: ctx.userId,
+        });
+    if (save.error) return json({ ok: false, error: 'No se pudo activar el método de pago.' }, 500);
   }
 
   await supabaseAdmin.from('event_finance_audit_logs').insert({
     event_id: event.id,
     actor_user_id: ctx.userId,
     action: 'PAYMENT_OPTION_UPDATED',
-    after_data: { provider, currency },
+    after_data: { mode, provider, currency },
   });
-  return json({ ok: true, provider, currency });
+  return json({ ok: true, mode, providers });
 };

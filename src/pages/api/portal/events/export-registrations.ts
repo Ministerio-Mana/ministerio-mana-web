@@ -4,6 +4,11 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { canActorOperateEventPayments, getEventAccessContext } from '@lib/eventAccess';
 import { isMicrosoftEventsWriteEnabled, uploadMicrosoftEventDocument } from '@lib/microsoftGraph';
 import { enforceRateLimit } from '@lib/rateLimit';
+import {
+  getEventPaymentProviderLabel,
+  selectPreferredEventPayments,
+  summarizeEventPayments,
+} from '@lib/eventPaymentReporting.js';
 
 export const prerender = false;
 
@@ -136,6 +141,24 @@ async function loadAllRegistrations(eventId: string) {
   return { data: rows, error: null };
 }
 
+async function loadAllPayments(eventId: string) {
+  if (!supabaseAdmin) return { data: [], error: new Error('Server Config Error') };
+  const rows: any[] = [];
+  const pageSize = 1_000;
+  for (let from = 0; from < 10_000; from += pageSize) {
+    const result = await supabaseAdmin
+      .from('event_payments')
+      .select('id,registration_id,provider,reference,method,amount,currency,status,created_at,received_at,verified_at')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (result.error) return { data: [], error: result.error };
+    rows.push(...(result.data || []));
+    if ((result.data || []).length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
 export const GET: APIRoute = async ({ request, url }) => {
   if (!supabaseAdmin) return json({ ok: false, error: 'Supabase no configurado.' }, 500);
   const ctx = await getEventAccessContext(request);
@@ -159,8 +182,15 @@ export const GET: APIRoute = async ({ request, url }) => {
     return json({ ok: false, error: 'No tienes permiso para exportar este evento.' }, 403);
   }
 
-  const registrationsResult = await loadAllRegistrations(event.id);
-  if (registrationsResult.error) return json({ ok: false, error: 'No se pudieron consultar las inscripciones.' }, 500);
+  const [registrationsResult, paymentsResult] = await Promise.all([
+    loadAllRegistrations(event.id),
+    loadAllPayments(event.id),
+  ]);
+  if (registrationsResult.error || paymentsResult.error) {
+    return json({ ok: false, error: 'No se pudieron consultar las inscripciones y sus pagos.' }, 500);
+  }
+
+  const paymentsByRegistration = selectPreferredEventPayments(paymentsResult.data);
 
   const customColumns = new Map<string, string>();
   for (const registration of registrationsResult.data) {
@@ -178,6 +208,11 @@ export const GET: APIRoute = async ({ request, url }) => {
     ['status', 'Estado'],
     ['total_amount', 'Total'],
     ['currency', 'Moneda'],
+    ['payment_provider', 'Proveedor de pago'],
+    ['payment_status', 'Estado del pago'],
+    ['payment_reference', 'Referencia Maná'],
+    ['payment_amount', 'Valor pagado'],
+    ['payment_currency', 'Moneda del pago'],
     ['created_at', 'Fecha de inscripción'],
     ['confirmed_at', 'Fecha de confirmación'],
     ...[...customColumns.entries()].map(([id, label]) => [`custom_${id}`, label]),
@@ -195,6 +230,8 @@ export const GET: APIRoute = async ({ request, url }) => {
       ? registration.form_responses as Record<string, any>
       : {};
     const customAnswers = new Map(readCustomFields(answers).map((field) => [field.id, field.value]));
+    const payment = paymentsByRegistration.get(String(registration.id));
+    const provider = String(payment?.provider || '').toUpperCase();
     const row: Record<string, string | number> = {
       contact_name: safeCell(registration.contact_name),
       contact_email: safeCell(registration.contact_email),
@@ -205,6 +242,11 @@ export const GET: APIRoute = async ({ request, url }) => {
       status: safeCell(registration.status),
       total_amount: Number(registration.total_amount || 0),
       currency: safeCell(registration.currency),
+      payment_provider: safeCell(getEventPaymentProviderLabel(provider)),
+      payment_status: safeCell(payment?.status),
+      payment_reference: safeCell(payment?.reference),
+      payment_amount: payment ? Number(payment.amount || 0) : '',
+      payment_currency: safeCell(payment?.currency),
       created_at: safeCell(formatDate(registration.created_at)),
       confirmed_at: safeCell(formatDate(registration.confirmed_at)),
     };
@@ -228,13 +270,49 @@ export const GET: APIRoute = async ({ request, url }) => {
     column.width = Math.max(14, Math.min(42, longest + 2));
   });
 
+  const financeRows = summarizeEventPayments(paymentsResult.data);
+
+  const financeSheet = workbook.addWorksheet('Resumen financiero');
+  financeSheet.views = [{ state: 'frozen', ySplit: 3 }];
+  financeSheet.mergeCells('A1:F1');
+  financeSheet.getCell('A1').value = 'Recaudo por proveedor y moneda — no sumar COP con USD';
+  financeSheet.getCell('A1').font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 13 };
+  financeSheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF293C74' } };
+  financeSheet.getCell('A1').alignment = { vertical: 'middle' };
+  financeSheet.getRow(1).height = 26;
+  financeSheet.getRow(3).values = ['Proveedor', 'Moneda', 'Pagos', 'Aprobados', 'Valor aprobado', 'Pendientes'];
+  const financeHeader = financeSheet.getRow(3);
+  financeHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  financeHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF293C74' } };
+  financeHeader.alignment = { vertical: 'middle', horizontal: 'center' };
+  financeRows.forEach((summary) => {
+    const row = financeSheet.addRow([
+      getEventPaymentProviderLabel(summary.provider),
+      summary.currency,
+      summary.payment_count,
+      summary.approved_count,
+      summary.approved_amount,
+      summary.pending_count,
+    ]);
+    row.getCell(5).numFmt = summary.currency === 'COP' ? '#,##0' : '#,##0.00';
+  });
+  financeSheet.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3, column: 6 } };
+  [31, 12, 12, 14, 20, 14].forEach((width, index) => {
+    financeSheet.getColumn(index + 1).width = width;
+  });
+
   const bytes = new Uint8Array(await workbook.xlsx.writeBuffer() as ArrayBuffer);
   const filename = `inscripciones-${slugify(event.title)}.xlsx`;
   const oneDriveUrl = await mirrorExportToOneDrive({ event, actorUserId: ctx.userId, content: bytes });
   void supabaseAdmin.from('event_finance_audit_logs').insert({
     event_id: event.id,
     action: 'EVENT_REGISTRATIONS_EXPORTED',
-    after_data: { registrations: registrationsResult.data.length, custom_fields: customColumns.size },
+    after_data: {
+      registrations: registrationsResult.data.length,
+      payments: paymentsResult.data.length,
+      finance_groups: financeRows.length,
+      custom_fields: customColumns.size,
+    },
   });
   return new Response(bytes, {
     headers: {

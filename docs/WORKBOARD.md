@@ -11,12 +11,6 @@
 
 ## Backlog
 
-- MANA-015 Cobro dual para eventos globales
-  - Owner: Equipo web
-  - Branch: `main`
-  - Scope: pagos de Eventos, precios COP/USD y operación consolidada
-  - Description: Permitir Wompi COP para Colombia y Stripe USD para otros países dentro del mismo evento global, sin mezclar monedas.
-
 - MANA-004 Agregar más data attributes para animaciones
   - Owner: TBD
   - Scope: `src/components/home/**`
@@ -35,6 +29,12 @@
 ---
 
 ## Ready
+- MANA-016 Activar SQL de Eventos y Finanzas en Supabase
+  - Owner: Usuario
+  - Scope: Supabase SQL Editor
+  - Description: Ejecutar en casa `docs/sql/event_documents_sharepoint.sql`, `docs/sql/event_payment_evidence_sharepoint.sql`, `docs/sql/finance_scopes_hierarchy.sql` y `docs/sql/events_dual_currency_payments.sql`, en ese orden.
+  - Notes: Después de ejecutarlos, asignar por correo el primer equipo financiero nacional, regional y local. El último SQL activa precios separados COP/USD y Wompi + Stripe en un mismo evento global.
+
 - MANA-011 Revisión en vivo del constructor de formularios de Eventos
   - Owner: Usuario
   - Scope: `/portal/events` y página pública del evento
@@ -55,6 +55,13 @@
 ---
 
 ## In Progress
+- MANA-015 Cobro dual para eventos globales
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: pagos de Eventos, precios COP/USD y operación consolidada
+  - Description: Permitir Wompi COP para Colombia y Stripe USD para otros países dentro del mismo evento global, sin mezclar monedas.
+  - Status: Interfaz, API, RPC, página pública y consolidación operativa/Excel en implementación. Activación pendiente de `docs/sql/events_dual_currency_payments.sql`.
+
 - MANA-013 Finanzas por alcance
   - Owner: Equipo web
   - Branch: `main`

@@ -44,11 +44,13 @@ function formatAmount(amount, currency) {
 function updateRegistrationTotal() {
   if (!registrationForm || !registrationTotal) return;
   const pricingModel = String(registrationForm.dataset.pricingModel || 'FREE').toUpperCase();
-  const currency = String(registrationForm.dataset.currency || 'COP').toUpperCase();
+  const selectedOption = registrationForm.elements.provider?.selectedOptions?.[0];
+  const currency = String(selectedOption?.dataset.currency || registrationForm.dataset.currency || 'COP').toUpperCase();
+  const unitPrice = Number(selectedOption?.dataset.unitPrice ?? registrationForm.dataset.unitPrice ?? 0);
   const quantity = Math.max(1, Number(registrationForm.elements.quantity?.value || 1));
   const amount = pricingModel === 'DONATION'
     ? Number(registrationForm.elements.donation_amount?.value || 0)
-    : Number(registrationForm.dataset.unitPrice || 0) * quantity;
+    : unitPrice * quantity;
   registrationTotal.textContent = amount > 0 ? formatAmount(amount, currency) : '—';
 }
 
@@ -105,12 +107,14 @@ if (registrationForm) {
   const manualReferenceInput = registrationForm.elements.manual_reference;
   const evidenceWrapper = document.getElementById('event-payment-evidence-wrapper');
   const evidenceInput = registrationForm.elements.payment_evidence;
+  const donationAmountInput = registrationForm.elements.donation_amount;
   const manualPaymentDetails = [...registrationForm.querySelectorAll('[data-manual-payment-details]')];
 
   function syncPaymentMethod() {
     const selectedOption = providerSelect?.selectedOptions?.[0];
     const selectedOptionId = String(selectedOption?.value || '');
     const kind = String(selectedOption?.dataset.kind || 'ONLINE').toUpperCase();
+    const currency = String(selectedOption?.dataset.currency || registrationForm.dataset.currency || 'COP').toUpperCase();
     const isManual = Boolean(selectedOptionId && kind !== 'ONLINE');
     const requiresEvidence = isManual && selectedOption?.dataset.requiresEvidence === 'true';
     manualPaymentDetails.forEach((panel) => {
@@ -126,9 +130,14 @@ if (registrationForm) {
       evidenceInput.disabled = !requiresEvidence;
       evidenceInput.required = requiresEvidence;
     }
+    if (donationAmountInput) {
+      donationAmountInput.step = currency === 'COP' ? '1000' : '1';
+      donationAmountInput.placeholder = currency === 'COP' ? 'Ej. 50.000' : 'Ej. 25';
+    }
     if (providerSelect && submitButton && !submitButton.disabled) {
       submitButton.textContent = isManual ? 'Reportar pago para revisión' : 'Continuar al pago';
     }
+    updateRegistrationTotal();
   }
 
   registrationForm.addEventListener('input', updateRegistrationTotal);
