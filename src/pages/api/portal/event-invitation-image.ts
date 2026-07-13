@@ -84,11 +84,30 @@ async function prepareImage(file: File): Promise<Buffer> {
     throw new Error('La imagen es demasiado pequeña. Usa una de al menos 480 × 480 píxeles.');
   }
 
-  const optimize = (quality: number) => image.clone()
-    .rotate()
-    .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: 'cover', position: 'attention', withoutEnlargement: false })
-    .webp({ quality, effort: 5 })
-    .toBuffer();
+  const optimize = async (quality: number) => {
+    const [background, foreground] = await Promise.all([
+      image.clone()
+        .rotate()
+        .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: 'cover', position: 'attention', withoutEnlargement: false })
+        .blur(28)
+        .modulate({ brightness: 0.72, saturation: 0.9 })
+        .webp({ quality: 56, effort: 5 })
+        .toBuffer(),
+      image.clone()
+        .rotate()
+        .resize(TARGET_WIDTH, TARGET_HEIGHT, {
+          fit: 'contain',
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+          withoutEnlargement: false,
+        })
+        .webp({ quality, effort: 5 })
+        .toBuffer(),
+    ]);
+    return sharp(background)
+      .composite([{ input: foreground, gravity: 'centre' }])
+      .webp({ quality, effort: 5 })
+      .toBuffer();
+  };
   let output = await optimize(82);
   for (const quality of [74, 66, 58]) {
     if (output.byteLength <= MAX_OUTPUT_BYTES) break;
