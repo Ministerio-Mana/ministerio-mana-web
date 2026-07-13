@@ -52,7 +52,7 @@ const EVENT_ENUM_FIELDS = new Set([
   'attendance_mode',
   'pricing_model',
 ]);
-const MAX_EVENT_REQUEST_CHARS = 12_000;
+const MAX_EVENT_REQUEST_CHARS = 24_000;
 
 async function ensureCumbreEvent(userId?: string | null) {
   if (!supabaseAdmin) return;

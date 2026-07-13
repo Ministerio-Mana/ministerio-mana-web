@@ -49,6 +49,34 @@ function updateRegistrationTotal() {
   registrationTotal.textContent = amount > 0 ? formatAmount(amount, currency) : '—';
 }
 
+function readCustomResponses(form) {
+  const responses = {};
+  const fields = [...form.querySelectorAll('[data-custom-field-id]')];
+  for (const field of fields) {
+    const id = String(field.dataset.customFieldId || '');
+    const type = String(field.dataset.customFieldType || '').toUpperCase();
+    const required = field.dataset.customFieldRequired === 'true';
+    if (!id) continue;
+    const controls = [...field.querySelectorAll('input, select, textarea')];
+    let value = '';
+    if (type === 'MULTIPLE_CHOICE') {
+      value = controls.filter((control) => control.checked).map((control) => control.value);
+    } else if (type === 'SINGLE_CHOICE') {
+      value = controls.find((control) => control.checked)?.value || '';
+    } else {
+      value = String(controls[0]?.value || '').trim();
+    }
+    const isEmpty = Array.isArray(value) ? value.length === 0 : !value;
+    if (required && isEmpty) {
+      const label = field.querySelector('legend')?.textContent?.replace('*', '').trim() || 'esta pregunta';
+      controls[0]?.focus();
+      throw new Error(`Responde ${label}.`);
+    }
+    if (!isEmpty) responses[id] = value;
+  }
+  return responses;
+}
+
 async function fetchJson(url, options = {}) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -103,6 +131,13 @@ if (registrationForm) {
   registrationForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     showRegistrationStatus();
+    let customResponses;
+    try {
+      customResponses = readCustomResponses(registrationForm);
+    } catch (error) {
+      showRegistrationStatus(error?.message || 'Revisa las preguntas obligatorias.');
+      return;
+    }
     if (!registrationForm.checkValidity()) {
       registrationForm.reportValidity();
       return;
@@ -130,6 +165,7 @@ if (registrationForm) {
           contact_phone: formData.get('contact_phone'),
           church: formData.get('church'),
           whatsapp_updates: formData.get('whatsapp_updates') === 'on',
+          custom_responses: customResponses,
           quantity: Number(formData.get('quantity') || 1),
           donation_amount: formData.get('donation_amount') || null,
           provider: selectedProviderOption?.dataset.provider || null,
@@ -167,7 +203,7 @@ if (registrationForm) {
       if (submitButton) {
         submitButton.textContent = data.requires_manual_review ? 'Reporte enviado' : 'Inscripción completada';
       }
-      registrationForm.querySelectorAll('input, select, button').forEach((field) => {
+      registrationForm.querySelectorAll('input, select, textarea, button').forEach((field) => {
         field.disabled = true;
       });
     } catch (error) {

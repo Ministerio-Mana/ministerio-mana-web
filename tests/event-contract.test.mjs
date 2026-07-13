@@ -59,10 +59,24 @@ test('normaliza una configuración simple de formulario y WhatsApp', () => {
     phone: 'required',
     church: 1,
     whatsapp_updates: true,
-  }), { phone: 'REQUIRED', church: true, whatsapp_updates: true });
+  }), { phone: 'REQUIRED', church: true, whatsapp_updates: true, fields: [] });
   assert.deepEqual(normalizeEventRegistrationFormConfig({ phone: 'cualquiera' }), {
-    phone: 'OPTIONAL', church: false, whatsapp_updates: false,
+    phone: 'OPTIONAL', church: false, whatsapp_updates: false, fields: [],
   });
   assert.equal(normalizeWhatsAppNumber('+57 (300) 123-4567'), '573001234567');
   assert.equal(normalizeWhatsAppNumber('123'), '');
+});
+
+test('limita y normaliza las preguntas configurables de un evento', () => {
+  const config = normalizeEventRegistrationFormConfig({
+    fields: [
+      { id: 'field_pregunta01', type: 'short_text', label: 'Ciudad de origen', required: true },
+      { id: 'field_opciones01', type: 'multiple_choice', label: 'Intereses', options: ['Niños', 'Jóvenes', 'Niños'] },
+      { id: 'campo_invalido', type: 'DATE', label: 'No debe entrar' },
+    ],
+  });
+  assert.deepEqual(config.fields, [
+    { id: 'field_pregunta01', type: 'SHORT_TEXT', label: 'Ciudad de origen', help_text: '', required: true, options: [] },
+    { id: 'field_opciones01', type: 'MULTIPLE_CHOICE', label: 'Intereses', help_text: '', required: false, options: ['Niños', 'Jóvenes'] },
+  ]);
 });

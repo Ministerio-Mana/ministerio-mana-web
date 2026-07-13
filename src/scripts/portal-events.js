@@ -25,7 +25,12 @@ import {
     normalizeEventOnlinePaymentProvider,
 } from '@lib/eventPaymentContract.js';
 import { normalizeEventInvitationLayout } from '@lib/eventInvitationLayout.js';
-import { normalizeEventRegistrationFormConfig } from '@lib/eventRegistrationForm.js';
+import {
+    EVENT_CUSTOM_FIELD_TYPES,
+    MAX_EVENT_CUSTOM_FIELDS,
+    isEventCustomChoiceField,
+    normalizeEventRegistrationFormConfig,
+} from '@lib/eventRegistrationForm.js';
 
 const eventsGate = document.getElementById('events-gate');
 const eventsSecureContent = document.getElementById('events-secure-content');
@@ -66,6 +71,9 @@ const eventRegistrationFormSettings = document.getElementById('event-registratio
 const eventRegistrationPhoneMode = document.getElementById('event-registration-phone-mode');
 const eventRegistrationCollectChurch = document.getElementById('event-registration-collect-church');
 const eventRegistrationWhatsAppUpdates = document.getElementById('event-registration-whatsapp-updates');
+const eventCustomFieldsContainer = document.getElementById('event-custom-fields');
+const eventCustomFieldAdd = document.getElementById('event-custom-field-add');
+const eventCustomFieldEmpty = document.getElementById('event-custom-field-empty');
 const eventRegistrationUrlWrapper = document.getElementById('event-registration-url-wrapper');
 const eventRegistrationWindow = document.getElementById('event-registration-window');
 const eventCapacityWrapper = document.getElementById('event-capacity-wrapper');
@@ -153,6 +161,7 @@ let manualQrPreviewObjectUrl = '';
 let invitationImagePreviewObjectUrl = '';
 let pendingInvitationImageFile = null;
 let eventSlugManuallyEdited = false;
+let eventCustomFields = [];
 const eventDatePickers = new Map();
 
 const churchesById = new Map();
@@ -354,6 +363,159 @@ function formatMoneyInput({ preserveCaret = false } = {}) {
     if (preserveCaret && currency === 'COP') setMoneyCaretFromDigits(eventPriceInput, digitsBeforeCaret);
 }
 
+const CUSTOM_FIELD_TYPE_LABELS = {
+    SHORT_TEXT: 'Respuesta corta',
+    LONG_TEXT: 'Respuesta abierta',
+    SINGLE_CHOICE: 'Una opción',
+    MULTIPLE_CHOICE: 'Varias opciones',
+    YES_NO: 'Sí o no',
+    DATE: 'Fecha',
+};
+
+function createCustomFieldId() {
+    const raw = window.crypto?.randomUUID?.().replace(/-/g, '')
+        || `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+    return `field_${raw.slice(0, 24).toLowerCase()}`;
+}
+
+function createCustomField() {
+    return {
+        id: createCustomFieldId(),
+        type: 'SHORT_TEXT',
+        label: '',
+        help_text: '',
+        required: false,
+        options: [],
+    };
+}
+
+function getCustomFieldIndex(target) {
+    const card = target?.closest?.('[data-custom-field-index]');
+    const index = Number(card?.dataset.customFieldIndex);
+    return Number.isInteger(index) && index >= 0 && index < eventCustomFields.length ? index : -1;
+}
+
+function syncCustomFieldBuilder(isInternal = eventPlatformReady && eventRegistrationMode?.value === 'INTERNAL') {
+    if (eventCustomFieldAdd) {
+        eventCustomFieldAdd.disabled = !isInternal || eventCustomFields.length >= MAX_EVENT_CUSTOM_FIELDS;
+        eventCustomFieldAdd.textContent = eventCustomFields.length >= MAX_EVENT_CUSTOM_FIELDS
+            ? `Máximo ${MAX_EVENT_CUSTOM_FIELDS} preguntas`
+            : '+ Agregar pregunta';
+    }
+    eventCustomFieldEmpty?.classList.toggle('hidden', eventCustomFields.length > 0);
+    eventCustomFieldsContainer?.querySelectorAll('input, select, textarea, button').forEach((field) => {
+        field.disabled = !isInternal;
+    });
+}
+
+function renderCustomFieldBuilder() {
+    if (!eventCustomFieldsContainer) return;
+    eventCustomFieldsContainer.replaceChildren();
+    eventCustomFields.forEach((field, index) => {
+        const card = document.createElement('article');
+        card.dataset.customFieldIndex = String(index);
+        card.className = 'rounded-md border border-slate-200 bg-white p-3 shadow-sm';
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between gap-3';
+        const title = document.createElement('p');
+        title.className = 'text-xs font-bold uppercase tracking-[0.08em] text-slate-500';
+        title.textContent = `Pregunta ${index + 1}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.dataset.customFieldAction = 'remove';
+        remove.className = 'rounded px-2 py-1 text-xs font-bold text-red-700 hover:bg-red-50';
+        remove.textContent = 'Quitar';
+        header.append(title, remove);
+
+        const grid = document.createElement('div');
+        grid.className = 'mt-3 grid gap-3 sm:grid-cols-2';
+        const typeLabel = document.createElement('label');
+        typeLabel.className = 'event-field';
+        typeLabel.textContent = 'Tipo de respuesta';
+        const type = document.createElement('select');
+        type.name = 'custom_field_type';
+        type.className = 'mt-1';
+        EVENT_CUSTOM_FIELD_TYPES.forEach((value) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = CUSTOM_FIELD_TYPE_LABELS[value] || value;
+            option.selected = value === field.type;
+            type.append(option);
+        });
+        typeLabel.append(type);
+
+        const requiredLabel = document.createElement('label');
+        requiredLabel.className = 'flex items-center gap-2 self-end pb-2 text-sm font-semibold text-slate-700';
+        const required = document.createElement('input');
+        required.type = 'checkbox';
+        required.name = 'custom_field_required';
+        required.checked = Boolean(field.required);
+        required.className = 'h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]';
+        requiredLabel.append(required, document.createTextNode('Respuesta obligatoria'));
+        grid.append(typeLabel, requiredLabel);
+
+        const label = document.createElement('label');
+        label.className = 'event-field sm:col-span-2';
+        label.textContent = 'Pregunta para la persona';
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.name = 'custom_field_label';
+        labelInput.maxLength = 120;
+        labelInput.placeholder = 'Ej. ¿Por medio de qué iglesia nos conociste?';
+        labelInput.value = field.label || '';
+        label.append(labelInput);
+        grid.append(label);
+
+        const help = document.createElement('label');
+        help.className = 'event-field sm:col-span-2';
+        help.textContent = 'Texto de ayuda (opcional)';
+        const helpInput = document.createElement('input');
+        helpInput.type = 'text';
+        helpInput.name = 'custom_field_help';
+        helpInput.maxLength = 240;
+        helpInput.placeholder = 'Explica brevemente para qué se usará este dato.';
+        helpInput.value = field.help_text || '';
+        help.append(helpInput);
+        grid.append(help);
+
+        if (isEventCustomChoiceField(field.type)) {
+            const options = document.createElement('label');
+            options.className = 'event-field sm:col-span-2';
+            options.textContent = 'Opciones (una por línea)';
+            const optionsInput = document.createElement('textarea');
+            optionsInput.name = 'custom_field_options';
+            optionsInput.rows = 3;
+            optionsInput.maxLength = 960;
+            optionsInput.placeholder = 'Primera opción\nSegunda opción';
+            optionsInput.value = Array.isArray(field.options) ? field.options.join('\n') : '';
+            options.append(optionsInput);
+            const hint = document.createElement('small');
+            hint.className = 'mt-1 block text-xs font-normal text-slate-500';
+            hint.textContent = 'Incluye entre 2 y 12 opciones claras.';
+            options.append(hint);
+            grid.append(options);
+        }
+        card.append(header, grid);
+        eventCustomFieldsContainer.append(card);
+    });
+    syncCustomFieldBuilder();
+}
+
+function getCustomFieldsForSaving() {
+    const fields = eventCustomFields.map((field) => ({
+        ...field,
+        label: String(field.label || '').trim(),
+        help_text: String(field.help_text || '').trim(),
+        options: Array.isArray(field.options) ? field.options.map((option) => String(option).trim()).filter(Boolean) : [],
+    }));
+    const missingLabel = fields.find((field) => !field.label || field.label.length < 3);
+    if (missingLabel) throw new Error('Escribe una pregunta clara de al menos 3 caracteres.');
+    const invalidOptions = fields.find((field) => isEventCustomChoiceField(field.type) && field.options.length < 2);
+    if (invalidOptions) throw new Error('Las preguntas de opciones necesitan al menos dos respuestas.');
+    return normalizeEventRegistrationFormConfig({ fields }).fields;
+}
+
 function syncRegistrationFields() {
     const isExternal = eventPlatformReady && eventRegistrationMode?.value === 'EXTERNAL';
     const isInternal = eventPlatformReady && eventRegistrationMode?.value === 'INTERNAL';
@@ -376,6 +538,7 @@ function syncRegistrationFields() {
     [eventRegistrationPhoneMode, eventRegistrationCollectChurch, eventRegistrationWhatsAppUpdates].forEach((field) => {
         if (field) field.disabled = !isInternal;
     });
+    syncCustomFieldBuilder(isInternal);
     syncDatePickerDisabledState();
     previewCta?.classList.toggle('hidden', !hasRegistration);
     previewCta?.classList.toggle('inline-flex', hasRegistration);
@@ -1277,6 +1440,8 @@ function openEventModal(mode, eventData = null) {
     if (eventRegistrationPhoneMode) eventRegistrationPhoneMode.value = formConfig.phone;
     if (eventRegistrationCollectChurch) eventRegistrationCollectChurch.checked = formConfig.church;
     if (eventRegistrationWhatsAppUpdates) eventRegistrationWhatsAppUpdates.checked = formConfig.whatsapp_updates;
+    eventCustomFields = formConfig.fields.map((field) => ({ ...field, options: [...field.options] }));
+    renderCustomFieldBuilder();
 
     const presetScope = String(eventData?.scope || getAllowedScopes()[0] || 'LOCAL').toUpperCase();
     if (eventScopeSelect) eventScopeSelect.value = presetScope;
@@ -1373,6 +1538,40 @@ eventRegistrationMode?.addEventListener('change', () => {
     syncRegistrationFields();
     syncFinanceFields();
 });
+eventCustomFieldAdd?.addEventListener('click', () => {
+    if (eventCustomFields.length >= MAX_EVENT_CUSTOM_FIELDS) return;
+    eventCustomFields.push(createCustomField());
+    renderCustomFieldBuilder();
+    eventCustomFieldsContainer?.querySelector('[name="custom_field_label"]')?.focus();
+});
+eventCustomFieldsContainer?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-custom-field-action="remove"]');
+    const index = getCustomFieldIndex(button);
+    if (!button || index < 0) return;
+    eventCustomFields.splice(index, 1);
+    renderCustomFieldBuilder();
+});
+eventCustomFieldsContainer?.addEventListener('input', (event) => {
+    const index = getCustomFieldIndex(event.target);
+    if (index < 0) return;
+    const field = eventCustomFields[index];
+    if (event.target.name === 'custom_field_label') field.label = event.target.value;
+    if (event.target.name === 'custom_field_help') field.help_text = event.target.value;
+    if (event.target.name === 'custom_field_options') {
+        field.options = event.target.value.split('\n').map((item) => item.trim()).filter(Boolean).slice(0, 12);
+    }
+});
+eventCustomFieldsContainer?.addEventListener('change', (event) => {
+    const index = getCustomFieldIndex(event.target);
+    if (index < 0) return;
+    const field = eventCustomFields[index];
+    if (event.target.name === 'custom_field_type') {
+        field.type = String(event.target.value || 'SHORT_TEXT').toUpperCase();
+        if (!isEventCustomChoiceField(field.type)) field.options = [];
+        renderCustomFieldBuilder();
+    }
+    if (event.target.name === 'custom_field_required') field.required = Boolean(event.target.checked);
+});
 eventSlugInput?.addEventListener('input', () => {
     eventSlugManuallyEdited = true;
     syncSlugInput();
@@ -1457,6 +1656,7 @@ eventForm?.addEventListener('submit', async (event) => {
                 phone: String(eventRegistrationPhoneMode?.value || 'OPTIONAL').toUpperCase(),
                 church: Boolean(eventRegistrationCollectChurch?.checked),
                 whatsapp_updates: Boolean(eventRegistrationWhatsAppUpdates?.checked),
+                fields: registrationMode === 'INTERNAL' ? getCustomFieldsForSaving() : [],
             };
         }
         payload.attendance_mode = normalizeAttendanceMode(eventForm.querySelector('[name="attendance_mode"]')?.value);

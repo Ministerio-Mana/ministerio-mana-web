@@ -6,6 +6,15 @@ import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@
 import TurnstileProvider from '@components/TurnstileProvider.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
 
+type RegistrationCustomField = {
+  id: string;
+  type: 'SHORT_TEXT' | 'LONG_TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'YES_NO' | 'DATE';
+  label: string;
+  help_text: string;
+  required: boolean;
+  options: string[];
+};
+
 export const prerender = false;
 
 const slug = String(Astro.params.slug || '').replace(/\/$/, '').toLowerCase();
@@ -57,6 +66,7 @@ const paymentReturnRaw = String(Astro.url.searchParams.get('payment') || '').toL
 const paymentReturnState = ['success', 'return', 'cancelled'].includes(paymentReturnRaw) ? paymentReturnRaw : '';
 const eventTimeZone = databaseEvent?.timezone || 'America/Bogota';
 const registrationFormConfig = normalizeEventRegistrationFormConfig(databaseEvent?.registration_form_config);
+const registrationCustomFields = registrationFormConfig.fields as RegistrationCustomField[];
 const contactWhatsApp = normalizeWhatsAppNumber(databaseEvent?.contact_whatsapp);
 const whatsappMessage = String(databaseEvent?.contact_whatsapp_message || `Hola, quiero información sobre ${title}.`).trim();
 const whatsappHref = contactWhatsApp
@@ -253,6 +263,42 @@ const structured = (contentEntry || databaseEvent) ? {
                       <input name="donation_amount" type="number" required min="1" max="1000000000" step={databaseEvent.currency === 'COP' ? '1000' : '1'} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
                     </label>
                   )}
+                  {registrationCustomFields.map((field) => (
+                    <fieldset class:list={['min-w-0', field.type === 'LONG_TEXT' || field.type === 'MULTIPLE_CHOICE' ? 'sm:col-span-2' : '']} data-custom-field-id={field.id} data-custom-field-type={field.type} data-custom-field-required={field.required ? 'true' : 'false'}>
+                      <legend class="text-sm font-bold text-slate-700">{field.label}{field.required && <span aria-hidden="true" class="ml-1 text-[#293C74]">*</span>}</legend>
+                      {field.help_text && <p class="mt-1 text-xs leading-relaxed text-slate-500">{field.help_text}</p>}
+                      {field.type === 'SHORT_TEXT' && <input name={`custom_${field.id}`} type="text" maxlength="160" required={field.required} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />}
+                      {field.type === 'LONG_TEXT' && <textarea name={`custom_${field.id}`} rows="4" maxlength="1000" required={field.required} class="mt-1 block w-full rounded-md border-slate-300"></textarea>}
+                      {field.type === 'DATE' && <input name={`custom_${field.id}`} type="date" required={field.required} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />}
+                      {field.type === 'YES_NO' && (
+                        <select name={`custom_${field.id}`} required={field.required} class="mt-1 block min-h-11 w-full rounded-md border-slate-300">
+                          <option value="">Selecciona una opción</option>
+                          <option value="Sí">Sí</option>
+                          <option value="No">No</option>
+                        </select>
+                      )}
+                      {field.type === 'SINGLE_CHOICE' && (
+                        <div class="mt-2 grid gap-2">
+                          {field.options.map((option, optionIndex) => (
+                            <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:border-[#293C74]/40">
+                              <input name={`custom_${field.id}`} type="radio" value={option} required={field.required && optionIndex === 0} class="h-4 w-4 border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                              <span>{option}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {field.type === 'MULTIPLE_CHOICE' && (
+                        <div class="mt-2 grid gap-2">
+                          {field.options.map((option) => (
+                            <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:border-[#293C74]/40">
+                              <input name={`custom_${field.id}`} type="checkbox" value={option} class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                              <span>{option}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </fieldset>
+                  ))}
                   {pricingModel !== 'FREE' && (
                     <label class="text-sm font-bold text-slate-700 sm:col-span-2">Método de pago
                       <select name="provider" required class="mt-1 block min-h-11 w-full rounded-md border-slate-300">

@@ -8,7 +8,7 @@ import { DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, normalizeEventRegistrationFormC
 
 export const prerender = false;
 
-const MAX_BODY_CHARS = 6_000;
+const MAX_BODY_CHARS = 14_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ONLINE_PROVIDERS = new Set(['WOMPI', 'STRIPE']);
@@ -60,6 +60,60 @@ async function persistRegistrationResponses(registrationId: string, responses: R
   if (error && error.code !== '42703') {
     console.error('[events.register] optional responses persistence failed', error);
   }
+}
+
+function isIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function readCustomResponses(value: unknown, formConfig: ReturnType<typeof normalizeEventRegistrationFormConfig>) {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const saved: Record<string, unknown> = {};
+  for (const field of formConfig.fields) {
+    const raw = source[field.id];
+    let response: string | string[] | null = null;
+    if (field.type === 'MULTIPLE_CHOICE') {
+      const values = Array.isArray(raw) ? raw : [];
+      const allowed = new Set(field.options);
+      const unique = [...new Set(values.map((item) => String(item).trim()))]
+        .filter((item) => allowed.has(item))
+        .slice(0, field.options.length);
+      if (values.length !== unique.length) {
+        throw new Error(`La respuesta de “${field.label}” no es válida.`);
+      }
+      response = unique;
+    } else if (field.type === 'YES_NO') {
+      const normalized = raw === true ? 'Sí' : raw === false ? 'No' : String(raw || '').trim();
+      if (normalized && !['Sí', 'No'].includes(normalized)) {
+        throw new Error(`La respuesta de “${field.label}” no es válida.`);
+      }
+      response = normalized || null;
+    } else {
+      const maxLength = field.type === 'LONG_TEXT' ? 1_000 : field.type === 'DATE' ? 10 : 160;
+      const rawText = String(raw || '');
+      if (rawText.length > maxLength || containsBlockedSequence(rawText)) {
+        throw new Error(`La respuesta de “${field.label}” no es válida.`);
+      }
+      const text = sanitizePlainText(rawText, maxLength);
+      if (field.type === 'DATE' && text && !isIsoDate(text)) {
+        throw new Error(`La fecha de “${field.label}” no es válida.`);
+      }
+      if (['SINGLE_CHOICE'].includes(field.type) && text && !field.options.includes(text)) {
+        throw new Error(`La respuesta de “${field.label}” no es válida.`);
+      }
+      response = text || null;
+    }
+    const isEmpty = Array.isArray(response) ? response.length === 0 : !response;
+    if (field.required && isEmpty) throw new Error(`Responde “${field.label}”.`);
+    if (!isEmpty) {
+      saved[field.id] = { label: field.label, type: field.type, value: response };
+    }
+  }
+  return saved;
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
@@ -125,6 +179,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const formResponses: Record<string, unknown> = {};
   if (formConfig.church && requestedChurch) formResponses.church = requestedChurch;
   if (formConfig.whatsapp_updates) formResponses.whatsapp_updates = body.whatsapp_updates === true;
+  try {
+    const customFields = readCustomResponses(body.custom_responses, formConfig);
+    if (Object.keys(customFields).length) formResponses.custom_fields = customFields;
+  } catch (error: any) {
+    return json({ ok: false, error: error?.message || 'Revisa las preguntas del formulario.' }, 400);
+  }
 
   const turnstileConfigured = Boolean(
     import.meta.env?.TURNSTILE_SECRET_KEY ?? process.env?.TURNSTILE_SECRET_KEY,
