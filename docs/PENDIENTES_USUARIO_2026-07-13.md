@@ -182,7 +182,7 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 
 ## 10. Trabajo que continúa a cargo del equipo web
 
-- [ ] Terminar y desplegar la administración visual de equipos financieros por alcance.
+- [x] Terminar y desplegar la administración visual de equipos financieros por alcance. Completado en `13d9cad`.
 - [ ] Agregar filtros, periodos y exportes al panel de Finanzas sin mezclar COP y USD.
 - [ ] Conectar la Lista de SharePoint de inscripciones si se aprueba.
 - [ ] Añadir la política de retención únicamente después de recibir el plazo aprobado.
