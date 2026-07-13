@@ -49,7 +49,7 @@
   - Branch: `main`
   - Scope: exportación Excel y futura sincronización segura con SharePoint
   - Description: Entregar registros con preguntas configurables sin alterar cobros, ImageKit, Campus ni los permisos actuales.
-  - Status: En curso — exportación Excel en implementación; la Lista de SharePoint se conectará cuando exista una lista autorizada.
+  - Status: En curso — Excel generado y respuestas visibles en la operación. La actualización automática en OneDrive/SharePoint queda lista para activarse al ejecutar `docs/sql/event_documents_sharepoint.sql`; luego faltará conectar una Lista de SharePoint autorizada para la vista compartida en tiempo real.
 
 - MANA-008 Backend Cumbre Mundial 2026
   - Owner: DELTA
