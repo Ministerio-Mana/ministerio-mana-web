@@ -33,7 +33,7 @@
   - Owner: Usuario
   - Scope: Supabase SQL Editor
   - Description: Ejecutar en casa `docs/sql/event_documents_sharepoint.sql`, `docs/sql/event_payment_evidence_sharepoint.sql`, `docs/sql/finance_scopes_hierarchy.sql` y `docs/sql/events_dual_currency_payments.sql`, en ese orden.
-  - Notes: Después de ejecutarlos, asignar por correo el primer equipo financiero nacional, regional y local. El último SQL activa precios separados COP/USD y Wompi + Stripe en un mismo evento global.
+  - Notes: Después de ejecutarlos, entrar a `/portal/users`, buscar cada responsable por correo y usar el botón `Finanzas` para asignar el primer equipo nacional, regional y local. El último SQL activa precios separados COP/USD y Wompi + Stripe en un mismo evento global.
 
 - MANA-011 Revisión en vivo del constructor de formularios de Eventos
   - Owner: Usuario
@@ -60,14 +60,14 @@
   - Branch: `main`
   - Scope: pagos de Eventos, precios COP/USD y operación consolidada
   - Description: Permitir Wompi COP para Colombia y Stripe USD para otros países dentro del mismo evento global, sin mezclar monedas.
-  - Status: Interfaz, API, RPC, página pública y consolidación operativa/Excel en implementación. Activación pendiente de `docs/sql/events_dual_currency_payments.sql`.
+  - Status: Interfaz, API, RPC, página pública, checkout y consolidación operativa/Excel listos. Stripe queda limitado a USD y Wompi a COP. Activación pendiente de `docs/sql/events_dual_currency_payments.sql` y revisión del usuario.
 
 - MANA-013 Finanzas por alcance
   - Owner: Equipo web
   - Branch: `main`
   - Scope: RBAC financiero local, regional, nacional y global; reportes y conciliación
   - Description: Separar visibilidad y operación financiera por iglesia, región y país. Wompi pertenece siempre al recaudo nacional; Stripe cubre recaudos internacionales/globales y campañas habilitadas.
-  - Status: Contrato SQL, clasificación automática, filtros de API y matriz de permisos listos. Requiere ejecutar `docs/sql/finance_scopes_hierarchy.sql` y asignar el primer equipo financiero por correo.
+  - Status: Contrato SQL, clasificación automática, filtros de API, matriz de permisos, administración visual de equipos y cuenta responsable en transacciones listos. Requiere ejecutar `docs/sql/finance_scopes_hierarchy.sql`, asignar el primer equipo y realizar QA con cuentas reales.
 
 - MANA-014 Comprobantes privados para pagos manuales de Eventos
   - Owner: Equipo web
@@ -115,6 +115,20 @@
 ---
 
 ## Done
+- MANA-018 Administración visual de equipos financieros por alcance
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: `/portal/users`, API administrativa y asignaciones financieras secundarias
+  - Completed: 2026-07-13
+  - Notes: Superadmin puede agregar o retirar Finanzas global, nacional, regional o local sin reemplazar el rol pastoral. Requiere la migración MANA-016 para activarse.
+
+- MANA-017 Inventario integral de activación y QA
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: `docs/PENDIENTES_USUARIO_2026-07-13.md`, integraciones y revisiones en vivo
+  - Completed: 2026-07-13
+  - Notes: El worklog original no existe en el árbol ni en el historial; el inventario se reconstruyó desde tablero, bitácora, SQL, rutas y configuración.
+
 - MANA-002 Documentación de equipo y reglas
   - Owner: DELTA
   - Branch: `ui/home-storytelling`

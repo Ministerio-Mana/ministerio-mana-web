@@ -121,6 +121,19 @@ create unique index idx_portal_role_assignments_unique_active
 create index if not exists idx_portal_role_assignments_user_role_status
   on public.portal_role_assignments(user_id, role, status);
 
+alter table public.portal_role_assignments enable row level security;
+
+revoke all on table public.portal_role_assignments from anon, authenticated;
+grant all on table public.portal_role_assignments to service_role;
+
+drop policy if exists service_role_all_portal_role_assignments on public.portal_role_assignments;
+create policy service_role_all_portal_role_assignments
+  on public.portal_role_assignments
+  for all
+  to service_role
+  using (true)
+  with check (true);
+
 alter table public.donations
   add column if not exists finance_scope_type text not null default 'UNASSIGNED',
   add column if not exists finance_scope_country_key text,

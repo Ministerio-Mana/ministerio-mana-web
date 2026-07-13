@@ -37,6 +37,24 @@ const scopeChurchWrapper = document.getElementById('user-scope-church');
 const scopeChurchSelect = document.getElementById('user-church-select');
 const scopeCampusMissionaryWrapper = document.getElementById('user-campus-missionary');
 const scopeCampusMissionarySelect = document.getElementById('user-campus-missionary-select');
+const financeAssignmentModal = document.getElementById('finance-assignment-modal');
+const financeAssignmentClose = document.getElementById('finance-assignment-close');
+const financeAssignmentCancel = document.getElementById('finance-assignment-cancel');
+const financeAssignmentUser = document.getElementById('finance-assignment-user');
+const financeAssignmentMigration = document.getElementById('finance-assignment-migration');
+const financeAssignmentList = document.getElementById('finance-assignment-list');
+const financeAssignmentCount = document.getElementById('finance-assignment-count');
+const financeAssignmentForm = document.getElementById('finance-assignment-form');
+const financeAssignmentScope = document.getElementById('finance-assignment-scope');
+const financeAssignmentCountryWrapper = document.getElementById('finance-assignment-country-wrapper');
+const financeAssignmentCountry = document.getElementById('finance-assignment-country');
+const financeAssignmentCountryList = document.getElementById('finance-assignment-country-list');
+const financeAssignmentRegionWrapper = document.getElementById('finance-assignment-region-wrapper');
+const financeAssignmentRegion = document.getElementById('finance-assignment-region');
+const financeAssignmentChurchWrapper = document.getElementById('finance-assignment-church-wrapper');
+const financeAssignmentChurch = document.getElementById('finance-assignment-church');
+const financeAssignmentFeedback = document.getElementById('finance-assignment-feedback');
+const financeAssignmentSave = document.getElementById('finance-assignment-save');
 const navLinkEvents = document.getElementById('nav-link-events');
 const navLinkUsers = document.getElementById('nav-link-users');
 const navLinkCampus = document.getElementById('nav-link-campus');
@@ -61,6 +79,9 @@ let scopeListenerAttached = false;
 let scopeCatalogsPromise = null;
 let usersPage = 1;
 const pendingRoleChanges = new Map();
+let financeAssignmentUserId = '';
+let activeFinanceAssignments = [];
+let financeHierarchyMigrationRequired = false;
 
 function showSecureContent() {
     gateEl?.classList.add('hidden');
@@ -111,7 +132,6 @@ const quickRoleChangeRoles = new Set([
     'superadmin',
     'admin',
     'campus_missionary',
-    'finance',
     'intercessor',
     'user',
 ]);
@@ -195,6 +215,22 @@ function getScopeCategory(user) {
     if (role === 'campus_missionary') return 'campus';
     if (role === 'intercessor') return 'intercession';
     return 'assistant';
+}
+
+function getFinanceAssignmentSummary(user) {
+    const assignments = Array.isArray(user?.finance_assignments) ? user.finance_assignments : [];
+    if (!assignments.length) return '';
+    const order = ['global', 'country', 'region', 'church'];
+    const labels = {
+        global: 'Global',
+        country: 'Nacional',
+        region: 'Regional',
+        church: 'Local',
+    };
+    const levels = Array.from(new Set(assignments.map((assignment) => assignment?.scope_type).filter(Boolean)))
+        .sort((left, right) => order.indexOf(left) - order.indexOf(right))
+        .map((scopeType) => labels[scopeType] || scopeType);
+    return levels.length ? `Finanzas: ${levels.join(' + ')}` : '';
 }
 
 function getSearchableUserText(user) {
@@ -345,6 +381,7 @@ async function init() {
 
     // 3. Setup Events
     setupModal(token);
+    setupFinanceAssignmentModal();
 
     searchInput?.addEventListener('input', () => applyFilters());
     roleFilter?.addEventListener('change', () => applyFilters());
@@ -806,6 +843,7 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
     const isBlocked = user?.access_status === 'blocked' || user?.is_blocked === true;
     const isActorSuperadmin = currentUserRole === 'superadmin';
     const isTargetSuperadmin = String(user?.role || '') === 'superadmin';
+    const isTargetGlobalAdmin = ['admin', 'superadmin'].includes(String(user?.role || ''));
     const isSelf = Boolean(currentUserId && user?.user_id === currentUserId);
     const resetButton = canSendAccessLink
         ? (isDeleted
@@ -814,6 +852,10 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
         : '';
     const accessLinkButton = canCopyAccessLink && !isDeleted
         ? `<button data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="px-3 py-2 rounded-lg border border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100">Copiar enlace</button>`
+        : '';
+    const financeCount = Number(user?.finance_assignment_count || 0);
+    const financeButton = isActorSuperadmin && !isDeleted && !isTargetGlobalAdmin
+        ? `<button data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-800 hover:bg-amber-100">Finanzas${financeCount ? ` (${financeCount})` : ''}</button>`
         : '';
     let lifecycleButtons = '';
     if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
@@ -830,7 +872,7 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
     }
 
     if (!pendingRole) {
-        const combined = [lifecycleButtons, accessLinkButton, resetButton].filter(Boolean).join('');
+        const combined = [financeButton, lifecycleButtons, accessLinkButton, resetButton].filter(Boolean).join('');
         if (!combined) {
             return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
         }
@@ -841,6 +883,7 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
         <div class="flex items-center justify-end gap-2 flex-wrap">
             <button data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
+            ${financeButton}
             ${lifecycleButtons}
             ${accessLinkButton}
             ${resetButton}
@@ -901,7 +944,11 @@ function renderTable(users) {
             const accessStatusClass = statusBadgeClass(accessStatus);
             const lastSignInLabel = formatDateTime(u.last_sign_in_at);
             const safeLastSignIn = escapeHtml(lastSignInLabel);
-            const scopeLabel = getScopeLabel(u);
+            const primaryScopeLabel = getScopeLabel(u);
+            const financeScopeLabel = getFinanceAssignmentSummary(u);
+            const scopeLabel = financeScopeLabel
+                ? (u.role === 'finance' ? financeScopeLabel : `${primaryScopeLabel} · ${financeScopeLabel}`)
+                : primaryScopeLabel;
             const safeScope = escapeHtml(scopeLabel);
             const resetLabel = accessStatus === 'invited' || accessStatus === 'pending' ? 'Reenviar acceso' : 'Reset contraseña';
             const canSendAccessLink = ['superadmin', 'admin', 'national_pastor', 'regional_pastor', 'pastor', 'local_collaborator'].includes(currentUserRole);
@@ -968,6 +1015,13 @@ tbody?.addEventListener('click', async (event) => {
     const target = event.target.closest('[data-action]');
     if (!target || !currentToken) return;
     const action = target.dataset.action;
+
+    if (action === 'manage-finance') {
+        const userId = target.dataset.userId;
+        if (!userId) return;
+        await openFinanceAssignmentModal(userId);
+        return;
+    }
 
     if (action === 'copy-access-link') {
         const email = target.dataset.email;
@@ -1138,6 +1192,276 @@ tbody?.addEventListener('click', async (event) => {
     }
 });
 
+function setFinanceAssignmentFeedback(message = '', type = 'info') {
+    if (!financeAssignmentFeedback) return;
+    if (!message) {
+        financeAssignmentFeedback.textContent = '';
+        financeAssignmentFeedback.className = 'hidden rounded-xl px-4 py-3 text-sm';
+        return;
+    }
+    const styles = type === 'error'
+        ? 'border border-red-200 bg-red-50 text-red-800'
+        : type === 'success'
+            ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+            : 'border border-sky-200 bg-sky-50 text-sky-800';
+    financeAssignmentFeedback.className = `rounded-xl px-4 py-3 text-sm ${styles}`;
+    financeAssignmentFeedback.textContent = message;
+}
+
+function setFinanceAssignmentFormDisabled(disabled) {
+    const controls = [
+        financeAssignmentScope,
+        financeAssignmentCountry,
+        financeAssignmentRegion,
+        financeAssignmentChurch,
+        financeAssignmentSave,
+    ];
+    controls.forEach((control) => {
+        if (control) control.disabled = disabled;
+    });
+    if (!disabled) updateFinanceAssignmentFields();
+}
+
+function populateFinanceAssignmentOptions() {
+    const countries = Array.from(new Set([
+        ...churchesCatalog.map((church) => church?.country),
+        ...regionsCatalog.map((region) => region?.country),
+    ].filter(Boolean))).sort((left, right) => String(left).localeCompare(String(right), 'es'));
+
+    if (financeAssignmentCountryList) {
+        financeAssignmentCountryList.innerHTML = countries
+            .map((country) => `<option value="${escapeAttr(country)}"></option>`)
+            .join('');
+    }
+    if (financeAssignmentRegion) {
+        financeAssignmentRegion.innerHTML = '<option value="">Selecciona una región</option>'
+            + regionsCatalog
+                .filter((region) => region?.id && region?.is_active !== false)
+                .map((region) => {
+                    const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
+                    return `<option value="${escapeAttr(region.id)}">${escapeHtml(label || 'Región')}</option>`;
+                })
+                .join('');
+    }
+    if (financeAssignmentChurch) {
+        financeAssignmentChurch.innerHTML = '<option value="">Selecciona una iglesia</option>'
+            + churchesCatalog
+                .filter((church) => church?.id)
+                .map((church) => {
+                    const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
+                    return `<option value="${escapeAttr(church.id)}">${escapeHtml(label || 'Iglesia')}</option>`;
+                })
+                .join('');
+    }
+}
+
+function updateFinanceAssignmentFields() {
+    const scopeType = financeAssignmentScope?.value || 'church';
+    const needsCountry = scopeType === 'country';
+    const needsRegion = scopeType === 'region';
+    const needsChurch = scopeType === 'church';
+
+    financeAssignmentCountryWrapper?.classList.toggle('hidden', !needsCountry);
+    financeAssignmentRegionWrapper?.classList.toggle('hidden', !needsRegion);
+    financeAssignmentChurchWrapper?.classList.toggle('hidden', !needsChurch);
+
+    if (financeAssignmentCountry) financeAssignmentCountry.disabled = financeHierarchyMigrationRequired || !needsCountry;
+    if (financeAssignmentRegion) financeAssignmentRegion.disabled = financeHierarchyMigrationRequired || !needsRegion;
+    if (financeAssignmentChurch) financeAssignmentChurch.disabled = financeHierarchyMigrationRequired || !needsChurch;
+    if (financeAssignmentScope) financeAssignmentScope.disabled = financeHierarchyMigrationRequired;
+    if (financeAssignmentSave) financeAssignmentSave.disabled = financeHierarchyMigrationRequired;
+}
+
+function renderFinanceAssignments() {
+    if (financeAssignmentCount) {
+        const count = activeFinanceAssignments.length;
+        financeAssignmentCount.textContent = `${count} ${count === 1 ? 'asignación' : 'asignaciones'}`;
+    }
+    if (!financeAssignmentList) return;
+    if (financeHierarchyMigrationRequired) {
+        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 px-4 py-5 text-center text-sm text-amber-800">La pantalla quedará habilitada cuando ejecutes la migración financiera.</p>';
+        return;
+    }
+    if (!activeFinanceAssignments.length) {
+        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500">Este usuario todavía no tiene acceso a Finanzas.</p>';
+        return;
+    }
+    financeAssignmentList.innerHTML = activeFinanceAssignments.map((assignment) => `
+        <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-bold text-[#293C74]">${escapeHtml(assignment.scope_label || 'Alcance financiero')}</p>
+                <p class="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Permiso financiero secundario</p>
+            </div>
+            <button type="button" data-finance-action="remove" data-assignment-id="${escapeAttr(assignment.id || '')}" class="min-h-10 rounded-md border border-rose-200 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">Retirar</button>
+        </div>
+    `).join('');
+}
+
+function syncFinanceAssignmentsToUser(assignments) {
+    const user = allUsers.find((item) => item.user_id === financeAssignmentUserId);
+    if (!user) return;
+    user.finance_assignments = (assignments || []).map((assignment) => ({
+        id: assignment.id,
+        scope_type: assignment.scope_type,
+        scope_id: assignment.scope_id,
+        scope_key: assignment.scope_key,
+    }));
+    user.finance_assignment_count = user.finance_assignments.length;
+    applyFilters({ resetPage: false });
+}
+
+async function openFinanceAssignmentModal(userId) {
+    if (currentUserRole !== 'superadmin' || !currentToken || !financeAssignmentModal) return;
+    const user = allUsers.find((item) => item.user_id === userId);
+    if (!user) return;
+
+    financeAssignmentUserId = userId;
+    activeFinanceAssignments = [];
+    financeHierarchyMigrationRequired = false;
+    const name = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Usuario';
+    if (financeAssignmentUser) financeAssignmentUser.textContent = `${name} · ${user.email || ''}`;
+    financeAssignmentMigration?.classList.add('hidden');
+    if (financeAssignmentList) {
+        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">Cargando asignaciones…</p>';
+    }
+    setFinanceAssignmentFeedback();
+    financeAssignmentModal.classList.remove('hidden');
+    financeAssignmentModal.classList.add('flex');
+    setFinanceAssignmentFormDisabled(true);
+
+    try {
+        await ensureScopeCatalogs(currentToken);
+        populateFinanceAssignmentOptions();
+        const { res, data } = await fetchJsonWithTimeout(
+            `/api/portal/admin/finance-assignments?user_id=${encodeURIComponent(userId)}`,
+            { headers: { Authorization: `Bearer ${currentToken}` }, credentials: 'include' },
+            20000,
+        );
+        if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudieron cargar los alcances financieros.');
+        financeHierarchyMigrationRequired = Boolean(data.migration_required);
+        activeFinanceAssignments = Array.isArray(data.assignments) ? data.assignments : [];
+        syncFinanceAssignmentsToUser(activeFinanceAssignments);
+        financeAssignmentMigration?.classList.toggle('hidden', !financeHierarchyMigrationRequired);
+        renderFinanceAssignments();
+        setFinanceAssignmentFormDisabled(financeHierarchyMigrationRequired);
+        updateFinanceAssignmentFields();
+    } catch (error) {
+        console.error(error);
+        activeFinanceAssignments = [];
+        renderFinanceAssignments();
+        setFinanceAssignmentFeedback(error?.message || 'No se pudieron cargar los alcances financieros.', 'error');
+        setFinanceAssignmentFormDisabled(true);
+    }
+}
+
+function closeFinanceAssignmentModal() {
+    financeAssignmentModal?.classList.add('hidden');
+    financeAssignmentModal?.classList.remove('flex');
+    financeAssignmentUserId = '';
+    activeFinanceAssignments = [];
+    financeHierarchyMigrationRequired = false;
+    financeAssignmentForm?.reset();
+    setFinanceAssignmentFeedback();
+    updateFinanceAssignmentFields();
+}
+
+function setupFinanceAssignmentModal() {
+    financeAssignmentClose?.addEventListener('click', closeFinanceAssignmentModal);
+    financeAssignmentCancel?.addEventListener('click', closeFinanceAssignmentModal);
+    financeAssignmentModal?.addEventListener('click', (event) => {
+        if (event.target === financeAssignmentModal) closeFinanceAssignmentModal();
+    });
+    financeAssignmentScope?.addEventListener('change', updateFinanceAssignmentFields);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !financeAssignmentModal?.classList.contains('hidden')) {
+            closeFinanceAssignmentModal();
+        }
+    });
+
+    financeAssignmentForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!financeAssignmentUserId || financeHierarchyMigrationRequired || !currentToken) return;
+        const scopeType = financeAssignmentScope?.value || 'church';
+        const payload = {
+            userId: financeAssignmentUserId,
+            scopeType,
+            scopeKey: scopeType === 'country' ? financeAssignmentCountry?.value || '' : null,
+            scopeId: scopeType === 'region'
+                ? financeAssignmentRegion?.value || ''
+                : scopeType === 'church'
+                    ? financeAssignmentChurch?.value || ''
+                    : null,
+        };
+        const originalText = financeAssignmentSave?.textContent || 'Agregar alcance';
+        if (financeAssignmentSave) {
+            financeAssignmentSave.textContent = 'Guardando…';
+            financeAssignmentSave.disabled = true;
+        }
+        setFinanceAssignmentFeedback();
+        try {
+            const { res, data } = await fetchJsonWithTimeout('/api/portal/admin/finance-assignments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
+                credentials: 'include',
+                body: JSON.stringify(payload),
+            }, 20000);
+            if (!res.ok || !data.ok) {
+                if (data.migration_required) {
+                    financeHierarchyMigrationRequired = true;
+                    financeAssignmentMigration?.classList.remove('hidden');
+                    setFinanceAssignmentFormDisabled(true);
+                }
+                throw new Error(data.error || 'No se pudo guardar el alcance financiero.');
+            }
+            activeFinanceAssignments = Array.isArray(data.assignments) ? data.assignments : [];
+            syncFinanceAssignmentsToUser(activeFinanceAssignments);
+            renderFinanceAssignments();
+            setFinanceAssignmentFeedback('Alcance financiero agregado correctamente.', 'success');
+        } catch (error) {
+            console.error(error);
+            setFinanceAssignmentFeedback(error?.message || 'No se pudo guardar el alcance financiero.', 'error');
+        } finally {
+            if (financeAssignmentSave) {
+                financeAssignmentSave.textContent = originalText;
+                financeAssignmentSave.disabled = financeHierarchyMigrationRequired;
+            }
+        }
+    });
+
+    financeAssignmentList?.addEventListener('click', async (event) => {
+        const source = event.target;
+        const button = source instanceof Element ? source.closest('[data-finance-action="remove"]') : null;
+        if (!button || !financeAssignmentUserId || !currentToken) return;
+        const assignmentId = button.dataset.assignmentId;
+        if (!assignmentId) return;
+        const assignment = activeFinanceAssignments.find((item) => item.id === assignmentId);
+        const confirmed = window.confirm(`¿Retirar ${assignment?.scope_label || 'este alcance financiero'}?`);
+        if (!confirmed) return;
+        const originalText = button.textContent;
+        button.textContent = 'Retirando…';
+        button.setAttribute('disabled', 'disabled');
+        setFinanceAssignmentFeedback();
+        try {
+            const { res, data } = await fetchJsonWithTimeout('/api/portal/admin/finance-assignments', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
+                credentials: 'include',
+                body: JSON.stringify({ userId: financeAssignmentUserId, assignmentId }),
+            }, 20000);
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo retirar el alcance financiero.');
+            activeFinanceAssignments = Array.isArray(data.assignments) ? data.assignments : [];
+            syncFinanceAssignmentsToUser(activeFinanceAssignments);
+            renderFinanceAssignments();
+            setFinanceAssignmentFeedback('Alcance financiero retirado.', 'success');
+        } catch (error) {
+            console.error(error);
+            button.textContent = originalText;
+            button.removeAttribute('disabled');
+            setFinanceAssignmentFeedback(error?.message || 'No se pudo retirar el alcance financiero.', 'error');
+        }
+    });
+}
+
 async function copySensitiveText(value) {
     if (navigator.clipboard?.writeText && window.isSecureContext) {
         await navigator.clipboard.writeText(value);
@@ -1168,7 +1492,7 @@ function setupModal(token) {
         // Populate Roles dynamically
         if (roleSelect) {
             roleSelect.innerHTML = '';
-            const allowedRoles = roleOrder.filter((role) => currentCreatableRoles.includes(role));
+            const allowedRoles = roleOrder.filter((role) => currentCreatableRoles.includes(role) && role !== 'finance');
 
             allowedRoles.forEach((role) => {
                 const opt = document.createElement('option');

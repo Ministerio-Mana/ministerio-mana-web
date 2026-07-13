@@ -14,6 +14,29 @@
 
 ## Entradas
 
+### 2026-07-13 (Finanzas jerárquicas: administración y activación guiada)
+- Responsable: Equipo web
+- Cambios:
+  - Se consolidó el inventario de activación y QA en `docs/PENDIENTES_USUARIO_2026-07-13.md`.
+  - Se agregó en `/portal/users` una administración de permisos financieros secundarios para superadmin: global, nacional, regional o local, sin reemplazar el rol pastoral principal.
+  - La API administrativa exige cuenta individual de superadmin, control de IP, validación estricta de alcance, referencias existentes y registro de la acción.
+  - La interfaz detecta si falta `finance_scopes_hierarchy.sql` y queda bloqueada de forma segura hasta aplicar la migración.
+  - Las cuentas nuevas ya no reciben `finance` como rol principal desde la interfaz; se crean con su rol real y después reciben el alcance financiero adicional.
+  - El panel de Finanzas identifica la cuenta responsable de cada movimiento: Wompi nacional Colombia, Stripe global o recaudo local/regional.
+  - El checkout de Eventos quedó endurecido para aceptar Wompi únicamente en COP y Stripe únicamente en USD.
+  - La migración financiera ahora protege `portal_role_assignments` con RLS y acceso exclusivo de `service_role` aunque se ejecute sin la migración anterior de roles secundarios.
+  - Se completó `.env.example` con las variables operativas faltantes de Eventos, Microsoft, seguridad y crons, sin valores sensibles.
+- Pruebas:
+  - `test:event-contract`: 10 aprobadas.
+  - `test:event-evidence`: 4 aprobadas.
+  - `test:finance-scope`: 9 aprobadas.
+  - Validación de sintaxis de scripts y `git diff --check`: correctas.
+  - Astro no reportó errores en los archivos modificados; el repositorio conserva diagnósticos históricos fuera de este alcance.
+- Pendientes:
+  - Ejecutar en Supabase los cuatro SQL registrados en MANA-016.
+  - Asignar y probar el primer equipo financiero nacional, regional y local.
+  - Completar las revisiones en vivo MANA-011 y MANA-012.
+
 ### 2026-04-27 (Cumbre: corrección paquete sin alojamiento + auditoría)
 - Responsable: Delta
 - Cambios:

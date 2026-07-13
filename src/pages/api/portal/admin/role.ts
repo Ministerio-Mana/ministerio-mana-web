@@ -70,7 +70,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const desiredRole = String(payload.role);
-  const ALLOWED_ROLE_CHANGES = new Set(['user', 'admin', 'superadmin', 'campus_missionary', 'finance', 'intercessor']);
+  if (desiredRole === 'finance') {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Finanzas se asigna como permiso adicional con alcance desde el botón Finanzas.',
+    }), {
+      status: 409,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  const ALLOWED_ROLE_CHANGES = new Set(['user', 'admin', 'superadmin', 'campus_missionary', 'intercessor']);
   if (!ALLOWED_ROLE_CHANGES.has(desiredRole)) {
     return new Response(JSON.stringify({ ok: false, error: 'Rol no permitido en este flujo' }), {
       status: 400,

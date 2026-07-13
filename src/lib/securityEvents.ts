@@ -7,6 +7,7 @@ type SecurityEventType =
   | 'payment_error'
   | 'payment_processed'
   | 'fx_fallback'
+  | 'admin_action'
   | 'maintenance';
 
 export interface SecurityEventPayload {

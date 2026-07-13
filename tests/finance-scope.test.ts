@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   buildFinanceScopeFilter,
@@ -6,11 +7,16 @@ import {
   normalizeFinanceCountryKey,
   resolveFinanceScopeAccess,
 } from '../src/lib/financeScope.ts';
+import {
+  financeAssignmentScopeLabel,
+  normalizeFinanceAssignmentInput,
+} from '../src/lib/financeAssignments.ts';
 
 const REGION_ANTIOQUIA = '11111111-1111-4111-8111-111111111111';
 const REGION_CARIBE = '22222222-2222-4222-8222-222222222222';
 const CHURCH_RIONEGRO = '33333333-3333-4333-8333-333333333333';
 const CHURCH_BOGOTA = '44444444-4444-4444-8444-444444444444';
+const FINANCE_SQL = readFileSync(new URL('../docs/sql/finance_scopes_hierarchy.sql', import.meta.url), 'utf8');
 
 test('normaliza el país para comparar perfiles, iglesias y movimientos', () => {
   assert.equal(normalizeFinanceCountryKey('  Colômbia / Nacional  '), 'colombia-nacional');
@@ -133,4 +139,43 @@ test('una asignación financiera incompleta falla cerrada', () => {
   assert.equal(access.hasAssignments, true);
   assert.equal(access.hasInvalidAssignments, true);
   assert.match(buildFinanceScopeFilter(access) || '', /00000000-0000/);
+});
+
+test('normaliza asignaciones financieras sin aceptar alcances ambiguos', () => {
+  assert.deepEqual(normalizeFinanceAssignmentInput({
+    userId: CHURCH_BOGOTA,
+    scopeType: 'country',
+    scopeKey: '  Colômbia  ',
+    scopeId: REGION_ANTIOQUIA,
+  }), {
+    ok: true,
+    value: {
+      userId: CHURCH_BOGOTA,
+      scopeType: 'country',
+      scopeId: null,
+      scopeKey: 'colombia',
+    },
+  });
+
+  const invalidRegion = normalizeFinanceAssignmentInput({
+    userId: CHURCH_BOGOTA,
+    scopeType: 'region',
+    scopeId: 'antioquia',
+  });
+  assert.equal(invalidRegion.ok, false);
+  if (!invalidRegion.ok) assert.match(invalidRegion.error, /región/i);
+});
+
+test('describe cada alcance financiero con lenguaje operativo', () => {
+  assert.equal(financeAssignmentScopeLabel({ scopeType: 'global' }), 'Global · todas las cuentas autorizadas');
+  assert.equal(financeAssignmentScopeLabel({ scopeType: 'country', scopeKey: 'estados-unidos' }), 'Nacional · Estados Unidos');
+  assert.equal(financeAssignmentScopeLabel({ scopeType: 'region', regionLabel: 'ANT · Antioquia' }), 'Regional · ANT · Antioquia');
+  assert.equal(financeAssignmentScopeLabel({ scopeType: 'church', churchLabel: 'Maná Rionegro' }), 'Local · Maná Rionegro');
+});
+
+test('la migración financiera protege asignaciones y fija la propiedad de los proveedores', () => {
+  assert.match(FINANCE_SQL, /alter table public\.portal_role_assignments enable row level security/i);
+  assert.match(FINANCE_SQL, /revoke all on table public\.portal_role_assignments from anon, authenticated/i);
+  assert.match(FINANCE_SQL, /provider_key = 'WOMPI'[\s\S]*finance_scope_type := 'NATIONAL'/i);
+  assert.match(FINANCE_SQL, /provider_key = 'STRIPE'[\s\S]*finance_scope_type := 'GLOBAL'/i);
 });

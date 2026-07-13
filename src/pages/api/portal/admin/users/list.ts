@@ -49,6 +49,12 @@ function isFutureTimestamp(value: unknown, now: number): boolean {
   return Number.isFinite(parsed) && parsed > now;
 }
 
+function isMissingRoleAssignmentsSchema(error: any): boolean {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '').toLowerCase();
+  return code === '42P01' || code === '42703' || message.includes('portal_role_assignments');
+}
+
 function dedupeProfiles(rows: ProfileRow[]): ProfileRow[] {
   const byUserId = new Map<string, ProfileRow>();
   for (const row of rows) {
@@ -184,6 +190,33 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const users = sortProfilesByUpdatedAt(scopedUsers).slice(0, RESPONSE_LIMIT);
+  const visibleUserIds = users.map((profile: any) => profile?.user_id).filter(Boolean);
+  const financeAssignmentMap = new Map<string, any[]>();
+
+  if (visibleUserIds.length && effectiveRole === 'superadmin') {
+    const { data: assignments, error: assignmentsError } = await supabaseAdmin
+      .from('portal_role_assignments')
+      .select('id,user_id,scope_type,scope_id,scope_key,status')
+      .in('user_id', visibleUserIds)
+      .eq('role', 'finance')
+      .eq('status', 'active');
+    if (assignmentsError) {
+      if (!isMissingRoleAssignmentsSchema(assignmentsError)) {
+        console.error('[portal.admin.users.list] finance assignments error', assignmentsError);
+      }
+    } else {
+      (assignments || []).forEach((assignment: any) => {
+        const rows = financeAssignmentMap.get(assignment.user_id) || [];
+        rows.push({
+          id: assignment.id,
+          scope_type: assignment.scope_type,
+          scope_id: assignment.scope_id,
+          scope_key: assignment.scope_key,
+        });
+        financeAssignmentMap.set(assignment.user_id, rows);
+      });
+    }
+  }
 
   const churchIds = Array.from(new Set((users || [])
     .map((profile: any) => profile?.church_id || profile?.portal_church_id || null)
@@ -306,6 +339,8 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
       account_deleted_at: accountDeletedAt,
       account_deleted_by: accountDeletedBy,
       account_delete_reason: accountDeleteReason,
+      finance_assignments: financeAssignmentMap.get(profile.user_id) || [],
+      finance_assignment_count: (financeAssignmentMap.get(profile.user_id) || []).length,
     };
   });
 

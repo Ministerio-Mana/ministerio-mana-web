@@ -3,6 +3,10 @@ import { resolveBaseUrl } from '@lib/url';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
 import { buildEventPaymentReference, createEventPaymentId } from '@lib/eventFinance';
+import {
+  getRequiredEventProviderCurrency,
+  isValidEventProviderCurrency,
+} from '@lib/eventPaymentContract.js';
 
 export type EventCheckoutProvider = 'WOMPI' | 'STRIPE';
 
@@ -85,11 +89,10 @@ export async function createEventCheckout(params: {
   if (!eventIsOpen(event)) throw new EventCheckoutError('El evento no está abierto para nuevos cobros.', 409);
 
   const currency = String(registration.currency || '').toUpperCase();
-  if (params.provider === 'WOMPI' && currency !== 'COP') {
-    throw new EventCheckoutError('Wompi solo puede cobrar este evento en COP.');
-  }
-  if (params.provider === 'STRIPE' && !['USD', 'EUR', 'COP'].includes(currency)) {
-    throw new EventCheckoutError('Stripe no está habilitado para esta moneda.');
+  if (!isValidEventProviderCurrency(params.provider, currency)) {
+    const providerLabel = params.provider === 'WOMPI' ? 'Wompi' : 'Stripe';
+    const requiredCurrency = getRequiredEventProviderCurrency(params.provider);
+    throw new EventCheckoutError(`${providerLabel} solo puede cobrar este evento en ${requiredCurrency}.`);
   }
 
   const { data: paymentOption, error: paymentOptionError } = await supabaseAdmin

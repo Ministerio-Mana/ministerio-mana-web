@@ -171,6 +171,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const targetRole = String(role || 'user');
+  if (targetRole === 'finance') {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Crea la cuenta con su rol principal y luego agrega Finanzas con el alcance correspondiente.',
+    }), { status: 409 });
+  }
   if (!canCreateRole(effectiveRole, targetRole)) {
     return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
   }

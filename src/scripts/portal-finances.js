@@ -83,6 +83,24 @@ function formatCurrency(val, currency) {
   }).format(val || 0);
 }
 
+function financeOriginLabel(transaction = {}) {
+  const provider = String(transaction.provider || '').trim().toUpperCase();
+  const scopeType = String(transaction.finance_scope_type || '').trim().toUpperCase();
+  const countryKey = String(transaction.finance_scope_country_key || '').trim();
+  const country = countryKey
+    ? countryKey.split('-').filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
+    : '';
+
+  if (provider === 'WOMPI') return 'Wompi · Nacional Colombia';
+  if (provider === 'STRIPE') return 'Stripe · Global';
+  if (scopeType === 'LOCAL') return 'Pago local · Iglesia';
+  if (scopeType === 'REGIONAL') return 'Cuenta regional';
+  if (scopeType === 'NATIONAL') return `Cuenta nacional${country ? ` · ${country}` : ''}`;
+  if (scopeType === 'GLOBAL') return 'Cuenta global';
+  if (provider) return provider;
+  return 'Sin clasificar';
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -344,6 +362,7 @@ function renderTransactions(transactions, pagination, { append = false } = {}) {
         <td data-label="Fecha" class="py-3 pl-2">${formatDate(t.created_at)}</td>
         <td data-label="Concepto" class="py-3 font-medium text-[#293C74]">${escapeHtml(t.concept_label || 'Aporte')}</td>
         <td data-label="Donante" class="py-3 text-slate-500">${escapeHtml(t.donor_name || 'Anónimo')}</td>
+        <td data-label="Cuenta" class="py-3 text-xs font-semibold text-slate-600">${escapeHtml(financeOriginLabel(t))}</td>
         <td data-label="Estado" class="py-3"><span class="portal-chip bg-green-100 text-green-800">${escapeHtml(t.status || 'APROBADO')}</span></td>
         <td data-label="Monto" class="py-3 text-right font-bold pr-2">${formatCurrency(t.amount, t.currency)}</td>
       </tr>
@@ -485,7 +504,7 @@ function issueCardHtml(issue) {
   const phoneRaw = issue.donor_phone || '';
   const phone = phoneRaw.toString().replace(/\D/g, '');
   const reference = issue.reference ? `Ref: ${issue.reference}` : '';
-  const provider = issue.provider ? issue.provider.toString().toUpperCase() : '';
+  const provider = financeOriginLabel(issue);
   const reason = issue.reason || 'En verificación';
   const dateLabel = issue.created_at ? new Date(issue.created_at).toLocaleDateString() : '';
 

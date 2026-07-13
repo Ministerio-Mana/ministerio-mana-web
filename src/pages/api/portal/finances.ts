@@ -130,6 +130,9 @@ function toClientRow(row: any) {
     provider: row.provider ?? null,
     reference: row.reference ?? null,
     church_id: row.church_id ?? null,
+    finance_scope_type: row.finance_scope_type ?? null,
+    finance_scope_country_key: row.finance_scope_country_key ?? null,
+    finance_region_id: row.finance_region_id ?? null,
   };
 }
 
