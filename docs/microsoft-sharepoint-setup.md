@@ -34,6 +34,7 @@ MICROSOFT_SHAREPOINT_SITE_ID=
 MICROSOFT_SHAREPOINT_DRIVE_ID=
 MICROSOFT_SHAREPOINT_EVENTS_DRIVE_ID=
 MICROSOFT_SHAREPOINT_EVENTS_WRITE_ENABLED=false
+MICROSOFT_SHAREPOINT_EVENT_REGISTRATIONS_LIST_ID=
 ```
 
 Primero se cargan los identificadores y el secreto manteniendo `MICROSOFT_GRAPH_ENABLED=false`. Al final se cambia a `true` y se prueba el endpoint de diagnostico.
@@ -76,6 +77,18 @@ Antes de encenderla:
 6. Cambiar `MICROSOFT_SHAREPOINT_EVENTS_WRITE_ENABLED=true`, desplegar y probar con un archivo sin datos sensibles.
 
 La API exige una cuenta individual, aplica la misma jerarquia del evento, limita a 4 MB por el limite de entrada de Vercel Functions, acepta solo PDF/JPG/PNG/WebP, sanea imagenes y registra cada intento en auditoria. Los archivos permanecen en SharePoint; Supabase guarda solo metadatos e identificadores externos.
+
+## Próxima conexión: inscripciones de Eventos
+
+Las respuestas se guardan primero en Maná. El portal genera desde la operación de cada evento un Excel con los datos base y las preguntas configurables. Esto evita perder una inscripción si Microsoft no está disponible.
+
+Para sincronización automática posterior, crear dentro del sitio privado `Portal Maná` una **Lista** llamada `Inscripciones de Eventos`, no un Excel. Sus columnas iniciales deben ser:
+
+- `Evento` (texto), `IdentificadorEvento` (texto), `IdentificadorInscripcion` (texto único), `Nombre`, `Correo`, `Teléfono`, `Iglesia`, `Estado`, `Asistentes`, `Total`, `Moneda`, `FechaInscripción`.
+- `RespuestasAdicionales` (varias líneas de texto): resumen legible de preguntas abiertas y opciones.
+- `EnlaceOperación` (hipervínculo): enlace privado a la operación en Maná.
+
+Una vez creada, registrar solo su identificador en `MICROSOFT_SHAREPOINT_EVENT_REGISTRATIONS_LIST_ID` y conceder a la aplicación el permiso mínimo de escritura sobre esa lista. No usar `Sites.ReadWrite.All`. La sincronización no reemplazará el Excel: el Excel seguirá siendo una exportación puntual y la lista será la vista operativa compartida.
 
 ### Limite con ImageKit
 

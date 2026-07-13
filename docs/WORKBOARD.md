@@ -30,6 +30,12 @@
 ---
 
 ## Ready
+- MANA-011 Revisión en vivo del constructor de formularios de Eventos
+  - Owner: Usuario
+  - Scope: `/portal/events` y página pública del evento
+  - Description: Crear una pregunta adicional, publicar el evento y enviar una inscripción de prueba desde celular.
+  - Notes: Pendiente para cuando el usuario tenga acceso; no bloquea el avance técnico.
+
 - MANA-007 Verificar build en producción
   - Owner: DELTA
   - Scope: CI/CD, Vercel deployment
@@ -38,6 +44,13 @@
 ---
 
 ## In Progress
+- MANA-010 Operación de inscripciones de Eventos
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: exportación Excel y futura sincronización segura con SharePoint
+  - Description: Entregar registros con preguntas configurables sin alterar cobros, ImageKit, Campus ni los permisos actuales.
+  - Status: En curso — exportación Excel en implementación; la Lista de SharePoint se conectará cuando exista una lista autorizada.
+
 - MANA-008 Backend Cumbre Mundial 2026
   - Owner: DELTA
   - Branch: `feat/cumbre-ui`

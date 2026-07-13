@@ -27,10 +27,15 @@ const eventId = String(Astro.params.id || '');
               <h1 id="event-operation-title" class="mt-1 truncate font-display text-3xl font-bold text-[#293C74]">Evento</h1>
               <p id="event-operation-meta" class="mt-1 text-sm text-slate-600"></p>
             </div>
-            <button id="event-operation-refresh" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
-              <PortalIcon name="refresh-cw" size={17} />
-              Actualizar
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button id="event-operation-export" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-[#F7F9FF] disabled:cursor-not-allowed disabled:opacity-60">
+                Descargar Excel
+              </button>
+              <button id="event-operation-refresh" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                <PortalIcon name="refresh-cw" size={17} />
+                Actualizar
+              </button>
+            </div>
           </header>
 
           <section aria-label="Resumen de operación" class="portal-stat-grid grid-cols-2 lg:grid-cols-4">

@@ -14,6 +14,7 @@ const empty = document.getElementById('event-operation-empty');
 const search = document.getElementById('event-operation-search');
 const statusFilter = document.getElementById('event-operation-status');
 const refreshButton = document.getElementById('event-operation-refresh');
+const exportButton = document.getElementById('event-operation-export');
 const pagination = document.getElementById('event-operation-pagination');
 const pageLabel = document.getElementById('event-operation-page');
 const reviewModal = document.getElementById('event-review-modal');
@@ -232,6 +233,45 @@ async function fetchJson(url, options = {}) {
     throw error;
   } finally {
     window.clearTimeout(timeout);
+  }
+}
+
+async function exportRegistrations() {
+  if (!exportButton) return;
+  const originalText = exportButton.textContent;
+  exportButton.disabled = true;
+  exportButton.textContent = 'Generando Excel...';
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS * 2);
+  try {
+    const params = new URLSearchParams({ event_id: eventId });
+    const response = await fetch(`/api/portal/events/export-registrations?${params}`, {
+      headers: authHeaders,
+      credentials: 'include',
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'No se pudo generar el Excel.');
+    }
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const disposition = String(response.headers.get('content-disposition') || '');
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'inscripciones-evento.xlsx';
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+  } catch (error) {
+    window.alert(error?.name === 'AbortError'
+      ? 'La exportación tardó demasiado. Intenta nuevamente.'
+      : error?.message || 'No se pudo generar el Excel.');
+  } finally {
+    window.clearTimeout(timeout);
+    exportButton.disabled = false;
+    exportButton.textContent = originalText;
   }
 }
 
@@ -465,6 +505,7 @@ refreshButton?.addEventListener('click', () => {
   void loadOperation(currentPage).catch(showFatalError);
   void loadEventDocuments({ quiet: true }).catch((error) => setDocumentsMessage(error?.message || 'No se pudieron actualizar los archivos.', 'error'));
 });
+exportButton?.addEventListener('click', () => void exportRegistrations());
 documentsRefresh?.addEventListener('click', () => void loadEventDocuments().catch((error) => {
   documentsLoading?.classList.add('hidden');
   setDocumentsMessage(error?.message || 'No se pudieron cargar los archivos.', 'error');
