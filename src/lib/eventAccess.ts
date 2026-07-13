@@ -13,7 +13,15 @@ import {
   getRoleScope,
   isNationalScopedRole,
   isRegionalScopedRole,
+  mergePortalCapabilities,
 } from '@lib/portalRbac';
+import { getSupportedSecondaryRoles, listActivePortalRoleAssignments } from '@lib/portalRoleAssignments';
+import {
+  financeScopeCanAccessRecord,
+  normalizeFinanceCountryKey,
+  resolveFinanceScopeAccess,
+  type FinanceScopeAccess,
+} from '@lib/financeScope';
 
 export type EventAccessContext = {
   ok: boolean;
@@ -29,6 +37,8 @@ export type EventAccessContext = {
   isNational: boolean;
   isRegional: boolean;
   regionIds: string[];
+  secondaryRoles: string[];
+  financeAccess: FinanceScopeAccess;
   capabilities: ReturnType<typeof getRoleCapabilities>;
 };
 
@@ -55,6 +65,8 @@ function deniedContext(status: number, error: string, userId: string | null = nu
     isNational: false,
     isRegional: false,
     regionIds: [],
+    secondaryRoles: [],
+    financeAccess: resolveFinanceScopeAccess({ primaryRole: 'user' }),
     capabilities: getRoleCapabilities('user'),
   };
 }
@@ -134,6 +146,7 @@ export async function getEventAccessContext(request: Request): Promise<EventAcce
       scope: 'global',
       isAdmin: true,
       isPasswordSession: true,
+      financeAccess: resolveFinanceScopeAccess({ primaryRole: 'superadmin' }),
       capabilities: getRoleCapabilities('superadmin'),
     };
   }
@@ -141,7 +154,10 @@ export async function getEventAccessContext(request: Request): Promise<EventAcce
   const profile = await ensureUserProfile(user);
   if (!profile) return deniedContext(403, 'Profile not found', user.id);
 
-  const memberships = await listUserMemberships(user.id);
+  const [memberships, roleAssignments] = await Promise.all([
+    listUserMemberships(user.id),
+    listActivePortalRoleAssignments(user.id),
+  ]);
   const role = resolveEffectivePortalRole(profile.role, memberships);
   const churchId = resolveEffectiveChurchId(
     profile.church_id || profile.portal_church_id || null,
@@ -150,6 +166,12 @@ export async function getEventAccessContext(request: Request): Promise<EventAcce
   const isRegional = isRegionalScopedRole(role);
   const isNational = isNationalScopedRole(role);
   const regionIds = isRegional ? await resolveRegionalScope(user.id, profile.region_id || null) : [];
+  const financeAccess = resolveFinanceScopeAccess({ primaryRole: role, assignments: roleAssignments });
+  const secondaryRoles = getSupportedSecondaryRoles(roleAssignments)
+    .filter((secondaryRole) => secondaryRole !== 'finance' || financeAccess.allowed);
+  const capabilities = secondaryRoles.length
+    ? mergePortalCapabilities([role, ...secondaryRoles])
+    : getRoleCapabilities(role);
 
   if (isRegional && !regionIds.length) {
     return {
@@ -160,7 +182,9 @@ export async function getEventAccessContext(request: Request): Promise<EventAcce
       churchId,
       isNational,
       isRegional,
-      capabilities: getRoleCapabilities(role),
+      secondaryRoles,
+      financeAccess,
+      capabilities,
     };
   }
 
@@ -178,8 +202,39 @@ export async function getEventAccessContext(request: Request): Promise<EventAcce
     isNational,
     isRegional,
     regionIds,
-    capabilities: getRoleCapabilities(role),
+    secondaryRoles,
+    financeAccess,
+    capabilities,
   };
+}
+
+async function canFinanceAccessEvent(
+  access: FinanceScopeAccess,
+  event: ScopedEvent,
+): Promise<boolean> {
+  const scopeType = String(event?.scope || '').trim().toUpperCase();
+  const record = {
+    finance_scope_type: scopeType,
+    finance_scope_country_key: normalizeFinanceCountryKey(event?.country),
+    finance_region_id: event?.region_id || null,
+    church_id: event?.church_id || null,
+  };
+  if (financeScopeCanAccessRecord(access, record)) return true;
+
+  if (!supabaseAdmin || scopeType !== 'LOCAL' || !event?.church_id) return false;
+  const { data: church, error } = await supabaseAdmin
+    .from('churches')
+    .select('id, region_id, country')
+    .eq('id', event.church_id)
+    .maybeSingle();
+  if (error || !church?.id) return false;
+
+  return financeScopeCanAccessRecord(access, {
+    finance_scope_type: 'LOCAL',
+    finance_scope_country_key: normalizeFinanceCountryKey(church.country),
+    finance_region_id: church.region_id || null,
+    church_id: church.id,
+  });
 }
 
 export async function canActorManageEvent(ctx: EventAccessContext, event: ScopedEvent): Promise<boolean> {
@@ -207,7 +262,8 @@ export async function canActorOperateEventPayments(
 ): Promise<boolean> {
   if (!ctx.ok || ctx.isPasswordSession) return false;
   if (!ctx.capabilities.can_manage_event_finances) return false;
-  if (ctx.isAdmin || ctx.role === 'finance') return true;
+  if (ctx.isAdmin) return true;
+  if (ctx.financeAccess.allowed && await canFinanceAccessEvent(ctx.financeAccess, event)) return true;
   return canActorManageEvent(ctx, event);
 }
 

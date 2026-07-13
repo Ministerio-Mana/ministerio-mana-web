@@ -1,8 +1,10 @@
 -- Roles secundarios del Portal Mana.
 --
--- Caso actual:
+-- Casos actuales:
 -- - Una persona conserva su rol principal (por ejemplo pastor)
 -- - Y recibe acceso adicional a Peticiones con rol secundario intercessor.
+-- - O recibe Finanzas con alcance explícito. La jerarquía financiera completa se
+--   activa con docs/sql/finance_scopes_hierarchy.sql.
 --
 -- Ejecutar una vez en Supabase SQL Editor.
 
@@ -14,24 +16,29 @@ create table if not exists public.portal_role_assignments (
   role text not null,
   scope_type text not null default 'global',
   scope_id uuid,
+  scope_key text,
   status text not null default 'active',
   created_by uuid references auth.users(id),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   constraint portal_role_assignments_role_check
-    check (role in ('intercessor')),
+    check (role in ('intercessor', 'finance')),
   constraint portal_role_assignments_scope_type_check
     check (scope_type in ('global', 'country', 'region', 'church', 'campus')),
   constraint portal_role_assignments_status_check
     check (status in ('active', 'inactive'))
 );
 
+alter table public.portal_role_assignments
+  add column if not exists scope_key text;
+
 create unique index if not exists idx_portal_role_assignments_unique_active
   on public.portal_role_assignments(
     user_id,
     role,
     scope_type,
-    coalesce(scope_id, '00000000-0000-0000-0000-000000000000'::uuid)
+    coalesce(scope_id, '00000000-0000-0000-0000-000000000000'::uuid),
+    coalesce(scope_key, '')
   )
   where status = 'active';
 

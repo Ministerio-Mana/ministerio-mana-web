@@ -35,6 +35,9 @@ export type DonationRecord = {
   concept_label?: string | null;
   payment_domain?: DonationDomain | string | null;
   church_id?: string | null;
+  finance_scope_type?: 'GLOBAL' | 'NATIONAL' | 'REGIONAL' | 'LOCAL' | 'UNASSIGNED' | null;
+  finance_scope_country_key?: string | null;
+  finance_region_id?: string | null;
   user_id?: string | null;
   missionary_id?: string | null;
   missionary_name?: string | null;
@@ -183,6 +186,9 @@ export async function createDonation(payload: Omit<DonationRecord, 'id'>): Promi
     concept_label: payload.concept_label ?? classification.conceptLabel,
     payment_domain: payload.payment_domain ?? classification.paymentDomain,
     church_id: payload.church_id ?? null,
+    finance_scope_type: payload.finance_scope_type ?? undefined,
+    finance_scope_country_key: payload.finance_scope_country_key ?? undefined,
+    finance_region_id: payload.finance_region_id ?? undefined,
     user_id: payload.user_id ?? null,
     missionary_id: payload.missionary_id ?? null,
     missionary_name: payload.missionary_name ?? null,

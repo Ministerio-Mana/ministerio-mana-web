@@ -1433,6 +1433,7 @@ export const PUT: APIRoute = async ({ request }) => {
           event_name: 'Cumbre Mundial 2026',
           campus: resolvedChurchName || null,
           church: resolvedChurchName || null,
+          church_id: resolvedChurchId || null,
           church_city: contactCity || null,
           donor_name: contactName,
           donor_email: contactEmail || null,

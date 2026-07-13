@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
-import { getRoleCapabilities } from '@lib/portalRbac';
+import { applyFinanceScopeFilter, getFinanceAccessContext } from '@lib/financeAccess';
+import { serializeFinanceScopeAccess } from '@lib/financeScope';
 
 export const prerender = false;
 
@@ -35,6 +34,9 @@ const TRANSACTION_FIELDS = [
   'provider',
   'reference',
   'church_id',
+  'finance_scope_type',
+  'finance_scope_country_key',
+  'finance_region_id',
 ].join(', ');
 
 const TRANSACTION_FALLBACK_FIELDS = [
@@ -152,21 +154,8 @@ export const GET: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) return json({ ok: false, error: 'Server Config Error' }, 500);
   const db = supabaseAdmin;
 
-  const user = await getUserFromRequest(request);
-  const passwordSession = user ? null : readPasswordSession(request);
-  if (!user && !passwordSession) return json({ ok: false, error: 'Unauthorized' }, 401);
-
-  const { data: profile } = user
-    ? await db
-      .from('user_profiles')
-      .select('church_id, role')
-      .eq('user_id', user.id)
-      .single()
-    : { data: { role: 'superadmin', church_id: null } };
-
-  if (!profile || !getRoleCapabilities(profile.role).can_access_finances) {
-    return json({ ok: false, error: 'Forbidden' }, 403);
-  }
+  const financeContext = await getFinanceAccessContext(request);
+  if (!financeContext.ok) return json({ ok: false, error: financeContext.error }, financeContext.status);
 
   const url = new URL(request.url);
   const page = parseBoundedInt(url.searchParams.get('page') || url.searchParams.get('transactionsPage'), 1, 1, 10000);
@@ -179,9 +168,11 @@ export const GET: APIRoute = async ({ request }) => {
   const buildQuery = (fields: string, statuses: string[], currentPage: number, currentPageSize: number) => {
     const rangeFrom = (currentPage - 1) * currentPageSize;
     const rangeTo = rangeFrom + currentPageSize - 1;
-    return db
+    let query = db
       .from('donations')
-      .select(fields, { count: 'exact' })
+      .select(fields, { count: 'exact' });
+    query = applyFinanceScopeFilter(query, financeContext.access);
+    return query
       .in('status', statuses)
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo);
@@ -197,10 +188,22 @@ export const GET: APIRoute = async ({ request }) => {
   ]);
 
   if (approvedResult.error && isMissingColumnError(approvedResult.error)) {
+    if (!financeContext.access.isGlobal) {
+      return json({
+        ok: false,
+        error: 'La separación financiera todavía no está activa. Ejecuta la migración de alcances financieros.',
+      }, 503);
+    }
     approvedResult = await buildQuery(TRANSACTION_FALLBACK_FIELDS, APPROVED_STATUSES, page, pageSize);
   }
 
   if (issuesResult.error && isMissingColumnError(issuesResult.error)) {
+    if (!financeContext.access.isGlobal) {
+      return json({
+        ok: false,
+        error: 'La separación financiera todavía no está activa. Ejecuta la migración de alcances financieros.',
+      }, 503);
+    }
     issuesResult = await buildQuery(ISSUE_FALLBACK_FIELDS, ISSUE_STATUSES, issuesPage, issuesPageSize);
   }
 
@@ -258,7 +261,7 @@ export const GET: APIRoute = async ({ request }) => {
       elapsedMs,
       transactionCount: approvedTransactions.length,
       issueCount: issues.length,
-      role: profile?.role,
+      role: financeContext.role,
     });
   }
 
@@ -276,5 +279,6 @@ export const GET: APIRoute = async ({ request }) => {
     pagination: transactionsPagination,
     transactionsPagination,
     issuesPagination,
+    financeScope: serializeFinanceScopeAccess(financeContext.access),
   });
 };

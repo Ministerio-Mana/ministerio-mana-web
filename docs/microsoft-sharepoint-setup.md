@@ -84,7 +84,9 @@ La API exige una cuenta individual, aplica la misma jerarquia del evento, limita
 - Se guardan en `Portal Eventos/{evento-id}/Comprobantes de pago` y se nombran con el nombre normalizado del asistente más un identificador corto de inscripción.
 - Las capturas se reorientan, reducen a un máximo de 1600 × 1600, convierten a WebP y quedan por debajo de 1,5 MB. Los PDF se limitan a 2 MB.
 - El enlace real de SharePoint nunca llega al navegador público. Solo una cuenta individual con alcance sobre el evento puede abrir el archivo mediante el portal.
-- `retention_until` queda en `NULL`: esto impide un borrado automático accidental. Contabilidad debe aprobar primero qué evidencia se conserva y por cuánto tiempo; después se puede programar una limpieza auditada.
+- `retention_until` queda en `NULL`: esto impide un borrado automático accidental. Contabilidad debe aprobar primero qué evidencia se conserva y por cuánto tiempo.
+- La tarea diaria `/api/events/payment-evidence/retention/run` procesa únicamente comprobantes ya revisados, vencidos y con `retention_until` explícito. Usa `CRON_SECRET`, reclama lotes sin carreras, reintenta hasta 10 veces y registra el borrado del binario en `event_finance_audit_logs`.
+- La limpieza elimina el archivo de SharePoint, pero conserva la inscripción, el pago, el hash, las fechas y la auditoría. Un error de Microsoft libera el registro para reintento y no lo marca como eliminado.
 
 ## Próxima conexión: inscripciones de Eventos
 

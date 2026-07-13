@@ -16,6 +16,7 @@ const pageInfoEl = document.getElementById('finances-page-info');
 const loadMoreBtn = document.getElementById('finances-load-more');
 const issuesPageInfoEl = document.getElementById('finances-issues-page-info');
 const issuesLoadMoreBtn = document.getElementById('finances-issues-load-more');
+const scopeLabelEl = document.getElementById('finances-scope-label');
 
 const REQUEST_TIMEOUT_MS = 15000;
 const TRANSACTIONS_PAGE_SIZE = 10;
@@ -58,6 +59,20 @@ function createEmptyCategoryStats() {
 function resetLoadedStats() {
   loadedTotalsByCurrency = {};
   loadedByCategory = createEmptyCategoryStats();
+}
+
+function scopeLabel(scope = {}) {
+  if (scope.is_global) return 'Alcance global';
+  const countries = Array.isArray(scope.country_keys) ? scope.country_keys : [];
+  const regions = Array.isArray(scope.region_ids) ? scope.region_ids : [];
+  const churches = Array.isArray(scope.church_ids) ? scope.church_ids : [];
+  if (countries.length) {
+    const names = countries.map((value) => String(value).replace(/-/g, ' ')).join(', ');
+    return `Alcance nacional · ${names}`;
+  }
+  if (regions.length) return `Alcance regional · ${regions.length} ${regions.length === 1 ? 'región' : 'regiones'}`;
+  if (churches.length) return `Alcance local · ${churches.length} ${churches.length === 1 ? 'iglesia' : 'iglesias'}`;
+  return 'Sin alcance financiero';
 }
 
 function formatCurrency(val, currency) {
@@ -258,6 +273,7 @@ function renderDashboard(data, options = {}) {
   if (loadingEl) loadingEl.classList.add('hidden');
   gateEl?.classList.add('hidden');
   secureContentEl?.classList.remove('hidden');
+  if (scopeLabelEl) scopeLabelEl.textContent = scopeLabel(data.financeScope);
 
   if (includeTransactions) {
     mergeLoadedStats(data.stats || {});

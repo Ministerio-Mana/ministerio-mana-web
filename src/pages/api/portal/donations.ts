@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
-import { getRoleCapabilities } from '@lib/portalRbac';
+import { applyFinanceScopeFilter, getFinanceAccessContext } from '@lib/financeAccess';
+import { serializeFinanceScopeAccess } from '@lib/financeScope';
 
 export const prerender = false;
 
@@ -89,24 +88,12 @@ export const GET: APIRoute = async ({ request }) => {
   }
   const db = supabaseAdmin;
 
-  const user = await getUserFromRequest(request);
-  const passwordSession = user ? null : readPasswordSession(request);
-  if (!user && !passwordSession) {
-    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
-  }
-
-  let role = 'superadmin';
-  if (user) {
-    const { data: profile } = await db
-      .from('user_profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-    role = profile?.role || 'user';
-  }
-
-  if (!getRoleCapabilities(role).can_access_finances) {
-    return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
+  const financeContext = await getFinanceAccessContext(request);
+  if (!financeContext.ok) {
+    return new Response(JSON.stringify({ ok: false, error: financeContext.error }), {
+      status: financeContext.status,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   const url = new URL(request.url);
@@ -144,18 +131,27 @@ export const GET: APIRoute = async ({ request }) => {
     'donor_city',
     'is_recurring',
     'source',
+    'church_id',
+    'finance_scope_type',
+    'finance_scope_country_key',
+    'finance_region_id',
   ].join(', ');
 
   const fallbackFields = selectFields
     .replace(', payment_domain', '')
     .replace(', concept_code', '')
     .replace(', concept_label', '')
-    .replace(', missionary_name', '');
+    .replace(', missionary_name', '')
+    .replace(', finance_scope_type', '')
+    .replace(', finance_scope_country_key', '')
+    .replace(', finance_region_id', '');
 
   const buildQuery = (fields: string) => {
     let query = db
       .from('donations')
-      .select(fields, { count: 'exact' })
+      .select(fields, { count: 'exact' });
+    query = applyFinanceScopeFilter(query, financeContext.access);
+    query = query
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo);
 
@@ -168,6 +164,15 @@ export const GET: APIRoute = async ({ request }) => {
 
   let result = await buildQuery(selectFields);
   if (result.error && isMissingColumnError(result.error)) {
+    if (!financeContext.access.isGlobal) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'La separación financiera todavía no está activa. Ejecuta la migración de alcances financieros.',
+      }), {
+        status: 503,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     let fallbackQuery = db
       .from('donations')
       .select(fallbackFields, { count: 'exact' })
@@ -226,6 +231,7 @@ export const GET: APIRoute = async ({ request }) => {
       pageTotalsByCurrency,
       pageTotalsByConcept,
     },
+    financeScope: serializeFinanceScopeAccess(financeContext.access),
   }), {
     status: 200,
     headers: {

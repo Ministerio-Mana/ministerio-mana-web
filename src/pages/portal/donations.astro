@@ -17,7 +17,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 class="text-3xl font-display font-bold text-[#293C74]">Donaciones</h1>
-              <p class="text-slate-600">Todas las donaciones con su concepto, destino y donante.</p>
+              <p class="text-slate-600">Donaciones autorizadas para tu alcance, con concepto, destino y donante.</p>
+              <p id="donations-scope-label" class="mt-3 w-fit rounded-full border border-[#293C74]/15 bg-white px-4 py-2 text-xs font-bold text-[#293C74]">
+                Verificando alcance…
+              </p>
             </div>
             <div class="grid w-full gap-2 sm:grid-cols-3 lg:w-auto">
               <select id="donations-status" aria-label="Filtrar donaciones por estado" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700">

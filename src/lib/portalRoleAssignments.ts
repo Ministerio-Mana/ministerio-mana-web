@@ -5,9 +5,10 @@ export type PortalRoleAssignment = {
   status?: string | null;
   scope_type?: string | null;
   scope_id?: string | null;
+  scope_key?: string | null;
 };
 
-const SUPPORTED_SECONDARY_ROLES = new Set(['intercessor']);
+const SUPPORTED_SECONDARY_ROLES = new Set(['finance', 'intercessor']);
 
 function isMissingRoleAssignmentsTable(error: any): boolean {
   const code = String(error?.code || '');
@@ -22,11 +23,21 @@ function isMissingRoleAssignmentsTable(error: any): boolean {
 export async function listActivePortalRoleAssignments(userId: string): Promise<PortalRoleAssignment[]> {
   if (!supabaseAdmin || !userId) return [];
 
-  const { data, error } = await supabaseAdmin
+  let { data, error } = await supabaseAdmin
     .from('portal_role_assignments')
-    .select('role, status, scope_type, scope_id')
+    .select('role, status, scope_type, scope_id, scope_key')
     .eq('user_id', userId)
     .eq('status', 'active');
+
+  if (error?.code === '42703') {
+    const fallback = await supabaseAdmin
+      .from('portal_role_assignments')
+      .select('role, status, scope_type, scope_id')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+    data = fallback.data as any;
+    error = fallback.error;
+  }
 
   if (error) {
     if (isMissingRoleAssignmentsTable(error)) return [];

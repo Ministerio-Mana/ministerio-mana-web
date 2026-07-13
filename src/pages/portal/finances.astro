@@ -14,9 +14,14 @@ import Sidebar from '@components/portal/Sidebar.astro';
          </div>
 
          <div id="finances-secure-content" class="hidden max-w-6xl mx-auto space-y-8">
-            <div>
-               <h1 class="text-3xl font-display font-bold text-[#293C74]">Finanzas</h1>
-               <p class="text-slate-600">Resumen financiero de tu iglesia/sede.</p>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+               <div>
+                  <h1 class="text-3xl font-display font-bold text-[#293C74]">Finanzas</h1>
+                  <p class="text-slate-600">Resumen de los movimientos autorizados para tu alcance.</p>
+               </div>
+               <p id="finances-scope-label" class="w-fit rounded-full border border-[#293C74]/15 bg-white px-4 py-2 text-xs font-bold text-[#293C74]">
+                  Verificando alcance…
+               </p>
             </div>
 
             <!-- Stats Grid -->

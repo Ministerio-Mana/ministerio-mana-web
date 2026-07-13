@@ -5,6 +5,7 @@ import { readPasswordSession } from '@lib/portalPasswordSession';
 import { getCreatableRoles, getRoleCapabilities, getRoleScope, mergePortalCapabilities } from '@lib/portalRbac';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getSupportedSecondaryRoles, listActivePortalRoleAssignments } from '@lib/portalRoleAssignments';
+import { resolveFinanceScopeAccess, serializeFinanceScopeAccess } from '@lib/financeScope';
 
 export const prerender = false;
 
@@ -75,6 +76,9 @@ export const GET: APIRoute = async ({ request }) => {
         allowed_region_ids: [],
         allowed_church_id: null,
       },
+      finance_scope_context: serializeFinanceScopeAccess(resolveFinanceScopeAccess({
+        primaryRole: 'superadmin',
+      })),
     }), {
       status: 200,
       headers: {
@@ -98,13 +102,17 @@ export const GET: APIRoute = async ({ request }) => {
 
   const effectiveRole = resolveEffectivePortalRole(profile.role, memberships);
   const effectiveChurchId = resolveEffectiveChurchId(profile.church_id || profile.portal_church_id || null, memberships);
-  const secondaryRoles = getSupportedSecondaryRoles(roleAssignments);
+  const financeScope = resolveFinanceScopeAccess({
+    primaryRole: effectiveRole,
+    assignments: roleAssignments,
+  });
+  const secondaryRoles = getSupportedSecondaryRoles(roleAssignments)
+    .filter((role) => role !== 'finance' || financeScope.allowed);
   const scope = getRoleScope(effectiveRole);
   const permissions = secondaryRoles.length
     ? mergePortalCapabilities([effectiveRole, ...secondaryRoles])
     : getRoleCapabilities(effectiveRole);
   const allowedRegionIds = await resolveAllowedRegionIds(user.id, effectiveRole, profile.region_id || null);
-
   return new Response(JSON.stringify({
     ok: true,
     profile: {
@@ -123,6 +131,7 @@ export const GET: APIRoute = async ({ request }) => {
       allowed_region_ids: allowedRegionIds,
       allowed_church_id: effectiveChurchId,
     },
+    finance_scope_context: serializeFinanceScopeAccess(financeScope),
   }), {
     status: 200,
     headers: {

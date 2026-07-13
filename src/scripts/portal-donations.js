@@ -14,6 +14,7 @@ const loadMoreBtn = document.getElementById('donations-load-more');
 const statCountEl = document.getElementById('donations-stat-count');
 const statCopEl = document.getElementById('donations-stat-cop');
 const statUsdEl = document.getElementById('donations-stat-usd');
+const scopeLabelEl = document.getElementById('donations-scope-label');
 let currentAuthHeaders = {};
 let paginationState = {
     page: 1,
@@ -138,6 +139,20 @@ function resetLoadedTotals() {
     loadedPageTotalsByCurrency = {};
 }
 
+function scopeLabel(scope = {}) {
+    if (scope.is_global) return 'Alcance global';
+    const countries = Array.isArray(scope.country_keys) ? scope.country_keys : [];
+    const regions = Array.isArray(scope.region_ids) ? scope.region_ids : [];
+    const churches = Array.isArray(scope.church_ids) ? scope.church_ids : [];
+    if (countries.length) {
+        const names = countries.map((value) => String(value).replace(/-/g, ' ')).join(', ');
+        return `Alcance nacional · ${names}`;
+    }
+    if (regions.length) return `Alcance regional · ${regions.length} ${regions.length === 1 ? 'región' : 'regiones'}`;
+    if (churches.length) return `Alcance local · ${churches.length} ${churches.length === 1 ? 'iglesia' : 'iglesias'}`;
+    return 'Sin alcance financiero';
+}
+
 function accumulateLoadedTotals(totals = {}) {
     Object.entries(totals || {}).forEach(([currency, amount]) => {
         const key = String(currency || 'COP').toUpperCase();
@@ -244,6 +259,7 @@ async function loadDonations({ append = false } = {}) {
             throw new Error(data.error || 'No se pudieron cargar las donaciones');
         }
 
+        if (scopeLabelEl) scopeLabelEl.textContent = scopeLabel(data.financeScope);
         renderDonations(data.donations || [], data.stats || {}, data.pagination || {}, { append });
     } catch (error) {
         console.error('[portal-donations] error', error);

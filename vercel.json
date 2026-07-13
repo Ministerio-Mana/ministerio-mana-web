@@ -20,6 +20,10 @@
     {
       "path": "/api/wompi/reconcile-pending",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/events/payment-evidence/retention/run",
+      "schedule": "20 8 * * *"
     }
   ]
 }

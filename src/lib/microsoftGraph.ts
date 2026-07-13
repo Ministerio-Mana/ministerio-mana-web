@@ -354,7 +354,8 @@ export async function uploadMicrosoftEventDocument(params: {
 
 export async function deleteMicrosoftEventDocument(driveId: string, itemId: string): Promise<void> {
   const config = getMicrosoftGraphConfig();
-  if (!config || !isMicrosoftEventsWriteEnabled()) return;
+  if (!isMicrosoftEventsWriteEnabled()) return;
+  if (!config) throw new Error('La integración de Microsoft no está configurada por completo.');
   const drive = await resolveEventsDrive(config);
   if (drive.id !== driveId) throw new Error('La biblioteca solicitada no está autorizada.');
   const response = await graphFetch(

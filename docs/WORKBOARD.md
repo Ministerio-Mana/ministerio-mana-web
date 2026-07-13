@@ -17,12 +17,6 @@
   - Scope: pagos de Eventos, precios COP/USD y operación consolidada
   - Description: Permitir Wompi COP para Colombia y Stripe USD para otros países dentro del mismo evento global, sin mezclar monedas.
 
-- MANA-013 Finanzas por alcance
-  - Owner: Equipo web
-  - Branch: `main`
-  - Scope: RBAC financiero local, regional, nacional y global; reportes y conciliación
-  - Description: Separar visibilidad y operación financiera por iglesia, región y país. Wompi pertenece siempre al recaudo nacional; Stripe cubre recaudos internacionales/globales y campañas habilitadas.
-
 - MANA-004 Agregar más data attributes para animaciones
   - Owner: TBD
   - Scope: `src/components/home/**`
@@ -61,11 +55,19 @@
 ---
 
 ## In Progress
+- MANA-013 Finanzas por alcance
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: RBAC financiero local, regional, nacional y global; reportes y conciliación
+  - Description: Separar visibilidad y operación financiera por iglesia, región y país. Wompi pertenece siempre al recaudo nacional; Stripe cubre recaudos internacionales/globales y campañas habilitadas.
+  - Status: Contrato SQL, clasificación automática, filtros de API y matriz de permisos listos. Requiere ejecutar `docs/sql/finance_scopes_hierarchy.sql` y asignar el primer equipo financiero por correo.
+
 - MANA-014 Comprobantes privados para pagos manuales de Eventos
   - Owner: Equipo web
   - Branch: `main`
   - Scope: carga, revisión, auditoría y retención controlada de comprobantes en SharePoint
   - Description: El asistente adjunta un comprobante limitado; el pastor autorizado lo revisa desde la operación. La retención queda sin vencimiento automático hasta que Contabilidad apruebe la política aplicable.
+  - Status: Carga privada, optimización, nombres por asistente, revisión y limpieza auditada listas. La tarea diaria solo elimina archivos con `retention_until` aprobado; `NULL` conserva el comprobante.
 
 - MANA-010 Operación de inscripciones de Eventos
   - Owner: Equipo web
