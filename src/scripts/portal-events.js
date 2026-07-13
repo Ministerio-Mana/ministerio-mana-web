@@ -949,7 +949,7 @@ function renderEvents() {
         const month = Number.isNaN(start.getTime()) ? 'EVENTO' : new Intl.DateTimeFormat('es-CO', { month: 'short' }).format(start).replace('.', '').toUpperCase();
         const day = Number.isNaN(start.getTime()) ? '—' : String(start.getDate());
         const media = bannerUrl
-            ? `<img src="${escapeAttr(bannerUrl)}" alt="" loading="lazy" decoding="async" class="h-24 w-full object-cover sm:h-28 sm:w-36" />`
+            ? `<img src="${escapeAttr(bannerUrl)}" alt="" loading="lazy" decoding="async" class="h-24 w-full object-cover sm:h-28 sm:w-48" />`
             : `<div class="flex h-24 w-full flex-col items-center justify-center bg-[#293C74] text-white sm:h-28 sm:w-28"><span class="text-xs font-bold text-white">${escapeHtml(month)}</span><strong class="text-3xl leading-none text-white">${escapeHtml(day)}</strong></div>`;
         const description = event.description ? `<p class="mt-1 line-clamp-1 text-sm text-slate-500">${escapeHtml(event.description)}</p>` : '';
         const editAction = canEditEvent(event)

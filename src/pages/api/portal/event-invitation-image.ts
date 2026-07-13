@@ -80,19 +80,20 @@ async function prepareImage(file: File): Promise<Buffer> {
   if (!metadata.format || !IMAGE_FORMATS.has(metadata.format) || !metadata.width || !metadata.height) {
     throw new Error('El contenido del archivo no es una imagen permitida.');
   }
-  if (metadata.width < 1200 || metadata.height < 675) {
-    throw new Error('La invitación debe medir al menos 1200 × 675 píxeles.');
-  }
-  const ratio = metadata.width / metadata.height;
-  if (Math.abs(ratio - (16 / 9)) > 0.025) {
-    throw new Error('La invitación debe ser horizontal 16:9, por ejemplo 1600 × 900 píxeles.');
+  if (metadata.width < 480 || metadata.height < 480) {
+    throw new Error('La imagen es demasiado pequeña. Usa una de al menos 480 × 480 píxeles.');
   }
 
-  const output = await image
+  const optimize = (quality: number) => image.clone()
     .rotate()
-    .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: 'fill', withoutEnlargement: false })
-    .webp({ quality: 80, effort: 5 })
+    .resize(TARGET_WIDTH, TARGET_HEIGHT, { fit: 'cover', position: 'attention', withoutEnlargement: false })
+    .webp({ quality, effort: 5 })
     .toBuffer();
+  let output = await optimize(82);
+  for (const quality of [74, 66, 58]) {
+    if (output.byteLength <= MAX_OUTPUT_BYTES) break;
+    output = await optimize(quality);
+  }
   if (output.byteLength > MAX_OUTPUT_BYTES) {
     throw new Error('La imagen optimizada supera 750 KB. Usa una imagen con menos detalle.');
   }
