@@ -20,6 +20,10 @@ import {
     normalizeAttendanceMode as normalizeEventAttendanceMode,
     normalizeEventTimeZone as normalizeContractTimeZone,
 } from '@lib/eventContract.js';
+import {
+    getRequiredEventProviderCurrency,
+    normalizeEventOnlinePaymentProvider,
+} from '@lib/eventPaymentContract.js';
 
 const eventsGate = document.getElementById('events-gate');
 const eventsSecureContent = document.getElementById('events-secure-content');
@@ -52,6 +56,7 @@ const eventFinancePending = document.getElementById('event-finance-pending');
 const eventFinanceSettings = document.getElementById('event-finance-settings');
 const eventPricingModel = document.getElementById('event-pricing-model');
 const eventPriceInput = document.getElementById('event-price');
+const eventCurrencyInput = document.getElementById('event-currency');
 const eventOnlineProvider = document.getElementById('event-online-provider');
 const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
 const eventRegistrationMode = document.getElementById('event-registration-mode');
@@ -74,6 +79,9 @@ const eventManualPaymentQrWrapper = document.getElementById('event-manual-paymen
 const eventManualPaymentQr = document.getElementById('event-manual-payment-qr');
 const eventManualPaymentQrPath = document.getElementById('event-manual-payment-qr-path');
 const eventManualPaymentQrPreview = document.getElementById('event-manual-payment-qr-preview');
+const eventInvitationImage = document.getElementById('event-invitation-image');
+const eventInvitationImageDropzone = document.getElementById('event-invitation-image-dropzone');
+const eventInvitationImageStatus = document.getElementById('event-invitation-image-status');
 const previewImage = document.getElementById('event-preview-image');
 const previewDate = document.getElementById('event-preview-date');
 const previewScope = document.getElementById('event-preview-scope');
@@ -136,6 +144,8 @@ let eventPermissionValidated = false;
 let eventPlatformReady = false;
 let eventFinanceReady = false;
 let manualQrPreviewObjectUrl = '';
+let invitationImagePreviewObjectUrl = '';
+let pendingInvitationImageFile = null;
 let eventSlugManuallyEdited = false;
 const eventDatePickers = new Map();
 
@@ -263,8 +273,18 @@ function initEventDatePickers() {
             onReady: (_dates, _value, instance) => {
                 instance.calendarContainer.classList.add('event-calendar');
                 if (instance._input) instance._input.placeholder = input.placeholder || 'Selecciona fecha y hora';
+                const confirmButton = document.createElement('button');
+                confirmButton.type = 'button';
+                confirmButton.className = 'event-calendar-confirm';
+                confirmButton.textContent = 'Listo';
+                confirmButton.addEventListener('click', () => {
+                    instance.close();
+                    updateEventPreview();
+                });
+                instance.calendarContainer.append(confirmButton);
             },
             onChange: () => updateEventPreview(),
+            onClose: () => updateEventPreview(),
         });
         eventDatePickers.set(name, picker);
     });
@@ -296,15 +316,36 @@ function parseMoneyInput(value, currency = 'COP') {
     return Number.isFinite(amount) ? amount : NaN;
 }
 
-function formatMoneyInput() {
+function setMoneyCaretFromDigits(input, digitsBeforeCaret) {
+    if (!input || !Number.isFinite(digitsBeforeCaret)) return;
+    if (digitsBeforeCaret <= 0) {
+        input.setSelectionRange(0, 0);
+        return;
+    }
+    let digitsSeen = 0;
+    let position = input.value.length;
+    for (let index = 0; index < input.value.length; index += 1) {
+        if (/\d/.test(input.value[index])) digitsSeen += 1;
+        if (digitsSeen >= digitsBeforeCaret) {
+            position = index + 1;
+            break;
+        }
+    }
+    input.setSelectionRange(position, position);
+}
+
+function formatMoneyInput({ preserveCaret = false } = {}) {
     if (!eventPriceInput) return;
     const currency = String(eventForm?.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
+    const selectionStart = eventPriceInput.selectionStart ?? eventPriceInput.value.length;
+    const digitsBeforeCaret = eventPriceInput.value.slice(0, selectionStart).replace(/\D/g, '').length;
     const amount = parseMoneyInput(eventPriceInput.value, currency);
     if (!Number.isFinite(amount)) return;
     eventPriceInput.value = new Intl.NumberFormat('es-CO', {
         minimumFractionDigits: currency === 'COP' ? 0 : 2,
         maximumFractionDigits: currency === 'COP' ? 0 : 2,
     }).format(amount);
+    if (preserveCaret && currency === 'COP') setMoneyCaretFromDigits(eventPriceInput, digitsBeforeCaret);
 }
 
 function syncRegistrationFields() {
@@ -350,8 +391,14 @@ function syncFinanceFields() {
     const isFree = eventPricingModel?.value === 'FREE';
     const usesInternalRegistration = eventRegistrationMode?.value === 'INTERNAL';
     if (eventPricingModel) eventPricingModel.disabled = !usesInternalRegistration;
-    const currencyField = eventForm?.querySelector('[name="currency"]');
-    if (currencyField) currencyField.disabled = !usesInternalRegistration || isFree;
+    const currencyField = eventCurrencyInput;
+    const provider = normalizeEventOnlinePaymentProvider(eventOnlineProvider?.value);
+    const requiredProviderCurrency = getRequiredEventProviderCurrency(provider);
+    if (currencyField && requiredProviderCurrency) currencyField.value = requiredProviderCurrency;
+    if (currencyField) {
+        currencyField.disabled = !usesInternalRegistration || isFree || Boolean(requiredProviderCurrency);
+        currencyField.classList.toggle('bg-slate-100', !usesInternalRegistration || isFree || Boolean(requiredProviderCurrency));
+    }
     const approvalField = eventForm?.querySelector('[name="registration_requires_approval"]');
     if (approvalField) approvalField.disabled = !usesInternalRegistration;
     if (eventFinanceRegistrationHint) {
@@ -369,20 +416,26 @@ function syncFinanceFields() {
         eventOnlineProviderWrapper.hidden = hideProvider;
         eventOnlineProviderWrapper.style.display = hideProvider ? 'none' : '';
     }
+    formatMoneyInput();
     syncManualPaymentFields();
 }
 
 function syncManualPaymentFields() {
+    const onlineProvider = normalizeEventOnlinePaymentProvider(eventOnlineProvider?.value);
+    const hasOnlineProvider = onlineProvider !== 'NONE';
     const available = eventFinanceReady
         && eventPricingModel?.value !== 'FREE'
-        && eventRegistrationMode?.value === 'INTERNAL';
+        && eventRegistrationMode?.value === 'INTERNAL'
+        && !hasOnlineProvider;
     if (eventManualPaymentEnabled) {
         if (!available) eventManualPaymentEnabled.checked = false;
         eventManualPaymentEnabled.disabled = !available;
     }
     eventManualPaymentPanel?.classList.toggle('opacity-60', !available);
     if (eventManualPaymentHint) {
-        eventManualPaymentHint.textContent = available
+        eventManualPaymentHint.textContent = hasOnlineProvider
+            ? `${onlineProvider === 'WOMPI' ? 'Wompi' : 'Stripe'} procesa el cobro automático; el pago manual queda desactivado.`
+            : available
             ? 'Actívalo para recibir un QR, transferencia, enlace externo o efectivo y revisar el comprobante.'
             : 'Selecciona “Inscripción en Maná” y un precio distinto de gratuito para habilitarlo.';
     }
@@ -445,16 +498,7 @@ async function loadEventPaymentOption(eventData) {
     } catch (error) {
         showFormError(error?.message || 'No se pudo cargar el método de pago.');
     } finally {
-        const canUseOnlineProvider = eventFinanceReady
-            && eventPricingModel?.value !== 'FREE'
-            && eventRegistrationMode?.value === 'INTERNAL';
-        if (!canUseOnlineProvider) eventOnlineProvider.value = 'NONE';
-        eventOnlineProvider.disabled = !canUseOnlineProvider;
-        if (eventOnlineProviderWrapper) {
-            eventOnlineProviderWrapper.hidden = !canUseOnlineProvider;
-            eventOnlineProviderWrapper.style.display = canUseOnlineProvider ? '' : 'none';
-        }
-        syncManualPaymentFields();
+        syncFinanceFields();
     }
 }
 
@@ -1081,7 +1125,7 @@ function updateEventPreview() {
     const scope = value('scope').toUpperCase() || 'LOCAL';
     const status = value('status').toUpperCase() || 'DRAFT';
     const start = eventDatePickers.get('start_date')?.selectedDates?.[0] || null;
-    const imageUrl = sanitizeUrl(value('banner_url'));
+    const imageUrl = invitationImagePreviewObjectUrl || sanitizeUrl(value('banner_url'));
     const location = [value('location_name'), value('city'), value('country')].filter(Boolean).join(' · ');
     const currency = value('currency').toUpperCase() || 'COP';
     const price = parseMoneyInput(value('price'), currency);
@@ -1113,8 +1157,55 @@ function updateEventPreview() {
     syncRegistrationFields();
 }
 
+function setInvitationImageStatus(message = '', tone = 'info') {
+    if (!eventInvitationImageStatus) return;
+    eventInvitationImageStatus.textContent = message;
+    eventInvitationImageStatus.className = message
+        ? `mt-1.5 text-xs font-medium ${tone === 'error' ? 'text-red-700' : tone === 'success' ? 'text-emerald-700' : 'text-slate-600'}`
+        : 'mt-1.5 hidden text-xs font-medium';
+}
+
+function clearPendingInvitationImage() {
+    pendingInvitationImageFile = null;
+    if (invitationImagePreviewObjectUrl) URL.revokeObjectURL(invitationImagePreviewObjectUrl);
+    invitationImagePreviewObjectUrl = '';
+    if (eventInvitationImage) eventInvitationImage.value = '';
+    setInvitationImageStatus();
+}
+
+function setPendingInvitationImage(file) {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size <= 0 || file.size > 4 * 1024 * 1024) {
+        pendingInvitationImageFile = null;
+        setInvitationImageStatus('Usa una imagen JPG, PNG o WebP de máximo 4 MB.', 'error');
+        return;
+    }
+    if (invitationImagePreviewObjectUrl) URL.revokeObjectURL(invitationImagePreviewObjectUrl);
+    pendingInvitationImageFile = file;
+    invitationImagePreviewObjectUrl = URL.createObjectURL(file);
+    setInvitationImageStatus(`${file.name} lista para guardarse en SharePoint.`, 'success');
+    updateEventPreview();
+}
+
+async function uploadInvitationImage(eventId) {
+    if (!pendingInvitationImageFile) return null;
+    const formData = new FormData();
+    formData.append('event_id', eventId);
+    formData.append('file', pendingInvitationImageFile);
+    const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/event-invitation-image', {
+        method: 'POST',
+        body: formData,
+    }, REQUEST_TIMEOUT_MS * 2, 'La carga de la imagen de invitación');
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar la imagen de invitación.');
+    const bannerField = eventForm?.querySelector('[name="banner_url"]');
+    if (bannerField) bannerField.value = String(data.banner_url || '');
+    clearPendingInvitationImage();
+    return String(data.banner_url || '');
+}
+
 function openEventModal(mode, eventData = null) {
     if (!eventModal || !eventForm) return;
+    clearPendingInvitationImage();
     eventForm.reset();
     eventDatePickers.forEach((picker) => picker.clear(false));
     eventSlugManuallyEdited = Boolean(eventData?.slug);
@@ -1195,6 +1286,7 @@ function closeEventModal() {
     eventModal.classList.remove('flex');
     document.body.style.overflow = '';
     showFormError();
+    clearPendingInvitationImage();
 }
 
 async function changeEventStatus(eventId, status) {
@@ -1290,21 +1382,36 @@ eventPricingModel?.addEventListener('change', () => {
     syncFinanceFields();
     updateEventPreview();
 });
-eventForm?.querySelector('[name="currency"]')?.addEventListener('change', () => {
-    if (eventOnlineProvider?.value === 'WOMPI' && eventForm.querySelector('[name="currency"]')?.value !== 'COP') {
-        eventOnlineProvider.value = 'NONE';
-    }
+eventOnlineProvider?.addEventListener('change', () => {
+    syncFinanceFields();
+    updateEventPreview();
+});
+eventCurrencyInput?.addEventListener('change', () => {
     formatMoneyInput();
     updateEventPreview();
 });
-eventPriceInput?.addEventListener('focus', () => {
-    const currency = String(eventForm?.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
-    const amount = parseMoneyInput(eventPriceInput.value, currency);
-    if (Number.isFinite(amount)) eventPriceInput.value = String(amount);
-});
+eventPriceInput?.addEventListener('input', () => formatMoneyInput({ preserveCaret: true }));
 eventPriceInput?.addEventListener('blur', () => {
     formatMoneyInput();
     updateEventPreview();
+});
+eventInvitationImage?.addEventListener('change', () => setPendingInvitationImage(eventInvitationImage.files?.[0]));
+eventInvitationImageDropzone?.addEventListener('click', () => eventInvitationImage?.click());
+eventInvitationImageDropzone?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        eventInvitationImage?.click();
+    }
+});
+eventInvitationImageDropzone?.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    eventInvitationImageDropzone.classList.add('is-dragging');
+});
+eventInvitationImageDropzone?.addEventListener('dragleave', () => eventInvitationImageDropzone.classList.remove('is-dragging'));
+eventInvitationImageDropzone?.addEventListener('drop', (event) => {
+    event.preventDefault();
+    eventInvitationImageDropzone.classList.remove('is-dragging');
+    setPendingInvitationImage(event.dataTransfer?.files?.[0]);
 });
 eventForm?.addEventListener('input', updateEventPreview);
 eventForm?.addEventListener('change', updateEventPreview);
@@ -1439,6 +1546,21 @@ eventForm?.addEventListener('submit', async (event) => {
             eventsCache = eventsCache.map((item) => item.id === eventId ? savedEvent : item);
         } else {
             eventsCache = [...eventsCache, savedEvent];
+        }
+        if (savedEvent?.id && pendingInvitationImageFile) {
+            try {
+                const bannerUrl = await uploadInvitationImage(savedEvent.id);
+                if (bannerUrl) {
+                    savedEvent.banner_url = bannerUrl;
+                    eventsCache = eventsCache.map((item) => item.id === savedEvent.id ? savedEvent : item);
+                }
+            } catch (imageError) {
+                if (eventIdInput) eventIdInput.value = savedEvent.id;
+                if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';
+                renderEvents();
+                showFormError(`El evento quedó guardado, pero ${imageError?.message || 'no se pudo cargar la invitación.'}`);
+                return;
+            }
         }
         if (eventFinanceReady && savedEvent?.id && eventOnlineProvider) {
             try {

@@ -171,9 +171,18 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </label>
           </div>
 
-          <label class="event-field">Imagen de invitación
-            <input type="url" name="banner_url" maxlength="500" placeholder="https://..." />
-          </label>
+          <div class="event-field">
+            <span>Imagen de invitación</span>
+            <input type="hidden" name="banner_url" />
+            <div id="event-invitation-image-dropzone" class="event-invitation-image-dropzone mt-1" tabindex="0" role="button" aria-describedby="event-invitation-image-help event-invitation-image-status">
+              <input id="event-invitation-image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" />
+              <strong>Arrastra una imagen aquí o selecciónala</strong>
+              <span>JPG, PNG o WebP · horizontal 16:9 · mínimo 1200 × 675</span>
+              <span>Se optimiza y guarda en SharePoint como 1600 × 900 WebP (máx. 750 KB).</span>
+            </div>
+            <p id="event-invitation-image-help" class="mt-1.5 text-xs text-slate-500">Archivo original máximo: 4 MB. Para evitar recortes, usa exactamente 1600 × 900.</p>
+            <p id="event-invitation-image-status" class="mt-1.5 hidden text-xs font-medium" role="status" aria-live="polite"></p>
+          </div>
 
           <div id="event-platform-pending" class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
             <p class="text-sm font-bold text-slate-700">Configuración pública avanzada pendiente de activar</p>
@@ -549,6 +558,57 @@ import Sidebar from '@components/portal/Sidebar.astro';
     :global(.event-calendar .flatpickr-time .flatpickr-time-separator) {
       color: #172033;
       font-weight: 700;
+    }
+
+    :global(.event-calendar-confirm) {
+      display: block;
+      width: calc(100% - 8px);
+      min-height: 34px;
+      margin: 6px 4px 2px;
+      border: 0;
+      border-radius: 4px;
+      background: #293c74;
+      color: #fff;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    :global(.event-calendar-confirm:hover) {
+      background: #20315f;
+    }
+
+    .event-invitation-image-dropzone {
+      display: grid;
+      min-height: 116px;
+      place-content: center;
+      gap: 0.3rem;
+      border: 1px dashed #94a3b8;
+      border-radius: 6px;
+      background: #f8fafc;
+      padding: 1rem;
+      color: #475569;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .event-invitation-image-dropzone strong {
+      color: #293c74;
+      font-size: 0.875rem;
+    }
+
+    .event-invitation-image-dropzone span {
+      font-size: 0.75rem;
+      line-height: 1.25rem;
+    }
+
+    .event-invitation-image-dropzone:hover,
+    .event-invitation-image-dropzone:focus,
+    .event-invitation-image-dropzone.is-dragging {
+      border-color: #293c74;
+      background: #eef3ff;
+      outline: none;
     }
 
     :global(.event-action) {

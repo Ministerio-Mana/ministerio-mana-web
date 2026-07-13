@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { isValidEventProviderCurrency } from '@lib/eventPaymentContract.js';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { canActorOperateEventPayments, getEventAccessContext } from '@lib/eventAccess';
 import { enforceRateLimit } from '@lib/rateLimit';
@@ -97,6 +98,20 @@ export const POST: APIRoute = async ({ request }) => {
   }
   if (enabled && String(event.pricing_model || '').toUpperCase() === 'FREE') {
     return json({ ok: false, error: 'Un evento gratuito no necesita pago manual.' }, 409);
+  }
+  if (enabled) {
+    const { data: activeOnline, error: activeOnlineError } = await supabaseAdmin
+      .from('event_payment_options')
+      .select('id,provider')
+      .eq('event_id', event.id)
+      .eq('kind', 'ONLINE')
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    if (activeOnlineError) return json({ ok: false, error: 'No se pudo consultar el cobro automático.' }, 500);
+    if (activeOnline?.id) {
+      return json({ ok: false, error: `${activeOnline.provider === 'WOMPI' ? 'Wompi' : 'Stripe'} ya procesa el cobro automático; desactívalo antes de habilitar pago manual.` }, 409);
+    }
   }
 
   const now = new Date().toISOString();
@@ -228,11 +243,13 @@ export const PUT: APIRoute = async ({ request }) => {
   if (provider !== 'NONE' && String(event.pricing_model || 'FREE').toUpperCase() === 'FREE') {
     return json({ ok: false, error: 'Un evento gratuito no puede activar cobro en línea.' }, 409);
   }
-  if (provider === 'WOMPI' && currency !== 'COP') {
-    return json({ ok: false, error: 'Wompi solo puede activarse para eventos en COP.' }, 400);
-  }
-  if (provider === 'STRIPE' && !['USD', 'EUR', 'COP'].includes(currency)) {
-    return json({ ok: false, error: 'Stripe no admite la moneda configurada.' }, 400);
+  if (!isValidEventProviderCurrency(provider, currency)) {
+    return json({
+      ok: false,
+      error: provider === 'WOMPI'
+        ? 'Wompi solo puede activarse para eventos en COP.'
+        : 'Stripe solo puede activarse para eventos en USD.',
+    }, 400);
   }
 
   const now = new Date().toISOString();

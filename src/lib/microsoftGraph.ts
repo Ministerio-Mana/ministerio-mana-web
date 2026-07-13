@@ -354,3 +354,33 @@ export async function deleteMicrosoftEventDocument(driveId: string, itemId: stri
   );
   if (!response.ok && response.status !== 404) throw new Error(await readSafeError(response));
 }
+
+export async function downloadMicrosoftEventDocument(params: {
+  driveId: string;
+  itemId: string;
+}): Promise<Uint8Array> {
+  const config = getMicrosoftGraphConfig();
+  if (!config || !isMicrosoftGraphEnabled()) {
+    throw new Error('La integración de Microsoft todavía no está configurada.');
+  }
+  const drive = await resolveEventsDrive(config);
+  if (drive.id !== params.driveId) throw new Error('La biblioteca solicitada no está autorizada.');
+
+  const itemResponse = await graphFetch(
+    config,
+    `/drives/${encodeURIComponent(drive.id)}/items/${encodeURIComponent(params.itemId)}?$select=id,file,@microsoft.graph.downloadUrl`,
+    { method: 'GET' },
+  );
+  if (!itemResponse.ok) throw new Error(await readSafeError(itemResponse));
+  const item = await itemResponse.json() as Record<string, unknown>;
+  const downloadUrl = String(item['@microsoft.graph.downloadUrl'] || '');
+  if (!downloadUrl.startsWith('https://')) throw new Error('Microsoft no devolvió un enlace de descarga válido.');
+
+  const response = await fetch(downloadUrl, {
+    method: 'GET',
+    redirect: 'error',
+    signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`Microsoft no pudo descargar la imagen (${response.status}).`);
+  return new Uint8Array(await response.arrayBuffer());
+}
