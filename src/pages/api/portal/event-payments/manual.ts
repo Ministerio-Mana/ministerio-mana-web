@@ -53,7 +53,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const allowedStatuses = new Set(['UNDER_REVIEW', 'CONFIRMED', 'CANCELLED', 'EXPIRED', 'PENDING_PAYMENT']);
   let registrationsQuery = supabaseAdmin
     .from('event_registrations')
-    .select('id, contact_name, contact_email, contact_phone, quantity, total_amount, currency, status, expires_at, created_at, confirmed_at', { count: 'exact' })
+    .select('id, contact_name, contact_email, contact_phone, quantity, total_amount, currency, status, expires_at, created_at, confirmed_at, form_responses', { count: 'exact' })
     .eq('event_id', event.id);
   if (allowedStatuses.has(statusFilter)) registrationsQuery = registrationsQuery.eq('status', statusFilter);
   registrationsQuery = registrationsQuery

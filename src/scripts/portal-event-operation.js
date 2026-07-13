@@ -105,6 +105,24 @@ function formatFileSize(bytes) {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getRegistrationExtraDetails(registration) {
+  const responses = registration?.form_responses && typeof registration.form_responses === 'object'
+    ? registration.form_responses
+    : {};
+  const details = [];
+  if (responses.church) details.push({ label: 'Iglesia o congregación', value: responses.church });
+  if (responses.whatsapp_updates === true) details.push({ label: 'Recordatorios por WhatsApp', value: 'Autorizados' });
+  const customFields = responses.custom_fields && typeof responses.custom_fields === 'object'
+    ? responses.custom_fields
+    : {};
+  Object.values(customFields).forEach((field) => {
+    const label = String(field?.label || '').trim();
+    const value = Array.isArray(field?.value) ? field.value.join(' · ') : field?.value;
+    if (label && value !== null && value !== undefined && String(value).trim()) details.push({ label, value });
+  });
+  return details.slice(0, 12);
+}
+
 function safeHttpsUrl(value) {
   try {
     const url = new URL(String(value || ''));
@@ -330,6 +348,11 @@ function renderRegistrations() {
     const attendance = status === 'CONFIRMED'
       ? `<span class="text-sm font-semibold text-slate-600">Asistencia: ${checkedIn} de ${quantity}</span>`
       : '';
+    const extraDetails = getRegistrationExtraDetails(registration);
+    const additionalInfo = extraDetails.length ? `
+      <dl class="grid gap-2 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2">
+        ${extraDetails.map((detail) => `<div><dt class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">${escapeHtml(detail.label)}</dt><dd class="mt-1 break-words text-slate-700">${escapeHtml(detail.value)}</dd></div>`).join('')}
+      </dl>` : '';
 
     return `
       <article class="portal-panel p-4 sm:p-5" data-registration-row="${escapeAttr(registration.id)}">
@@ -345,6 +368,7 @@ function renderRegistrations() {
             </div>
             <strong class="text-base text-[#293C74]">${escapeHtml(formatAmount(registration.total_amount, registration.currency))}</strong>
           </div>
+          ${additionalInfo}
           ${paymentInfo}
           <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
             ${attendance}
