@@ -15,10 +15,10 @@ import targetIcon from 'lucide-static/icons/target.svg?raw';
 import usersIcon from 'lucide-static/icons/users-round.svg?raw';
 import { feature } from 'topojson-client';
 import worldLand from 'world-atlas/land-110m.json';
+import '../../styles/story-motion.css';
 
 const assetBase = '/assets/home-ministerio';
 const bibleLinesTeal = `${assetBase}/bible-lines-teal.svg`;
-const bibleLinesWhite = `${assetBase}/bible-lines-white.svg`;
 const brandMark = `${assetBase}/ministerio-mana-mark.svg`;
 const brandLogoWhite = `${assetBase}/mana-logo-white.svg`;
 const devotionalLogo = `${assetBase}/devocional-logo.svg`;
@@ -157,7 +157,12 @@ const iconSvg = {
 };
 ---
 
-<section class="mana-story-code" aria-label="Borrador del nuevo home de Ministerio Maná">
+<section
+  class="mana-story-code"
+  aria-label="Borrador del nuevo home de Ministerio Maná"
+  data-mana-story-deck
+  data-story-preset="cinematic"
+>
   <section class="mana-scene mana-scene--hero" data-mana-scene>
     <div class="mana-slide mana-slide--dark">
       <div class="mana-slide__art" data-mana-visual aria-hidden="true">
@@ -178,7 +183,7 @@ const iconSvg = {
           </p>
           <nav class="mana-actions" data-mana-ui aria-label="Acciones del borrador">
             <button type="button" class="mana-btn mana-btn--fill" data-mana-next>Comenzar historia</button>
-            <a href="/eventos/cumbre-mundial-2026/" class="mana-btn mana-btn--line">Volver a Cumbre</a>
+            <a href="/iglesias/" class="mana-btn mana-btn--line">Conocer iglesias</a>
           </nav>
         </div>
       </div>
@@ -284,13 +289,13 @@ const iconSvg = {
             <circle class="mana-map-city-dot mana-map-city-dot--uk" cx={londonPoint.x} cy={londonPoint.y} r="7" />
             <circle class="mana-map-city-dot mana-map-city-dot--co" cx={medellinPoint.x} cy={medellinPoint.y} r="7" />
             <foreignObject class="mana-map-flag-object mana-map-flag-object--uk" x={londonLabelPoint.x.toFixed(1)} y={labelY(londonLabelPoint)} width={historyLabelSize.width} height={historyLabelSize.height} data-mana-pin>
-              <div xmlns="http://www.w3.org/1999/xhtml" class="mana-flag-pin mana-flag-pin--uk mana-flag-pin--svg">
+              <div class="mana-flag-pin mana-flag-pin--uk mana-flag-pin--svg">
                 <span class="mana-flag mana-flag--uk" aria-hidden="true"></span>
                 <strong>LONDRES</strong>
               </div>
             </foreignObject>
             <foreignObject class="mana-map-flag-object mana-map-flag-object--co" x={medellinLabelPoint.x.toFixed(1)} y={labelY(medellinLabelPoint)} width={historyLabelSize.width} height={historyLabelSize.height} data-mana-pin>
-              <div xmlns="http://www.w3.org/1999/xhtml" class="mana-flag-pin mana-flag-pin--co mana-flag-pin--svg">
+              <div class="mana-flag-pin mana-flag-pin--co mana-flag-pin--svg">
                 <span class="mana-flag mana-flag--co" aria-hidden="true"></span>
                 <strong>MEDELLÍN</strong>
               </div>

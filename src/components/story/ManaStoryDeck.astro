@@ -1,0 +1,43 @@
+---
+import '../../styles/story-motion.css';
+import { isStoryMotionPreset } from '@lib/storyMotion';
+
+const {
+  as = 'section',
+  class: className = '',
+  label,
+  panelCount,
+  preset: requestedPreset = 'editorial',
+  staticMobile = true,
+  staticBreakpoint = 768,
+  scrollFactorBreakpoint = staticBreakpoint,
+  scrollFactor,
+  snapDirectional = true,
+  snapInertia = true,
+} = Astro.props;
+
+const Element = as;
+const preset = isStoryMotionPreset(requestedPreset) ? requestedPreset : 'editorial';
+const safePanelCount = Number.isFinite(Number(panelCount)) ? Math.max(1, Math.floor(Number(panelCount))) : undefined;
+const safeStaticBreakpoint = Math.max(320, Math.floor(Number(staticBreakpoint) || 768));
+const safeFactorBreakpoint = Math.max(320, Math.floor(Number(scrollFactorBreakpoint) || safeStaticBreakpoint));
+const safeScrollFactor = Number.isFinite(Number(scrollFactor)) ? Number(scrollFactor) : undefined;
+const panelCountStyle = safePanelCount ? `--panel-count: ${safePanelCount};` : undefined;
+---
+
+<Element
+  class:list={['mana-story-deck', className]}
+  aria-label={label}
+  data-mana-story-deck
+  data-cumbre-story
+  data-story-preset={preset}
+  data-cumbre-static-mobile={String(Boolean(staticMobile))}
+  data-cumbre-static-breakpoint={String(safeStaticBreakpoint)}
+  data-cumbre-scroll-factor-breakpoint={String(safeFactorBreakpoint)}
+  data-cumbre-scroll-factor={safeScrollFactor === undefined ? undefined : String(safeScrollFactor)}
+  data-cumbre-snap-directional={String(Boolean(snapDirectional))}
+  data-cumbre-snap-inertia={String(Boolean(snapInertia))}
+  style={panelCountStyle}
+>
+  <slot />
+</Element>

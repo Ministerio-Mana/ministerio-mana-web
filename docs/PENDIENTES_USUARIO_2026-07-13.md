@@ -270,6 +270,10 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 ## 9. Contenido, Home y experiencia móvil
 
 - [ ] Aprobar el copy final de los capítulos del Home.
+- [ ] Abrir `/home-ministerio` en escritorio y celular; confirmar qué escenas, textos e imágenes forman el Home oficial. No reemplazar la portada `/` antes de esta aprobación.
+- [ ] Abrir `/peregrinaciones/turquia-islas-griegas-2026` en escritorio y celular; comprobar que en escritorio los paneles barren suavemente en ambos sentidos y que en celular el contenido queda vertical, legible y sin bloqueo.
+- [ ] Activar temporalmente “Reducir movimiento” en el dispositivo y comprobar que Home y Peregrinaciones muestran todas las secciones sin barridos, mareo ni contenido perdido.
+- [ ] Aprobar las plantillas cerradas `editorial` y `cinematic` antes de agregar `Historia Maná` al constructor de Contenido. Los pastores elegirán plantilla e imágenes, no valores técnicos de animación.
 - [ ] Revisar animaciones y scroll en celular, especialmente dispositivos de gama media.
 - [ ] Confirmar que no hay mareo, saltos ni bloqueos de scroll.
 - [ ] Revisar Home, Eventos, Donaciones, Iglesias, Campus y Portal en móvil.

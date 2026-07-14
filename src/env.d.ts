@@ -38,3 +38,5 @@ interface ImportMetaEnv {
 }
 
 declare module 'gsap';
+declare module 'd3-geo';
+declare module 'topojson-client';

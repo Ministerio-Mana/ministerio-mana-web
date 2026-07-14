@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
+import '../styles/story-motion.css';
 
 const cspNonce = Astro.locals?.cspNonce;
 
@@ -90,8 +91,14 @@ const sceneCount = 11;
   hideFooter={true}
   disableSmoothScroll={true}
 >
-  <div class="mana-home" data-mana-story style={`--scene-count: ${sceneCount}`}>
-    <div class="story-stage" aria-live="polite">
+  <div
+    class="mana-home"
+    data-mana-story
+    data-mana-story-deck
+    data-story-preset="editorial"
+    style={`--scene-count: ${sceneCount}`}
+  >
+    <div class="story-stage">
       <div class="story-frame" aria-hidden="true">
         <span class="corner-block corner-block--top"></span>
         <span class="corner-line corner-line--bottom"></span>
@@ -115,8 +122,8 @@ const sceneCount = 11;
             </h1>
             <p class="hero-text">Una iglesia que enseña las Escrituras, edifica vidas y forma discípulos para impactar su entorno cercano y el mundo.</p>
             <div class="button-row">
-              <a href="#historia" class="story-button story-button--primary">Comenzar historia</a>
-              <a href="/eventos/cumbre-mundial-2026/" class="story-button story-button--ghost">Volver a Cumbre</a>
+              <a href="#historia" class="story-button story-button--primary" data-story-next>Comenzar historia</a>
+              <a href="/iglesias/" class="story-button story-button--ghost">Conocer iglesias</a>
             </div>
           </div>
           <div class="hero-echo" aria-hidden="true">
@@ -377,7 +384,7 @@ const sceneCount = 11;
   </div>
 </BaseLayout>
 
-<script nonce={cspNonce}>
+<script nonce={cspNonce} is:inline>
   (() => {
     const root = document.querySelector('[data-mana-story]');
     if (!root) return;
@@ -385,7 +392,16 @@ const sceneCount = 11;
     const scenes = Array.from(root.querySelectorAll('[data-story-scene]'));
     const dots = Array.from(root.querySelectorAll('[data-story-dot]'));
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersStatic = prefersReduced || window.matchMedia('(max-width: 519px)').matches;
     let ticking = false;
+
+    const revealAll = () => {
+      scenes.forEach((scene) => {
+        scene.classList.add('is-active');
+        scene.setAttribute('aria-hidden', 'false');
+      });
+      dots.forEach((dot) => dot.classList.remove('is-active'));
+    };
 
     const setActive = (activeIndex) => {
       scenes.forEach((scene, index) => {
@@ -398,8 +414,8 @@ const sceneCount = 11;
 
     const update = () => {
       ticking = false;
-      if (prefersReduced) {
-        setActive(0);
+      if (prefersStatic) {
+        revealAll();
         return;
       }
 
@@ -421,6 +437,12 @@ const sceneCount = 11;
 
     window.addEventListener('scroll', requestUpdate, { passive: true });
     window.addEventListener('resize', requestUpdate);
+    root.querySelector('[data-story-next]')?.addEventListener('click', (event) => {
+      if (prefersStatic) return;
+      event.preventDefault();
+      const nextY = root.getBoundingClientRect().top + window.scrollY + window.innerHeight;
+      window.scrollTo({ top: nextY, behavior: 'smooth' });
+    });
     document.addEventListener('astro:page-load', update);
     update();
   })();
@@ -2129,6 +2151,31 @@ const sceneCount = 11;
       margin-top: 16px;
       font-size: 0.98rem;
       line-height: 1.45;
+    }
+  }
+
+  @media (max-width: 519px) {
+    .mana-home {
+      min-height: auto;
+      overflow: visible;
+    }
+
+    .story-stage {
+      position: relative;
+      overflow: visible;
+    }
+
+    .story-progress {
+      display: none;
+    }
+
+    .story-scene {
+      position: relative;
+      min-height: 100svh;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      filter: none;
     }
   }
 

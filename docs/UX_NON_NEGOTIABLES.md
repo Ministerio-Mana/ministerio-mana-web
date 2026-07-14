@@ -39,6 +39,14 @@ Esta carta define el mínimo aceptable para páginas públicas, Portal, operacio
 19. **Leyes de UX:** Fitts, Hick, Jakob y Aesthetic-Usability orientan decisiones, sin reemplazar pruebas con usuarios reales.
 20. **Movimiento con propósito:** transiciones que explican cambio, sin bloquear; respeto obligatorio a `prefers-reduced-motion`.
 
+### Aplicación del movimiento narrativo
+
+- La firma `Historia Maná` usa presets compartidos `calm`, `editorial` y `cinematic`; una página no inventa duraciones, distancias o comportamiento de scroll por separado.
+- El barrido entre paneles es reversible, conserva el orden del documento y nunca reemplaza la navegación normal.
+- En reducción de movimiento todos los paneles quedan visibles, sin fijación, desenfoque ni contenido marcado como oculto para tecnologías de asistencia.
+- En herramientas operativas, formularios, pagos, Peticiones y mapas interactivos se prefiere movimiento calmado; el tratamiento cinematográfico se reserva para relatos y campañas.
+- Una historia ofrece un flujo estático adaptable cuando el tamaño, la densidad, el rendimiento o la preferencia del usuario lo exigen.
+
 ## Frontera de producto
 
 21. **La velocidad es parte del producto:** feedback local inmediato, cero spinners sin contexto y continuidad cuando la red es inestable.

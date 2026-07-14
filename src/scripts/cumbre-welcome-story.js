@@ -1,7 +1,12 @@
 import Lenis from '@studio-freight/lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { mobileRevealDelay, shouldUseStaticStory } from '../lib/storyMotion.ts';
+import {
+  mobileRevealDelay,
+  resolveStoryMotionConfig,
+  shouldUseStaticStory,
+  storySnapPoint,
+} from '../lib/storyMotion.ts';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -101,9 +106,13 @@ function getViewportHeight() {
   return Math.round(window.visualViewport?.height || window.innerHeight || 1);
 }
 
-function getScrollFactor(story) {
+function getScrollFactor(story, motionConfig) {
   const breakpoint = Number.parseInt(story.dataset.cumbreScrollFactorBreakpoint || '768', 10);
-  return window.innerWidth >= breakpoint ? 1.34 : 1;
+  const requestedFactor = Number.parseFloat(story.dataset.cumbreScrollFactor || '');
+  const scrollFactor = Number.isFinite(requestedFactor)
+    ? resolveStoryMotionConfig(motionConfig.preset, { scrollFactor: requestedFactor }).scrollFactor
+    : motionConfig.scrollFactor;
+  return window.innerWidth >= breakpoint ? scrollFactor : 1;
 }
 
 function getBooleanData(value, fallback = true) {
@@ -232,80 +241,94 @@ function setupPanelInitialState(panel, index) {
   panel.classList.toggle('is-active', index === 0);
   panel.classList.toggle('is-visible', index === 0);
 
+  const titleWords = panel.querySelectorAll('[data-split-title] .split-word > span');
+  const revealItems = panel.querySelectorAll('[data-reveal]:not([data-split-title])');
+
   gsap.set(panel, {
     clipPath: index === 0 ? 'inset(0% 0% 0% 0%)' : 'inset(100% 0% 0% 0%)',
   });
 
-  gsap.set(panel.querySelectorAll('[data-split-title] .split-word > span'), {
-    autoAlpha: index === 0 ? 1 : 0,
-    y: index === 0 ? 0 : 54,
-    rotateX: index === 0 ? 0 : -22,
-    scale: index === 0 ? 1 : 0.96,
-    filter: index === 0 ? 'blur(0px)' : 'blur(5px)',
-    transformOrigin: '50% 90%',
-  });
+  if (titleWords.length) {
+    gsap.set(titleWords, {
+      autoAlpha: index === 0 ? 1 : 0,
+      y: index === 0 ? 0 : 54,
+      rotateX: index === 0 ? 0 : -22,
+      scale: index === 0 ? 1 : 0.96,
+      filter: index === 0 ? 'blur(0px)' : 'blur(5px)',
+      transformOrigin: '50% 90%',
+    });
+  }
 
-  gsap.set(panel.querySelectorAll('[data-reveal]:not([data-split-title])'), {
-    autoAlpha: index === 0 ? 1 : 0,
-    y: index === 0 ? 0 : 38,
-    scale: index === 0 ? 1 : 0.985,
-    filter: index === 0 ? 'blur(0px)' : 'blur(6px)',
-  });
+  if (revealItems.length) {
+    gsap.set(revealItems, {
+      autoAlpha: index === 0 ? 1 : 0,
+      y: index === 0 ? 0 : 38,
+      scale: index === 0 ? 1 : 0.985,
+      filter: index === 0 ? 'blur(0px)' : 'blur(6px)',
+    });
+  }
 }
 
 function addContentEntrance(timeline, panel, at) {
   const titleWords = panel.querySelectorAll('[data-split-title] .split-word > span');
   const revealItems = panel.querySelectorAll('[data-reveal]:not([data-split-title])');
 
-  timeline.to(
-    titleWords,
-    {
-      autoAlpha: 1,
-      y: 0,
-      rotateX: 0,
-      scale: 1,
-      filter: 'blur(0px)',
-      duration: 0.42,
-      ease: 'power3.out',
-      stagger: 0.025,
-    },
-    at
-  );
+  if (titleWords.length) {
+    timeline.to(
+      titleWords,
+      {
+        autoAlpha: 1,
+        y: 0,
+        rotateX: 0,
+        scale: 1,
+        filter: 'blur(0px)',
+        duration: 0.42,
+        ease: 'power3.out',
+        stagger: 0.025,
+      },
+      at
+    );
+  }
 
-  timeline.to(
-    revealItems,
-    {
-      autoAlpha: 1,
-      y: 0,
-      scale: 1,
-      filter: 'blur(0px)',
-      duration: 0.44,
-      ease: 'power3.out',
-      stagger: 0.055,
-    },
-    at + 0.1
-  );
+  if (revealItems.length) {
+    timeline.to(
+      revealItems,
+      {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        filter: 'blur(0px)',
+        duration: 0.44,
+        ease: 'power3.out',
+        stagger: 0.055,
+      },
+      at + 0.1
+    );
+  }
 }
 
 function addContentExit(timeline, panel, at) {
   const titleWords = panel.querySelectorAll('[data-split-title] .split-word > span');
   const revealItems = panel.querySelectorAll('[data-reveal]:not([data-split-title])');
   const bg = panel.querySelector('[data-panel-bg]');
+  const exitItems = [...titleWords, ...revealItems];
 
-  timeline.to(
-    [titleWords, revealItems],
-    {
-      autoAlpha: 0,
-      y: -24,
-      rotateX: 12,
-      scale: 0.992,
-      filter: 'blur(5px)',
-      duration: 0.3,
-      ease: 'power2.in',
-      stagger: 0.012,
-    },
-    at
-  );
+  if (exitItems.length) {
+    timeline.to(
+      exitItems,
+      {
+        autoAlpha: 0,
+        y: -24,
+        rotateX: 12,
+        scale: 0.992,
+        filter: 'blur(5px)',
+        duration: 0.3,
+        ease: 'power2.in',
+        stagger: 0.012,
+      },
+      at
+    );
+  }
 
   if (bg) {
     timeline.to(
@@ -333,6 +356,7 @@ function setupStory() {
   story.style.setProperty('--panel-count', String(panels.length));
 
   const staticBreakpoint = Number.parseInt(story.dataset.cumbreStaticBreakpoint || '768', 10);
+  const motionConfig = resolveStoryMotionConfig(story.dataset.storyPreset);
   setupModeChangeWatcher(staticBreakpoint);
 
   const useStaticPanels = shouldUseStaticStory({
@@ -378,16 +402,19 @@ function setupStory() {
         trigger: story,
         start: 'top top',
         end: () => {
-          return `+=${getViewportHeight() * lastIndex * getScrollFactor(story)}`;
+          return `+=${getViewportHeight() * lastIndex * getScrollFactor(story, motionConfig)}`;
         },
         pin: true,
-        scrub: 1.05,
+        scrub: motionConfig.scrub,
         anticipatePin: 1,
         invalidateOnRefresh: true,
         snap: {
-          snapTo: (value) => Math.round(value * lastIndex) / lastIndex,
-          duration: { min: 0.18, max: 0.42 },
-          delay: 0.07,
+          snapTo: (value) => storySnapPoint(value, panels.length),
+          duration: {
+            min: motionConfig.snapMinDuration,
+            max: motionConfig.snapMaxDuration,
+          },
+          delay: motionConfig.snapDelay,
           ease: 'power1.inOut',
           directional: snapDirectional,
           inertia: snapInertia,
@@ -412,7 +439,7 @@ function setupStory() {
           panel,
           {
             clipPath: 'inset(0% 0% 0% 0%)',
-            duration: 0.56,
+            duration: motionConfig.sweepDuration,
             ease: 'power2.inOut',
           },
           index - 0.74

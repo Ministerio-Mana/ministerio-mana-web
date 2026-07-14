@@ -48,7 +48,7 @@
   - Branch: `main`
   - Scope: Eventos públicos, Donaciones, Iglesias, Campus, Portal y estilos compartidos
   - Description: Corregir inconsistencias verificables de jerarquía, responsive, accesibilidad, navegación y footer sin reemplazar la identidad visual vigente.
-  - Status: Correcciones compartidas listas: encabezado sin desborde a 320 px, objetivos táctiles de 44 px y jerarquía semántica de Donaciones. Pendiente revisión visual final en producción.
+  - Status: Correcciones compartidas listas: encabezado sin desborde a 320 px, objetivos táctiles de 44 px y jerarquía semántica de Donaciones. La fase pública inventarió Home, Campus, Peticiones, Iglesias/mapa y Peregrinaciones; `Historia Maná` ya tiene presets tipados, tokens, degradación estática y componente compartido. Peregrinaciones usa el preset editorial y la bienvenida de Cumbre conserva el cinematográfico. Sigue la revisión escena por escena del Home laboratorio y después Iglesias/mapa, Campus y Peticiones.
 
 - MANA-022 Confiabilidad de pagos y tareas programadas
   - Owner: Equipo web

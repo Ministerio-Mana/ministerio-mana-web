@@ -1,5 +1,6 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import ManaStoryDeck from '@components/story/ManaStoryDeck.astro';
 import bookOpenCheckIcon from 'lucide-static/icons/book-open-check.svg?raw';
 import calendarIcon from 'lucide-static/icons/calendar.svg?raw';
 import clockIcon from 'lucide-static/icons/clock.svg?raw';
@@ -17,7 +18,6 @@ const lucideIcon = (svg: string) =>
     .replace(/<svg\b((?:(?!class=)[^>])*)>/, '<svg$1 class="pilgrim-lucide-icon" aria-hidden="true" focusable="false">');
 
 const assetBase = '/images/peregrinaciones/turquia-islas-griegas-2026';
-const heroImage = `${assetBase}/istanbul-cruise.jpg`;
 const flagImage = `${assetBase}/turkey-flag.jpg`;
 const posterImage = `${assetBase}/poster-reference.jpg`;
 const routeMapImage = `${assetBase}/route-map-original.jpg`;
@@ -284,16 +284,17 @@ const cspNonce = Astro.locals?.cspNonce;
   backLabel="Peregrinaciones"
   useHistoryBack={false}
 >
-  <main class="pilgrim-page" data-pilgrim-story-root>
-    <section
+  <div class="pilgrim-page" data-pilgrim-story-root>
+    <ManaStoryDeck
       class="pilgrim-story"
-      data-cumbre-story
-      data-cumbre-static-mobile="true"
-      data-cumbre-static-breakpoint="520"
-      data-cumbre-scroll-factor-breakpoint="520"
-      data-cumbre-snap-directional="false"
-      data-cumbre-snap-inertia="false"
-      style="--panel-count: 6;"
+      label="Historia de la peregrinación a Turquía e Islas Griegas"
+      panelCount={6}
+      preset="editorial"
+      staticMobile
+      staticBreakpoint={520}
+      scrollFactorBreakpoint={520}
+      snapDirectional={false}
+      snapInertia={false}
     >
       <section class="cumbre-panel pilgrim-panel pilgrim-panel--hero pilgrim-hero" aria-labelledby="peregrinacion-title" data-cumbre-panel data-panel-theme="dark">
         <div class="pilgrim-panel-bg" data-panel-bg aria-hidden="true"></div>
@@ -532,7 +533,7 @@ const cspNonce = Astro.locals?.cspNonce;
           </div>
         </div>
       </section>
-    </section>
+    </ManaStoryDeck>
 
     <section id="itinerario-detalle" class="pilgrim-section pilgrim-section--navy pilgrim-detail-section">
       <div class="pilgrim-shell">
@@ -659,7 +660,12 @@ const cspNonce = Astro.locals?.cspNonce;
             const panels = Array.from(story.querySelectorAll('[data-cumbre-panel]'));
             const index = Math.max(0, panels.indexOf(targetPanel));
             const breakpoint = Number.parseInt(story.dataset.cumbreScrollFactorBreakpoint || '768', 10);
-            const scrollFactor = window.innerWidth >= breakpoint ? 1.34 : 1;
+            const requestedFactor = Number.parseFloat(story.dataset.cumbreScrollFactor || '');
+            const preset = story.dataset.storyPreset || 'editorial';
+            const presetFactor = preset === 'cinematic' ? 1.34 : preset === 'calm' ? 1.08 : 1.2;
+            const scrollFactor = window.innerWidth >= breakpoint
+              ? (Number.isFinite(requestedFactor) ? requestedFactor : presetFactor)
+              : 1;
             const viewportHeight = window.visualViewport?.height || window.innerHeight || 1;
             const storyTop = story.offsetTop || 0;
             const target = Math.max(storyTop, storyTop + viewportHeight * index * scrollFactor);
@@ -713,7 +719,7 @@ const cspNonce = Astro.locals?.cspNonce;
     <script>
       import '@scripts/cumbre-welcome-story.js';
     </script>
-  </main>
+  </div>
 </CumbreLayout>
 
 <style>

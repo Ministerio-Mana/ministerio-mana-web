@@ -1,5 +1,6 @@
 ---
 import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
+import ManaStoryDeck from '@components/story/ManaStoryDeck.astro';
 
 const unityReminders = [
   'la obra no se hace solos',
@@ -97,7 +98,15 @@ const schedule = [
   flush
   showEventBadge={false}
 >
-  <main class="cumbre-welcome-story" data-cumbre-story style="--panel-count: 7;">
+  <ManaStoryDeck
+    as="section"
+    class="cumbre-welcome-story"
+    label="Guía de bienvenida de la Cumbre Mundial de Discipulado"
+    panelCount={7}
+    preset="cinematic"
+    staticMobile
+    staticBreakpoint={768}
+  >
     <section
       class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#07111c] text-white"
       data-cumbre-panel
@@ -502,7 +511,7 @@ const schedule = [
         </div>
       </div>
     </section>
-  </main>
+  </ManaStoryDeck>
 
   <script>
     import '@scripts/cumbre-welcome-story.js';

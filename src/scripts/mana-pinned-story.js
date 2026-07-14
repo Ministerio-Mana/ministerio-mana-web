@@ -1,6 +1,7 @@
 import Lenis from '@studio-freight/lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { resolveStoryMotionConfig, storySnapPoint } from '../lib/storyMotion.ts';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -200,7 +201,7 @@ function prepareScene(scene, index) {
   if (drawPaths.length) gsap.set(drawPaths, { strokeDasharray: 1, strokeDashoffset: 1 });
 }
 
-function addSceneMotion(masterTimeline, scene, index, sceneCount) {
+function addSceneMotion(masterTimeline, scene, index, sceneCount, motionConfig) {
   const slide = scene.querySelector('.mana-slide');
   const {
     titleWords,
@@ -226,7 +227,15 @@ function addSceneMotion(masterTimeline, scene, index, sceneCount) {
     if (initialTargets.length) gsap.set(initialTargets, { autoAlpha: 1, y: 0, rotateX: 0, filter: 'blur(0px)' });
   } else {
     masterTimeline
-      .to(scene, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.44, ease: 'power3.inOut' }, step - 0.46)
+      .to(
+        scene,
+        {
+          clipPath: 'inset(0% 0% 0% 0%)',
+          duration: motionConfig.sweepDuration,
+          ease: 'power3.inOut',
+        },
+        step - 0.46,
+      )
       .to(scene.previousElementSibling, { scale: 0.992, duration: 0.36, ease: 'power2.inOut' }, step - 0.42);
 
     fromToIfTargets(
@@ -377,6 +386,8 @@ function initManaStoryCode() {
 
   if (!story || !scenes.length) return;
 
+  const motionConfig = resolveStoryMotionConfig(story.dataset.storyPreset);
+
   story.querySelectorAll('[data-mana-split]').forEach(splitText);
   bindSceneButtons(scenes);
 
@@ -393,23 +404,26 @@ function initManaStoryCode() {
       id: 'mana-slide-story-master',
       trigger: story,
       start: 'top top',
-      end: () => `+=${Math.round(window.innerHeight * Math.max(1, sceneCount - 1))}`,
+      end: () => `+=${Math.round(window.innerHeight * Math.max(1, sceneCount - 1) * motionConfig.scrollFactor)}`,
       pin: story,
       pinSpacing: true,
-      scrub: 1.05,
+      scrub: motionConfig.scrub,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       snap: {
-        snapTo: 1 / Math.max(1, sceneCount - 1),
-        duration: { min: 0.22, max: 0.55 },
-        delay: 0.03,
+        snapTo: (value) => storySnapPoint(value, sceneCount),
+        duration: {
+          min: motionConfig.snapMinDuration,
+          max: motionConfig.snapMaxDuration,
+        },
+        delay: motionConfig.snapDelay,
         ease: 'power2.out',
       },
       onUpdate: ({ progress }) => updateSceneProgress(scenes, progress),
     },
   });
 
-  scenes.forEach((scene, index) => addSceneMotion(masterTimeline, scene, index, sceneCount));
+  scenes.forEach((scene, index) => addSceneMotion(masterTimeline, scene, index, sceneCount, motionConfig));
 
   if (!window.__manaStoryResizeBound) {
     window.addEventListener(

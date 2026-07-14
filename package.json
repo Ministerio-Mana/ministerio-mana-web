@@ -19,6 +19,7 @@
     "test:event-documents": "node --experimental-strip-types --test tests/event-document-presentation.test.ts",
     "test:internal-quality": "node --test tests/internal-quality-contract.test.mjs",
     "test:home-motion": "node --experimental-strip-types --test tests/home-mobile-motion.test.ts",
+    "test:public-story": "node --experimental-strip-types --test tests/home-mobile-motion.test.ts tests/public-story-contract.test.mjs",
     "test:operations": "node --experimental-strip-types --test tests/cron-auth.test.ts tests/payment-reliability.test.ts tests/campus-payment-contract.test.ts tests/operations-source-contract.test.ts",
     "campaign:cumbre:welcome": "node scripts/cumbre-welcome-campaign.mjs",
     "security:scan": "node scripts/security-monitor.cjs",
