@@ -48,6 +48,10 @@ import PortalIcon from './PortalIcon.astro';
             <PortalIcon name="calendar-cog" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Gestión de Eventos</span>
         </a>
+        <a href="/portal/church-page" id="nav-link-church-page" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
+            <PortalIcon name="file-pen-line" class="text-white/70 transition-colors group-hover:text-white" />
+            <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Página de mi iglesia</span>
+        </a>
         <!-- Usuarios (Restricted - Pastors/Admins) -->
         <a href="/portal/users" id="nav-link-users" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="users" class="text-white/70 transition-colors group-hover:text-white" />
@@ -159,6 +163,7 @@ import PortalIcon from './PortalIcon.astro';
 
     const restrictedLinks = [
         'nav-link-events',
+        'nav-link-church-page',
         'nav-link-users',
         'nav-link-campus',
         'nav-link-donations',
@@ -199,6 +204,14 @@ import PortalIcon from './PortalIcon.astro';
                 || permissions.can_manage_national_events
                 || permissions.can_manage_global_events
             );
+        }
+        if (id === 'nav-link-church-page') {
+            return [
+                'superadmin', 'admin',
+                'national_pastor', 'national_collaborator',
+                'regional_pastor', 'regional_collaborator',
+                'pastor', 'local_collaborator',
+            ].includes(role);
         }
         if (id === 'nav-link-users') return Boolean(permissions.can_manage_users);
         if (id === 'nav-link-campus') return Boolean(permissions.can_access_campus);

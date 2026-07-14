@@ -1,0 +1,296 @@
+---
+import CmsStorySection from '@components/cms/CmsStorySection.astro';
+import { getPublicEventPath } from '@lib/publicEvents';
+import { optimizedPublicImageUrl, responsivePublicImageSrcset } from '@lib/publicMedia';
+import type { PublicChurchPage } from '@lib/churchPublic';
+
+const { data } = Astro.props as { data: PublicChurchPage };
+const { page, church, events } = data;
+const place = [church.city, church.country].filter(Boolean).join(', ');
+const address = String(church.address || '').trim();
+const mapsHref = String(church.maps_url || '').startsWith('https://')
+  ? String(church.maps_url)
+  : address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, ${place}`)}`
+    : '';
+const whatsapp = page.contact_whatsapp || String(church.contact_phone || '').replace(/\D/g, '');
+const whatsappText = page.contact_whatsapp_message || `Hola, quiero recibir información sobre ${page.display_name}.`;
+const whatsappHref = whatsapp ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(whatsappText)}` : '';
+const email = page.contact_email || String(church.contact_email || '');
+const hero = optimizedPublicImageUrl(page.hero_image_url, 1920, 84);
+const heroSrcset = responsivePublicImageSrcset(page.hero_image_url, [640, 960, 1280, 1600, 1920], 84);
+const gallery = page.gallery.map((image) => ({
+  ...image,
+  src: optimizedPublicImageUrl(image.url, 1200, 82),
+  srcset: responsivePublicImageSrcset(image.url, [480, 720, 960, 1200], 82),
+}));
+const scenes = page.story_config.scenes;
+const formatEventDate = (value: string) => new Intl.DateTimeFormat('es-CO', {
+  dateStyle: 'long',
+  timeStyle: 'short',
+  timeZone: 'America/Bogota',
+}).format(new Date(value));
+---
+
+<main class:list={['church-public', `church-public--${page.template.toLowerCase()}`]}>
+  {page.template === 'STORY' ? (
+    <>
+      <h1 class="sr-only">{page.display_name}</h1>
+      <CmsStorySection payload={page.story_config} label={`Historia de ${page.display_name}`} />
+    </>
+  ) : (
+    <section class="church-hero" aria-labelledby="church-page-title">
+      {hero && (
+        <img
+          class="church-hero__image"
+          src={hero}
+          srcset={heroSrcset}
+          sizes="100vw"
+          alt={page.hero_image_alt}
+          fetchpriority="high"
+          decoding="async"
+        />
+      )}
+      <div class="church-hero__veil"></div>
+      <div class="church-shell church-hero__content">
+        <p class="church-eyebrow">Iglesia local · {place}</p>
+        <h1 id="church-page-title">{page.display_name}</h1>
+        <p>{page.tagline}</p>
+        <div class="church-actions">
+          {whatsappHref && <a class="church-button church-button--primary" href={whatsappHref} target="_blank" rel="noopener noreferrer">Hablar por WhatsApp</a>}
+          {mapsHref && <a class="church-button church-button--secondary" href={mapsHref} target="_blank" rel="noopener noreferrer">Cómo llegar</a>}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {page.template === 'MOSAIC' && scenes.length > 0 && (
+    <section class="church-mosaic" aria-label={`Recorrido visual de ${page.display_name}`}>
+      <div class="church-shell church-mosaic__grid">
+        {scenes.map((scene, index) => (
+          <article class:list={['church-mosaic__card', index === 0 && 'church-mosaic__card--wide']}>
+            <img
+              src={optimizedPublicImageUrl(scene.image, 1400, 84)}
+              srcset={responsivePublicImageSrcset(scene.image, [480, 720, 960, 1200, 1400], 84)}
+              sizes={index === 0 ? '(min-width: 900px) 70vw, 100vw' : '(min-width: 900px) 35vw, 100vw'}
+              alt={scene.imageAlt}
+              loading="lazy"
+              decoding="async"
+            />
+            <div class="church-mosaic__copy">
+              {scene.eyebrow && <p>{scene.eyebrow}</p>}
+              <h2>{scene.title}</h2>
+              {scene.text && <span>{scene.text}</span>}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="church-info" aria-labelledby="church-about-title">
+    <div class="church-shell church-info__grid">
+      <article class="church-info__main">
+        <p class="church-kicker">Nuestra comunidad</p>
+        <h2 id="church-about-title">Una iglesia para caminar juntos</h2>
+        <p>{page.description}</p>
+      </article>
+      <aside class="church-info__details" aria-label="Información práctica">
+        <div><span>Reuniones</span><strong>{page.service_schedule}</strong></div>
+        {address && <div><span>Dirección</span><strong>{address}</strong></div>}
+        {place && <div><span>Ciudad</span><strong>{place}</strong></div>}
+      </aside>
+    </div>
+  </section>
+
+  {(page.pastor_name || page.pastor_image_url) && (
+    <section class="church-leadership" aria-labelledby="church-leadership-title">
+      <div class="church-shell church-leadership__grid">
+        {page.pastor_image_url && (
+          <figure>
+            <img
+              src={optimizedPublicImageUrl(page.pastor_image_url, 1000, 84)}
+              srcset={responsivePublicImageSrcset(page.pastor_image_url, [480, 720, 1000], 84)}
+              sizes="(min-width: 900px) 42vw, 100vw"
+              alt={page.pastor_image_alt}
+              loading="lazy"
+              decoding="async"
+            />
+          </figure>
+        )}
+        <div>
+          <p class="church-kicker">Liderazgo local</p>
+          <h2 id="church-leadership-title">{page.pastor_name || 'Nuestro equipo pastoral'}</h2>
+          {page.pastor_title && <p>{page.pastor_title}</p>}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {gallery.length > 0 && (
+    <section class="church-gallery" aria-labelledby="church-gallery-title">
+      <div class="church-shell">
+        <p class="church-kicker">Vida en comunidad</p>
+        <h2 id="church-gallery-title">Así vivimos la iglesia</h2>
+        <div class="church-gallery__grid">
+          {gallery.map((image) => (
+            <figure><img src={image.src} srcset={image.srcset} sizes="(min-width: 900px) 33vw, 100vw" alt={image.alt} loading="lazy" decoding="async" /></figure>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="church-events" aria-labelledby="church-events-title">
+    <div class="church-shell">
+      <div class="church-section-heading">
+        <div>
+          <p class="church-kicker">Agenda local</p>
+          <h2 id="church-events-title">Próximos eventos</h2>
+        </div>
+        <a href="/eventos/">Ver todos los eventos</a>
+      </div>
+      {events.length ? (
+        <div class="church-events__grid">
+          {events.map((event) => (
+            <article>
+              <p>{formatEventDate(event.start_date)}</p>
+              <h3>{event.title}</h3>
+              {event.description && <span>{event.description}</span>}
+              <a href={getPublicEventPath(event)}>Ver información</a>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div class="church-empty">Todavía no hay eventos públicos programados para esta sede.</div>
+      )}
+    </div>
+  </section>
+
+  <section class="church-contact" aria-labelledby="church-contact-title">
+    <div class="church-shell church-contact__panel">
+      <div>
+        <p class="church-kicker">Estamos cerca</p>
+        <h2 id="church-contact-title">¿Quieres visitarnos o saber más?</h2>
+        <p>Escríbenos y el equipo local te responderá.</p>
+      </div>
+      <div class="church-actions">
+        {whatsappHref && <a class="church-button church-button--primary" href={whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
+        {email && <a class="church-button church-button--secondary" href={`mailto:${email}`}>Correo</a>}
+        {mapsHref && <a class="church-button church-button--secondary" href={mapsHref} target="_blank" rel="noopener noreferrer">Ubicación</a>}
+      </div>
+    </div>
+  </section>
+</main>
+
+<style>
+  .church-public {
+    --church-navy: #111936;
+    --church-blue: #293c74;
+    --church-teal: #28a6bd;
+    --church-paper: #f5f8fb;
+    background: var(--church-paper);
+    color: #172151;
+  }
+
+  .church-shell {
+    margin-inline: auto;
+    max-width: 72rem;
+    padding-inline: var(--space-3);
+    width: 100%;
+  }
+
+  .church-hero {
+    align-items: end;
+    background: var(--church-navy);
+    color: #fff;
+    display: flex;
+    min-height: min(82svh, 52rem);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .church-hero__image,
+  .church-hero__veil {
+    height: 100%;
+    inset: 0;
+    position: absolute;
+    width: 100%;
+  }
+
+  .church-hero__image { object-fit: cover; }
+  .church-hero__veil { background: linear-gradient(90deg, rgba(10, 18, 50, .94), rgba(10, 18, 50, .35)), linear-gradient(0deg, rgba(10, 18, 50, .75), transparent 55%); }
+  .church-hero__content { padding-block: var(--space-16) var(--space-8); position: relative; z-index: 1; }
+  .church-hero h1 { font-family: var(--font-display); font-size: clamp(3rem, 8vw, 6.5rem); font-weight: 900; letter-spacing: -.04em; line-height: .94; max-width: 14ch; }
+  .church-hero__content > p:not(.church-eyebrow) { font-size: clamp(1.05rem, 2vw, 1.35rem); line-height: 1.55; margin-top: var(--space-3); max-width: 58ch; }
+  .church-eyebrow, .church-kicker { color: var(--church-teal); font-size: .75rem; font-weight: 900; letter-spacing: .18em; margin-bottom: var(--space-2); text-transform: uppercase; }
+  .church-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+  .church-button { align-items: center; border-radius: 999px; display: inline-flex; font-size: .875rem; font-weight: 900; justify-content: center; min-height: 48px; padding: var(--space-1) var(--space-3); }
+  .church-button--primary { background: var(--church-teal); color: #07111c; }
+  .church-button--secondary { border: 1px solid currentColor; color: inherit; }
+  .church-button:focus-visible, .church-section-heading a:focus-visible, .church-events article a:focus-visible { outline: 3px solid #f2c94c; outline-offset: 3px; }
+
+  .church-info, .church-leadership, .church-gallery, .church-events, .church-contact { padding-block: var(--space-10); }
+  .church-info__grid, .church-leadership__grid { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1.2fr) minmax(17rem, .8fr); }
+  .church-info h2, .church-leadership h2, .church-gallery h2, .church-events h2, .church-contact h2 { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; letter-spacing: -.035em; line-height: 1; max-width: 18ch; }
+  .church-info__main > p:last-child, .church-leadership__grid > div > p:last-child, .church-contact__panel > div > p:last-child { font-size: 1.05rem; line-height: 1.65; margin-top: var(--space-3); max-width: 68ch; white-space: pre-line; }
+  .church-info__details { background: #fff; border: 1px solid #dce4ec; border-radius: 24px; padding: var(--space-4); }
+  .church-info__details div + div { border-top: 1px solid #e7edf2; margin-top: var(--space-3); padding-top: var(--space-3); }
+  .church-info__details span { color: #64748b; display: block; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+  .church-info__details strong { display: block; line-height: 1.5; margin-top: var(--space-1); white-space: pre-line; }
+
+  .church-leadership { background: #e8f4f4; }
+  .church-leadership__grid { align-items: center; }
+  .church-leadership figure { border-radius: 32px; min-height: 24rem; overflow: hidden; }
+  .church-leadership img { height: 100%; min-height: 24rem; object-fit: cover; width: 100%; }
+
+  .church-gallery { background: #fff; }
+  .church-gallery__grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--space-5); }
+  .church-gallery figure { aspect-ratio: 4 / 3; border-radius: 24px; overflow: hidden; }
+  .church-gallery img { height: 100%; object-fit: cover; transition: transform .35s ease; width: 100%; }
+  .church-gallery figure:hover img { transform: scale(1.035); }
+
+  .church-section-heading { align-items: end; display: flex; gap: var(--space-4); justify-content: space-between; }
+  .church-section-heading > a { color: var(--church-blue); font-weight: 900; min-height: 44px; padding-block: var(--space-1); }
+  .church-events__grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--space-5); }
+  .church-events article, .church-empty { background: #fff; border: 1px solid #dce4ec; border-radius: 24px; padding: var(--space-4); }
+  .church-events article > p { color: var(--church-teal); font-size: .75rem; font-weight: 900; text-transform: uppercase; }
+  .church-events article h3 { font-size: 1.25rem; font-weight: 900; line-height: 1.2; margin-top: var(--space-2); }
+  .church-events article span { color: #526174; display: block; line-height: 1.55; margin-top: var(--space-2); }
+  .church-events article a { color: var(--church-blue); display: inline-flex; font-weight: 900; margin-top: var(--space-3); min-height: 44px; padding-block: var(--space-1); }
+  .church-empty { color: #64748b; margin-top: var(--space-5); }
+
+  .church-contact { background: var(--church-navy); color: #fff; }
+  .church-contact__panel { align-items: center; display: flex; gap: var(--space-6); justify-content: space-between; }
+  .church-contact .church-button--secondary { color: #fff; }
+
+  .church-mosaic { background: #0d1430; color: #fff; padding-block: var(--space-10); }
+  .church-mosaic__grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .church-mosaic__card { border-radius: 32px; min-height: 34rem; overflow: hidden; position: relative; }
+  .church-mosaic__card--wide { grid-column: 1 / -1; }
+  .church-mosaic__card img { height: 100%; inset: 0; object-fit: cover; position: absolute; width: 100%; }
+  .church-mosaic__card::after { background: linear-gradient(0deg, rgba(7, 17, 28, .94), transparent 68%); content: ''; inset: 0; position: absolute; }
+  .church-mosaic__copy { bottom: 0; max-width: 62ch; padding: var(--space-5); position: absolute; z-index: 1; }
+  .church-mosaic__copy p { color: #f2c94c; font-size: .72rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+  .church-mosaic__copy h2 { font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; line-height: 1; margin-top: var(--space-2); }
+  .church-mosaic__copy span { display: block; line-height: 1.55; margin-top: var(--space-2); }
+
+  @supports (animation-timeline: view()) {
+    .church-mosaic__card { animation: church-card-enter both linear; animation-range: entry 5% cover 32%; animation-timeline: view(); }
+  }
+  @keyframes church-card-enter { from { opacity: .45; transform: translateY(32px) scale(.98); } to { opacity: 1; transform: none; } }
+
+  @media (max-width: 767px) {
+    .church-shell { padding-inline: var(--space-2); }
+    .church-info__grid, .church-leadership__grid, .church-gallery__grid, .church-events__grid, .church-mosaic__grid { grid-template-columns: minmax(0, 1fr); }
+    .church-mosaic__card--wide { grid-column: auto; }
+    .church-section-heading, .church-contact__panel { align-items: flex-start; flex-direction: column; }
+    .church-contact__panel { display: flex; }
+    .church-hero__content { padding-block: var(--space-12) var(--space-6); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .church-mosaic__card { animation: none; }
+    .church-gallery img { transition: none; }
+  }
+</style>

@@ -461,7 +461,7 @@ const i18n = JSON.stringify(c.js);
           </svg>
         </div>
         <div class="prayer-note-layer" data-prayer-list></div>
-        <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite">
+        <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite" role="dialog" aria-modal="false" aria-label={c.js.selectedRequest}>
           <button type="button" class="prayer-wall-detail__close" data-prayer-detail-close aria-label={c.js.close}>×</button>
           <span>{c.js.selectedRequest}</span>
           <h4 data-prayer-detail-name></h4>
@@ -614,7 +614,7 @@ const i18n = JSON.stringify(c.js);
               </div>
               <div class="prayer-wall-light" aria-hidden="true"></div>
               <div class="prayer-note-layer" data-prayer-list></div>
-              <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite">
+              <aside class="prayer-wall-detail" data-prayer-detail hidden aria-live="polite" role="dialog" aria-modal="false" aria-label={c.js.selectedRequest}>
                 <button type="button" class="prayer-wall-detail__close" data-prayer-detail-close aria-label={c.js.close}>×</button>
                 <span>{c.js.selectedRequest}</span>
                 <h3 data-prayer-detail-name></h3>

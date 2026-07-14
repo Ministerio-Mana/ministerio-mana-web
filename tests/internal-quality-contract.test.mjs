@@ -172,6 +172,32 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
   assert.doesNotMatch(operationLogic, /event\.target === reviewModal\) closeReviewModal\(\)/);
 });
 
+test('el editor de iglesias separa borrador, publicación, alcance e imágenes', async () => {
+  const [view, logic, api, mediaRegister, sql, publicPage] = await Promise.all([
+    readSource('src/pages/portal/church-page.astro'),
+    readSource('src/scripts/portal-church-page.js'),
+    readSource('src/pages/api/portal/church-pages.ts'),
+    readSource('src/pages/api/portal/church-media-register.ts'),
+    readSource('docs/sql/church_public_pages.sql'),
+    readSource('src/lib/churchPublic.ts'),
+  ]);
+
+  assert.equal([...view.matchAll(/<h1\b/g)].length, 1);
+  assert.match(view, /id="church-media-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="church-media-title"[^>]*aria-hidden="true"/);
+  assert.match(logic, /window\.addEventListener\('beforeunload', saveLocalDraft\)/);
+  assert.match(logic, /event\.key !== 'Tab'/);
+  assert.match(logic, /state\.modalTrigger\?\.focus\?\.\(\)/);
+  assert.match(logic, /expected_version: Number\(state\.page\.version \|\| 0\)/);
+  assert.match(api, /requireChurchPageEditor\(request\)/);
+  assert.match(api, /published_snapshot: snapshot/);
+  assert.match(api, /\.eq\('version', expectedVersion\)/);
+  assert.match(api, /validateScopedImages/);
+  assert.match(mediaRegister, /existing\.data\.folder !== expectedFolder/);
+  assert.match(sql, /revoke all on table public\.church_public_pages from anon, authenticated/);
+  assert.match(publicPage, /\.eq\('status', 'PUBLISHED'\)/);
+  assert.match(publicPage, /published_snapshot/);
+});
+
 test('usuarios protege creación, roles y alcances financieros', async () => {
   const [usersView, usersLogic, portalStyles] = await Promise.all([
     readSource('src/pages/portal/users.astro'),

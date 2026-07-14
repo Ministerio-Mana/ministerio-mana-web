@@ -35,3 +35,25 @@ test('el Home deja todas las escenas accesibles en modo estático', async () => 
   assert.match(source, /@media \(max-width: 519px\)/);
   assert.doesNotMatch(source, /Volver a Cumbre/);
 });
+
+test('el footer intenta cargar el devocional actual sin bloquear la página', async () => {
+  const source = await readProjectFile('src/components/Footer.astro');
+
+  assert.match(source, /const current = cached \?\? \{ ts: 0, data: fallbackDevotionalList \}/);
+  assert.match(source, /Promise\.race\(\[/);
+  assert.match(source, /setTimeout\(\(\) => resolve\(current\.data\), 320\)/);
+  assert.match(source, /https:\/\/i\.ytimg\.com\/vi\/\$\{fallbackVideoId\}\/hqdefault\.jpg/);
+  assert.doesNotMatch(source, /front-devocional-mana\.png/);
+});
+
+test('el detalle público de Peticiones anuncia el diálogo y devuelve el foco', async () => {
+  const [view, logic] = await Promise.all([
+    readProjectFile('src/components/PrayerWall.astro'),
+    readProjectFile('src/scripts/prayer-wall.js'),
+  ]);
+
+  assert.match(view, /data-prayer-detail hidden aria-live="polite" role="dialog" aria-modal="false"/);
+  assert.match(logic, /detail\.querySelector\('\[data-prayer-detail-close\]'\)\?\.focus\(\)/);
+  assert.match(logic, /event\.key !== 'Escape'/);
+  assert.match(logic, /trigger instanceof HTMLElement && trigger\.isConnected/);
+});

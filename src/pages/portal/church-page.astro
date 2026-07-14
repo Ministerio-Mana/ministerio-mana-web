@@ -1,0 +1,243 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Sidebar from '@components/portal/Sidebar.astro';
+import PortalIcon from '@components/portal/PortalIcon.astro';
+---
+
+<BaseLayout title="Página de mi iglesia | Portal Maná" description="Editor visual de la página pública de cada iglesia." hideHeader hideFooter noindex>
+  <div class="min-h-screen bg-slate-50 text-slate-800">
+    <div class="flex min-h-screen flex-col lg:flex-row">
+      <Sidebar />
+      <main class="min-w-0 flex-1 p-4 md:p-8 lg:p-12">
+        <div id="church-page-gate" class="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm" role="status" aria-live="polite">Validando permisos...</div>
+
+        <div id="church-page-app" class="mx-auto hidden max-w-7xl space-y-6">
+          <header class="border-b border-slate-200 pb-4">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[.16em] text-slate-500">Presencia local</p>
+                <h1 class="mt-2 font-display text-3xl font-black text-[#293C74] md:text-4xl">Página de mi iglesia</h1>
+                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">Completa la información, elige una plantilla y agrega imágenes. El diseño y el movimiento se aplican automáticamente.</p>
+              </div>
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label class="text-xs font-bold text-slate-600">Iglesia
+                  <select id="church-page-church" class="mt-2 min-h-11 w-full min-w-64 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#293C74]"></select>
+                </label>
+                <a id="church-page-public-link" class="hidden min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700" target="_blank" rel="noopener noreferrer"><PortalIcon name="external-link" size={17} /> Ver página</a>
+              </div>
+            </div>
+          </header>
+
+          <section id="church-page-setup" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-6">
+            <p class="text-xs font-black uppercase tracking-[.16em] text-amber-700">Configuración pendiente</p>
+            <h2 class="mt-2 text-xl font-black text-[#293C74]">Activa las páginas locales</h2>
+            <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">Ejecuta este archivo una sola vez en Supabase. No modifica eventos, pagos, roles ni las iglesias existentes.</p>
+            <code class="mt-4 block overflow-x-auto rounded-xl bg-white px-4 py-4 text-sm font-bold text-[#293C74]">docs/sql/church_public_pages.sql</code>
+          </section>
+
+          <div id="church-page-alert" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></div>
+
+          <form id="church-page-form" class="hidden space-y-6">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,.72fr)] xl:items-start">
+              <div class="space-y-6">
+                <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+                  <div class="mb-4">
+                    <p class="text-xs font-black uppercase tracking-[.14em] text-brand-teal">1. Estilo</p>
+                    <h2 class="mt-2 text-xl font-black text-[#293C74]">Elige cómo se contará la historia</h2>
+                  </div>
+                  <fieldset id="church-page-templates" class="grid gap-4 md:grid-cols-3">
+                    <legend class="sr-only">Plantilla visual</legend>
+                    <label class="church-template-card">
+                      <input type="radio" name="template" value="ESSENTIAL" class="sr-only" />
+                      <span class="church-template-thumb church-template-thumb--essential"><i></i><i></i><i></i></span>
+                      <strong>Esencial</strong><small>Clara, rápida y con secciones tradicionales.</small>
+                    </label>
+                    <label class="church-template-card">
+                      <input type="radio" name="template" value="STORY" class="sr-only" />
+                      <span class="church-template-thumb church-template-thumb--story"><i></i><i></i><i></i></span>
+                      <strong>Historia</strong><small>Escenas de pantalla completa que avanzan con el scroll.</small>
+                    </label>
+                    <label class="church-template-card">
+                      <input type="radio" name="template" value="MOSAIC" class="sr-only" />
+                      <span class="church-template-thumb church-template-thumb--mosaic"><i></i><i></i><i></i></span>
+                      <strong>Mosaico</strong><small>Editorial, visual y con tarjetas que aparecen al recorrer.</small>
+                    </label>
+                  </fieldset>
+                </section>
+
+                <details open class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">2. Bienvenida e información</summary>
+                  <div class="grid gap-4 border-t border-slate-100 p-4 md:grid-cols-2 md:p-6">
+                    <label class="church-field md:col-span-2">Nombre público<input id="church-page-name" maxlength="120" required /></label>
+                    <label class="church-field md:col-span-2">Frase de bienvenida<input id="church-page-tagline" maxlength="180" required placeholder="Una familia para crecer en la fe" /></label>
+                    <label class="church-field md:col-span-2">Descripción<textarea id="church-page-description" rows="5" maxlength="1600" required></textarea></label>
+                    <label class="church-field">Enlace público<div class="church-slug"><span>/iglesias/</span><input id="church-page-slug" maxlength="160" required /></div></label>
+                    <label class="church-field">Horarios<textarea id="church-page-schedule" rows="3" maxlength="600" required placeholder="Domingos · 10:00 a. m."></textarea></label>
+                  </div>
+                </details>
+
+                <details open class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">3. Imágenes principales</summary>
+                  <div class="grid gap-4 border-t border-slate-100 p-4 md:grid-cols-2 md:p-6">
+                    <div class="church-image-field md:col-span-2">
+                      <span>Portada</span>
+                      <div id="church-page-hero-preview" class="church-image-preview church-image-preview--wide"></div>
+                      <button type="button" data-image-target="hero" class="church-secondary-button"><PortalIcon name="image" size={17} /> Elegir o subir imagen</button>
+                      <label class="church-field">Descripción accesible<input id="church-page-hero-alt" maxlength="160" placeholder="Personas reunidas en la iglesia..." /></label>
+                    </div>
+                    <div class="church-image-field">
+                      <span>Pastor o equipo</span>
+                      <div id="church-page-pastor-preview" class="church-image-preview"></div>
+                      <button type="button" data-image-target="pastor" class="church-secondary-button"><PortalIcon name="image" size={17} /> Elegir o subir imagen</button>
+                      <label class="church-field">Descripción accesible<input id="church-page-pastor-alt" maxlength="160" /></label>
+                    </div>
+                    <div class="grid content-start gap-4">
+                      <label class="church-field">Nombre del pastor o equipo<input id="church-page-pastor-name" maxlength="120" /></label>
+                      <label class="church-field">Rol o presentación<input id="church-page-pastor-title" maxlength="80" placeholder="Pastores locales" /></label>
+                    </div>
+                  </div>
+                </details>
+
+                <details id="church-page-story-section" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">4. Escenas de la historia</summary>
+                  <div class="space-y-4 border-t border-slate-100 p-4 md:p-6">
+                    <p class="text-sm leading-relaxed text-slate-600">Para Historia y Mosaico agrega entre 2 y 6 escenas. Solo completas texto e imágenes; el movimiento queda protegido.</p>
+                    <div id="church-page-scenes" class="space-y-4"></div>
+                    <button id="church-page-add-scene" type="button" class="church-secondary-button"><PortalIcon name="plus" size={17} /> Agregar escena</button>
+                  </div>
+                </details>
+
+                <details class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">5. Galería y contacto</summary>
+                  <div class="space-y-6 border-t border-slate-100 p-4 md:p-6">
+                    <div>
+                      <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div><h3 class="font-black text-[#293C74]">Galería</h3><p class="mt-2 text-xs text-slate-500">Hasta 6 fotos de la comunidad.</p></div>
+                        <button type="button" data-image-target="gallery" class="church-secondary-button"><PortalIcon name="plus" size={17} /> Agregar foto</button>
+                      </div>
+                      <div id="church-page-gallery" class="mt-4 grid gap-4 sm:grid-cols-2"></div>
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2">
+                      <label class="church-field">WhatsApp<input id="church-page-whatsapp" inputmode="tel" maxlength="24" placeholder="+57 300 000 0000" /></label>
+                      <label class="church-field">Correo<input id="church-page-email" type="email" maxlength="254" /></label>
+                      <label class="church-field md:col-span-2">Mensaje inicial de WhatsApp<input id="church-page-whatsapp-message" maxlength="280" placeholder="Hola, quiero recibir información..." /></label>
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              <aside class="space-y-4 xl:sticky xl:top-6">
+                <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+                    <div><p class="text-xs font-black uppercase tracking-[.14em] text-brand-teal">Vista previa</p><p id="church-page-preview-label" class="mt-2 text-xs text-slate-500">Esencial</p></div>
+                    <span id="church-page-status" class="rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-600">Borrador</span>
+                  </div>
+                  <div id="church-page-preview" class="church-live-preview"></div>
+                </section>
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <p id="church-page-save-status" class="min-h-5 text-xs text-slate-500" role="status" aria-live="polite">Los cambios se conservan en este dispositivo hasta guardarlos.</p>
+                  <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <button id="church-page-save" type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-black text-white"><PortalIcon name="save" size={17} /> Guardar borrador</button>
+                    <button id="church-page-publish" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#293C74]/30 bg-white px-4 py-2 text-sm font-black text-[#293C74]"><PortalIcon name="send" size={17} /><span id="church-page-publish-label">Publicar</span></button>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="church-media-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="church-media-title" aria-hidden="true">
+    <div class="mx-auto my-8 max-w-5xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div class="flex items-start justify-between gap-4 border-b border-slate-100 p-4 md:p-6">
+        <div><h2 id="church-media-title" class="text-xl font-black text-[#293C74]">Imágenes de esta iglesia</h2><p class="mt-2 text-sm text-slate-500">Elige una imagen existente o sube una nueva. JPG, PNG o WebP, máximo 5 MB.</p></div>
+        <button id="church-media-close" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500" aria-label="Cerrar biblioteca"><PortalIcon name="x" size={19} /></button>
+      </div>
+      <div class="grid gap-6 p-4 md:grid-cols-[17rem_1fr] md:p-6">
+        <form id="church-media-upload" class="space-y-4">
+          <label id="church-media-dropzone" for="church-media-file" tabindex="0" role="button" class="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-center focus:outline-none focus:ring-2 focus:ring-[#293C74]/30">
+            <PortalIcon name="upload" size={28} class="text-[#293C74]" />
+            <strong class="text-sm text-[#293C74]">Arrastra una imagen</strong><span class="text-xs text-slate-500">o toca para seleccionarla</span>
+            <input id="church-media-file" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" />
+          </label>
+          <p id="church-media-upload-status" class="min-h-5 text-xs text-slate-500" role="status" aria-live="polite"></p>
+          <button type="submit" class="min-h-11 w-full rounded-xl bg-[#293C74] px-4 py-2 text-sm font-black text-white">Subir imagen</button>
+        </form>
+        <div>
+          <label class="church-field">Buscar<input id="church-media-search" type="search" placeholder="Nombre de archivo" /></label>
+          <div id="church-media-list" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+          <p id="church-media-empty" class="mt-4 hidden rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">Todavía no hay imágenes en la carpeta de esta iglesia.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import '@scripts/portal-church-page.js';
+</script>
+
+<style>
+  .church-field { color: #475569; display: block; font-size: .75rem; font-weight: 800; }
+  .church-field input, .church-field textarea, .church-field select { background: #f8fafc; border: 1px solid #dce4ec; border-radius: 12px; color: #172151; display: block; font-size: .875rem; font-weight: 500; margin-top: var(--space-1); min-height: 44px; padding: var(--space-2); width: 100%; }
+  .church-field input:focus, .church-field textarea:focus, .church-field select:focus { border-color: #293c74; outline: 3px solid rgba(41,60,116,.14); }
+  .church-slug { align-items: center; display: flex; margin-top: var(--space-1); }
+  .church-slug span { background: #eef2f7; border: 1px solid #dce4ec; border-radius: 12px 0 0 12px; color: #64748b; min-height: 44px; padding: var(--space-2); }
+  .church-slug input { border-left: 0; border-radius: 0 12px 12px 0; margin: 0; }
+  .church-template-card { border: 2px solid #e2e8f0; border-radius: 16px; cursor: pointer; display: flex; min-height: 176px; padding: var(--space-2); flex-direction: column; }
+  .church-template-card:has(input:checked) { border-color: #293c74; box-shadow: 0 0 0 3px rgba(41,60,116,.12); }
+  .church-template-card:focus-within { outline: 3px solid rgba(40,166,189,.35); outline-offset: 2px; }
+  .church-template-card strong { color: #293c74; font-size: .95rem; margin-top: var(--space-2); }
+  .church-template-card small { color: #64748b; line-height: 1.45; margin-top: var(--space-1); }
+  .church-template-thumb { background: #111936; border-radius: 10px; display: grid; gap: var(--space-1); height: 72px; overflow: hidden; padding: var(--space-1); }
+  .church-template-thumb i { background: #28a6bd; border-radius: 4px; display: block; }
+  .church-template-thumb--essential { grid-template-rows: 1.5fr .45fr .45fr; }
+  .church-template-thumb--story { grid-template-columns: 1fr 1fr 1fr; padding: 0; }
+  .church-template-thumb--story i:nth-child(2) { background: #f2c94c; }
+  .church-template-thumb--mosaic { grid-template-columns: 1.5fr 1fr; grid-template-rows: 1fr 1fr; }
+  .church-template-thumb--mosaic i:first-child { grid-row: 1 / -1; }
+  .church-secondary-button { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: 44px; padding: var(--space-1) var(--space-2); }
+  .church-image-field { display: grid; gap: var(--space-2); }
+  .church-image-field > span { color: #475569; font-size: .75rem; font-weight: 900; }
+  .church-image-preview { align-items: center; aspect-ratio: 4 / 3; background: #eef2f7; background-position: center; background-size: cover; border: 1px dashed #cbd5e1; border-radius: 16px; display: flex; justify-content: center; overflow: hidden; }
+  .church-image-preview--wide { aspect-ratio: 16 / 7; }
+  .church-live-preview { background: #111936; min-height: 34rem; overflow: hidden; }
+  :global(.preview-essential header) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd); background-position: center; background-size: cover; color: white; display: flex; flex-direction: column; justify-content: end; min-height: 22rem; padding: var(--space-4); }
+  :global(.preview-essential header small) { align-self: flex-start; font-size: .65rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+  :global(.preview-essential header strong) { align-self: flex-start; font-size: clamp(2rem,5vw,3.4rem); font-weight: 900; line-height: .95; margin-top: var(--space-2); }
+  :global(.preview-essential header span) { align-self: flex-start; line-height: 1.45; margin-top: var(--space-2); }
+  :global(.preview-essential section) { background: white; color: #172151; padding: var(--space-4); }
+  :global(.preview-essential section strong) { display: block; font-size: 1.45rem; font-weight: 900; }
+  :global(.preview-essential section p) { color: #64748b; line-height: 1.55; margin-top: var(--space-2); }
+  :global(.preview-story) { display: grid; min-height: 34rem; }
+  :global(.preview-story-card) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd) center/cover; color: white; display: flex; min-height: 17rem; padding: var(--space-3); position: relative; }
+  :global(.preview-story-card::after) { background: linear-gradient(0deg,rgba(7,17,28,.9),transparent); content: ''; inset: 0; position: absolute; }
+  :global(.preview-story-card div) { position: relative; z-index: 1; }
+  :global(.preview-story-card small), :global(.preview-story-card strong) { display: block; }
+  :global(.preview-story-card small) { color: #f2c94c; font-size: .65rem; font-weight: 900; text-transform: uppercase; }
+  :global(.preview-story-card strong) { font-size: 1.6rem; line-height: 1; margin-top: var(--space-1); }
+  :global(.preview-mosaic) { color: white; padding: var(--space-2); }
+  :global(.preview-mosaic header) { padding: var(--space-3) var(--space-2); }
+  :global(.preview-mosaic header small), :global(.preview-mosaic header strong) { display: block; }
+  :global(.preview-mosaic header small) { color: #28a6bd; font-size: .65rem; font-weight: 900; text-transform: uppercase; }
+  :global(.preview-mosaic header strong) { font-size: 2rem; line-height: 1; margin-top: var(--space-1); }
+  :global(.preview-mosaic > div) { display: grid; gap: var(--space-2); grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(.preview-mosaic-card) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd) center/cover; border-radius: 16px; display: flex; min-height: 12rem; padding: var(--space-2); position: relative; }
+  :global(.preview-mosaic-card::after) { background: linear-gradient(0deg,rgba(7,17,28,.9),transparent); border-radius: inherit; content: ''; inset: 0; position: absolute; }
+  :global(.preview-mosaic-card div) { position: relative; z-index: 1; }
+  :global(.preview-mosaic-card small), :global(.preview-mosaic-card strong) { display: block; }
+  :global(.preview-mosaic-card small) { color: #f2c94c; font-size: .6rem; text-transform: uppercase; }
+  :global(.preview-mosaic-card strong) { line-height: 1.05; margin-top: var(--space-1); }
+  :global(.church-scene-card) { border: 1px solid #dce4ec; border-radius: 16px; padding: var(--space-2); }
+  :global(.church-scene-grid) { display: grid; gap: var(--space-2); grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(.church-scene-image) { aspect-ratio: 16 / 9; background: #eef2f7 center/cover; border-radius: 12px; margin-top: var(--space-2); }
+  :global(.church-media-card) { background: #fff; border: 1px solid #dce4ec; border-radius: 16px; min-height: 44px; overflow: hidden; text-align: left; width: 100%; }
+  :global(.church-media-card img) { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+  :global(.church-media-card span) { display: block; font-size: .72rem; font-weight: 800; overflow: hidden; padding: var(--space-1); text-overflow: ellipsis; white-space: nowrap; }
+  :global(.church-gallery-card) { border: 1px solid #dce4ec; border-radius: 16px; overflow: hidden; padding: var(--space-2); }
+  :global(.church-gallery-card img) { aspect-ratio: 4 / 3; border-radius: 10px; object-fit: cover; width: 100%; }
+  :global(.church-gallery-card button) { min-height: 44px; color: #b42318; font-size: .75rem; font-weight: 900; }
+  @media (max-width: 640px) { :global(.church-scene-grid), :global(.preview-mosaic > div) { grid-template-columns: 1fr; } }
+</style>

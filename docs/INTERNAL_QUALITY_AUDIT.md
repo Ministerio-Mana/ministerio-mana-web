@@ -43,6 +43,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Cumple técnicamente en código y producción; cuentas reales por alcance y misionero pendientes |
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Cumple técnicamente en código y producción; decisiones reales y variación por roles pendientes |
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Cumple técnicamente en código y producción; mutaciones controladas, ImageKit y variación por roles pendientes |
+| 4 | `/portal/church-page` | Páginas locales, plantillas, ImageKit y alcance territorial | Cumple técnicamente en código; SQL, publicación controlada y variación por roles pendientes |
 | 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Parcial avanzado: contrato, despliegue y acceso privado verificados; bloques reales y roles pendientes |
 | 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Parcial avanzado: contrato, despliegue y acceso restringido verificados; lectura real con superadmin individual pendiente |
 | 4 | `/admin/cumbre/manual` | Operación sensible, auditoría y cierre | Cumple técnicamente en código y producción; SQL, sesión individual y escritura controlada pendientes |
@@ -301,6 +302,29 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - El servidor normaliza todo el documento, elimina propiedades desconocidas, rechaza URLs inseguras y exige una historia completa antes de publicar.
 - La publicación pública del CMS quedó conectada por ruta, respetando prioridad de las páginas Astro existentes y sirviendo únicamente estados publicados.
 - Compilación y contrato de espaciado pasan sin aumentar deuda. Falta la prueba autenticada con medios reales y las tres orientaciones.
+
+## Registro de la fase 4 — `/portal/church-page`
+
+### Evidencia implementada
+
+- El editor ofrece tres plantillas protegidas: `Esencial`, `Historia` y `Mosaico`. Los pastores completan información, escenas e imágenes sin editar CSS, JSON ni parámetros libres de animación.
+- Los permisos se vuelven a comprobar en cada API. Administración conserva alcance global; equipos nacionales, regionales y locales reciben únicamente las iglesias que les corresponden. La sesión compartida por contraseña no puede escribir.
+- Borrador y publicación están separados. Guardar no modifica la página pública; publicar copia una instantánea validada y usa versión esperada para impedir que una sesión sobrescriba silenciosamente a otra.
+- Slug, correo, WhatsApp, textos, escenas, galería y URLs se normalizan en servidor. La publicación exige portada con texto alternativo, horarios, descripción, contacto y escenas completas cuando la plantilla las necesita.
+- ImageKit usa carga directa firmada, verificación posterior en servidor y carpeta estable por iglesia. Una página solo puede guardar imágenes registradas en la biblioteca de su propia sede.
+- La galería admite seis imágenes en la interfaz y el relato entre dos y seis escenas. Horizontal, cuadrada y vertical se adaptan con `cover`, `contain`, punto focal o composición editorial según la plantilla; no se deforman.
+- Los borradores se conservan durante la sesión, salir de la pestaña activa la recuperación local y los fallos de API no limpian lo escrito. La versión pública anterior permanece intacta hasta una publicación válida.
+- El diálogo de medios anuncia propósito, encierra el foco, cierra con `Escape`, devuelve el foco y permite abrir el selector de archivos con teclado. Los controles críticos mantienen al menos 44 px.
+- La ruta pública `/iglesias/{slug}` solo lee estados `PUBLISHED` y su `published_snapshot`; integra horarios, liderazgo, galería, WhatsApp, correo, mapa y los próximos eventos públicos de esa sede.
+- `church-page.test.ts` y el contrato interno cubren normalización, requisitos de publicación, carpeta estable, alcance de medios, concurrencia, RLS e instantánea pública. Compilación y contrato de espaciado pasan sin agregar deuda.
+
+### Cierre humano requerido para `/portal/church-page`
+
+- Ejecutar `docs/sql/church_public_pages.sql` y confirmar las dos tablas indicadas al final del archivo.
+- Entrar con una cuenta individual de una iglesia autorizada, cargar una imagen horizontal, una cuadrada y una vertical, y revisar el editor a 390 px y escritorio.
+- Guardar un borrador y confirmar que la página pública anterior no cambia. Luego publicar una página controlada y comprobar directorio, mapa, contacto y evento local.
+- Repetir con pastor o colaborador local, regional y nacional; cada cuenta debe ver únicamente sus sedes. Una cuenta sin alcance debe quedar bloqueada en navegación y API.
+- Abrir el mismo borrador en dos sesiones y confirmar que la segunda recibe el conflicto de versión en vez de sobrescribir el cambio reciente.
 
 ## Registro de la fase 4 — `/portal/content-preview`
 

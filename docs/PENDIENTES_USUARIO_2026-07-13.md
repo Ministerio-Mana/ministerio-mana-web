@@ -36,6 +36,20 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Ejecutar una segunda actualización y confirmar que cambia la hora de `Actualizado` y reemplaza el mismo archivo.
 - [ ] Usar `Descargar una copia` una vez para validar la alternativa fuera de línea.
 
+### Cuarto: página pública de una iglesia
+
+- [ ] Después de ejecutar el punto 6, entrar con una cuenta individual a `/portal/church-page`.
+- [ ] Elegir una iglesia autorizada y probar `Esencial`, `Historia` y `Mosaico` sin publicar datos reales incompletos.
+- [ ] Cargar una imagen horizontal, una cuadrada y una vertical; confirmar que cada una queda en la biblioteca de esa iglesia y no se deforma.
+- [ ] Guardar el borrador, recargar y confirmar que se recupera. Verificar que la página pública no cambió antes de pulsar `Publicar`.
+- [ ] Publicar una sede controlada y revisar `/iglesias/`, su mapa, `/iglesias/{slug}`, WhatsApp, correo, ubicación y próximos eventos en celular y escritorio.
+- [ ] Repetir el acceso con una cuenta local, regional y nacional; cada una debe ver únicamente las iglesias de su alcance.
+
+### Quinto: Devocional y Peticiones
+
+- [ ] Confirmar que el footer muestra la miniatura del devocional más reciente y no el logo fijo. Reproducir, pausar y cambiar de video una vez.
+- [ ] En `/peticiones/`, abrir una petición con teclado, cerrarla con `Escape` y confirmar que el foco regresa a la tarjeta sin pulsar `Oré`.
+
 ### Decisiones que debe dejar definidas el usuario
 
 - [ ] Elegir el plazo de retención de comprobantes: 90, 180, 365 días u otro aprobado por Contabilidad.
@@ -82,8 +96,12 @@ No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supaba
   - Evita duplicar abonos de Cumbre por doble clic, reintento o dos solicitudes concurrentes.
   - El script no borra ni modifica pagos. Si encuentra duplicados históricos, se detiene y muestra un error: no eliminar nada; compartir únicamente el resultado para revisar cada caso.
   - Resultado esperado: existen `idx_cumbre_payments_provider_tx_unique` e `idx_cumbre_payments_booking_reference_unique`.
+- [ ] 6. Ejecutar `docs/sql/church_public_pages.sql`.
+  - Activa borradores, publicación, tres plantillas y auditoría para la página pública de cada iglesia.
+  - No modifica eventos, pagos, roles, membresías ni la información territorial existente.
+  - Resultado esperado: aparecen `church_public_pages` y `church_public_page_audit_logs`.
 
-Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El quinto queda pendiente.
+Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. Los puntos 5 y 6 quedan pendientes.
 
 ## 2. Activar el primer equipo financiero
 

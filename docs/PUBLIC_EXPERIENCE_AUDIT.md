@@ -39,7 +39,7 @@ El contrato técnico vive en `src/lib/storyMotion.ts`, `src/styles/story-motion.
 | Cumbre — bienvenida | Siete escenas con el mismo motor usado por Peregrinaciones. | Migrada al componente compartido con preset `cinematic`; no reactivar campañas cerradas. |
 | Campus | Portada visual con revelados independientes y valores históricos fuera de escala. | Auditar en la siguiente etapa; usar movimiento calmado, no una historia completa, salvo una campaña concreta. |
 | Peticiones | Muro operativo con formulario y privacidad sensible. | Priorizar calma, legibilidad, feedback y privacidad; no fijar escenas al scroll. |
-| Iglesias y mapa | Mapa Leaflet funcional con filtros, controles y variante ambiental. | Mejorar responsive, carga, teclado y diseño de tarjetas; reservar el mapa ambiental para escenas narrativas. |
+| Iglesias y mapa | Mapa Leaflet funcional, directorio híbrido y páginas locales con tres plantillas. | Supabase alimenta el directorio sin perder el respaldo estático; falta QA con una sede publicada. |
 | CMS de Contenido | Admite bloques editoriales y carga directa a ImageKit. El constructor técnico obligaba a copiar URLs o editar JSON. | `Historia Maná` agregado como plantilla cerrada: escenas, preset, paleta, layout, punto focal y selector visual de ImageKit; nunca expone valores libres de movimiento. |
 
 ## Etapas
@@ -61,9 +61,28 @@ El contrato técnico vive en `src/lib/storyMotion.ts`, `src/styles/story-motion.
 - Una ruta pública dinámica sirve únicamente páginas publicadas; las rutas especiales existentes conservan prioridad.
 - El catálogo de recursos y las recomendaciones de carga viven en `CMS_STORY_IMAGE_GUIDE_2026-07-14.md`.
 
+## Registro Iglesias — 14 de julio de 2026
+
+- El directorio público combina las iglesias de Supabase con el respaldo editorial existente; un fallo de base de datos no deja el mapa ni las tarjetas vacías.
+- Cada sede publicada obtiene `/iglesias/{slug}` y aparece con “Conocer esta iglesia” en el directorio. Las sedes sin página continúan mostrando ubicación y contacto sin enlaces rotos.
+- `Esencial` prioriza información práctica y velocidad; `Historia` reutiliza el barrido vertical de Historia Maná; `Mosaico` ofrece una composición editorial nueva con movimiento progresivo y degradación estática.
+- Las tres experiencias comparten tipografía, jerarquía, paleta, footer, contactos, mapa, galería y próximos eventos locales. En móvil pasan a una columna y respetan `prefers-reduced-motion`.
+- La imagen nunca se estira. Portadas usan composición adaptable; escenas permiten fondo, división o arte protagonista; galerías recortan únicamente dentro de tarjetas previsibles.
+- La versión pública se sirve desde una instantánea separada del borrador. Las imágenes externas no registradas y las pertenecientes a otra sede se rechazan antes de guardar.
+- La activación productiva requiere `docs/sql/church_public_pages.sql` y una publicación de prueba autorizada. Hasta entonces, el directorio existente sigue funcionando sin cambios destructivos.
+
+## Registro Devocional y Peticiones — 14 de julio de 2026
+
+- La auditoría en vivo confirmó que `/devocional/` obtiene el video actual y que el reproductor del footer reproduce YouTube, pero el footer conservaba una miniatura fija por una inicialización incorrecta de caché.
+- El footer ahora intenta la consulta inicial, usa miniaturas reales de YouTube incluso durante el respaldo y vuelve a intentar pronto si la fuente remota falla. No bloquea la página más de 320 ms.
+- El muro público de Peticiones cargó su registro sin desbordamiento ni exposición adicional. El detalle ahora se anuncia como diálogo, enfoca el cierre, acepta `Escape` y devuelve el foco a la petición que lo abrió.
+
 ## Cierre humano de esta fase
 
 - Revisar `/home-ministerio` y la peregrinación en escritorio, tableta y celular.
 - Confirmar que el ritmo se siente suave y que ningún panel obliga a seguir una animación para leer.
 - Aprobar qué borrador del Home se convierte en fuente oficial antes de cambiar la portada `/`.
 - Crear una página controlada con `Historia Maná`, elegir imágenes horizontal, cuadrada y vertical desde ImageKit y aprobar las tres presentaciones antes de usar el constructor en Home.
+- Publicar una sede controlada con cada una de las tres plantillas y confirmar directorio, mapa, WhatsApp, correo y evento local en 390 px y escritorio.
+- Después del despliegue, confirmar que el footer muestra la miniatura del devocional más reciente y que reproducir, pausar, cambiar video y mover el progreso siguen funcionando.
+- Abrir y cerrar una petición por teclado; confirmar que `Escape` devuelve el foco a la tarjeta sin marcar “Oré”.

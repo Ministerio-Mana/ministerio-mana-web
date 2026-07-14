@@ -1,0 +1,26 @@
+---
+export const prerender = false;
+
+import BaseLayout from '@layouts/BaseLayout.astro';
+import ChurchPublicExperience from '@components/churches/ChurchPublicExperience.astro';
+import { getPublicChurchPage } from '@lib/churchPublic';
+
+const slug = String(Astro.params.slug || '').trim();
+const churchPage = await getPublicChurchPage(slug);
+if (!churchPage) Astro.response.status = 404;
+const title = churchPage ? `${churchPage.page.display_name} | Ministerio Maná` : 'Iglesia no encontrada | Ministerio Maná';
+const description = churchPage?.page.description || 'La página solicitada no está publicada.';
+---
+
+<BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
+  {churchPage ? (
+    <ChurchPublicExperience data={churchPage} />
+  ) : (
+    <main class="mx-auto flex min-h-[65svh] max-w-3xl flex-col items-center justify-center px-6 py-24 text-center">
+      <p class="text-xs font-black uppercase tracking-[.18em] text-brand-teal">Directorio de iglesias</p>
+      <h1 class="mt-4 font-display text-4xl font-black text-[#293C74] md:text-6xl">Esta página aún no está publicada</h1>
+      <p class="mt-4 max-w-xl text-base leading-relaxed text-slate-600">Puedes regresar al directorio para encontrar la sede, su WhatsApp y la ubicación disponible.</p>
+      <a href="/iglesias/" class="mt-8 inline-flex min-h-12 items-center justify-center rounded-full bg-[#293C74] px-6 py-4 text-sm font-black text-white">Ver directorio</a>
+    </main>
+  )}
+</BaseLayout>

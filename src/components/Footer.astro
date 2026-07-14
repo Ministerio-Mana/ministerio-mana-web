@@ -6,7 +6,7 @@ const devotionalWhatsappUrl = 'https://whatsapp.com/channel/0029VaABvlHGzzKb3f53
 const devotionalYoutubeChannelUrl = 'https://www.youtube.com/channel/UCC85JrvTKq9dfCcgxQQU_Ag';
 const devotionalYoutubeVideosUrl = `${devotionalYoutubeChannelUrl}/videos`;
 const devotionalRssUrl = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCC85JrvTKq9dfCcgxQQU_Ag';
-const devotionalCoverFallback = '/assets/home-ministerio/front-devocional-mana.png';
+const fallbackVideoId = '2Xw3LVxU1dM';
 
 type DevotionalVideo = {
   title: string;
@@ -19,9 +19,9 @@ type DevotionalVideo = {
 const fallbackDevotional: DevotionalVideo = {
   title: t(locale, 'footer_player_title_fallback'),
   description: t(locale, 'footer_player_body_fallback'),
-  videoId: '2Xw3LVxU1dM',
-  image: devotionalCoverFallback,
-  url: 'https://www.youtube.com/watch?v=2Xw3LVxU1dM',
+  videoId: fallbackVideoId,
+  image: `https://i.ytimg.com/vi/${fallbackVideoId}/hqdefault.jpg`,
+  url: `https://www.youtube.com/watch?v=${fallbackVideoId}`,
 };
 const fallbackDevotionalList: DevotionalVideo[] = [
   fallbackDevotional,
@@ -193,7 +193,7 @@ async function fetchLatestDevotionalsFromRemote(): Promise<DevotionalVideo[]> {
   return pageVideos.length > 0 ? pageVideos : fallbackDevotionalList;
 }
 
-function getLatestDevotionals(): DevotionalVideo[] {
+async function getLatestDevotionals(): Promise<DevotionalVideo[]> {
   const cacheKey = locale;
   const globalCache = globalThis as typeof globalThis & {
     __manaYoutubeFooterVideoListsV3?: Record<string, { ts: number; data: DevotionalVideo[]; inflight?: Promise<DevotionalVideo[]> }>;
@@ -206,14 +206,17 @@ function getLatestDevotionals(): DevotionalVideo[] {
 
   if (cached && Array.isArray(cached.data) && now - cached.ts < cacheTtlMs) return cached.data;
 
-  const current = cached ?? { ts: now, data: fallbackDevotionalList };
+  const current = cached ?? { ts: 0, data: fallbackDevotionalList };
   cache[cacheKey] = current;
 
-  if (!current.inflight && now - current.ts >= fallbackTtlMs) {
+  if (!current.inflight) {
     current.inflight = fetchLatestDevotionalsFromRemote()
       .then((data) => {
-        current.ts = Date.now();
         current.data = data.length > 0 ? data : fallbackDevotionalList;
+        const usedFallback = current.data === fallbackDevotionalList;
+        current.ts = usedFallback
+          ? Date.now() - Math.max(0, cacheTtlMs - fallbackTtlMs)
+          : Date.now();
         return current.data;
       })
       .catch(() => {
@@ -226,10 +229,13 @@ function getLatestDevotionals(): DevotionalVideo[] {
       });
   }
 
-  return current.data;
+  return await Promise.race([
+    current.inflight,
+    new Promise<DevotionalVideo[]>((resolve) => setTimeout(() => resolve(current.data), 320)),
+  ]);
 }
 
-const latestDevotionals = getLatestDevotionals();
+const latestDevotionals = await getLatestDevotionals();
 const latestDevotional = latestDevotionals[0] ?? {
   ...fallbackDevotional,
   image: `https://i.ytimg.com/vi/${fallbackDevotional.videoId}/hqdefault.jpg`,

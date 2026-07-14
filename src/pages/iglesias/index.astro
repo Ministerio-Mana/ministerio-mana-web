@@ -2,16 +2,23 @@
 export const prerender = false;
 import BaseLayout from '@layouts/BaseLayout.astro';
 import ChurchesMap from '@components/ChurchesMap.astro';
-import churchesData from '@data/churches.json';
 import { buildChurchGeoTree } from '@lib/churchGeo';
 import { buildSafeChurchMapsUrl } from '@lib/mapsUrl';
+import { listPublicChurchDirectory } from '@lib/churchDirectory';
+import { listPublishedChurchPageSummaries } from '@lib/churchPublic';
 
 const toMapsHref = (church: any) => {
   return buildSafeChurchMapsUrl(church, church.country || 'Colombia');
 };
 
-const churchesRaw = (churchesData as any[]).map((church, index) => ({
+const [directoryRows, publishedPages] = await Promise.all([
+  listPublicChurchDirectory(),
+  listPublishedChurchPageSummaries(),
+]);
+const publishedPageByChurch = new Map(publishedPages.map((page) => [page.church_id, page.slug]));
+const churchesRaw = directoryRows.map((church, index) => ({
   ...church,
+  page_slug: publishedPageByChurch.get(church.id) || church.page_slug || '',
   mapsHref: toMapsHref(church),
   id: `${church.country ?? 'Colombia'}-${church.city ?? 'sin-ciudad'}-${church.name ?? index}`
     .toLowerCase()
@@ -57,7 +64,7 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
       </div>
 
       <div class="mb-14 animate-fade-in-up delay-300 relative group">
-        <ChurchesMap />
+        <ChurchesMap churches={churches} />
         <div class="absolute inset-0 pointer-events-none z-10 opacity-25 mix-blend-overlay">
           <svg width="100%" height="100%">
             <pattern id="dot-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -229,6 +236,14 @@ const description = 'Encuentra la sede de Ministerio Maná más cercana y contac
             </div>
 
             <div class="grid grid-cols-2 gap-3 mt-auto relative z-10">
+              {church.page_slug && (
+                <a
+                  href={`/iglesias/${church.page_slug}`}
+                  class="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-4 py-4 text-xs font-intro tracking-wider text-[#182653] transition hover:bg-brand-teal hover:text-white focus:outline-none focus:ring-2 focus:ring-brand-teal focus:ring-offset-2 focus:ring-offset-[#11182f]"
+                >
+                  Conocer esta iglesia
+                </a>
+              )}
               {church.whatsapp && (
                 <a
                   href={`https://wa.me/${church.whatsapp.replace(/[^0-9]/g, '')}`}

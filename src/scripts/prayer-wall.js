@@ -244,6 +244,18 @@ function showPrayerDetail(root, row, note) {
   button.addEventListener('click', () => handlePrayerAction(root, row, count, button));
   oldButton.replaceWith(button);
   detail.hidden = false;
+  root.__prayerDetailTrigger = note;
+  detail.querySelector('[data-prayer-detail-close]')?.focus();
+}
+
+function closePrayerDetail(root, restoreFocus = true) {
+  root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
+    detail.hidden = true;
+  });
+  root.querySelectorAll('[data-prayer-card].is-open').forEach((note) => note.classList.remove('is-open'));
+  const trigger = root.__prayerDetailTrigger;
+  root.__prayerDetailTrigger = null;
+  if (restoreFocus && trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
 }
 
 function createPrayerNote(root, row, index, slots, isNew = false) {
@@ -420,12 +432,12 @@ function setupPagination(root) {
 
 function setupPrayerDetail(root) {
   root.querySelectorAll('[data-prayer-detail-close]').forEach((button) => {
-    button.addEventListener('click', () => {
-      root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
-        detail.hidden = true;
-      });
-      root.querySelectorAll('[data-prayer-card].is-open').forEach((note) => note.classList.remove('is-open'));
-    });
+    button.addEventListener('click', () => closePrayerDetail(root));
+  });
+  root.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !root.querySelector('[data-prayer-detail]:not([hidden])')) return;
+    event.preventDefault();
+    closePrayerDetail(root);
   });
 }
 

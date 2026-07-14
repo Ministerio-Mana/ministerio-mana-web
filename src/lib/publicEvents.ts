@@ -10,6 +10,7 @@ const LEGACY_PUBLIC_FIELDS = [
   'title',
   'description',
   'scope',
+  'church_id',
   'start_date',
   'end_date',
   'banner_url',
@@ -53,6 +54,7 @@ export type PublicEvent = {
   title: string;
   description: string | null;
   scope: string;
+  church_id?: string | null;
   start_date: string;
   end_date: string | null;
   banner_url: string | null;
