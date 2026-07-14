@@ -7,6 +7,7 @@
     "src/pages/portal/events/[id].astro",
     "src/pages/portal/finances.astro",
     "src/pages/portal/ingresar.astro",
+    "src/pages/portal/regions.astro",
     "src/pages/portal/registro.astro",
     "src/pages/eventos/[slug].astro",
     "src/scripts/app-modal.js",
@@ -15,6 +16,7 @@
     "src/scripts/portal-event-operation.js",
     "src/scripts/portal-finances.js",
     "src/scripts/portal-ingresar.js",
+    "src/scripts/portal-regions.js",
     "src/scripts/portal-registro.js",
     "src/styles/portal.css"
   ],
@@ -154,7 +156,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 359,
+    "tailwindOffScale": 341,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },

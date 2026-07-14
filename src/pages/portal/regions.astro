@@ -19,18 +19,34 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <p class="text-slate-600">Administra regiones, ciudades y asignaciones de liderazgo regional.</p>
           </div>
 
-          <div id="regions-error" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
+          <div id="regions-error" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700" role="alert" aria-live="assertive"></div>
+          <div id="regions-feedback" class="hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800" role="status" aria-live="polite"></div>
 
-          <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 space-y-4">
-            <h2 class="text-xl font-bold text-[#293C74]">1) Crear o Actualizar Región</h2>
-            <form id="region-form" class="grid md:grid-cols-4 gap-3">
-              <input name="country" placeholder="País (ej: Colombia)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
-              <input name="code" placeholder="Código (ej: CO-PAC)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
-              <input name="name" placeholder="Nombre (ej: Pacífico)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
-              <button type="submit" class="bg-[#293C74] text-white rounded-xl font-bold text-sm px-4 py-3">Guardar Región</button>
+          <section class="portal-panel space-y-4 p-6" aria-labelledby="region-form-title">
+            <div>
+              <h2 id="region-form-title" class="text-xl font-bold text-[#293C74]">Crear región</h2>
+              <p id="region-form-help" class="mt-2 text-sm text-slate-500">El código identifica la región y no cambia durante una edición.</p>
+            </div>
+            <form id="region-form" class="grid gap-4 md:grid-cols-3" aria-describedby="region-form-help">
+              <div>
+                <label for="region-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
+                <input id="region-country" name="country" autocomplete="country-name" placeholder="Ej: Colombia" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required />
+              </div>
+              <div>
+                <label for="region-code" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Código</label>
+                <input id="region-code" name="code" autocomplete="off" placeholder="Ej: CO-PAC" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm uppercase" required />
+              </div>
+              <div>
+                <label for="region-name" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Nombre</label>
+                <input id="region-name" name="name" autocomplete="off" placeholder="Ej: Pacífico" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required />
+              </div>
+              <div class="flex flex-col gap-2 md:col-span-3 sm:flex-row">
+                <button id="region-submit" type="submit" class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Guardar región</button>
+                <button id="region-cancel-edit" type="button" class="hidden min-h-11 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar edición</button>
+              </div>
             </form>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+            <div class="portal-table-frame">
+              <table class="portal-responsive-table w-full text-sm">
                 <thead>
                   <tr class="text-left text-slate-400 border-b border-slate-100">
                     <th class="py-2">País</th>
@@ -45,23 +61,35 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <tbody id="regions-table-body" class="divide-y divide-slate-50 text-slate-700"></tbody>
               </table>
             </div>
-          </div>
+          </section>
 
-          <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 space-y-4">
-            <h2 class="text-xl font-bold text-[#293C74]">2) Asignar Ciudades a Región</h2>
-            <form id="city-form" class="grid md:grid-cols-4 gap-3">
-              <input name="country" placeholder="País" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required />
-              <input name="cities" placeholder="Ciudad o ciudades (coma separadas)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm md:col-span-2" required />
-              <select name="regionId" id="city-region-select" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required>
-                <option value="">Selecciona una región</option>
-              </select>
-              <div class="md:col-span-4 flex gap-3">
-                <button type="submit" class="bg-[#293C74] text-white rounded-xl font-bold text-sm px-4 py-3">Asignar Ciudad(es)</button>
-                <button type="button" id="btn-clear-city-region" class="bg-slate-100 text-slate-700 rounded-xl font-bold text-sm px-4 py-3">Quitar Región</button>
+          <section class="portal-panel space-y-4 p-6" aria-labelledby="city-form-title">
+            <div>
+              <h2 id="city-form-title" class="text-xl font-bold text-[#293C74]">Asignar ciudades a una región</h2>
+              <p id="city-form-help" class="mt-2 text-sm text-slate-500">Puedes escribir varias ciudades separadas por comas. Revisa el país antes de guardar.</p>
+            </div>
+            <form id="city-form" class="grid gap-4 md:grid-cols-4" aria-describedby="city-form-help">
+              <div>
+                <label for="city-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
+                <input id="city-country" name="country" autocomplete="country-name" placeholder="Ej: Colombia" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required />
+              </div>
+              <div class="md:col-span-2">
+                <label for="city-names" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Ciudad o ciudades</label>
+                <input id="city-names" name="cities" autocomplete="address-level2" placeholder="Ej: Cali, Palmira" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required />
+              </div>
+              <div>
+                <label for="city-region-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región</label>
+                <select name="regionId" id="city-region-select" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required>
+                  <option value="">Selecciona una región</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-2 md:col-span-4 sm:flex-row">
+                <button type="submit" class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Asignar ciudades</button>
+                <button type="button" id="btn-clear-city-region" class="min-h-11 rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700">Quitar región</button>
               </div>
             </form>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+            <div class="portal-table-frame">
+              <table class="portal-responsive-table w-full text-sm">
                 <thead>
                   <tr class="text-left text-slate-400 border-b border-slate-100">
                     <th class="py-2">País</th>
@@ -74,23 +102,35 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <tbody id="cities-table-body" class="divide-y divide-slate-50 text-slate-700"></tbody>
               </table>
             </div>
-          </div>
+          </section>
 
-          <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-6 space-y-4">
-            <h2 class="text-xl font-bold text-[#293C74]">3) Asignar Pastores/Colaboradores Regionales</h2>
-            <form id="assignment-form" class="grid md:grid-cols-4 gap-3">
-              <input name="email" placeholder="Email del usuario" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm md:col-span-2" required />
-              <select name="role" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required>
-                <option value="regional_pastor">Pastor Regional</option>
-                <option value="regional_collaborator">Colaborador Regional</option>
-              </select>
-              <select name="regionId" id="assignment-region-select" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm" required>
-                <option value="">Selecciona una región</option>
-              </select>
-              <button type="submit" class="md:col-span-4 bg-[#293C74] text-white rounded-xl font-bold text-sm px-4 py-3">Asignar Liderazgo Regional</button>
+          <section class="portal-panel space-y-4 p-6" aria-labelledby="assignment-form-title">
+            <div>
+              <h2 id="assignment-form-title" class="text-xl font-bold text-[#293C74]">Asignar liderazgo regional</h2>
+              <p id="assignment-form-help" class="mt-2 text-sm text-slate-500">Esta acción establece el rol regional principal del usuario. Confirma correo, rol y región.</p>
+            </div>
+            <form id="assignment-form" class="grid gap-4 md:grid-cols-4" aria-describedby="assignment-form-help">
+              <div class="md:col-span-2">
+                <label for="assignment-email" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Correo del usuario</label>
+                <input id="assignment-email" name="email" type="email" autocomplete="email" placeholder="nombre@dominio.org" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required />
+              </div>
+              <div>
+                <label for="assignment-role" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
+                <select id="assignment-role" name="role" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required>
+                  <option value="regional_pastor">Pastor Regional</option>
+                  <option value="regional_collaborator">Colaborador Regional</option>
+                </select>
+              </div>
+              <div>
+                <label for="assignment-region-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región</label>
+                <select name="regionId" id="assignment-region-select" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" required>
+                  <option value="">Selecciona una región</option>
+                </select>
+              </div>
+              <button type="submit" class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white md:col-span-4">Asignar liderazgo regional</button>
             </form>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+            <div class="portal-table-frame">
+              <table class="portal-responsive-table w-full text-sm">
                 <thead>
                   <tr class="text-left text-slate-400 border-b border-slate-100">
                     <th class="py-2">Usuario</th>
@@ -103,7 +143,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <tbody id="assignments-table-body" class="divide-y divide-slate-50 text-slate-700"></tbody>
               </table>
             </div>
-          </div>
+          </section>
         </div>
       </section>
     </div>

@@ -200,3 +200,29 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.doesNotMatch(usersLogic, /event\.target === financeAssignmentModal\) closeFinanceAssignmentModal\(\)/);
   assert.match(portalStyles, /\.portal-shell \.portal-responsive-table \[data-action\] \{\s*min-height: 44px;/);
 });
+
+test('regiones protege jerarquía territorial, edición y tablas móviles', async () => {
+  const [regionsView, regionsLogic] = await Promise.all([
+    readSource('src/pages/portal/regions.astro'),
+    readSource('src/scripts/portal-regions.js'),
+  ]);
+
+  assert.match(regionsView, /id="regions-error"[^>]*role="alert" aria-live="assertive"/);
+  assert.match(regionsView, /id="regions-feedback"[^>]*role="status" aria-live="polite"/);
+  for (const id of ['region-country', 'region-code', 'region-name', 'city-country', 'city-names', 'city-region-select', 'assignment-email', 'assignment-role', 'assignment-region-select']) {
+    assert.match(regionsView, new RegExp(`label for="${id}"`));
+    assert.match(regionsView, new RegExp(`id="${id}"[^>]*min-h-11`));
+  }
+  assert.equal([...regionsView.matchAll(/portal-responsive-table/g)].length, 3);
+  assert.match(regionsView, /id="region-cancel-edit"[^>]*min-h-11/);
+
+  assert.match(regionsLogic, /data-label="Acciones"/);
+  assert.match(regionsLogic, /data-action="rename-region"[^>]*min-h-11/);
+  assert.match(regionsLogic, /data-action="revoke-assignment"[^>]*min-h-11/);
+  assert.match(regionsLogic, /function beginRegionEdit\(region, trigger\)/);
+  assert.match(regionsLogic, /function resetRegionEditor\(/);
+  assert.match(regionsLogic, /Promise\.all\(\[loadRegions\(\), loadCities\(\), loadAssignments\(\)\]\)/);
+  assert.match(regionsLogic, /window\.confirm\(`¿Asignar a/);
+  assert.match(regionsLogic, /window\.addEventListener\('beforeunload'/);
+  assert.doesNotMatch(regionsLogic, /window\.prompt/);
+});
