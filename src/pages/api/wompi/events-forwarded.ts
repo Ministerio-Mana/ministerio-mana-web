@@ -20,9 +20,11 @@ import {
   markInstallmentLinksUsed,
   hasInstallmentReminder,
   recordInstallmentReminder,
+  hasApprovedPaymentByReference,
 } from '@lib/cumbreStore';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { sendWhatsappMessage } from '@lib/whatsapp';
+import { resolveWebhookFailureTransition } from '@lib/paymentReliability';
 
 export const prerender = false;
 
@@ -149,6 +151,9 @@ export const POST: APIRoute = async ({ request }) => {
     const normalizedCurrency = transaction?.currency || 'COP';
     const paymentMethodToken = transaction?.payment_method?.token ?? null;
     const paymentSourceId = transaction?.payment_source_id ?? null;
+    const alreadyApproved = normalizedStatus === 'APPROVED' && reference
+      ? await hasApprovedPaymentByReference({ provider: 'wompi', reference: String(reference) })
+      : false;
 
     let installmentId: string | null = null;
     if (planId) {
@@ -159,18 +164,28 @@ export const POST: APIRoute = async ({ request }) => {
         const isFailed = normalizedStatus === 'FAILED';
         const wasPaid = installment.status === 'PAID';
         const nextInstallmentStatus = isApproved ? 'PAID' : isFailed ? 'FAILED' : 'PROCESSING';
+        const failureTransition = isFailed
+          ? resolveWebhookFailureTransition({
+              status: installment.status,
+              providerReference: installment.provider_reference,
+              incomingReference: reference,
+              attemptCount: installment.attempt_count,
+            })
+          : null;
 
         installmentId = installment.id;
-        await updateInstallment(installment.id, {
-          status: nextInstallmentStatus,
-          provider_tx_id: providerTxId,
-          provider_reference: reference,
-          paid_at: isApproved ? new Date().toISOString() : null,
-          attempt_count: isFailed
-            ? Number(installment.attempt_count || 0) + 1
-            : installment.attempt_count,
-          last_error: isFailed ? 'Wompi payment failed' : null,
-        });
+        if (!failureTransition || failureTransition.shouldUpdate) {
+          await updateInstallment(installment.id, {
+            status: nextInstallmentStatus,
+            provider_tx_id: providerTxId,
+            provider_reference: reference,
+            paid_at: isApproved ? new Date().toISOString() : null,
+            attempt_count: failureTransition
+              ? failureTransition.nextAttemptCount
+              : installment.attempt_count,
+            last_error: isFailed ? 'Wompi payment failed' : null,
+          });
+        }
         if (isApproved && !wasPaid) {
           await addPlanPayment(planId, amount);
           await refreshPlanNextDueDate(planId);
@@ -231,11 +246,13 @@ export const POST: APIRoute = async ({ request }) => {
       && bookingId
       && paymentMethodType
       && paymentMethodType !== 'CARD';
-    const shouldLookupBooking = Boolean(bookingId && (normalizedStatus === 'APPROVED' || pendingNotify));
+    const shouldLookupBooking = Boolean(
+      bookingId && ((normalizedStatus === 'APPROVED' && !alreadyApproved) || pendingNotify),
+    );
     const booking = shouldLookupBooking ? await getBookingById(bookingId!) : null;
 
     if (normalizedStatus === 'APPROVED' && bookingId) {
-      if (booking?.contact_email) {
+      if (!alreadyApproved && booking?.contact_email) {
         await sendCumbreEmail('payment_received', {
           to: booking.contact_email,
           fullName: booking.contact_name ?? undefined,
@@ -250,7 +267,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     if (booking?.contact_phone && hasWhatsappProvider()) {
-      if (normalizedStatus === 'APPROVED') {
+      if (normalizedStatus === 'APPROVED' && !alreadyApproved) {
         const reminderKey = 'PAYMENT_RECEIVED';
         const alreadySent = installmentId
           ? await hasInstallmentReminder({ installmentId, reminderKey, channel: 'whatsapp' })

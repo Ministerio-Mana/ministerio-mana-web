@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { isSendgridEnabled, sendSendgridEmail } from '@lib/sendgrid';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -17,16 +18,11 @@ function isProduction(): boolean {
 }
 
 function validateCron(request: Request): boolean {
-  const secret = env('SECURITY_ALERT_CRON_SECRET') ?? env('CRON_SECRET');
-  if (!secret) return !isProduction();
-  const header = request.headers.get('x-cron-secret');
-  if (header && header === secret) return true;
-  const authorization = request.headers.get('authorization') || '';
-  if (authorization === `Bearer ${secret}`) return true;
-  if (isProduction()) return false;
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  return Boolean(token && token === secret);
+  return isCronRequestAuthorized(request, {
+    secrets: [env('SECURITY_ALERT_CRON_SECRET'), env('CRON_SECRET')],
+    production: isProduction(),
+    allowQueryTokenInDevelopment: true,
+  });
 }
 
 function parseLookbackMinutes(): number {

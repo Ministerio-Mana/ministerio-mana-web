@@ -16,6 +16,7 @@
     "test:finance-reporting": "node --experimental-strip-types --test tests/finance-reporting.test.ts",
     "test:event-documents": "node --experimental-strip-types --test tests/event-document-presentation.test.ts",
     "test:home-motion": "node --experimental-strip-types --test tests/home-mobile-motion.test.ts",
+    "test:operations": "node --experimental-strip-types --test tests/cron-auth.test.ts tests/payment-reliability.test.ts tests/campus-payment-contract.test.ts tests/operations-source-contract.test.ts",
     "campaign:cumbre:welcome": "node scripts/cumbre-welcome-campaign.mjs",
     "security:scan": "node scripts/security-monitor.cjs",
     "security:alert": "node scripts/security-alert.cjs"

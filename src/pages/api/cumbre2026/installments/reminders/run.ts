@@ -3,6 +3,7 @@ import { resolveBaseUrl } from '@lib/url';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { sendCumbreEmail } from '@lib/cumbreMailer';
 import { sendWhatsappMessage } from '@lib/whatsapp';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 import {
   createInstallmentLinkToken,
   listInstallmentsByDueDates,
@@ -26,11 +27,10 @@ function isProduction(): boolean {
 }
 
 function validateCron(request: Request): boolean {
-  const secret = env('CUMBRE_CRON_SECRET');
-  if (!secret) return !isProduction();
-  const header = request.headers.get('x-cron-secret');
-  if (header && header === secret) return true;
-  return false;
+  return isCronRequestAuthorized(request, {
+    secrets: [env('CUMBRE_CRON_SECRET'), env('CRON_SECRET')],
+    production: isProduction(),
+  });
 }
 
 function formatCurrency(amount: number, currency: string): string {

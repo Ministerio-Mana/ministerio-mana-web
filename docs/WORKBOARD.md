@@ -35,6 +35,34 @@
 ---
 
 ## In Progress
+- MANA-021 Revisión visual y móvil de páginas públicas
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: Eventos públicos, Donaciones, Iglesias, Campus, Portal y estilos compartidos
+  - Description: Corregir inconsistencias verificables de jerarquía, responsive, accesibilidad, navegación y footer sin reemplazar la identidad visual vigente.
+  - Status: Correcciones compartidas listas: encabezado sin desborde a 320 px, objetivos táctiles de 44 px y jerarquía semántica de Donaciones. Pendiente revisión visual final en producción.
+
+- MANA-022 Confiabilidad de pagos y tareas programadas
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: Webhooks Wompi/Stripe, idempotencia, conciliación, crons y pruebas automatizadas
+  - Description: Confirmar mediante contratos repetibles que los reintentos no duplican movimientos ni inscripciones y que las tareas programadas fallan de forma segura.
+  - Status: Autenticación de crons centralizada y sin tokens en URL de producción; reclamación atómica de suscripciones Wompi y deduplicación de fallos/avisos de webhooks implementadas. Contratos automáticos listos; pendiente QA controlado de proveedores y logs.
+
+- MANA-023 Contratos financieros de Campus y Donaciones
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: Donaciones, Campus, misioneros, suscripciones, proveedores y visibilidad financiera
+  - Description: Auditar y probar la asignación del destino, la separación Wompi/Stripe y el comportamiento de cobros recurrentes sin realizar transacciones reales.
+  - Status: Contrato COP/Wompi y USD/Stripe extraído y probado, incluyendo asignación individual por misionero. Pendiente una transacción de prueba autorizada por proveedor.
+
+- MANA-024 Auditoría operativa de Cumbre Mundial 2026
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: Backend, exportes, notificaciones, auditoría y Centro de Soluciones de Cumbre
+  - Description: Identificar y corregir brechas técnicas seguras; cualquier corrección histórica o cierre contable requiere confirmación humana.
+  - Status: Exportes, Centro de Soluciones, notificaciones y corrección con vista previa auditados. Se reforzaron secretos de exportación y webhooks idempotentes. Los crons de cobro/recordatorio siguen desactivados hasta definir si Cumbre está activa, en cierre o archivada.
+
 - MANA-015 Cobro dual para eventos globales
   - Owner: Equipo web
   - Branch: `main`
@@ -64,11 +92,11 @@
   - Status: En curso — Excel generado y respuestas visibles en la operación. “Actualizar Excel en OneDrive” reemplaza el mismo archivo en la biblioteca del evento; “Descargar una copia” es secundaria. La activación requiere `docs/sql/event_documents_sharepoint.sql`; una Lista de SharePoint autorizada sigue siendo el siguiente paso para una vista compartida en tiempo real.
 
 - MANA-008 Backend Cumbre Mundial 2026
-  - Owner: DELTA
-  - Branch: `feat/cumbre-ui`
+  - Owner: Equipo web
+  - Branch: `main`
   - Scope: `src/pages/api/cumbre2026/**`, `src/pages/api/cuenta/**`, `src/lib/cumbre*`, `src/lib/supabase*`
   - Description: Booking, pagos, webhooks, planes de cuotas, cuenta usuario, export CSV y contabilidad
-  - Status: En curso (pendiente notificaciones, exportes contabilidad y verificacion end-to-end)
+  - Status: Backend, notificaciones controladas, exportes contables, auditoría de paquetes y corrección segura con `dryRun` disponibles. Pendiente verificación end-to-end y decisión operativa de cierre; seguimiento en MANA-024.
 
 
 ---

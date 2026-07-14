@@ -10,42 +10,42 @@ const locale = Astro.cookies.get('lang')?.value === 'en' ? 'en' : 'es';
 <header id="main-header" class="sticky top-0 z-40 border-b border-white/10 bg-[#121F4E] shadow-[0_10px_30px_rgba(11,17,32,0.18)]">
   <div class="absolute inset-x-0 bottom-0 h-px bg-[#28A6BD]/35"></div>
   
-  <div class="relative w-full max-w-[1440px] mx-auto grid grid-cols-[auto,1fr,auto] items-center gap-4 lg:gap-8 py-4 px-6 md:px-8 lg:px-12">
+  <div class="relative mx-auto grid w-full max-w-[1440px] grid-cols-[auto,1fr,auto] items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 md:px-8 lg:gap-8 lg:px-12">
     <a href="/" class="group inline-flex items-center shrink-0 z-50">
       <!-- Logo Container -->
-      <div class="flex h-14 w-14 items-center justify-center">
-        <img src="/assets/home-ministerio/ministerio-mana-mark.svg" alt="Ministerio Maná" class="h-14 w-14 object-contain" />
+      <div class="flex h-12 w-12 items-center justify-center sm:h-14 sm:w-14">
+        <img src="/assets/home-ministerio/ministerio-mana-mark.svg" alt="Ministerio Maná" class="h-12 w-12 object-contain sm:h-14 sm:w-14" />
       </div>
     </a>
 
     <!-- Spacer (Button removed) -->
     <div class="hidden lg:block"></div>
 
-    <div class="flex items-center justify-end gap-3 shrink-0 z-50">
+    <div class="z-50 flex shrink-0 items-center justify-end gap-2 sm:gap-3">
       <a href="/donaciones/" class="hidden lg:inline-flex items-center justify-center rounded-full bg-[#28A6BD] px-6 py-2.5 text-sm font-bold text-[#0B1120] shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#5CCBE0] hover:text-[#0B1120] hover:shadow-lg">{t(locale,'nav_donate')}</a>
       <AccountButton variant="dark" />
       <LangSwitch variant="dark" />
       <details class="relative lg:hidden">
-        <summary class="inline-flex cursor-pointer select-none items-center justify-center rounded-full border border-white/25 bg-white/10 px-6 py-2.5 font-display text-xs font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md transition-all hover:bg-white/15">Menú</summary>
+        <summary class="inline-flex min-h-11 cursor-pointer select-none items-center justify-center rounded-full border border-white/25 bg-white/10 px-4 py-2.5 font-display text-xs font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md transition-all hover:bg-white/15 sm:px-6">Menú</summary>
         <div class="absolute right-0 mt-3 w-64 rounded-3xl border border-[var(--mana-border-strong)] bg-white p-4 shadow-lg">
           <div class="flex flex-col gap-3">
-            <a href="/portal/" class="nav-link flex items-center gap-2 rounded-xl px-2 py-2">
+            <a href="/portal/" class="nav-link flex min-h-11 items-center gap-2 rounded-xl px-2 py-2">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Portal Maná
             </a>
             <hr class="border-[var(--mana-border)]" />
-            <a href="/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_home')}</a>
-            <a href="/ministerio/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_ministry')}</a>
-            <a href="/campus/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_campus')}</a>
-            <a href="/escuela-biblica/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_school')}</a>
-            <a href="/iglesias/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_churches')}</a>
-            <a href="/eventos/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_events')}</a>
-            <a href="/devocional/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_devotional')}</a>
-            <a href="/mujeres/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_women')}</a>
-            <a href="/peregrinaciones/" class="nav-link rounded-xl px-2 py-2">{t(locale,'nav_pilgrims')}</a>
-            <a href="/donaciones/" class="btn-primary justify-center text-xs">{t(locale,'nav_donate')}</a>
+            <a href="/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_home')}</a>
+            <a href="/ministerio/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_ministry')}</a>
+            <a href="/campus/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_campus')}</a>
+            <a href="/escuela-biblica/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_school')}</a>
+            <a href="/iglesias/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_churches')}</a>
+            <a href="/eventos/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_events')}</a>
+            <a href="/devocional/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_devotional')}</a>
+            <a href="/mujeres/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_women')}</a>
+            <a href="/peregrinaciones/" class="nav-link flex min-h-11 items-center rounded-xl px-2 py-2">{t(locale,'nav_pilgrims')}</a>
+            <a href="/donaciones/" class="btn-primary min-h-11 justify-center text-xs">{t(locale,'nav_donate')}</a>
           </div>
         </div>
       </details>

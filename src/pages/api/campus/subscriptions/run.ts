@@ -1,5 +1,4 @@
 import type { APIRoute } from 'astro';
-import { timingSafeEqual } from 'node:crypto';
 import { buildDonationReference, createDonation, getDonationById, updateDonationById } from '@lib/donationsStore';
 import { createWompiCharge } from '@lib/wompi';
 import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
@@ -13,6 +12,7 @@ import {
   type CampusSubscriptionRecord,
 } from '@lib/campusSubscriptions';
 import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -25,36 +25,11 @@ function isProduction(): boolean {
   return runtimeEnv === 'production';
 }
 
-function getCampusCronSecrets(): string[] {
-  return Array.from(new Set([
-    env('CAMPUS_CRON_SECRET'),
-    env('CRON_SECRET'),
-  ].filter((value): value is string => Boolean(value))));
-}
-
-function matchesSecret(value: string | null | undefined, secrets: string[]): boolean {
-  if (!value) return false;
-  const candidate = Buffer.from(value);
-  return secrets.some((secret) => {
-    const expected = Buffer.from(secret);
-    return candidate.length === expected.length && timingSafeEqual(candidate, expected);
-  });
-}
-
 function validateCron(request: Request): boolean {
-  const secrets = getCampusCronSecrets();
-  if (!secrets.length) return !isProduction();
-
-  const header = request.headers.get('x-cron-secret');
-  if (matchesSecret(header, secrets)) return true;
-
-  const authorization = request.headers.get('authorization');
-  if (authorization?.startsWith('Bearer ')) {
-    const bearerToken = authorization.slice('Bearer '.length).trim();
-    if (matchesSecret(bearerToken, secrets)) return true;
-  }
-
-  return false;
+  return isCronRequestAuthorized(request, {
+    secrets: [env('CAMPUS_CRON_SECRET'), env('CRON_SECRET')],
+    production: isProduction(),
+  });
 }
 
 function addMonthsIso(date = new Date(), months = 1): string {

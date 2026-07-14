@@ -14,6 +14,11 @@ import { DOCUMENT_TYPES_ANY, normalizeDocumentType } from '@lib/donationInput';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { createCampusSubscription } from '@lib/campusSubscriptions';
 import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
+import {
+    buildCampusAllocationAmounts,
+    normalizeCampusMoneyAmount,
+    resolveCampusPaymentProvider,
+} from '@lib/campusPaymentContract';
 
 export const prerender = false;
 
@@ -35,58 +40,6 @@ function isMissingColumnError(error: any): boolean {
     const code = String(error?.code || '');
     const message = String(error?.message || '').toLowerCase();
     return code === '42703' || (message.includes('column') && message.includes('does not exist'));
-}
-
-function normalizeMoneyAmount(value: unknown, currency: 'COP' | 'USD'): number {
-    let amount: number;
-    if (typeof value === 'string') {
-        const raw = value.trim();
-        if (currency === 'COP') {
-            const digits = raw.replace(/[^\d]/g, '');
-            amount = digits ? Number(digits) : 0;
-        } else {
-            let normalized = raw.replace(/[^0-9.,]/g, '');
-            if (normalized.includes(',') && !normalized.includes('.')) {
-                normalized = normalized.replace(',', '.');
-            } else {
-                normalized = normalized.replace(/,/g, '');
-            }
-            amount = Number(normalized);
-        }
-    } else {
-        amount = Number(value);
-    }
-    if (!Number.isFinite(amount) || amount <= 0) return 0;
-    return currency === 'COP'
-        ? Math.round(amount)
-        : Math.round(amount * 100) / 100;
-}
-
-function buildAllocationAmounts(params: {
-    selectedSlugs: string[];
-    allocations: unknown;
-    amount: unknown;
-    currency: 'COP' | 'USD';
-}): { slug: string; amount: number }[] {
-    const { selectedSlugs, allocations, amount, currency } = params;
-
-    if (Array.isArray(allocations) && allocations.length > 0) {
-        const bySlug = new Map<string, number>();
-        allocations.forEach((item: any) => {
-            const slug = asText(item?.slug).trim();
-            if (!selectedSlugs.includes(slug)) return;
-            const allocationAmount = normalizeMoneyAmount(item?.amount, currency);
-            if (allocationAmount > 0) bySlug.set(slug, allocationAmount);
-        });
-
-        return selectedSlugs.map((slug) => ({
-            slug,
-            amount: bySlug.get(slug) || 0,
-        }));
-    }
-
-    const legacyAmount = normalizeMoneyAmount(amount, currency);
-    return selectedSlugs.map((slug) => ({ slug, amount: legacyAmount }));
 }
 
 /**
@@ -188,7 +141,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             return json({ ok: false, error: 'Moneda no soportada' }, 400);
         }
         const normalizedCurrency = currency as 'COP' | 'USD';
-        if ((!Array.isArray(allocations) || allocations.length === 0) && normalizeMoneyAmount(amount, normalizedCurrency) <= 0) {
+        if ((!Array.isArray(allocations) || allocations.length === 0) && normalizeCampusMoneyAmount(amount, normalizedCurrency) <= 0) {
             return json({ ok: false, error: 'Monto inválido' }, 400);
         }
         if (!donorFullName) {
@@ -225,7 +178,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             return json({ ok: false, error: 'Misioneros no válidos' }, 400);
         }
 
-        const allocationAmounts = buildAllocationAmounts({
+        const allocationAmounts = buildCampusAllocationAmounts({
             selectedSlugs,
             allocations,
             amount,
@@ -311,6 +264,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
         const baseUrl = resolveBaseUrl(request);
         const reference = buildDonationReference({ domain: 'CAMPUS' });
+        const paymentProvider = resolveCampusPaymentProvider(normalizedCurrency);
 
         if (user?.id && supabaseAdmin) {
             const profileUpdates: Record<string, any> = {
@@ -331,7 +285,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
         // Store donation record
         const donation = await createDonation({
-            provider: currency === 'COP' ? 'wompi' : 'stripe',
+            provider: paymentProvider.provider,
             status: 'PENDING',
             amount: totalAmount,
             currency,

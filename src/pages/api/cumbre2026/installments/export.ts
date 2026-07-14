@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
 import { csvEscape } from '@lib/csv';
+import { safeSecretEqual } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -19,8 +20,7 @@ function validateExport(request: Request): boolean {
   const secret = env('CUMBRE_EXPORT_SECRET');
   if (!secret) return false;
   const header = request.headers.get('x-export-secret');
-  if (header && header === secret) return true;
-  return false;
+  return safeSecretEqual(header, secret);
 }
 
 export const GET: APIRoute = async ({ request, clientAddress }) => {

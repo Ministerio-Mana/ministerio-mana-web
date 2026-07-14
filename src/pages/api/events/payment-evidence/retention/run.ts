@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro';
-import { timingSafeEqual } from 'node:crypto';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import {
   deleteMicrosoftEventDocument,
   getMicrosoftGraphConfigurationStatus,
   isMicrosoftEventsWriteEnabled,
 } from '@lib/microsoftGraph';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -15,18 +15,13 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
-function safeEqual(left?: string | null, right?: string | null): boolean {
-  if (!left || !right) return false;
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
-}
-
 function isAuthorized(request: Request): boolean {
-  const secret = env('CRON_SECRET');
-  if (!secret) return false;
-  const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
-  return safeEqual(bearer, secret) || safeEqual(request.headers.get('x-cron-secret'), secret);
+  const production = (env('VERCEL_ENV') || env('NODE_ENV')) === 'production';
+  return isCronRequestAuthorized(request, {
+    secrets: [env('CRON_SECRET')],
+    production,
+    allowWithoutSecretInDevelopment: false,
+  });
 }
 
 function json(payload: Record<string, unknown>, status = 200): Response {

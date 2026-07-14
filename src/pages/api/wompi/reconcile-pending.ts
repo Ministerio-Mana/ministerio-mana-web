@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
-import { timingSafeEqual } from 'node:crypto';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { getWompiTransaction } from '@lib/wompi';
 import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 import { listRetryableWompiEvents, markWompiEventProcessed } from '@lib/wompiEventInbox';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -12,20 +12,12 @@ function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
 }
 
-function matchesSecret(value: string | null, secret: string): boolean {
-  if (!value) return false;
-  const candidate = Buffer.from(value);
-  const expected = Buffer.from(secret);
-  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
-}
-
 function isAuthorized(request: Request): boolean {
-  const secret = env('CRON_SECRET');
   const production = (env('VERCEL_ENV') || env('NODE_ENV')) === 'production';
-  if (!secret) return !production;
-  const authorization = request.headers.get('authorization');
-  const bearer = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null;
-  return matchesSecret(bearer, secret) || matchesSecret(request.headers.get('x-cron-secret'), secret);
+  return isCronRequestAuthorized(request, {
+    secrets: [env('CRON_SECRET')],
+    production,
+  });
 }
 
 export const POST: APIRoute = async ({ request }) => {

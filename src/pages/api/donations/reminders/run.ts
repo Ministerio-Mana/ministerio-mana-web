@@ -4,6 +4,7 @@ import { logSecurityEvent } from '@lib/securityEvents';
 import { sendSendgridEmail, isSendgridEnabled } from '@lib/sendgrid';
 import { getDonationByReference } from '@lib/donationsStore';
 import { listDueDonationReminders, recordDonationReminderLog, updateDonationReminder } from '@lib/donationReminders';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -16,29 +17,11 @@ function isProduction(): boolean {
   return runtimeEnv === 'production';
 }
 
-function getCronSecrets(): string[] {
-  return [
-    env('DONATION_REMINDER_CRON_SECRET'),
-    env('CRON_SECRET'),
-  ].filter((value): value is string => Boolean(value));
-}
-
 function validateCron(request: Request): boolean {
-  const secrets = getCronSecrets();
-  if (!secrets.length) return !isProduction();
-
-  const header = request.headers.get('x-cron-secret');
-  if (header && secrets.includes(header)) return true;
-
-  const authorization = request.headers.get('authorization');
-  if (authorization?.startsWith('Bearer ')) {
-    const bearerToken = authorization.slice('Bearer '.length).trim();
-    if (secrets.includes(bearerToken)) return true;
-  }
-
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  return Boolean(token && secrets.includes(token));
+  return isCronRequestAuthorized(request, {
+    secrets: [env('DONATION_REMINDER_CRON_SECRET'), env('CRON_SECRET')],
+    production: isProduction(),
+  });
 }
 
 function getBogotaDateString(date = new Date()): string {

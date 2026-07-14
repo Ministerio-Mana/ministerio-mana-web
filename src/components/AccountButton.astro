@@ -6,11 +6,11 @@ const cspNonce = Astro.locals?.cspNonce;
 
 const isDark = variant === 'dark';
 const guestClass = isDark
-  ? 'hidden items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15 transition-all text-sm font-medium text-white/90 hover:text-white'
-  : 'hidden items-center gap-2 px-4 py-2 rounded-full border border-[var(--mana-border)] bg-white/70 hover:border-brand-medium hover:bg-brand-teal/5 transition-all text-sm font-medium text-brand-dark hover:text-brand-medium';
+  ? 'hidden min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2 rounded-full border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15 transition-all text-sm font-medium text-white/90 hover:text-white sm:px-4'
+  : 'hidden min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2 rounded-full border border-[var(--mana-border)] bg-white/70 hover:border-brand-medium hover:bg-brand-teal/5 transition-all text-sm font-medium text-brand-dark hover:text-brand-medium sm:px-4';
 const loggedSummaryClass = isDark
-  ? 'flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15 transition-all cursor-pointer select-none text-white/90 hover:text-white'
-  : 'flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--mana-border)] bg-white/70 hover:border-brand-medium hover:bg-brand-teal/5 transition-all cursor-pointer select-none text-brand-dark hover:text-brand-medium';
+  ? 'flex min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2 rounded-full border border-white/20 bg-white/10 hover:border-white/40 hover:bg-white/15 transition-all cursor-pointer select-none text-white/90 hover:text-white sm:px-4'
+  : 'flex min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2 rounded-full border border-[var(--mana-border)] bg-white/70 hover:border-brand-medium hover:bg-brand-teal/5 transition-all cursor-pointer select-none text-brand-dark hover:text-brand-medium sm:px-4';
 const avatarClass = isDark
   ? 'w-8 h-8 rounded-full bg-brand-teal/20 flex items-center justify-center text-white font-bold text-sm'
   : 'w-8 h-8 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-dark font-bold text-sm';

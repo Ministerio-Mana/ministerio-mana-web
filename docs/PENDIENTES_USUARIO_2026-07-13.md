@@ -45,6 +45,20 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Definir si Cumbre Mundial 2026 continúa activa, entra en cierre contable o se archiva.
 - [ ] Registrar el vencimiento del secreto de Microsoft Entra y confirmar biblioteca privada, permisos mínimos y variables de Vercel.
 
+### Pendientes añadidos por la revisión técnica del 13 de julio
+
+- [ ] En celular angosto —idealmente 320 px y 390 px— abrir `Eventos`, `Donaciones`, `Iglesias`, `Campus` y `Portal`; confirmar que el encabezado, el menú y los botones se pueden tocar sin desplazamiento horizontal.
+- [ ] Confirmar en Vercel que `CRON_SECRET` existe en Producción. No copiar su valor; basta revisar que esté configurado.
+- [ ] Revisar en los logs de Vercel una ejecución exitosa de cada tarea activa: recordatorios de Donaciones, suscripciones de Donaciones, suscripciones de Campus, alertas de seguridad, conciliación Wompi y retención de comprobantes.
+- [ ] Hacer una suscripción Wompi de monto mínimo autorizado en modo de prueba y comprobar que una segunda ejecución simultánea no crea dos donaciones ni dos cobros.
+- [ ] Reenviar una vez el mismo webhook de prueba Wompi y Stripe; confirmar que no aumenta otra cuota, no duplica el movimiento y no vuelve a enviar el aviso de pago recibido.
+- [ ] Si Cumbre continúa activa, autorizar explícitamente la programación de cobros y recordatorios de cuotas; hasta esa decisión ambos procesos de Cumbre permanecen sin cron para evitar cobros o mensajes inesperados.
+- [ ] Si Cumbre continúa activa, comprobar que `CUMBRE_CRON_SECRET` o `CRON_SECRET` está configurado y hacer una ejecución controlada sin pagos reales de alto valor.
+- [ ] Desde el Centro de Soluciones de Cumbre, ejecutar la auditoría de paquetes en vista previa y revisar los casos marcados antes de autorizar cualquier corrección.
+- [ ] Enviar un único aviso controlado de Cumbre por correo o WhatsApp y confirmar remitente, destinatario, texto y registro de auditoría; no hacer envío masivo durante QA.
+
+No apareció ningún SQL adicional por ejecutar como resultado de esta revisión.
+
 ## 1. Lo primero que debe hacerse en casa
 
 No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supabase y correr cada archivo por separado, esperando a que termine antes del siguiente.
@@ -228,6 +242,9 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - [x] Identificar el Excel en línea y mostrar la hora real de su última actualización en la operación de Eventos.
 - [ ] Conectar la Lista de SharePoint de inscripciones si se aprueba.
 - [ ] Añadir la política de retención únicamente después de recibir el plazo aprobado.
+- [x] Endurecer autenticación de tareas programadas y exportes de Cumbre sin exponer secretos en la URL.
+- [x] Evitar cobros recurrentes duplicados por concurrencia en Donaciones y deduplicar reintentos/avisos de webhooks de Cumbre.
+- [x] Probar por contrato que Campus mantiene COP/Wompi y USD/Stripe, incluyendo asignaciones por misionero.
 - [ ] Completar QA y cierre contable de Cumbre según la decisión del punto 7.
 - [x] Optimizar animaciones móviles y terminar los atributos pendientes del Home.
 - [ ] Revisar copy final y consistencia visual de las páginas públicas.

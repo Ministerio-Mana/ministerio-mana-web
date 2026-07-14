@@ -9,6 +9,7 @@ import {
   hasApprovedPaymentByReference,
   getBookingById,
   getInstallmentById,
+  getInstallmentByReference,
   getPlanByProviderSubscription,
   getNextPendingInstallment,
   updateInstallment,
@@ -39,6 +40,7 @@ import {
 } from '@lib/campusSubscriptions';
 import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
 import { isEventPaymentReference, processEventProviderPayment } from '@lib/eventFinance';
+import { resolveWebhookFailureTransition } from '@lib/paymentReliability';
 
 export const prerender = false;
 
@@ -448,7 +450,8 @@ async function processEvent(event: Stripe.Event): Promise<void> {
         }
       }
 
-      const installment = await getNextPendingInstallment(plan.id);
+      const installment = await getInstallmentByReference(invoice.id)
+        || await getNextPendingInstallment(plan.id);
       if (!installment) break;
 
       const amount = invoice.amount_paid ? invoice.amount_paid / 100 : 0;
@@ -539,14 +542,25 @@ async function processEvent(event: Stripe.Event): Promise<void> {
         break;
       }
 
-      const installment = await getNextPendingInstallment(plan.id);
+      const installment = await getInstallmentByReference(invoice.id)
+        || await getNextPendingInstallment(plan.id);
       if (!installment) break;
 
-      await updateInstallment(installment.id, {
-        status: 'FAILED',
-        last_error: invoice.last_finalization_error?.message || 'Stripe invoice payment failed',
-        attempt_count: Number(installment.attempt_count || 0) + 1,
+      const failureTransition = resolveWebhookFailureTransition({
+        status: installment.status,
+        providerReference: installment.provider_reference,
+        incomingReference: invoice.id,
+        attemptCount: installment.attempt_count,
       });
+      if (failureTransition.shouldUpdate) {
+        await updateInstallment(installment.id, {
+          status: 'FAILED',
+          provider_tx_id: invoice.payment_intent ? String(invoice.payment_intent) : invoice.id,
+          provider_reference: invoice.id,
+          last_error: invoice.last_finalization_error?.message || 'Stripe invoice payment failed',
+          attempt_count: failureTransition.nextAttemptCount,
+        });
+      }
       break;
     }
     case 'payment_intent.succeeded': {

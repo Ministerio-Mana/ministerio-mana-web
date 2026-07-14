@@ -3,6 +3,7 @@ import { buildInstallmentReference } from '@lib/cumbre2026';
 import { listDueInstallments, updateInstallment, updatePaymentPlan, getBookingById, recordPayment } from '@lib/cumbreStore';
 import { createWompiCharge } from '@lib/wompi';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { isCronRequestAuthorized } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -16,11 +17,10 @@ function isProduction(): boolean {
 }
 
 function validateCron(request: Request): boolean {
-  const secret = env('CUMBRE_CRON_SECRET');
-  if (!secret) return !isProduction();
-  const header = request.headers.get('x-cron-secret');
-  if (header && header === secret) return true;
-  return false;
+  return isCronRequestAuthorized(request, {
+    secrets: [env('CUMBRE_CRON_SECRET'), env('CRON_SECRET')],
+    production: isProduction(),
+  });
 }
 
 export const POST: APIRoute = async ({ request }) => {

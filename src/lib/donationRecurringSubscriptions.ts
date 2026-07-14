@@ -360,6 +360,43 @@ export async function listDueWompiDonationRecurringSubscriptions(params: {
   return (data ?? []) as DonationRecurringRecord[];
 }
 
+export async function claimDueWompiDonationRecurringSubscription(params: {
+  id: string;
+  nowIso: string;
+  reference: string;
+  scheduledAtIso: string;
+}): Promise<DonationRecurringRecord | null> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('donation_recurring_subscriptions')
+    .update({
+      status: 'PENDING',
+      provider_reference: params.reference,
+      last_charge_status: 'PENDING',
+      last_charge_error: null,
+      raw_provider_data: {
+        scheduledAt: params.scheduledAtIso,
+        reference: params.reference,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', params.id)
+    .eq('provider', 'wompi')
+    .eq('status', 'ACTIVE')
+    .lte('next_charge_at', params.nowIso)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    if (missingRecurringTable(error)) {
+      throw new Error('Falta ejecutar docs/sql/donation_recurring_subscriptions.sql en Supabase.');
+    }
+    throw new Error('No se pudo reservar la suscripcion recurrente vencida.');
+  }
+
+  return data as DonationRecurringRecord | null;
+}
+
 export async function listPendingSetupWompiDonationRecurringSubscriptions(params?: {
   limit?: number;
 }): Promise<DonationRecurringRecord[]> {

@@ -5,6 +5,7 @@ import { getPrice, isValidPackageType } from '@lib/cumbre2026';
 import { enforceAdminIp } from '@lib/adminIpAllowlist';
 import { resolveParticipantPackagesForExport } from '@lib/cumbrePackageResolution';
 import { csvEscape } from '@lib/csv';
+import { safeSecretEqual } from '@lib/cronAuth';
 
 export const prerender = false;
 
@@ -21,8 +22,7 @@ function validateExport(request: Request): boolean {
   const secret = env('CUMBRE_ADMIN_EXPORT_SECRET');
   if (!secret) return !isProduction();
   const header = request.headers.get('x-export-secret');
-  if (header && header === secret) return true;
-  return false;
+  return safeSecretEqual(header, secret);
 }
 
 function ilikeValue(value: string | null): string | null {

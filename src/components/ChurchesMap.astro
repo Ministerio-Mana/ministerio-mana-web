@@ -27,7 +27,7 @@ const isAmbient = variant === 'ambient';
             <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Continente</span>
             <select
               id="map-continent-control"
-              class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+              class="min-h-11 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
             >
               <option value="">Todos</option>
             </select>
@@ -36,7 +36,7 @@ const isAmbient = variant === 'ambient';
             <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">País</span>
             <select
               id="map-country-control"
-              class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+              class="min-h-11 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
             >
               <option value="">Todos</option>
             </select>
@@ -45,7 +45,7 @@ const isAmbient = variant === 'ambient';
             <span class="block text-[10px] uppercase tracking-widest text-white/55 font-intro">Ciudad</span>
             <select
               id="map-city-control"
-              class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
+              class="min-h-11 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-[12px] font-intro text-white outline-none focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/40"
             >
               <option value="">Todas</option>
             </select>
@@ -418,8 +418,8 @@ const isAmbient = variant === 'ambient';
     bottom: clamp(34px, 5vh, 84px);
     z-index: 1000;
     display: grid;
-    grid-template-columns: repeat(3, 34px);
-    grid-template-rows: repeat(3, 34px);
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
     gap: 6px;
     pointer-events: auto;
     opacity: 0.88;
@@ -428,8 +428,8 @@ const isAmbient = variant === 'ambient';
   .mana-map-pan-controls button {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 999px;
     background: rgba(36, 63, 120, 0.64);

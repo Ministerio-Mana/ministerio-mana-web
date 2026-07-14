@@ -94,8 +94,8 @@ function formatPreset(value: number): string {
     <div class="container-tight donation-stage__inner">
       <div class="donation-story">
         <img class="donation-logo" src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" />
-        <p class="donation-script">Sembrar</p>
-        <h1 class="donation-title">
+        <p class="donation-script" aria-hidden="true">Sembrar</p>
+        <h1 class="donation-title" aria-label="Sembrar una red para sostener la misión">
           <span>una red</span>
           <span>sostener la misión</span>
         </h1>
@@ -731,7 +731,7 @@ function formatPreset(value: number): string {
   }
 
   .donation-presets button {
-    min-height: 2.45rem;
+    min-height: 2.75rem;
     border: 1px solid rgba(var(--mana-navy), 0.16);
     border-radius: 6px;
     background: white;
