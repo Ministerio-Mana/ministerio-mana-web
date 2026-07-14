@@ -39,7 +39,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Parcial avanzado: lista y creación cumplen en producción; variación de roles y Finanzas pendiente |
 | 2 | `/portal/regions` | Jerarquía territorial y autorización | Cumple técnicamente en código y producción; mutaciones reales y variación por roles pendientes |
 | 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Cumple técnicamente en código y producción; exportes y variación real por alcance pendientes |
-| 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Pendiente |
+| 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Cumple técnicamente en código y producción; conciliación real y variación por alcance pendientes |
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Pendiente |
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Pendiente |
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Pendiente |
@@ -190,6 +190,30 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Descargar un CSV COP y otro USD con un período acotado; comprobar encabezados, alcance, moneda única y apertura correcta en Excel web.
 - Repetir con responsables global, nacional, regional y local para confirmar que interfaz, API y exportes entregan únicamente movimientos autorizados.
 - Abrir un único correo y WhatsApp de prueba desde una alerta autorizada, sin envío masivo, y revisar destinatario y texto antes de enviar.
+
+## Registro de la fase 3 — `/portal/donations`
+
+### Evidencia implementada
+
+- La ruta mantiene un solo `h1`, alcance financiero visible, filtros anunciables, estados de carga, error y vacío, paginación y tabla adaptable a tarjetas en celular.
+- Los acumulados explican que corresponden únicamente a donaciones aprobadas visibles. COP se presenta sin decimales y USD con dos centavos, sin sumar monedas distintas.
+- Cada fila muestra proveedor y moneda juntos. Wompi espera COP y Stripe espera USD; una combinación distinta recibe una advertencia visible para revisión, sin corregir datos silenciosamente.
+- Respuestas antiguas de filtros o paginación ya no pueden reemplazar una vista más reciente. El control que inicia un filtro recupera el foco cuando termina la carga.
+- La conciliación de Wompi pasó de cuadros nativos a un diálogo con título, descripción, referencia, campo etiquetado, foco inicial y encierro de foco. La interfaz explica que consulta un pago existente y no crea cobros ni mueve dinero.
+- `Escape` conserva un ID escrito y el clic de fondo no cierra accidentalmente. El cierre explícito advierte antes de descartarlo y devuelve el foco a la referencia que abrió el diálogo.
+- La aprobación manual excepcional solo aparece si el servidor confirma que está habilitada, exige ID de transacción y una confirmación explícita de revisión en el panel oficial de Wompi. La API conserva la validación administrativa, unicidad de referencia y comprobación de proveedor, monto y moneda cuando Wompi responde.
+- El fallback de esquema ya no ignora silenciosamente un filtro por concepto que no puede aplicar; falla cerrado con una indicación operativa.
+- Todos los controles visibles y dinámicos tienen objetivo táctil mínimo de 44 px. `donations.astro` y `portal-donations.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos.
+- El contrato automático de calidad interna suma catorce verificaciones. Los contratos de operaciones confirmaron nuevamente COP/Wompi, USD/Stripe e idempotencia de cobros recurrentes.
+- Producción verificada en `ministeriomana.org`: 14 controles visibles a 390 px y 27 a 1280 px, con cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1` y ningún desbordamiento horizontal. No aparecieron combinaciones proveedor/moneda inconsistentes en la carga revisada.
+- El diálogo se abrió sobre una referencia pendiente sin enviar la operación. Un ID temporal se conservó con `Escape`, el foco pasó al cierre, y al limpiar y cerrar volvió a “Sincronizar Wompi”. Los filtros recuperaron el foco y mostraron USD con centavos.
+
+### Cierre humano requerido para `/portal/donations`
+
+- Repetir con responsables financieros global, nacional, regional y local para confirmar que cada alcance recibe únicamente registros autorizados.
+- Conciliar una sola referencia pendiente autorizada después de compararla con el panel oficial de Wompi; confirmar que no se genera un cobro nuevo y que el estado y la auditoría local se actualizan una sola vez.
+- Si la aprobación manual excepcional está habilitada, probarla únicamente con una referencia controlada y evidencia oficial de Wompi. No aprobar manualmente una referencia que no coincida en monto, moneda y titular.
+- Revisar “Cargar más” con un filtro acotado y comprobar que conteo y acumulados aprobados visibles crecen sin duplicar filas.
 
 ## Regla de actualización
 

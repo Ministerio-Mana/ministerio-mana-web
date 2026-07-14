@@ -218,6 +218,10 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - [ ] Verificar suscripciones y cron de cobro/recordatorio.
 - [ ] Validar motivos reales de pagos pendientes y fallidos en Finanzas.
 - [ ] Definir el flujo de certificados y si se pedirá documento en aportes internacionales.
+- [ ] Entrar a `/portal/donations` con responsables financieros global, nacional, regional y local; confirmar que cada cuenta solo ve donaciones de su alcance.
+- [ ] Con una única referencia pendiente autorizada, comparar referencia, monto y moneda contra el panel oficial de Wompi; luego usar “Sincronizar Wompi” y confirmar que no aparece un cobro nuevo, que el estado cambia una sola vez y que existe auditoría local.
+- [ ] Probar la aprobación manual excepcional solo si está habilitada y únicamente con una referencia controlada ya confirmada en Wompi. No usarla cuando monto, moneda o titular no coincidan.
+- [ ] En Donaciones, aplicar filtros de estado y concepto, usar “Cargar más” y confirmar que el conteo y los acumulados aprobados visibles aumentan sin filas duplicadas.
 
 ### Iglesias
 
