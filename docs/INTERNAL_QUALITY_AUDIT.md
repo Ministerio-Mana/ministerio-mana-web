@@ -85,12 +85,14 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - El registro manual conserva el formulario ante clics accidentales o `Escape`; el selector de iglesia tiene diálogo accesible, filtros etiquetados, foco controlado y salida dinámica escapada.
 - Paginación, filtros, asignación de iglesia, planes, pagos, donaciones, Campus y calendario generados dinámicamente tienen nombre accesible y objetivo táctil mínimo.
 - Contrato automático ampliado de cuatro a ocho verificaciones.
+- Producción verificada en `ministeriomana.org`: a 390 px la operación renderizó 110 controles y a 1280 px 123; en ambos casos hubo cero controles menores de 44 px, cero controles sin nombre, un solo `h1` y ningún desbordamiento horizontal.
+- Los diálogos avanzados están desplegados con su contrato semántico. Su interacción completa permanece pendiente porque no existe actualmente un evento abierto y configurado que habilite “Registrar participante”; no se forzó el control deshabilitado de expedientes cerrados.
 
 ### Cierre técnico requerido para `/portal`
 
 - Terminar la migración gradual de espaciado en `portal-dashboard.js`, `portal-user-event-view.js`, `RegistrationModal` y el resto del panel hasta poder marcarlos estrictos.
 - Probar las cinco pestañas con roles usuario, pastor, finanzas y administrador, sin ampliar permisos visibles ni efectivos.
-- Verificar en producción a 390 y 1280 px los controles dinámicos, el registro manual y el selector de iglesia después del despliegue de esta subfase.
+- Abrir en producción el registro manual y el selector de iglesia cuando exista un evento operativo habilitado; comprobar preservación de datos, `Escape` y devolución de foco sin guardar una inscripción.
 
 ## Regla de actualización
 
