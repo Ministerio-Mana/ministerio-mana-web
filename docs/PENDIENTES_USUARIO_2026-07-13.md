@@ -57,7 +57,7 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Desde el Centro de Soluciones de Cumbre, ejecutar la auditoría de paquetes en vista previa y revisar los casos marcados antes de autorizar cualquier corrección.
 - [ ] Enviar un único aviso controlado de Cumbre por correo o WhatsApp y confirmar remitente, destinatario, texto y registro de auditoría; no hacer envío masivo durante QA.
 
-No apareció ningún SQL adicional por ejecutar como resultado de esta revisión.
+Apareció un único SQL adicional para Cumbre: `docs/sql/cumbre_manual_payment_idempotency.sql`. Debe ejecutarse antes de habilitar abonos manuales concurrentes; está incluido en el punto 1.
 
 ## 1. Lo primero que debe hacerse en casa
 
@@ -78,8 +78,12 @@ No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supaba
 - [x] 4. Ejecutar `docs/sql/events_dual_currency_payments.sql`.
   - Activa precio COP para Wompi y precio USD para Stripe dentro del mismo evento global.
   - Resultado esperado: existen `price_cop`, `price_usd` y los RPC seguros incluidos en el script.
+- [ ] 5. Ejecutar `docs/sql/cumbre_manual_payment_idempotency.sql`.
+  - Evita duplicar abonos de Cumbre por doble clic, reintento o dos solicitudes concurrentes.
+  - El script no borra ni modifica pagos. Si encuentra duplicados históricos, se detiene y muestra un error: no eliminar nada; compartir únicamente el resultado para revisar cada caso.
+  - Resultado esperado: existen `idx_cumbre_payments_provider_tx_unique` e `idx_cumbre_payments_booking_reference_unique`.
 
-Los cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas.
+Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El quinto queda pendiente.
 
 ## 2. Activar el primer equipo financiero
 
@@ -213,6 +217,13 @@ Opcional, solo si se van a usar:
 Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 
 - [ ] Confirmar estado: operación activa, cierre o archivo.
+- [ ] Ejecutar `docs/sql/cumbre_manual_payment_idempotency.sql` y guardar únicamente el resultado, nunca secretos ni datos de pagos.
+- [ ] Entrar a `/admin/cumbre/manual` sin parámetros en la URL con una cuenta Supabase individual `superadmin`. Confirmar que una sesión compartida por contraseña, `admin` y una cuenta común quedan bloqueadas.
+- [ ] Revisar la pantalla a 390 px y en escritorio: etiquetas, confirmaciones, participantes, montos, mensajes y botones deben verse completos sin desplazamiento horizontal.
+- [ ] Confirmar que “Reserva 50%” y “Cuotas” aparecen cerradas después del plazo configurado y que el equipo no crea planes vencidos.
+- [ ] Si Cumbre continúa operativa, autorizar una única reserva o un único abono manual controlado con soporte real ya verificado. Confirmar moneda, saldo y referencia antes de guardar; no simular un pago ni reenviar si aparece “conciliación secundaria requiere revisión”.
+- [ ] Después de esa operación controlada, confirmar una sola fila de pago, una sola donación física vinculada, totales recalculados y `reconciliation_status = complete` en el evento técnico del pago.
+- [ ] Confirmar que cualquier cliente técnico legado dejó de enviar `CUMBRE_MANUAL_SECRET` por URL o formulario y usa exclusivamente `x-admin-secret`; la interfaz humana no usa ese secreto.
 - [ ] Si sigue activo, ejecutar QA de Wompi, Stripe, menores, internacionales y cuotas.
 - [ ] Revisar el Centro de Soluciones: incompletos, pendientes, descuadres, duplicados y sin iglesia.
 - [ ] Ejecutar la auditoría de paquetes en modo de vista previa.

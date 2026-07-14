@@ -45,7 +45,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Cumple técnicamente en código y producción; mutaciones controladas, ImageKit y variación por roles pendientes |
 | 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Parcial avanzado: contrato, despliegue y acceso privado verificados; bloques reales y roles pendientes |
 | 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Parcial avanzado: contrato, despliegue y acceso restringido verificados; lectura real con superadmin individual pendiente |
-| 4 | `/admin/cumbre/manual` | Operación sensible, auditoría y cierre | Pendiente |
+| 4 | `/admin/cumbre/manual` | Operación sensible, auditoría y cierre | Cumple técnicamente en código y producción; SQL, sesión individual y escritura controlada pendientes |
 
 ## Registro de la fase 1
 
@@ -338,6 +338,30 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Comparar el nombre del sitio y las bibliotecas visibles contra Portal Maná en SharePoint. Confirmar que la biblioteca de Eventos y la bandera de carga reflejan la configuración aprobada.
 - Repetir el acceso con `admin`, una cuenta sin administración y una sesión por contraseña; ninguna debe ver el diagnóstico ni recibir datos del API.
 - Revisar en Microsoft Entra que la aplicación conserva permisos mínimos sobre el sitio autorizado y registrar la fecha de rotación del secreto sin copiarlo al Portal, Git ni conversaciones.
+
+## Registro de la fase 4 — `/admin/cumbre/manual`
+
+### Evidencia implementada
+
+- La herramienta dejó de aceptar `CUMBRE_MANUAL_SECRET` en URL o formularios. La interfaz exige una sesión Supabase individual con rol efectivo `superadmin`; la sesión compartida por contraseña y los demás roles se bloquean en cliente y servidor. El secreto se conserva únicamente como compatibilidad para clientes técnicos que lo envían en `x-admin-secret`.
+- La página usa un solo `h1`, no anida otro `main`, oculta navegación pública, aplica `noindex`, `noarchive` y caché privada desactivada. La operación queda escondida hasta que termina la validación individual y muestra qué cuenta está actuando.
+- Todos los campos visibles tienen etiqueta, los controles táctiles mantienen 44 px, los estados anuncian progreso y errores, y los formularios preservan lo escrito ante fallos o salida accidental. Tras un éxito, el botón permanece bloqueado hasta elegir explícitamente “Limpiar para otra…”.
+- Participantes se construyen con nodos y `textContent`, sin interpolar nombres en HTML. Se exige nombre, edad entera entre 0 y 120, máximo veinte personas y confirmación explícita antes de guardar.
+- COP acepta enteros con formato colombiano, por ejemplo `300000` o `300.000`; USD admite hasta dos decimales. El servidor deriva la moneda del expediente para abonos, impide montos negativos, formatos ambiguos, sobrepagos y abonos sobre reservas totalmente pagadas.
+- Los planes de depósito y cuotas se cierran al vencer `CUMBRE_INSTALLMENT_DEADLINE` tanto en interfaz como en servidor. Esto evita crear cronogramas ya vencidos mientras se decide si Cumbre sigue activa, entra en cierre o se archiva.
+- Reserva y abono usan llaves estables de idempotencia. El abono registra `provider_tx_id`, falla cerrado ante errores y distingue `pending`, `complete` y `error` de la conciliación secundaria. Si el pago ya quedó escrito pero falla plan, total o donación, responde “registrado, no reenviar” en vez de invitar a duplicarlo.
+- `docs/sql/cumbre_manual_payment_idempotency.sql` añade restricciones únicas de transacción y referencia. Se detiene sin modificar datos si detecta duplicados históricos; hasta ejecutarlo, la interfaz y el servidor cubren reintentos secuenciales, pero la garantía completa frente a concurrencia depende de esas restricciones.
+- El pago, el plan y la donación aún viven en tablas separadas. El estado explícito evita reenvíos y deja el caso conciliable, pero una futura función transaccional en base de datos sigue siendo la mejora recomendada para atomicidad completa.
+- `manual.astro` y `cumbre-manual-auth.js` llegaron a cero deuda de espaciado y quedaron estrictos. El contrato automático suma veinte verificaciones; la deuda global bajó a 1.231 clases fuera de escala, 10 arbitrarias y 1.171 declaraciones CSS heredadas.
+- Producción final `dpl_7nz8gh5DFipzFsHYN4WqrUxBXaC5` quedó `READY` y asociada a `ministeriomana.org`. La lectura directa devolvió `200`, título y compuerta esperados, CSP, HSTS, `no-store`, `noarchive`, ninguna llave o campo legado; ambos API rechazaron sin sesión antes de consultar o escribir datos.
+
+### Cierre humano requerido para `/admin/cumbre/manual`
+
+- Ejecutar `docs/sql/cumbre_manual_payment_idempotency.sql`. Si se detiene por duplicados, no borrar ni corregir pagos sin una conciliación caso por caso.
+- Definir si Cumbre Mundial 2026 continúa activa, entra en cierre contable o se archiva antes de autorizar nuevas reservas, cronogramas o mensajes.
+- Entrar sin parámetros en la URL con una cuenta individual `superadmin` y revisar la pantalla a 390 px y escritorio. Repetir con sesión compartida, `admin` y usuario común; todos deben quedar bloqueados.
+- Si Cumbre sigue operativa, realizar una única escritura controlada con reserva, soporte y monto reales previamente autorizados. Verificar una sola fila de pago, una sola donación vinculada, totales y conciliación completa; no repetir una operación marcada para revisión.
+- Confirmar que cualquier integración técnica que aún use esta ruta envía el secreto solo por encabezado. Retirar enlaces, favoritos, documentación o registros históricos que lo hayan incluido en la URL.
 
 ## Regla de actualización
 
