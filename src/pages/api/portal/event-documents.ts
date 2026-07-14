@@ -162,10 +162,10 @@ export const GET: APIRoute = async ({ request }) => {
 
   const { data, error } = await supabaseAdmin
     .from('event_documents')
-    .select('id,event_id,status,original_name,mime_type,size_bytes,sharepoint_web_url,uploaded_by,created_at')
+    .select('id,event_id,status,original_name,mime_type,size_bytes,sharepoint_web_url,uploaded_by,created_at,updated_at')
     .eq('event_id', eventId)
     .in('status', ['READY', 'FAILED'])
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .limit(100);
   if (error && isSchemaMissing(error)) {
     return json({

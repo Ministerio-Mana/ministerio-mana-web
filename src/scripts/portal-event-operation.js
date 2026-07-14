@@ -3,6 +3,7 @@ import externalLinkIconUrl from 'lucide-static/icons/external-link.svg?url';
 import fileIconUrl from 'lucide-static/icons/file.svg?url';
 import userCheckIconUrl from 'lucide-static/icons/user-check.svg?url';
 import xCircleIconUrl from 'lucide-static/icons/circle-x.svg?url';
+import { eventDocumentPresentation } from '@lib/eventDocumentPresentation';
 import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
 
 const root = document.querySelector('[data-event-operation-root]');
@@ -170,15 +171,27 @@ function renderEventDocuments(documents) {
   documentsList.innerHTML = documents.map((documentItem) => {
     const url = safeHttpsUrl(documentItem.sharepoint_web_url);
     const failed = documentItem.status === 'FAILED';
-    const action = url && !failed
-      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">${icon(externalLinkIconUrl)} Abrir</a>`
+    const presentation = eventDocumentPresentation(documentItem);
+    const badge = presentation.isWorkbook
+      ? '<span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">Excel en línea</span>'
       : '';
-    return `<div class="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    const formattedSize = formatFileSize(documentItem.size_bytes);
+    const formattedDate = formatDate(presentation.activityDate);
+    const metadata = [formattedSize, formattedDate ? `${presentation.dateLabel} ${formattedDate}` : '']
+      .filter(Boolean)
+      .join(' · ');
+    const action = url && !failed
+      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border ${presentation.isWorkbook ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-slate-300 bg-white text-[#293C74] hover:bg-slate-50'} px-3 py-2 text-sm font-bold">${icon(externalLinkIconUrl)} ${escapeHtml(presentation.actionLabel)}</a>`
+      : '';
+    return `<div class="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${presentation.isWorkbook ? 'bg-emerald-50/30' : ''}">
       <div class="flex min-w-0 items-start gap-3">
-        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">${icon(fileIconUrl)}</span>
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${presentation.isWorkbook ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${icon(fileIconUrl)}</span>
         <div class="min-w-0">
-          <p class="break-words text-sm font-bold text-slate-800">${escapeHtml(documentItem.original_name || 'Archivo')}</p>
-          <p class="mt-1 text-xs ${failed ? 'font-bold text-red-700' : 'text-slate-500'}">${failed ? 'La carga no se completó' : `${escapeHtml(formatFileSize(documentItem.size_bytes))} · ${escapeHtml(formatDate(documentItem.created_at))}`}</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="break-words text-sm font-bold text-slate-800">${escapeHtml(documentItem.original_name || 'Archivo')}</p>
+            ${badge}
+          </div>
+          <p class="mt-1 text-xs ${failed ? 'font-bold text-red-700' : 'text-slate-500'}">${failed ? 'La carga no se completó' : escapeHtml(metadata)}</p>
         </div>
       </div>
       ${action}

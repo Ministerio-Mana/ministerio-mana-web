@@ -6,13 +6,44 @@ Este documento reemplaza el inventario operativo que estaba disperso entre la bi
 
 ## Revisión programada para el 14 de julio de 2026
 
-El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes y no bloquean el trabajo técnico autónomo:
+El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes y no bloquean el trabajo técnico autónomo. Orden recomendado:
 
-- [ ] Asignar el primer equipo financiero y comprobar un usuario nacional, regional y local.
-- [ ] Completar la revisión de Eventos: constructor, imágenes, formulario, cobro nacional, cobro global y pago local con comprobante.
-- [ ] Actualizar y abrir `Inscripciones.xlsx` en Excel web; repetir la actualización y confirmar que reemplaza el mismo archivo.
-- [ ] Definir el plazo de retención de comprobantes y quién puede aprobar pagos manuales.
-- [ ] Decidir si se agregará una Lista de SharePoint para inscripciones y si Cumbre Mundial continúa activa, entra en cierre o se archiva.
+### Primero: accesos y Finanzas
+
+- [ ] Preparar nombre y correo del primer responsable financiero nacional de Colombia.
+- [ ] Preparar nombre, correo y región de un responsable financiero regional.
+- [ ] Preparar nombre, correo e iglesia de un responsable financiero local.
+- [ ] Asignar los tres alcances desde `/portal/users` sin retirar los roles pastorales existentes.
+- [ ] Entrar con cada cuenta de prueba y confirmar que ve solamente los movimientos de su alcance.
+- [ ] Probar los filtros y descargar un CSV COP y otro USD; confirmar que nunca aparecen mezclados.
+
+### Segundo: Eventos de punta a punta
+
+- [ ] Crear y guardar un evento local gratuito con `Colombia · Bogotá` y modalidad `Presencial`.
+- [ ] Probar una imagen horizontal, una cuadrada y una vertical; revisar tarjeta, invitación pública y celular.
+- [ ] Crear un formulario Maná con una pregunta adicional obligatoria y otra opcional.
+- [ ] Enviar una inscripción desde celular y revisar el consentimiento y enlace de WhatsApp.
+- [ ] Crear un evento nacional Wompi/COP y comprobar que no ofrece USD ni pago manual simultáneo.
+- [ ] Crear un evento global Wompi/COP + Stripe/USD y comprobar que muestra ambos precios sin conversión.
+- [ ] Crear un evento local con QR o transferencia, adjuntar un comprobante pequeño y revisar su auditoría.
+
+### Tercero: Excel web y OneDrive
+
+- [ ] Abrir la operación de un evento que tenga inscripciones.
+- [ ] Pulsar `Actualizar Excel en OneDrive` y abrir `Inscripciones.xlsx` desde Documentos internos.
+- [ ] Confirmar que abre en Excel web sin instalar Microsoft 365.
+- [ ] Revisar las hojas `Inscripciones` y `Resumen financiero`, las preguntas adicionales y la separación COP/USD.
+- [ ] Ejecutar una segunda actualización y confirmar que cambia la hora de `Actualizado` y reemplaza el mismo archivo.
+- [ ] Usar `Descargar una copia` una vez para validar la alternativa fuera de línea.
+
+### Decisiones que debe dejar definidas el usuario
+
+- [ ] Elegir el plazo de retención de comprobantes: 90, 180, 365 días u otro aprobado por Contabilidad.
+- [ ] Definir quién puede aprobar y rechazar pagos manuales a nivel local, regional y nacional.
+- [ ] Recopilar los datos bancarios, QR e instrucciones autorizadas de cada iglesia que operará pagos locales.
+- [ ] Decidir si se agrega una Lista de SharePoint para inscripciones en tiempo real además del Excel.
+- [ ] Definir si Cumbre Mundial 2026 continúa activa, entra en cierre contable o se archiva.
+- [ ] Registrar el vencimiento del secreto de Microsoft Entra y confirmar biblioteca privada, permisos mínimos y variables de Vercel.
 
 ## 1. Lo primero que debe hacerse en casa
 
@@ -194,12 +225,13 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 
 - [x] Terminar y desplegar la administración visual de equipos financieros por alcance. Completado en `13d9cad`.
 - [x] Agregar filtros, periodos y exportes al panel de Finanzas sin mezclar COP y USD.
+- [x] Identificar el Excel en línea y mostrar la hora real de su última actualización en la operación de Eventos.
 - [ ] Conectar la Lista de SharePoint de inscripciones si se aprueba.
 - [ ] Añadir la política de retención únicamente después de recibir el plazo aprobado.
 - [ ] Completar QA y cierre contable de Cumbre según la decisión del punto 7.
-- [ ] Optimizar animaciones móviles y terminar data attributes pendientes del Home.
+- [x] Optimizar animaciones móviles y terminar los atributos pendientes del Home.
 - [ ] Revisar copy final y consistencia visual de las páginas públicas.
-- [ ] Mantener pruebas automáticas de eventos, comprobantes, finanzas y roles.
+- [x] Mantener pruebas automáticas de eventos, comprobantes, finanzas y roles.
 
 ## 11. Qué no debe hacerse
 

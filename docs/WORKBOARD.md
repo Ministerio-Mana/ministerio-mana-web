@@ -95,6 +95,13 @@
 ---
 
 ## Done
+- MANA-020 Visibilidad del Excel en línea de Eventos
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: Documentos internos de `/portal/events/:id`, API de documentos y pruebas
+  - Completed: 2026-07-13
+  - Notes: `Inscripciones.xlsx` queda identificado como Excel en línea, usa su fecha real de actualización y sube al inicio después de cada reemplazo. Los documentos genéricos conservan su presentación y privacidad.
+
 - MANA-007 Verificar build en producción
   - Owner: Equipo web
   - Branch: `main`
