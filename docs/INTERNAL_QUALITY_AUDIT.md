@@ -43,7 +43,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Cumple técnicamente en código y producción; cuentas reales por alcance y misionero pendientes |
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Cumple técnicamente en código y producción; decisiones reales y variación por roles pendientes |
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Cumple técnicamente en código y producción; mutaciones controladas, ImageKit y variación por roles pendientes |
-| 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Pendiente |
+| 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Parcial avanzado: contrato, despliegue y acceso privado verificados; bloques reales y roles pendientes |
 | 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Pendiente |
 | 4 | `/admin/cumbre/manual` | Operación sensible, auditoría y cierre | Pendiente |
 
@@ -291,6 +291,30 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Abrir la vista previa y comparar texto, imágenes, orden y responsive sin publicar primero. Después publicar y despublicar únicamente la página controlada.
 - Subir una imagen pequeña autorizada a ImageKit, usarla en la página de prueba y confirmar que no se elimina mientras esté referenciada. Luego retirar la referencia, eliminar el medio controlado y revisar su auditoría.
 - Entrar con `admin`, `superadmin` y una cuenta sin administración; confirmar que solo las dos primeras acceden al CMS y a sus API. Decidir aparte si el producto necesita un rol editorial nuevo antes de ampliar permisos.
+
+## Registro de la fase 4 — `/portal/content-preview`
+
+### Evidencia implementada
+
+- La vista previa dejó de anidar un segundo `main` dentro del layout y ahora mantiene un único `h1` con el título de la página, estado editorial anunciado y retorno táctil de 44 px al CMS.
+- El cliente valida sesión y rol antes de pedir datos. Solo `admin` y `superadmin` continúan; el nuevo API vuelve a comprobar el permiso en servidor.
+- El API dedicado entrega únicamente página, estado, versión y campos necesarios de las secciones. No expone ajustes completos, SEO, usuarios creadores ni otros metadatos administrativos; página y secciones se consultan en paralelo.
+- Secciones archivadas quedan fuera de la respuesta. La vista maneja portada, texto, galería, video, tarjetas, llamados a la acción y un estado básico para bloques avanzados.
+- YouTube usa el dominio sin cookies, Vimeo conserva proveedor autorizado y los `iframe` aplican carga diferida y política de referencia estricta.
+- Los enlaces muestran destino y estilo, pero el clic se intercepta y anuncia sin navegar. Esto evita salir accidentalmente o activar una acción externa mientras se revisa contenido privado.
+- Estados de carga, vacío, error y reintento son explícitos. La solicitud vence a los quince segundos y una respuesta tardía no reemplaza un reintento más reciente.
+- Las imágenes tienen textos alternativos y un estado “Imagen no disponible” ante fallos. Galerías pasan a una columna en móvil y todos los llamados mantienen 44 px.
+- El botón del editor abre la ruta privada directamente desde el clic, evitando que el navegador bloquee la pestaña después de esperar una solicitud intermedia.
+- `content-preview.astro` y `portal-content-preview.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos. El contrato automático de calidad interna suma dieciocho verificaciones; la deuda global bajó a 1.308 clases fuera de escala.
+- Producción desplegada como `dpl_Cp2rYxkfjrQ6YBe7SwwgCx4um4q1`. La página entrega CSP, HSTS, `SAMEORIGIN`, política de permisos restrictiva y el API respondió `401` sin sesión. La revisión visual autenticada no se forzó después de cerrar la sesión de QA anterior.
+
+### Cierre humano requerido para `/portal/content-preview`
+
+- Desde una página controlada, pulsar “Vista previa” y confirmar que la pestaña abre sin aviso de ventana bloqueada.
+- Con bloques de prueba, revisar portada, texto, galería, video, tarjetas y llamados a la acción a 390 px y escritorio. Confirmar un solo `h1`, cero desbordamiento y ausencia de errores de consola.
+- Pulsar cada enlace de prueba y confirmar que muestra el destino sin abandonar la vista previa ni ejecutar la acción externa.
+- Probar una imagen retirada o URL inválida y confirmar el estado “Imagen no disponible” sin pantalla en blanco.
+- Repetir con `admin`, `superadmin` y una cuenta sin administración; la última debe regresar al Portal y el API debe rechazarla.
 
 ## Regla de actualización
 

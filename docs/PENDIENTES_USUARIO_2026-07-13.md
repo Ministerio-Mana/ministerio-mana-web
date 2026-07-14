@@ -255,6 +255,9 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - [ ] Abrir la misma página de prueba en dos sesiones administrativas. Guardar primero en una y confirmar que la segunda recibe un aviso de conflicto y no sobrescribe el cambio.
 - [ ] Crear una sección de prueba, guardarla, archivarla y usar “Deshacer”. Confirmar que puede restaurarse y que la actividad conserva el historial.
 - [ ] Abrir la vista previa de la página controlada y revisar texto, imágenes, orden y responsive. Después publicar y despublicar únicamente esa página de prueba.
+- [ ] Confirmar que “Vista previa” abre una pestaña sin aviso de ventana bloqueada. Revisar portada, texto, galería, video, tarjetas y llamados a la acción a 390 px y escritorio.
+- [ ] Pulsar los enlaces dentro de la vista previa y confirmar que anuncian el destino, pero no navegan ni ejecutan acciones externas.
+- [ ] Probar una imagen retirada o URL inválida y confirmar que aparece “Imagen no disponible” sin romper la página.
 - [ ] Subir una imagen pequeña autorizada a ImageKit, usarla en la página de prueba y confirmar que carga en preview. Retirar luego su referencia, eliminar solo ese medio y revisar la auditoría.
 - [ ] Entrar a `/portal/content` con `admin`, `superadmin` y una cuenta sin administración. Confirmar que solo las dos primeras acceden al CMS y a sus API.
 - [ ] Decidir si se necesita un rol editorial distinto de `admin` y `superadmin`. No ampliar permisos hasta definir exactamente qué puede crear, editar, publicar y eliminar.
