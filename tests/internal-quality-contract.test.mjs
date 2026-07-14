@@ -173,9 +173,10 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
 });
 
 test('usuarios protege creación, roles y alcances financieros', async () => {
-  const [usersView, usersLogic] = await Promise.all([
+  const [usersView, usersLogic, portalStyles] = await Promise.all([
     readSource('src/pages/portal/users.astro'),
     readSource('src/scripts/portal-users.js'),
+    readSource('src/styles/portal.css'),
   ]);
 
   assert.match(usersView, /id="btn-open-create-user" type="button"[^>]*min-h-11/);
@@ -197,4 +198,5 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(usersLogic, /event\.target === modal\) closeCreateUserModal\(\)/);
   assert.doesNotMatch(usersLogic, /event\.target === financeAssignmentModal\) closeFinanceAssignmentModal\(\)/);
+  assert.match(portalStyles, /\.portal-shell \.portal-responsive-table \[data-action\] \{\s*min-height: 44px;/);
 });
