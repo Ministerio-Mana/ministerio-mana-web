@@ -32,11 +32,6 @@
   - Description: Usar “Actualizar Excel en OneDrive”, abrir `Inscripciones.xlsx` desde Documentos internos y comprobar que las respuestas del formulario aparecen en columnas.
   - Notes: “Descargar una copia” queda disponible solo para trabajo fuera de línea. Requiere haber ejecutado `docs/sql/event_documents_sharepoint.sql` y tener habilitada la escritura de Eventos en Microsoft 365.
 
-- MANA-007 Verificar build en producción
-  - Owner: DELTA
-  - Scope: CI/CD, Vercel deployment
-  - Description: Confirmar que Lenis/GSAP funcionan en prod
-
 ---
 
 ## In Progress
@@ -100,6 +95,13 @@
 ---
 
 ## Done
+- MANA-007 Verificar build en producción
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: CI/CD, portada y Vercel Production
+  - Completed: 2026-07-13
+  - Notes: Producción verificada a 390 × 844 y en escritorio. El flujo móvil quedó estático y navegable; el escritorio conserva paneles, transiciones y temas. No hubo errores de consola.
+
 - MANA-005 Optimizar animaciones para mobile
   - Owner: Equipo web
   - Branch: `main`
@@ -167,4 +169,4 @@ _Ningún ticket bloqueado actualmente_
 - ✅ **Animaciones**: GSAP ScrollTrigger (aprobado)
 - ✅ **Paleta de colores**: Beige/Navy original (mantener, NO cosmic)
 - ✅ **Mobile optimization**: Flujo estático y revelado ligero completados (MANA-005)
-- ⏳ **Production testing**: Pendiente (MANA-007)
+- ✅ **Production testing**: Portada verificada en móvil y escritorio (MANA-007)

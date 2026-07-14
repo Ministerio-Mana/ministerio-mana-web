@@ -25,6 +25,8 @@
   - `test:home-motion`: 4 aprobadas.
   - Batería de Eventos y Finanzas: 32 aprobadas.
   - `npm run build`: exitoso.
+  - Producción verificada a 390 × 844: cinco paneles relativos, desplazamiento nativo, selector de ministerio funcional y cero errores de consola.
+  - Producción en escritorio: paneles animados, cambio de tema y navegación por capítulos funcionales, sin errores de consola.
 - Pendientes:
   - Revisión perceptual del usuario en un celular de gama media, programada para el 14 de julio de 2026.
 
