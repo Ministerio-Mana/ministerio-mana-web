@@ -1410,19 +1410,9 @@ async function openPreview() {
     return;
   }
 
-  setBusy(true, 'Generando link de preview...');
-  try {
-    const data = await fetchJson('/api/portal/content/preview-link', {
-      method: 'POST',
-      body: JSON.stringify({ page_id: state.selectedPageId }),
-    });
-
-    const path = String(data.preview_path || '/');
-    window.open(path, '_blank', 'noopener,noreferrer');
-    showAlert('Preview abierto en una nueva pestaña.', 'success');
-  } finally {
-    setBusy(false);
-  }
+  const path = `/portal/content-preview?page_id=${encodeURIComponent(state.selectedPageId)}`;
+  window.open(path, '_blank', 'noopener,noreferrer');
+  showAlert('Vista previa abierta en una nueva pestaña.', 'success');
 }
 
 async function createPageFromModal() {

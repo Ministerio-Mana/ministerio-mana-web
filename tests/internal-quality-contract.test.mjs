@@ -396,6 +396,8 @@ test('contenido editorial preserva borradores, evita colisiones y confirma cambi
   assert.match(contentLogic, /label: 'Deshacer'/);
   assert.match(contentLogic, /Eliminar archivo de la biblioteca/);
   assert.match(contentLogic, /Guarda primero los borradores locales/);
+  assert.match(contentLogic, /const path = `\/portal\/content-preview\?page_id=\$\{encodeURIComponent\(state\.selectedPageId\)\}`/);
+  assert.doesNotMatch(contentLogic, /fetchJson\('\/api\/portal\/content\/preview-link'/);
   assert.doesNotMatch(contentLogic, /window\.(?:confirm|prompt|alert)/);
 
   assert.match(pagesApi, /expected_updated_at/);
@@ -408,4 +410,37 @@ test('contenido editorial preserva borradores, evita colisiones y confirma cambi
   assert.match(publishApi, /\.eq\('updated_at', pageBefore\.updated_at\)/);
   assert.match(publishApi, /rollbackError/);
   assert.match(publishApi, /volvió a su estado anterior/);
+});
+
+test('la vista previa editorial minimiza datos y evita navegación accidental', async () => {
+  const [previewView, previewLogic, previewApi] = await Promise.all([
+    readSource('src/pages/portal/content-preview.astro'),
+    readSource('src/scripts/portal-content-preview.js'),
+    readSource('src/pages/api/portal/content/preview.ts'),
+  ]);
+
+  assert.equal([...previewView.matchAll(/<h1\b/g)].length, 1);
+  assert.doesNotMatch(previewView, /<main\b/);
+  assert.match(previewView, /href="\/portal\/content"[^>]*min-h-11/);
+  assert.match(previewView, /id="cms-preview-loading"[^>]*role="status" aria-live="polite"/);
+  assert.match(previewView, /id="cms-preview-error"[^>]*role="alert" aria-live="assertive"/);
+  assert.match(previewView, /id="cms-preview-retry"[^>]*min-h-11/);
+  assert.match(previewView, /Los enlaces se muestran para revisar su diseño, pero no se abren/);
+
+  assert.match(previewLogic, /getPortalSession\(\{ auth \}\)/);
+  assert.match(previewLogic, /\['admin', 'superadmin'\]\.includes\(role\)/);
+  assert.match(previewLogic, /\/api\/portal\/content\/preview\?page_id=/);
+  assert.doesNotMatch(previewLogic, /\/api\/portal\/content\/pages\?page_id=/);
+  assert.match(previewLogic, /www\.youtube-nocookie\.com\/embed/);
+  assert.match(previewLogic, /referrerpolicy="strict-origin-when-cross-origin"/);
+  assert.match(previewLogic, /event\.preventDefault\(\)/);
+  assert.match(previewLogic, /Enlace revisado: \$\{href\}\. No se abrió\./);
+  assert.match(previewLogic, /REQUEST_TIMEOUT_MS = 15000/);
+
+  assert.match(previewApi, /requireCmsAdmin/);
+  assert.match(previewApi, /Promise\.all\(\[/);
+  assert.match(previewApi, /select\('id,page_key,route_path,title,status,version,updated_at'\)/);
+  assert.match(previewApi, /select\('id,section_key,kind,title,position,payload,status,updated_at'\)/);
+  assert.match(previewApi, /\.neq\('status', 'archived'\)/);
+  assert.doesNotMatch(previewApi, /select\('\*'\)/);
 });

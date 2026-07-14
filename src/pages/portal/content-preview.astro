@@ -4,23 +4,34 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
 ---
 
 <BaseLayout title="Vista previa de contenido | Portal Maná" description="Vista previa privada del contenido editorial." hideHeader hideFooter noindex>
-  <main class="min-h-screen bg-[#F5F7FA] text-slate-800">
-    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
-      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4">
-        <a href="/portal/content" class="inline-flex min-h-10 items-center gap-2 rounded-md px-3 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-100">
+  <div class="min-h-screen bg-[#F5F7FA] text-slate-800">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
+      <div class="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <a href="/portal/content" class="inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-100">
           <PortalIcon name="arrow-left" size={18} />
           Volver a Contenido
         </a>
-        <span id="cms-preview-status" class="portal-chip bg-amber-50 text-amber-700">Vista previa privada</span>
+        <div class="min-w-0 sm:text-right">
+          <p class="text-xs font-black uppercase tracking-wider text-slate-500">Vista previa editorial</p>
+          <h1 id="cms-preview-page-title" class="truncate font-display text-lg font-black text-[#293C74]">Cargando página…</h1>
+          <span id="cms-preview-status" class="mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800" role="status" aria-live="polite">Vista previa privada</span>
+        </div>
       </div>
     </header>
 
     <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
-      <div id="cms-preview-loading" class="portal-panel px-6 py-12 text-center text-slate-500">Cargando vista previa...</div>
-      <div id="cms-preview-error" class="portal-panel hidden border-red-200 bg-red-50 px-6 py-8 text-center text-red-700" role="alert"></div>
-      <article id="cms-preview-root" class="hidden space-y-5"></article>
+      <div class="mb-6 rounded-xl border border-[#293C74]/15 bg-white px-4 py-4 text-sm text-slate-600" role="note">
+        Los enlaces se muestran para revisar su diseño, pero no se abren desde esta vista previa privada.
+        <span id="cms-preview-link-feedback" class="mt-2 hidden font-bold text-[#293C74]" role="status" aria-live="polite"></span>
+      </div>
+      <div id="cms-preview-loading" class="portal-panel px-6 py-12 text-center text-slate-500" role="status" aria-live="polite">Cargando vista previa…</div>
+      <div id="cms-preview-error" class="portal-panel hidden border-red-200 bg-red-50 px-6 py-8 text-center text-red-700" role="alert" aria-live="assertive">
+        <p id="cms-preview-error-message">No se pudo cargar la vista previa.</p>
+        <button id="cms-preview-retry" type="button" class="mt-4 min-h-11 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-black text-red-700 hover:bg-red-100">Reintentar</button>
+      </div>
+      <article id="cms-preview-root" class="hidden space-y-6" aria-labelledby="cms-preview-page-title"></article>
     </div>
-  </main>
+  </div>
 
   <script src="../../scripts/portal-content-preview.js"></script>
 </BaseLayout>
