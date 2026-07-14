@@ -259,3 +259,44 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - No usar Wompi para recaudo local: Wompi pertenece siempre al recaudo nacional de Colombia.
 - No eliminar comprobantes hasta tener una política de retención aprobada.
 - No cambiar el rol pastoral principal para entregar un permiso financiero adicional.
+
+## 12. Decisiones tuyas para la carta de calidad
+
+La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_NEGOTIABLES.md). Estas son únicamente las decisiones que requieren tu aprobación; la auditoría e implementación técnica corresponden al equipo web bajo MANA-025.
+
+### Aprobar el estándar
+
+- [ ] Aprobar WCAG 2.2 AA como línea base interna para todo el sitio y conservar 44 × 44 px como objetivo táctil propio, especialmente pensando en pastores mayores.
+- [ ] Aprobar las excepciones de seguridad: no usar UI optimista ni `Deshacer` como única protección en pagos, permisos, aprobaciones financieras, mensajes masivos o borrados definitivos.
+- [ ] Confirmar que la paleta de comandos y los atajos serán obligatorios en el Portal y herramientas de uso diario, pero no en las páginas públicas salvo necesidad comprobada.
+- [ ] Confirmar que cualquier excepción a la carta debe registrar motivo, responsable y fecha de revisión en el Workboard.
+
+### Definir prioridades de producto
+
+- [ ] Elegir los primeros módulos para la auditoría formal. Orden recomendado: Portal/Eventos, Finanzas, Donaciones/Campus, Iglesias y páginas públicas.
+- [ ] Decidir si las primeras funciones de personalización serán vistas guardadas y densidad del Portal; dejar temas para una fase posterior.
+- [ ] Definir qué formularios necesitan autosave obligatorio. Recomendación inicial: creación/edición de Eventos, inscripción extensa y operaciones financieras manuales.
+- [ ] Definir en qué procesos vale la pena trabajar con red inestable u offline. Recomendación inicial: borradores de formularios, listas de asistentes y revisión operativa; nunca almacenar secretos ni datos financieros completos sin protección adicional.
+
+### Seguridad, privacidad y continuidad
+
+- [ ] Definir qué roles tendrán 2FA obligatorio. Recomendación: superadmin, finanzas, administradores nacionales y cualquier rol que apruebe pagos o gestione permisos.
+- [ ] Nombrar el responsable interno de privacidad y el canal para solicitudes de acceso, corrección, exportación y supresión de datos.
+- [ ] Aprobar una matriz de retención para inscripciones, comprobantes, auditorías, notificaciones y respaldos; no asumir que “borrar” elimina de inmediato una obligación contable o legal.
+- [ ] Confirmar con asesoría jurídica la política de tratamiento bajo Ley 1581 de 2012 y, si se ofrecen servicios cubiertos a personas en la Unión Europea, la aplicabilidad específica del European Accessibility Act.
+- [ ] Definir objetivos de continuidad: cuánto dato se puede perder como máximo —RPO— y cuánto tiempo puede estar caído cada servicio —RTO—.
+- [ ] Designar quién revisará trimestralmente restauración de respaldos, rotación de secretos, dependencias vulnerables y alertas de producción.
+
+### Rendimiento y medición
+
+- [ ] Aprobar el presupuesto recomendado: feedback local visible en menos de 100 ms; acciones de servidor por debajo de 400 ms en p75 cuando sea viable; si tardan más, progreso útil y trabajo preservado.
+- [ ] Definir la matriz mínima de dispositivos y redes para QA. Recomendación: 320, 390 y 430 px; Android gama media; iPhone; escritorio 1366 y 1440 px; red lenta simulada.
+- [ ] Confirmar si se habilitarán métricas continuas de rendimiento y errores en Vercel sin enviar datos personales a analítica.
+
+### Estado actual frente a tus no negociables
+
+- **Más sólido:** separación de monedas/proveedores, idempotencia, roles por alcance, auditoría de operaciones sensibles, exportes y responsive de páginas principales.
+- **Parcial:** accesibilidad integral, tokens y escala tipográfica, recuperación universal de formularios, internacionalización completa, tablas homogéneas y privacidad autoservicio.
+- **Pendiente de construir o medir:** paleta de comandos, vistas guardadas/densidad, presupuesto p75, restauración probada con RPO/RTO y auditoría WCAG 2.2 AA completa.
+
+No necesitas ejecutar SQL para esta carta. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.
