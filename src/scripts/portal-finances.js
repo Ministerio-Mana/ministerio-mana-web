@@ -736,6 +736,7 @@ filtersForm?.addEventListener('submit', async (event) => {
     if (applyFiltersBtn) {
       applyFiltersBtn.disabled = false;
       applyFiltersBtn.textContent = originalText;
+      window.requestAnimationFrame(() => applyFiltersBtn.focus());
     }
   }
 });
@@ -756,6 +757,7 @@ clearFiltersBtn?.addEventListener('click', async () => {
   } finally {
     clearFiltersBtn.disabled = false;
     clearFiltersBtn.textContent = originalText;
+    window.requestAnimationFrame(() => clearFiltersBtn.focus());
   }
 });
 

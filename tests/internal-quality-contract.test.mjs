@@ -252,4 +252,6 @@ test('finanzas separa monedas, respuestas tardías y controles operativos', asyn
   assert.match(financesLogic, /inline-flex min-h-11 items-center/);
   assert.match(financesLogic, /type="button" class="min-h-11[^>]+data-copy-text/);
   assert.match(financesLogic, /rel="noopener noreferrer"/);
+  assert.match(financesLogic, /requestAnimationFrame\(\(\) => applyFiltersBtn\.focus\(\)\)/);
+  assert.match(financesLogic, /requestAnimationFrame\(\(\) => clearFiltersBtn\.focus\(\)\)/);
 });
