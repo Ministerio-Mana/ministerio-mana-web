@@ -484,3 +484,79 @@ test('integraciones protege secretos, mínimo privilegio y respuestas tardías',
   assert.match(microsoftGraph, /site\.id !== config\.siteId/);
   assert.match(microsoftGraph, /config\.driveId && !drives\.some/);
 });
+
+test('Cumbre manual exige identidad individual y evita abonos duplicados', async () => {
+  const [
+    manualView,
+    manualAuth,
+    manualAccess,
+    bookingApi,
+    paymentApi,
+    cumbreStore,
+    idempotencySql,
+  ] = await Promise.all([
+    readSource('src/pages/admin/cumbre/manual.astro'),
+    readSource('src/scripts/cumbre-manual-auth.js'),
+    readSource('src/lib/cumbreManualAccess.ts'),
+    readSource('src/pages/api/cumbre2026/manual/submit.ts'),
+    readSource('src/pages/api/cumbre2026/manual/payment.ts'),
+    readSource('src/lib/cumbreStore.ts'),
+    readSource('docs/sql/cumbre_manual_payment_idempotency.sql'),
+  ]);
+
+  assert.equal([...manualView.matchAll(/<h1\b/g)].length, 1);
+  assert.doesNotMatch(manualView, /<main\b/);
+  assert.match(manualView, /hideHeader hideFooter noindex/);
+  assert.match(manualView, /id="cumbre-manual-gate"[^>]*role="status" aria-live="polite"/);
+  assert.match(manualView, /id="cumbre-manual-content" class="hidden/);
+  assert.match(manualView, /Operación financiera sensible/);
+  assert.doesNotMatch(manualView, /Astro\.url\.searchParams\.get\(['"]token/);
+  assert.doesNotMatch(manualView, /name="token"/);
+  assert.doesNotMatch(manualView, /innerHTML/);
+  for (const id of ['participant-name', 'participant-age', 'participant-lodging', 'participant-relationship', 'manual-payment-booking-id', 'manual-payment-value', 'manual-abono-method']) {
+    assert.match(manualView, new RegExp(`label for="${id}"`));
+    assert.match(manualView, new RegExp(`id="${id}"[^>]*min-h-11`));
+  }
+  assert.match(manualView, /name="manualConfirmed" value="yes"[^>]*required/);
+  assert.match(manualView, /name="paymentConfirmed" value="yes"[^>]*required/);
+  assert.match(manualView, /credentials: 'include'/);
+  assert.match(manualView, /window\.setTimeout\(\(\) => controller\.abort\(\), 15000\)/);
+  assert.match(manualView, /window\.addEventListener\('beforeunload'/);
+  assert.match(manualView, /document\.createElement\('li'\)/);
+  assert.match(manualView, /recorded && !payload\?\.ok/);
+
+  assert.match(manualAuth, /role !== 'superadmin' \|\| session\.auth\.mode === 'password'/);
+  assert.match(manualAuth, /Object\.freeze\(\{ \.\.\.session\.headers \}\)/);
+  assert.match(manualAuth, /cumbre-manual-ready/);
+
+  assert.match(manualAccess, /getPortalAdminContext\(params\.request\)/);
+  assert.match(manualAccess, /portal\.role === 'superadmin'/);
+  assert.match(manualAccess, /!portal\.isPasswordSession/);
+  assert.match(manualAccess, /headers\.get\('x-admin-secret'\)/);
+  assert.match(manualAccess, /crypto\.timingSafeEqual/);
+  assert.doesNotMatch(manualAccess, /searchParams|formData/);
+
+  assert.match(bookingApi, /authorizeCumbreManualAccess/);
+  assert.match(bookingApi, /MAX_PARTICIPANTS = 20/);
+  assert.match(bookingApi, /created_by: access\.userId/);
+  assert.match(bookingApi, /providerTxId = `manual-booking:\$\{idempotencyKey\}`/);
+  assert.match(bookingApi, /throwOnError: true/);
+  assert.match(bookingApi, /insertOnly: true/);
+  assert.doesNotMatch(bookingApi, /token: tokenPair\.token/);
+
+  assert.match(paymentApi, /authorizeCumbreManualAccess/);
+  assert.match(paymentApi, /paymentConfirmed/);
+  assert.match(paymentApi, /normalizedAmount > remaining/);
+  assert.match(paymentApi, /providerTxId = `manual:\$\{idempotencyKey\}`/);
+  assert.match(paymentApi, /reconciliation_status: 'pending'/);
+  assert.match(paymentApi, /reconciliation_status: 'complete'/);
+  assert.match(paymentApi, /recorded: true/);
+  assert.match(paymentApi, /insertOnly: true/);
+  assert.match(paymentApi, /cache-control': 'private, no-store/);
+
+  assert.match(cumbreStore, /insertOnly\?: boolean/);
+  assert.match(cumbreStore, /params\.reference && !params\.insertOnly/);
+  assert.match(cumbreStore, /updatePaymentRawEventByProviderTxId/);
+  assert.match(idempotencySql, /create unique index if not exists idx_cumbre_payments_provider_tx_unique/);
+  assert.match(idempotencySql, /create unique index if not exists idx_cumbre_payments_booking_reference_unique/);
+});

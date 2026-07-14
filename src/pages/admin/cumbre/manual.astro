@@ -1,26 +1,37 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 
-const token = Astro.url.searchParams.get('token') ?? '';
 const cspNonce = Astro.locals?.cspNonce;
 const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '2026-05-15') as string;
 ---
 
-<BaseLayout title="Cumbre 2026 Manual | Ministerio Maná" description="Formulario manual para pagos físicos.">
-  <main class="min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
-    <section class="py-12 md:py-16 px-4 md:px-8">
-      <div class="max-w-5xl mx-auto space-y-8">
-        <div class="relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 md:p-10 shadow-lg shadow-slate-200/60">
-          <div class="absolute -top-12 -right-10 h-40 w-40 rounded-full bg-[#293C74]/10"></div>
+<BaseLayout title="Cumbre 2026 Manual | Ministerio Maná" description="Operación privada para reservas y pagos físicos." hideHeader hideFooter noindex>
+  <div class="min-h-screen bg-[#F8FAFC] text-slate-800 selection:bg-[#293C74]/20">
+    <section class="px-4 py-12 md:px-8 md:py-16" aria-labelledby="cumbre-manual-title">
+      <div class="mx-auto max-w-5xl space-y-8">
+        <div class="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-8 shadow-lg shadow-slate-200/60">
+          <div class="absolute -right-8 -top-12 h-40 w-40 rounded-full bg-[#293C74]/10"></div>
           <div class="relative">
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Portal Maná</p>
-            <h1 class="text-3xl md:text-4xl font-display font-bold text-[#293C74]">Registro manual Cumbre 2026</h1>
-            <p class="text-slate-600 mt-2 max-w-2xl">Usa este formulario para crear reservas físicas y registrar abonos cuando el pago ya se realizó por fuera del portal.</p>
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Portal Maná</p>
+            <h1 id="cumbre-manual-title" class="mt-2 text-3xl font-display font-bold text-[#293C74] md:text-4xl">Registro manual Cumbre 2026</h1>
+            <p class="mt-2 max-w-2xl text-slate-600">Usa este formulario únicamente cuando la reserva o el pago físico ya fueron verificados por el equipo autorizado.</p>
           </div>
         </div>
 
-        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-lg shadow-slate-200/50">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div id="cumbre-manual-gate" class="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm" role="status" aria-live="polite">
+          <p id="cumbre-manual-gate-message">Validando cuenta individual...</p>
+          <a id="cumbre-manual-gate-link" href="/portal" class="mt-4 hidden min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">Volver al Portal</a>
+        </div>
+
+        <div id="cumbre-manual-content" class="hidden space-y-8">
+        <aside class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900" aria-labelledby="cumbre-manual-security-title">
+          <h2 id="cumbre-manual-security-title" class="font-bold">Operación financiera sensible</h2>
+          <p class="mt-2">No uses esta pantalla para simular pagos. Verifica soporte, reserva, moneda y monto antes de confirmar. Los cambios quedan asociados a tu cuenta individual.</p>
+          <p id="cumbre-manual-actor" class="mt-2 font-bold">Sesión en validación</p>
+        </aside>
+
+        <div class="rounded-2xl border border-slate-100 bg-white p-8 shadow-lg shadow-slate-200/50">
+          <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 class="text-xl md:text-2xl font-display font-bold text-[#293C74]">Crear reserva manual</h2>
               <p class="text-sm text-slate-500">Datos del responsable + participantes y forma de pago.</p>
@@ -29,26 +40,25 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
           </div>
 
           <form id="manual-booking-form" method="POST" action="/api/cumbre2026/manual/submit" class="space-y-8" data-installment-deadline={installmentDeadline}>
-            <input type="hidden" name="token" value={token} />
             <input type="hidden" name="participants" id="participants-json" value="[]" />
             <input type="hidden" name="idempotencyKey" id="manual-idempotency-key" />
 
-            <div class="grid gap-5 md:grid-cols-2">
+            <div class="grid gap-4 md:grid-cols-2">
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre responsable</label>
-                <input name="contactName" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Nombre completo" />
+                <label for="manual-contact-name" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Nombre responsable</label>
+                <input id="manual-contact-name" name="contactName" autocomplete="name" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Nombre completo" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Email</label>
-                <input type="email" name="email" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="correo@email.com" />
+                <label for="manual-contact-email" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Email</label>
+                <input id="manual-contact-email" type="email" name="email" autocomplete="email" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="correo@email.com" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono</label>
-                <input name="phone" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="3000000000" />
+                <label for="manual-contact-phone" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Teléfono</label>
+                <input id="manual-contact-phone" name="phone" type="tel" autocomplete="tel" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="300 000 0000" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Tipo documento</label>
-                <select name="documentType" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                <label for="manual-document-type" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Tipo documento</label>
+                <select id="manual-document-type" name="documentType" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]">
                   <option value="">Selecciona</option>
                   <option value="CC">CC</option>
                   <option value="CE">CE</option>
@@ -58,135 +68,188 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                 </select>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Número documento</label>
-                <input name="documentNumber" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Documento" />
+                <label for="manual-document-number" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Número documento</label>
+                <input id="manual-document-number" name="documentNumber" autocomplete="off" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Documento" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
-                <input name="country" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Colombia" />
+                <label for="manual-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">País</label>
+                <input id="manual-country" name="country" autocomplete="country-name" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Colombia" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
-                <input name="city" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Ciudad" />
+                <label for="manual-city" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Ciudad</label>
+                <input id="manual-city" name="city" autocomplete="address-level2" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Ciudad" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Iglesia / Sede</label>
-                <input name="church" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Iglesia / Sede" />
+                <label for="manual-church" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Iglesia / Sede</label>
+                <input id="manual-church" name="church" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Iglesia / Sede" />
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Grupo país</label>
-                <select id="manual-country-group" name="countryGroup" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                <label for="manual-country-group" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Grupo país</label>
+                <select id="manual-country-group" name="countryGroup" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 font-medium text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]">
                   <option value="CO" selected>Colombia</option>
                   <option value="INT">Internacional</option>
                 </select>
               </div>
             </div>
 
-            <div class="rounded-[2rem] border border-slate-100 bg-slate-50/70 p-6">
-              <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <div class="rounded-2xl border border-slate-100 bg-slate-50/70 p-6">
+              <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h3 class="text-sm font-bold text-[#293C74]">Participantes</h3>
-                  <p class="mt-1 text-xs text-slate-500">Los cupos con hospedaje ya están agotados; registra nuevos participantes sin alojamiento.</p>
+                  <p class="mt-2 text-xs text-slate-500">Los cupos con hospedaje ya están agotados; registra nuevos participantes sin alojamiento.</p>
                 </div>
-                <button type="button" id="add-participant" class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90 transition">Agregar participante</button>
+                <button type="button" id="add-participant" class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#293C74]/90">Agregar participante</button>
               </div>
-              <div class="grid gap-3 md:grid-cols-4">
-                <input id="p-name" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Nombre" />
-                <input id="p-age" type="number" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Edad" />
-                <select id="p-lodging" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm">
-                  <option value="no">Sin alojamiento</option>
-                </select>
-                <input id="p-rel" class="rounded-xl bg-white border border-slate-200 px-3 py-2 text-[#293C74] placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none text-sm" placeholder="Relación" />
+              <div class="grid gap-4 md:grid-cols-4">
+                <div>
+                  <label for="participant-name" class="mb-2 block text-xs font-bold text-[#293C74]">Nombre</label>
+                  <input id="participant-name" autocomplete="off" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-[#293C74] outline-none placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Nombre completo" />
+                </div>
+                <div>
+                  <label for="participant-age" class="mb-2 block text-xs font-bold text-[#293C74]">Edad</label>
+                  <input id="participant-age" type="number" min="0" max="120" step="1" inputmode="numeric" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-[#293C74] outline-none placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Edad" />
+                </div>
+                <div>
+                  <label for="participant-lodging" class="mb-2 block text-xs font-bold text-[#293C74]">Alojamiento</label>
+                  <select id="participant-lodging" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]">
+                    <option value="no">Sin alojamiento</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="participant-relationship" class="mb-2 block text-xs font-bold text-[#293C74]">Relación <span class="font-normal text-slate-500">(opcional)</span></label>
+                  <input id="participant-relationship" autocomplete="off" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-[#293C74] outline-none placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Ej. hijo" />
+                </div>
               </div>
-              <ul id="participants-list" class="mt-4 text-xs text-slate-500 space-y-1"></ul>
+              <p id="participant-status" class="mt-4 text-xs text-slate-500" role="status" aria-live="polite">Aún no hay participantes.</p>
+              <ul id="participants-list" class="mt-2 space-y-2 text-sm text-slate-600"></ul>
             </div>
 
-            <div class="rounded-[2rem] border border-slate-100 bg-white p-6">
-              <h3 class="text-sm font-bold text-[#293C74] mb-4">Pago</h3>
+            <div class="rounded-2xl border border-slate-100 bg-white p-6">
+              <h3 class="mb-4 text-sm font-bold text-[#293C74]">Pago</h3>
               <div class="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Opción de pago</label>
-                  <select name="paymentOption" id="payment-option" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                  <label for="payment-option" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Opción de pago</label>
+                  <select name="paymentOption" id="payment-option" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]">
                     <option value="FULL">Pago completo</option>
                     <option value="DEPOSIT">Reserva 50%</option>
                     <option value="INSTALLMENTS">Cuotas</option>
                   </select>
                 </div>
                 <div id="frequency-wrapper" class="hidden">
-                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Frecuencia cuotas</label>
-                  <select id="frequency-select" name="frequency" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                  <label for="frequency-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Frecuencia cuotas</label>
+                  <select id="frequency-select" name="frequency" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]">
                     <option value="MONTHLY">Mensual</option>
                     <option value="BIWEEKLY">Quincenal</option>
                   </select>
                 </div>
                 <div id="deposit-wrapper" class="hidden md:col-span-2">
-                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Fecha de segundo pago</label>
-                  <input id="deposit-due-date" name="deposit_due_date" type="date" max={installmentDeadline} class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" />
-                  <p class="text-[11px] text-slate-500 ml-1 mt-1">Disponible hasta <span id="deposit-deadline-label" class="font-semibold text-[#293C74]">15 de mayo de 2026</span> (incluido).</p>
+                  <label for="deposit-due-date" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Fecha de segundo pago</label>
+                  <input id="deposit-due-date" name="deposit_due_date" type="date" max={installmentDeadline} class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" />
+                  <p class="mt-2 text-xs text-slate-500">Disponible hasta <span id="deposit-deadline-label" class="font-semibold text-[#293C74]">15 de mayo de 2026</span> (incluido).</p>
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Moneda de pago</label>
-                  <select id="manual-currency" name="currency" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
+                  <label for="manual-currency" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Moneda de pago</label>
+                  <select id="manual-currency" name="currency" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]">
                     <option value="COP">Pesos colombianos (COP)</option>
                     <option value="USD">Dólares (USD)</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Valor pagado hoy</label>
-                  <input id="manual-payment-amount" name="paymentAmount" type="text" inputmode="decimal" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="0" />
-                  <div class="flex items-center justify-between text-[11px] text-slate-500 ml-1 mt-1">
+                  <label for="manual-payment-amount" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Valor pagado hoy</label>
+                  <input id="manual-payment-amount" name="paymentAmount" type="text" inputmode="decimal" autocomplete="off" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none placeholder-slate-400 transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="0" />
+                  <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                     <span id="manual-payment-hint">Automático: $0</span>
-                    <label class="inline-flex items-center gap-2 font-semibold text-slate-500 cursor-pointer">
-                      <input id="manual-payment-custom-toggle" type="checkbox" class="h-3.5 w-3.5 rounded border-slate-300 text-brand-teal focus:ring-brand-teal">
+                    <label class="inline-flex min-h-11 cursor-pointer items-center gap-2 font-semibold text-slate-600">
+                      <input id="manual-payment-custom-toggle" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-brand-teal focus:ring-brand-teal">
                       Aporte libre
                     </label>
                   </div>
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Método de pago</label>
-                  <input name="paymentMethod" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Efectivo / Transferencia" />
+                  <label for="manual-payment-method" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Método de pago</label>
+                  <input id="manual-payment-method" name="paymentMethod" autocomplete="off" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none placeholder-slate-400 transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Efectivo / Transferencia" />
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <button type="submit" class="px-8 py-4 rounded-2xl bg-[#293C74] text-white font-bold hover:shadow-lg hover:shadow-[#293C74]/20 transition-all">Crear reserva</button>
-              <p id="manual-status" class="text-xs text-slate-500"></p>
+            <label class="flex min-h-11 cursor-pointer items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+              <input name="manualConfirmed" value="yes" type="checkbox" required class="mt-2 h-4 w-4 shrink-0 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+              <span><strong class="text-[#293C74]">Confirmo la operación.</strong> Verifiqué los datos, participantes, moneda, monto y soporte físico antes de guardar.</span>
+            </label>
+
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div class="flex flex-wrap gap-2">
+                <button id="manual-booking-submit" type="submit" class="min-h-11 rounded-xl bg-[#293C74] px-8 py-2 font-bold text-white transition-all hover:shadow-lg hover:shadow-[#293C74]/20">Crear reserva</button>
+                <button id="manual-booking-reset" type="button" disabled class="hidden min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2 font-bold text-[#293C74] hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">Limpiar para otra reserva</button>
+              </div>
+              <p id="manual-status" class="text-sm text-slate-500" role="status" aria-live="polite"></p>
             </div>
           </form>
         </div>
 
-        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-lg shadow-slate-200/50">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div class="rounded-2xl border border-slate-100 bg-white p-8 shadow-lg shadow-slate-200/50">
+          <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 class="text-xl md:text-2xl font-display font-bold text-[#293C74]">Registrar abono manual</h2>
               <p class="text-sm text-slate-500">Usa el Booking ID y el monto recibido.</p>
             </div>
             <span class="inline-flex items-center gap-2 rounded-full bg-brand-teal/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-brand-teal">Abonos</span>
           </div>
-          <form id="manual-payment-form" method="POST" action="/api/cumbre2026/manual/payment" class="space-y-5">
-            <input type="hidden" name="token" value={token} />
+          <form id="manual-payment-form" method="POST" action="/api/cumbre2026/manual/payment" class="space-y-6">
+            <input type="hidden" name="idempotencyKey" id="manual-payment-idempotency-key" />
             <div class="grid gap-4 md:grid-cols-3">
-              <input name="bookingId" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Booking ID" />
-              <input name="amount" type="number" required class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Monto" />
-              <input name="paymentMethod" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-400" placeholder="Método (efectivo...)" />
+              <div>
+                <label for="manual-payment-booking-id" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Booking ID</label>
+                <input id="manual-payment-booking-id" name="bookingId" autocomplete="off" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none placeholder-slate-400 transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="UUID de la reserva" />
+              </div>
+              <div>
+                <label for="manual-payment-value" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Monto recibido</label>
+                <input id="manual-payment-value" name="amount" type="text" inputmode="decimal" autocomplete="off" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none placeholder-slate-400 transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Monto en moneda de la reserva" />
+              </div>
+              <div>
+                <label for="manual-abono-method" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[#293C74]">Método verificado</label>
+                <input id="manual-abono-method" name="paymentMethod" autocomplete="off" required class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 font-medium text-[#293C74] outline-none placeholder-slate-400 transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Efectivo / Transferencia" />
+              </div>
             </div>
-            <div class="flex items-center gap-4">
-              <button type="submit" class="px-8 py-4 rounded-2xl bg-brand-teal text-white font-bold hover:shadow-lg hover:shadow-brand-teal/20 transition-all">Registrar abono</button>
-              <p id="payment-status" class="text-xs text-slate-500"></p>
+            <label class="flex min-h-11 cursor-pointer items-start gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+              <input name="paymentConfirmed" value="yes" type="checkbox" required class="mt-2 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-teal focus:ring-brand-teal" />
+              <span><strong class="text-[#293C74]">Confirmo el abono.</strong> Comparé reserva, moneda, saldo, monto y soporte. Entiendo que esta acción afecta la contabilidad.</span>
+            </label>
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div class="flex flex-wrap gap-2">
+                <button id="manual-payment-submit" type="submit" class="min-h-11 rounded-xl bg-brand-teal px-8 py-2 font-bold text-white transition-all hover:shadow-lg hover:shadow-brand-teal/20">Registrar abono</button>
+                <button id="manual-payment-reset" type="button" disabled class="hidden min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2 font-bold text-[#293C74] hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">Limpiar para otro abono</button>
+              </div>
+              <p id="payment-status" class="text-sm text-slate-500" role="status" aria-live="polite"></p>
             </div>
           </form>
         </div>
+        </div>
       </div>
     </section>
-  </main>
+  </div>
+
+  <script src="../../../scripts/cumbre-manual-auth.js"></script>
 
   <script type="module" nonce={cspNonce}>
     const participants = [];
     const list = document.getElementById('participants-list');
-    const input = document.getElementById('participants-json');
+    const participantsInput = document.getElementById('participants-json');
+    const participantStatus = document.getElementById('participant-status');
+    const participantName = document.getElementById('participant-name');
+    const participantAge = document.getElementById('participant-age');
+    const participantLodging = document.getElementById('participant-lodging');
+    const participantRelationship = document.getElementById('participant-relationship');
     const bookingForm = document.getElementById('manual-booking-form');
+    const bookingSubmit = document.getElementById('manual-booking-submit');
+    const bookingReset = document.getElementById('manual-booking-reset');
+    const bookingStatus = document.getElementById('manual-status');
     const idempotencyInput = document.getElementById('manual-idempotency-key');
+    const paymentForm = document.getElementById('manual-payment-form');
+    const paymentSubmit = document.getElementById('manual-payment-submit');
+    const paymentReset = document.getElementById('manual-payment-reset');
+    const paymentStatus = document.getElementById('payment-status');
+    const paymentIdempotencyInput = document.getElementById('manual-payment-idempotency-key');
     const paymentOption = document.getElementById('payment-option');
     const frequencyWrapper = document.getElementById('frequency-wrapper');
     const frequencySelect = document.getElementById('frequency-select');
@@ -202,62 +265,52 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     let paymentAmountTouched = false;
     let bookingIdempotencyKey = null;
     let bookingSignature = null;
+    let paymentIdempotencyKey = null;
+    let paymentSignature = null;
+    let bookingDirty = false;
+    let paymentDirty = false;
+    let bookingCompleted = false;
+    let paymentCompleted = false;
 
-    const generateIdempotencyKey = () => {
-      if (window.crypto?.randomUUID) {
-        return window.crypto.randomUUID();
-      }
-      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    };
+    const generateIdempotencyKey = () => window.crypto?.randomUUID?.()
+      || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
     const prices = {
-      COP: {
-        lodging: 850000,
-        no_lodging: 660000,
-        child_0_7: 300000,
-        child_7_13: 550000,
-      },
-      USD: {
-        lodging: 220,
-        no_lodging: 170,
-        child_0_7: 80,
-        child_7_13: 140,
-      },
+      COP: { lodging: 850000, no_lodging: 660000, child_0_7: 300000, child_7_13: 550000 },
+      USD: { lodging: 220, no_lodging: 170, child_0_7: 80, child_7_13: 140 },
     };
 
     const normalizeCurrency = (value) => (value === 'USD' ? 'USD' : 'COP');
+    const roundCurrency = (amount, currency) => currency === 'COP'
+      ? Math.round(amount)
+      : Math.round(amount * 100) / 100;
 
-    const roundCurrency = (amount, currency) => (
-      currency === 'COP' ? Math.round(amount) : Math.round(amount * 100) / 100
-    );
-
-    const formatCurrency = (amount, currency) => {
-      if (currency === 'USD') {
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(amount);
-      }
-      return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
-    };
+    const formatCurrency = (amount, currency) => new Intl.NumberFormat(
+      currency === 'USD' ? 'en-US' : 'es-CO',
+      {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: currency === 'USD' ? 2 : 0,
+      },
+    ).format(amount);
 
     const formatInputAmount = (amount, currency) => {
       if (!Number.isFinite(amount)) return '';
-      if (currency === 'USD') {
-        return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(amount);
-      }
-      return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(amount);
+      return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CO', {
+        maximumFractionDigits: currency === 'USD' ? 2 : 0,
+      }).format(amount);
     };
 
     const parseInputAmount = (raw, currency) => {
-      const value = (raw || '').toString().trim();
+      const value = String(raw || '').trim();
       if (!value) return null;
       if (currency === 'COP') {
         const digits = value.replace(/[^\d]/g, '');
-        if (!digits) return null;
-        const amount = Number(digits);
+        const amount = digits ? Number(digits) : Number.NaN;
         return Number.isFinite(amount) ? amount : null;
       }
       const normalized = value.replace(/[^0-9.,]/g, '').replace(/,/g, '');
-      if (!normalized) return null;
-      const amount = Number(normalized);
+      const amount = normalized ? Number(normalized) : Number.NaN;
       return Number.isFinite(amount) ? amount : null;
     };
 
@@ -268,13 +321,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     };
 
     const getSelectedCurrency = () => normalizeCurrency(currencySelect?.value);
-
     const getTotalAmount = () => {
       const currency = getSelectedCurrency();
-      return participants.reduce((sum, p) => {
-        const packageType = getPackageType(p.age || 0, p.lodging);
-        const price = prices[currency]?.[packageType] || 0;
-        return sum + price;
+      return participants.reduce((sum, participant) => {
+        const packageType = getPackageType(participant.age, participant.lodging);
+        return sum + (prices[currency]?.[packageType] || 0);
       }, 0);
     };
 
@@ -283,18 +334,13 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       const end = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
       const now = new Date();
       const current = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-      if (end < current) {
-        return { count: 1, amount: total };
-      }
+      if (end < current) return { count: 1, amount: total };
       const dueDates = [];
       let tempDate = new Date(current);
       while (tempDate <= end) {
         dueDates.push(new Date(tempDate));
-        if (frequency === 'BIWEEKLY') {
-          tempDate.setUTCDate(tempDate.getUTCDate() + 14);
-        } else {
-          tempDate.setUTCMonth(tempDate.getUTCMonth() + 1);
-        }
+        if (frequency === 'BIWEEKLY') tempDate.setUTCDate(tempDate.getUTCDate() + 14);
+        else tempDate.setUTCMonth(tempDate.getUTCMonth() + 1);
       }
       const count = Math.max(1, dueDates.length);
       return { count, amount: total / count };
@@ -306,20 +352,15 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       const option = paymentOption?.value || 'FULL';
       if (option === 'DEPOSIT') return roundCurrency(total * 0.5, currency);
       if (option === 'INSTALLMENTS') {
-        const frequency = frequencySelect?.value || 'MONTHLY';
-        const preview = getInstallmentPreview(total, frequency);
-        return roundCurrency(preview.amount, currency);
+        return roundCurrency(getInstallmentPreview(total, frequencySelect?.value || 'MONTHLY').amount, currency);
       }
       return roundCurrency(total, currency);
     };
 
     const updatePaymentHint = () => {
       if (!paymentHint) return;
-      const currency = getSelectedCurrency();
-      const suggested = getDefaultPaymentAmount();
-      const customEnabled = Boolean(paymentCustomToggle?.checked);
-      const label = customEnabled ? 'Sugerido' : 'Automático';
-      paymentHint.textContent = `${label}: ${formatCurrency(suggested, currency)}`;
+      const label = paymentCustomToggle?.checked ? 'Sugerido' : 'Automático';
+      paymentHint.textContent = `${label}: ${formatCurrency(getDefaultPaymentAmount(), getSelectedCurrency())}`;
     };
 
     const syncPaymentAmount = (force = false) => {
@@ -328,69 +369,114 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       paymentAmountInput.readOnly = !customEnabled;
       paymentAmountInput.classList.toggle('bg-white', customEnabled);
       paymentAmountInput.classList.toggle('bg-slate-50', !customEnabled);
-
-      const shouldSync = (!customEnabled && (force || !paymentAmountTouched || !paymentAmountInput.value));
-      if (shouldSync) {
-        const defaultAmount = getDefaultPaymentAmount();
-        paymentAmountInput.value = defaultAmount ? formatInputAmount(defaultAmount, getSelectedCurrency()) : '';
+      const shouldSync = !customEnabled && (force || !paymentAmountTouched || !paymentAmountInput.value);
+      if (shouldSync || (customEnabled && force && !paymentAmountInput.value)) {
+        const amount = getDefaultPaymentAmount();
+        paymentAmountInput.value = amount ? formatInputAmount(amount, getSelectedCurrency()) : '';
         if (force) paymentAmountTouched = false;
-      } else if (customEnabled && force && !paymentAmountInput.value) {
-        const defaultAmount = getDefaultPaymentAmount();
-        paymentAmountInput.value = defaultAmount ? formatInputAmount(defaultAmount, getSelectedCurrency()) : '';
       }
       updatePaymentHint();
     };
 
     const formatLongDateWithYear = (value) => {
-      try {
-        const [year, month, day] = value.split('-').map(Number);
-        const date = new Date(year, (month || 1) - 1, day || 1);
-        return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
-      } catch {
-        return value;
-      }
+      const [year, month, day] = value.split('-').map(Number);
+      const date = new Date(year, (month || 1) - 1, day || 1);
+      return Number.isNaN(date.getTime())
+        ? value
+        : date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
     };
 
-    const getDepositMinDate = () => {
-      const base = new Date();
-      base.setDate(base.getDate() + 1);
-      const year = base.getFullYear();
-      const month = String(base.getMonth() + 1).padStart(2, '0');
-      const day = String(base.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+    const getTodayValue = (daysToAdd = 0) => {
+      const date = new Date();
+      date.setDate(date.getDate() + daysToAdd);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
 
     const syncDepositSchedule = () => {
       if (!depositInput) return;
-      const minDate = getDepositMinDate();
+      const minDate = getTodayValue(1);
       depositInput.min = minDate;
       depositInput.max = installmentDeadline;
-      if (depositDeadlineLabel) {
-        depositDeadlineLabel.textContent = formatLongDateWithYear(installmentDeadline);
-      }
-      if (!depositInput.value || depositInput.value < minDate || depositInput.value > installmentDeadline) {
-        const next = installmentDeadline >= minDate ? installmentDeadline : minDate;
-        depositInput.value = next;
+      if (depositDeadlineLabel) depositDeadlineLabel.textContent = formatLongDateWithYear(installmentDeadline);
+      if (installmentDeadline >= minDate && (!depositInput.value || depositInput.value < minDate || depositInput.value > installmentDeadline)) {
+        depositInput.value = installmentDeadline;
       }
     };
 
+    const closeExpiredPaymentOptions = () => {
+      if (!paymentOption || getTodayValue() <= installmentDeadline) return;
+      for (const value of ['DEPOSIT', 'INSTALLMENTS']) {
+        const option = paymentOption.querySelector(`option[value="${value}"]`);
+        if (option) {
+          option.disabled = true;
+          option.textContent = `${option.textContent} · plazo cerrado`;
+        }
+      }
+      paymentOption.value = 'FULL';
+    };
+
+    const renderParticipants = () => {
+      participantsInput.value = JSON.stringify(participants);
+      list.replaceChildren();
+      participants.forEach((participant, index) => {
+        const item = document.createElement('li');
+        item.className = 'flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2';
+        const description = document.createElement('span');
+        description.textContent = `${participant.fullName} · ${participant.age} años · Sin alojamiento`;
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'min-h-11 rounded-xl px-4 py-2 font-bold text-red-700 hover:bg-red-50';
+        removeButton.textContent = 'Quitar';
+        removeButton.setAttribute('aria-label', `Quitar a ${participant.fullName}`);
+        removeButton.addEventListener('click', () => {
+          participants.splice(index, 1);
+          bookingDirty = true;
+          paymentAmountTouched = false;
+          renderParticipants();
+          syncPaymentAmount(true);
+          participantName?.focus();
+        });
+        item.append(description, removeButton);
+        list.append(item);
+      });
+      participantStatus.textContent = participants.length
+        ? `${participants.length} de 20 participante${participants.length === 1 ? '' : 's'} registrado${participants.length === 1 ? '' : 's'}.`
+        : 'Aún no hay participantes.';
+    };
+
     document.getElementById('add-participant')?.addEventListener('click', () => {
-      const name = document.getElementById('p-name').value.trim();
-      const age = Number(document.getElementById('p-age').value || 0);
-      const lodging = document.getElementById('p-lodging').value;
-      const relationship = document.getElementById('p-rel').value.trim();
-      if (!name) return;
-      participants.push({ fullName: name, age, lodging, relationship });
-      input.value = JSON.stringify(participants);
-      list.innerHTML = participants
-        .map((p) => `<li>${p.fullName} • ${p.age || '-'} • ${getPackageType(p.age || 0, p.lodging) === 'lodging' ? 'Con alojamiento' : 'Sin alojamiento'}</li>`)
-        .join('');
-      document.getElementById('p-name').value = '';
-      document.getElementById('p-age').value = '';
-      document.getElementById('p-lodging').value = 'no';
-      document.getElementById('p-rel').value = '';
+      const name = participantName?.value.trim() || '';
+      const ageValue = participantAge?.value.trim() || '';
+      const age = Number(ageValue);
+      if (!name) {
+        participantStatus.textContent = 'Escribe el nombre del participante.';
+        participantName?.focus();
+        return;
+      }
+      if (!ageValue || !Number.isInteger(age) || age < 0 || age > 120) {
+        participantStatus.textContent = 'Escribe una edad válida entre 0 y 120 años.';
+        participantAge?.focus();
+        return;
+      }
+      if (participants.length >= 20) {
+        participantStatus.textContent = 'La reserva admite máximo 20 participantes.';
+        return;
+      }
+      participants.push({
+        fullName: name,
+        age,
+        lodging: participantLodging?.value || 'no',
+        relationship: participantRelationship?.value.trim() || '',
+      });
+      if (participantName) participantName.value = '';
+      if (participantAge) participantAge.value = '';
+      if (participantLodging) participantLodging.value = 'no';
+      if (participantRelationship) participantRelationship.value = '';
+      bookingDirty = true;
       paymentAmountTouched = false;
+      renderParticipants();
       syncPaymentAmount(true);
+      participantName?.focus();
     });
 
     const updatePaymentSections = () => {
@@ -398,23 +484,16 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       frequencyWrapper?.classList.toggle('hidden', value !== 'INSTALLMENTS');
       depositWrapper?.classList.toggle('hidden', value !== 'DEPOSIT');
       if (depositInput) depositInput.required = value === 'DEPOSIT';
-      if (value === 'DEPOSIT') {
-        syncDepositSchedule();
-      }
+      if (value === 'DEPOSIT') syncDepositSchedule();
       paymentAmountTouched = false;
       syncPaymentAmount(true);
     };
 
     const syncCurrencyFromCountryGroup = () => {
-      if (!countryGroupSelect || !currencySelect) return;
-      const next = countryGroupSelect.value === 'INT' ? 'USD' : 'COP';
-      currencySelect.value = next;
+      if (countryGroupSelect && currencySelect) currencySelect.value = countryGroupSelect.value === 'INT' ? 'USD' : 'COP';
     };
-
     const syncCountryGroupFromCurrency = () => {
-      if (!countryGroupSelect || !currencySelect) return;
-      const next = normalizeCurrency(currencySelect.value) === 'USD' ? 'INT' : 'CO';
-      countryGroupSelect.value = next;
+      if (countryGroupSelect && currencySelect) countryGroupSelect.value = normalizeCurrency(currencySelect.value) === 'USD' ? 'INT' : 'CO';
     };
 
     paymentOption?.addEventListener('change', updatePaymentSections);
@@ -435,95 +514,202 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
     paymentAmountInput?.addEventListener('input', () => {
       paymentAmountTouched = true;
       const amount = parseInputAmount(paymentAmountInput.value, getSelectedCurrency());
-      if (amount !== null) {
-        paymentAmountInput.value = formatInputAmount(amount, getSelectedCurrency());
-      }
+      if (amount !== null) paymentAmountInput.value = formatInputAmount(amount, getSelectedCurrency());
       updatePaymentHint();
     });
     paymentCustomToggle?.addEventListener('change', () => {
-      paymentAmountTouched = Boolean(paymentCustomToggle?.checked);
+      paymentAmountTouched = Boolean(paymentCustomToggle.checked);
       syncPaymentAmount(true);
     });
     depositInput?.addEventListener('change', syncDepositSchedule);
     depositInput?.addEventListener('blur', syncDepositSchedule);
 
-    syncCurrencyFromCountryGroup();
-    updatePaymentSections();
-    syncPaymentAmount(true);
+    const authHeaders = () => {
+      const value = window['cumbreManualAuthHeaders'];
+      if (!value || typeof value !== 'object') throw new Error('La sesión individual no está disponible. Recarga la página.');
+      return value;
+    };
 
-    bookingForm?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const status = document.getElementById('manual-status');
+    const requestJson = async (action, formData) => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
+      try {
+        const response = await fetch(action, {
+          method: 'POST',
+          body: formData,
+          headers: authHeaders(),
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+        return { response, payload };
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    };
+
+    const setBusy = (button, busy, label, completed) => {
+      if (!button) return;
+      button.dataset.defaultLabel ||= button.textContent || '';
+      button.textContent = busy ? label : button.dataset.defaultLabel;
+      button.disabled = busy || completed;
+      button.setAttribute('aria-busy', busy ? 'true' : 'false');
+    };
+
+    bookingForm?.addEventListener('input', () => {
+      if (!bookingCompleted) bookingDirty = true;
+    });
+    bookingForm?.addEventListener('change', () => {
+      if (!bookingCompleted) bookingDirty = true;
+    });
+    paymentForm?.addEventListener('input', () => {
+      if (!paymentCompleted) paymentDirty = true;
+    });
+    paymentForm?.addEventListener('change', () => {
+      if (!paymentCompleted) paymentDirty = true;
+    });
+
+    bookingForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (bookingCompleted) return;
+      if (!participants.length) {
+        bookingStatus.textContent = 'Agrega al menos un participante antes de crear la reserva.';
+        participantName?.focus();
+        return;
+      }
       const option = paymentOption?.value || 'FULL';
-      if (option === 'DEPOSIT' && (!depositInput || !depositInput.value)) {
-        status.textContent = 'Selecciona la fecha del segundo pago';
+      if (option === 'DEPOSIT' && !depositInput?.value) {
+        bookingStatus.textContent = 'Selecciona la fecha del segundo pago.';
+        depositInput?.focus();
         return;
       }
       const parsedPayment = parseInputAmount(paymentAmountInput?.value, getSelectedCurrency());
-      if (paymentCustomToggle?.checked && (!paymentAmountInput?.value || !parsedPayment || parsedPayment <= 0)) {
-        status.textContent = 'Ingresa el valor pagado hoy para el aporte libre';
+      if (paymentCustomToggle?.checked && (!paymentAmountInput?.value || parsedPayment === null || parsedPayment <= 0)) {
+        bookingStatus.textContent = 'Ingresa el valor pagado hoy para el aporte libre.';
+        paymentAmountInput?.focus();
         return;
       }
-      status.textContent = 'Enviando...';
-      const formData = new FormData(form);
-      if (parsedPayment !== null) {
-        formData.set('paymentAmount', String(parsedPayment));
-      }
-      const signature = JSON.stringify({
-        contactName: formData.get('contactName'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        documentType: formData.get('documentType'),
-        documentNumber: formData.get('documentNumber'),
-        countryGroup: formData.get('countryGroup'),
-        country: formData.get('country'),
-        city: formData.get('city'),
-        church: formData.get('church'),
-        paymentOption: formData.get('paymentOption'),
-        paymentAmount: formData.get('paymentAmount'),
-        frequency: formData.get('frequency'),
-        depositDueDate: formData.get('deposit_due_date'),
-        currency: formData.get('currency'),
-        participants: formData.get('participants'),
-      });
+
+      const formData = new FormData(bookingForm);
+      if (parsedPayment !== null) formData.set('paymentAmount', String(parsedPayment));
+      const signature = JSON.stringify(Array.from(formData.entries()).filter(([key]) => key !== 'idempotencyKey'));
       if (!bookingIdempotencyKey || bookingSignature !== signature) {
         bookingIdempotencyKey = generateIdempotencyKey();
         bookingSignature = signature;
       }
-      if (idempotencyInput) {
-        idempotencyInput.value = bookingIdempotencyKey;
-      }
+      idempotencyInput.value = bookingIdempotencyKey;
       formData.set('idempotencyKey', bookingIdempotencyKey);
-      const res = await fetch(form.action, {
-        method: 'POST',
-        body: formData,
-      });
-      const payload = await res.json();
-      if (payload?.ok) {
-        status.textContent = `Reserva creada: ${payload.bookingId}`;
-        bookingIdempotencyKey = null;
-        bookingSignature = null;
-      } else {
-        status.textContent = payload?.error || 'No se pudo crear la reserva';
+      bookingStatus.textContent = 'Creando reserva de forma segura...';
+      setBusy(bookingSubmit, true, 'Creando...', bookingCompleted);
+
+      try {
+        const { payload } = await requestJson(bookingForm.action, formData);
+        if (payload?.ok) {
+          bookingCompleted = true;
+          bookingDirty = false;
+          bookingStatus.textContent = payload.idempotent
+            ? `La reserva ${payload.bookingId} ya estaba creada; no se duplicó.`
+            : `Reserva creada: ${payload.bookingId}.`;
+          bookingReset.disabled = false;
+          bookingReset.classList.remove('hidden');
+        } else {
+          bookingStatus.textContent = payload?.error || 'No se pudo crear la reserva.';
+        }
+      } catch (error) {
+        bookingStatus.textContent = error?.name === 'AbortError'
+          ? 'La operación tardó demasiado. Conservamos los datos; revisa la reserva antes de reenviar.'
+          : error instanceof Error ? error.message : 'No se pudo conectar. Conservamos los datos.';
+      } finally {
+        setBusy(bookingSubmit, false, 'Creando...', bookingCompleted);
       }
     });
 
-    document.getElementById('manual-payment-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const status = document.getElementById('payment-status');
-      status.textContent = 'Registrando...';
-      const res = await fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
+    bookingReset?.addEventListener('click', () => {
+      bookingForm.reset();
+      participants.splice(0, participants.length);
+      bookingIdempotencyKey = null;
+      bookingSignature = null;
+      bookingCompleted = false;
+      bookingDirty = false;
+      paymentAmountTouched = false;
+      idempotencyInput.value = '';
+      bookingStatus.textContent = '';
+      bookingReset.disabled = true;
+      bookingReset.classList.add('hidden');
+      renderParticipants();
+      syncCurrencyFromCountryGroup();
+      closeExpiredPaymentOptions();
+      updatePaymentSections();
+      bookingSubmit.disabled = false;
+      document.getElementById('manual-contact-name')?.focus();
+    });
+
+    paymentForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (paymentCompleted) return;
+      const formData = new FormData(paymentForm);
+      const signature = JSON.stringify({
+        bookingId: String(formData.get('bookingId') || '').trim(),
+        amount: String(formData.get('amount') || '').trim(),
+        paymentMethod: String(formData.get('paymentMethod') || '').trim(),
       });
-      const payload = await res.json();
-      if (payload?.ok) {
-        status.textContent = `Abono registrado: ${payload.reference}`;
-      } else {
-        status.textContent = payload?.error || 'No se pudo registrar el abono';
+      if (!paymentIdempotencyKey || paymentSignature !== signature) {
+        paymentIdempotencyKey = generateIdempotencyKey();
+        paymentSignature = signature;
+      }
+      paymentIdempotencyInput.value = paymentIdempotencyKey;
+      formData.set('idempotencyKey', paymentIdempotencyKey);
+      paymentStatus.textContent = 'Registrando el abono de forma segura...';
+      setBusy(paymentSubmit, true, 'Registrando...', paymentCompleted);
+
+      try {
+        const { payload } = await requestJson(paymentForm.action, formData);
+        if (payload?.ok || payload?.recorded) {
+          paymentCompleted = true;
+          paymentDirty = false;
+          paymentStatus.textContent = payload?.recorded && !payload?.ok
+            ? `${payload.error} Referencia: ${payload.reference || 'pendiente'}.`
+            : payload.idempotent
+              ? `El abono ${payload.reference} ya estaba registrado; no se duplicó.`
+              : `Abono registrado: ${payload.reference}.`;
+          paymentReset.disabled = false;
+          paymentReset.classList.remove('hidden');
+        } else {
+          paymentStatus.textContent = payload?.error || 'No se pudo registrar el abono.';
+        }
+      } catch (error) {
+        paymentStatus.textContent = error?.name === 'AbortError'
+          ? 'La operación tardó demasiado. No la reenvíes sin revisar primero la reserva.'
+          : error instanceof Error ? error.message : 'No se pudo conectar. Conservamos los datos.';
+      } finally {
+        setBusy(paymentSubmit, false, 'Registrando...', paymentCompleted);
       }
     });
+
+    paymentReset?.addEventListener('click', () => {
+      paymentForm.reset();
+      paymentIdempotencyKey = null;
+      paymentSignature = null;
+      paymentCompleted = false;
+      paymentDirty = false;
+      paymentIdempotencyInput.value = '';
+      paymentStatus.textContent = '';
+      paymentReset.disabled = true;
+      paymentReset.classList.add('hidden');
+      paymentSubmit.disabled = false;
+      document.getElementById('manual-payment-booking-id')?.focus();
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+      if ((!bookingDirty || bookingCompleted) && (!paymentDirty || paymentCompleted)) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
+
+    renderParticipants();
+    syncCurrencyFromCountryGroup();
+    closeExpiredPaymentOptions();
+    updatePaymentSections();
+    syncPaymentAmount(true);
   </script>
 </BaseLayout>

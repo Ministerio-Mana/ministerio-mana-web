@@ -17,31 +17,14 @@ import { countPayments, createPaymentPlan, recordPayment, recomputeBookingTotals
 import { normalizeCityName, normalizeChurchName } from '@lib/normalization';
 import { createDonation } from '@lib/donationsStore';
 import { cleanupCumbreBooking } from '@lib/cumbreCleanup';
-import { buildIdempotencyKey } from '@lib/cumbreIdempotency';
-import { enforceAdminIp } from '@lib/adminIpAllowlist';
+import { buildIdempotencyKey, isSafeTokenCandidate } from '@lib/cumbreIdempotency';
+import { authorizeCumbreManualAccess } from '@lib/cumbreManualAccess';
+import { enforceRateLimit } from '@lib/rateLimit';
+import { logSecurityEvent } from '@lib/securityEvents';
 
 export const prerender = false;
 
-function env(key: string): string | undefined {
-  return import.meta.env?.[key] ?? process.env?.[key];
-}
-
-function isProduction(): boolean {
-  const runtimeEnv = env('VERCEL_ENV') ?? env('NODE_ENV') ?? 'development';
-  return runtimeEnv === 'production';
-}
-
-function validateAdmin(request: Request, token?: string | null): boolean {
-  const secret = env('CUMBRE_MANUAL_SECRET');
-  if (!secret) return false;
-  const header = request.headers.get('x-admin-secret');
-  if (header && header === secret) return true;
-  if (token && token === secret) return true;
-  if (isProduction()) return false;
-  const url = new URL(request.url);
-  const urlToken = url.searchParams.get('token');
-  return Boolean(urlToken && urlToken === secret);
-}
+const MAX_PARTICIPANTS = 20;
 
 function normalizeFrequency(raw: string | null | undefined): InstallmentFrequency {
   const value = (raw || '').toString().trim().toUpperCase();
@@ -55,19 +38,18 @@ function normalizeCurrency(raw: unknown): 'COP' | 'USD' | null {
   return null;
 }
 
-function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number {
+function parseAmountForCurrency(raw: unknown, currency: 'COP' | 'USD'): number | null {
   const value = String(raw || '').trim();
-  if (!value) return 0;
+  if (!value) return null;
+  if (value.includes('-')) return Number.NaN;
   if (currency === 'COP') {
-    const digits = value.replace(/[^\d]/g, '');
-    if (!digits) return 0;
-    const amount = Number(digits);
-    return Number.isFinite(amount) ? amount : 0;
+    if (!/^\d+$|^\d{1,3}(?:[.,]\d{3})+$/.test(value)) return Number.NaN;
+    return Number(value.replace(/[.,]/g, ''));
   }
-  const normalized = value.replace(/[^0-9.,-]/g, '').replace(/,/g, '');
-  if (!normalized) return 0;
-  const amount = Number(normalized);
-  return Number.isFinite(amount) ? amount : 0;
+  if (!/^\d+(?:\.\d{1,2})?$|^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(value)) {
+    return Number.NaN;
+  }
+  return Number(value.replace(/,/g, ''));
 }
 
 function packageTypeFromInput(ageRaw: unknown, lodgingRaw: unknown): PackageType {
@@ -98,33 +80,36 @@ async function findIdempotentBooking(idempotencyKey: string | null, expectedPart
   if ((count ?? 0) >= expectedParticipants) {
     return booking;
   }
-  await cleanupCumbreBooking(booking.id);
   return null;
 }
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-  const ipCheck = await enforceAdminIp({
+  const access = await authorizeCumbreManualAccess({
     request,
     clientAddress,
     identifier: 'cumbre.manual.submit',
-    allowlistKeys: ['CUMBRE_ADMIN_IP_ALLOWLIST', 'ADMIN_IP_ALLOWLIST'],
   });
-  if (!ipCheck.ok) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 403,
+  if (!access.ok) {
+    return new Response(JSON.stringify({ ok: false, error: access.error || 'No autorizado' }), {
+      status: access.status,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const allowed = await enforceRateLimit(
+    `cumbre-manual-submit:${access.userId || access.email || clientAddress || 'service'}`,
+    60,
+    12,
+    { failOpen: false },
+  );
+  if (!allowed) {
+    return new Response(JSON.stringify({ ok: false, error: 'Demasiados intentos. Espera un minuto y vuelve a intentar.' }), {
+      status: 429,
       headers: { 'content-type': 'application/json' },
     });
   }
 
   const form = await request.formData();
-  const token = form.get('token')?.toString();
-
-  if (!validateAdmin(request, token)) {
-    return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), {
-      status: 401,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
 
   if (!supabaseAdmin) {
     return new Response(JSON.stringify({ ok: false, error: 'Supabase no configurado' }), {
@@ -151,8 +136,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const paymentAmountRaw = form.get('paymentAmount')?.toString() ?? '';
     const frequency = normalizeFrequency(form.get('frequency'));
     const currencyOverride = normalizeCurrency(form.get('currency'));
+    const confirmed = form.get('manualConfirmed')?.toString() === 'yes';
 
-    if (!contactName || !email || !phone) {
+    if (!confirmed) {
+      return new Response(JSON.stringify({ ok: false, error: 'Confirma que verificaste la reserva y el pago antes de guardarlos.' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    if (!contactName || !email || !phone || !contactCountry || !contactCity || !contactChurch) {
       return new Response(JSON.stringify({ ok: false, error: 'Datos de contacto incompletos' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
@@ -181,6 +174,27 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       parsed = [];
     }
 
+    if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > MAX_PARTICIPANTS) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: `Debes registrar entre 1 y ${MAX_PARTICIPANTS} participantes.`,
+      }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    const invalidAge = parsed.some((entry: any) => {
+      const age = Number(entry?.age);
+      return !Number.isInteger(age) || age < 0 || age > 120;
+    });
+    if (invalidAge) {
+      return new Response(JSON.stringify({ ok: false, error: 'Cada participante debe tener una edad válida entre 0 y 120 años.' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const participants = parsed
       .map((entry: any) => {
         const packageType = packageTypeFromInput(entry?.age, entry?.lodging);
@@ -204,6 +218,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     const currency = currencyOverride ?? currencyForGroup(countryGroup);
     const paymentAmountInput = parseAmountForCurrency(paymentAmountRaw, currency);
+    if (Number.isNaN(paymentAmountInput)) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: currency === 'COP'
+          ? 'Usa un monto COP entero, por ejemplo 300000 o 300.000.'
+          : 'Usa un monto USD con máximo dos decimales, por ejemplo 300 o 300.00.',
+      }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     const totalAmount = calculateTotals(currency, participants);
     const threshold = depositThreshold(totalAmount);
 
@@ -240,9 +265,26 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       });
     }
 
+    if (paymentAmount > 0 && paymentMethod.length < 3) {
+      return new Response(JSON.stringify({ ok: false, error: 'Indica el método con el que verificaste el pago recibido.' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
     const remainingAmount = Math.max(totalAmount - paymentAmount, 0);
     const autoPlan = paymentOption === 'FULL' && paymentAmount > 0 && paymentAmount < totalAmount;
     const planOption = autoPlan ? 'INSTALLMENTS' : paymentOption;
+    const installmentDeadline = getInstallmentDeadline();
+    const today = new Date();
+    const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    if (planOption === 'INSTALLMENTS' && todayValue > installmentDeadline) {
+      return new Response(JSON.stringify({ ok: false, error: 'El plazo para crear nuevos planes de cuotas ya cerró.' }), {
+        status: 409,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
 
     if (planOption === 'DEPOSIT') {
       if (!isValidDateOnly(depositDueDateRaw)) {
@@ -251,16 +293,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           headers: { 'content-type': 'application/json' },
         });
       }
-      const deadline = getInstallmentDeadline();
-      const today = new Date();
-      const todayValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       if (depositDueDateRaw < todayValue) {
         return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago debe ser futura' }), {
           status: 400,
           headers: { 'content-type': 'application/json' },
         });
       }
-      if (depositDueDateRaw > deadline) {
+      if (depositDueDateRaw > installmentDeadline) {
         return new Response(JSON.stringify({ ok: false, error: 'La fecha del segundo pago supera la fecha límite' }), {
           status: 400,
           headers: { 'content-type': 'application/json' },
@@ -291,13 +330,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       rawKey: form.get('idempotencyKey') ?? form.get('idempotency_key'),
       fallbackSeed: idempotencySeed,
     });
+    if (!idempotencyKey || !isSafeTokenCandidate(idempotencyKey)) {
+      return new Response(JSON.stringify({ ok: false, error: 'No se pudo proteger el envío. Recarga la página e intenta de nuevo.' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
 
     const existingBooking = await findIdempotentBooking(idempotencyKey, participants.length);
     if (existingBooking) {
       return new Response(JSON.stringify({
         ok: true,
         bookingId: existingBooking.id,
-        token: null,
         planId: null,
         idempotent: true,
       }), {
@@ -338,6 +382,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         token_hash: tokenPair.hash,
         idempotency_key: idempotencyKey,
         source: 'cumbre-manual',
+        created_by: access.userId,
       })
       .select('id')
       .single();
@@ -349,7 +394,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           return new Response(JSON.stringify({
             ok: true,
             bookingId: existing.id,
-            token: null,
             planId: null,
             idempotent: true,
           }), {
@@ -439,10 +483,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (paymentAmount > 0) {
       const paymentIndex = (await countPayments(booking.id)) + 1;
       const reference = buildPaymentReference(booking.id, paymentIndex);
+      const providerTxId = `manual-booking:${idempotencyKey}`;
       await recordPayment({
         bookingId: booking.id,
         provider: 'manual',
-        providerTxId: null,
+        providerTxId,
         reference,
         amount: paymentAmount,
         currency,
@@ -450,7 +495,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         rawEvent: {
           source: 'cumbre-manual',
           method: paymentMethod || null,
+          actor_user_id: access.userId,
+          access_mode: access.mode,
+          idempotency_key: idempotencyKey,
         },
+        throwOnError: true,
+        insertOnly: true,
       });
 
       if (planId && planOption === 'INSTALLMENTS') {
@@ -467,7 +517,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         amount: paymentAmount,
         currency,
         reference,
-        provider_tx_id: null,
+        provider_tx_id: providerTxId,
         payment_method: paymentMethod || null,
         donation_type: 'evento',
         project_name: 'Cumbre Mundial 2026',
@@ -487,7 +537,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         need_certificate: false,
         source: 'cumbre-manual',
         cumbre_booking_id: booking.id,
-        raw_event: null,
+        raw_event: {
+          actor_user_id: access.userId,
+          access_mode: access.mode,
+          idempotency_key: idempotencyKey,
+        },
       });
     }
 
@@ -497,10 +551,25 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       console.error('[cumbre.manual] recompute error', error);
     }
 
+    await logSecurityEvent({
+      type: 'admin_action',
+      identifier: 'cumbre.manual.submit',
+      ip: clientAddress || null,
+      detail: 'Reserva manual creada',
+      meta: {
+        actor_user_id: access.userId,
+        actor_email: access.email,
+        access_mode: access.mode,
+        booking_id: booking.id,
+        currency,
+        participant_count: participants.length,
+        payment_amount: paymentAmount,
+      },
+    });
+
     return new Response(JSON.stringify({
       ok: true,
       bookingId: booking.id,
-      token: tokenPair.token,
       planId,
     }), {
       status: 200,

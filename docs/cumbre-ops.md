@@ -122,9 +122,13 @@ curl -L "https://TU-DOMINIO/api/cumbre2026/admin/export-all" \
 ## Formulario manual (pagos físicos)
 
 Ruta:
-- `/admin/cumbre/manual?token=TU_CUMBRE_MANUAL_SECRET`
+- `/admin/cumbre/manual`
 
-El formulario crea reservas manuales y permite registrar abonos.
+El formulario crea reservas manuales y permite registrar abonos. La interfaz exige una sesión individual del Portal con rol efectivo `superadmin`; una sesión compartida por contraseña no autoriza esta operación.
+
+`CUMBRE_MANUAL_SECRET` se conserva únicamente para clientes técnicos confiables que llaman los API con el encabezado `x-admin-secret`. Nunca debe enviarse en la URL, campos del formulario, capturas, registros ni enlaces compartidos.
+
+Antes de habilitar abonos manuales concurrentes, ejecuta `docs/sql/cumbre_manual_payment_idempotency.sql`. El archivo se detiene sin modificar datos si detecta pagos históricos duplicados y, cuando el histórico está limpio, crea las restricciones únicas de transacción y referencia.
 
 ## Supabase Auth (cuentas)
 

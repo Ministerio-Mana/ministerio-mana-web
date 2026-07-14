@@ -2,6 +2,7 @@
   "$strictFiles": [
     "src/components/portal/Sidebar.astro",
     "src/layouts/BaseLayout.astro",
+    "src/pages/admin/cumbre/manual.astro",
     "src/pages/portal/activar.astro",
     "src/pages/portal/campus.astro",
     "src/pages/portal/content.astro",
@@ -17,6 +18,7 @@
     "src/pages/portal/registro.astro",
     "src/pages/eventos/[slug].astro",
     "src/scripts/app-modal.js",
+    "src/scripts/cumbre-manual-auth.js",
     "src/scripts/portal-activar.js",
     "src/scripts/portal-campus.js",
     "src/scripts/portal-content.js",
@@ -86,11 +88,6 @@
     "tailwindOffScale": 41,
     "tailwindArbitrary": 0,
     "cssMagicValue": 90
-  },
-  "src/pages/admin": {
-    "tailwindOffScale": 59,
-    "tailwindArbitrary": 0,
-    "cssMagicValue": 0
   },
   "src/pages/api": {
     "tailwindOffScale": 1,

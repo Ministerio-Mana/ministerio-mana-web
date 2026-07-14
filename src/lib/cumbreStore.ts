@@ -62,6 +62,7 @@ export type PaymentRecord = {
   status: string;
   plan_id?: string | null;
   installment_id?: string | null;
+  raw_event?: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -172,7 +173,7 @@ export async function listActivePendingPayments(params: {
   const supabase = ensureSupabase();
   let query = supabase
     .from('cumbre_payments')
-    .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, plan_id, installment_id, created_at')
+    .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, plan_id, installment_id, raw_event, created_at')
     .eq('booking_id', params.bookingId)
     .in('status', [...ACTIVE_PENDING_PAYMENT_STATUSES])
     .gte('created_at', getPendingPaymentCutoffIso())
@@ -215,6 +216,25 @@ export async function hasApprovedPaymentByReference(params: {
   return Boolean(data?.id);
 }
 
+export async function getPaymentByProviderTxId(params: {
+  provider: string;
+  providerTxId: string;
+}): Promise<PaymentRecord | null> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_payments')
+    .select('id, booking_id, provider, provider_tx_id, reference, amount, currency, status, plan_id, installment_id, created_at')
+    .eq('provider', params.provider)
+    .eq('provider_tx_id', params.providerTxId)
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error('[cumbre.payments] provider transaction lookup error', error);
+    return null;
+  }
+  return data as PaymentRecord | null;
+}
+
 export async function recordPayment(params: {
   bookingId: string;
   provider: string;
@@ -226,10 +246,12 @@ export async function recordPayment(params: {
   planId?: string | null;
   installmentId?: string | null;
   rawEvent?: unknown;
-}): Promise<void> {
+  throwOnError?: boolean;
+  insertOnly?: boolean;
+}): Promise<boolean> {
   const supabase = ensureSupabase();
 
-  if (params.reference) {
+  if (params.reference && !params.insertOnly) {
     const { data, error } = await supabase
       .from('cumbre_payments')
       .update({
@@ -247,7 +269,7 @@ export async function recordPayment(params: {
       .select('id');
 
     if (!error && data && data.length > 0) {
-      return;
+      return true;
     }
   }
 
@@ -273,6 +295,29 @@ export async function recordPayment(params: {
       identifier: 'cumbre.payment',
       detail: insertError.message,
     });
+    if (params.throwOnError) {
+      throw new Error('No se pudo registrar el pago');
+    }
+    return false;
+  }
+  return true;
+}
+
+export async function updatePaymentRawEventByProviderTxId(params: {
+  provider: string;
+  providerTxId: string;
+  rawEvent: Record<string, unknown>;
+}): Promise<void> {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('cumbre_payments')
+    .update({ raw_event: params.rawEvent })
+    .eq('provider', params.provider)
+    .eq('provider_tx_id', params.providerTxId)
+    .select('id');
+
+  if (error || !data?.length) {
+    throw new Error('No se pudo actualizar la conciliación del pago');
   }
 }
 
