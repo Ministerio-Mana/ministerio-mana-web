@@ -14,6 +14,27 @@
 
 ## Entradas
 
+### 2026-07-13 (Finanzas: SQL activos, filtros y exportación separada)
+- Responsable: Equipo web
+- Cambios:
+  - Se verificó la activación de documentos internos, comprobantes privados, jerarquía financiera y cobro dual para Eventos.
+  - La clasificación existente quedó consistente: Wompi nacional de Colombia y Stripe global.
+  - `/portal/finances` ahora filtra en servidor por período, fechas personalizadas, proveedor, nivel de cuenta y moneda, siempre después de aplicar el alcance RBAC del usuario.
+  - Los reportes descargables exigen seleccionar COP o USD; cada archivo contiene una sola moneda, tiene límite de 5.000 registros y protege las celdas de texto contra fórmulas de hoja de cálculo.
+  - Se eliminó el indicador que comparaba conceptos sumando cifras numéricas de COP y USD. El tablero muestra subtotales independientes y cantidad de movimientos visibles.
+  - Se agregó una prueba específica para períodos en hora Colombia, filtros, nombres de cuenta y CSV.
+- Pruebas:
+  - `test:finance-reporting`: 8 aprobadas.
+  - `test:finance-scope`: 9 aprobadas.
+  - `test:event-contract`: 10 aprobadas.
+  - `test:event-evidence`: 4 aprobadas.
+  - `npm run build`: exitoso después de reinstalar exactamente el `package-lock`; 0 vulnerabilidades reportadas por npm.
+  - `astro check` conserva diagnósticos históricos fuera de los archivos de esta fase.
+- Pendientes:
+  - Asignar el primer equipo financiero nacional, regional y local desde `/portal/users`.
+  - Ejecutar QA de visibilidad con una cuenta real de cada alcance.
+  - Completar las revisiones en vivo de Eventos y Excel en OneDrive.
+
 ### 2026-07-13 (Finanzas jerárquicas: administración y activación guiada)
 - Responsable: Equipo web
 - Cambios:

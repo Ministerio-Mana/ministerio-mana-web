@@ -8,23 +8,23 @@ Este documento reemplaza el inventario operativo que estaba disperso entre la bi
 
 No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supabase y correr cada archivo por separado, esperando a que termine antes del siguiente.
 
-- [ ] 1. Ejecutar `docs/sql/event_documents_sharepoint.sql`.
+- [x] 1. Ejecutar `docs/sql/event_documents_sharepoint.sql`.
   - Activa los metadatos y la auditoría para documentos privados de cada evento.
   - Resultado esperado: aparecen las tablas de documentos y auditoría indicadas al final del script.
-- [ ] 2. Ejecutar `docs/sql/event_payment_evidence_sharepoint.sql`.
+- [x] 2. Ejecutar `docs/sql/event_payment_evidence_sharepoint.sql`.
   - Activa almacenamiento privado, revisión y retención controlada de comprobantes manuales.
   - Resultado esperado: existe `event_payment_evidence` con referencias de SharePoint y retención.
-- [ ] 3. Ejecutar `docs/sql/finance_scopes_hierarchy.sql`.
+- [x] 3. Ejecutar `docs/sql/finance_scopes_hierarchy.sql`.
   - Separa Finanzas global, nacional, regional y local.
   - Wompi queda siempre como recaudo nacional de Colombia.
   - Stripe queda como recaudo global/internacional.
   - QR, transferencia o efectivo con iglesia quedan como recaudo local.
   - Resultado esperado: la consulta final no muestra Wompi fuera de `NATIONAL/colombia` ni Stripe fuera de `GLOBAL`.
-- [ ] 4. Ejecutar `docs/sql/events_dual_currency_payments.sql`.
+- [x] 4. Ejecutar `docs/sql/events_dual_currency_payments.sql`.
   - Activa precio COP para Wompi y precio USD para Stripe dentro del mismo evento global.
   - Resultado esperado: existen `price_cop`, `price_usd` y los RPC seguros incluidos en el script.
 
-Si algún script falla, detenerse en ese punto, guardar el mensaje completo y no continuar con el siguiente hasta corregirlo.
+Los cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas.
 
 ## 2. Activar el primer equipo financiero
 
@@ -183,7 +183,7 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 ## 10. Trabajo que continúa a cargo del equipo web
 
 - [x] Terminar y desplegar la administración visual de equipos financieros por alcance. Completado en `13d9cad`.
-- [ ] Agregar filtros, periodos y exportes al panel de Finanzas sin mezclar COP y USD.
+- [x] Agregar filtros, periodos y exportes al panel de Finanzas sin mezclar COP y USD.
 - [ ] Conectar la Lista de SharePoint de inscripciones si se aprueba.
 - [ ] Añadir la política de retención únicamente después de recibir el plazo aprobado.
 - [ ] Completar QA y cierre contable de Cumbre según la decisión del punto 7.

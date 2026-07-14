@@ -1,8 +1,9 @@
 import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { financeRecordOriginLabel } from '@lib/financeReporting';
 
 const statTotalCop = document.getElementById('stat-total-cop');
 const statTotalUsd = document.getElementById('stat-total-usd');
-const statTop = document.getElementById('stat-top-concept');
+const statTransactionCount = document.getElementById('stat-transaction-count');
 const gateEl = document.getElementById('finances-gate');
 const secureContentEl = document.getElementById('finances-secure-content');
 const loadingEl = document.getElementById('finances-loading');
@@ -17,8 +18,22 @@ const loadMoreBtn = document.getElementById('finances-load-more');
 const issuesPageInfoEl = document.getElementById('finances-issues-page-info');
 const issuesLoadMoreBtn = document.getElementById('finances-issues-load-more');
 const scopeLabelEl = document.getElementById('finances-scope-label');
+const filtersForm = document.getElementById('finances-filters');
+const periodFilter = document.getElementById('finances-period-filter');
+const accountFilter = document.getElementById('finances-account-filter');
+const currencyFilter = document.getElementById('finances-currency-filter');
+const customDatesEl = document.getElementById('finances-custom-dates');
+const dateFromFilter = document.getElementById('finances-date-from');
+const dateToFilter = document.getElementById('finances-date-to');
+const filterFeedbackEl = document.getElementById('finances-filter-feedback');
+const filterSummaryEl = document.getElementById('finances-filter-summary');
+const clearFiltersBtn = document.getElementById('finances-clear-filters');
+const applyFiltersBtn = document.getElementById('finances-apply-filters');
+const exportCopBtn = document.getElementById('finances-export-cop');
+const exportUsdBtn = document.getElementById('finances-export-usd');
 
 const REQUEST_TIMEOUT_MS = 15000;
+const EXPORT_TIMEOUT_MS = 30000;
 const TRANSACTIONS_PAGE_SIZE = 10;
 const ISSUES_PAGE_SIZE = 10;
 const DEFAULT_CATEGORIES = [
@@ -37,6 +52,7 @@ let transactionsPagination = createEmptyPagination(TRANSACTIONS_PAGE_SIZE);
 let issuesPagination = createEmptyPagination(ISSUES_PAGE_SIZE);
 let loadedTotalsByCurrency = {};
 let loadedByCategory = createEmptyCategoryStats();
+let loadedTransactionCount = 0;
 
 function createEmptyPagination(pageSize) {
   return {
@@ -59,6 +75,7 @@ function createEmptyCategoryStats() {
 function resetLoadedStats() {
   loadedTotalsByCurrency = {};
   loadedByCategory = createEmptyCategoryStats();
+  loadedTransactionCount = 0;
 }
 
 function scopeLabel(scope = {}) {
@@ -81,24 +98,6 @@ function formatCurrency(val, currency) {
     currency: currency || 'COP',
     maximumFractionDigits: 0,
   }).format(val || 0);
-}
-
-function financeOriginLabel(transaction = {}) {
-  const provider = String(transaction.provider || '').trim().toUpperCase();
-  const scopeType = String(transaction.finance_scope_type || '').trim().toUpperCase();
-  const countryKey = String(transaction.finance_scope_country_key || '').trim();
-  const country = countryKey
-    ? countryKey.split('-').filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
-    : '';
-
-  if (provider === 'WOMPI') return 'Wompi · Nacional Colombia';
-  if (provider === 'STRIPE') return 'Stripe · Global';
-  if (scopeType === 'LOCAL') return 'Pago local · Iglesia';
-  if (scopeType === 'REGIONAL') return 'Cuenta regional';
-  if (scopeType === 'NATIONAL') return `Cuenta nacional${country ? ` · ${country}` : ''}`;
-  if (scopeType === 'GLOBAL') return 'Cuenta global';
-  if (provider) return provider;
-  return 'Sin clasificar';
 }
 
 function escapeHtml(value) {
@@ -155,6 +154,130 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
     throw err;
   } finally {
     window.clearTimeout(timeoutId);
+  }
+}
+
+function appendFinanceFilterParams(params, { currencyOverride = '' } = {}) {
+  const period = periodFilter?.value || 'all';
+  const account = accountFilter?.value || '';
+  const currency = currencyOverride || currencyFilter?.value || '';
+  params.set('period', period);
+  if (account) params.set('account', account);
+  if (currency) params.set('currency', currency);
+  if (period === 'custom') {
+    if (dateFromFilter?.value) params.set('dateFrom', dateFromFilter.value);
+    if (dateToFilter?.value) params.set('dateTo', dateToFilter.value);
+  }
+  return params;
+}
+
+function setFilterFeedback(message = '', tone = 'error') {
+  if (!filterFeedbackEl) return;
+  if (!message) {
+    filterFeedbackEl.textContent = '';
+    filterFeedbackEl.className = 'mt-4 hidden rounded-md px-4 py-3 text-sm';
+    return;
+  }
+  const styles = tone === 'success'
+    ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+    : 'border border-red-200 bg-red-50 text-red-700';
+  filterFeedbackEl.className = `mt-4 rounded-md px-4 py-3 text-sm ${styles}`;
+  filterFeedbackEl.textContent = message;
+}
+
+function validateFilters() {
+  if (periodFilter?.value !== 'custom') return true;
+  const from = dateFromFilter?.value || '';
+  const to = dateToFilter?.value || '';
+  if (!from || !to) {
+    setFilterFeedback('Selecciona la fecha inicial y la fecha final.');
+    return false;
+  }
+  if (from > to) {
+    setFilterFeedback('La fecha inicial no puede ser posterior a la fecha final.');
+    return false;
+  }
+  return true;
+}
+
+function updateCustomDatesVisibility() {
+  const visible = periodFilter?.value === 'custom';
+  customDatesEl?.classList.toggle('hidden', !visible);
+  customDatesEl?.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  if (dateFromFilter) dateFromFilter.required = visible;
+  if (dateToFilter) dateToFilter.required = visible;
+}
+
+function optionLabel(select, fallback) {
+  const option = select?.options?.[select.selectedIndex];
+  return option?.textContent?.trim() || fallback;
+}
+
+function renderFilterSummary(filters = {}) {
+  if (!filterSummaryEl) return;
+  const periodLabel = optionLabel(periodFilter, 'Todo el historial');
+  const accountLabel = optionLabel(accountFilter, 'Todas las cuentas autorizadas');
+  const currencyLabel = filters.currency || currencyFilter?.value || '';
+  const currencyText = currencyLabel ? `Solo ${currencyLabel}` : 'COP y USD separados';
+  const dateText = filters.dateFrom && filters.dateTo
+    ? `${filters.dateFrom} a ${filters.dateTo}`
+    : periodLabel;
+  filterSummaryEl.textContent = `${dateText} · ${accountLabel} · ${currencyText}`;
+}
+
+function exportFilenameFromResponse(response, fallback) {
+  const disposition = response.headers.get('content-disposition') || '';
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  const candidate = match?.[1] || fallback;
+  return candidate.replace(/[^a-zA-Z0-9._-]/g, '-') || fallback;
+}
+
+async function downloadFinanceExport(currency, button) {
+  if (!validateFilters()) return;
+  const originalText = button?.textContent || `Descargar CSV · ${currency}`;
+  if (button) {
+    button.disabled = true;
+    button.textContent = `Preparando ${currency}...`;
+  }
+  setFilterFeedback();
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), EXPORT_TIMEOUT_MS);
+  try {
+    const params = appendFinanceFilterParams(new URLSearchParams({ format: 'csv' }), {
+      currencyOverride: currency,
+    });
+    const response = await fetch(`/api/portal/finances?${params.toString()}`, {
+      headers: currentAuthHeaders,
+      credentials: 'include',
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || `No se pudo exportar ${currency}.`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = exportFilenameFromResponse(response, `finanzas-${currency.toLowerCase()}.csv`);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    setFilterFeedback(`Reporte ${currency} preparado. No contiene movimientos de otra moneda.`, 'success');
+  } catch (error) {
+    const message = error?.name === 'AbortError'
+      ? 'La exportación tardó demasiado. Selecciona un período más corto.'
+      : error?.message || `No se pudo exportar ${currency}.`;
+    setFilterFeedback(message);
+  } finally {
+    window.clearTimeout(timeoutId);
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
   }
 }
 
@@ -250,6 +373,7 @@ async function loadFinances({ appendTransactions = false, appendIssues = false }
       includeTransactions: includeTransactions ? 'true' : 'false',
       includeIssues: includeIssues ? 'true' : 'false',
     });
+    appendFinanceFilterParams(params);
 
     const { res, data } = await fetchJsonWithTimeout(`/api/portal/finances?${params.toString()}`, {
       headers: currentAuthHeaders,
@@ -292,6 +416,7 @@ function renderDashboard(data, options = {}) {
   gateEl?.classList.add('hidden');
   secureContentEl?.classList.remove('hidden');
   if (scopeLabelEl) scopeLabelEl.textContent = scopeLabel(data.financeScope);
+  renderFilterSummary(data.filters || {});
 
   if (includeTransactions) {
     mergeLoadedStats(data.stats || {});
@@ -306,6 +431,7 @@ function renderDashboard(data, options = {}) {
 }
 
 function mergeLoadedStats(stats) {
+  loadedTransactionCount += Number(stats.loadedRows || 0);
   Object.entries(stats.totalByCurrency || {}).forEach(([currency, amount]) => {
     const key = String(currency || 'COP').toUpperCase();
     loadedTotalsByCurrency[key] = (loadedTotalsByCurrency[key] || 0) + Number(amount || 0);
@@ -326,17 +452,7 @@ function mergeLoadedStats(stats) {
 function renderStats() {
   if (statTotalCop) statTotalCop.textContent = formatCurrency(loadedTotalsByCurrency.COP || 0, 'COP');
   if (statTotalUsd) statTotalUsd.textContent = formatCurrency(loadedTotalsByCurrency.USD || 0, 'USD');
-
-  let topConcept = '-';
-  let maxVal = 0;
-  for (const [key, val] of Object.entries(loadedByCategory)) {
-    const numVal = Number(val?.total || 0);
-    if (numVal > maxVal) {
-      maxVal = numVal;
-      topConcept = key;
-    }
-  }
-  if (statTop) statTop.textContent = maxVal > 0 ? topConcept : '-';
+  if (statTransactionCount) statTransactionCount.textContent = new Intl.NumberFormat('es-CO').format(loadedTransactionCount);
 }
 
 function renderTransactions(transactions, pagination, { append = false } = {}) {
@@ -362,7 +478,7 @@ function renderTransactions(transactions, pagination, { append = false } = {}) {
         <td data-label="Fecha" class="py-3 pl-2">${formatDate(t.created_at)}</td>
         <td data-label="Concepto" class="py-3 font-medium text-[#293C74]">${escapeHtml(t.concept_label || 'Aporte')}</td>
         <td data-label="Donante" class="py-3 text-slate-500">${escapeHtml(t.donor_name || 'Anónimo')}</td>
-        <td data-label="Cuenta" class="py-3 text-xs font-semibold text-slate-600">${escapeHtml(financeOriginLabel(t))}</td>
+        <td data-label="Cuenta" class="py-3 text-xs font-semibold text-slate-600">${escapeHtml(financeRecordOriginLabel(t))}</td>
         <td data-label="Estado" class="py-3"><span class="portal-chip bg-green-100 text-green-800">${escapeHtml(t.status || 'APROBADO')}</span></td>
         <td data-label="Monto" class="py-3 text-right font-bold pr-2">${formatCurrency(t.amount, t.currency)}</td>
       </tr>
@@ -504,7 +620,7 @@ function issueCardHtml(issue) {
   const phoneRaw = issue.donor_phone || '';
   const phone = phoneRaw.toString().replace(/\D/g, '');
   const reference = issue.reference ? `Ref: ${issue.reference}` : '';
-  const provider = financeOriginLabel(issue);
+  const provider = financeRecordOriginLabel(issue);
   const reason = issue.reason || 'En verificación';
   const dateLabel = issue.created_at ? new Date(issue.created_at).toLocaleDateString() : '';
 
@@ -577,4 +693,48 @@ issuesLoadMoreBtn?.addEventListener('click', () => {
   void loadFinances({ appendIssues: true });
 });
 
+periodFilter?.addEventListener('change', () => {
+  updateCustomDatesVisibility();
+  setFilterFeedback();
+});
+
+filtersForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!validateFilters()) return;
+  const originalText = applyFiltersBtn?.textContent || 'Aplicar filtros';
+  if (applyFiltersBtn) {
+    applyFiltersBtn.disabled = true;
+    applyFiltersBtn.textContent = 'Aplicando...';
+  }
+  setFilterFeedback();
+  try {
+    await loadFinances();
+  } finally {
+    if (applyFiltersBtn) {
+      applyFiltersBtn.disabled = false;
+      applyFiltersBtn.textContent = originalText;
+    }
+  }
+});
+
+clearFiltersBtn?.addEventListener('click', () => {
+  if (periodFilter) periodFilter.value = 'all';
+  if (accountFilter) accountFilter.value = '';
+  if (currencyFilter) currencyFilter.value = '';
+  if (dateFromFilter) dateFromFilter.value = '';
+  if (dateToFilter) dateToFilter.value = '';
+  updateCustomDatesVisibility();
+  setFilterFeedback();
+  void loadFinances();
+});
+
+exportCopBtn?.addEventListener('click', () => {
+  void downloadFinanceExport('COP', exportCopBtn);
+});
+
+exportUsdBtn?.addEventListener('click', () => {
+  void downloadFinanceExport('USD', exportUsdBtn);
+});
+
+updateCustomDatesVisibility();
 init();

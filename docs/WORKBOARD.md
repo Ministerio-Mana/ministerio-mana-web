@@ -29,11 +29,6 @@
 ---
 
 ## Ready
-- MANA-016 Activar SQL de Eventos y Finanzas en Supabase
-  - Owner: Usuario
-  - Scope: Supabase SQL Editor
-  - Description: Ejecutar en casa `docs/sql/event_documents_sharepoint.sql`, `docs/sql/event_payment_evidence_sharepoint.sql`, `docs/sql/finance_scopes_hierarchy.sql` y `docs/sql/events_dual_currency_payments.sql`, en ese orden.
-  - Notes: Después de ejecutarlos, entrar a `/portal/users`, buscar cada responsable por correo y usar el botón `Finanzas` para asignar el primer equipo nacional, regional y local. El último SQL activa precios separados COP/USD y Wompi + Stripe en un mismo evento global.
 
 - MANA-011 Revisión en vivo del constructor de formularios de Eventos
   - Owner: Usuario
@@ -60,14 +55,14 @@
   - Branch: `main`
   - Scope: pagos de Eventos, precios COP/USD y operación consolidada
   - Description: Permitir Wompi COP para Colombia y Stripe USD para otros países dentro del mismo evento global, sin mezclar monedas.
-  - Status: Interfaz, API, RPC, página pública, checkout y consolidación operativa/Excel listos. Stripe queda limitado a USD y Wompi a COP. Activación pendiente de `docs/sql/events_dual_currency_payments.sql` y revisión del usuario.
+  - Status: Interfaz, API, RPC, página pública, checkout, consolidación operativa/Excel y SQL activos. Stripe queda limitado a USD y Wompi a COP. Pendiente revisión del usuario en un evento global de prueba.
 
 - MANA-013 Finanzas por alcance
   - Owner: Equipo web
   - Branch: `main`
   - Scope: RBAC financiero local, regional, nacional y global; reportes y conciliación
   - Description: Separar visibilidad y operación financiera por iglesia, región y país. Wompi pertenece siempre al recaudo nacional; Stripe cubre recaudos internacionales/globales y campañas habilitadas.
-  - Status: Contrato SQL, clasificación automática, filtros de API, matriz de permisos, administración visual de equipos y cuenta responsable en transacciones listos. Requiere ejecutar `docs/sql/finance_scopes_hierarchy.sql`, asignar el primer equipo y realizar QA con cuentas reales.
+  - Status: Contrato SQL, clasificación automática, matriz de permisos, administración visual de equipos y cuenta responsable en transacciones activos. En curso filtros por período/cuenta/moneda y exportes separados; después se asigna el primer equipo y se realiza QA con cuentas reales.
 
 - MANA-014 Comprobantes privados para pagos manuales de Eventos
   - Owner: Equipo web
@@ -115,6 +110,19 @@
 ---
 
 ## Done
+- MANA-019 Reportes financieros filtrados y exportación por moneda
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: `/portal/finances`, API financiera y CSV contable
+  - Completed: 2026-07-13
+  - Notes: Filtros por período, fechas, proveedor, nivel de cuenta y moneda respetan el alcance financiero. Los exportes exigen COP o USD y generan archivos independientes con límite seguro de registros.
+
+- MANA-016 Activar SQL de Eventos y Finanzas en Supabase
+  - Owner: Usuario
+  - Scope: Supabase SQL Editor
+  - Completed: 2026-07-13
+  - Notes: Activos documentos internos, comprobantes privados, jerarquía financiera y cobro dual. Verificación final: Wompi `NATIONAL/colombia`, Stripe `GLOBAL` y RPC seguros disponibles.
+
 - MANA-018 Administración visual de equipos financieros por alcance
   - Owner: Equipo web
   - Branch: `main`

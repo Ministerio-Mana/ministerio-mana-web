@@ -2,6 +2,13 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { applyFinanceScopeFilter, getFinanceAccessContext } from '@lib/financeAccess';
 import { serializeFinanceScopeAccess } from '@lib/financeScope';
+import {
+  applyFinanceReportFilters,
+  buildFinanceCsv,
+  financeExportFilename,
+  parseFinanceReportFilters,
+  type FinanceReportFilters,
+} from '@lib/financeReporting';
 
 export const prerender = false;
 
@@ -56,6 +63,7 @@ const TRANSACTION_FALLBACK_FIELDS = [
 
 const ISSUE_FIELDS = `${TRANSACTION_FIELDS}, raw_event`;
 const ISSUE_FALLBACK_FIELDS = `${TRANSACTION_FALLBACK_FIELDS}, raw_event`;
+const FINANCE_EXPORT_LIMIT = 5000;
 
 function json(payload: any, status = 200): Response {
   return new Response(JSON.stringify(payload), {
@@ -161,6 +169,9 @@ export const GET: APIRoute = async ({ request }) => {
   if (!financeContext.ok) return json({ ok: false, error: financeContext.error }, financeContext.status);
 
   const url = new URL(request.url);
+  const parsedFilters = parseFinanceReportFilters(url.searchParams);
+  if (parsedFilters.error) return json({ ok: false, error: parsedFilters.error }, 400);
+  const filters = parsedFilters.filters;
   const page = parseBoundedInt(url.searchParams.get('page') || url.searchParams.get('transactionsPage'), 1, 1, 10000);
   const pageSize = parseBoundedInt(url.searchParams.get('pageSize') || url.searchParams.get('transactionsPageSize'), 50, 1, 100);
   const issuesPage = parseBoundedInt(url.searchParams.get('issuesPage'), 1, 1, 10000);
@@ -168,18 +179,85 @@ export const GET: APIRoute = async ({ request }) => {
   const includeTransactions = url.searchParams.get('includeTransactions') !== 'false';
   const includeIssues = url.searchParams.get('includeIssues') !== 'false';
 
-  const buildQuery = (fields: string, statuses: string[], currentPage: number, currentPageSize: number) => {
+  const buildQuery = (
+    fields: string,
+    statuses: string[],
+    currentPage: number,
+    currentPageSize: number,
+    reportFilters: FinanceReportFilters = filters,
+  ) => {
     const rangeFrom = (currentPage - 1) * currentPageSize;
     const rangeTo = rangeFrom + currentPageSize - 1;
     let query = db
       .from('donations')
       .select(fields, { count: 'exact' });
     query = applyFinanceScopeFilter(query, financeContext.access);
+    query = applyFinanceReportFilters(query, reportFilters);
     return query
       .in('status', statuses)
       .order('created_at', { ascending: false })
       .range(rangeFrom, rangeTo);
   };
+
+  if (url.searchParams.get('format') === 'csv') {
+    if (!filters.currency) {
+      return json({ ok: false, error: 'Selecciona COP o USD para exportar sin mezclar monedas.' }, 400);
+    }
+
+    let exportResult = await buildQuery(
+      TRANSACTION_FIELDS,
+      APPROVED_STATUSES,
+      1,
+      FINANCE_EXPORT_LIMIT,
+      filters,
+    );
+
+    if (exportResult.error && isMissingColumnError(exportResult.error)) {
+      const fallbackCompatible = financeContext.access.isGlobal
+        && ['', 'WOMPI', 'STRIPE'].includes(filters.account);
+      if (!fallbackCompatible) {
+        return json({
+          ok: false,
+          error: 'La separación financiera todavía no está activa para este reporte.',
+        }, 503);
+      }
+      exportResult = await buildQuery(
+        TRANSACTION_FALLBACK_FIELDS,
+        APPROVED_STATUSES,
+        1,
+        FINANCE_EXPORT_LIMIT,
+        filters,
+      );
+    }
+
+    if (exportResult.error) {
+      console.error('[portal.finances] export query failed', {
+        elapsedMs: Date.now() - startedAt,
+        message: exportResult.error?.message || String(exportResult.error),
+        code: exportResult.error?.code,
+      });
+      return json({ ok: false, error: 'No se pudo preparar el archivo financiero.' }, 500);
+    }
+
+    if (Number(exportResult.count || 0) > FINANCE_EXPORT_LIMIT) {
+      return json({
+        ok: false,
+        error: `El reporte supera ${FINANCE_EXPORT_LIMIT} registros. Selecciona un período más corto.`,
+      }, 413);
+    }
+
+    const exportRows = (exportResult.data || []).map((row: any) => toClientRow(row));
+    const csv = buildFinanceCsv(exportRows);
+    return new Response(csv, {
+      status: 200,
+      headers: {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': `attachment; filename="${financeExportFilename(filters)}"`,
+        'cache-control': 'private, no-store, max-age=0',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  }
 
   let [approvedResult, issuesResult] = await Promise.all([
     includeTransactions
@@ -283,5 +361,6 @@ export const GET: APIRoute = async ({ request }) => {
     transactionsPagination,
     issuesPagination,
     financeScope: serializeFinanceScopeAccess(financeContext.access),
+    filters,
   });
 };
