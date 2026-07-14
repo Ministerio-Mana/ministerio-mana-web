@@ -302,6 +302,9 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 ### Revisión visual del contrato de espaciado
 
 - [ ] Después del próximo despliegue, revisar en celular y escritorio los botones, badges, tarjetas y gutters compartidos. Confirmar que el ritmo de múltiplos de 8 se siente cómodo y no demasiado amplio, especialmente para pastores mayores.
+- [ ] En `/portal/users`, abrir “Nuevo Usuario” con una cuenta autorizada, escribir un nombre temporal sin enviar y comprobar que `Escape` y el fondo conservan el formulario; al cerrar con la X debe advertir antes de descartarlo y devolver el foco a “Nuevo Usuario”.
+- [ ] Con una cuenta superadmin, abrir “Finanzas” para un usuario de prueba y recorrer nivel, país, región e iglesia con teclado. Cerrar sin agregar ni retirar alcances y confirmar que el foco vuelve al botón correcto.
+- [ ] Repetir `/portal/users` con cuentas administrativas nacional, regional y local; confirmar que cada rol solo puede crear, editar y asignar dentro de su alcance autorizado.
 - [ ] En `/portal/events`, abrir “Nuevo evento” y recorrer el formulario completo; luego abrir la operación de un evento y revisar documentos, filtros, inscritos y el diálogo de pago manual. Confirmar que ningún bloque se siente amontonado ni excesivamente separado.
 - [ ] En “Nuevo evento”, escribir un título temporal sin guardar: un clic en el fondo y la tecla `Escape` deben conservar el formulario; “Cancelar” o la X deben advertir antes de descartar. Abrir una fecha y confirmar que los días, las flechas, la hora y “Listo” se pueden tocar cómodamente en celular.
 - [ ] Cuando exista una inscripción manual de prueba “Por verificar”, abrir su comprobante y el diálogo de aprobar/rechazar sin confirmar la operación. Escribir una nota temporal; `Escape` y el fondo deben conservarla, y el cierre explícito debe advertir antes de descartarla y devolver el foco al botón anterior.

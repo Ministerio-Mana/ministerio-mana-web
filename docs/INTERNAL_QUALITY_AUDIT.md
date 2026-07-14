@@ -36,7 +36,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Parcial avanzado: estructura, formularios, diálogos y controles dinámicos corregidos; producción y roles en revisión |
 | 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Cumple técnicamente en código y producción; creación real y variación por roles pendientes |
 | 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Parcial avanzado: base productiva revisada y estados dinámicos corregidos; prueba con inscripciones pendiente |
-| 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Pendiente |
+| 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Parcial avanzado: lista y creación cumplen en producción; variación de roles y Finanzas pendiente |
 | 2 | `/portal/regions` | Jerarquía territorial y autorización | Pendiente |
 | 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Pendiente |
@@ -128,6 +128,25 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Repetir la revisión productiva con una inscripción manual bajo revisión y un comprobante privado de prueba, sin aprobar ni rechazar pagos reales.
 - Verificar la devolución del foco y preservación de la nota del diálogo abierto.
 - Diseñar una corrección o deshacer seguro para check-in antes de reemplazar la confirmación actual.
+
+## Registro de la fase 2 — `/portal/users`
+
+### Evidencia implementada
+
+- La lista conserva un solo `h1`, ubicación actual, búsqueda, filtros, resumen, tabla adaptable, paginación y estados de carga o vacío.
+- Filtros, paginación y acciones dinámicas de acceso, rol, ciclo de vida y Finanzas tienen objetivo táctil mínimo de 44 px. La regla compartida de tablas del Portal dejó de anular este mínimo con un valor heredado de 40 px.
+- El formulario de creación anuncia título y descripción, asocia cada etiqueta con su campo, usa ayudas persistentes y devuelve el foco al control que lo abrió.
+- `Escape` y el clic de fondo conservan el formulario; el cierre explícito advierte antes de descartar datos y salir de la página con cambios activa la protección del navegador.
+- El diálogo de alcances financieros anuncia el usuario seleccionado, encierra el foco y no cierra accidentalmente con `Escape` ni con un clic de fondo. No se modificó la autorización de API ni la separación del rol pastoral principal.
+- El contrato automático de calidad interna suma once verificaciones.
+- Producción verificada en `ministeriomana.org`: 39 controles visibles a 390 px y 52 a 1280 px, con cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1` y ningún desbordamiento horizontal.
+- Con un nombre temporal no guardado, `Escape` y el fondo conservaron el texto; el cierre explícito mostró la advertencia, limpió el formulario sin enviarlo y devolvió el foco a “Nuevo Usuario”.
+
+### Cierre técnico requerido para `/portal/users`
+
+- Abrir el diálogo de Finanzas con una cuenta superadmin autorizada y recorrerlo por teclado sin guardar cambios; confirmar alcance global, nacional, regional y local.
+- Repetir la pantalla con cuentas de administración nacional, regional y local para confirmar que las acciones visibles y efectivas respetan el alcance.
+- Probar una creación real únicamente con una cuenta y correo autorizados, confirmando invitación, error recuperable y auditoría sin exponer credenciales.
 
 ## Regla de actualización
 
