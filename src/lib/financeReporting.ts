@@ -126,15 +126,15 @@ export function applyFinanceReportFilters(query: any, filters: FinanceReportFilt
   if (filters.dateFrom) next = next.gte('created_at', `${filters.dateFrom}T00:00:00-05:00`);
   if (filters.dateTo) next = next.lte('created_at', `${filters.dateTo}T23:59:59.999-05:00`);
   if (filters.currency === 'COP') {
-    next = next.or('currency.eq.COP,provider.eq.WOMPI,and(currency.is.null,finance_scope_type.in.(NATIONAL,REGIONAL,LOCAL))');
+    next = next.or('currency.ilike.COP,provider.ilike.WOMPI,and(currency.is.null,provider.not.ilike.STRIPE),and(currency.is.null,provider.is.null)');
   } else if (filters.currency === 'USD') {
-    next = next.or('currency.eq.USD,provider.eq.STRIPE');
+    next = next.or('currency.ilike.USD,provider.ilike.STRIPE');
   }
 
   if (filters.account === 'WOMPI' || filters.account === 'STRIPE') {
-    next = next.eq('provider', filters.account);
+    next = next.ilike('provider', filters.account);
   } else if (filters.account) {
-    next = next.eq('finance_scope_type', filters.account);
+    next = next.ilike('finance_scope_type', filters.account);
   }
   return next;
 }

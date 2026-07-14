@@ -55,8 +55,8 @@ test('aplica período, moneda y proveedor al query', () => {
       operations.push(['lte', column, value]);
       return this;
     },
-    eq(column: string, value: string) {
-      operations.push(['eq', column, value]);
+    ilike(column: string, value: string) {
+      operations.push(['ilike', column, value]);
       return this;
     },
     or(value: string) {
@@ -74,8 +74,8 @@ test('aplica período, moneda y proveedor al query', () => {
   assert.deepEqual(operations, [
     ['gte', 'created_at', '2026-07-01T00:00:00-05:00'],
     ['lte', 'created_at', '2026-07-13T23:59:59.999-05:00'],
-    ['or', 'filter', 'currency.eq.COP,provider.eq.WOMPI,and(currency.is.null,finance_scope_type.in.(NATIONAL,REGIONAL,LOCAL))'],
-    ['eq', 'provider', 'WOMPI'],
+    ['or', 'filter', 'currency.ilike.COP,provider.ilike.WOMPI,and(currency.is.null,provider.not.ilike.STRIPE),and(currency.is.null,provider.is.null)'],
+    ['ilike', 'provider', 'WOMPI'],
   ]);
 });
 
@@ -85,8 +85,8 @@ test('filtra cuentas locales por alcance financiero', () => {
     gte() { return this; },
     lte() { return this; },
     or() { return this; },
-    eq(column: string, value: string) {
-      operations.push(['eq', column, value]);
+    ilike(column: string, value: string) {
+      operations.push(['ilike', column, value]);
       return this;
     },
   };
@@ -97,7 +97,7 @@ test('filtra cuentas locales por alcance financiero', () => {
     account: 'LOCAL',
     currency: '',
   });
-  assert.deepEqual(operations, [['eq', 'finance_scope_type', 'LOCAL']]);
+  assert.deepEqual(operations, [['ilike', 'finance_scope_type', 'LOCAL']]);
 });
 
 test('genera CSV seguro, con BOM y una sola moneda', () => {

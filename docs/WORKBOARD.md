@@ -115,7 +115,7 @@
   - Branch: `main`
   - Scope: `/portal/finances`, API financiera y CSV contable
   - Completed: 2026-07-13
-  - Notes: Filtros por período, fechas, proveedor, nivel de cuenta y moneda respetan el alcance financiero. Los exportes exigen COP o USD y generan archivos independientes con límite seguro de registros; el histórico sin moneda explícita usa Wompi=COP y Stripe=USD.
+  - Notes: Filtros por período, fechas, proveedor, nivel de cuenta y moneda respetan el alcance financiero. Los exportes exigen COP o USD y generan archivos independientes con límite seguro de registros; el histórico sin moneda explícita o con mayúsculas/minúsculas distintas usa Wompi=COP y Stripe=USD.
 
 - MANA-016 Activar SQL de Eventos y Finanzas en Supabase
   - Owner: Usuario
