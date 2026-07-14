@@ -172,6 +172,8 @@ let invitationImagePreviewObjectUrl = '';
 let pendingInvitationImageFile = null;
 let eventSlugManuallyEdited = false;
 let eventCustomFields = [];
+let eventFormDirty = false;
+let eventModalReturnFocus = null;
 const eventDatePickers = new Map();
 
 const churchesById = new Map();
@@ -1473,6 +1475,7 @@ async function uploadInvitationImage(eventId) {
 
 function openEventModal(mode, eventData = null) {
     if (!eventModal || !eventForm) return;
+    if (document.activeElement instanceof HTMLElement) eventModalReturnFocus = document.activeElement;
     clearPendingInvitationImage();
     eventForm.reset();
     eventDatePickers.forEach((picker) => picker.clear(false));
@@ -1553,18 +1556,63 @@ function openEventModal(mode, eventData = null) {
 
     eventModal.classList.remove('hidden');
     eventModal.classList.add('flex');
+    eventModal.setAttribute('aria-hidden', 'false');
+    eventFormDirty = false;
     document.body.style.overflow = 'hidden';
     void loadEventPaymentOption(eventData);
     window.setTimeout(() => eventForm.querySelector('[name="title"]')?.focus(), 0);
 }
 
-function closeEventModal() {
+function getEventModalFocusableElements() {
+    if (!eventModal) return [];
+    const selector = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const containers = [eventModal, ...document.querySelectorAll('.event-calendar.open')];
+    return containers.flatMap((container) => [...container.querySelectorAll(selector)])
+        .filter((element, index, elements) => elements.indexOf(element) === index)
+        .filter((element) => !element.closest('[hidden], [aria-hidden="true"]') && element.getClientRects().length > 0);
+}
+
+function closeEventModal(returnFocusOverride = null) {
     if (!eventModal) return;
     eventModal.classList.add('hidden');
     eventModal.classList.remove('flex');
+    eventModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     showFormError();
     clearPendingInvitationImage();
+    eventFormDirty = false;
+    const returnFocus = returnFocusOverride || eventModalReturnFocus;
+    eventModalReturnFocus = null;
+    window.queueMicrotask(() => {
+        if (returnFocus?.isConnected) returnFocus.focus();
+        else btnNewEvent?.focus();
+    });
+}
+
+function requestCloseEventModal() {
+    if (eventFormDirty && !window.confirm('Hay cambios sin guardar en este evento. ¿Quieres descartarlos?')) return;
+    closeEventModal();
+}
+
+function handleEventModalKeydown(event) {
+    if (!eventModal?.classList.contains('flex')) return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal?.focus();
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getEventModalFocusableElements();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
 }
 
 async function changeEventStatus(eventId, status) {
@@ -1597,7 +1645,7 @@ eventFilters?.addEventListener('click', (event) => {
     eventFilters.querySelectorAll('[data-event-filter]').forEach((item) => {
         const active = item === button;
         item.classList.toggle('is-active', active);
-        item.setAttribute('aria-selected', String(active));
+        item.setAttribute('aria-pressed', String(active));
     });
     renderEvents();
 });
@@ -1605,10 +1653,10 @@ eventFilters?.addEventListener('click', (event) => {
 eventSearch?.addEventListener('input', renderEvents);
 eventScopeFilter?.addEventListener('change', renderEvents);
 btnNewEvent?.addEventListener('click', () => openEventModal('create'));
-closeModal?.addEventListener('click', closeEventModal);
-eventCancel?.addEventListener('click', closeEventModal);
+closeModal?.addEventListener('click', requestCloseEventModal);
+eventCancel?.addEventListener('click', requestCloseEventModal);
 eventModal?.addEventListener('click', (event) => {
-    if (event.target === eventModal) closeEventModal();
+    if (event.target === eventModal) closeModal?.focus();
 });
 
 eventsList?.addEventListener('click', (event) => {
@@ -1637,6 +1685,7 @@ eventRegistrationMode?.addEventListener('change', () => {
 });
 eventCustomFieldAdd?.addEventListener('click', () => {
     if (eventCustomFields.length >= MAX_EVENT_CUSTOM_FIELDS) return;
+    eventFormDirty = true;
     eventCustomFields.push(createCustomField());
     renderCustomFieldBuilder();
     eventCustomFieldsContainer?.querySelector('[name="custom_field_label"]')?.focus();
@@ -1645,6 +1694,7 @@ eventCustomFieldsContainer?.addEventListener('click', (event) => {
     const button = event.target.closest('[data-custom-field-action="remove"]');
     const index = getCustomFieldIndex(button);
     if (!button || index < 0) return;
+    eventFormDirty = true;
     eventCustomFields.splice(index, 1);
     renderCustomFieldBuilder();
 });
@@ -1744,8 +1794,14 @@ eventInvitationImageDropzone?.addEventListener('drop', (event) => {
     eventInvitationImageDropzone.classList.remove('is-dragging');
     setPendingInvitationImage(event.dataTransfer?.files?.[0]);
 });
-eventForm?.addEventListener('input', updateEventPreview);
-eventForm?.addEventListener('change', updateEventPreview);
+eventForm?.addEventListener('input', () => {
+    eventFormDirty = true;
+    updateEventPreview();
+});
+eventForm?.addEventListener('change', () => {
+    eventFormDirty = true;
+    updateEventPreview();
+});
 
 eventForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -1949,7 +2005,8 @@ eventForm?.addEventListener('submit', async (event) => {
                 return;
             }
         }
-        closeEventModal();
+        eventFormDirty = false;
+        closeEventModal(btnNewEvent);
         renderEvents();
     } catch (error) {
         showFormError(error?.message || 'No se pudo guardar el evento.');
@@ -1960,7 +2017,13 @@ eventForm?.addEventListener('submit', async (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && eventModal?.classList.contains('flex')) closeEventModal();
+    handleEventModalKeydown(event);
+});
+
+window.addEventListener('beforeunload', (event) => {
+    if (!eventFormDirty || !eventModal?.classList.contains('flex')) return;
+    event.preventDefault();
+    event.returnValue = '';
 });
 
 async function init() {

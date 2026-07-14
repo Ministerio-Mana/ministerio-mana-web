@@ -34,7 +34,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 1 | `/portal/registro` | Datos personales, contraseña y validación | Cumple en código y producción; registro real pendiente |
 | 1 | `/portal/activar` | Credencial nueva y enlace temporal | Cumple en código y producción; activación real pendiente |
 | 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Parcial avanzado: estructura, formularios, diálogos y controles dinámicos corregidos; producción y roles en revisión |
-| 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Auditoría funcional avanzada; cierre de los 45 pendiente |
+| 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Parcial avanzado: lista, formulario largo y calendario corregidos; producción y roles en revisión |
 | 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Pendiente |
 | 2 | `/portal/regions` | Jerarquía territorial y autorización | Pendiente |
@@ -93,6 +93,23 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Terminar la migración gradual de espaciado en `portal-dashboard.js`, `portal-user-event-view.js`, `RegistrationModal` y el resto del panel hasta poder marcarlos estrictos.
 - Probar las cinco pestañas con roles usuario, pastor, finanzas y administrador, sin ampliar permisos visibles ni efectivos.
 - Abrir en producción el registro manual y el selector de iglesia cuando exista un evento operativo habilitado; comprobar preservación de datos, `Escape` y devolución de foco sin guardar una inscripción.
+
+## Registro de la fase 2 — `/portal/events`
+
+### Evidencia implementada
+
+- La lista mantiene un solo `h1`, filtros con nombre accesible, estados de carga/vacío/error y presentación adaptable de artes horizontales, cuadrados y verticales.
+- Los filtros de estado usan un grupo de botones con `aria-pressed`; filtros, acciones, campos y botones críticos tienen objetivo táctil mínimo de 44 px.
+- El formulario de evento anuncia su diálogo con `aria-hidden`, encierra y devuelve el foco, y no descarta el trabajo por `Escape` ni por un clic accidental en el fondo.
+- Cerrar o cancelar con cambios exige una decisión explícita, y salir de la página con el formulario modificado activa la protección del navegador.
+- El calendario conserva el botón “Listo” y lleva días, navegación, hora y confirmación a objetivos táctiles de 44 px.
+- El contrato automático de calidad interna suma nueve verificaciones.
+
+### Cierre técnico requerido para `/portal/events`
+
+- Verificar en producción a 390 y 1280 px la lista, el formulario y el calendario después del despliegue de esta subfase.
+- Probar creación y edición con alcances local, regional, nacional y global usando cuentas autorizadas, sin guardar datos de prueba innecesarios.
+- Revisar el flujo de archivar/restaurar y definir el mecanismo de deshacer antes de sustituir la confirmación actual.
 
 ## Regla de actualización
 

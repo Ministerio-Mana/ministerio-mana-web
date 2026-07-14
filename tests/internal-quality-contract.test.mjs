@@ -124,3 +124,26 @@ test('el selector de iglesias y el registro manual protegen foco, datos y formul
   assert.match(registrationLogic, /handleAlertKeydown\(event\)/);
   assert.doesNotMatch(registrationLogic, /if \(e\.target === this\.modal\) this\.close\(\)/);
 });
+
+test('gestión de eventos protege el formulario largo y mantiene controles táctiles', async () => {
+  const [eventsView, eventsLogic] = await Promise.all([
+    readSource('src/pages/portal/events.astro'),
+    readSource('src/scripts/portal-events.js'),
+  ]);
+
+  assert.match(eventsView, /id="event-filters"[^>]*role="group"[^>]*aria-label="Estado del evento"/);
+  assert.match(eventsView, /data-event-filter="active" aria-pressed="true"/);
+  assert.match(eventsView, /id="event-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="event-modal-title"[^>]*aria-hidden="true"/);
+  assert.match(eventsView, /id="close-modal"[^>]*h-11 w-11[^>]*aria-label="Cerrar formulario de evento"/);
+  assert.match(eventsView, /\.event-filter \{[\s\S]*?min-height: 44px;/);
+  assert.match(eventsView, /:global\(\.event-action\) \{[\s\S]*?min-height: 44px;/);
+  assert.match(eventsView, /:global\(\.event-calendar-confirm\) \{[\s\S]*?min-height: 44px;/);
+
+  assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
+  assert.match(eventsLogic, /function requestCloseEventModal\(\)/);
+  assert.match(eventsLogic, /event\.key === 'Escape'[\s\S]*?closeModal\?\.focus\(\)/);
+  assert.match(eventsLogic, /event\.key !== 'Tab'/);
+  assert.match(eventsLogic, /eventModalReturnFocus/);
+  assert.match(eventsLogic, /window\.addEventListener\('beforeunload'/);
+  assert.doesNotMatch(eventsLogic, /event\.target === eventModal\) closeEventModal\(\)/);
+});

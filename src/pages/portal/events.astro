@@ -36,24 +36,24 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
           <section class="portal-panel p-4" aria-label="Filtros de eventos">
             <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div id="event-filters" class="flex max-w-full gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Estado del evento">
-                <button type="button" class="event-filter is-active" data-event-filter="active" role="tab" aria-selected="true">Activos <span data-filter-count="active">0</span></button>
-                <button type="button" class="event-filter" data-event-filter="upcoming" role="tab" aria-selected="false">Próximos <span data-filter-count="upcoming">0</span></button>
-                <button type="button" class="event-filter" data-event-filter="live" role="tab" aria-selected="false">En curso <span data-filter-count="live">0</span></button>
-                <button type="button" class="event-filter" data-event-filter="completed" role="tab" aria-selected="false">Terminados <span data-filter-count="completed">0</span></button>
-                <button type="button" class="event-filter" data-event-filter="draft" role="tab" aria-selected="false">Borradores <span data-filter-count="draft">0</span></button>
-                <button type="button" class="event-filter" data-event-filter="archived" role="tab" aria-selected="false">Archivados <span data-filter-count="archived">0</span></button>
+              <div id="event-filters" class="flex max-w-full gap-2 overflow-x-auto pb-2" role="group" aria-label="Estado del evento">
+                <button type="button" class="event-filter is-active" data-event-filter="active" aria-pressed="true">Activos <span data-filter-count="active">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="upcoming" aria-pressed="false">Próximos <span data-filter-count="upcoming">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="live" aria-pressed="false">En curso <span data-filter-count="live">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="completed" aria-pressed="false">Terminados <span data-filter-count="completed">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="draft" aria-pressed="false">Borradores <span data-filter-count="draft">0</span></button>
+                <button type="button" class="event-filter" data-event-filter="archived" aria-pressed="false">Archivados <span data-filter-count="archived">0</span></button>
               </div>
 
               <div class="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_160px] xl:w-[470px]">
                 <label class="relative block">
                   <span class="sr-only">Buscar evento</span>
                   <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
-                  <input id="event-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm" placeholder="Buscar evento o lugar" autocomplete="off" />
+                  <input id="event-search" type="search" class="min-h-11 w-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm" placeholder="Buscar evento o lugar" autocomplete="off" />
                 </label>
                 <label>
                   <span class="sr-only">Filtrar por alcance</span>
-                  <select id="event-scope-filter" class="w-full border border-slate-200 bg-white px-4 py-2 text-sm">
+                  <select id="event-scope-filter" class="min-h-11 w-full border border-slate-200 bg-white px-4 py-2 text-sm">
                     <option value="">Todo alcance</option>
                     <option value="LOCAL">Local</option>
                     <option value="REGIONAL">Regional</option>
@@ -90,14 +90,14 @@ import Sidebar from '@components/portal/Sidebar.astro';
     </div>
   </div>
 
-  <div id="event-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/55 p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+  <div id="event-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/55 p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="event-modal-title" aria-hidden="true">
     <div class="my-auto w-full max-w-6xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
         <div>
           <p class="text-xs font-bold uppercase text-slate-500">Gestión de eventos</p>
           <h2 id="event-modal-title" class="text-xl font-bold text-[#293C74]">Nuevo evento</h2>
         </div>
-        <button id="close-modal" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Cerrar">
+        <button id="close-modal" type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Cerrar formulario de evento">
           <PortalIcon name="x" size={22} />
         </button>
       </div>
@@ -175,7 +175,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <span>Imagen de invitación</span>
             <input type="hidden" name="banner_url" />
             <div id="event-invitation-image-dropzone" class="event-invitation-image-dropzone mt-2" tabindex="0" role="button" aria-describedby="event-invitation-image-help event-invitation-image-status">
-              <input id="event-invitation-image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" />
+              <input id="event-invitation-image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only !m-0 !h-px !min-h-0 !w-px !p-0" tabindex="-1" aria-hidden="true" />
               <strong>Arrastra una imagen aquí o selecciónala</strong>
               <span>JPG, PNG o WebP · horizontal, cuadrada o vertical</span>
               <span>Conservamos la imagen completa y la adaptamos a una invitación 1600 × 900.</span>
@@ -298,7 +298,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                     <h5 class="text-sm font-bold text-[#293C74]">Preguntas adicionales</h5>
                     <p class="mt-2 max-w-2xl text-xs leading-relaxed text-slate-500">Agrega solo lo necesario: texto corto o abierto, opciones, sí/no o fecha. No se permiten archivos ni datos sensibles.</p>
                   </div>
-                  <button id="event-custom-field-add" type="button" data-platform-field disabled class="inline-flex min-h-10 items-center justify-center rounded-md border border-[#293C74] bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:bg-[#293C74] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">+ Agregar pregunta</button>
+                  <button id="event-custom-field-add" type="button" data-platform-field disabled class="inline-flex min-h-11 items-center justify-center rounded-md border border-[#293C74] bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:bg-[#293C74] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">+ Agregar pregunta</button>
                 </div>
                 <p id="event-custom-field-empty" class="mt-4 rounded-md border border-dashed border-slate-300 bg-white p-4 text-xs leading-relaxed text-slate-500">No hay preguntas adicionales. La inscripción pedirá solo los datos que configuraste arriba.</p>
                 <div id="event-custom-fields" class="mt-4 space-y-4" aria-live="polite"></div>
@@ -367,7 +367,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <span id="event-online-provider-hint" class="mt-2 block text-xs font-normal text-slate-500"></span>
             </label>
             <div id="event-manual-payment-panel" class="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-4">
-              <label class="flex min-h-9 items-center gap-2 text-sm font-semibold text-slate-700">
+              <label class="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
                 <input id="event-manual-payment-enabled" type="checkbox" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                 Aceptar pago verificado manualmente
               </label>
@@ -401,7 +401,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
               </div>
             </div>
-            <label class="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+            <label class="flex min-h-11 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
               <input type="checkbox" name="registration_requires_approval" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
               Aprobar inscripciones antes de confirmarlas
             </label>
@@ -410,8 +410,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <div id="event-form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700" role="alert"></div>
 
           <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-            <button id="event-cancel" type="button" class="min-h-10 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" class="min-h-10 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
+            <button id="event-cancel" type="button" class="min-h-11 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+            <button type="submit" class="min-h-11 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
           </div>
         </form>
 
@@ -434,7 +434,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <p id="event-preview-description" class="text-sm leading-relaxed text-slate-600">La descripción aparecerá aquí.</p>
               <p id="event-preview-location" class="border-t border-slate-100 pt-4 text-sm font-medium text-slate-700">Lugar por definir</p>
               <p id="event-preview-price" class="text-sm font-bold text-[#293C74]">Evento gratuito</p>
-              <span id="event-preview-cta" class="hidden min-h-10 items-center justify-center rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Inscribirme</span>
+              <span id="event-preview-cta" class="hidden min-h-11 items-center justify-center rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Inscribirme</span>
             </div>
           </article>
         </aside>
@@ -445,7 +445,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
   <style>
     .event-filter {
       display: inline-flex;
-      min-height: 40px;
+      min-height: 44px;
       flex: none;
       align-items: center;
       gap: var(--space-1);
@@ -498,7 +498,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
     }
 
     .event-field :is(input, select) {
-      min-height: 2.5rem;
+      min-height: 44px;
     }
 
     .event-field textarea {
@@ -524,7 +524,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
       box-sizing: border-box;
       width: 100%;
       min-width: 0;
-      min-height: 2.5rem;
+      min-height: 44px;
       margin-top: var(--space-1);
       border: 1px solid #dce2ea;
       background: #fff;
@@ -550,7 +550,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
     }
 
     :global(.flatpickr-calendar.event-calendar) {
-      width: min(286px, calc(100vw - var(--space-4)));
+      box-sizing: border-box;
+      width: min(336px, 100vw);
       border: 1px solid #dce2ea;
       border-radius: 6px;
       background: #fff;
@@ -570,12 +571,28 @@ import Sidebar from '@components/portal/Sidebar.astro';
       font-weight: 700;
     }
 
+    :global(.event-calendar .flatpickr-current-month),
+    :global(.event-calendar .flatpickr-current-month .numInputWrapper),
+    :global(.event-calendar .flatpickr-current-month input),
+    :global(.event-calendar .flatpickr-prev-month),
+    :global(.event-calendar .flatpickr-next-month) {
+      min-height: 44px;
+    }
+
+    :global(.event-calendar .flatpickr-prev-month),
+    :global(.event-calendar .flatpickr-next-month) {
+      display: flex;
+      min-width: 44px;
+      align-items: center;
+      justify-content: center;
+    }
+
     :global(.event-calendar .flatpickr-day) {
       border-radius: 4px;
       color: #334155;
-      height: 32px;
+      height: 44px;
       max-width: none;
-      line-height: 32px;
+      line-height: 44px;
     }
 
     :global(.event-calendar .flatpickr-days),
@@ -606,8 +623,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     :global(.event-calendar .flatpickr-time) {
       border-top-color: #e2e8f0;
-      height: 36px;
-      line-height: 36px;
+      height: 44px;
+      line-height: 44px;
     }
 
     :global(.event-calendar .flatpickr-time input),
@@ -619,7 +636,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
     :global(.event-calendar-confirm) {
       display: block;
       width: calc(100% - var(--space-2));
-      min-height: 34px;
+      min-height: 44px;
       margin: var(--space-1);
       border: 0;
       border-radius: 4px;
@@ -705,7 +722,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     :global(.event-action) {
       display: inline-flex;
-      min-height: 40px;
+      min-height: 44px;
       align-items: center;
       justify-content: center;
       gap: var(--space-1);
