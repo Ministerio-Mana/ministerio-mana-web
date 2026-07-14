@@ -250,8 +250,14 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - [ ] Revisar animaciones y scroll en celular, especialmente dispositivos de gama media.
 - [ ] Confirmar que no hay mareo, saltos ni bloqueos de scroll.
 - [ ] Revisar Home, Eventos, Donaciones, Iglesias, Campus y Portal en móvil.
-- [ ] Decidir si se activará el CMS para edición pública de Home/Eventos/Noticias.
-- [ ] Si se activa, validar el SQL del CMS, preview, publicación, ImageKit y permisos editor/admin.
+- [x] Confirmar que el CMS está activo. Producción ya contiene Inicio, Eventos y Noticias como borradores; no hace falta ejecutar otro SQL para esta revisión.
+- [ ] Crear una página de prueba en una ruta no pública. Editarla, recargar la misma pestaña y confirmar que el borrador local se recupera antes de guardar.
+- [ ] Abrir la misma página de prueba en dos sesiones administrativas. Guardar primero en una y confirmar que la segunda recibe un aviso de conflicto y no sobrescribe el cambio.
+- [ ] Crear una sección de prueba, guardarla, archivarla y usar “Deshacer”. Confirmar que puede restaurarse y que la actividad conserva el historial.
+- [ ] Abrir la vista previa de la página controlada y revisar texto, imágenes, orden y responsive. Después publicar y despublicar únicamente esa página de prueba.
+- [ ] Subir una imagen pequeña autorizada a ImageKit, usarla en la página de prueba y confirmar que carga en preview. Retirar luego su referencia, eliminar solo ese medio y revisar la auditoría.
+- [ ] Entrar a `/portal/content` con `admin`, `superadmin` y una cuenta sin administración. Confirmar que solo las dos primeras acceden al CMS y a sus API.
+- [ ] Decidir si se necesita un rol editorial distinto de `admin` y `superadmin`. No ampliar permisos hasta definir exactamente qué puede crear, editar, publicar y eliminar.
 
 ## 10. Trabajo que continúa a cargo del equipo web
 

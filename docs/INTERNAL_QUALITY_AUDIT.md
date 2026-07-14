@@ -42,7 +42,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Cumple técnicamente en código y producción; conciliación real y variación por alcance pendientes |
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Cumple técnicamente en código y producción; cuentas reales por alcance y misionero pendientes |
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Cumple técnicamente en código y producción; decisiones reales y variación por roles pendientes |
-| 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Pendiente |
+| 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Cumple técnicamente en código y producción; mutaciones controladas, ImageKit y variación por roles pendientes |
 | 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Pendiente |
 | 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Pendiente |
 | 4 | `/admin/cumbre/manual` | Operación sensible, auditoría y cierre | Pendiente |
@@ -265,6 +265,32 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Con `admin` y `superadmin`, recorrer los tres diálogos sin confirmar primero. En rechazo, escribir una nota temporal y comprobar que `Escape` y el fondo la conservan; descartarla únicamente mediante la acción explícita.
 - Confirmar que dos revisores no pueden decidir la misma petición: la segunda sesión debe recibir el mensaje de que la petición cambió y actualizar la bandeja.
 - Antes de publicar una petición de prueba, revisar manualmente que el texto no permita identificar a la persona ni revele datos sensibles.
+
+## Registro de la fase 4 — `/portal/content`
+
+### Evidencia implementada
+
+- El CMS productivo está activo y conserva tres páginas en borrador: Inicio, Eventos y Noticias. La auditoría no creó, publicó ni eliminó contenido real.
+- Las ediciones de página, secciones y los formularios “Nueva página” y “Nueva sección” se conservan como borradores de sesión en la pestaña. Cambiar de página no los elimina y una recarga puede recuperarlos.
+- Los formularios largos advierten antes de abandonar la pestaña. `Escape` y el fondo conservan lo escrito; descartar exige una segunda acción explícita y devuelve el foco al control que abrió el diálogo.
+- Crear página, crear sección y confirmar acciones sensibles usan diálogos con propósito, descripción, resumen, foco inicial, encierro de foco, estados anunciados y controles de 44 px.
+- Guardar página o sección incluye la fecha de versión esperada. Si otra persona editó primero, el servidor responde conflicto y no sobrescribe silenciosamente el cambio reciente.
+- Publicar o despublicar exige una confirmación contextual y bloquea la acción mientras existan borradores locales. La actualización de página usa control de concurrencia; si fallan las secciones, intenta restaurar el estado anterior y no registra una publicación incompleta como exitosa.
+- Archivar una sección dejó de ser un borrado definitivo: el contenido permanece guardado, puede restaurarse y ofrece “Deshacer”. El reordenamiento compensa el primer movimiento si el segundo no puede completarse.
+- Eliminar un medio dejó de usar `confirm` nativo. El diálogo identifica archivo y proveedor, advierte revisar referencias publicadas y no ejecuta nada hasta la confirmación explícita. ImageKit, su token de carga y el registro de auditoría existentes no se modificaron.
+- Las respuestas tardías al cambiar de página o carpeta multimedia ya no reemplazan una vista reciente. Cargas largas conservan progreso útil y los fallos por archivo permanecen listos para reintentar.
+- `content.astro` y `portal-content.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos. El contrato automático de calidad interna suma diecisiete verificaciones. La deuda global bajó a 1.329 clases fuera de escala.
+- Producción final verificada en `ministeriomana.org`: a 390 × 844 hubo 22 controles visibles, cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1`, ningún desbordamiento horizontal y cero errores de consola. El mismo diseño se comprobó a 1280 px antes del último ajuste, que únicamente añadió el nombre accesible del selector técnico de carpetas.
+- Se escribió y descartó un borrador temporal sin enviarlo. `Escape` conservó sus tres campos; “Borrar borrador y cerrar” limpió el formulario y devolvió el foco. La confirmación de publicación mostró “Inicio · /”, cerró con `Escape`, devolvió el foco a “Publicar” y la página permaneció en borrador.
+
+### Cierre humano requerido para `/portal/content`
+
+- Crear una página de prueba en una ruta no pública, editarla, recargar la misma pestaña y confirmar que el borrador local se recupera antes de guardar.
+- Abrir la misma página con dos cuentas administrativas de prueba; guardar un cambio en la primera y comprobar que la segunda recibe el conflicto sin sobrescribirlo.
+- Crear una sección de prueba, guardarla, archivarla, usar “Deshacer” y confirmar en el historial que el contenido nunca fue eliminado.
+- Abrir la vista previa y comparar texto, imágenes, orden y responsive sin publicar primero. Después publicar y despublicar únicamente la página controlada.
+- Subir una imagen pequeña autorizada a ImageKit, usarla en la página de prueba y confirmar que no se elimina mientras esté referenciada. Luego retirar la referencia, eliminar el medio controlado y revisar su auditoría.
+- Entrar con `admin`, `superadmin` y una cuenta sin administración; confirmar que solo las dos primeras acceden al CMS y a sus API. Decidir aparte si el producto necesita un rol editorial nuevo antes de ampliar permisos.
 
 ## Regla de actualización
 
