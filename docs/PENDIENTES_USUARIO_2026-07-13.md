@@ -306,6 +306,9 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 - [ ] En `/portal/finances`, revisar filtros, subtotales COP/USD, tabla en escritorio, tarjetas en celular y alertas de pago. Confirmar que sigue siendo fácil distinguir monedas, cuentas y acciones sin exceso de aire.
 - [ ] Abrir una invitación pública en `/eventos/[slug]` con arte horizontal, cuadrado y vertical; revisar portada, franja de datos, bloque de ayuda y formulario en celular y escritorio. Confirmar que el arte no se deforma y que el ritmo visual se siente natural.
 - [ ] Con una cuenta de prueba, recorrer `/portal/ingresar`, recuperación de contraseña, `/portal/registro` y un enlace real de `/portal/activar`. Confirmar que los errores conservan lo escrito, los correos llegan y ninguna cuenta real queda bloqueada.
+- [ ] En `/portal`, recorrer las pestañas Resumen, Mis Eventos, Mis Aportes, Mi Perfil y Eventos a 390 px y en escritorio. Confirmar que el título cambia con claridad, que no aparece scroll horizontal y que los filtros siguen siendo fáciles de usar.
+- [ ] En `/portal`, provocar un aviso, una confirmación y abrir el detalle de una reserva. Confirmar que `Escape` cierra, que el foco vuelve al botón anterior y que el formulario obligatorio de perfil no se cierra accidentalmente.
+- [ ] Repetir `/portal` con cuentas de prueba de usuario, pastor, finanzas y administrador; confirmar que cada persona solo ve los datos y acciones que le corresponden.
 - [ ] Reportar cualquier pantalla donde el contenido se vea amontonado o demasiado separado; indicar ruta y captura. La migración se hará por módulo sin aceptar valores aislados nuevos.
 
 No necesitas ejecutar SQL para esta carta ni para el contrato de espaciado. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.

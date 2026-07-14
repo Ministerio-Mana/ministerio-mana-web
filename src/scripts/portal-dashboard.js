@@ -261,11 +261,46 @@ const bookingInspectorBody = document.getElementById('booking-inspector-body');
 let portalConfirmResolver = null;
 let bookingInspectorPayload = null;
 let bookingInspectorQuery = '';
+const portalModalReturnFocus = new WeakMap();
+const portalModals = [onboardingModal, portalAlertModal, portalConfirmModal, bookingInspectorModal].filter(Boolean);
+
+function getPortalModalFocusables(modal) {
+  if (!modal) return [];
+  return Array.from(modal.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )).filter((element) => !element.closest('[hidden]') && element.getClientRects().length > 0);
+}
+
+function openPortalModal(modal, preferredFocus) {
+  if (!modal) return;
+  if (document.activeElement instanceof HTMLElement) {
+    portalModalReturnFocus.set(modal, document.activeElement);
+  }
+  modal.setAttribute('aria-hidden', 'false');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  window.requestAnimationFrame(() => {
+    const target = preferredFocus || getPortalModalFocusables(modal)[0] || modal.querySelector('[tabindex="-1"]');
+    target?.focus();
+  });
+}
+
+function closePortalModal(modal) {
+  if (!modal) return;
+  modal.setAttribute('aria-hidden', 'true');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  const returnFocus = portalModalReturnFocus.get(modal);
+  portalModalReturnFocus.delete(modal);
+  returnFocus?.focus();
+}
+
+function getOpenPortalModal() {
+  return [...portalModals].reverse().find((modal) => modal.getAttribute('aria-hidden') === 'false') || null;
+}
 
 function hidePortalAlert() {
-  if (!portalAlertModal) return;
-  portalAlertModal.classList.add('hidden');
-  portalAlertModal.classList.remove('flex');
+  closePortalModal(portalAlertModal);
 }
 
 function showPortalAlert(message, options = {}) {
@@ -275,8 +310,7 @@ function showPortalAlert(message, options = {}) {
   }
   portalAlertMessage.textContent = message;
   portalAlertTitle.textContent = options.title || 'Atención';
-  portalAlertModal.classList.remove('hidden');
-  portalAlertModal.classList.add('flex');
+  openPortalModal(portalAlertModal, portalAlertOk);
 }
 
 portalAlertClose?.addEventListener('click', hidePortalAlert);
@@ -286,9 +320,7 @@ portalAlertModal?.addEventListener('click', (event) => {
 });
 
 function hidePortalConfirm(result = false) {
-  if (!portalConfirmModal) return;
-  portalConfirmModal.classList.add('hidden');
-  portalConfirmModal.classList.remove('flex');
+  closePortalModal(portalConfirmModal);
   if (portalConfirmResolver) {
     portalConfirmResolver(result);
     portalConfirmResolver = null;
@@ -309,8 +341,7 @@ function showPortalConfirm(message, options = {}) {
     portalConfirmOk.classList.remove('bg-brand-teal', 'hover:bg-brand-teal/90');
     portalConfirmOk.classList.add('bg-[#E15554]', 'hover:bg-[#D94B4A]');
   }
-  portalConfirmModal.classList.remove('hidden');
-  portalConfirmModal.classList.add('flex');
+  openPortalModal(portalConfirmModal, portalConfirmCancel || portalConfirmOk);
   return new Promise((resolve) => {
     portalConfirmResolver = resolve;
   });
@@ -324,9 +355,7 @@ portalConfirmModal?.addEventListener('click', (event) => {
 });
 
 function hideBookingInspector() {
-  if (!bookingInspectorModal) return;
-  bookingInspectorModal.classList.add('hidden');
-  bookingInspectorModal.classList.remove('flex');
+  closePortalModal(bookingInspectorModal);
 }
 
 function showBookingInspectorLoading(bookingId) {
@@ -341,8 +370,7 @@ function showBookingInspectorLoading(bookingId) {
       Cargando detalle de reserva...
     </div>
   `;
-  bookingInspectorModal.classList.remove('hidden');
-  bookingInspectorModal.classList.add('flex');
+  openPortalModal(bookingInspectorModal, bookingInspectorClose);
 }
 
 function resolveBookingTypeLabel(booking, plan) {
@@ -662,8 +690,33 @@ bookingInspectorSearch?.addEventListener('input', () => {
   renderBookingInspector();
 });
 document.addEventListener('keydown', (event) => {
+  const modal = getOpenPortalModal();
+  if (!modal) return;
+
   if (event.key === 'Escape') {
-    hideBookingInspector();
+    if (modal === onboardingModal) return;
+    event.preventDefault();
+    if (modal === portalConfirmModal) hidePortalConfirm(false);
+    else if (modal === portalAlertModal) hidePortalAlert();
+    else if (modal === bookingInspectorModal) hideBookingInspector();
+    return;
+  }
+
+  if (event.key !== 'Tab') return;
+  const focusables = getPortalModalFocusables(modal);
+  if (!focusables.length) {
+    event.preventDefault();
+    modal.querySelector('[tabindex="-1"]')?.focus();
+    return;
+  }
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
   }
 });
 
@@ -1447,31 +1500,43 @@ navLinks.forEach(link => {
       const url = new URL(window.location);
       url.searchParams.set('tab', targetTab);
       history.pushState({}, '', url);
-      switchTab(targetTab);
+      switchTab(targetTab, { focusHeading: true });
     }
   });
 });
 
 document.querySelectorAll('[data-tab-trigger]').forEach(btn => {
   btn.addEventListener('click', () => {
-    switchTab(btn.dataset.tabTrigger);
+    switchTab(btn.dataset.tabTrigger, { focusHeading: true });
   });
 });
 
-function switchTab(tabId) {
+function switchTab(tabId, { focusHeading = false } = {}) {
   // Update links
-  navLinks.forEach(l => l.classList.remove('active'));
-  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+  navLinks.forEach((link) => {
+    link.classList.remove('active');
+    if (link.dataset.tab) link.removeAttribute('aria-current');
+  });
+  const activeLink = document.querySelector(`[data-tab="${tabId}"]`);
+  activeLink?.classList.add('active');
+  activeLink?.setAttribute('aria-current', 'page');
 
-  // Update contents with GSAP
+  let activeContent = null;
   tabContents.forEach(content => {
     if (content.id === `tab-${tabId}`) {
+      activeContent = content;
       content.classList.remove('hidden');
+      content.setAttribute('aria-hidden', 'false');
       animateIn(content, { x: 20, duration: 260 });
     } else {
       content.classList.add('hidden');
+      content.setAttribute('aria-hidden', 'true');
     }
   });
+
+  if (focusHeading) {
+    activeContent?.querySelector('[tabindex="-1"]')?.focus({ preventScroll: false });
+  }
 }
 
 function getErrorMessage(err) {
@@ -1528,8 +1593,14 @@ function setAccountDataWarning(visible) {
   document.getElementById('account-data-warning')?.classList.toggle('hidden', !visible);
 }
 
-document.getElementById('account-data-retry')?.addEventListener('click', () => {
-  window.location.reload();
+[document.getElementById('account-error-retry'), document.getElementById('account-data-retry')]
+  .filter(Boolean)
+  .forEach((button) => {
+    button.addEventListener('click', () => window.location.reload());
+  });
+
+document.getElementById('focus-participant-search')?.addEventListener('click', () => {
+  churchParticipantsSearch?.focus();
 });
 
 async function loadChurchCatalog(headers = {}) {
@@ -1964,7 +2035,7 @@ async function loadDashboardData(authResult) {
     syncDeleteAccountAccess();
 
     if (authMode === 'password') {
-      if (onboardingModal) onboardingModal.classList.add('hidden');
+      closePortalModal(onboardingModal);
       if (saveProfileBtn) {
         saveProfileBtn.disabled = true;
         saveProfileBtn.classList.add('opacity-40', 'cursor-not-allowed');
@@ -5864,8 +5935,7 @@ function toggleOnboardingChurch(value) {
 
 function showOnboarding() {
   if (!onboardingModal) return;
-  onboardingModal.classList.remove('hidden');
-  onboardingModal.classList.add('flex');
+  openPortalModal(onboardingModal, onboardName);
 
   if (portalProfile) {
     onboardName.value = portalProfile.full_name || profileName.value || '';
@@ -6692,8 +6762,7 @@ onboardAffiliation?.addEventListener('change', (event) => {
     profileChurchName.value = portalProfile.church_name || '';
     toggleChurchField(profileAffiliation.value);
 
-    onboardingModal.classList.add('hidden');
-    onboardingModal.classList.remove('flex');
+    closePortalModal(onboardingModal);
   } catch (err) {
     console.error(err);
     onboardingStatus.textContent = err?.message || 'No pudimos guardar tu perfil. Intenta de nuevo.';

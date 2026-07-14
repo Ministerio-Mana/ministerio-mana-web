@@ -11,7 +11,6 @@ import Sidebar from '@components/portal/Sidebar.astro';
     <div class="flex flex-col lg:flex-row min-h-screen">
       
       <!-- Sidebar / Navigation -->
-      <!-- Sidebar / Navigation -->
       <Sidebar />
 
       <!-- Main Content Area -->
@@ -19,7 +18,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
         <div class="max-w-6xl mx-auto">
           
           <!-- Loading State (Skeleton) -->
-          <div id="account-loading" class="space-y-10 animate-pulse">
+          <div id="account-loading" class="space-y-10 animate-pulse" role="status" aria-live="polite" aria-label="Cargando la información del panel">
             <div class="h-10 w-48 bg-slate-200 rounded-xl"></div>
             <div class="grid md:grid-cols-3 gap-6">
               <div class="h-40 bg-slate-200 rounded-[2rem]"></div>
@@ -28,13 +27,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
           </div>
 
-            <div id="account-error" class="hidden text-center py-20">
+          <div id="account-error" class="hidden text-center py-20" role="alert">
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-400/10 text-red-400 mb-6">
                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
             </div>
             <h2 class="text-2xl font-bold mb-2">Algo salió mal</h2>
             <p class="text-slate-600">No pudimos cargar la información de tu cuenta.</p>
-            <button onclick="window.location.reload()" class="mt-6 px-6 py-2 bg-[#293C74] text-white rounded-xl hover:bg-[#293C74]/90 transition-all">Reintentar</button>
+            <button id="account-error-retry" type="button" class="mt-6 min-h-11 px-6 py-2 bg-[#293C74] text-white rounded-xl hover:bg-[#293C74]/90 transition-all">Reintentar</button>
           </div>
 
           <div id="account-content" class="hidden space-y-12" aria-busy="true">
@@ -44,13 +43,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <h1 class="text-2xl font-display font-bold text-[#293C74]">Panel General</h1>
               </div>
               <div class="flex flex-wrap items-center gap-3">
-                <a href="/" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-brand-teal px-4 py-2 text-xs font-bold uppercase text-white shadow-sm transition hover:bg-brand-teal/90">
+                <a href="/" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-brand-teal px-4 py-2 text-xs font-bold uppercase text-white shadow-sm transition hover:bg-brand-teal/90">
                   Ir al Inicio
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-7 9 7M4 10v10a1 1 0 001 1h5m4 0h5a1 1 0 001-1V10" />
                   </svg>
                 </a>
-                <a href="/eventos" class="inline-flex min-h-10 items-center gap-2 rounded-md border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase text-[#293C74] transition hover:border-[#293C74]/60 hover:bg-[#293C74]/5">
+                <a href="/eventos" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-[#293C74]/20 px-4 py-2 text-xs font-bold uppercase text-[#293C74] transition hover:border-[#293C74]/60 hover:bg-[#293C74]/5">
                   <PortalIcon name="calendar-days" size={16} />
                   Agenda pública
                 </a>
@@ -59,15 +58,15 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <div id="account-data-warning" class="hidden rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
               No se pudo cargar toda la información actualizada.
-              <button id="account-data-retry" type="button" class="ml-2 min-h-8 rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100">
+              <button id="account-data-retry" type="button" class="ml-2 min-h-11 rounded-md border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100">
                 Reintentar
               </button>
             </div>
             
             <!-- Tab: Resumen -->
-            <div id="tab-resumen" class="tab-content space-y-10">
+            <div id="tab-resumen" class="tab-content space-y-10" role="region" aria-labelledby="tab-resumen-title" aria-hidden="false">
               <header>
-                <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">¡Hola <span id="welcome-name" class="text-brand-teal">...</span>!</h1>
+                <h2 id="tab-resumen-title" tabindex="-1" class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2 outline-none">¡Hola <span id="welcome-name" class="text-brand-teal">...</span>!</h2>
                 <p class="text-slate-600">Este es el resumen de tu participación en los eventos Maná.</p>
               </header>
 
@@ -90,7 +89,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <div class="portal-panel p-5">
                   <h3 class="mb-2 text-lg font-black text-[#293C74]">¿Necesitas ayuda?</h3>
                   <p class="mb-4 text-xs font-bold leading-relaxed text-slate-700">Si tienes dudas con tus aportes, nuestro equipo de soporte está listo para asistirte.</p>
-                  <a href="https://wa.me/573148297534" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#293C74]/90">
+                  <a href="https://wa.me/573148297534" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#293C74]/90">
                     Soporte WhatsApp
                   </a>
                 </div>
@@ -107,7 +106,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       <p class="text-slate-600 text-sm">Tu próxima cuota de <span id="highlight-amount" class="text-[#293C74] font-bold">...</span> para <span id="highlight-context" class="text-[#293C74] font-bold">Cumbre Mundial 2026</span> será procesada el <span id="highlight-date" class="text-[#293C74] font-bold">...</span>.</p>
                    </div>
                    <div class="md:ml-auto">
-                      <button data-tab-trigger="reservas" class="text-sm font-bold text-brand-teal hover:underline px-4 py-2">Ver mis inscripciones →</button>
+                      <button type="button" data-tab-trigger="reservas" class="min-h-11 text-sm font-bold text-brand-teal hover:underline px-4 py-2">Ver mis inscripciones →</button>
                    </div>
                 </div>
               </div>
@@ -115,7 +114,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="space-y-6">
                 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
                   <div>
-                    <h2 class="text-lg font-bold text-[#293C74]">Eventos inscritos</h2>
+                    <h3 class="text-lg font-bold text-[#293C74]">Eventos inscritos</h3>
                     <p class="text-xs text-slate-500">Resumen por evento con cuenta regresiva y próximos abonos.</p>
                   </div>
                 </div>
@@ -128,10 +127,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div>
-                    <h2 class="text-lg font-bold text-[#293C74]">Ofrendas y Diezmos</h2>
+                    <h3 class="text-lg font-bold text-[#293C74]">Ofrendas y Diezmos</h3>
                     <p class="text-xs text-slate-500">Tus aportes y recordatorios activos.</p>
                   </div>
-                  <a id="giving-cta" href="/primicias?type=diezmos&recurring=1" hidden class="inline-flex items-center gap-2 rounded-full bg-brand-teal text-white px-5 py-2 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-brand-teal/90 transition">
+                  <a id="giving-cta" href="/primicias?type=diezmos&recurring=1" hidden class="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-teal text-white px-5 py-2 text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-brand-teal/90 transition">
                     Programar diezmo
                   </a>
                 </div>
@@ -144,10 +143,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="space-y-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div>
-                    <h2 class="text-lg font-bold text-[#293C74]">Mis siembras Campus</h2>
+                    <h3 class="text-lg font-bold text-[#293C74]">Mis siembras Campus</h3>
                     <p class="text-xs text-slate-500">Pausa, reactiva o cancela tus apoyos mensuales a misioneros Campus.</p>
                   </div>
-                  <a id="campus-cta" href="/campus" hidden class="inline-flex items-center gap-2 rounded-full border border-brand-teal/40 text-brand-teal px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-brand-teal/10 transition">
+                  <a id="campus-cta" href="/campus" hidden class="inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-teal/40 text-brand-teal px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-brand-teal/10 transition">
                     Apoyar campus
                   </a>
                 </div>
@@ -160,7 +159,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <div class="space-y-6">
                 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-2">
                   <div>
-                    <h2 class="text-lg font-bold text-[#293C74]">Eventos cerca de ti</h2>
+                    <h3 class="text-lg font-bold text-[#293C74]">Eventos cerca de ti</h3>
                     <p class="text-xs text-slate-500">Próximos encuentros en tu ciudad o país.</p>
                   </div>
                 </div>
@@ -172,15 +171,15 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <!-- Tab: Reservas -->
-            <div id="tab-reservas" class="tab-content hidden space-y-10">
+            <div id="tab-reservas" class="tab-content hidden space-y-10" role="region" aria-labelledby="tab-reservas-title" aria-hidden="true">
               <header>
-                <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">Mis Eventos</h1>
+                <h2 id="tab-reservas-title" tabindex="-1" class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2 outline-none">Mis Eventos</h2>
                 <p class="text-slate-600">Gestiona tus inscripciones a eventos y planes de abono.</p>
               </header>
 
               <div class="space-y-10">
                 <div class="space-y-6">
-                   <h2 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Eventos Inscritos</h2>
+                   <h3 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Eventos Inscritos</h3>
                    <div id="bookings-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                    <div id="bookings-empty" class="hidden p-12 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
                     <p class="text-slate-500">Aún no tienes inscripciones para la Cumbre 2026.</p>
@@ -188,7 +187,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
 
                 <div class="space-y-6">
-                   <h2 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Planes de Abono</h2>
+                   <h3 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Planes de Abono</h3>
                    <div id="plans-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                    <div id="plans-empty" class="hidden p-12 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
                     <p class="text-slate-500">No tienes planes de abono activos.</p>
@@ -196,7 +195,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
 
                 <div class="space-y-6">
-                   <h2 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Cuotas Pendientes</h2>
+                   <h3 class="text-xs font-bold text-slate-600 uppercase tracking-[0.3em]">Cuotas Pendientes</h3>
                    <div id="installments-list" class="space-y-4"></div>
                    <div id="installments-empty" class="hidden p-10 text-center bg-white border border-slate-100 rounded-[2rem] shadow-sm">
                     <p class="text-slate-500">No tienes cuotas pendientes en este momento.</p>
@@ -206,9 +205,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <!-- Tab: Pagos -->
-            <div id="tab-pagos" class="tab-content hidden space-y-10">
+            <div id="tab-pagos" class="tab-content hidden space-y-10" role="region" aria-labelledby="tab-pagos-title" aria-hidden="true">
               <header>
-                <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">Mis Aportes</h1>
+                <h2 id="tab-pagos-title" tabindex="-1" class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2 outline-none">Mis Aportes</h2>
                 <p class="text-slate-600">Registro detallado de aportes y abonos realizados.</p>
               </header>
 
@@ -234,39 +233,39 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <!-- Tab: Perfil -->
-            <div id="tab-perfil" class="tab-content hidden space-y-10">
+            <div id="tab-perfil" class="tab-content hidden space-y-10" role="region" aria-labelledby="tab-perfil-title" aria-hidden="true">
                <header>
-                 <h1 class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2">Mi Perfil</h1>
+                 <h2 id="tab-perfil-title" tabindex="-1" class="text-3xl lg:text-4xl font-display font-bold text-[#293C74] mb-2 outline-none">Mi Perfil</h2>
                  <p class="text-slate-600">Mantén tu información personal actualizada.</p>
                </header>
 
                <div class="max-w-3xl bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 space-y-8 shadow-lg shadow-slate-200/50">
                   <div class="grid gap-6">
                     <div class="space-y-2">
-                       <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre Completo</label>
+                       <label for="profile-name" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre Completo</label>
                        <input type="text" id="profile-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
                     </div>
                     <div class="space-y-2">
-                       <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Correo Electrónico</label>
+                       <label for="profile-email" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Correo Electrónico</label>
                        <input type="email" id="profile-email" disabled class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-500 cursor-not-allowed">
                     </div>
                     <div class="space-y-2">
-                       <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Rol</label>
+                       <label for="profile-role" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Rol</label>
                        <input type="text" id="profile-role" disabled class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-slate-500 cursor-not-allowed">
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
+                        <label for="profile-phone" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
                         <input type="text" id="profile-phone" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
                       </div>
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
+                        <label for="profile-city" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
                         <input type="text" id="profile-city" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
                       </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Tipo de documento</label>
+                        <label for="profile-document-type" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Tipo de documento</label>
                         <select id="profile-document-type" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
                           <option value="">Selecciona una opción</option>
                           <option value="CC">CC</option>
@@ -277,17 +276,17 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         </select>
                       </div>
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Número de documento</label>
+                        <label for="profile-document-number" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Número de documento</label>
                         <input type="text" id="profile-document-number" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
                       </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
+                        <label for="profile-country" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
                         <input type="text" id="profile-country" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500">
                       </div>
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Mi relación con Maná</label>
+                        <label for="profile-affiliation" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Mi relación con Maná</label>
                         <select id="profile-affiliation" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
                           <option value="">Selecciona una opción</option>
                           <option value="local">Asisto a una sede</option>
@@ -297,7 +296,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       </div>
                     </div>
                     <div id="profile-church-wrapper" class="space-y-2 hidden">
-                      <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre de la sede / iglesia</label>
+                      <label for="profile-church-name" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre de la sede / iglesia</label>
                       <input type="text" id="profile-church-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium placeholder-slate-500" placeholder="Ej: Maná Medellín">
                     </div>
                   </div>
@@ -305,7 +304,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
                   <div class="pt-4 flex items-center justify-between gap-4">
                      <p id="profile-status" class="text-sm font-medium"></p>
-                     <button id="btn-save-profile" class="bg-[#293C74] text-white px-8 py-3 rounded-2xl font-bold hover:shadow-lg hover:shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all text-sm">
+                     <button id="btn-save-profile" type="button" class="min-h-11 bg-[#293C74] text-white px-8 py-3 rounded-2xl font-bold hover:shadow-lg hover:shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all text-sm">
                         Guardar Personales
                      </button>
                   </div>
@@ -320,11 +319,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
-                      <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nueva Contraseña</label>
-                      <input type="password" id="security-new-password" minlength="10" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all placeholder-slate-400" placeholder="Mínimo 10 caracteres">
+                      <label for="security-new-password" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nueva Contraseña</label>
+                      <input type="password" id="security-new-password" minlength="10" aria-describedby="security-password-help" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all placeholder-slate-400" placeholder="Mínimo 10 caracteres">
+                      <p id="security-password-help" class="text-xs leading-relaxed text-slate-600">Usa mínimo 10 caracteres, con mayúscula, minúscula, número y símbolo.</p>
                     </div>
                     <div class="space-y-2">
-                       <button id="btn-update-password" class="w-full h-full mt-6 md:mt-0 bg-white border border-[#293C74]/20 text-[#293C74] px-6 py-4 rounded-2xl font-bold hover:bg-[#293C74] hover:text-white transition-all text-sm">
+                       <button id="btn-update-password" type="button" class="w-full min-h-11 h-full mt-6 md:mt-0 bg-white border border-[#293C74]/20 text-[#293C74] px-6 py-4 rounded-2xl font-bold hover:bg-[#293C74] hover:text-white transition-all text-sm">
                           Actualizar Contraseña
                        </button>
                     </div>
@@ -341,7 +341,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                            </div>
                            <p class="text-xs text-slate-600 max-w-sm">Vincula tu dispositivo para ingresar sin contraseña la próxima vez.</p>
                         </div>
-                        <button id="btn-register-passkey" class="bg-white border border-[#293C74]/20 text-[#293C74] px-6 py-3 rounded-2xl font-bold hover:bg-[#293C74] hover:text-white transition-all text-xs flex items-center gap-2">
+                        <button id="btn-register-passkey" type="button" class="min-h-11 bg-white border border-[#293C74]/20 text-[#293C74] px-6 py-3 rounded-2xl font-bold hover:bg-[#293C74] hover:text-white transition-all text-xs flex items-center gap-2">
                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                            Vincular este dispositivo
                         </button>
@@ -358,7 +358,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                     </div>
 
                     <div class="space-y-2">
-                      <label class="block text-[10px] font-bold text-red-700 uppercase tracking-widest ml-1">Motivo (opcional)</label>
+                      <label for="delete-account-reason" class="block text-[10px] font-bold text-red-700 uppercase tracking-widest ml-1">Motivo (opcional)</label>
                       <input
                         type="text"
                         id="delete-account-reason"
@@ -370,7 +370,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div class="space-y-2">
-                        <label class="block text-[10px] font-bold text-red-700 uppercase tracking-widest ml-1">Escribe ELIMINAR para confirmar</label>
+                        <label for="delete-account-confirm" class="block text-[10px] font-bold text-red-700 uppercase tracking-widest ml-1">Escribe ELIMINAR para confirmar</label>
                         <input
                           type="text"
                           id="delete-account-confirm"
@@ -381,6 +381,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       <div class="space-y-2">
                         <button
                           id="btn-delete-account"
+                          type="button"
                           class="w-full h-full mt-6 md:mt-0 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl font-bold hover:bg-red-600 hover:text-white transition-all text-sm"
                         >
                           Eliminar mi cuenta
@@ -393,7 +394,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <!-- Tab: Eventos (Antes Iglesia) -->
-            <div id="tab-iglesia" class="tab-content hidden space-y-8">
+            <div id="tab-iglesia" class="tab-content hidden space-y-8" role="region" aria-labelledby="iglesia-title" aria-hidden="true">
               <header class="portal-panel p-5 sm:p-6">
                 <div class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div class="min-w-0">
@@ -401,7 +402,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       <span id="event-operation-state" class="portal-chip bg-slate-100 text-slate-700">Cargando</span>
                       <span id="church-selector-status" class="text-xs text-slate-500"></span>
                     </div>
-                    <h1 id="iglesia-title" class="text-2xl font-display font-bold text-[#293C74] sm:text-3xl">Cumbre Mundial 2026</h1>
+                    <h2 id="iglesia-title" tabindex="-1" class="text-2xl font-display font-bold text-[#293C74] outline-none sm:text-3xl">Cumbre Mundial 2026</h2>
                     <p id="iglesia-subtitle" class="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600">Gestión operativa y control de asistencia.</p>
                     <div id="event-operation-meta" class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
                       <span id="event-operation-date">Fecha por confirmar</span>
@@ -414,7 +415,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   <div id="event-operations-controls" class="hidden w-full flex-col gap-2 sm:flex-row xl:w-auto">
                     <label class="min-w-0 sm:min-w-[280px]">
                       <span class="sr-only">Seleccionar evento</span>
-                      <select id="event-operations-selector" class="w-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]">
+                      <select id="event-operations-selector" class="w-full min-h-11 border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#293C74]">
                         <option value="">Cargando eventos...</option>
                       </select>
                     </label>
@@ -435,7 +436,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       <p class="mt-1 text-sm text-slate-600">Las inscripciones están cerradas. Los pagos, participantes, saldos y reportes permanecen disponibles para conciliación.</p>
                     </div>
                   </div>
-                  <a id="event-public-page-link" href="/eventos" class="inline-flex min-h-10 flex-none items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
+                  <a id="event-public-page-link" href="/eventos" class="inline-flex min-h-11 flex-none items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
                     <PortalIcon name="external-link" size={16} />
                     Ver página
                   </a>
@@ -446,11 +447,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <div class="grid w-full grid-cols-1 gap-2 lg:grid-cols-[180px_180px_minmax(240px,1fr)]">
                   <div class="relative lg:col-span-3">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
-                    <input id="church-selector-search" type="search" placeholder="Buscar iglesia, ciudad o país..." class="w-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold text-[#293C74]" autocomplete="off" />
+                    <input id="church-selector-search" type="search" aria-label="Buscar iglesia, ciudad o país" placeholder="Buscar iglesia, ciudad o país..." class="w-full min-h-11 border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-semibold text-[#293C74]" autocomplete="off" />
                   </div>
-                  <select id="church-selector-continent" class="w-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]"><option value="">Continente: todos</option></select>
-                  <select id="church-selector-country" class="w-full border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]"><option value="">País: todos</option></select>
-                  <select id="church-selector-input" class="w-full min-w-0 border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-[#293C74]"><option value="">Selecciona una iglesia</option></select>
+                  <select id="church-selector-continent" aria-label="Filtrar iglesias por continente" class="w-full min-h-11 border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#293C74]"><option value="">Continente: todos</option></select>
+                  <select id="church-selector-country" aria-label="Filtrar iglesias por país" class="w-full min-h-11 border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#293C74]"><option value="">País: todos</option></select>
+                  <select id="church-selector-input" aria-label="Seleccionar iglesia" class="w-full min-h-11 min-w-0 border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-[#293C74]"><option value="">Selecciona una iglesia</option></select>
                 </div>
               </section>
 
@@ -476,11 +477,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <div class="grid lg:grid-cols-[minmax(0,1fr)_320px]">
                   <div class="p-6 sm:p-8">
                     <p class="text-xs font-bold uppercase text-slate-500">Operación del evento</p>
-                    <h2 id="event-generic-heading" class="mt-2 text-2xl font-bold text-[#293C74]">Configura inscripciones y recaudo</h2>
+                    <h3 id="event-generic-heading" class="mt-2 text-2xl font-bold text-[#293C74]">Configura inscripciones y recaudo</h3>
                     <p id="event-generic-description" class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">Este evento ya tiene calendario y página pública. Define entradas, moneda y métodos de pago antes de abrir registros.</p>
                     <div class="mt-6 flex flex-wrap gap-2">
-                      <a id="event-generic-configure" href="/portal/events" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]"><PortalIcon name="settings-2" size={17} /> Configurar evento</a>
-                      <a id="event-generic-public-link" href="/eventos" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-slate-300 px-4 py-2.5 text-sm font-bold text-[#293C74] hover:bg-slate-50"><PortalIcon name="external-link" size={17} /> Ver invitación</a>
+                      <a id="event-generic-configure" href="/portal/events" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]"><PortalIcon name="settings-2" size={17} /> Configurar evento</a>
+                      <a id="event-generic-public-link" href="/eventos" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50"><PortalIcon name="external-link" size={17} /> Ver invitación</a>
                     </div>
                   </div>
                   <aside class="border-t border-slate-200 bg-slate-50 p-6 lg:border-l lg:border-t-0">
@@ -524,7 +525,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           <p class="portal-stat-label">Pendiente</p>
                           <p class="portal-stat-value !text-amber-600" id="stat-church-pending">0</p>
                       </div>
-                      <button type="button" class="portal-stat text-left hover:bg-slate-50" onclick="document.getElementById('church-participants-search')?.focus()">
+                      <button id="focus-participant-search" type="button" class="portal-stat min-h-11 text-left hover:bg-slate-50">
                           <p class="portal-stat-label">Acción rápida</p>
                           <p class="mt-2 text-sm font-bold text-[#293C74]">Buscar inscrito</p>
                       </button>
@@ -540,10 +541,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           </div>
                           <div class="flex flex-wrap items-center gap-3">
                             <span id="church-participants-count" class="text-[10px] font-semibold text-slate-500 whitespace-nowrap">0 resultados</span>
-                            <button id="church-export-btn" class="shrink-0 p-2 text-slate-400 hover:text-brand-teal hover:bg-brand-teal/10 rounded-lg transition-colors" title="Exportar Excel">
+                            <button id="church-export-btn" type="button" aria-label="Exportar participantes a Excel" class="flex h-11 w-11 shrink-0 items-center justify-center text-slate-400 hover:text-brand-teal hover:bg-brand-teal/10 rounded-lg transition-colors" title="Exportar Excel">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             </button>
-                            <button id="church-audit-btn" class="hidden shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-100 transition-colors text-[11px] font-bold uppercase tracking-widest" title="Descargar auditoría de paquetes">
+                            <button id="church-audit-btn" type="button" class="hidden min-h-11 shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-100 transition-colors text-[11px] font-bold uppercase tracking-widest" title="Descargar auditoría de paquetes">
                               Auditoría
                             </button>
                           </div>
@@ -551,19 +552,19 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         <p id="church-export-status" class="text-xs text-slate-500 min-h-[1rem]"></p>
                         <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
                           <div class="relative">
-                            <input id="church-participants-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74] text-xs font-medium" placeholder="Buscar nombre, documento, email, ciudad, país o iglesia...">
+                            <input id="church-participants-search" type="search" aria-label="Buscar participantes" class="w-full min-h-11 bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74] text-xs font-medium" placeholder="Buscar nombre, documento, email, ciudad, país o iglesia...">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                           </div>
                           <div class="flex flex-wrap items-center gap-2 lg:justify-end">
                             <div id="church-participants-view-toggle" class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-                              <button type="button" data-view="cards" class="church-participants-view-btn rounded-md bg-[#293C74] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
+                              <button type="button" data-view="cards" class="church-participants-view-btn min-h-11 rounded-md bg-[#293C74] px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white shadow-sm">
                                 Tarjetas
                               </button>
-                              <button type="button" data-view="table" class="church-participants-view-btn rounded-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#293C74]">
+                              <button type="button" data-view="table" class="church-participants-view-btn min-h-11 rounded-md px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-[#293C74]">
                                 Tabla
                               </button>
                             </div>
-                            <select id="church-participants-sort" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                            <select id="church-participants-sort" aria-label="Ordenar participantes" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
                               <option value="recent_payment_desc">Más recientes</option>
                               <option value="name_asc">Nombre A-Z</option>
                               <option value="created_desc">Fecha de registro</option>
@@ -572,33 +573,33 @@ import Sidebar from '@components/portal/Sidebar.astro';
                               <option value="paid_desc">Mayor pagado</option>
                               <option value="pending_desc">Mayor pendiente</option>
                             </select>
-                            <select id="church-participants-payment" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                            <select id="church-participants-payment" aria-label="Filtrar participantes por pago" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
                               <option value="">Pagos</option>
                               <option value="full">Completos</option>
                               <option value="pending">Con saldo</option>
                               <option value="recent">Con pago reciente</option>
                             </select>
-                            <select id="church-participants-lodging" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                            <select id="church-participants-lodging" aria-label="Filtrar participantes por hospedaje" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
                               <option value="">Alojamiento</option>
                               <option value="Con alojamiento">Con alojamiento</option>
                               <option value="Sin alojamiento">Sin alojamiento</option>
                               <option value="Nino 0-4">Niños 0-4</option>
                               <option value="Nino 5-10">Niños 5-10</option>
                             </select>
-                            <select id="church-participants-menu" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                            <select id="church-participants-menu" aria-label="Filtrar participantes por alimentación" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
                               <option value="">Menú</option>
                               <option value="TRADICIONAL">Tradicional</option>
                               <option value="VEGETARIANO">Vegetariano</option>
                               <option value="INFANTIL">Infantil</option>
                               <option value="SIN ALIMENTACION">Sin alimentación</option>
                             </select>
-                            <select id="church-participants-alert" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                            <select id="church-participants-alert" aria-label="Filtrar participantes por alerta" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
                               <option value="">Alertas</option>
                               <option value="with">Con alerta</option>
                               <option value="corrected">Corregidos en export</option>
                               <option value="review">Por revisar</option>
                             </select>
-                            <select id="church-participants-page-size" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
+                            <select id="church-participants-page-size" aria-label="Participantes por página" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-[11px] font-semibold text-[#293C74]">
                               <option value="10" selected>10</option>
                               <option value="20">20</option>
                               <option value="40">40</option>
@@ -626,7 +627,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                             <div class="flex items-center gap-2">
                               <button
                                 id="church-installments-remind-visible"
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-[#293C74] hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="min-h-11 px-3 py-2 rounded-lg border border-slate-200 bg-white text-[11px] font-bold text-[#293C74] hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 type="button"
                               >
                                 Recordar visibles
@@ -636,7 +637,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           </div>
                           <div class="space-y-3 mb-4">
                             <div class="relative">
-                              <input id="church-installments-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar nombre, correo o referencia..." />
+                              <input id="church-installments-search" type="search" aria-label="Buscar cuotas pendientes" class="w-full min-h-11 bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar nombre, correo o referencia..." />
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
@@ -644,7 +645,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                             <div class="flex flex-wrap items-center gap-2">
                               <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                 Estado
-                                <select id="church-installments-status" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <select id="church-installments-status" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                   <option value="">Todos</option>
                                   <option value="OVERDUE">Vencidas</option>
                                   <option value="PENDING">Pendientes</option>
@@ -654,7 +655,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                               </label>
                               <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                 Cobro
-                                <select id="church-installments-charge" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <select id="church-installments-charge" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                   <option value="">Todos</option>
                                   <option value="WOMPI_MANUAL">Wompi manual</option>
                                   <option value="WOMPI_AUTO">Wompi automático</option>
@@ -666,7 +667,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                               </label>
                               <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                 Ver
-                                <select id="church-installments-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <select id="church-installments-page-size" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                   <option value="5">5</option>
                                   <option value="10" selected>10</option>
                                   <option value="20">20</option>
@@ -705,32 +706,32 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           </div>
                           <div class="space-y-3 mb-4">
                             <div class="relative">
-                              <input id="church-payments-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar por nombre, correo o referencia..." />
+                              <input id="church-payments-search" type="search" aria-label="Buscar movimientos y pagos" class="w-full min-h-11 bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar por nombre, correo o referencia..." />
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                               </svg>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <select id="church-payments-status" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
+                              <select id="church-payments-status" aria-label="Filtrar pagos por estado" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
                                 <option value="">Todos los estados</option>
                                 <option value="APPROVED">Aprobados</option>
                                 <option value="PENDING">Pendientes</option>
                                 <option value="DECLINED">Rechazados</option>
                                 <option value="FAILED">Fallidos</option>
                               </select>
-                              <select id="church-payments-provider" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
+                              <select id="church-payments-provider" aria-label="Filtrar pagos por proveedor" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
                                 <option value="">Todos los proveedores</option>
                                 <option value="wompi">Wompi</option>
                                 <option value="stripe">Stripe</option>
                                 <option value="manual">Manual</option>
                               </select>
-                              <input id="church-payments-from" type="date" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]" />
-                              <input id="church-payments-to" type="date" class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]" />
+                              <input id="church-payments-from" type="date" aria-label="Pagos desde la fecha" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]" />
+                              <input id="church-payments-to" type="date" aria-label="Pagos hasta la fecha" class="min-h-11 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]" />
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                               <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                 Orden
-                                <select id="church-payments-sort" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <select id="church-payments-sort" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                   <option value="recent_desc">Más recientes</option>
                                   <option value="recent_asc">Más antiguos</option>
                                   <option value="amount_desc">Mayor monto</option>
@@ -738,7 +739,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                               </label>
                               <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                 Ver
-                                <select id="church-payments-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                                <select id="church-payments-page-size" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                   <option value="5">5</option>
                                   <option value="10" selected>10</option>
                                   <option value="20">20</option>
@@ -767,7 +768,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         <p class="mt-2 text-sm leading-relaxed text-slate-600">Registra participantes y pagos manuales sin salir del evento.</p>
                       </div>
                     </div>
-                    <button id="church-form-toggle" class="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]">
+                    <button id="church-form-toggle" type="button" class="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]">
                       <PortalIcon name="plus" size={18} />
                       Registrar participante
                     </button>
@@ -779,7 +780,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       <div>
                          <div class="flex items-center justify-between mb-4">
                             <h3 class="text-sm font-bold text-[#293C74]">Equipo</h3>
-                            <button id="btn-toggle-invite" type="button" aria-label="Invitar integrante" class="flex h-9 w-9 items-center justify-center rounded-md bg-slate-50 text-[#293C74] transition-colors hover:bg-[#293C74] hover:text-white">
+                            <button id="btn-toggle-invite" type="button" aria-label="Invitar integrante" class="flex h-11 w-11 items-center justify-center rounded-md bg-slate-50 text-[#293C74] transition-colors hover:bg-[#293C74] hover:text-white">
                                 <PortalIcon name="plus" size={17} />
                             </button>
                          </div>
@@ -788,19 +789,19 @@ import Sidebar from '@components/portal/Sidebar.astro';
                          <div id="church-invite-card" class="hidden mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                              <div class="space-y-3">
                                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invitar Colaborador</p>
-                                <input id="church-invite-email" type="email" class="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs" placeholder="Correo electrónico">
-                                <select id="church-invite-role" class="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs">
+                                <input id="church-invite-email" type="email" aria-label="Correo del nuevo integrante" class="w-full min-h-11 bg-white border-slate-200 rounded-xl px-3 py-2 text-xs" placeholder="Correo electrónico">
+                                <select id="church-invite-role" aria-label="Rol del nuevo integrante" class="w-full min-h-11 bg-white border-slate-200 rounded-xl px-3 py-2 text-xs">
                                    <option value="church_member">Colaborador (Registrar)</option>
                                    <option value="church_admin">Pastor (Admin)</option>
                                 </select>
                                 <div id="church-invite-church-wrapper" class="hidden space-y-1">
-                                   <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Iglesia / Ciudad</label>
-                                   <select id="church-invite-church" class="w-full bg-white border-slate-200 rounded-xl px-3 py-2 text-xs">
+                                   <label for="church-invite-church" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Iglesia / Ciudad</label>
+                                   <select id="church-invite-church" class="w-full min-h-11 bg-white border-slate-200 rounded-xl px-3 py-2 text-xs">
                                       <option value="">Selecciona una iglesia</option>
                                    </select>
                                 </div>
-                                <button id="church-invite-btn" class="w-full bg-[#293C74] text-white py-2 rounded-xl text-xs font-bold hover:bg-[#293C74]/90">Enviar Invitación</button>
-                                <p id="church-invite-status" class="text-[10px] text-slate-500 text-center min-h-[1rem]"></p>
+                                <button id="church-invite-btn" type="button" class="w-full min-h-11 bg-[#293C74] text-white py-2 rounded-xl text-xs font-bold hover:bg-[#293C74]/90">Enviar Invitación</button>
+                                <p id="church-invite-status" class="text-[10px] text-slate-500 text-center min-h-[1rem]" role="status" aria-live="polite"></p>
                              </div>
                          </div>
 
@@ -813,7 +814,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                       <!-- Admin Tools (Sync) -->
                       <div id="admin-sync-wrapper" class="hidden">
                           <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Herramientas Admin</p>
-                          <button id="btn-sync-churches" class="w-full py-3 bg-slate-50 text-slate-500 rounded-xl font-bold text-xs hover:bg-[#293C74] hover:text-white transition-all flex items-center justify-center gap-2 border border-slate-200 border-dashed hover:border-transparent">
+                          <button id="btn-sync-churches" type="button" class="w-full min-h-11 py-3 bg-slate-50 text-slate-500 rounded-xl font-bold text-xs hover:bg-[#293C74] hover:text-white transition-all flex items-center justify-center gap-2 border border-slate-200 border-dashed hover:border-transparent">
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                              Sincronizar Data
                           </button>
@@ -833,28 +834,28 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
                       <div class="space-y-3">
                         <div id="admin-followups-filters" class="flex items-center gap-2 overflow-x-auto pb-1">
-                          <button data-filter="all" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-[#293C74] text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
+                          <button type="button" data-filter="all" class="admin-followups-filter min-h-11 shrink-0 whitespace-nowrap px-3 py-2 rounded-full bg-[#293C74] text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
                             Todos <span data-count class="ml-1 text-[10px] opacity-80">0</span>
                           </button>
-                          <button data-filter="registration_incomplete" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                          <button type="button" data-filter="registration_incomplete" class="admin-followups-filter min-h-11 shrink-0 whitespace-nowrap px-3 py-2 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
                             Registro <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
                           </button>
-                          <button data-filter="payment_pending" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                          <button type="button" data-filter="payment_pending" class="admin-followups-filter min-h-11 shrink-0 whitespace-nowrap px-3 py-2 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
                             Pago pendiente <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
                           </button>
-                          <button data-filter="payment_mismatch" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                          <button type="button" data-filter="payment_mismatch" class="admin-followups-filter min-h-11 shrink-0 whitespace-nowrap px-3 py-2 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
                             Descuadre <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
                           </button>
-                          <button data-filter="overpaid" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                          <button type="button" data-filter="overpaid" class="admin-followups-filter min-h-11 shrink-0 whitespace-nowrap px-3 py-2 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
                             Duplicados <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
                           </button>
-                          <button data-filter="no_church" class="admin-followups-filter shrink-0 whitespace-nowrap px-3 py-1 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
+                          <button type="button" data-filter="no_church" class="admin-followups-filter min-h-11 shrink-0 whitespace-nowrap px-3 py-2 rounded-full bg-white text-slate-500 hover:text-[#293C74] text-[10px] font-bold uppercase tracking-widest border border-slate-100">
                             Sin iglesia <span data-count class="ml-1 text-[10px] text-slate-400">0</span>
                           </button>
                         </div>
                         <div class="flex flex-col md:flex-row md:items-center gap-2">
                           <div class="relative flex-1 min-w-0">
-                            <input id="admin-followups-search" type="search" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar por nombre, correo o ref..." />
+                            <input id="admin-followups-search" type="search" aria-label="Buscar alertas y acciones" class="w-full min-h-11 bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar por nombre, correo o ref..." />
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
@@ -862,7 +863,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                           <div class="flex flex-wrap items-center gap-2 md:justify-end">
                             <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                               Orden
-                              <select id="admin-followups-sort" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                              <select id="admin-followups-sort" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                 <option value="recent_desc">Más recientes</option>
                                 <option value="recent_asc">Más antiguos</option>
                                 <option value="amount_desc">Mayor monto</option>
@@ -870,7 +871,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                             </label>
                             <label class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                               Ver
-                              <select id="admin-followups-page-size" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#293C74]">
+                              <select id="admin-followups-page-size" class="min-h-11 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-[#293C74]">
                                 <option value="6">6</option>
                                 <option value="12" selected>12</option>
                                 <option value="24">24</option>
@@ -897,13 +898,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
                         <p class="text-xs text-white/60 mb-4">Gestión rápida de administradores globales.</p>
                         
                         <div class="space-y-2">
-                            <input id="admin-invite-email" class="w-full bg-white/10 border-none rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:ring-1 focus:ring-white/30" placeholder="Email nuevo admin">
-                            <select id="admin-invite-role" class="w-full bg-white/10 border-none rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-white/30">
+                            <input id="admin-invite-email" type="email" aria-label="Correo del nuevo administrador" class="w-full min-h-11 bg-white/10 border-none rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:ring-1 focus:ring-white/30" placeholder="Email nuevo admin">
+                            <select id="admin-invite-role" aria-label="Rol del nuevo administrador" class="w-full min-h-11 bg-white/10 border-none rounded-xl px-3 py-2 text-xs text-white focus:ring-1 focus:ring-white/30">
                                <option value="admin" class="text-black">Admin</option>
                                <option value="superadmin" class="text-black">Superadmin</option>
                             </select>
-                            <button id="admin-invite-btn" class="w-full bg-white text-slate-900 py-2 rounded-xl text-xs font-bold hover:bg-white/90 transition">Crear Admin</button>
-                            <p id="admin-invite-status" class="text-[10px] mt-1 opacity-60"></p>
+                            <button id="admin-invite-btn" type="button" class="w-full min-h-11 bg-white text-slate-900 py-2 rounded-xl text-xs font-bold hover:bg-white/90 transition">Crear Admin</button>
+                            <p id="admin-invite-status" class="text-[10px] mt-1 opacity-60" role="status" aria-live="polite"></p>
                         </div>
                      </div>
                   </div>
@@ -919,38 +920,38 @@ import Sidebar from '@components/portal/Sidebar.astro';
         </div>
       </section>
     </div>
-    <div id="onboarding-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div class="w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-8 md:p-10">
+    <div id="onboarding-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="onboarding-title" aria-describedby="onboarding-description" aria-hidden="true">
+      <div class="w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 md:p-8" tabindex="-1">
         <div class="flex items-start justify-between gap-4 mb-6">
           <div>
             <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Portal Maná</p>
-            <h2 class="text-2xl md:text-3xl font-display font-bold text-[#293C74]">Completa tu perfil</h2>
-            <p class="text-sm text-slate-600 mt-2">Estos datos nos ayudan a organizar tu participación y asignarte correctamente.</p>
+            <h2 id="onboarding-title" class="text-2xl md:text-3xl font-display font-bold text-[#293C74]">Completa tu perfil</h2>
+            <p id="onboarding-description" class="text-sm text-slate-600 mt-2">Estos datos nos ayudan a organizar tu participación y asignarte correctamente.</p>
           </div>
         </div>
 
         <form id="onboarding-form" class="space-y-5">
           <div class="space-y-2">
-            <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre completo</label>
-            <input type="text" id="onboard-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Tu nombre completo">
+            <label for="onboard-name" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre completo</label>
+            <input type="text" id="onboard-name" required autocomplete="name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Tu nombre completo">
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-2">
-              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
-              <input type="text" id="onboard-phone" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="+57 300 000 0000">
+              <label for="onboard-phone" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Teléfono / WhatsApp</label>
+              <input type="tel" id="onboard-phone" autocomplete="tel" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="+57 300 000 0000">
             </div>
             <div class="space-y-2">
-              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
-              <input type="text" id="onboard-city" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Ciudad">
+              <label for="onboard-city" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
+              <input type="text" id="onboard-city" autocomplete="address-level2" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Ciudad">
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="space-y-2">
-              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
-              <input type="text" id="onboard-country" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="País">
+              <label for="onboard-country" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País</label>
+              <input type="text" id="onboard-country" autocomplete="country-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="País">
             </div>
             <div class="space-y-2">
-              <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Mi relación con Maná</label>
+              <label for="onboard-affiliation" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Mi relación con Maná</label>
               <select id="onboard-affiliation" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium">
                 <option value="">Selecciona una opción</option>
                 <option value="local">Asisto a una sede</option>
@@ -960,13 +961,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
           </div>
           <div id="onboard-church-wrapper" class="space-y-2 hidden">
-            <label class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre de la sede / iglesia</label>
+            <label for="onboard-church-name" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre de la sede / iglesia</label>
             <input type="text" id="onboard-church-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Ej: Maná Medellín">
           </div>
 
-          <div class="flex items-center justify-between pt-4">
-            <p id="onboarding-status" class="text-sm text-slate-600"></p>
-            <button type="submit" class="bg-[#293C74] text-white px-10 py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all">
+          <div class="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p id="onboarding-status" class="text-sm text-slate-600" role="status" aria-live="polite"></p>
+            <button type="submit" class="min-h-11 bg-[#293C74] text-white px-8 py-3 rounded-2xl font-bold hover:shadow-lg hover:shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all">
               Guardar perfil
             </button>
           </div>
@@ -974,59 +975,60 @@ import Sidebar from '@components/portal/Sidebar.astro';
       </div>
     </div>
 
-    <div id="portal-alert-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 md:p-7">
+    <div id="portal-alert-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="portal-alert-title" aria-describedby="portal-alert-message" aria-hidden="true">
+      <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 md:p-8" tabindex="-1">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Portal Maná</p>
             <h3 id="portal-alert-title" class="text-lg font-display font-bold text-[#293C74]">Atención</h3>
           </div>
-          <button id="portal-alert-close" class="w-8 h-8 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold">
+          <button id="portal-alert-close" type="button" aria-label="Cerrar aviso" class="w-11 h-11 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold">
             <span aria-hidden="true">×</span>
           </button>
         </div>
         <p id="portal-alert-message" class="text-sm text-slate-600 mt-3"></p>
         <div class="mt-6 flex justify-end">
-          <button id="portal-alert-ok" class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">Entendido</button>
+          <button id="portal-alert-ok" type="button" class="min-h-11 px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">Entendido</button>
         </div>
       </div>
     </div>
 
-    <div id="portal-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 md:p-7">
+    <div id="portal-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="portal-confirm-title" aria-describedby="portal-confirm-message" aria-hidden="true">
+      <div class="w-full max-w-md bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 md:p-8" tabindex="-1">
         <div class="flex items-start justify-between gap-4">
           <div>
             <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Portal Maná</p>
             <h3 id="portal-confirm-title" class="text-lg font-display font-bold text-[#293C74]">Confirmar</h3>
           </div>
-          <button id="portal-confirm-close" class="w-8 h-8 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold">
+          <button id="portal-confirm-close" type="button" aria-label="Cerrar confirmación" class="w-11 h-11 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold">
             <span aria-hidden="true">×</span>
           </button>
         </div>
         <p id="portal-confirm-message" class="text-sm text-slate-600 mt-3"></p>
         <div class="mt-6 flex flex-wrap justify-end gap-2">
-          <button id="portal-confirm-cancel" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
-          <button id="portal-confirm-ok" class="px-4 py-2 rounded-xl bg-[#E15554] text-white text-xs font-bold hover:bg-[#D94B4A]">Confirmar</button>
+          <button id="portal-confirm-cancel" type="button" class="min-h-11 px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <button id="portal-confirm-ok" type="button" class="min-h-11 px-4 py-2 rounded-xl bg-[#E15554] text-white text-xs font-bold hover:bg-[#D94B4A]">Confirmar</button>
         </div>
       </div>
     </div>
 
-    <div id="booking-inspector-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div class="w-full max-w-6xl max-h-[92vh] overflow-hidden bg-white rounded-[2rem] shadow-2xl border border-slate-100 flex flex-col">
+    <div id="booking-inspector-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="booking-inspector-title" aria-describedby="booking-inspector-subtitle" aria-hidden="true">
+      <div class="w-full max-w-6xl max-h-[calc(100vh-2rem)] overflow-hidden bg-white rounded-[2rem] shadow-2xl border border-slate-100 flex flex-col" tabindex="-1">
         <div class="px-6 md:px-8 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
           <div class="min-w-0">
             <p class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Reserva Cumbre</p>
             <h3 id="booking-inspector-title" class="text-xl md:text-2xl font-display font-bold text-[#293C74] truncate">Detalle de reserva</h3>
             <p id="booking-inspector-subtitle" class="text-xs text-slate-500 mt-1">Cargando...</p>
           </div>
-          <button id="booking-inspector-close" class="w-9 h-9 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold shrink-0">
+          <button id="booking-inspector-close" type="button" aria-label="Cerrar detalle de reserva" class="w-11 h-11 rounded-full bg-slate-50 text-[#293C74] hover:bg-[#293C74] hover:text-white flex items-center justify-center transition-colors font-bold shrink-0">
             <span aria-hidden="true">×</span>
           </button>
         </div>
 
         <div class="px-6 md:px-8 py-4 border-b border-slate-100 bg-slate-50/60">
           <div class="relative max-w-xl">
-            <input id="booking-inspector-search" type="search" class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar en esta reserva: participante, correo, documento o referencia..." />
+            <label for="booking-inspector-search" class="sr-only">Buscar en esta reserva</label>
+            <input id="booking-inspector-search" type="search" class="w-full min-h-11 bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-[#293C74] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#293C74] focus:border-[#293C74]" placeholder="Buscar en esta reserva: participante, correo, documento o referencia..." />
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>

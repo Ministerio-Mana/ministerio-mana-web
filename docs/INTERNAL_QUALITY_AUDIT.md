@@ -29,11 +29,11 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 
 | Fase | Ruta o superficie | Riesgo principal | Estado |
 | --- | --- | --- | --- |
-| 1 | `BaseLayout`, modal global y navegación lateral | Teclado, foco, consistencia y permisos visibles | Cumple en código y prueba local; verificación de permisos en producción pendiente |
-| 1 | `/portal/ingresar` | Autenticación, recuperación y privacidad | Cumple en código y prueba local; acceso real pendiente |
-| 1 | `/portal/registro` | Datos personales, contraseña y validación | Cumple en código y prueba local; registro real pendiente |
-| 1 | `/portal/activar` | Credencial nueva y enlace temporal | Cumple en código y prueba local; enlace real pendiente |
-| 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Pendiente |
+| 1 | `BaseLayout`, modal global y navegación lateral | Teclado, foco, consistencia y permisos visibles | Cumple en código y producción; variación completa por roles pendiente |
+| 1 | `/portal/ingresar` | Autenticación, recuperación y privacidad | Cumple en código y producción; ingreso y recuperación reales pendientes |
+| 1 | `/portal/registro` | Datos personales, contraseña y validación | Cumple en código y producción; registro real pendiente |
+| 1 | `/portal/activar` | Credencial nueva y enlace temporal | Cumple en código y producción; activación real pendiente |
+| 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Parcial: estructura, formularios y diálogos corregidos; datos dinámicos y roles en revisión |
 | 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Pendiente |
@@ -61,11 +61,34 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Revisión local a 320 px sin desborde horizontal, campos sin etiqueta ni controles táctiles menores a 44 px.
 - Validación vacía comprobada: dos campos marcados, diálogo anunciado, foco en “Cerrar aviso”, cierre con `Escape` y retorno al botón de envío.
 
-### Cierre requerido para cada ruta de la fase 1
+### Verificación de producción de la fase 1
 
-- Verificación de producción a 390 px y escritorio después del despliegue.
+- A 390 px, ingreso y registro no tienen desborde horizontal, campos sin etiqueta ni objetivos táctiles menores a 44 px.
+- El diálogo de validación se anuncia, recibe el foco, cierra con `Escape` y devuelve el foco al control que lo abrió.
+- Activación sin token presenta un estado seguro y mantiene inhabilitados los controles que no pueden ejecutarse.
+- A 390 y 1280 px, la navegación lateral conserva ubicación, cierre con `Escape` y objetivos de 44 px.
+
+### Cierre humano requerido para cada ruta de la fase 1
+
 - Confirmación con cuenta real de que errores y carga preservan los datos escritos.
 - Prueba real de ingreso, recuperación, registro y activación únicamente con cuentas autorizadas.
+
+## Registro de la fase 2 — `/portal`
+
+### Evidencia implementada
+
+- Un solo `h1` para el panel; cada pestaña usa un título asociado a su región y actualiza `aria-hidden` al cambiar.
+- Carga, error y datos parciales tienen estados anunciables y acciones de reintento sin eventos inline.
+- Perfil, seguridad, onboarding, filtros operativos e invitaciones cuentan con nombres accesibles y ayuda persistente cuando aplica.
+- Objetivos táctiles estáticos críticos migrados a 44 px; la deuda de espaciado de `src/pages/portal` bajó de 387 a 359 clases.
+- Onboarding, aviso, confirmación y detalle de reserva tienen semántica de diálogo, encierro de foco, cierre seguro con `Escape` y devolución del foco. El onboarding obligatorio no se descarta con `Escape`.
+- Contrato automático ampliado de cuatro a seis verificaciones.
+
+### Cierre técnico requerido para `/portal`
+
+- Auditar y migrar los componentes generados dinámicamente por `portal-dashboard.js`, `portal-user-event-view.js`, `RegistrationModal` y `ChurchSelector`.
+- Probar las cinco pestañas con roles usuario, pastor, finanzas y administrador, sin ampliar permisos visibles ni efectivos.
+- Verificar en producción a 390 y 1280 px después del despliegue de esta fase.
 
 ## Regla de actualización
 

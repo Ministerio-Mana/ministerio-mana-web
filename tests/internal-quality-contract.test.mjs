@@ -58,3 +58,34 @@ test('ingreso, registro y activación mantienen etiquetas, ayuda y estados acces
   assert.match(activate, /aria-describedby="activate-password-help"/);
   assert.match(activate, /id="activate-status-container"[^>]*role="status" aria-live="polite"/);
 });
+
+test('el panel principal conserva una jerarquía única y pestañas anunciables', async () => {
+  const panel = await readSource('src/pages/portal/index.astro');
+  const h1Headings = [...panel.matchAll(/<h1\b/g)];
+
+  assert.equal(h1Headings.length, 1, 'el panel debe tener un solo h1');
+  assert.match(panel, /id="tab-resumen"[^>]*role="region"[^>]*aria-labelledby="tab-resumen-title"[^>]*aria-hidden="false"/);
+  assert.match(panel, /id="tab-perfil"[^>]*role="region"[^>]*aria-labelledby="tab-perfil-title"[^>]*aria-hidden="true"/);
+  assert.match(panel, /id="account-loading"[^>]*role="status" aria-live="polite"/);
+  assert.doesNotMatch(panel, /onclick=/);
+});
+
+test('los diálogos del panel controlan foco, Escape y tamaños táctiles', async () => {
+  const [panel, dashboard] = await Promise.all([
+    readSource('src/pages/portal/index.astro'),
+    readSource('src/scripts/portal-dashboard.js'),
+  ]);
+
+  for (const id of ['onboarding-modal', 'portal-alert-modal', 'portal-confirm-modal', 'booking-inspector-modal']) {
+    assert.match(panel, new RegExp(`id="${id}"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-[^>]+aria-hidden="true"`));
+  }
+  for (const id of ['portal-alert-close', 'portal-confirm-close', 'booking-inspector-close']) {
+    assert.match(panel, new RegExp(`id="${id}"[^>]*aria-label="[^"]+"[^>]*w-11 h-11`));
+  }
+  assert.match(dashboard, /function getPortalModalFocusables/);
+  assert.match(dashboard, /event\.key === 'Escape'/);
+  assert.match(dashboard, /event\.key !== 'Tab'/);
+  assert.match(dashboard, /returnFocus\?\.focus\(\)/);
+  assert.match(dashboard, /content\.setAttribute\('aria-hidden', 'false'\)/);
+  assert.match(dashboard, /content\.setAttribute\('aria-hidden', 'true'\)/);
+});

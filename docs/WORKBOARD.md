@@ -40,7 +40,7 @@
   - Branch: `main`
   - Scope: sistema visual, accesibilidad, rendimiento, formularios, navegación, datos, privacidad, resiliencia y seguridad percibida
   - Description: Convertir los no negociables del producto en criterios medibles, pruebas de aceptación y una auditoría gradual sin romper flujos operativos existentes.
-  - Status: Carta base consolidada y matriz interna de 45 controles activa. Gestión/Operación de Eventos, Finanzas, invitación pública y fase 1 interna llegaron a cero infracciones en sus archivos estrictos. Ingreso, registro, activación, navegación y modal global tienen contratos de teclado, foco, 44 px y responsive. La deuda global bajó de 1.906 a 1.553 clases fuera de escala y de 1.212 a 1.172 declaraciones CSS. Continúa auditoría ruta por ruta.
+  - Status: Carta base consolidada y matriz interna de 45 controles activa. Gestión/Operación de Eventos, Finanzas, invitación pública y fase 1 interna llegaron a cero infracciones en sus archivos estrictos. Ingreso, registro, activación, navegación y modal global tienen contratos de teclado, foco, 44 px y responsive. En `/portal` ya se corrigieron jerarquía, estados, etiquetas y diálogos; continúa la migración de contenido dinámico y la prueba por roles. La deuda global bajó de 1.906 a 1.525 clases fuera de escala y de 1.212 a 1.172 declaraciones CSS.
 
 - MANA-021 Revisión visual y móvil de páginas públicas
   - Owner: Equipo web
