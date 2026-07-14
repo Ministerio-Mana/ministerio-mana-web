@@ -322,6 +322,8 @@ class DonationWidget {
 
         // Update CTA state
         const hasAmount = this.amount >= config.min;
+        const ctaEnabled = this.donorInfoVisible || hasAmount;
+        this.dom.cta.disabled = !ctaEnabled;
         if (this.donorInfoVisible) {
             // CTA is in "submit" mode — always enabled
             this.dom.cta.classList.remove('opacity-50', 'pointer-events-none');

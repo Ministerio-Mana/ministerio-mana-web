@@ -61,3 +61,46 @@ test('el detalle público de Peticiones anuncia el diálogo y devuelve el foco',
   assert.match(logic, /event\.key !== 'Escape'/);
   assert.match(logic, /trigger instanceof HTMLElement && trigger\.isConnected/);
 });
+
+test('Peticiones reserva ranuras reales y mantiene papeles accesibles', async () => {
+  const [view, logic] = await Promise.all([
+    readProjectFile('src/components/PrayerWall.astro'),
+    readProjectFile('src/scripts/prayer-wall.js'),
+  ]);
+
+  assert.match(logic, /position\[4\] === 'vertical'/);
+  assert.match(logic, /note\.setAttribute\('role', 'button'\)/);
+  assert.match(logic, /note\.setAttribute\('aria-haspopup', 'dialog'\)/);
+  assert.match(logic, /MOBILE_SLOTS\.length : DESKTOP_SLOTS\.length/);
+  assert.doesNotMatch(logic, /dataset\.labelSide/);
+  assert.match(view, /\.prayer-note\[data-paper-orientation="vertical"\]/);
+  assert.match(view, /min-height: 2\.75rem/);
+  assert.match(view, /font-family: "Summer Loving", "Segoe Print", cursive/);
+});
+
+test('el mapa público mantiene marcadores y acciones con área táctil accesible', async () => {
+  const [map, directory] = await Promise.all([
+    readProjectFile('src/components/ChurchesMap.astro'),
+    readProjectFile('src/pages/iglesias/index.astro'),
+  ]);
+
+  assert.match(map, /iconSize: \[44, 44\]/);
+  assert.match(map, /marker\.getElement\(\)\?\.setAttribute\('aria-label'/);
+  assert.match(map, /\.leaflet-popup-close-button[\s\S]*height: 44px/);
+  assert.match(map, /\.mana-popup-btn[\s\S]*min-height: 44px/);
+  assert.match(directory, /class="flex min-h-11 items-center justify-center gap-2 py-3/);
+});
+
+test('Campus etiqueta los datos de pago y deshabilita la acción inválida', async () => {
+  const [view, logic] = await Promise.all([
+    readProjectFile('src/components/campus/DonationForm.astro'),
+    readProjectFile('src/scripts/campus-donation.js'),
+  ]);
+
+  assert.match(view, /for=\{amountInputId\}/);
+  assert.match(view, /autocomplete="name"/);
+  assert.match(view, /autocomplete="email"/);
+  assert.match(view, /role="alert" aria-live="assertive"/);
+  assert.match(view, /<button type="button" disabled class="donate-cta/);
+  assert.match(logic, /this\.dom\.cta\.disabled = !ctaEnabled/);
+});

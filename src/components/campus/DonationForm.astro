@@ -23,6 +23,14 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
       minLabel: 'Mínimo $5 USD',
       provider: 'Stripe',
     };
+const amountInputId = `campus-amount-${slug}`;
+const amountContextId = `campus-amount-context-${slug}`;
+const donorNameId = `campus-donor-name-${slug}`;
+const donorEmailId = `campus-donor-email-${slug}`;
+const donorPhoneId = `campus-donor-phone-${slug}`;
+const donorCityId = `campus-donor-city-${slug}`;
+const donorDocumentTypeId = `campus-document-type-${slug}`;
+const donorDocumentNumberId = `campus-document-number-${slug}`;
 ---
 
 <div class="donation-widget relative p-4 sm:p-6 transition-all group overflow-visible"
@@ -60,13 +68,16 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
         <!-- Custom Amount — organic border -->
         <div class="custom-amount-control">
           <div class="mb-4 text-center">
-            <p class="amount-title text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Escribe tu donación</p>
-            <p class="currency-context mt-1 text-[10px] font-intro-reg text-gray-500">{initialCurrency.context}</p>
+            <label for={amountInputId} class="amount-title text-[10px] font-intro uppercase text-[#001B3A] tracking-widest">Escribe tu donación</label>
+            <p id={amountContextId} class="currency-context mt-1 text-[10px] font-intro-reg text-gray-500">{initialCurrency.context}</p>
           </div>
           <div class="relative mb-2 group-input select-organic p-2">
             <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
-            <input type="text"
+            <input id={amountInputId}
+                   name="amount"
+                   type="text"
                    inputmode="decimal"
+                   aria-describedby={amountContextId}
                    class="custom-amount-input min-h-11 w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
                    placeholder={initialCurrency.placeholder}>
             <span class="currency-code sr-only">{initialCurrency.code}</span>
@@ -93,12 +104,17 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
       <!-- Donor Info (inline, shown in same form) -->
       <div class="donor-info-section hidden mb-6 space-y-3">
         <p class="text-center text-[10px] font-intro uppercase text-gray-400 tracking-widest mb-2">Tus datos para el pago</p>
-        <input type="text" class="donor-name-input donor-input-single w-full" placeholder="Nombre completo *">
-        <input type="email" class="donor-email-input donor-input-single w-full" placeholder="tucorreo@email.com *">
-        <input type="tel" class="donor-phone-input donor-input-single w-full" placeholder="Teléfono / WhatsApp">
-        <input type="text" class="donor-city-input donor-input-single w-full" placeholder="Ciudad">
+        <label for={donorNameId} class="sr-only">Nombre completo</label>
+        <input id={donorNameId} name="full_name" type="text" autocomplete="name" class="donor-name-input donor-input-single w-full" placeholder="Nombre completo *">
+        <label for={donorEmailId} class="sr-only">Correo electrónico</label>
+        <input id={donorEmailId} name="email" type="email" autocomplete="email" class="donor-email-input donor-input-single w-full" placeholder="tucorreo@email.com *">
+        <label for={donorPhoneId} class="sr-only">Teléfono o WhatsApp</label>
+        <input id={donorPhoneId} name="phone" type="tel" autocomplete="tel" class="donor-phone-input donor-input-single w-full" placeholder="Teléfono / WhatsApp">
+        <label for={donorCityId} class="sr-only">Ciudad</label>
+        <input id={donorCityId} name="city" type="text" autocomplete="address-level2" class="donor-city-input donor-input-single w-full" placeholder="Ciudad">
         <div class="campus-document-fields space-y-3">
-          <select class="donor-document-type-input donor-input-single w-full" aria-label="Tipo de documento">
+          <label for={donorDocumentTypeId} class="sr-only">Tipo de identificación</label>
+          <select id={donorDocumentTypeId} name="document_type" class="donor-document-type-input donor-input-single w-full">
             <option value="">Tipo de identificación *</option>
             <option value="CC">Cédula de ciudadanía</option>
             <option value="CE">Cédula de extranjería</option>
@@ -106,7 +122,8 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
             <option value="PAS">Pasaporte</option>
             <option value="NIT">NIT</option>
           </select>
-          <input type="text" class="donor-document-number-input donor-input-single w-full" placeholder="Número de identificación *">
+          <label for={donorDocumentNumberId} class="sr-only">Número de identificación</label>
+          <input id={donorDocumentNumberId} name="document_number" type="text" autocomplete="off" class="donor-document-number-input donor-input-single w-full" placeholder="Número de identificación *">
           <p class="document-help text-[10px] font-intro-reg text-gray-400 text-center">
             Requerido para pagos procesados en Colombia por Wompi.
           </p>
@@ -119,22 +136,22 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
           Para una siembra mensual necesitas iniciar sesión o crear una cuenta. Así podrás pausar, reactivar o cancelar desde el portal.
         </p>
         <div class="mt-4 grid gap-2">
-          <a class="account-login-link inline-flex items-center justify-center rounded-lg bg-[#001B3A] px-3 py-2 text-[10px] font-intro uppercase tracking-widest text-white" href="/portal/ingresar">
+          <a class="account-login-link inline-flex min-h-11 items-center justify-center rounded-lg bg-[#001B3A] px-3 py-2 text-[10px] font-intro uppercase tracking-widest text-white" href="/portal/ingresar">
             Iniciar sesión
           </a>
-          <a class="account-register-link inline-flex items-center justify-center rounded-lg border border-[#001B3A]/20 bg-white px-3 py-2 text-[10px] font-intro uppercase tracking-widest text-[#001B3A]" href="/portal/registro">
+          <a class="account-register-link inline-flex min-h-11 items-center justify-center rounded-lg border border-[#001B3A]/20 bg-white px-3 py-2 text-[10px] font-intro uppercase tracking-widest text-[#001B3A]" href="/portal/registro">
             Crear cuenta
           </a>
         </div>
       </div>
 
       <!-- Error message -->
-      <div class="donation-error hidden text-center mb-3">
+      <div class="donation-error hidden text-center mb-3" role="alert" aria-live="assertive">
         <p class="text-red-600 text-xs font-intro-reg bg-red-50 py-2 px-3 rounded-lg inline-block"></p>
       </div>
 
       <!-- CTA Button — scribble style -->
-      <button type="button" class="donate-cta btn-scribble block w-full py-4 bg-[#001B3A] text-white font-intro text-center text-sm uppercase tracking-widest flex items-center justify-center gap-2 opacity-50 pointer-events-none">
+      <button type="button" disabled class="donate-cta btn-scribble block w-full py-4 bg-[#001B3A] text-white font-intro text-center text-sm uppercase tracking-widest flex items-center justify-center gap-2 opacity-50 pointer-events-none disabled:cursor-not-allowed">
         <span class="cta-text">Donar Ahora</span>
         <SowingIcon class="cta-icon" />
       </button>
@@ -144,7 +161,7 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
          Pago seguro vía <span class="provider-name text-gray-500 font-bold">{initialCurrency.provider}</span>
       </p>
       <p class="mt-2 text-center text-[10px] font-intro-reg text-gray-400">
-        Al donar aceptas los <a href="/donaciones/terminos-suscripciones" class="font-bold text-[#001B3A] underline decoration-brand-teal/60 underline-offset-2">terminos de donaciones y suscripciones</a>.
+        Al donar aceptas los <a href="/donaciones/terminos-suscripciones" class="inline-flex min-h-11 items-center font-bold text-[#001B3A] underline decoration-brand-teal/60 underline-offset-2">términos de donaciones y suscripciones</a>.
       </p>
   </div>
 </div>

@@ -397,6 +397,14 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Si Cumbre sigue operativa, realizar una única escritura controlada con reserva, soporte y monto reales previamente autorizados. Verificar una sola fila de pago, una sola donación vinculada, totales y conciliación completa; no repetir una operación marcada para revisión.
 - Confirmar que cualquier integración técnica que aún use esta ruta envía el secreto solo por encabezado. Retirar enlaces, favoritos, documentación o registros históricos que lo hayan incluido en la URL.
 
+## Pasada autenticada de solo lectura — 14 de julio de 2026
+
+- Se recorrieron en producción `/portal`, `/portal/events`, `/portal/finances`, `/portal/donations`, `/portal/peticiones`, `/portal/content`, `/portal/church-page`, `/portal/campus`, `/portal/users` y `/portal/regions` con una sesión autorizada, sin abrir ni enviar operaciones de escritura.
+- Las diez rutas mantuvieron un solo `h1`, cero desbordamiento horizontal, cero campos visibles sin etiqueta y cero objetivos táctiles menores de 44 px en la vista de escritorio revisada.
+- Los dos supuestos errores de imagen de Eventos pertenecían a vistas previas ocultas todavía sin `src`; no son imágenes visibles rotas. La auditoría repetible ahora descarta elementos ocultos al contar fallos de carga.
+- Contenido dejó de mostrar carga visible después del tiempo de estabilización. La página de iglesia conserva su compuerta de activación hasta que se ejecute `church_public_pages.sql` y exista una sede controlada; no se forzó una publicación.
+- La matriz productiva previa ya cubre 390 px y 1280 px para los módulos internos principales. Siguen pendientes las variaciones reales por rol y las mutaciones controladas descritas en cada cierre humano.
+
 ## Regla de actualización
 
 Cada fase debe dejar: archivos estrictos cuando lleguen a cero, pruebas ejecutadas, hallazgos pendientes con responsable y una revisión en producción. Las decisiones humanas se copian a `PENDIENTES_USUARIO_2026-07-13.md`; las brechas técnicas permanecen en MANA-025 hasta cerrarse.

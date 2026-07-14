@@ -49,6 +49,8 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 
 - [ ] Confirmar que el footer muestra la miniatura del devocional más reciente y no el logo fijo. Reproducir, pausar y cambiar de video una vez.
 - [ ] En `/peticiones/`, abrir una petición con teclado, cerrarla con `Escape` y confirmar que el foco regresa a la tarjeta sin pulsar `Oré`.
+- [ ] En `/peticiones/`, revisar visualmente en celular y escritorio que los papeles funcionales horizontales y verticales quedan dentro de las ranuras del muro, no cubren papeles decorativos y el nombre manuscrito se entiende.
+- [ ] En `/campus/`, elegir un monto de prueba sin completar el pago; confirmar que el formulario muestra etiquetas comprensibles, lleva el foco al primer dato requerido y conserva lo escrito al provocar un error de validación.
 
 ### Decisiones que debe dejar definidas el usuario
 

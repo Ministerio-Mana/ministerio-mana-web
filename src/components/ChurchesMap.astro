@@ -169,9 +169,9 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
     const markerIcon = L.divIcon({
       className: 'mana-map-pin',
       html: `<div class="mana-pin-wrap"><div class="mana-pin-pulse"></div><div class="mana-pin-core"></div></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-      popupAnchor: [0, -8],
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22],
     });
 
     const mapContinentControl = document.getElementById('map-continent-control');
@@ -241,9 +241,14 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
         </div>
       `;
 
-      L.marker(latLng, { icon: markerIcon }).addTo(markerLayer).bindPopup(popupHtml, {
+      const marker = L.marker(latLng, {
+        icon: markerIcon,
+        title: church.name,
+        alt: `Iglesia ${church.name}, ${city}`,
+      }).addTo(markerLayer).bindPopup(popupHtml, {
         className: 'mana-popup-wrapper',
       });
+      marker.getElement()?.setAttribute('aria-label', `Iglesia ${church.name}, ${city}`);
     });
 
     const globalBounds = allCoords.length ? L.latLngBounds(allCoords) : null;
@@ -501,9 +506,9 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: white !important;
     border-radius: 999px !important;
-    width: 40px !important;
-    height: 40px !important;
-    line-height: 40px !important;
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
     margin-bottom: 8px !important;
     transition: all 0.2s ease;
   }
@@ -515,15 +520,18 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
 
   .mana-pin-wrap {
     position: relative;
-    width: 18px;
-    height: 18px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
   }
 
   .mana-pin-pulse {
     position: absolute;
-    inset: 0;
+    height: 18px;
+    left: 13px;
+    top: 13px;
+    width: 18px;
     border-radius: 999px;
     background: rgba(45, 212, 191, 0.35);
     animation: mana-pin-pulse 1.9s ease-out infinite;
@@ -570,6 +578,14 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
+  .leaflet-popup-close-button {
+    align-items: center;
+    display: flex !important;
+    height: 44px !important;
+    justify-content: center;
+    width: 44px !important;
+  }
+
   .mana-popup-card {
     display: grid;
     gap: 8px;
@@ -605,6 +621,10 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
   }
 
   .mana-popup-btn {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    min-height: 44px;
     text-decoration: none;
     font-size: 11px;
     font-weight: 700;

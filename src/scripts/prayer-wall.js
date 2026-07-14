@@ -1,82 +1,53 @@
 const DESKTOP_SLOTS = [
-  [23.2, 16.4, -3, 0, 'right'],
-  [56, 16.4, 1, 3, 'right'],
-  [82.3, 30.2, -2, 2, 'left'],
-  [10, 35.5, 0, 1, 'right'],
-  [52.5, 40.6, 0, 1, 'left'],
-  [24.2, 44.8, 0, 1, 'left'],
-  [62.5, 44.8, -2, 3, 'right'],
-  [27.1, 72.9, 0, 1, 'right'],
-  [63.5, 72.9, 0, 1, 'left'],
-  [74.2, 38.4, 0, 1, 'left'],
-  [24.6, 72.9, 1, 3, 'right'],
-  [60.4, 72.9, -2, 0, 'left'],
-  [10, 23.5, 0, 1, 'right'],
-  [52.5, 35.6, 0, 1, 'left'],
+  [24.2, 16.4, -4, 0, 'horizontal'],
+  [56.2, 16.4, 2, 1, 'vertical'],
+  [82.4, 30.2, -3, 2, 'horizontal'],
+  [24.5, 44.8, 3, 3, 'horizontal'],
+  [62.3, 44.8, -4, 0, 'vertical'],
+  [28.2, 72.9, 2, 1, 'horizontal'],
+  [64.5, 72.9, -2, 2, 'horizontal'],
 ];
 
 const MOBILE_SLOTS = [
-  [23.2, 16.4, -3, 0, 'right'],
-  [56, 16.4, 1, 3, 'right'],
-  [82.3, 30.2, -2, 2, 'left'],
-  [10, 35.5, 0, 1, 'right'],
-  [52.5, 40.6, 0, 1, 'right'],
-  [27.1, 72.9, 0, 1, 'right'],
-  [63.5, 72.9, -2, 0, 'left'],
-  [24.2, 44.8, 0, 1, 'right'],
+  [24.2, 16.4, -4, 0, 'horizontal'],
+  [56.2, 16.4, 2, 1, 'vertical'],
+  [82.4, 30.2, -3, 2, 'horizontal'],
+  [24.5, 44.8, 3, 3, 'horizontal'],
+  [62.3, 44.8, -4, 0, 'vertical'],
+  [28.2, 72.9, 2, 1, 'horizontal'],
 ];
 
 const NOTE_PAPERS = [
   `
-    <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__paper-shadow" d="M16 46 L46 38 L51 51 L18 58 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M14 43 C25 38 36 42 47 36 L53 49 C38 48 28 56 15 55 Z" />
-      <path class="prayer-note__paper-fold" d="M24 43 C31 48 30 52 18 55" />
-      <path class="prayer-note__paper-shadow" d="M46 35 L91 25 L99 43 L48 52 Z" />
-      <path class="prayer-note__paper-body" d="M43 32 C58 26 75 33 94 24 L101 41 C80 39 64 50 44 49 Z" />
-      <path class="prayer-note__paper-fold" d="M54 33 C65 40 62 45 48 49" />
-      <path class="prayer-note__paper-line" d="M66 37 C76 33 84 35 93 31" />
-      <path class="prayer-note__paper-shadow" d="M78 19 L112 15 L115 31 L78 35 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M76 17 C87 13 99 19 112 14 L117 29 C102 26 91 36 77 32 Z" />
-      <path class="prayer-note__paper-fold" d="M86 17 C92 22 91 28 79 32" />
+    <svg viewBox="0 0 120 72" preserveAspectRatio="none" focusable="false">
+      <path class="prayer-note__paper-shadow" d="M8 10 L113 7 L117 64 L10 69 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M4 8 C31 3 80 11 114 5 L116 61 C82 57 38 70 6 65 Z" />
+      <path class="prayer-note__paper-fold" d="M18 9 C27 26 19 45 7 64" />
+      <path class="prayer-note__paper-line" d="M37 25 C56 21 75 27 94 22 M35 43 C57 39 77 45 98 39" />
     </svg>
   `,
   `
-    <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__paper-shadow" d="M40 15 L58 12 L61 36 L38 40 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M38 13 C46 9 54 15 60 11 L62 35 C52 31 44 41 37 37 Z" />
-      <path class="prayer-note__paper-fold" d="M44 15 C52 21 51 27 39 37" />
-      <path class="prayer-note__paper-shadow" d="M33 38 L63 33 L67 55 L34 59 Z" />
-      <path class="prayer-note__paper-body" d="M31 36 C43 31 53 38 64 31 L68 53 C55 50 44 61 32 57 Z" />
-      <path class="prayer-note__paper-fold" d="M41 36 C50 44 47 51 33 57" />
-      <path class="prayer-note__paper-shadow" d="M28 59 L56 54 L60 78 L29 81 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M27 57 C38 53 48 59 57 53 L61 76 C49 72 38 84 28 79 Z" />
-      <path class="prayer-note__paper-fold" d="M35 58 C45 65 42 72 29 79" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M54 60 C63 56 70 60 78 57 L80 76 C70 72 64 80 55 78 Z" />
+    <svg viewBox="0 0 120 72" preserveAspectRatio="none" focusable="false">
+      <path class="prayer-note__paper-shadow" d="M7 8 L112 10 L116 66 L8 68 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M5 6 C35 12 76 4 113 9 L114 62 C78 69 36 58 6 65 Z" />
+      <path class="prayer-note__paper-fold" d="M96 10 C87 29 99 45 113 61" />
+      <path class="prayer-note__paper-line" d="M25 26 C48 30 69 23 91 28 M23 44 C48 48 69 40 93 45" />
     </svg>
   `,
   `
-    <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__paper-shadow" d="M16 36 L46 31 L50 48 L17 51 Z" />
-      <path class="prayer-note__paper-body" d="M14 34 C25 30 36 35 47 29 L51 46 C38 43 29 53 15 49 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M42 32 C52 27 62 34 72 29 L76 47 C64 44 55 52 43 49 Z" />
-      <path class="prayer-note__paper-fold" d="M51 33 C58 39 56 44 44 49" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M74 42 C85 36 96 44 108 36 L113 53 C99 50 90 59 75 56 Z" />
-      <path class="prayer-note__paper-fold" d="M84 42 C94 49 91 54 76 56" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M91 27 C100 23 110 28 119 24 L122 39 C111 36 103 43 92 41 Z" />
+    <svg viewBox="0 0 120 72" preserveAspectRatio="none" focusable="false">
+      <path class="prayer-note__paper-shadow" d="M9 9 L114 6 L116 63 L8 68 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M5 7 C37 2 81 12 114 5 L114 60 C80 56 38 71 6 64 Z" />
+      <path class="prayer-note__paper-fold" d="M17 8 C28 25 20 47 7 63" />
+      <path class="prayer-note__paper-line" d="M36 24 C56 20 76 27 96 21 M34 43 C56 38 78 46 98 39" />
     </svg>
   `,
   `
-    <svg viewBox="0 0 128 86" focusable="false">
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M12 45 C23 40 33 48 43 42 L47 57 C35 54 26 62 13 58 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M33 42 C45 38 55 45 66 39 L70 58 C57 54 48 63 34 59 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M56 39 C68 35 80 43 91 36 L95 56 C82 52 72 62 57 58 Z" />
-      <path class="prayer-note__paper-body" d="M83 38 C97 33 107 40 120 34 L123 52 C109 48 99 58 84 55 Z" />
-      <path class="prayer-note__paper-fold" d="M21 45 C29 51 27 55 14 58" />
-      <path class="prayer-note__paper-fold" d="M44 43 C53 50 50 56 35 59" />
-      <path class="prayer-note__paper-fold" d="M67 40 C76 48 73 54 58 58" />
-      <path class="prayer-note__paper-fold" d="M94 39 C104 46 101 51 85 55" />
-      <path class="prayer-note__paper-line" d="M100 42 C107 39 113 41 119 38" />
+    <svg viewBox="0 0 120 72" preserveAspectRatio="none" focusable="false">
+      <path class="prayer-note__paper-shadow" d="M8 8 L112 10 L117 65 L9 68 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M5 6 C38 12 79 3 113 9 L115 61 C80 69 37 57 6 65 Z" />
+      <path class="prayer-note__paper-fold" d="M97 10 C87 27 99 46 114 60" />
+      <path class="prayer-note__paper-line" d="M24 25 C48 30 70 22 93 28 M23 44 C49 48 70 39 95 45" />
     </svg>
   `,
 ];
@@ -106,7 +77,7 @@ function getSlotPositions(root) {
 
 function getPageSize(root) {
   if (isCompact(root)) return 5;
-  return compactWallQuery.matches ? 6 : 9;
+  return compactWallQuery.matches ? MOBILE_SLOTS.length : DESKTOP_SLOTS.length;
 }
 
 function formatPager(root, current, total) {
@@ -222,9 +193,13 @@ function showPrayerDetail(root, row, note) {
   if (!detail) return;
 
   root.querySelectorAll('[data-prayer-card].is-open').forEach((item) => {
-    if (item !== note) item.classList.remove('is-open');
+    if (item !== note) {
+      item.classList.remove('is-open');
+      item.setAttribute('aria-expanded', 'false');
+    }
   });
   note.classList.add('is-open');
+  note.setAttribute('aria-expanded', 'true');
 
   const name = detail.querySelector('[data-prayer-detail-name]');
   const meta = detail.querySelector('[data-prayer-detail-meta]');
@@ -252,7 +227,10 @@ function closePrayerDetail(root, restoreFocus = true) {
   root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
     detail.hidden = true;
   });
-  root.querySelectorAll('[data-prayer-card].is-open').forEach((note) => note.classList.remove('is-open'));
+  root.querySelectorAll('[data-prayer-card].is-open').forEach((note) => {
+    note.classList.remove('is-open');
+    note.setAttribute('aria-expanded', 'false');
+  });
   const trigger = root.__prayerDetailTrigger;
   root.__prayerDetailTrigger = null;
   if (restoreFocus && trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
@@ -264,19 +242,16 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   note.className = `prayer-note${isNew && !prefersReducedMotion ? ' is-new' : ''}`;
   note.dataset.prayerCard = row.id;
   note.tabIndex = 0;
-  note.setAttribute('role', 'group');
+  note.setAttribute('role', 'button');
+  note.setAttribute('aria-haspopup', 'dialog');
+  note.setAttribute('aria-expanded', 'false');
   note.setAttribute('aria-label', `${row.first_name}. ${row.request_text}`);
   note.style.setProperty('--x', `${position[0]}%`);
   note.style.setProperty('--y', `${position[1]}%`);
   note.style.setProperty('--r', `${position[2]}deg`);
   const paperType = Number.isFinite(Number(position[3])) ? Number(position[3]) : index % NOTE_PAPERS.length;
   note.dataset.paperType = String(paperType);
-  note.dataset.labelSide =
-    typeof position[4] === 'string'
-      ? position[4]
-      : position[0] > (compactWallQuery.matches ? 58 : 62)
-        ? 'left'
-        : 'right';
+  note.dataset.paperOrientation = position[4] === 'vertical' ? 'vertical' : 'horizontal';
 
   const pin = document.createElement('span');
   pin.className = 'prayer-note__pin';

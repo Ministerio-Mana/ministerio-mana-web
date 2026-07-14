@@ -22,7 +22,7 @@ const locale = Astro.cookies.get('lang')?.value === 'en' ? 'en' : 'es';
     <div class="hidden lg:block"></div>
 
     <div class="z-50 flex shrink-0 items-center justify-end gap-2 sm:gap-3">
-      <a href="/donaciones/" class="hidden lg:inline-flex items-center justify-center rounded-full bg-[#28A6BD] px-6 py-2.5 text-sm font-bold text-[#0B1120] shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#5CCBE0] hover:text-[#0B1120] hover:shadow-lg">{t(locale,'nav_donate')}</a>
+      <a href="/donaciones/" class="hidden min-h-11 lg:inline-flex items-center justify-center rounded-full bg-[#28A6BD] px-6 py-2.5 text-sm font-bold text-[#0B1120] shadow-md transition-all hover:-translate-y-0.5 hover:bg-[#5CCBE0] hover:text-[#0B1120] hover:shadow-lg">{t(locale,'nav_donate')}</a>
       <AccountButton variant="dark" />
       <LangSwitch variant="dark" />
       <details class="relative lg:hidden">

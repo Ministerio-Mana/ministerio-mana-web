@@ -77,6 +77,22 @@ El contrato técnico vive en `src/lib/storyMotion.ts`, `src/styles/story-motion.
 - El footer ahora intenta la consulta inicial, usa miniaturas reales de YouTube incluso durante el respaldo y vuelve a intentar pronto si la fuente remota falla. No bloquea la página más de 320 ms.
 - El muro público de Peticiones cargó su registro sin desbordamiento ni exposición adicional. El detalle ahora se anuncia como diálogo, enfoca el cierre, acepta `Escape` y devuelve el foco a la petición que lo abrió.
 
+## Matriz responsive y correcciones — 14 de julio de 2026
+
+- La auditoría automatizada `npm run audit:public-ui` abre Chrome real a 1440 × 900, 768 × 1024 y 390 × 844. Comprueba desbordamiento, encabezados, imágenes, etiquetas, objetivos táctiles y contratos propios de Peticiones, Iglesias e Historia Maná.
+- `/peticiones/` conserva un solo `h1`, cero imágenes rotas, cero campos sin etiqueta y ningún desbordamiento en los tres anchos. Las peticiones funcionales usan siete ranuras reservadas en escritorio y seis en tableta o celular; no comparten posiciones con los papeles decorativos.
+- Cada petición visible es ahora un papel completo horizontal o vertical, con nombre manuscrito legible, área interactiva mínima de 44 px, foco visible y detalle separado. La paginación impide reutilizar una ranura dentro de la misma vista.
+- `/iglesias/` cargó 22 tarjetas y 22 marcadores en los tres anchos, sin desbordamiento, imágenes rotas, etiquetas faltantes ni objetivos menores de 44 px. Marcadores, zoom, cierre de popup y acciones de contacto tienen nombre accesible y superficie táctil completa.
+- `/home-ministerio`, Peregrinación, Campus y Devocional pasaron sin desbordamiento ni imágenes rotas. El regreso de Peregrinación se elevó a 44 px; Campus recibió etiquetas programáticas para monto y datos de pago, un error anunciable y estado `disabled` real antes de elegir un monto válido.
+- La revisión visual humana sigue siendo necesaria para juzgar ritmo, recorte artístico y comodidad del movimiento; la matriz automática evita declarar como correcto un diseño que técnicamente se desborde o pierda accesibilidad.
+
+## Frontera de almacenamiento público y privado
+
+- ImageKit es la fuente recomendada para portadas, galerías, escenas y artes públicos de iglesias, eventos y páginas. Su CDN entrega variantes responsive y formatos optimizados sin exponer bibliotecas internas.
+- SharePoint conserva originales operativos, Excel, comprobantes, documentos, aprobaciones y archivos sujetos a auditoría o retención. No se usa como CDN de la experiencia pública.
+- Solo se conserva una copia maestra en SharePoint cuando exista una necesidad aprobada de archivo institucional. No se duplican automáticamente todos los medios públicos, para evitar almacenamiento, sincronización y gobierno innecesarios.
+- Esta separación mantiene la página rápida y pública en ImageKit, mientras los archivos sensibles permanecen privados y sujetos a permisos en SharePoint.
+
 ## Cierre humano de esta fase
 
 - Revisar `/home-ministerio` y la peregrinación en escritorio, tableta y celular.
