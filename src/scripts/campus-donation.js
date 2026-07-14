@@ -200,7 +200,7 @@ class DonationWidget {
 
         config.options.forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'btn-scribble py-2 px-1 text-sm font-intro text-[#001B3A] bg-transparent transition-all amount-btn';
+            btn.className = 'btn-scribble min-h-11 py-2 px-1 text-sm font-intro text-[#001B3A] bg-transparent transition-all amount-btn';
             btn.textContent = opt.label;
             btn.type = 'button';
             btn.dataset.value = opt.value;

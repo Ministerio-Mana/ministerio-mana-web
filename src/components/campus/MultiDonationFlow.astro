@@ -147,8 +147,8 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
             <div class="max-w-xl mx-auto">
                 <!-- Frequency -->
                 <div class="flex gap-3 mb-6 max-w-xs mx-auto">
-                    <button type="button" class="multi-freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-white" data-freq="monthly" style="background-color: #001B3A;">Mensual</button>
-                    <button type="button" class="multi-freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-white/50" data-freq="once">Única vez</button>
+                    <button type="button" class="multi-freq-btn btn-scribble min-h-11 flex-1 py-2 text-xs font-intro uppercase text-white" data-freq="monthly" style="background-color: #001B3A;">Mensual</button>
+                    <button type="button" class="multi-freq-btn btn-scribble min-h-11 flex-1 py-2 text-xs font-intro uppercase text-white/50" data-freq="once">Única vez</button>
                 </div>
 
                 <div class="mb-6 max-w-xs mx-auto">
@@ -172,7 +172,7 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
                         <input type="text"
                                inputmode="decimal"
                                id="multi-total-amount"
-                               class="w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
+                               class="min-h-11 w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
                                placeholder={initialCurrency.placeholder}>
                         <span id="multi-currency-code" class="sr-only">{initialCurrency.code}</span>
                     </div>

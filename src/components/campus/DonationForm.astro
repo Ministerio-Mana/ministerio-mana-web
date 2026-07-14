@@ -42,8 +42,8 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
   <div class="relative z-10">
       <!-- Frequency Selector — scribble buttons -->
       <div class="flex mb-6 gap-3 frequency-selector">
-        <button type="button" class="freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-[#001B3A]" data-freq="monthly">Mensual</button>
-        <button type="button" class="freq-btn btn-scribble flex-1 py-2 text-xs font-intro uppercase text-gray-400" data-freq="once">Única vez</button>
+        <button type="button" class="freq-btn btn-scribble min-h-11 flex-1 py-2 text-xs font-intro uppercase text-[#001B3A]" data-freq="monthly">Mensual</button>
+        <button type="button" class="freq-btn btn-scribble min-h-11 flex-1 py-2 text-xs font-intro uppercase text-gray-400" data-freq="once">Única vez</button>
       </div>
 
       <div class="mb-5">
@@ -67,7 +67,7 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
             <span class="currency-symbol absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal font-intro text-lg">$</span>
             <input type="text"
                    inputmode="decimal"
-                   class="custom-amount-input w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
+                   class="custom-amount-input min-h-11 w-full bg-transparent border-none text-[#001B3A] font-intro text-xl py-1 pl-8 pr-4 focus:outline-none text-center placeholder-gray-300"
                    placeholder={initialCurrency.placeholder}>
             <span class="currency-code sr-only">{initialCurrency.code}</span>
           </div>
@@ -84,7 +84,7 @@ const initialCurrency = String(country).toUpperCase() === 'CO'
 
         <div class="amount-method-state hidden mt-3 text-center">
           <p class="amount-method-text sr-only" aria-live="polite"></p>
-          <button type="button" class="amount-method-reset inline-flex min-h-9 items-center justify-center px-3 font-intro text-[10px] uppercase tracking-widest text-[#001B3A]/70 underline decoration-brand-teal/60 underline-offset-4 transition-colors hover:text-brand-teal">
+          <button type="button" class="amount-method-reset inline-flex min-h-11 items-center justify-center px-3 font-intro text-[10px] uppercase tracking-widest text-[#001B3A]/70 underline decoration-brand-teal/60 underline-offset-4 transition-colors hover:text-brand-teal">
             Cambiar monto
           </button>
         </div>
