@@ -444,3 +444,43 @@ test('la vista previa editorial minimiza datos y evita navegación accidental', 
   assert.match(previewApi, /\.neq\('status', 'archived'\)/);
   assert.doesNotMatch(previewApi, /select\('\*'\)/);
 });
+
+test('integraciones protege secretos, mínimo privilegio y respuestas tardías', async () => {
+  const [integrationsView, integrationsLogic, integrationsApi, microsoftGraph] = await Promise.all([
+    readSource('src/pages/portal/integrations.astro'),
+    readSource('src/scripts/portal-integrations.js'),
+    readSource('src/pages/api/portal/integrations/microsoft/status.ts'),
+    readSource('src/lib/microsoftGraph.ts'),
+  ]);
+
+  assert.equal([...integrationsView.matchAll(/<h1\b/g)].length, 1);
+  assert.doesNotMatch(integrationsView, /<main\b/);
+  assert.match(integrationsView, /id="integrations-gate"[^>]*role="status" aria-live="polite"/);
+  assert.match(integrationsView, /id="integrations-alert"[^>]*role="status" aria-live="polite"/);
+  assert.match(integrationsView, /id="integrations-busy"[^>]*role="status" aria-live="polite"/);
+  assert.match(integrationsView, /id="microsoft-refresh"[^>]*min-h-11/);
+  assert.match(integrationsView, /id="microsoft-verify"[^>]*min-h-11/);
+  assert.match(integrationsView, /nunca muestra credenciales, llaves ni tokens/);
+  assert.match(integrationsView, /No crea, modifica ni elimina archivos/);
+
+  assert.match(integrationsLogic, /role !== 'superadmin' \|\| session\.auth\.mode === 'password'/);
+  assert.match(integrationsLogic, /REQUEST_TIMEOUT_MS = 15_000/);
+  assert.match(integrationsLogic, /statusRequestRevision/);
+  assert.match(integrationsLogic, /requestRevision !== statusRequestRevision/);
+  assert.match(integrationsLogic, /querySelector\('\[data-label\]'\)/);
+  assert.match(integrationsLogic, /button\.setAttribute\('aria-busy', String\(busy\)\)/);
+  assert.match(integrationsLogic, /refreshButton\?\.focus\(\)/);
+  assert.match(integrationsLogic, /verifyButton\?\.focus\(\)/);
+
+  assert.match(integrationsApi, /auth\.role !== 'superadmin' \|\| auth\.isPasswordSession/);
+  assert.match(integrationsApi, /missing_count: config\.missing\.length/);
+  assert.match(integrationsApi, /drives: connection\.drives\.map\(\(drive\) => \(\{ name: drive\.name \}\)\)/);
+  assert.match(integrationsApi, /Microsoft no pudo completar la prueba de lectura/);
+  assert.doesNotMatch(integrationsApi, /selected_drive_id:/);
+  assert.doesNotMatch(integrationsApi, /site: connection\.site/);
+  assert.doesNotMatch(integrationsApi, /error: error instanceof Error/);
+
+  assert.match(microsoftGraph, /const \[site, drives\] = await Promise\.all\(\[/);
+  assert.match(microsoftGraph, /site\.id !== config\.siteId/);
+  assert.match(microsoftGraph, /config\.driveId && !drives\.some/);
+});

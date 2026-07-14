@@ -9,60 +9,73 @@ import Sidebar from '@components/portal/Sidebar.astro';
     <div class="flex min-h-screen flex-col lg:flex-row">
       <Sidebar />
 
-      <main class="relative flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 xl:p-14">
-        <div id="integrations-gate" class="mx-auto max-w-xl rounded-md border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
-          Validando permisos...
+      <section class="relative flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 xl:p-16" aria-labelledby="integrations-title">
+        <div id="integrations-gate" class="mx-auto max-w-xl rounded-md border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm" role="status" aria-live="polite">
+          <p id="integrations-gate-message">Validando permisos...</p>
+          <a id="integrations-gate-link" href="/portal" class="mt-4 hidden min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
+            Volver al panel
+          </a>
         </div>
 
         <div id="integrations-content" class="mx-auto hidden max-w-5xl space-y-6">
-          <header class="border-b border-slate-200 pb-5">
+          <header class="border-b border-slate-200 pb-4">
             <p class="text-xs font-bold uppercase text-slate-500">Configuración privada</p>
-            <h1 class="mt-1 text-2xl font-display font-bold text-[#293C74] md:text-4xl">Integraciones</h1>
-            <p class="mt-1 text-sm text-slate-600 md:text-base">Estado técnico de servicios externos autorizados.</p>
+            <h1 id="integrations-title" class="mt-2 text-2xl font-display font-bold text-[#293C74] md:text-4xl">Integraciones</h1>
+            <p class="mt-2 text-sm text-slate-600 md:text-base">Estado técnico de servicios externos autorizados.</p>
           </header>
 
-          <div id="integrations-alert" class="hidden rounded-md border px-4 py-3 text-sm" role="alert"></div>
+          <div id="integrations-alert" class="hidden rounded-md border px-4 py-4 text-sm" role="status" aria-live="polite"></div>
+          <p id="integrations-busy" class="sr-only" role="status" aria-live="polite"></p>
+
+          <aside class="rounded-md border border-[#293C74]/20 bg-[#293C74]/5 p-4" aria-labelledby="integrations-security-title">
+            <h2 id="integrations-security-title" class="text-sm font-bold text-[#293C74]">Acceso seguro y mínimo</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Solo una cuenta individual con rol superadmin puede consultar este diagnóstico. La pantalla nunca muestra credenciales, llaves ni tokens y la prueba no modifica archivos.
+            </p>
+          </aside>
 
           <section class="portal-panel overflow-hidden">
             <div class="grid md:grid-cols-[190px_1fr]">
               <div class="flex min-h-40 items-center justify-center bg-[#293C74] text-white">
                 <PortalIcon name="settings-2" size={46} />
               </div>
-              <div class="space-y-5 p-6 md:p-8">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="space-y-6 p-6 md:p-8">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p class="text-xs font-bold uppercase text-slate-500">Microsoft 365</p>
-                    <h2 class="mt-1 text-xl font-bold text-[#293C74]">SharePoint</h2>
-                    <p class="mt-1 text-sm text-slate-600">Acceso restringido al sitio Portal Maná.</p>
+                    <h2 class="mt-2 text-xl font-bold text-[#293C74]">SharePoint</h2>
+                    <p class="mt-2 text-sm text-slate-600">Acceso restringido al sitio Portal Maná.</p>
                   </div>
-                  <button id="microsoft-refresh" type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                  <button id="microsoft-refresh" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#293C74]">
                     <PortalIcon name="refresh-cw" size={17} />
-                    Actualizar
+                    <span data-label>Actualizar</span>
                   </button>
                 </div>
 
-                <dl class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
                     <dt class="text-xs font-bold uppercase text-slate-500">Variables</dt>
-                    <dd id="microsoft-configured" class="mt-1 text-sm font-bold text-slate-700">Pendiente</dd>
+                    <dd id="microsoft-configured" class="mt-2 text-sm font-bold text-slate-700">Pendiente</dd>
                   </div>
                   <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
                     <dt class="text-xs font-bold uppercase text-slate-500">Integración</dt>
-                    <dd id="microsoft-enabled" class="mt-1 text-sm font-bold text-slate-700">Pendiente</dd>
+                    <dd id="microsoft-enabled" class="mt-2 text-sm font-bold text-slate-700">Pendiente</dd>
                   </div>
                   <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
                     <dt class="text-xs font-bold uppercase text-slate-500">Conexión</dt>
-                    <dd id="microsoft-connected" class="mt-1 text-sm font-bold text-slate-700">Sin probar</dd>
+                    <dd id="microsoft-connected" class="mt-2 text-sm font-bold text-slate-700">Sin probar</dd>
                   </div>
                   <div class="rounded-md border border-slate-200 bg-slate-50 p-4">
                     <dt class="text-xs font-bold uppercase text-slate-500">Carga Eventos</dt>
-                    <dd id="microsoft-events-write" class="mt-1 text-sm font-bold text-slate-700">Apagada</dd>
+                    <dd id="microsoft-events-write" class="mt-2 text-sm font-bold text-slate-700">Apagada</dd>
                   </div>
                 </dl>
 
-                <div id="microsoft-site" class="hidden rounded-md border border-slate-200 px-4 py-3">
+                <div id="microsoft-config-detail" class="hidden rounded-md border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800" role="status"></div>
+
+                <div id="microsoft-site" class="hidden rounded-md border border-slate-200 px-4 py-4">
                   <p id="microsoft-site-name" class="text-sm font-bold text-[#293C74]"></p>
-                  <a id="microsoft-site-link" class="mt-1 hidden text-xs font-bold text-brand-teal hover:underline" target="_blank" rel="noopener noreferrer">Abrir SharePoint</a>
+                  <a id="microsoft-site-link" class="mt-2 hidden min-h-11 items-center text-sm font-bold text-brand-teal hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#293C74]" target="_blank" rel="noopener noreferrer">Abrir SharePoint en una pestaña nueva</a>
                 </div>
 
                 <div id="microsoft-drives-wrap" class="hidden space-y-2">
@@ -71,17 +84,20 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                  <button id="microsoft-verify" type="button" disabled class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1f2f63] disabled:cursor-not-allowed disabled:opacity-50">
+                  <button id="microsoft-verify" type="button" disabled aria-describedby="microsoft-readonly-note" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white transition hover:bg-[#1f2f63] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#293C74] disabled:cursor-not-allowed disabled:opacity-50">
                     <PortalIcon name="eye" size={17} />
-                    Probar conexión de lectura
+                    <span data-label>Probar conexión de lectura</span>
                   </button>
                 </div>
-                <p class="text-xs text-slate-500">La prueba consulta el sitio y sus bibliotecas. No crea, modifica ni elimina archivos.</p>
+                <div class="space-y-2 text-xs leading-5 text-slate-500">
+                  <p id="microsoft-readonly-note">La prueba consulta el sitio y sus bibliotecas. No crea, modifica ni elimina archivos.</p>
+                  <p id="microsoft-last-checked">Última actualización: aún no consultada.</p>
+                </div>
               </div>
             </div>
           </section>
         </div>
-      </main>
+      </section>
     </div>
   </div>
 

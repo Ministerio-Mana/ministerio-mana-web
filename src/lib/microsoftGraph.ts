@@ -184,13 +184,14 @@ export async function verifyMicrosoftSharePointConnection(): Promise<{
   const config = getMicrosoftGraphConfig();
   if (!config) throw new Error('La integración de Microsoft todavía no está configurada.');
 
-  const site = await graphGet<MicrosoftGraphSite>(
-    config,
-    `/sites/${encodeURIComponent(config.siteId)}?$select=id,displayName,name,webUrl`,
-  );
+  const [site, drives] = await Promise.all([
+    graphGet<MicrosoftGraphSite>(
+      config,
+      `/sites/${encodeURIComponent(config.siteId)}?$select=id,displayName,name,webUrl`,
+    ),
+    listSharePointDrives(config),
+  ]);
   if (site.id !== config.siteId) throw new Error('Microsoft devolvió un sitio diferente al configurado.');
-
-  const drives = await listSharePointDrives(config);
 
   if (config.driveId && !drives.some((drive) => drive.id === config.driveId)) {
     throw new Error('La biblioteca configurada no pertenece al sitio autorizado.');

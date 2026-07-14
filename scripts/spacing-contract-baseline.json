@@ -6,6 +6,7 @@
     "src/pages/portal/campus.astro",
     "src/pages/portal/content.astro",
     "src/pages/portal/content-preview.astro",
+    "src/pages/portal/integrations.astro",
     "src/pages/portal/events.astro",
     "src/pages/portal/events/[id].astro",
     "src/pages/portal/donations.astro",
@@ -20,6 +21,7 @@
     "src/scripts/portal-campus.js",
     "src/scripts/portal-content.js",
     "src/scripts/portal-content-preview.js",
+    "src/scripts/portal-integrations.js",
     "src/scripts/portal-events.js",
     "src/scripts/portal-event-operation.js",
     "src/scripts/portal-donations.js",
@@ -166,7 +168,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 247,
+    "tailwindOffScale": 230,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
@@ -176,7 +178,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 301,
+    "tailwindOffScale": 300,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
