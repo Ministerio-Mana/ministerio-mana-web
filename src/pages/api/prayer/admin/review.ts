@@ -10,7 +10,10 @@ type ReviewDecision = 'approve' | 'reject' | 'keep_private';
 function json(body: Record<string, any>, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'private, no-store',
+    },
   });
 }
 
@@ -21,7 +24,7 @@ function normalizeDecision(value: unknown): ReviewDecision | null {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f-]{36}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function isMissingModerationColumn(error: any): boolean {
@@ -68,18 +71,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
   if (!current.data) return json({ ok: false, error: 'Petición no encontrada' }, 404);
 
-  if (guard.role === 'intercessor') {
-    if (current.data.visibility !== 'public') {
-      return json({ ok: false, error: 'Las peticiones privadas son solo para intercesión.' }, 400);
-    }
-
-    if (!['pending', 'flagged'].includes(String(current.data.moderation_status || ''))) {
-      return json({ ok: false, error: 'Esta petición ya fue revisada.' }, 400);
-    }
+  if (current.data.visibility !== 'public') {
+    return json({ ok: false, error: 'Las peticiones privadas son solo para intercesión.' }, 400);
   }
-
-  if (decision === 'approve' && current.data.visibility !== 'public') {
-    return json({ ok: false, error: 'Una petición privada no se puede publicar sin cambiar su privacidad.' }, 400);
+  if (!['pending', 'flagged'].includes(String(current.data.moderation_status || ''))) {
+    return json({ ok: false, error: 'Esta petición ya fue revisada.' }, 409);
   }
 
   const updates: Record<string, any> = {
@@ -110,10 +106,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     .from('prayer_requests')
     .update(updates)
     .eq('id', id)
-    .select('id,first_name,request_text,city,country,prayers_count,visibility,moderation_status,flagged,approved,reviewed_by,reviewed_at,admin_note,created_at,updated_at')
-    .single();
+    .eq('visibility', 'public')
+    .in('moderation_status', ['pending', 'flagged'])
+    .select('id,visibility,moderation_status,flagged,approved,admin_note,updated_at')
+    .maybeSingle();
 
   if (error) return json({ ok: false, error: 'No se pudo revisar la petición' }, 500);
+  if (!data) return json({ ok: false, error: 'La petición cambió mientras la revisabas. Actualiza la bandeja.' }, 409);
 
   return json({ ok: true, row: data });
 };

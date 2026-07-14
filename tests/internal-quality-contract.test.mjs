@@ -323,3 +323,41 @@ test('campus respeta asignaciones, alcance financiero y contactos táctiles', as
   assert.match(campusApi, /totalDonationRows/);
   assert.match(campusApi, /La separación financiera todavía no está activa para Campus/);
 });
+
+test('peticiones separa intercesión de moderación y protege cada decisión pastoral', async () => {
+  const [prayersView, prayersLogic, prayersGuard, prayersListApi, prayersReviewApi] = await Promise.all([
+    readSource('src/pages/portal/peticiones.astro'),
+    readSource('src/scripts/portal-prayers.js'),
+    readSource('src/lib/portalPrayerGuard.ts'),
+    readSource('src/pages/api/prayer/admin/list.ts'),
+    readSource('src/pages/api/prayer/admin/review.ts'),
+  ]);
+
+  for (const id of ['prayers-status', 'prayers-visibility', 'prayers-refresh', 'prayers-load-more']) {
+    assert.match(prayersView, new RegExp(`id="${id}"[^>]*min-h-11`));
+  }
+  assert.match(prayersView, /label for="prayers-status"/);
+  assert.match(prayersView, /label for="prayers-visibility"/);
+  assert.match(prayersView, /id="prayers-feedback"[^>]*role="status" aria-live="polite"/);
+  assert.match(prayersView, /id="prayer-review-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="prayer-review-title"[^>]*aria-describedby="prayer-review-description"[^>]*aria-hidden="true"/);
+  assert.match(prayersView, /id="prayer-review-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar revisión de petición"/);
+  assert.match(prayersView, /label for="prayer-review-note"/);
+
+  assert.match(prayersLogic, /session\.permissions\?\.can_access_prayers/);
+  assert.match(prayersLogic, /requestRevision !== dataRevision \|\| requestAppendSequence !== appendSequence/);
+  assert.match(prayersLogic, /function getReviewModalFocusableElements\(\)/);
+  assert.match(prayersLogic, /event\.key === 'Escape'/);
+  assert.match(prayersLogic, /La nota se conservó/);
+  assert.match(prayersLogic, /window\.addEventListener\('beforeunload'/);
+  assert.match(prayersLogic, /data-prayer-action="approve"[^>]+min-h-11/);
+  assert.doesNotMatch(prayersLogic, /window\.(?:prompt|alert)/);
+
+  assert.match(prayersGuard, /const PRAYER_REVIEW_ROLES = new Set\(\['superadmin', 'admin'\]\)/);
+  assert.match(prayersListApi, /select\(fields, \{ count: 'exact' \}\)/);
+  assert.doesNotMatch(prayersListApi, /reviewed_by,reviewed_at/);
+  assert.match(prayersListApi, /cache-control': 'private, no-store'/);
+  assert.match(prayersListApi, /hasNextPage: visibleTo < totalRows/);
+  assert.match(prayersReviewApi, /\.in\('moderation_status', \['pending', 'flagged'\]\)/);
+  assert.match(prayersReviewApi, /La petición cambió mientras la revisabas/);
+  assert.match(prayersReviewApi, /cache-control': 'private, no-store'/);
+});

@@ -9,6 +9,7 @@
     "src/pages/portal/donations.astro",
     "src/pages/portal/finances.astro",
     "src/pages/portal/ingresar.astro",
+    "src/pages/portal/peticiones.astro",
     "src/pages/portal/regions.astro",
     "src/pages/portal/registro.astro",
     "src/pages/eventos/[slug].astro",
@@ -20,6 +21,7 @@
     "src/scripts/portal-donations.js",
     "src/scripts/portal-finances.js",
     "src/scripts/portal-ingresar.js",
+    "src/scripts/portal-prayers.js",
     "src/scripts/portal-regions.js",
     "src/scripts/portal-registro.js",
     "src/styles/portal.css"
@@ -160,7 +162,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 314,
+    "tailwindOffScale": 311,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
@@ -170,7 +172,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 360,
+    "tailwindOffScale": 353,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
