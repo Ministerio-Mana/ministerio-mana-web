@@ -121,7 +121,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - El diálogo sensible de aprobar o rechazar pago anuncia título y resumen, encierra y devuelve el foco, y protege la nota ante `Escape`, clic de fondo o salida accidental.
 - Nombres, referencias, respuestas adicionales y URLs interpoladas por las tarjetas dinámicas se escapan antes de renderizarse.
 - El contrato automático de calidad interna suma diez verificaciones.
-- La base productiva se revisó a 390 y 1280 px sin desbordamiento ni controles sin nombre. El evento disponible tenía cero inscripciones, por lo que los estados dinámicos permanecen cubiertos por contrato hasta disponer de un registro de prueba autorizado.
+- Producción verificada en `ministeriomana.org`: 11 controles visibles a 390 px y 24 a 1280 px, con cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1` y ningún desbordamiento. El diálogo sensible llegó cerrado con título, descripción y `aria-hidden`. El evento disponible tenía cero inscripciones, por lo que los estados dinámicos permanecen cubiertos por contrato hasta disponer de un registro de prueba autorizado.
 
 ### Cierre técnico requerido para `/portal/events/[id]`
 
