@@ -235,6 +235,15 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - [ ] Revisar que cada iglesia tenga región, país, correo institucional y datos de contacto correctos.
 - [ ] Confirmar qué personas pueden crear colaboradores y eventos en cada iglesia.
 
+### Peticiones de oración
+
+- [ ] Crear tres peticiones públicas de prueba con datos ficticios y sin nombres completos, teléfonos, correos, direcciones ni información pastoral real.
+- [ ] Entrar con una cuenta cuyo rol principal o adicional sea `intercessor`; confirmar que puede leer para interceder, pero no publicar, cambiar privacidad, rechazar ni ver notas administrativas.
+- [ ] Entrar con `admin` y `superadmin`; abrir “Publicar”, “Pasar a privada” y “Rechazar” sobre las peticiones de prueba. Revisar el resumen y el aviso de privacidad antes de confirmar una decisión.
+- [ ] En “Rechazar”, escribir una nota temporal; comprobar que `Escape` y el fondo la conservan y que solo “Borrar nota y cerrar” la descarta. Confirmar después un rechazo controlado y verificar que la nota no llegue a la persona.
+- [ ] Moderar la misma petición desde dos sesiones administrativas de prueba; confirmar que la segunda recibe el aviso de que la petición cambió y no sobrescribe la primera decisión.
+- [ ] Antes de publicar, confirmar manualmente que el texto no identifica a la persona ni contiene datos sensibles. No usar peticiones pastorales reales durante QA.
+
 ## 9. Contenido, Home y experiencia móvil
 
 - [ ] Aprobar el copy final de los capítulos del Home.

@@ -41,7 +41,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Cumple técnicamente en código y producción; exportes y variación real por alcance pendientes |
 | 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Cumple técnicamente en código y producción; conciliación real y variación por alcance pendientes |
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Cumple técnicamente en código y producción; cuentas reales por alcance y misionero pendientes |
-| 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Pendiente |
+| 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Cumple técnicamente en código y producción; decisiones reales y variación por roles pendientes |
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Pendiente |
 | 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Pendiente |
 | 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Pendiente |
@@ -240,6 +240,31 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Abrir un único correo y WhatsApp de prueba sin enviar inmediatamente; revisar destinatario, nombre del donante y texto pastoral antes de autorizar el mensaje.
 - Probar un aporte Campus controlado con Wompi/COP y otro con Stripe/USD; confirmar asignaciones por misionero, monto por misionero y total contable sin duplicados.
 - Cuando el histórico supere el límite visible, confirmar que aparece la nota de cobertura y que Finanzas conserva el histórico completo.
+
+## Registro de la fase 3 — `/portal/peticiones`
+
+### Evidencia implementada
+
+- El acceso de lectura reconoce el rol principal y la asignación adicional de intercesión. El cliente usa el permiso consolidado de sesión y el API valida nuevamente identidad, rol e IP autorizada.
+- `intercessor` quedó limitado a lectura pastoral. Solo `admin` y `superadmin` pueden publicar, conservar privada o rechazar una petición; la regla coincide en interfaz y servidor.
+- El listado aplica paginación de 50 registros, totales globales y cobertura visible por filtro. Consultas de filas y conteos se ejecutan en paralelo y una respuesta tardía no reemplaza una vista más reciente.
+- El API entrega únicamente los campos necesarios. No expone correo del revisor ni fechas internas de revisión; la nota administrativa solo se incluye para quienes pueden moderar. Las respuestas sensibles usan `private, no-store`.
+- Publicar, conservar privada y rechazar pasaron de `prompt` y `alert` nativos a un diálogo contextual con propósito, resumen, foco inicial, encierro de foco, `Escape` y devolución del foco.
+- Antes de publicar se recuerda revisar teléfonos, correos, direcciones e información sensible. La nota de rechazo es interna, tiene límite de 320 caracteres y no se envía a la persona.
+- Una nota escrita se conserva ante `Escape` o clic de fondo. El descarte exige una segunda acción explícita y el formulario guardado ya no activa un falso aviso de trabajo pendiente.
+- La actualización del servidor vuelve a comprobar visibilidad y estado en la misma operación. Si otra persona ya moderó la petición, responde conflicto y evita una segunda decisión silenciosa.
+- Filtros, actualización, carga progresiva, reintento y acciones dinámicas respetan 44 px. Las etiquetas son visibles, los estados se anuncian y la tarjeta nueva recibe foco al paginar.
+- `peticiones.astro` y `portal-prayers.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos. El contrato automático de calidad interna suma dieciséis verificaciones.
+- Producción verificada en `ministeriomana.org` a 390 px: cinco controles visibles, cero objetivos menores de 44 px, cero controles sin etiqueta, un solo `h1` y ningún desbordamiento horizontal. El filtro sin resultados y “Actualizar” restauraron correctamente el foco.
+- La bandeja productiva mostró un registro publicado, un total coherente y ninguna petición pendiente. Por seguridad no se alteró el registro real ni se forzó el diálogo con datos inventados.
+
+### Cierre humano requerido para `/portal/peticiones`
+
+- Crear tres peticiones públicas de prueba, sin nombres completos, teléfonos, correos, direcciones ni información pastoral real; usar una para cada decisión: publicar, conservar privada y rechazar.
+- Con una cuenta de intercesión principal o adicional, confirmar que puede leer las peticiones autorizadas pero no ve controles de moderación ni notas administrativas.
+- Con `admin` y `superadmin`, recorrer los tres diálogos sin confirmar primero. En rechazo, escribir una nota temporal y comprobar que `Escape` y el fondo la conservan; descartarla únicamente mediante la acción explícita.
+- Confirmar que dos revisores no pueden decidir la misma petición: la segunda sesión debe recibir el mensaje de que la petición cambió y actualizar la bandeja.
+- Antes de publicar una petición de prueba, revisar manualmente que el texto no permita identificar a la persona ni revele datos sensibles.
 
 ## Regla de actualización
 
