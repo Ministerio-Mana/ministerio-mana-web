@@ -461,28 +461,28 @@ function renderCustomFieldBuilder() {
     eventCustomFields.forEach((field, index) => {
         const card = document.createElement('article');
         card.dataset.customFieldIndex = String(index);
-        card.className = 'rounded-md border border-slate-200 bg-white p-3 shadow-sm';
+        card.className = 'rounded-md border border-slate-200 bg-white p-4 shadow-sm';
 
         const header = document.createElement('div');
-        header.className = 'flex items-center justify-between gap-3';
+        header.className = 'flex items-center justify-between gap-4';
         const title = document.createElement('p');
         title.className = 'text-xs font-bold uppercase tracking-[0.08em] text-slate-500';
         title.textContent = `Pregunta ${index + 1}`;
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.dataset.customFieldAction = 'remove';
-        remove.className = 'rounded px-2 py-1 text-xs font-bold text-red-700 hover:bg-red-50';
+        remove.className = 'inline-flex min-h-11 items-center rounded px-2 py-2 text-xs font-bold text-red-700 hover:bg-red-50';
         remove.textContent = 'Quitar';
         header.append(title, remove);
 
         const grid = document.createElement('div');
-        grid.className = 'mt-3 grid gap-3 sm:grid-cols-2';
+        grid.className = 'mt-4 grid gap-4 sm:grid-cols-2';
         const typeLabel = document.createElement('label');
         typeLabel.className = 'event-field';
         typeLabel.textContent = 'Tipo de respuesta';
         const type = document.createElement('select');
         type.name = 'custom_field_type';
-        type.className = 'mt-1';
+        type.className = 'mt-2';
         EVENT_CUSTOM_FIELD_TYPES.forEach((value) => {
             const option = document.createElement('option');
             option.value = value;
@@ -538,7 +538,7 @@ function renderCustomFieldBuilder() {
             optionsInput.value = Array.isArray(field.options) ? field.options.join('\n') : '';
             options.append(optionsInput);
             const hint = document.createElement('small');
-            hint.className = 'mt-1 block text-xs font-normal text-slate-500';
+            hint.className = 'mt-2 block text-xs font-normal text-slate-500';
             hint.textContent = 'Incluye entre 2 y 12 opciones claras.';
             options.append(hint);
             grid.append(options);
@@ -869,10 +869,10 @@ function showEventsError(error) {
 
     eventsList.classList.add('hidden');
     eventsEmpty.classList.add('hidden');
-    eventsLoading.className = 'portal-panel px-5 py-8 text-center';
+    eventsLoading.className = 'portal-panel px-6 py-8 text-center';
     eventsLoading.innerHTML = `
         <p class="font-bold text-red-700">No se pudieron cargar los eventos</p>
-        <p class="mt-1 text-sm text-slate-600">${escapeHtml(message)}</p>
+        <p class="mt-2 text-sm text-slate-600">${escapeHtml(message)}</p>
         <button type="button" id="btn-retry-events" class="mt-4 min-h-10 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74]">Reintentar</button>
     `;
     document.getElementById('btn-retry-events')?.addEventListener('click', () => void loadEvents());
@@ -1210,7 +1210,7 @@ function renderEvents() {
         const media = bannerUrl
             ? `<div class="event-list-media event-list-media--${escapeAttr(bannerLayout.toLowerCase())}"><img src="${escapeAttr(bannerUrl)}" alt="" loading="lazy" decoding="async" /></div>`
             : `<div class="event-list-media event-list-media--horizontal flex flex-col items-center justify-center bg-[#293C74] text-white"><span class="text-xs font-bold text-white">${escapeHtml(month)}</span><strong class="text-3xl leading-none text-white">${escapeHtml(day)}</strong></div>`;
-        const description = event.description ? `<p class="mt-1 line-clamp-1 text-sm text-slate-500">${escapeHtml(event.description)}</p>` : '';
+        const description = event.description ? `<p class="mt-2 line-clamp-1 text-sm text-slate-500">${escapeHtml(event.description)}</p>` : '';
         const editAction = canEditEvent(event)
             ? `<button type="button" class="event-edit event-action" data-event-id="${escapeAttr(event.id || '')}">${icon(pencilIconUrl)} Editar</button>`
             : '';
@@ -1225,8 +1225,8 @@ function renderEvents() {
           <article class="portal-panel overflow-hidden" data-event-row="${escapeAttr(event.id || '')}">
             <div class="flex flex-col sm:flex-row">
               <div class="flex-none bg-slate-100">${media}</div>
-              <div class="min-w-0 flex-1 p-4 sm:px-5">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div class="min-w-0 flex-1 p-4 sm:px-6">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div class="min-w-0">
                     <div class="mb-2 flex flex-wrap items-center gap-2">
                       <span class="portal-chip ${LIFECYCLE_TONES[lifecycle]}">${escapeHtml(LIFECYCLE_LABELS[lifecycle])}</span>
@@ -1236,7 +1236,7 @@ function renderEvents() {
                     </div>
                     <h2 class="truncate text-lg font-bold text-[#293C74]">${escapeHtml(event.title || 'Evento')}</h2>
                     ${description}
-                    <div class="mt-3 flex flex-col gap-1 text-sm text-slate-600 md:flex-row md:flex-wrap md:gap-x-5">
+                    <div class="mt-4 flex flex-col gap-2 text-sm text-slate-600 md:flex-row md:flex-wrap md:gap-x-6">
                       <span class="inline-flex min-w-0 items-center gap-2">${icon(calendarIconUrl)} ${escapeHtml(formatEventDate(event))}</span>
                       <span class="inline-flex min-w-0 items-center gap-2">${icon(mapPinIconUrl)} <span class="truncate">${escapeHtml(getLocationLabel(event))}</span></span>
                     </div>
@@ -1426,8 +1426,8 @@ function setInvitationImageStatus(message = '', tone = 'info') {
     if (!eventInvitationImageStatus) return;
     eventInvitationImageStatus.textContent = message;
     eventInvitationImageStatus.className = message
-        ? `mt-1.5 text-xs font-medium ${tone === 'error' ? 'text-red-700' : tone === 'success' ? 'text-emerald-700' : 'text-slate-600'}`
-        : 'mt-1.5 hidden text-xs font-medium';
+        ? `mt-2 text-xs font-medium ${tone === 'error' ? 'text-red-700' : tone === 'success' ? 'text-emerald-700' : 'text-slate-600'}`
+        : 'mt-2 hidden text-xs font-medium';
 }
 
 function clearPendingInvitationImage() {

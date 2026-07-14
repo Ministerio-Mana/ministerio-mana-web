@@ -15,13 +15,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
         </div>
 
         <div id="events-secure-content" class="mx-auto hidden max-w-7xl space-y-6">
-          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <header class="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p class="mb-1 text-xs font-bold uppercase text-slate-500">Operación y seguimiento</p>
+              <p class="mb-2 text-xs font-bold uppercase text-slate-500">Operación y seguimiento</p>
               <h1 class="font-display text-3xl font-bold text-[#293C74]">Eventos</h1>
-              <p class="mt-1 max-w-2xl text-sm text-slate-600">Organiza el calendario de tu iglesia, región o país según tus permisos.</p>
+              <p class="mt-2 max-w-2xl text-sm text-slate-600">Organiza el calendario de tu iglesia, región o país según tus permisos.</p>
             </div>
-            <button id="btn-new-event" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#20315f]">
+            <button id="btn-new-event" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#20315f]">
               <PortalIcon name="plus" size={18} />
               Nuevo evento
             </button>
@@ -34,9 +34,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <div class="portal-stat"><p class="portal-stat-label">Borradores</p><p id="event-stat-drafts" class="portal-stat-value">0</p></div>
           </section>
 
-          <section class="portal-panel p-3 sm:p-4" aria-label="Filtros de eventos">
-            <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div id="event-filters" class="flex max-w-full gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Estado del evento">
+          <section class="portal-panel p-4" aria-label="Filtros de eventos">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div id="event-filters" class="flex max-w-full gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Estado del evento">
                 <button type="button" class="event-filter is-active" data-event-filter="active" role="tab" aria-selected="true">Activos <span data-filter-count="active">0</span></button>
                 <button type="button" class="event-filter" data-event-filter="upcoming" role="tab" aria-selected="false">Próximos <span data-filter-count="upcoming">0</span></button>
                 <button type="button" class="event-filter" data-event-filter="live" role="tab" aria-selected="false">En curso <span data-filter-count="live">0</span></button>
@@ -49,11 +49,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <label class="relative block">
                   <span class="sr-only">Buscar evento</span>
                   <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
-                  <input id="event-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm" placeholder="Buscar evento o lugar" autocomplete="off" />
+                  <input id="event-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm" placeholder="Buscar evento o lugar" autocomplete="off" />
                 </label>
                 <label>
                   <span class="sr-only">Filtrar por alcance</span>
-                  <select id="event-scope-filter" class="w-full border border-slate-200 bg-white px-3 py-2 text-sm">
+                  <select id="event-scope-filter" class="w-full border border-slate-200 bg-white px-4 py-2 text-sm">
                     <option value="">Todo alcance</option>
                     <option value="LOCAL">Local</option>
                     <option value="REGIONAL">Regional</option>
@@ -65,11 +65,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
           </section>
 
-          <div id="events-loading" class="space-y-3" aria-live="polite">
+          <div id="events-loading" class="space-y-4" aria-live="polite">
             {[1, 2, 3].map(() => (
               <div class="portal-panel flex animate-pulse gap-4 p-4">
                 <div class="h-20 w-20 flex-none bg-slate-100 sm:w-28"></div>
-                <div class="min-w-0 flex-1 space-y-3 py-1">
+                <div class="min-w-0 flex-1 space-y-4 py-2">
                   <div class="h-4 w-2/5 bg-slate-100"></div>
                   <div class="h-3 w-3/4 bg-slate-100"></div>
                   <div class="h-3 w-1/2 bg-slate-100"></div>
@@ -78,21 +78,21 @@ import Sidebar from '@components/portal/Sidebar.astro';
             ))}
           </div>
 
-          <div id="events-list" class="hidden space-y-3" aria-live="polite"></div>
+          <div id="events-list" class="hidden space-y-4" aria-live="polite"></div>
 
-          <div id="events-empty" class="portal-panel hidden px-5 py-12 text-center">
-            <span class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="calendar-days" size={22} /></span>
+          <div id="events-empty" class="portal-panel hidden px-6 py-12 text-center">
+            <span class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="calendar-days" size={22} /></span>
             <h2 class="text-base font-bold text-slate-800">No hay eventos en esta vista</h2>
-            <p class="mt-1 text-sm text-slate-500">Cambia el filtro o crea un evento nuevo.</p>
+            <p class="mt-2 text-sm text-slate-500">Cambia el filtro o crea un evento nuevo.</p>
           </div>
         </div>
       </main>
     </div>
   </div>
 
-  <div id="event-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/55 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+  <div id="event-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-slate-950/55 p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
     <div class="my-auto w-full max-w-6xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-6">
+      <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6">
         <div>
           <p class="text-xs font-bold uppercase text-slate-500">Gestión de eventos</p>
           <h2 id="event-modal-title" class="text-xl font-bold text-[#293C74]">Nuevo evento</h2>
@@ -103,7 +103,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
       </div>
 
       <div class="grid lg:grid-cols-[minmax(0,1fr)_390px]">
-        <form id="event-form" class="space-y-5 p-4 sm:p-6">
+        <form id="event-form" class="space-y-6 p-4 sm:p-6">
           <input type="hidden" name="id" id="event-id" />
 
           <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
@@ -174,25 +174,25 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <div class="event-field">
             <span>Imagen de invitación</span>
             <input type="hidden" name="banner_url" />
-            <div id="event-invitation-image-dropzone" class="event-invitation-image-dropzone mt-1" tabindex="0" role="button" aria-describedby="event-invitation-image-help event-invitation-image-status">
+            <div id="event-invitation-image-dropzone" class="event-invitation-image-dropzone mt-2" tabindex="0" role="button" aria-describedby="event-invitation-image-help event-invitation-image-status">
               <input id="event-invitation-image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" />
               <strong>Arrastra una imagen aquí o selecciónala</strong>
               <span>JPG, PNG o WebP · horizontal, cuadrada o vertical</span>
               <span>Conservamos la imagen completa y la adaptamos a una invitación 1600 × 900.</span>
             </div>
-            <p id="event-invitation-image-help" class="mt-1.5 text-xs text-slate-500">Archivo original máximo: 4 MB y mínimo 480 × 480. Para fotos cuadradas o verticales usamos un fondo suavizado, sin recortar el contenido.</p>
-            <p id="event-invitation-image-status" class="mt-1.5 hidden text-xs font-medium" role="status" aria-live="polite"></p>
+            <p id="event-invitation-image-help" class="mt-2 text-xs text-slate-500">Archivo original máximo: 4 MB y mínimo 480 × 480. Para fotos cuadradas o verticales usamos un fondo suavizado, sin recortar el contenido.</p>
+            <p id="event-invitation-image-status" class="mt-2 hidden text-xs font-medium" role="status" aria-live="polite"></p>
           </div>
 
-          <div id="event-platform-pending" class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+          <div id="event-platform-pending" class="rounded-md border border-slate-200 bg-slate-50 px-4 py-4">
             <p class="text-sm font-bold text-slate-700">Configuración pública avanzada pendiente de activar</p>
-            <p class="mt-1 text-xs leading-relaxed text-slate-500">El evento puede seguir guardándose y publicándose con la configuración actual.</p>
+            <p class="mt-2 text-xs leading-relaxed text-slate-500">El evento puede seguir guardándose y publicándose con la configuración actual.</p>
           </div>
 
-          <section id="event-platform-settings" class="hidden space-y-4 border-t border-slate-200 pt-5" aria-labelledby="event-platform-title">
+          <section id="event-platform-settings" class="hidden space-y-4 border-t border-slate-200 pt-6" aria-labelledby="event-platform-title">
             <div>
               <h3 id="event-platform-title" class="text-sm font-bold text-[#293C74]">Invitación pública</h3>
-              <p class="mt-1 text-xs text-slate-500">Controla dónde aparece el evento y cómo se registran los asistentes.</p>
+              <p class="mt-2 text-xs text-slate-500">Controla dónde aparece el evento y cómo se registran los asistentes.</p>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -209,11 +209,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <label class="event-field">Enlace público
-              <div class="mt-1 flex min-w-0 items-center rounded-md border border-slate-200 bg-white focus-within:border-[#293C74]">
-                <span class="hidden flex-none border-r border-slate-200 px-3 text-sm text-slate-500 sm:inline">/eventos/</span>
+              <div class="mt-2 flex min-w-0 items-center rounded-md border border-slate-200 bg-white focus-within:border-[#293C74]">
+                <span class="hidden flex-none border-r border-slate-200 px-4 text-sm text-slate-500 sm:inline">/eventos/</span>
                 <input id="event-slug" class="min-w-0 flex-1 border-0 !mt-0 focus:ring-0" type="text" name="slug" data-platform-field disabled maxlength="180" placeholder="encuentro-de-familias" autocapitalize="none" autocomplete="off" spellcheck="false" />
               </div>
-              <span id="event-slug-hint" class="mt-1.5 block text-xs font-medium text-slate-500">Los espacios se convierten automáticamente en guiones.</span>
+              <span id="event-slug-hint" class="mt-2 block text-xs font-medium text-slate-500">Los espacios se convierten automáticamente en guiones.</span>
             </label>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -268,18 +268,18 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">WhatsApp de información
                 <input type="tel" name="contact_whatsapp" data-platform-field disabled inputmode="tel" maxlength="24" placeholder="573001234567" />
-                <span class="mt-1.5 block text-xs font-normal text-slate-500">Escribe el número con indicativo. La invitación genera el enlace de WhatsApp automáticamente.</span>
+                <span class="mt-2 block text-xs font-normal text-slate-500">Escribe el número con indicativo. La invitación genera el enlace de WhatsApp automáticamente.</span>
               </label>
               <label class="event-field">Mensaje inicial de WhatsApp
                 <input type="text" name="contact_whatsapp_message" data-platform-field disabled maxlength="280" placeholder="Hola, quiero información sobre este evento." />
-                <span class="mt-1.5 block text-xs font-normal text-slate-500">Si lo dejas vacío, se crea un saludo con el nombre del evento.</span>
+                <span class="mt-2 block text-xs font-normal text-slate-500">Si lo dejas vacío, se crea un saludo con el nombre del evento.</span>
               </label>
             </div>
 
             <section id="event-registration-form-settings" class="hidden rounded-lg border border-[#293C74]/15 bg-[#F7F9FF] p-4" aria-labelledby="event-registration-form-title">
               <h4 id="event-registration-form-title" class="text-sm font-bold text-[#293C74]">Datos del formulario</h4>
-              <p class="mt-1 text-xs leading-relaxed text-slate-500">Nombre y correo siempre se solicitan para poder confirmar la inscripción. Elige únicamente los datos adicionales que realmente usarán.</p>
-              <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <p class="mt-2 text-xs leading-relaxed text-slate-500">Nombre y correo siempre se solicitan para poder confirmar la inscripción. Elige únicamente los datos adicionales que realmente usarán.</p>
+              <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <label class="event-field">Número para WhatsApp
                   <select id="event-registration-phone-mode" data-platform-field disabled>
                     <option value="HIDDEN">No pedirlo</option>
@@ -288,32 +288,32 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   </select>
                 </label>
                 <div class="space-y-2 pt-6 text-sm text-slate-700">
-                  <label class="flex items-start gap-2"><input id="event-registration-collect-church" type="checkbox" data-platform-field disabled class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" /> <span><strong>Preguntar iglesia o congregación</strong><small class="mt-0.5 block text-xs text-slate-500">Campo opcional para la persona.</small></span></label>
-                  <label class="flex items-start gap-2"><input id="event-registration-whatsapp-updates" type="checkbox" data-platform-field disabled class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" /> <span><strong>Ofrecer recordatorios por WhatsApp</strong><small class="mt-0.5 block text-xs text-slate-500">La persona decide si los autoriza.</small></span></label>
+                  <label class="flex items-start gap-2"><input id="event-registration-collect-church" type="checkbox" data-platform-field disabled class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" /> <span><strong>Preguntar iglesia o congregación</strong><small class="mt-2 block text-xs text-slate-500">Campo opcional para la persona.</small></span></label>
+                  <label class="flex items-start gap-2"><input id="event-registration-whatsapp-updates" type="checkbox" data-platform-field disabled class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" /> <span><strong>Ofrecer recordatorios por WhatsApp</strong><small class="mt-2 block text-xs text-slate-500">La persona decide si los autoriza.</small></span></label>
                 </div>
               </div>
-              <div class="mt-5 border-t border-[#293C74]/10 pt-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="mt-6 border-t border-[#293C74]/10 pt-4">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h5 class="text-sm font-bold text-[#293C74]">Preguntas adicionales</h5>
-                    <p class="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500">Agrega solo lo necesario: texto corto o abierto, opciones, sí/no o fecha. No se permiten archivos ni datos sensibles.</p>
+                    <p class="mt-2 max-w-2xl text-xs leading-relaxed text-slate-500">Agrega solo lo necesario: texto corto o abierto, opciones, sí/no o fecha. No se permiten archivos ni datos sensibles.</p>
                   </div>
-                  <button id="event-custom-field-add" type="button" data-platform-field disabled class="inline-flex min-h-10 items-center justify-center rounded-md border border-[#293C74] bg-white px-3 py-2 text-xs font-bold text-[#293C74] hover:bg-[#293C74] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">+ Agregar pregunta</button>
+                  <button id="event-custom-field-add" type="button" data-platform-field disabled class="inline-flex min-h-10 items-center justify-center rounded-md border border-[#293C74] bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:bg-[#293C74] hover:text-white disabled:cursor-not-allowed disabled:opacity-50">+ Agregar pregunta</button>
                 </div>
-                <p id="event-custom-field-empty" class="mt-3 rounded-md border border-dashed border-slate-300 bg-white px-3 py-3 text-xs leading-relaxed text-slate-500">No hay preguntas adicionales. La inscripción pedirá solo los datos que configuraste arriba.</p>
-                <div id="event-custom-fields" class="mt-3 space-y-3" aria-live="polite"></div>
+                <p id="event-custom-field-empty" class="mt-4 rounded-md border border-dashed border-slate-300 bg-white p-4 text-xs leading-relaxed text-slate-500">No hay preguntas adicionales. La inscripción pedirá solo los datos que configuraste arriba.</p>
+                <div id="event-custom-fields" class="mt-4 space-y-4" aria-live="polite"></div>
               </div>
             </section>
           </section>
 
-          <div id="event-finance-pending" class="hidden rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+          <div id="event-finance-pending" class="hidden rounded-md border border-slate-200 bg-slate-50 px-4 py-4">
             <p class="text-sm font-bold text-slate-700">Operación financiera pendiente de activar</p>
           </div>
 
-          <section id="event-finance-settings" class="hidden space-y-4 border-t border-slate-200 pt-5" aria-labelledby="event-finance-title">
+          <section id="event-finance-settings" class="hidden space-y-4 border-t border-slate-200 pt-6" aria-labelledby="event-finance-title">
             <div>
               <h3 id="event-finance-title" class="text-sm font-bold text-[#293C74]">Modalidad y cobro</h3>
-              <p id="event-finance-registration-hint" class="mt-1 text-xs text-slate-500">Selecciona “Inscripción en Maná” para configurar cobros y aprobación.</p>
+              <p id="event-finance-registration-hint" class="mt-2 text-xs text-slate-500">Selecciona “Inscripción en Maná” para configurar cobros y aprobación.</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">Modalidad
@@ -345,15 +345,15 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
             <section id="event-dual-price-settings" class="hidden rounded-lg border border-[#293C74]/15 bg-[#F7F9FF] p-4" aria-labelledby="event-dual-price-title">
               <h4 id="event-dual-price-title" class="text-sm font-bold text-[#293C74]">Dos precios, una sola invitación</h4>
-              <p class="mt-1 text-xs leading-relaxed text-slate-500">Define cada valor directamente. No hacemos conversiones automáticas ni mezclamos monedas en los reportes.</p>
-              <div class="mt-3 grid gap-4 sm:grid-cols-2">
+              <p class="mt-2 text-xs leading-relaxed text-slate-500">Define cada valor directamente. No hacemos conversiones automáticas ni mezclamos monedas en los reportes.</p>
+              <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <label class="event-field">Precio en Colombia · COP
                   <input id="event-price-cop" type="text" name="price_cop" data-finance-field disabled inputmode="numeric" autocomplete="off" maxlength="24" placeholder="300.000" />
-                  <span class="mt-1.5 block text-xs font-normal text-slate-500">Se cobra con Wompi y entra al recaudo nacional.</span>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Se cobra con Wompi y entra al recaudo nacional.</span>
                 </label>
                 <label class="event-field">Precio internacional · USD
                   <input id="event-price-usd" type="text" name="price_usd" data-finance-field disabled inputmode="decimal" autocomplete="off" maxlength="24" placeholder="80,00" />
-                  <span class="mt-1.5 block text-xs font-normal text-slate-500">Se cobra con Stripe para asistentes fuera de Colombia.</span>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Se cobra con Stripe para asistentes fuera de Colombia.</span>
                 </label>
               </div>
             </section>
@@ -364,15 +364,15 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <option value="STRIPE">Stripe</option>
                 <option id="event-online-provider-dual" value="DUAL">Wompi Colombia + Stripe internacional</option>
               </select>
-              <span id="event-online-provider-hint" class="mt-1.5 block text-xs font-normal text-slate-500"></span>
+              <span id="event-online-provider-hint" class="mt-2 block text-xs font-normal text-slate-500"></span>
             </label>
-            <div id="event-manual-payment-panel" class="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+            <div id="event-manual-payment-panel" class="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-4">
               <label class="flex min-h-9 items-center gap-2 text-sm font-semibold text-slate-700">
                 <input id="event-manual-payment-enabled" type="checkbox" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                 Aceptar pago verificado manualmente
               </label>
               <p id="event-manual-payment-hint" class="text-xs leading-relaxed text-slate-500">Disponible para eventos con inscripción en Maná y precio fijo o aporte voluntario.</p>
-              <div id="event-manual-payment-settings" class="hidden space-y-3 border-t border-slate-200 pt-3">
+              <div id="event-manual-payment-settings" class="hidden space-y-4 border-t border-slate-200 pt-4">
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="event-field">Tipo de pago
                     <select id="event-manual-payment-kind" data-finance-field disabled>
@@ -392,7 +392,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <label id="event-manual-payment-url-wrapper" class="event-field hidden">Enlace HTTPS de pago
                   <input id="event-manual-payment-url" type="url" data-finance-field disabled maxlength="500" placeholder="https://..." />
                 </label>
-                <div id="event-manual-payment-qr-wrapper" class="hidden space-y-3">
+                <div id="event-manual-payment-qr-wrapper" class="hidden space-y-4">
                   <label class="event-field">Imagen del código QR
                     <input id="event-manual-payment-qr" type="file" data-finance-field disabled accept="image/png,image/jpeg,image/webp" />
                   </label>
@@ -401,38 +401,38 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
               </div>
             </div>
-            <label class="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
+            <label class="flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
               <input type="checkbox" name="registration_requires_approval" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
               Aprobar inscripciones antes de confirmarlas
             </label>
           </section>
 
-          <div id="event-form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert"></div>
+          <div id="event-form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700" role="alert"></div>
 
           <div class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-            <button id="event-cancel" type="button" class="min-h-10 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
-            <button type="submit" class="min-h-10 rounded-md bg-[#293C74] px-4 py-1.5 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
+            <button id="event-cancel" type="button" class="min-h-10 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+            <button type="submit" class="min-h-10 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Guardar evento</button>
           </div>
         </form>
 
         <aside class="border-t border-slate-200 bg-slate-50 p-4 sm:p-6 lg:border-l lg:border-t-0">
-          <p class="mb-3 text-xs font-bold uppercase text-slate-500">Vista previa de la invitación</p>
+          <p class="mb-4 text-xs font-bold uppercase text-slate-500">Vista previa de la invitación</p>
           <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div id="event-preview-media" class="relative aspect-[16/9] bg-[#293C74]">
               <img id="event-preview-image" class="hidden h-full w-full object-cover" alt="" />
-              <div id="event-preview-date" class="absolute bottom-3 left-3 rounded-md bg-white px-3 py-2 text-center shadow-sm">
+              <div id="event-preview-date" class="absolute bottom-3 left-3 rounded-md bg-white px-4 py-2 text-center shadow-sm">
                 <span class="block text-xs font-bold uppercase text-slate-500">Fecha</span>
                 <strong class="block text-lg text-[#293C74]">Por definir</strong>
               </div>
             </div>
-            <div class="space-y-3 p-5">
+            <div class="space-y-4 p-6">
               <div class="flex flex-wrap items-center gap-2">
                 <span id="event-preview-scope" class="portal-chip bg-[#293C74]/10 text-[#293C74]">Local</span>
                 <span id="event-preview-status" class="portal-chip bg-amber-50 text-amber-700">Borrador</span>
               </div>
               <h3 id="event-preview-title" class="text-xl font-bold leading-tight text-[#293C74]">Título del evento</h3>
               <p id="event-preview-description" class="text-sm leading-relaxed text-slate-600">La descripción aparecerá aquí.</p>
-              <p id="event-preview-location" class="border-t border-slate-100 pt-3 text-sm font-medium text-slate-700">Lugar por definir</p>
+              <p id="event-preview-location" class="border-t border-slate-100 pt-4 text-sm font-medium text-slate-700">Lugar por definir</p>
               <p id="event-preview-price" class="text-sm font-bold text-[#293C74]">Evento gratuito</p>
               <span id="event-preview-cta" class="hidden min-h-10 items-center justify-center rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Inscribirme</span>
             </div>
@@ -448,9 +448,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
       min-height: 40px;
       flex: none;
       align-items: center;
-      gap: 0.4rem;
+      gap: var(--space-1);
       border-radius: 5px;
-      padding: 0.45rem 0.7rem;
+      padding: var(--space-1) var(--space-2);
       color: #5d687a;
       font-size: 0.78rem;
       font-weight: 700;
@@ -461,7 +461,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
       min-width: 1.25rem;
       border-radius: 4px;
       background: #eef1f5;
-      padding: 0.12rem 0.3rem;
+      padding: 0 var(--space-1);
       color: #4b5563;
       font-size: 0.7rem;
       text-align: center;
@@ -488,10 +488,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
     .event-field :is(input, select, textarea) {
       display: block;
       width: 100%;
-      margin-top: 0.35rem;
+      margin-top: var(--space-1);
       border: 1px solid #dce2ea;
       background: #fff;
-      padding: 0.5rem 0.65rem;
+      padding: var(--space-1) var(--space-2);
       color: #172033;
       font-size: 0.875rem;
       font-weight: 400;
@@ -508,7 +508,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
     .event-date-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
-      gap: 1rem;
+      gap: var(--space-2);
     }
 
     .event-date-field {
@@ -525,10 +525,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
       width: 100%;
       min-width: 0;
       min-height: 2.5rem;
-      margin-top: 0.35rem;
+      margin-top: var(--space-1);
       border: 1px solid #dce2ea;
       background: #fff;
-      padding: 0.5rem 0.65rem;
+      padding: var(--space-1) var(--space-2);
       color: #172033;
       font-size: 0.875rem;
       font-weight: 400;
@@ -550,18 +550,18 @@ import Sidebar from '@components/portal/Sidebar.astro';
     }
 
     :global(.flatpickr-calendar.event-calendar) {
-      width: min(286px, calc(100vw - 20px));
+      width: min(286px, calc(100vw - var(--space-4)));
       border: 1px solid #dce2ea;
       border-radius: 6px;
       background: #fff;
-      padding: 6px;
+      padding: var(--space-1);
       box-shadow: 0 18px 45px rgb(23 32 51 / 18%);
       color: #172033;
       font-family: inherit;
     }
 
     :global(.event-calendar .flatpickr-months) {
-      padding: 2px 0 6px;
+      padding: 0 0 var(--space-1);
     }
 
     :global(.event-calendar .flatpickr-current-month),
@@ -618,9 +618,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
     :global(.event-calendar-confirm) {
       display: block;
-      width: calc(100% - 8px);
+      width: calc(100% - var(--space-2));
       min-height: 34px;
-      margin: 6px 4px 2px;
+      margin: var(--space-1);
       border: 0;
       border-radius: 4px;
       background: #293c74;
@@ -639,11 +639,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
       display: grid;
       min-height: 116px;
       place-content: center;
-      gap: 0.3rem;
+      gap: var(--space-1);
       border: 1px dashed #94a3b8;
       border-radius: 6px;
       background: #f8fafc;
-      padding: 1rem;
+      padding: var(--space-2);
       color: #475569;
       text-align: center;
       cursor: pointer;
@@ -708,11 +708,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
       min-height: 40px;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
+      gap: var(--space-1);
       border: 1px solid #dce2ea;
       border-radius: 5px;
       background: #fff;
-      padding: 0.45rem 0.7rem;
+      padding: var(--space-1) var(--space-2);
       color: #293c74;
       font-size: 0.75rem;
       font-weight: 700;

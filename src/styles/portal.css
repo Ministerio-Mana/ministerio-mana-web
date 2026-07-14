@@ -76,13 +76,13 @@
 
 .portal-shell .portal-stat {
   min-width: 0;
-  padding: 1rem;
+  padding: var(--space-2);
   border-right: 1px solid #edf0f4;
   border-bottom: 1px solid #edf0f4;
 }
 
 .portal-shell .portal-stat-label {
-  margin-bottom: 0.35rem;
+  margin-bottom: var(--space-1);
   color: var(--portal-muted);
   font-size: 0.75rem;
   font-weight: 700;
@@ -116,9 +116,9 @@
 .portal-shell .portal-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--space-1);
   border-radius: 5px;
-  padding: 0.3rem 0.5rem;
+  padding: var(--space-1);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.1;
@@ -126,7 +126,7 @@
 
 .portal-auth-shell {
   min-height: 100vh;
-  padding: 1rem;
+  padding: var(--space-2);
 }
 
 .portal-auth-card {
@@ -150,11 +150,11 @@
 
   .portal-shell .portal-responsive-table tbody {
     display: grid;
-    gap: 0.75rem;
+    gap: var(--space-2);
   }
 
   .portal-shell .portal-responsive-table tr {
-    padding: 0.75rem 1rem;
+    padding: var(--space-2);
     border: 1px solid var(--portal-border);
     border-radius: 8px;
     background: var(--portal-surface);
@@ -164,8 +164,8 @@
     display: grid;
     grid-template-columns: minmax(7rem, 34%) minmax(0, 1fr);
     align-items: start;
-    gap: 0.75rem;
-    padding: 0.6rem 0 !important;
+    gap: var(--space-2);
+    padding: var(--space-1) 0 !important;
     border-bottom: 1px solid #edf0f4;
     text-align: left !important;
     overflow-wrap: anywhere;
@@ -206,12 +206,12 @@
   }
 
   .portal-shell .portal-stat {
-    padding: 0.85rem;
+    padding: var(--space-2);
   }
 
   .portal-auth-shell {
     align-items: flex-start !important;
-    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-top: max(var(--space-2), env(safe-area-inset-top));
   }
 }
 

@@ -109,9 +109,17 @@ function compareWithBaseline(report, baseline) {
   const newDebt = [];
   const baselineUpdates = [];
   const modules = totalsByModule(report);
+  const strictFiles = Array.isArray(baseline.$strictFiles) ? baseline.$strictFiles : [];
+  const moduleBaseline = Object.fromEntries(
+    Object.entries(baseline).filter(([key]) => !key.startsWith("$")),
+  );
+
+  for (const file of strictFiles) {
+    if (report[file]) newDebt.push(`${file}: volvió a contener deuda después de llegar a cero`);
+  }
 
   for (const [module, metrics] of Object.entries(modules)) {
-    const allowed = baseline[module];
+    const allowed = moduleBaseline[module];
     if (!allowed) {
       newDebt.push(`${module}: contiene deuda de espaciado nueva`);
       continue;
@@ -126,48 +134,54 @@ function compareWithBaseline(report, baseline) {
     }
   }
 
-  for (const module of Object.keys(baseline)) {
+  for (const module of Object.keys(moduleBaseline)) {
     if (!modules[module]) baselineUpdates.push(`${module}: ya no contiene deuda; elimina el módulo de la línea base`);
   }
 
   return { baselineUpdates, newDebt };
 }
 
-const report = auditSpacingContract();
+function main() {
+  const report = auditSpacingContract();
 
-if (process.argv.includes("--report")) {
-  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-  process.exit(0);
+  if (process.argv.includes("--report")) {
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return;
+  }
+
+  if (process.argv.includes("--baseline")) {
+    process.stdout.write(`${JSON.stringify(totalsByModule(report), null, 2)}\n`);
+    return;
+  }
+
+  if (!existsSync(BASELINE_FILE)) {
+    console.error("Falta scripts/spacing-contract-baseline.json. Ejecuta el reporte y revisa la línea base antes de crearla.");
+    process.exitCode = 1;
+    return;
+  }
+
+  const baseline = JSON.parse(readFileSync(BASELINE_FILE, "utf8"));
+  const { baselineUpdates, newDebt } = compareWithBaseline(report, baseline);
+  const summary = totals(report);
+
+  console.log(
+    `Contrato de espaciado: ${Object.keys(report).length} archivos heredados; ` +
+      `${summary.tailwindOffScale} clases fuera de escala, ` +
+      `${summary.tailwindArbitrary} arbitrarias y ${summary.cssMagicValue} declaraciones CSS por migrar.`,
+  );
+
+  if (newDebt.length > 0) {
+    console.error("\nSe agregó deuda nueva de padding, margin o gap:");
+    for (const failure of newDebt) console.error(`- ${failure}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (baselineUpdates.length > 0) {
+    console.error("\nLa deuda bajó. Actualiza scripts/spacing-contract-baseline.json para que no pueda regresar:");
+    for (const update of baselineUpdates) console.error(`- ${update}`);
+    process.exitCode = 1;
+  }
 }
 
-if (process.argv.includes("--baseline")) {
-  process.stdout.write(`${JSON.stringify(totalsByModule(report), null, 2)}\n`);
-  process.exit(0);
-}
-
-if (!existsSync(BASELINE_FILE)) {
-  console.error("Falta scripts/spacing-contract-baseline.json. Ejecuta el reporte y revisa la línea base antes de crearla.");
-  process.exit(1);
-}
-
-const baseline = JSON.parse(readFileSync(BASELINE_FILE, "utf8"));
-const { baselineUpdates, newDebt } = compareWithBaseline(report, baseline);
-const summary = totals(report);
-
-console.log(
-  `Contrato de espaciado: ${Object.keys(report).length} archivos heredados; ` +
-    `${summary.tailwindOffScale} clases fuera de escala, ` +
-    `${summary.tailwindArbitrary} arbitrarias y ${summary.cssMagicValue} declaraciones CSS por migrar.`,
-);
-
-if (newDebt.length > 0) {
-  console.error("\nSe agregó deuda nueva de padding, margin o gap:");
-  for (const failure of newDebt) console.error(`- ${failure}`);
-  process.exit(1);
-}
-
-if (baselineUpdates.length > 0) {
-  console.error("\nLa deuda bajó. Actualiza scripts/spacing-contract-baseline.json para que no pueda regresar:");
-  for (const update of baselineUpdates) console.error(`- ${update}`);
-  process.exit(1);
-}
+if (resolve(process.argv[1] || "") === fileURLToPath(import.meta.url)) main();

@@ -155,12 +155,12 @@ function setDocumentsMessage(message = '', tone = 'info') {
   if (!documentsMessage) return;
   documentsMessage.textContent = message;
   documentsMessage.className = message
-    ? `rounded-md border px-3 py-2 text-sm ${tone === 'error'
+    ? `rounded-md border px-4 py-2 text-sm ${tone === 'error'
       ? 'border-red-200 bg-red-50 text-red-700'
       : tone === 'success'
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
         : 'border-amber-200 bg-amber-50 text-amber-800'}`
-    : 'hidden rounded-md border px-3 py-2 text-sm';
+    : 'hidden rounded-md border px-4 py-2 text-sm';
 }
 
 function renderEventDocuments(documents) {
@@ -173,7 +173,7 @@ function renderEventDocuments(documents) {
     const failed = documentItem.status === 'FAILED';
     const presentation = eventDocumentPresentation(documentItem);
     const badge = presentation.isWorkbook
-      ? '<span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">Excel en línea</span>'
+      ? '<span class="inline-flex rounded-full bg-emerald-50 px-2 py-2 text-[11px] font-bold text-emerald-700">Excel en línea</span>'
       : '';
     const formattedSize = formatFileSize(documentItem.size_bytes);
     const formattedDate = formatDate(presentation.activityDate);
@@ -181,17 +181,17 @@ function renderEventDocuments(documents) {
       .filter(Boolean)
       .join(' · ');
     const action = url && !failed
-      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border ${presentation.isWorkbook ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-slate-300 bg-white text-[#293C74] hover:bg-slate-50'} px-3 py-2 text-sm font-bold">${icon(externalLinkIconUrl)} ${escapeHtml(presentation.actionLabel)}</a>`
+      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border ${presentation.isWorkbook ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-slate-300 bg-white text-[#293C74] hover:bg-slate-50'} px-4 py-2 text-sm font-bold">${icon(externalLinkIconUrl)} ${escapeHtml(presentation.actionLabel)}</a>`
       : '';
-    return `<div class="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${presentation.isWorkbook ? 'bg-emerald-50/30' : ''}">
-      <div class="flex min-w-0 items-start gap-3">
-        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${presentation.isWorkbook ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${icon(fileIconUrl)}</span>
+    return `<div class="flex min-h-16 flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between ${presentation.isWorkbook ? 'bg-emerald-50/30' : ''}">
+      <div class="flex min-w-0 items-start gap-4">
+        <span class="mt-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${presentation.isWorkbook ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">${icon(fileIconUrl)}</span>
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <p class="break-words text-sm font-bold text-slate-800">${escapeHtml(documentItem.original_name || 'Archivo')}</p>
             ${badge}
           </div>
-          <p class="mt-1 text-xs ${failed ? 'font-bold text-red-700' : 'text-slate-500'}">${failed ? 'La carga no se completó' : escapeHtml(metadata)}</p>
+          <p class="mt-2 text-xs ${failed ? 'font-bold text-red-700' : 'text-slate-500'}">${failed ? 'La carga no se completó' : escapeHtml(metadata)}</p>
         </div>
       </div>
       ${action}
@@ -363,10 +363,10 @@ function renderFinanceSummary(rows) {
     const currency = String(row.currency || 'COP').toUpperCase();
     const approvedCount = Number(row.approved_count || 0);
     const pendingCount = Number(row.pending_count || 0);
-    return `<article class="bg-white px-4 py-5 sm:px-5">
+    return `<article class="border-b border-slate-200 bg-white px-4 py-6 sm:px-6">
       <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">${escapeHtml(PAYMENT_PROVIDER_LABELS[provider] || provider || 'Otro medio')}</p>
       <p class="mt-2 text-2xl font-bold text-[#293C74]">${escapeHtml(formatAmount(row.approved_amount, currency))}</p>
-      <p class="mt-1 text-sm text-slate-600">${approvedCount} aprobado${approvedCount === 1 ? '' : 's'}${pendingCount ? ` · ${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}` : ''}</p>
+      <p class="mt-2 text-sm text-slate-600">${approvedCount} aprobado${approvedCount === 1 ? '' : 's'}${pendingCount ? ` · ${pendingCount} pendiente${pendingCount === 1 ? '' : 's'}` : ''}</p>
     </article>`;
   }).join('');
 }
@@ -399,22 +399,22 @@ function renderRegistrations() {
     const remaining = Math.max(0, quantity - checkedIn);
     const paymentStatus = String(payment?.status || '').toUpperCase();
     const paymentReferenceDetail = payment?.is_manual
-      ? `<div><dt class="text-xs font-bold uppercase text-slate-500">Referencia reportada</dt><dd class="mt-1 break-words font-semibold text-slate-800">${escapeHtml(payment.reported_reference || 'Sin referencia')}</dd></div>`
-      : `<div><dt class="text-xs font-bold uppercase text-slate-500">Estado del pago</dt><dd class="mt-1 font-semibold text-slate-800">${escapeHtml(PAYMENT_STATUS_LABELS[paymentStatus] || paymentStatus || 'Sin estado')}</dd></div>`;
+      ? `<div><dt class="text-xs font-bold uppercase text-slate-500">Referencia reportada</dt><dd class="mt-2 break-words font-semibold text-slate-800">${escapeHtml(payment.reported_reference || 'Sin referencia')}</dd></div>`
+      : `<div><dt class="text-xs font-bold uppercase text-slate-500">Estado del pago</dt><dd class="mt-2 font-semibold text-slate-800">${escapeHtml(PAYMENT_STATUS_LABELS[paymentStatus] || paymentStatus || 'Sin estado')}</dd></div>`;
     const paymentInfo = payment ? `
-      <dl class="grid gap-3 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div><dt class="text-xs font-bold uppercase text-slate-500">Método</dt><dd class="mt-1 font-semibold text-slate-800">${escapeHtml(payment.method_label || payment.method || 'Manual')}</dd></div>
+      <dl class="grid gap-4 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div><dt class="text-xs font-bold uppercase text-slate-500">Método</dt><dd class="mt-2 font-semibold text-slate-800">${escapeHtml(payment.method_label || payment.method || 'Manual')}</dd></div>
         ${paymentReferenceDetail}
-        <div><dt class="text-xs font-bold uppercase text-slate-500">Referencia Maná</dt><dd class="mt-1 break-all font-mono text-xs text-slate-700">${escapeHtml(payment.reference || '')}</dd></div>
-        <div><dt class="text-xs font-bold uppercase text-slate-500">Valor</dt><dd class="mt-1 font-bold text-[#293C74]">${escapeHtml(formatAmount(payment.amount, payment.currency))}</dd></div>
+        <div><dt class="text-xs font-bold uppercase text-slate-500">Referencia Maná</dt><dd class="mt-2 break-all font-mono text-xs text-slate-700">${escapeHtml(payment.reference || '')}</dd></div>
+        <div><dt class="text-xs font-bold uppercase text-slate-500">Valor</dt><dd class="mt-2 font-bold text-[#293C74]">${escapeHtml(formatAmount(payment.amount, payment.currency))}</dd></div>
       </dl>
-      ${payment.evidence ? `<div class="flex flex-col gap-3 rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      ${payment.evidence ? `<div class="flex flex-col gap-4 rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">Comprobante privado</p>
-          <p class="mt-1 break-words text-sm font-semibold text-slate-800">${escapeHtml(payment.evidence.original_filename || 'Comprobante')} · ${escapeHtml(formatFileSize(payment.evidence.size_bytes))}</p>
+          <p class="mt-2 break-words text-sm font-semibold text-slate-800">${escapeHtml(payment.evidence.original_filename || 'Comprobante')} · ${escapeHtml(formatFileSize(payment.evidence.size_bytes))}</p>
         </div>
-        <a href="${escapeAttr(payment.evidence.view_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-3 py-2 text-sm font-bold text-[#293C74] hover:bg-[#EEF2FF]">${icon(externalLinkIconUrl)} Ver comprobante</a>
-      </div>` : payment.requires_evidence ? `<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">Esta persona no adjuntó comprobante.</p>` : ''}` : '';
+        <a href="${escapeAttr(payment.evidence.view_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-[#EEF2FF]">${icon(externalLinkIconUrl)} Ver comprobante</a>
+      </div>` : payment.requires_evidence ? `<p class="rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">Esta persona no adjuntó comprobante.</p>` : ''}` : '';
     const missingRequiredEvidence = Boolean(payment?.requires_evidence && !payment?.evidence);
     const reviewActions = status === 'UNDER_REVIEW' && payment?.id && payment?.is_manual && permissions.can_approve ? `
       <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300" data-action="APPROVE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}" ${missingRequiredEvidence ? 'disabled title="Falta el comprobante obligatorio"' : ''}>${icon(checkCircleIconUrl)} Aprobar pago</button>
@@ -430,20 +430,20 @@ function renderRegistrations() {
     const extraDetails = getRegistrationExtraDetails(registration);
     const additionalInfo = extraDetails.length ? `
       <dl class="grid gap-2 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2">
-        ${extraDetails.map((detail) => `<div><dt class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">${escapeHtml(detail.label)}</dt><dd class="mt-1 break-words text-slate-700">${escapeHtml(detail.value)}</dd></div>`).join('')}
+        ${extraDetails.map((detail) => `<div><dt class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">${escapeHtml(detail.label)}</dt><dd class="mt-2 break-words text-slate-700">${escapeHtml(detail.value)}</dd></div>`).join('')}
       </dl>` : '';
 
     return `
-      <article class="portal-panel p-4 sm:p-5" data-registration-row="${escapeAttr(registration.id)}">
+      <article class="portal-panel p-4 sm:p-6" data-registration-row="${escapeAttr(registration.id)}">
         <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <h2 class="text-lg font-bold text-[#293C74]">${escapeHtml(registration.contact_name || 'Sin nombre')}</h2>
                 <span class="portal-chip ${STATUS_TONES[status] || 'bg-slate-100 text-slate-600'}">${escapeHtml(STATUS_LABELS[status] || status)}</span>
               </div>
-              <p class="mt-1 break-words text-sm text-slate-600">${escapeHtml(registration.contact_email || '')}${registration.contact_phone ? ` · ${escapeHtml(registration.contact_phone)}` : ''}</p>
-              <p class="mt-1 text-xs text-slate-500">${quantity} asistente${quantity === 1 ? '' : 's'} · Reportado ${escapeHtml(formatDate(registration.created_at))}</p>
+              <p class="mt-2 break-words text-sm text-slate-600">${escapeHtml(registration.contact_email || '')}${registration.contact_phone ? ` · ${escapeHtml(registration.contact_phone)}` : ''}</p>
+              <p class="mt-2 text-xs text-slate-500">${quantity} asistente${quantity === 1 ? '' : 's'} · Reportado ${escapeHtml(formatDate(registration.created_at))}</p>
             </div>
             <strong class="text-base text-[#293C74]">${escapeHtml(formatAmount(registration.total_amount, registration.currency))}</strong>
           </div>
@@ -522,12 +522,12 @@ function openReviewModal(action, registration) {
   if (reviewSummary) {
     reviewSummary.innerHTML = `
       <strong class="block text-[#293C74]">${escapeHtml(registration.contact_name)}</strong>
-      <span class="mt-1 block">${escapeHtml(formatAmount(registration.payment.amount, registration.payment.currency))} · ${escapeHtml(registration.payment.method_label || 'Pago manual')}</span>
-      <span class="mt-1 block break-words">Referencia reportada: ${escapeHtml(registration.payment.reported_reference || 'Sin referencia')}</span>`;
+      <span class="mt-2 block">${escapeHtml(formatAmount(registration.payment.amount, registration.payment.currency))} · ${escapeHtml(registration.payment.method_label || 'Pago manual')}</span>
+      <span class="mt-2 block break-words">Referencia reportada: ${escapeHtml(registration.payment.reported_reference || 'Sin referencia')}</span>`;
   }
   if (reviewConfirm) {
     reviewConfirm.textContent = approving ? 'Aprobar y confirmar inscripción' : 'Rechazar pago';
-    reviewConfirm.className = `min-h-11 rounded-md px-5 py-2 text-sm font-bold text-white ${approving ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`;
+    reviewConfirm.className = `min-h-11 rounded-md px-6 py-2 text-sm font-bold text-white ${approving ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`;
   }
   reviewModal.classList.remove('hidden');
   reviewModal.classList.add('flex');

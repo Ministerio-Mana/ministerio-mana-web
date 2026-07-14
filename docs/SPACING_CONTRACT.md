@@ -68,4 +68,6 @@ Estos valores pueden no ser múltiplos de 8, pero no deben usarse como `padding`
 
 `npm run test:spacing` revisa código Astro, CSS, JavaScript y TypeScript. La línea base registra la deuda histórica por módulo: una edición no puede aumentarla ni trasladarla a otra área del producto. Cuando una corrección reduce el contador, la prueba exige bajar también la línea base para que esa deuda no pueda regresar.
 
+Cuando un archivo llega a cero se agrega a `$strictFiles`. Desde ese momento cualquier infracción nueva en ese archivo bloquea el build, aunque otro archivo del mismo módulo haya mejorado.
+
 La línea base no convierte una infracción histórica en una buena práctica. Solo permite migrar el sitio por módulos sin bloquear producción ni deformar pantallas existentes de una vez.

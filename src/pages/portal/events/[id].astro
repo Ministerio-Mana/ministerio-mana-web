@@ -17,15 +17,15 @@ const eventId = String(Astro.params.id || '');
         </div>
 
         <div id="event-operation-content" class="mx-auto hidden max-w-7xl space-y-6">
-          <header class="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <header class="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div class="min-w-0">
               <a href="/portal/events" class="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-[#293C74] hover:underline">
                 <PortalIcon name="arrow-left" size={17} />
                 Eventos
               </a>
-              <p class="mt-3 text-xs font-bold uppercase text-slate-500">Pagos y asistencia</p>
-              <h1 id="event-operation-title" class="mt-1 truncate font-display text-3xl font-bold text-[#293C74]">Evento</h1>
-              <p id="event-operation-meta" class="mt-1 text-sm text-slate-600"></p>
+              <p class="mt-4 text-xs font-bold uppercase text-slate-500">Pagos y asistencia</p>
+              <h1 id="event-operation-title" class="mt-2 truncate font-display text-3xl font-bold text-[#293C74]">Evento</h1>
+              <p id="event-operation-meta" class="mt-2 text-sm text-slate-600"></p>
             </div>
             <div class="flex flex-wrap gap-2">
               <button id="event-operation-export" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-[#F7F9FF] disabled:cursor-not-allowed disabled:opacity-60">
@@ -49,36 +49,36 @@ const eventId = String(Astro.params.id || '');
           </section>
 
           <section id="event-finance-summary" class="portal-panel hidden overflow-hidden" aria-labelledby="event-finance-summary-title">
-            <div class="border-b border-slate-200 px-4 py-4 sm:px-5">
+            <div class="border-b border-slate-200 px-4 py-4 sm:px-6">
               <p class="text-xs font-bold uppercase text-slate-500">Recaudo conciliado</p>
-              <h2 id="event-finance-summary-title" class="mt-1 text-xl font-bold text-[#293C74]">Resumen por proveedor y moneda</h2>
-              <p class="mt-1 text-sm text-slate-600">Cada moneda se muestra por separado. El portal nunca suma pesos con dólares.</p>
+              <h2 id="event-finance-summary-title" class="mt-2 text-xl font-bold text-[#293C74]">Resumen por proveedor y moneda</h2>
+              <p class="mt-2 text-sm text-slate-600">Cada moneda se muestra por separado. El portal nunca suma pesos con dólares.</p>
             </div>
-            <div id="event-finance-summary-grid" class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
+            <div id="event-finance-summary-grid" class="grid gap-0 bg-slate-200 sm:grid-cols-2 xl:grid-cols-3" aria-live="polite"></div>
           </section>
 
           <section id="event-documents-section" class="portal-panel overflow-hidden" aria-labelledby="event-documents-title">
-            <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div class="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <p class="text-xs font-bold uppercase text-slate-500">Microsoft 365</p>
-                <h2 id="event-documents-title" class="mt-1 text-xl font-bold text-[#293C74]">Documentos internos del evento</h2>
-                <p class="mt-1 text-sm text-slate-600"><strong>Inscripciones.xlsx</strong> se actualiza sobre el mismo archivo y abre en Excel web. Los demás documentos permanecen privados por evento.</p>
+                <h2 id="event-documents-title" class="mt-2 text-xl font-bold text-[#293C74]">Documentos internos del evento</h2>
+                <p class="mt-2 text-sm text-slate-600"><strong>Inscripciones.xlsx</strong> se actualiza sobre el mismo archivo y abre en Excel web. Los demás documentos permanecen privados por evento.</p>
               </div>
-              <button id="event-documents-refresh" type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
+              <button id="event-documents-refresh" type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
                 <PortalIcon name="refresh-cw" size={16} />
                 Actualizar archivos
               </button>
             </div>
 
-            <div class="space-y-4 p-4 sm:p-5">
-              <p id="event-documents-message" class="hidden rounded-md border px-3 py-2 text-sm" role="status" aria-live="polite"></p>
+            <div class="space-y-4 p-4 sm:p-6">
+              <p id="event-documents-message" class="hidden rounded-md border px-4 py-2 text-sm" role="status" aria-live="polite"></p>
 
-              <form id="event-documents-form" class="hidden gap-3 sm:grid-cols-[minmax(0,1fr)_auto]" enctype="multipart/form-data">
+              <form id="event-documents-form" class="hidden gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" enctype="multipart/form-data">
                 <label class="block min-w-0">
                   <span class="sr-only">Seleccionar archivo del evento</span>
-                  <input id="event-documents-file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" class="block min-h-11 w-full rounded-md border border-slate-300 bg-white text-sm text-slate-700 file:mr-3 file:min-h-11 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-4 file:text-sm file:font-bold file:text-[#293C74]" />
+                  <input id="event-documents-file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" class="block min-h-11 w-full rounded-md border border-slate-300 bg-white text-sm text-slate-700 file:mr-4 file:min-h-11 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-4 file:text-sm file:font-bold file:text-[#293C74]" />
                 </label>
-                <button id="event-documents-submit" type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60">
+                <button id="event-documents-submit" type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60">
                   <PortalIcon name="upload" size={17} />
                   Subir archivo
                 </button>
@@ -91,22 +91,22 @@ const eventId = String(Astro.params.id || '');
               <div id="event-documents-list" class="hidden divide-y divide-slate-200 rounded-md border border-slate-200" aria-live="polite"></div>
               <div id="event-documents-empty" class="hidden rounded-md border border-dashed border-slate-300 px-4 py-8 text-center">
                 <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="file-pen-line" size={20} /></span>
-                <p class="mt-3 text-sm font-bold text-slate-700">Todavía no hay archivos</p>
-                <p class="mt-1 text-xs text-slate-500">Los documentos aparecerán aquí sin mezclarse con otros eventos. No uses esta sección para galerías públicas.</p>
+                <p class="mt-4 text-sm font-bold text-slate-700">Todavía no hay archivos</p>
+                <p class="mt-2 text-xs text-slate-500">Los documentos aparecerán aquí sin mezclarse con otros eventos. No uses esta sección para galerías públicas.</p>
               </div>
             </div>
           </section>
 
-          <section class="portal-panel p-3 sm:p-4" aria-label="Filtros de inscripciones">
-            <div class="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_220px]">
+          <section class="portal-panel p-4" aria-label="Filtros de inscripciones">
+            <div class="grid gap-4 sm:grid-cols-[minmax(220px,1fr)_220px]">
               <label class="relative block">
                 <span class="sr-only">Buscar persona</span>
                 <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
-                <input id="event-operation-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm" placeholder="Buscar nombre, correo o referencia" autocomplete="off" />
+                <input id="event-operation-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm" placeholder="Buscar nombre, correo o referencia" autocomplete="off" />
               </label>
               <label>
                 <span class="sr-only">Filtrar estado</span>
-                <select id="event-operation-status" class="w-full border border-slate-200 bg-white px-3 py-2 text-sm">
+                <select id="event-operation-status" class="w-full border border-slate-200 bg-white px-4 py-2 text-sm">
                   <option value="">Todos los estados</option>
                   <option value="UNDER_REVIEW">Por verificar</option>
                   <option value="CONFIRMED">Confirmados</option>
@@ -117,22 +117,22 @@ const eventId = String(Astro.params.id || '');
             </div>
           </section>
 
-          <div id="event-operation-loading" class="space-y-3" aria-live="polite">
+          <div id="event-operation-loading" class="space-y-4" aria-live="polite">
             {[1, 2, 3].map(() => (
-              <div class="portal-panel animate-pulse p-5">
+              <div class="portal-panel animate-pulse p-6">
                 <div class="h-4 w-2/5 bg-slate-100"></div>
-                <div class="mt-3 h-3 w-3/4 bg-slate-100"></div>
-                <div class="mt-3 h-9 w-48 bg-slate-100"></div>
+                <div class="mt-4 h-3 w-3/4 bg-slate-100"></div>
+                <div class="mt-4 h-9 w-48 bg-slate-100"></div>
               </div>
             ))}
           </div>
 
-          <div id="event-operation-list" class="hidden space-y-3" aria-live="polite"></div>
+          <div id="event-operation-list" class="hidden space-y-4" aria-live="polite"></div>
 
-          <div id="event-operation-empty" class="portal-panel hidden px-5 py-12 text-center">
-            <span class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="users" size={22} /></span>
+          <div id="event-operation-empty" class="portal-panel hidden px-6 py-12 text-center">
+            <span class="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500"><PortalIcon name="users" size={22} /></span>
             <h2 class="text-base font-bold text-slate-800">No hay inscripciones en esta vista</h2>
-            <p class="mt-1 text-sm text-slate-500">Cambia el filtro o comparte la invitación del evento.</p>
+            <p class="mt-2 text-sm text-slate-500">Cambia el filtro o comparte la invitación del evento.</p>
           </div>
 
           <nav id="event-operation-pagination" class="hidden items-center justify-between border-t border-slate-200 pt-4" aria-label="Paginación de inscripciones">
@@ -147,7 +147,7 @@ const eventId = String(Astro.params.id || '');
 
   <div id="event-review-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-labelledby="event-review-title">
     <div class="w-full max-w-lg rounded-lg border border-slate-200 bg-white shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
         <div>
           <p class="text-xs font-bold uppercase text-slate-500">Verificación manual</p>
           <h2 id="event-review-title" class="text-xl font-bold text-[#293C74]">Revisar pago</h2>
@@ -156,16 +156,16 @@ const eventId = String(Astro.params.id || '');
           <PortalIcon name="x" size={21} />
         </button>
       </div>
-      <div class="space-y-4 p-5">
-        <div id="event-review-summary" class="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"></div>
+      <div class="space-y-4 p-6">
+        <div id="event-review-summary" class="rounded-md border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700"></div>
         <label class="block text-sm font-bold text-slate-700">Nota de revisión
-          <textarea id="event-review-note" rows="3" maxlength="500" class="mt-1 block w-full rounded-md border-slate-300" placeholder="Dato usado para verificar o motivo del rechazo"></textarea>
+          <textarea id="event-review-note" rows="3" maxlength="500" class="mt-2 block w-full rounded-md border-slate-300" placeholder="Dato usado para verificar o motivo del rechazo"></textarea>
         </label>
-        <p id="event-review-error" class="hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert"></p>
+        <p id="event-review-error" class="hidden rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700" role="alert"></p>
       </div>
-      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 px-5 py-4 sm:flex-row sm:justify-end">
+      <div class="flex flex-col-reverse gap-2 border-t border-slate-200 px-6 py-4 sm:flex-row sm:justify-end">
         <button id="event-review-cancel" type="button" class="min-h-11 rounded-md border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancelar</button>
-        <button id="event-review-confirm" type="button" class="min-h-11 rounded-md bg-[#293C74] px-5 py-2 text-sm font-bold text-white">Confirmar</button>
+        <button id="event-review-confirm" type="button" class="min-h-11 rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white">Confirmar</button>
       </div>
     </div>
   </div>

@@ -1,4 +1,11 @@
 {
+  "$strictFiles": [
+    "src/pages/portal/events.astro",
+    "src/pages/portal/events/[id].astro",
+    "src/scripts/portal-events.js",
+    "src/scripts/portal-event-operation.js",
+    "src/styles/portal.css"
+  ],
   "src/components/_root": {
     "tailwindOffScale": 50,
     "tailwindArbitrary": 0,
@@ -140,9 +147,9 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 562,
+    "tailwindOffScale": 452,
     "tailwindArbitrary": 0,
-    "cssMagicValue": 15
+    "cssMagicValue": 0
   },
   "src/pages/primicias": {
     "tailwindOffScale": 3,
@@ -150,13 +157,13 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 476,
+    "tailwindOffScale": 428,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
   "src/styles": {
     "tailwindOffScale": 0,
     "tailwindArbitrary": 0,
-    "cssMagicValue": 19
+    "cssMagicValue": 8
   }
 }
