@@ -4,6 +4,7 @@ import {
   applyFinanceReportFilters,
   buildFinanceCsv,
   financeExportFilename,
+  financeRecordCurrency,
   financeRecordOriginLabel,
   parseFinanceReportFilters,
 } from '../src/lib/financeReporting.ts';
@@ -58,6 +59,10 @@ test('aplica período, moneda y proveedor al query', () => {
       operations.push(['eq', column, value]);
       return this;
     },
+    or(value: string) {
+      operations.push(['or', 'filter', value]);
+      return this;
+    },
   };
   applyFinanceReportFilters(query, {
     period: 'custom',
@@ -69,7 +74,7 @@ test('aplica período, moneda y proveedor al query', () => {
   assert.deepEqual(operations, [
     ['gte', 'created_at', '2026-07-01T00:00:00-05:00'],
     ['lte', 'created_at', '2026-07-13T23:59:59.999-05:00'],
-    ['eq', 'currency', 'COP'],
+    ['or', 'filter', 'currency.eq.COP,provider.eq.WOMPI,and(currency.is.null,finance_scope_type.in.(NATIONAL,REGIONAL,LOCAL))'],
     ['eq', 'provider', 'WOMPI'],
   ]);
 });
@@ -79,6 +84,7 @@ test('filtra cuentas locales por alcance financiero', () => {
   const query = {
     gte() { return this; },
     lte() { return this; },
+    or() { return this; },
     eq(column: string, value: string) {
       operations.push(['eq', column, value]);
       return this;
@@ -117,6 +123,12 @@ test('mantiene los nombres operativos de cada origen', () => {
   assert.equal(financeRecordOriginLabel({ provider: 'WOMPI' }), 'Wompi · Nacional Colombia');
   assert.equal(financeRecordOriginLabel({ provider: 'STRIPE' }), 'Stripe · Global');
   assert.equal(financeRecordOriginLabel({ finance_scope_type: 'LOCAL' }), 'Pago local · Iglesia');
+});
+
+test('normaliza la moneda histórica usando el proveedor como contrato', () => {
+  assert.equal(financeRecordCurrency({ provider: 'WOMPI', currency: null }), 'COP');
+  assert.equal(financeRecordCurrency({ provider: 'STRIPE', currency: null }), 'USD');
+  assert.equal(financeRecordCurrency({ provider: 'PHYSICAL', currency: null }), 'COP');
 });
 
 test('nombra exportes con moneda, cuenta y período', () => {

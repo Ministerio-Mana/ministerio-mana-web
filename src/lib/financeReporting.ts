@@ -125,7 +125,11 @@ export function applyFinanceReportFilters(query: any, filters: FinanceReportFilt
   let next = query;
   if (filters.dateFrom) next = next.gte('created_at', `${filters.dateFrom}T00:00:00-05:00`);
   if (filters.dateTo) next = next.lte('created_at', `${filters.dateTo}T23:59:59.999-05:00`);
-  if (filters.currency) next = next.eq('currency', filters.currency);
+  if (filters.currency === 'COP') {
+    next = next.or('currency.eq.COP,provider.eq.WOMPI,and(currency.is.null,finance_scope_type.in.(NATIONAL,REGIONAL,LOCAL))');
+  } else if (filters.currency === 'USD') {
+    next = next.or('currency.eq.USD,provider.eq.STRIPE');
+  }
 
   if (filters.account === 'WOMPI' || filters.account === 'STRIPE') {
     next = next.eq('provider', filters.account);
@@ -133,6 +137,13 @@ export function applyFinanceReportFilters(query: any, filters: FinanceReportFilt
     next = next.eq('finance_scope_type', filters.account);
   }
   return next;
+}
+
+export function financeRecordCurrency(transaction: Record<string, unknown> = {}): 'COP' | 'USD' {
+  const provider = String(transaction.provider || '').trim().toUpperCase();
+  if (provider === 'WOMPI') return 'COP';
+  if (provider === 'STRIPE') return 'USD';
+  return String(transaction.currency || '').trim().toUpperCase() === 'USD' ? 'USD' : 'COP';
 }
 
 export function financeRecordOriginLabel(transaction: Record<string, unknown> = {}): string {
@@ -192,7 +203,7 @@ export function buildFinanceCsv(rows: Array<Record<string, any>>): string {
     csvText(String(row.provider || '').toUpperCase()),
     csvText(row.status),
     csvNumber(row.amount),
-    csvText(String(row.currency || '').toUpperCase()),
+    csvText(financeRecordCurrency(row)),
     csvText(row.reference),
     csvText(row.finance_scope_type),
     csvText(row.finance_scope_country_key),

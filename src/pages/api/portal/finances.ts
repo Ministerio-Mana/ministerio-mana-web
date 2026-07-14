@@ -6,6 +6,7 @@ import {
   applyFinanceReportFilters,
   buildFinanceCsv,
   financeExportFilename,
+  financeRecordCurrency,
   parseFinanceReportFilters,
   type FinanceReportFilters,
 } from '@lib/financeReporting';
@@ -127,7 +128,7 @@ function toClientRow(row: any) {
   return {
     id: row.id,
     amount: row.amount,
-    currency: row.currency,
+    currency: financeRecordCurrency(row),
     status: row.status,
     concept_label: resolveCategory(row),
     donation_type: row.donation_type ?? null,
@@ -246,7 +247,9 @@ export const GET: APIRoute = async ({ request }) => {
       }, 413);
     }
 
-    const exportRows = (exportResult.data || []).map((row: any) => toClientRow(row));
+    const exportRows = (exportResult.data || [])
+      .map((row: any) => toClientRow(row))
+      .filter((row: any) => row.currency === filters.currency);
     const csv = buildFinanceCsv(exportRows);
     return new Response(csv, {
       status: 200,

@@ -21,10 +21,11 @@
   - La clasificación existente quedó consistente: Wompi nacional de Colombia y Stripe global.
   - `/portal/finances` ahora filtra en servidor por período, fechas personalizadas, proveedor, nivel de cuenta y moneda, siempre después de aplicar el alcance RBAC del usuario.
   - Los reportes descargables exigen seleccionar COP o USD; cada archivo contiene una sola moneda, tiene límite de 5.000 registros y protege las celdas de texto contra fórmulas de hoja de cálculo.
+  - Los movimientos históricos sin moneda explícita se normalizan por el contrato del proveedor: Wompi como COP y Stripe como USD.
   - Se eliminó el indicador que comparaba conceptos sumando cifras numéricas de COP y USD. El tablero muestra subtotales independientes y cantidad de movimientos visibles.
   - Se agregó una prueba específica para períodos en hora Colombia, filtros, nombres de cuenta y CSV.
 - Pruebas:
-  - `test:finance-reporting`: 8 aprobadas.
+  - `test:finance-reporting`: 9 aprobadas.
   - `test:finance-scope`: 9 aprobadas.
   - `test:event-contract`: 10 aprobadas.
   - `test:event-evidence`: 4 aprobadas.
