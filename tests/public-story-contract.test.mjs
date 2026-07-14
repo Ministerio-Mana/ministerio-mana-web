@@ -37,13 +37,17 @@ test('el Home deja todas las escenas accesibles en modo estático', async () => 
 });
 
 test('el footer intenta cargar el devocional actual sin bloquear la página', async () => {
-  const source = await readProjectFile('src/components/Footer.astro');
+  const [source, player] = await Promise.all([
+    readProjectFile('src/components/Footer.astro'),
+    readProjectFile('src/scripts/devotional-footer-player.js'),
+  ]);
 
   assert.match(source, /const current = cached \?\? \{ ts: 0, data: fallbackDevotionalList \}/);
   assert.match(source, /Promise\.race\(\[/);
   assert.match(source, /setTimeout\(\(\) => resolve\(current\.data\), 320\)/);
   assert.match(source, /https:\/\/i\.ytimg\.com\/vi\/\$\{fallbackVideoId\}\/hqdefault\.jpg/);
   assert.doesNotMatch(source, /front-devocional-mana\.png/);
+  assert.match(player, /!state\.ytPlayer && !frame\.getAttribute\('src'\)[\s\S]*?buildEmbedUrl\(videoId, true\)[\s\S]*?ensureYouTubePlayer\(player\)/);
 });
 
 test('el detalle público de Peticiones anuncia el diálogo y devuelve el foco', async () => {

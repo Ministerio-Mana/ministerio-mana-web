@@ -260,6 +260,12 @@ async function playVideo(player) {
   state.pendingPlay = true;
   setPlayLabel(player, true);
 
+  // Crear el iframe con autoplay dentro del gesto del usuario evita que el
+  // navegador convierta el primer toque en una simple carga del reproductor.
+  if (!state.ytPlayer && !frame.getAttribute('src')) {
+    frame.setAttribute('src', buildEmbedUrl(videoId, true));
+  }
+
   try {
     const ytPlayer = await ensureYouTubePlayer(player);
     if (state.videoId !== videoId) {
