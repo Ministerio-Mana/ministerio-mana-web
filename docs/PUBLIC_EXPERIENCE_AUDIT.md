@@ -40,7 +40,7 @@ El contrato técnico vive en `src/lib/storyMotion.ts`, `src/styles/story-motion.
 | Campus | Portada visual con revelados independientes y valores históricos fuera de escala. | Auditar en la siguiente etapa; usar movimiento calmado, no una historia completa, salvo una campaña concreta. |
 | Peticiones | Muro operativo con formulario y privacidad sensible. | Priorizar calma, legibilidad, feedback y privacidad; no fijar escenas al scroll. |
 | Iglesias y mapa | Mapa Leaflet funcional con filtros, controles y variante ambiental. | Mejorar responsive, carga, teclado y diseño de tarjetas; reservar el mapa ambiental para escenas narrativas. |
-| CMS de Contenido | Admite hero, texto, galería, CTA, video, tarjetas y custom. | Agregar `Historia Maná` únicamente después de validar plantillas cerradas; no permitir valores de movimiento libres. |
+| CMS de Contenido | Admite bloques editoriales y carga directa a ImageKit. El constructor técnico obligaba a copiar URLs o editar JSON. | `Historia Maná` agregado como plantilla cerrada: escenas, preset, paleta, layout, punto focal y selector visual de ImageKit; nunca expone valores libres de movimiento. |
 
 ## Etapas
 
@@ -49,11 +49,21 @@ El contrato técnico vive en `src/lib/storyMotion.ts`, `src/styles/story-motion.
 3. **Iglesias y mapa:** carga resiliente, alternativa si falla el proveedor, tarjetas móviles y navegación accesible.
 4. **Campus:** jerarquía, tokens, imágenes, movimiento calmado y conversión sin distraer del aporte.
 5. **Peticiones:** privacidad visible, formulario indulgente, estados, accesibilidad y densidad.
-6. **CMS:** constructor restringido con plantillas `editorial` y `cinematic`, previsualización y límites de escenas/recursos.
+6. **CMS:** constructor restringido con presets `calm`, `editorial` y `cinematic`, previsualización, selector de ImageKit y límites de dos a ocho escenas. Implementado técnicamente; QA productivo pendiente.
+
+## Registro CMS — 14 de julio de 2026
+
+- El bloque `story` comparte `ManaStoryDeck` y los presets tipados existentes; no se creó un motor paralelo.
+- La edición es guiada y no requiere JSON: permite reordenar escenas, elegir presentación para horizontal/cuadrada/vertical, definir punto focal, texto alternativo y CTA opcional.
+- La biblioteca ImageKit se abre dentro de un diálogo con búsqueda y aplica la URL directamente al campo elegido.
+- Borradores por pestaña incluyen estructura y valores de escenas. Los límites se vuelven a validar en el API.
+- Publicar exige una sola historia por página, al menos dos escenas y título, imagen y texto alternativo en cada escena.
+- Una ruta pública dinámica sirve únicamente páginas publicadas; las rutas especiales existentes conservan prioridad.
+- El catálogo de recursos y las recomendaciones de carga viven en `CMS_STORY_IMAGE_GUIDE_2026-07-14.md`.
 
 ## Cierre humano de esta fase
 
 - Revisar `/home-ministerio` y la peregrinación en escritorio, tableta y celular.
 - Confirmar que el ritmo se siente suave y que ningún panel obliga a seguir una animación para leer.
 - Aprobar qué borrador del Home se convierte en fuente oficial antes de cambiar la portada `/`.
-- Aprobar el futuro bloque `Historia Maná` del CMS después de ver las plantillas cerradas.
+- Crear una página controlada con `Historia Maná`, elegir imágenes horizontal, cuadrada y vertical desde ImageKit y aprobar las tres presentaciones antes de usar el constructor en Home.

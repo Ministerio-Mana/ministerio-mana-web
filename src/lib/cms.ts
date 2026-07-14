@@ -2,7 +2,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 
 export const CMS_PAGE_STATUSES = ['draft', 'published', 'archived'] as const;
 export const CMS_SECTION_STATUSES = ['draft', 'published', 'archived'] as const;
-export const CMS_SECTION_KINDS = ['hero', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'] as const;
+export const CMS_SECTION_KINDS = ['hero', 'story', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'] as const;
 
 export type CmsPageStatus = (typeof CMS_PAGE_STATUSES)[number];
 export type CmsSectionStatus = (typeof CMS_SECTION_STATUSES)[number];

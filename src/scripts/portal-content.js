@@ -1,9 +1,10 @@
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
-const SECTION_KINDS = ['hero', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'];
+const SECTION_KINDS = ['hero', 'story', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'];
 const SECTION_STATUSES = ['draft', 'published', 'archived'];
 const SECTION_KIND_LABELS = {
   hero: 'Portada',
+  story: 'Historia Maná',
   rich_text: 'Texto',
   gallery: 'Galería',
   cta: 'Llamado a la acción',
@@ -11,6 +12,31 @@ const SECTION_KIND_LABELS = {
   cards: 'Tarjetas',
   custom: 'Avanzado',
 };
+const STORY_PRESET_LABELS = {
+  calm: 'Suave',
+  editorial: 'Editorial',
+  cinematic: 'Cinemática',
+};
+const STORY_THEME_LABELS = {
+  navy: 'Azul Maná',
+  light: 'Clara',
+  warm: 'Cálida',
+};
+const STORY_LAYOUT_LABELS = {
+  backdrop: 'Imagen de fondo',
+  'split-left': 'Imagen a la izquierda',
+  'split-right': 'Imagen a la derecha',
+  poster: 'Arte protagonista',
+};
+const STORY_FOCAL_LABELS = {
+  center: 'Centro',
+  top: 'Arriba',
+  bottom: 'Abajo',
+  left: 'Izquierda',
+  right: 'Derecha',
+};
+const STORY_MIN_SCENES = 2;
+const STORY_MAX_SCENES = 8;
 const STATUS_LABELS = {
   draft: 'Borrador',
   published: 'Publicado',
@@ -43,6 +69,8 @@ const state = {
   modalDiscardArmed: new Map(),
   confirmAction: null,
   confirmReturnFocus: null,
+  mediaPickerTarget: null,
+  mediaPickerReturnFocus: null,
 };
 
 const el = {
@@ -90,6 +118,13 @@ const el = {
   mediaStatus: document.getElementById('cms-media-status'),
   mediaList: document.getElementById('cms-media-list'),
   mediaEmpty: document.getElementById('cms-media-empty'),
+
+  mediaPickerModal: document.getElementById('cms-media-picker-modal'),
+  mediaPickerClose: document.getElementById('cms-media-picker-close'),
+  mediaPickerCancel: document.getElementById('cms-media-picker-cancel'),
+  mediaPickerSearch: document.getElementById('cms-media-picker-search'),
+  mediaPickerList: document.getElementById('cms-media-picker-list'),
+  mediaPickerEmpty: document.getElementById('cms-media-picker-empty'),
 
   pageModal: document.getElementById('cms-page-modal'),
   pageModalForm: document.getElementById('cms-page-modal-form'),
@@ -512,7 +547,9 @@ async function runConfirmAction() {
 }
 
 function handleDialogKeydown(event) {
-  const openDialog = !el.confirmModal?.classList.contains('hidden')
+  const openDialog = !el.mediaPickerModal?.classList.contains('hidden')
+    ? el.mediaPickerModal
+    : !el.confirmModal?.classList.contains('hidden')
     ? el.confirmModal
     : !el.pageModal?.classList.contains('hidden')
       ? el.pageModal
@@ -523,7 +560,8 @@ function handleDialogKeydown(event) {
 
   if (event.key === 'Escape') {
     event.preventDefault();
-    if (openDialog === el.confirmModal) closeConfirmDialog();
+    if (openDialog === el.mediaPickerModal) closeMediaPicker();
+    else if (openDialog === el.confirmModal) closeConfirmDialog();
     else requestCloseEditorModal(openDialog);
     return;
   }
@@ -627,8 +665,10 @@ function restorePageDraft() {
 
 function sectionDraftValues(card) {
   const values = {};
-  card.querySelectorAll('[data-field], [data-payload-field]').forEach((field) => {
-    const key = field.hasAttribute('data-field')
+  card.querySelectorAll('[data-field], [data-payload-field], [data-draft-key]').forEach((field) => {
+    const key = field.hasAttribute('data-draft-key')
+      ? `draft:${field.getAttribute('data-draft-key')}`
+      : field.hasAttribute('data-field')
       ? `field:${field.getAttribute('data-field')}`
       : `payload:${field.getAttribute('data-payload-field')}`;
     values[key] = String(field.value ?? '');
@@ -678,8 +718,18 @@ function restoreSectionDrafts() {
       if (sectionId && draft) delete stored.drafts[sectionId];
       return;
     }
-    card.querySelectorAll('[data-field], [data-payload-field]').forEach((field) => {
-      const fieldKey = field.hasAttribute('data-field')
+    const storyPayloadDraft = draft.values['field:story_payload_draft'];
+    if (storyPayloadDraft && card.querySelector('[data-story-editor]')) {
+      try {
+        refreshStoryEditor(card, JSON.parse(storyPayloadDraft), { persist: false });
+      } catch {
+        // El resto de los campos recuperables continúa disponible aunque falle esta escena.
+      }
+    }
+    card.querySelectorAll('[data-field], [data-payload-field], [data-draft-key]').forEach((field) => {
+      const fieldKey = field.hasAttribute('data-draft-key')
+        ? `draft:${field.getAttribute('data-draft-key')}`
+        : field.hasAttribute('data-field')
         ? `field:${field.getAttribute('data-field')}`
         : `payload:${field.getAttribute('data-payload-field')}`;
       if (draft.values[fieldKey] !== undefined) field.value = String(draft.values[fieldKey]);
@@ -779,6 +829,238 @@ function renderStatusOptions(value) {
     .join('');
 }
 
+function clientSafeUrl(value) {
+  const url = String(value || '').trim();
+  if (url.startsWith('/') && !url.startsWith('//')) return url;
+  if (/^https:\/\//i.test(url)) return url;
+  return '';
+}
+
+function defaultStoryPayload(title = 'Nuestra historia') {
+  return {
+    preset: 'editorial',
+    theme: 'navy',
+    scenes: [
+      {
+        id: 'bienvenida',
+        eyebrow: 'Ministerio Maná',
+        title,
+        text: 'Presenta aquí la idea principal con una frase breve y cercana.',
+        image: '',
+        imageAlt: '',
+        layout: 'backdrop',
+        focalPoint: 'center',
+        primaryLabel: '',
+        primaryHref: '',
+      },
+      {
+        id: 'proposito',
+        eyebrow: 'Nuestro propósito',
+        title: 'Una historia que continúa',
+        text: 'Amplía el mensaje con una imagen significativa.',
+        image: '',
+        imageAlt: '',
+        layout: 'split-right',
+        focalPoint: 'center',
+        primaryLabel: '',
+        primaryHref: '',
+      },
+      {
+        id: 'invitacion',
+        eyebrow: 'Te esperamos',
+        title: 'Sé parte de esta historia',
+        text: 'Cierra con una invitación clara y, si lo necesitas, agrega un botón.',
+        image: '',
+        imageAlt: '',
+        layout: 'poster',
+        focalPoint: 'center',
+        primaryLabel: '',
+        primaryHref: '',
+      },
+    ],
+  };
+}
+
+function storyOptionMarkup(options, value) {
+  return Object.entries(options)
+    .map(([key, label]) => `<option value="${escapeAttr(key)}"${key === value ? ' selected' : ''}>${escapeHtml(label)}</option>`)
+    .join('');
+}
+
+function normalizedStoryForEditor(payload, title = 'Nuestra historia') {
+  const fallback = defaultStoryPayload(title);
+  const input = payload && typeof payload === 'object' ? payload : fallback;
+  const scenes = Array.isArray(input.scenes) && input.scenes.length ? input.scenes.slice(0, STORY_MAX_SCENES) : fallback.scenes;
+  return {
+    preset: STORY_PRESET_LABELS[input.preset] ? input.preset : 'editorial',
+    theme: STORY_THEME_LABELS[input.theme] ? input.theme : 'navy',
+    scenes: scenes.map((scene, index) => ({
+      id: String(scene?.id || `escena-${index + 1}`),
+      eyebrow: String(scene?.eyebrow || ''),
+      title: String(scene?.title || ''),
+      text: String(scene?.text || ''),
+      image: String(scene?.image || ''),
+      imageAlt: String(scene?.imageAlt || ''),
+      layout: STORY_LAYOUT_LABELS[scene?.layout] ? scene.layout : (index % 2 ? 'split-right' : 'backdrop'),
+      focalPoint: STORY_FOCAL_LABELS[scene?.focalPoint] ? scene.focalPoint : 'center',
+      primaryLabel: String(scene?.primaryLabel || ''),
+      primaryHref: String(scene?.primaryHref || ''),
+    })),
+  };
+}
+
+function renderStoryScene(scene, index, total) {
+  const prefix = `story.${index}`;
+  const previewUrl = clientSafeUrl(scene.image);
+  return `<article class="rounded-xl border border-slate-200 bg-white p-4 md:p-6" data-story-scene data-story-scene-id="${escapeAttr(scene.id || `escena-${index + 1}`)}">
+    <div class="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-xs font-black uppercase tracking-wider text-brand-teal">Escena ${index + 1}</p>
+        <p class="mt-2 text-sm text-slate-500">Una idea principal, una imagen y una acción opcional.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" data-story-action="up" class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 text-slate-700 disabled:opacity-40" aria-label="Subir escena ${index + 1}" ${index === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" data-story-action="down" class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 text-slate-700 disabled:opacity-40" aria-label="Bajar escena ${index + 1}" ${index === total - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" data-story-action="remove" class="min-h-11 rounded-md border border-red-200 px-4 py-2 text-xs font-bold text-red-700 disabled:opacity-40" ${total <= STORY_MIN_SCENES ? 'disabled' : ''}>Quitar</button>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label class="text-xs font-bold text-slate-600">Texto superior
+        <input data-story-field="eyebrow" data-draft-key="${prefix}.eyebrow" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm" value="${escapeAttr(scene.eyebrow)}" maxlength="60" />
+      </label>
+      <label class="text-xs font-bold text-slate-600">Título
+        <input data-story-field="title" data-draft-key="${prefix}.title" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm" value="${escapeAttr(scene.title)}" maxlength="90" />
+      </label>
+      <label class="text-xs font-bold text-slate-600 md:col-span-2">Texto breve
+        <textarea data-story-field="text" data-draft-key="${prefix}.text" rows="4" class="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm leading-6" maxlength="520">${escapeHtml(scene.text)}</textarea>
+      </label>
+    </div>
+    <div class="mt-4 grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 lg:grid-cols-[200px_1fr]">
+      <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        ${previewUrl
+          ? `<img src="${escapeAttr(previewUrl)}" alt="" class="aspect-[4/3] h-full w-full object-cover" loading="lazy" decoding="async" />`
+          : '<div class="flex aspect-[4/3] items-center justify-center px-4 text-center text-xs font-bold text-slate-400">Selecciona una imagen</div>'}
+      </div>
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label class="text-xs font-bold text-slate-600 md:col-span-2">Imagen
+          <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input data-story-field="image" data-draft-key="${prefix}.image" type="url" class="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(scene.image)}" placeholder="Elige desde ImageKit" />
+            <button type="button" data-story-action="pick-image" class="min-h-11 shrink-0 rounded-md bg-[#293C74] px-4 py-2 text-xs font-bold text-white">Elegir imagen</button>
+          </div>
+        </label>
+        <label class="text-xs font-bold text-slate-600 md:col-span-2">Descripción de la imagen
+          <input data-story-field="imageAlt" data-draft-key="${prefix}.imageAlt" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(scene.imageAlt)}" maxlength="160" placeholder="Ejemplo: Comunidad reunida durante el servicio" />
+        </label>
+        <label class="text-xs font-bold text-slate-600">Presentación
+          <select data-story-field="layout" data-draft-key="${prefix}.layout" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${storyOptionMarkup(STORY_LAYOUT_LABELS, scene.layout)}</select>
+        </label>
+        <label class="text-xs font-bold text-slate-600">Punto importante
+          <select data-story-field="focalPoint" data-draft-key="${prefix}.focalPoint" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${storyOptionMarkup(STORY_FOCAL_LABELS, scene.focalPoint)}</select>
+        </label>
+      </div>
+    </div>
+    <details class="mt-4 rounded-lg border border-slate-200 bg-white">
+      <summary class="flex min-h-11 cursor-pointer items-center px-4 py-2 text-xs font-bold text-slate-600">Botón opcional</summary>
+      <div class="grid grid-cols-1 gap-4 border-t border-slate-200 p-4 md:grid-cols-2">
+        <label class="text-xs font-bold text-slate-600">Texto del botón
+          <input data-story-field="primaryLabel" data-draft-key="${prefix}.primaryLabel" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm" value="${escapeAttr(scene.primaryLabel)}" maxlength="40" />
+        </label>
+        <label class="text-xs font-bold text-slate-600">Enlace
+          <input data-story-field="primaryHref" data-draft-key="${prefix}.primaryHref" type="url" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm" value="${escapeAttr(scene.primaryHref)}" placeholder="/eventos o https://..." />
+        </label>
+      </div>
+    </details>
+  </article>`;
+}
+
+function renderStoryEditorFields(payload) {
+  const story = normalizedStoryForEditor(payload);
+  return `<div class="rounded-xl border border-[#293C74]/15 bg-[#293C74]/5 p-4 md:p-6">
+    <p class="text-sm font-bold text-[#293C74]">Historia guiada, sin configuración técnica</p>
+    <p class="mt-2 text-sm leading-6 text-slate-600">En celular se muestra como secciones legibles; en pantallas grandes usa transiciones suaves y respeta la preferencia de movimiento reducido.</p>
+    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label class="text-xs font-bold text-slate-600">Ritmo visual
+        <select data-story-setting="preset" data-draft-key="story.preset" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${storyOptionMarkup(STORY_PRESET_LABELS, story.preset)}</select>
+      </label>
+      <label class="text-xs font-bold text-slate-600">Paleta
+        <select data-story-setting="theme" data-draft-key="story.theme" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${storyOptionMarkup(STORY_THEME_LABELS, story.theme)}</select>
+      </label>
+    </div>
+  </div>
+  <div class="mt-4 space-y-4">${story.scenes.map((scene, index) => renderStoryScene(scene, index, story.scenes.length)).join('')}</div>
+  <button type="button" data-story-action="add" class="mt-4 min-h-11 w-full rounded-md border border-dashed border-[#293C74]/40 bg-white px-4 py-2 text-sm font-bold text-[#293C74] disabled:opacity-40" ${story.scenes.length >= STORY_MAX_SCENES ? 'disabled' : ''}>Agregar escena (${story.scenes.length}/${STORY_MAX_SCENES})</button>`;
+}
+
+function readStoryPayload(card) {
+  const editor = card.querySelector('[data-story-editor]');
+  const scenes = Array.from(editor?.querySelectorAll('[data-story-scene]') || []).map((scene, index) => {
+    const read = (key) => String(scene.querySelector(`[data-story-field="${key}"]`)?.value || '').trim();
+    return {
+      id: scene.getAttribute('data-story-scene-id') || `escena-${index + 1}`,
+      eyebrow: read('eyebrow'),
+      title: read('title'),
+      text: read('text'),
+      image: read('image'),
+      imageAlt: read('imageAlt'),
+      layout: read('layout') || 'backdrop',
+      focalPoint: read('focalPoint') || 'center',
+      primaryLabel: read('primaryLabel'),
+      primaryHref: read('primaryHref'),
+    };
+  });
+  return {
+    preset: String(editor?.querySelector('[data-story-setting="preset"]')?.value || 'editorial'),
+    theme: String(editor?.querySelector('[data-story-setting="theme"]')?.value || 'navy'),
+    scenes,
+  };
+}
+
+function syncStoryDraftField(card) {
+  const field = card.querySelector('[data-field="story_payload_draft"]');
+  if (field) field.value = JSON.stringify(readStoryPayload(card));
+}
+
+function refreshStoryEditor(card, payload, options = {}) {
+  const editor = card.querySelector('[data-story-editor]');
+  const fields = editor?.querySelector('[data-story-editor-fields]');
+  if (!editor || !fields) return;
+  fields.innerHTML = renderStoryEditorFields(payload);
+  syncStoryDraftField(card);
+  if (options.persist !== false) persistSectionDraft(card);
+}
+
+function handleStoryEditorClick(event, card) {
+  const button = event.target instanceof Element ? event.target.closest('[data-story-action]') : null;
+  if (!button || !card.contains(button)) return;
+  const action = button.getAttribute('data-story-action');
+  const story = readStoryPayload(card);
+  const sceneNode = button.closest('[data-story-scene]');
+  const index = sceneNode ? Array.from(card.querySelectorAll('[data-story-scene]')).indexOf(sceneNode) : -1;
+
+  if (action === 'pick-image') {
+    const input = sceneNode?.querySelector('[data-story-field="image"]');
+    if (input) openMediaPicker(input, button);
+    return;
+  }
+  if (action === 'add' && story.scenes.length < STORY_MAX_SCENES) {
+    story.scenes.push({
+      id: `escena-${Date.now().toString(36)}`,
+      eyebrow: '', title: 'Nueva escena', text: '', image: '', imageAlt: '',
+      layout: story.scenes.length % 2 ? 'split-right' : 'backdrop',
+      focalPoint: 'center', primaryLabel: '', primaryHref: '',
+    });
+  } else if (action === 'remove' && index >= 0 && story.scenes.length > STORY_MIN_SCENES) {
+    story.scenes.splice(index, 1);
+  } else if (action === 'up' && index > 0) {
+    [story.scenes[index - 1], story.scenes[index]] = [story.scenes[index], story.scenes[index - 1]];
+  } else if (action === 'down' && index >= 0 && index < story.scenes.length - 1) {
+    [story.scenes[index + 1], story.scenes[index]] = [story.scenes[index], story.scenes[index + 1]];
+  } else {
+    return;
+  }
+  refreshStoryEditor(card, story);
+}
+
 async function swapSectionsOrder(sectionId, direction) {
   const currentIndex = state.sections.findIndex((item) => item.id === sectionId);
   if (currentIndex < 0) return;
@@ -836,6 +1118,14 @@ function renderPayloadField(label, key, value, options = {}) {
       <textarea data-payload-field="${escapeAttr(key)}" rows="${options.rows || 3}" class="${inputClass}">${escapeHtml(value || '')}</textarea>
     </label>`;
   }
+  if (options.media) {
+    return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
+      <div class="mt-2 flex flex-col gap-2 sm:flex-row">
+        <input data-payload-field="${escapeAttr(key)}" type="url" class="min-h-11 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(value || '')}" placeholder="Elige desde ImageKit" />
+        <button type="button" class="cms-payload-pick-image min-h-11 shrink-0 rounded-md bg-[#293C74] px-4 py-2 text-xs font-bold text-white">Elegir imagen</button>
+      </div>
+    </label>`;
+  }
   return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
     <input data-payload-field="${escapeAttr(key)}" type="${options.type || 'text'}" class="${inputClass}" value="${escapeAttr(value || '')}" />
   </label>`;
@@ -845,12 +1135,20 @@ function renderPayloadEditor(section) {
   const payload = section.payload || {};
   let fields = '';
 
+  if (section.kind === 'story') {
+    const story = normalizedStoryForEditor(payload, section.title || 'Nuestra historia');
+    return `<div class="mt-4" data-story-editor>
+      <textarea data-field="story_payload_draft" class="hidden" tabindex="-1" aria-hidden="true">${escapeHtml(JSON.stringify(story))}</textarea>
+      <div data-story-editor-fields>${renderStoryEditorFields(story)}</div>
+    </div>`;
+  }
+
   if (section.kind === 'hero') {
     fields = [
       renderPayloadField('Texto superior', 'eyebrow', payload.eyebrow),
       renderPayloadField('Título principal', 'title', payload.title),
       renderPayloadField('Descripción', 'subtitle', payload.subtitle, { multiline: true, wide: true }),
-      renderPayloadField('Imagen', 'image', payload.image, { type: 'url', wide: true }),
+      renderPayloadField('Imagen', 'image', payload.image, { media: true, wide: true }),
       renderPayloadField('Texto del botón', 'ctaLabel', payload.ctaLabel),
       renderPayloadField('Enlace del botón', 'ctaHref', payload.ctaHref, { type: 'url' }),
     ].join('');
@@ -912,11 +1210,21 @@ function renderSections() {
 
   el.sections.innerHTML = state.sections
     .map((section, index) => {
+      const statusTone = section.status === 'published'
+        ? 'border-teal-200 bg-teal-50 text-teal-800'
+        : section.status === 'archived'
+          ? 'border-slate-200 bg-slate-100 text-slate-600'
+          : 'border-amber-200 bg-amber-50 text-amber-800';
       return `
       <article class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 md:p-6" data-section-id="${escapeAttr(section.id)}">
-        <div class="mb-4 flex items-center justify-between gap-2">
+        <input data-field="kind" type="hidden" value="${escapeAttr(section.kind || 'rich_text')}" />
+        <input data-field="position" type="hidden" value="${escapeAttr(Number(section.position || 0))}" />
+        <input data-field="status" type="hidden" value="${escapeAttr(section.status || 'draft')}" />
+        <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex flex-wrap items-center gap-2">
             <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Bloque ${index + 1}</p>
+            <span class="rounded-full border border-[#293C74]/15 bg-white px-2 py-2 text-xs font-bold text-[#293C74]">${escapeHtml(SECTION_KIND_LABELS[section.kind] || section.kind || 'Bloque')}</span>
+            <span class="rounded-full border px-2 py-2 text-xs font-bold ${statusTone}">${escapeHtml(STATUS_LABELS[section.status] || section.status || 'Borrador')}</span>
             <span data-section-draft-status class="hidden rounded-full bg-amber-100 px-2 py-2 text-xs font-bold text-amber-800">Borrador local</span>
           </div>
           <div class="flex items-center gap-2">
@@ -924,27 +1232,22 @@ function renderSections() {
             <button type="button" class="cms-section-down h-11 w-11 rounded-lg border border-slate-300 text-slate-600" data-cms-action aria-label="Bajar bloque ${index + 1}" ${index === state.sections.length - 1 ? 'disabled' : ''}>↓</button>
           </div>
         </div>
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label class="text-xs font-bold text-slate-600">Nombre interno
-            <input data-field="section_key" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(section.section_key || '')}" />
-          </label>
-          <label class="text-xs font-bold text-slate-600">Tipo
-            <select data-field="kind" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${renderKindOptions(section.kind || 'rich_text')}</select>
-          </label>
-          <label class="text-xs font-bold text-slate-600">Posición
-            <input data-field="position" type="number" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(Number(section.position || 0))}" />
-          </label>
-          <label class="text-xs font-bold text-slate-600">Estado
-            <select data-field="status" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${renderStatusOptions(section.status || 'draft')}</select>
-          </label>
-        </div>
-        <label class="mt-4 block text-xs font-bold text-slate-600">Título
+        <label class="block text-xs font-bold text-slate-600">Título del bloque
           <input data-field="title" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(section.title || '')}" />
         </label>
+        <details class="mt-4 rounded-lg border border-slate-200 bg-white">
+          <summary class="flex min-h-11 cursor-pointer items-center px-4 py-2 text-xs font-bold text-slate-600">Identificador técnico</summary>
+          <div class="border-t border-slate-200 p-4">
+            <label class="text-xs font-bold text-slate-600">Nombre interno
+              <input data-field="section_key" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm" value="${escapeAttr(section.section_key || '')}" />
+            </label>
+            <p class="mt-2 text-xs leading-5 text-slate-500">Solo se usa para identificar este bloque en el sistema. El tipo y el orden se protegen desde los controles visuales.</p>
+          </div>
+        </details>
         ${renderPayloadEditor(section)}
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          <button type="button" class="cms-section-save min-h-11 rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-white" data-cms-action>Guardar sección</button>
-          <button type="button" class="cms-section-archive min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700" data-cms-action>${section.status === 'archived' ? 'Restaurar' : 'Archivar'}</button>
+        <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button type="button" class="cms-section-save min-h-11 rounded-lg bg-brand-teal px-4 py-2 text-sm font-bold text-white" data-cms-action>Guardar bloque</button>
+          <button type="button" class="cms-section-archive min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700" data-cms-action>${section.status === 'archived' ? 'Restaurar' : 'Archivar'}</button>
         </div>
       </article>
       `;
@@ -959,6 +1262,19 @@ function renderSections() {
     const archiveBtn = card.querySelector('.cms-section-archive');
     const upBtn = card.querySelector('.cms-section-up');
     const downBtn = card.querySelector('.cms-section-down');
+
+    card.querySelectorAll('.cms-payload-pick-image').forEach((button) => {
+      button.addEventListener('click', () => {
+        const input = button.parentElement?.querySelector('[data-payload-field]');
+        if (input) openMediaPicker(input, button);
+      });
+    });
+
+    if (card.querySelector('[data-story-editor]')) {
+      card.addEventListener('click', (event) => handleStoryEditorClick(event, card));
+      card.addEventListener('input', () => syncStoryDraftField(card));
+      card.addEventListener('change', () => syncStoryDraftField(card));
+    }
 
     upBtn?.addEventListener('click', () => {
       if (!sectionId) return;
@@ -976,22 +1292,27 @@ function renderSections() {
 
     saveBtn?.addEventListener('click', async () => {
       if (!sectionId) return;
-      const payloadRaw = card.querySelector('[data-field="payload"]')?.value || '{}';
       let payload;
-      try {
-        payload = JSON.parse(payloadRaw);
-      } catch {
-        showAlert('El contenido avanzado tiene un formato inválido.', 'error', 6000);
-        return;
-      }
+      const selectedKind = card.querySelector('[data-field="kind"]')?.value;
+      if (selectedKind === 'story') {
+        payload = readStoryPayload(card);
+      } else {
+        const payloadRaw = card.querySelector('[data-field="payload"]')?.value || '{}';
+        try {
+          payload = JSON.parse(payloadRaw);
+        } catch {
+          showAlert('El contenido avanzado tiene un formato inválido.', 'error', 6000);
+          return;
+        }
 
-      card.querySelectorAll('[data-payload-field]').forEach((field) => {
-        const key = field.getAttribute('data-payload-field');
-        if (!key) return;
-        const value = String(field.value || '').trim();
-        if (value) payload[key] = value;
-        else delete payload[key];
-      });
+        card.querySelectorAll('[data-payload-field]').forEach((field) => {
+          const key = field.getAttribute('data-payload-field');
+          if (!key) return;
+          const value = String(field.value || '').trim();
+          if (value) payload[key] = value;
+          else delete payload[key];
+        });
+      }
 
       const body = {
         section_id: sectionId,
@@ -1169,6 +1490,7 @@ function renderMedia() {
     .join('');
 
   el.mediaEmpty.classList.toggle('hidden', state.media.length > 0);
+  renderMediaPicker();
 
   el.mediaList.querySelectorAll('.cms-media-copy').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -1218,6 +1540,78 @@ function renderMedia() {
       });
     });
   });
+}
+
+function renderMediaPicker() {
+  if (!el.mediaPickerList || !el.mediaPickerEmpty) return;
+  const query = String(el.mediaPickerSearch?.value || '').trim().toLowerCase();
+  const files = state.media.filter((file) => {
+    if (!String(file.mime_type || '').startsWith('image/')) return false;
+    const haystack = `${file.name || ''} ${file.path || ''}`.toLowerCase();
+    return !query || haystack.includes(query);
+  });
+
+  el.mediaPickerList.innerHTML = files.map((file) => {
+    const previewUrl = clientSafeUrl(file.thumbnail_url || file.public_url);
+    const publicUrl = clientSafeUrl(file.public_url);
+    const dimensions = file.width && file.height ? `${file.width} × ${file.height}px` : 'Medidas automáticas';
+    return `<article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="aspect-[4/3] bg-slate-100">
+        ${previewUrl ? `<img src="${escapeAttr(previewUrl)}" alt="${escapeAttr(file.name || 'Imagen de la biblioteca')}" class="h-full w-full object-cover" loading="lazy" decoding="async" />` : ''}
+      </div>
+      <div class="p-4">
+        <p class="truncate text-sm font-bold text-[#293C74]" title="${escapeAttr(file.name || '')}">${escapeHtml(file.name || 'Imagen')}</p>
+        <p class="mt-2 text-xs text-slate-500">${escapeHtml(dimensions)} · ${escapeHtml(formatBytes(file.size))}</p>
+        <button type="button" class="cms-media-picker-use mt-4 min-h-11 w-full rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white disabled:opacity-50" data-url="${escapeAttr(publicUrl)}" ${publicUrl ? '' : 'disabled'}>Usar esta imagen</button>
+      </div>
+    </article>`;
+  }).join('');
+  el.mediaPickerEmpty.classList.toggle('hidden', files.length > 0);
+
+  el.mediaPickerList.querySelectorAll('.cms-media-picker-use').forEach((button) => {
+    button.addEventListener('click', () => {
+      const target = state.mediaPickerTarget;
+      const url = button.getAttribute('data-url') || '';
+      if (!target?.isConnected || !url) return;
+      const scene = target.closest('[data-story-scene]');
+      target.value = url;
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      const card = target.closest('[data-section-id]');
+      const sceneIndex = scene && card ? Array.from(card.querySelectorAll('[data-story-scene]')).indexOf(scene) : -1;
+      const story = card?.querySelector('[data-story-editor]') ? readStoryPayload(card) : null;
+      closeMediaPicker();
+      if (card && story) {
+        refreshStoryEditor(card, story);
+        card.querySelectorAll('[data-story-action="pick-image"]')[sceneIndex]?.focus();
+      }
+      showAlert('Imagen aplicada al bloque. Guarda los cambios cuando estén listos.', 'success', 6500);
+    });
+  });
+}
+
+function openMediaPicker(target, trigger) {
+  if (!el.mediaPickerModal || !target) return;
+  state.mediaPickerTarget = target;
+  state.mediaPickerReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
+  if (el.mediaPickerSearch) el.mediaPickerSearch.value = '';
+  renderMediaPicker();
+  el.mediaPickerModal.classList.remove('hidden');
+  el.mediaPickerModal.classList.add('flex');
+  el.mediaPickerModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('overflow-hidden');
+  window.requestAnimationFrame(() => el.mediaPickerSearch?.focus());
+}
+
+function closeMediaPicker() {
+  if (!el.mediaPickerModal || el.mediaPickerModal.classList.contains('hidden')) return;
+  el.mediaPickerModal.classList.add('hidden');
+  el.mediaPickerModal.classList.remove('flex');
+  el.mediaPickerModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('overflow-hidden');
+  const returnFocus = state.mediaPickerReturnFocus;
+  state.mediaPickerTarget = null;
+  state.mediaPickerReturnFocus = null;
+  if (returnFocus?.isConnected) returnFocus.focus();
 }
 
 async function loadMedia(silent = false) {
@@ -1462,6 +1856,11 @@ async function createSectionFromModal() {
     el.modalSectionKey?.focus();
     return;
   }
+  if (kind === 'story' && state.sections.some((section) => section.kind === 'story' && section.status !== 'archived')) {
+    setModalFeedback(el.sectionModal, 'Esta página ya tiene una Historia Maná. Edita ese bloque o archívalo antes de crear otra.');
+    el.modalSectionKind?.focus();
+    return;
+  }
 
   setBusy(true, 'Creando sección...');
   try {
@@ -1473,7 +1872,7 @@ async function createSectionFromModal() {
         kind,
         title: title || key,
         position: state.sections.length,
-        payload: { text: '', image: '', cta: null },
+        payload: kind === 'story' ? defaultStoryPayload(title || 'Nuestra historia') : { text: '', image: '', cta: null },
       }),
     });
 
@@ -1748,6 +2147,12 @@ el.mediaRefresh?.addEventListener('click', () => {
   loadMedia().catch((error) => {
     showAlert(parseError(error, 'No se pudo cargar la biblioteca.'), 'error', 6000);
   });
+});
+el.mediaPickerSearch?.addEventListener('input', renderMediaPicker);
+el.mediaPickerClose?.addEventListener('click', closeMediaPicker);
+el.mediaPickerCancel?.addEventListener('click', closeMediaPicker);
+el.mediaPickerModal?.addEventListener('click', (event) => {
+  if (event.target === el.mediaPickerModal) closeMediaPicker();
 });
 el.mediaUploadForm?.addEventListener('submit', (event) => {
   uploadMedia(event).catch((error) => {

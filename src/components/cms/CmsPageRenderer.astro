@@ -1,5 +1,6 @@
 ---
 import { optimizedPublicImageUrl, responsivePublicImageSrcset } from '@lib/publicMedia';
+import CmsStorySection from './CmsStorySection.astro';
 
 type CmsSection = {
   id: string;
@@ -59,6 +60,10 @@ function toEmbedUrl(raw: string): string {
   {sections.map((section) => {
     const payload = section.payload || {};
     const kind = String(section.kind || 'custom');
+
+    if (kind === 'story') {
+      return <CmsStorySection payload={payload} label={String(section.title || 'Historia Maná')} />;
+    }
 
     if (kind === 'hero') {
       const image = safeUrl(payload.image);
@@ -169,3 +174,26 @@ function toEmbedUrl(raw: string): string {
     );
   })}
 </div>
+
+<style>
+  .cms-page-renderer {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0 auto;
+    max-width: 72rem;
+    overflow: clip;
+    padding: var(--space-4);
+  }
+
+  .cms-page-renderer :global(.cms-story-deck) {
+    justify-self: center;
+    width: 100vw;
+  }
+
+  @media (max-width: 767px) {
+    .cms-page-renderer {
+      gap: var(--space-3);
+      padding: var(--space-3);
+    }
+  }
+</style>

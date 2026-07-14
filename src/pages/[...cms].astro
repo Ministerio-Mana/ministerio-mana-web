@@ -1,0 +1,26 @@
+---
+import CmsPageRenderer from '@components/cms/CmsPageRenderer.astro';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { getCmsPageByRoute } from '@lib/cmsPublic';
+
+export const prerender = false;
+
+const content = await getCmsPageByRoute({ routePath: Astro.url.pathname });
+if (!content) return Astro.rewrite('/404');
+
+const page = content.page || {};
+const seo = page.seo && typeof page.seo === 'object' ? page.seo : {};
+const title = String(seo.title || page.title || 'Ministerio Maná');
+const description = String(seo.description || page.description || 'Ministerio Maná');
+const image = String(seo.image || '');
+---
+
+<BaseLayout
+  {title}
+  {description}
+  image={image || undefined}
+  imageAlt={image ? String(page.title || title) : undefined}
+>
+  <h1 class="sr-only">{String(page.title || title)}</h1>
+  <CmsPageRenderer sections={content.sections} />
+</BaseLayout>

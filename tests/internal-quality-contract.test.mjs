@@ -363,12 +363,14 @@ test('peticiones separa intercesión de moderación y protege cada decisión pas
 });
 
 test('contenido editorial preserva borradores, evita colisiones y confirma cambios públicos', async () => {
-  const [contentView, contentLogic, pagesApi, sectionsApi, publishApi] = await Promise.all([
+  const [contentView, contentLogic, pagesApi, sectionsApi, publishApi, storyContract, publicCmsRoute] = await Promise.all([
     readSource('src/pages/portal/content.astro'),
     readSource('src/scripts/portal-content.js'),
     readSource('src/pages/api/portal/content/pages.ts'),
     readSource('src/pages/api/portal/content/sections.ts'),
     readSource('src/pages/api/portal/content/publish.ts'),
+    readSource('src/lib/cmsStory.ts'),
+    readSource('src/pages/[...cms].astro'),
   ]);
 
   for (const id of ['cms-page-save', 'cms-page-publish', 'cms-page-unpublish', 'cms-page-preview', 'cms-section-new', 'cms-media-refresh']) {
@@ -377,10 +379,10 @@ test('contenido editorial preserva borradores, evita colisiones y confirma cambi
   assert.match(contentView, /label for="cms-media-folder"/);
   assert.match(contentView, /id="cms-media-dropzone"[^>]*tabindex="0"[^>]*role="button"/);
   assert.match(contentView, /id="cms-media-directory"[^>]*tabindex="-1"[^>]*aria-label="Seleccionar carpeta de imágenes"/);
-  for (const id of ['cms-page-modal', 'cms-section-modal', 'cms-confirm-modal']) {
+  for (const id of ['cms-page-modal', 'cms-section-modal', 'cms-media-picker-modal', 'cms-confirm-modal']) {
     assert.match(contentView, new RegExp(`id="${id}"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-[^>]+aria-hidden="true"`));
   }
-  for (const id of ['cms-page-modal-close', 'cms-section-modal-close', 'cms-confirm-close']) {
+  for (const id of ['cms-page-modal-close', 'cms-section-modal-close', 'cms-media-picker-close', 'cms-confirm-close']) {
     assert.match(contentView, new RegExp(`id="${id}"[^>]*(?:h-11 w-11|w-11[^>]*h-11)`));
   }
 
@@ -396,6 +398,12 @@ test('contenido editorial preserva borradores, evita colisiones y confirma cambi
   assert.match(contentLogic, /label: 'Deshacer'/);
   assert.match(contentLogic, /Eliminar archivo de la biblioteca/);
   assert.match(contentLogic, /Guarda primero los borradores locales/);
+  assert.match(contentLogic, /story: 'Historia Maná'/);
+  assert.match(contentLogic, /STORY_MIN_SCENES = 2/);
+  assert.match(contentLogic, /STORY_MAX_SCENES = 8/);
+  assert.match(contentLogic, /function openMediaPicker\(target, trigger\)/);
+  assert.match(contentLogic, /function readStoryPayload\(card\)/);
+  assert.match(contentLogic, /data-story-action="pick-image"/);
   assert.match(contentLogic, /const path = `\/portal\/content-preview\?page_id=\$\{encodeURIComponent\(state\.selectedPageId\)\}`/);
   assert.doesNotMatch(contentLogic, /fetchJson\('\/api\/portal\/content\/preview-link'/);
   assert.doesNotMatch(contentLogic, /window\.(?:confirm|prompt|alert)/);
@@ -410,6 +418,13 @@ test('contenido editorial preserva borradores, evita colisiones y confirma cambi
   assert.match(publishApi, /\.eq\('updated_at', pageBefore\.updated_at\)/);
   assert.match(publishApi, /rollbackError/);
   assert.match(publishApi, /volvió a su estado anterior/);
+  assert.match(publishApi, /Cada página puede publicar una sola Historia Maná/);
+  assert.match(publishApi, /requirePublishable: true/);
+  assert.match(storyContract, /CMS_STORY_MIN_SCENES = 2/);
+  assert.match(storyContract, /CMS_STORY_MAX_SCENES = 8/);
+  assert.match(storyContract, /parsed\.protocol === 'https:'/);
+  assert.match(publicCmsRoute, /getCmsPageByRoute/);
+  assert.match(publicCmsRoute, /Astro\.rewrite\('\/404'\)/);
 });
 
 test('la vista previa editorial minimiza datos y evita navegación accidental', async () => {

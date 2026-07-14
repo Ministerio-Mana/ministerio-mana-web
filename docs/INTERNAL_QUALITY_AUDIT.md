@@ -292,6 +292,16 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Subir una imagen pequeña autorizada a ImageKit, usarla en la página de prueba y confirmar que no se elimina mientras esté referenciada. Luego retirar la referencia, eliminar el medio controlado y revisar su auditoría.
 - Entrar con `admin`, `superadmin` y una cuenta sin administración; confirmar que solo las dos primeras acceden al CMS y a sus API. Decidir aparte si el producto necesita un rol editorial nuevo antes de ampliar permisos.
 
+### Ampliación no-code de `/portal/content` — 14 de julio de 2026
+
+- La configuración principal muestra título y descripción; ruta, idioma, nombre interno y SEO quedan bajo revelado progresivo.
+- Cada bloque presenta tipo y estado como información protegida. El orden se cambia con controles visuales y ya no acepta una posición numérica manual.
+- `Historia Maná` ofrece campos guiados, presets cerrados y entre dos y ocho escenas; no expone JSON ni parámetros de animación.
+- El selector de ImageKit evita copiar y pegar URLs, conserva búsqueda, foco y objetivos táctiles, y aplica el medio elegido al borrador correcto.
+- El servidor normaliza todo el documento, elimina propiedades desconocidas, rechaza URLs inseguras y exige una historia completa antes de publicar.
+- La publicación pública del CMS quedó conectada por ruta, respetando prioridad de las páginas Astro existentes y sirviendo únicamente estados publicados.
+- Compilación y contrato de espaciado pasan sin aumentar deuda. Falta la prueba autenticada con medios reales y las tres orientaciones.
+
 ## Registro de la fase 4 — `/portal/content-preview`
 
 ### Evidencia implementada

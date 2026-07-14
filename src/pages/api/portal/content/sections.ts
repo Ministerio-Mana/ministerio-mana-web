@@ -12,6 +12,7 @@ import {
   normalizeKey,
   parseJsonBody,
 } from '@lib/cms';
+import { normalizeCmsStoryPayload } from '@lib/cmsStory';
 
 export const prerender = false;
 const MAX_SECTION_REQUEST_CHARS = 70_000;
@@ -70,9 +71,23 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return jsonResponse({ ok: false, error: 'page_id, section_key y kind válidos son obligatorios' }, 400);
   }
 
-  const payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+  let payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+  if (kind === 'story') payload = normalizeCmsStoryPayload(payload).payload;
   if (payloadIsTooLarge(payload)) {
     return jsonResponse({ ok: false, error: 'El contenido del bloque supera el tamaño permitido' }, 413);
+  }
+
+  if (kind === 'story') {
+    const { count, error: storyCountError } = await supabaseAdmin
+      .from('cms_sections')
+      .select('id', { count: 'exact', head: true })
+      .eq('page_id', pageId)
+      .eq('kind', 'story')
+      .neq('status', 'archived');
+    if (storyCountError) return jsonResponse({ ok: false, error: 'No se pudo validar la Historia Maná existente' }, 500);
+    if ((count || 0) > 0) {
+      return jsonResponse({ ok: false, error: 'Esta página ya tiene una Historia Maná.' }, 409);
+    }
   }
 
   const { data: section, error } = await supabaseAdmin
@@ -159,8 +174,39 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
     updates.status = status;
   }
 
+  let effectiveKind = String(updates.kind || '').toLowerCase();
+  let sectionPageId = '';
+  if (updates.kind === 'story' && body.payload === undefined) {
+    return jsonResponse({ ok: false, error: 'El contenido guiado es obligatorio al cambiar a Historia Maná' }, 400);
+  }
+  if ((body.payload !== undefined && !effectiveKind) || updates.kind === 'story') {
+    const { data: existingSection, error: existingSectionError } = await supabaseAdmin
+      .from('cms_sections')
+      .select('kind,page_id')
+      .eq('id', sectionId)
+      .maybeSingle();
+    if (existingSectionError || !existingSection) {
+      return jsonResponse({ ok: false, error: 'No se pudo validar el tipo de sección' }, 404);
+    }
+    if (!effectiveKind) effectiveKind = String(existingSection.kind || '').toLowerCase();
+    sectionPageId = String(existingSection.page_id || '');
+  }
+
+  if (updates.kind === 'story') {
+    const { count, error: storyCountError } = await supabaseAdmin
+      .from('cms_sections')
+      .select('id', { count: 'exact', head: true })
+      .eq('page_id', sectionPageId)
+      .eq('kind', 'story')
+      .neq('status', 'archived')
+      .neq('id', sectionId);
+    if (storyCountError) return jsonResponse({ ok: false, error: 'No se pudo validar la Historia Maná existente' }, 500);
+    if ((count || 0) > 0) return jsonResponse({ ok: false, error: 'Esta página ya tiene una Historia Maná.' }, 409);
+  }
+
   if (body.payload !== undefined) {
-    const payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+    let payload = typeof body.payload === 'object' && body.payload ? body.payload : {};
+    if (effectiveKind === 'story') payload = normalizeCmsStoryPayload(payload).payload;
     if (payloadIsTooLarge(payload)) {
       return jsonResponse({ ok: false, error: 'El contenido del bloque supera el tamaño permitido' }, 413);
     }

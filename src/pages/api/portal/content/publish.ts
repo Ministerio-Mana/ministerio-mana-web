@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { requireCmsAdmin, jsonResponse } from '@lib/cmsAdmin';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { cleanText, insertCmsAuditLog, insertCmsRevision, parseJsonBody } from '@lib/cms';
+import { normalizeCmsStoryPayload } from '@lib/cmsStory';
 
 export const prerender = false;
 
@@ -37,6 +38,32 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       ok: false,
       error: 'La página cambió mientras confirmabas. Recarga y revisa la versión más reciente antes de publicar.',
     }, 409);
+  }
+
+  if (isPublish) {
+    const { data: storySections, error: storySectionsError } = await supabaseAdmin
+      .from('cms_sections')
+      .select('title,payload')
+      .eq('page_id', pageId)
+      .eq('kind', 'story')
+      .neq('status', 'archived');
+
+    if (storySectionsError) {
+      return jsonResponse({ ok: false, error: 'No se pudo validar la historia antes de publicar' }, 500);
+    }
+    if ((storySections?.length || 0) > 1) {
+      return jsonResponse({ ok: false, error: 'Cada página puede publicar una sola Historia Maná.' }, 400);
+    }
+    for (const storySection of storySections ?? []) {
+      const validation = normalizeCmsStoryPayload(storySection.payload, { requirePublishable: true });
+      if (!validation.ok) {
+        return jsonResponse({
+          ok: false,
+          error: `Revisa “${storySection.title || 'Historia Maná'}”: ${validation.errors[0]}`,
+          validation_errors: validation.errors,
+        }, 400);
+      }
+    }
   }
 
   const { data: updatedPage, error: updatePageError } = await supabaseAdmin

@@ -1,0 +1,406 @@
+---
+import ManaStoryDeck from '@components/story/ManaStoryDeck.astro';
+import { normalizeCmsStoryPayload } from '@lib/cmsStory';
+import { optimizedPublicImageUrl, responsivePublicImageSrcset } from '@lib/publicMedia';
+
+const { payload = {}, label = 'Historia Maná' } = Astro.props;
+const story = normalizeCmsStoryPayload(payload).payload;
+
+const focalPositions = {
+  center: '50% 50%',
+  top: '50% 15%',
+  bottom: '50% 85%',
+  left: '20% 50%',
+  right: '80% 50%',
+};
+
+function safeHref(value: string): string {
+  if (value.startsWith('/') && !value.startsWith('//')) return value;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+---
+
+{story.scenes.length > 0 && (
+  <ManaStoryDeck
+    as="section"
+    class:list={['cms-story-deck', `cms-story-deck--${story.theme}`]}
+    label={label}
+    panelCount={story.scenes.length}
+    preset={story.preset}
+    staticMobile
+    staticBreakpoint={768}
+  >
+    {story.scenes.map((scene, index) => {
+      const image = scene.image ? optimizedPublicImageUrl(scene.image, 1920, 84) : '';
+      const imageSrcset = scene.image
+        ? responsivePublicImageSrcset(scene.image, [640, 960, 1280, 1600, 1920], 84)
+        : undefined;
+      const isBackdrop = scene.layout === 'backdrop';
+      const isPoster = scene.layout === 'poster';
+      const isSplit = scene.layout === 'split-left' || scene.layout === 'split-right';
+      const panelTheme = story.theme === 'navy' || isBackdrop || isPoster ? 'dark' : 'light';
+      const href = safeHref(scene.primaryHref);
+      const objectPosition = focalPositions[scene.focalPoint] || focalPositions.center;
+
+      return (
+        <section
+          class:list={[
+            'cms-story-panel',
+            `cms-story-panel--${story.theme}`,
+            `cms-story-panel--${scene.layout}`,
+          ]}
+          data-cumbre-panel
+          data-panel-theme={panelTheme}
+          aria-labelledby={`cms-story-title-${scene.id}`}
+        >
+          {(isBackdrop || isPoster) && image && (
+            <div class="cms-story-backdrop" data-panel-bg>
+              <img
+                src={image}
+                srcset={imageSrcset}
+                sizes="100vw"
+                alt=""
+                loading={index === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                fetchpriority={index === 0 ? 'high' : undefined}
+                style={`object-position: ${objectPosition};`}
+              />
+              <div class="cms-story-scrim"></div>
+            </div>
+          )}
+
+          <div class="cms-story-inner" data-panel-inner data-mobile-reveal-group>
+            <div class:list={['cms-story-grid', isSplit && 'cms-story-grid--split', scene.layout === 'split-right' && 'cms-story-grid--reverse', isPoster && 'cms-story-grid--poster']}>
+              {isSplit && image && (
+                <figure class="cms-story-visual" data-reveal>
+                  <img
+                    src={image}
+                    srcset={imageSrcset}
+                    sizes="(min-width: 960px) 48vw, 100vw"
+                    alt={scene.imageAlt}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                    style={`object-position: ${objectPosition};`}
+                  />
+                </figure>
+              )}
+
+              {isPoster && image && (
+                <figure class="cms-story-poster" data-reveal>
+                  <img
+                    src={image}
+                    srcset={imageSrcset}
+                    sizes="(min-width: 960px) 42vw, 88vw"
+                    alt={scene.imageAlt}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                </figure>
+              )}
+
+              <div class="cms-story-copy">
+                {scene.eyebrow && <p class="cms-story-eyebrow" data-reveal>{scene.eyebrow}</p>}
+                <h2 id={`cms-story-title-${scene.id}`} class="cms-story-title" data-split-title>{scene.title}</h2>
+                {scene.text && <p class="cms-story-text" data-reveal>{scene.text}</p>}
+                {scene.primaryLabel && href && (
+                  <a href={href} class="cms-story-action" data-reveal>{scene.primaryLabel}</a>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    })}
+  </ManaStoryDeck>
+)}
+
+<script>
+  import '@scripts/cumbre-welcome-story.js';
+</script>
+
+<style>
+  :global(.cms-story-deck) {
+    background: #07111c;
+    height: var(--cumbre-vh, 100svh);
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .cms-story-panel {
+    clip-path: inset(100% 0 0 0);
+    height: var(--cumbre-vh, 100svh);
+    inset: 0;
+    min-height: var(--cumbre-vh, 100svh);
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    width: 100%;
+    will-change: clip-path, transform;
+  }
+
+  .cms-story-panel:first-child,
+  .cms-story-panel.is-visible {
+    clip-path: inset(0);
+  }
+
+  .cms-story-panel.is-active,
+  .cms-story-panel a {
+    pointer-events: auto;
+  }
+
+  .cms-story-panel--navy {
+    background: #07111c;
+    color: #fff;
+  }
+
+  .cms-story-panel--light {
+    background: #edf6f4;
+    color: #101827;
+  }
+
+  .cms-story-panel--warm {
+    background: #f7f2e7;
+    color: #101827;
+  }
+
+  .cms-story-backdrop {
+    inset: 0;
+    position: absolute;
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  .cms-story-backdrop img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .cms-story-scrim {
+    background:
+      linear-gradient(90deg, rgba(7, 17, 28, 0.9), rgba(7, 17, 28, 0.42)),
+      linear-gradient(0deg, rgba(7, 17, 28, 0.64), transparent 56%);
+    inset: 0;
+    position: absolute;
+  }
+
+  .cms-story-panel--poster .cms-story-backdrop img {
+    filter: blur(24px) saturate(0.8);
+    opacity: 0.48;
+    transform: scale(1.08);
+  }
+
+  .cms-story-inner {
+    align-items: center;
+    display: flex;
+    height: var(--cumbre-vh, 100svh);
+    margin: 0 auto;
+    max-width: 72rem;
+    min-height: var(--cumbre-vh, 100svh);
+    padding: var(--space-12) var(--space-4) var(--space-8);
+    position: relative;
+    width: 100%;
+    z-index: 1;
+  }
+
+  .cms-story-grid {
+    align-items: center;
+    display: grid;
+    gap: var(--space-4);
+    width: 100%;
+  }
+
+  .cms-story-grid--split,
+  .cms-story-grid--poster {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .cms-story-grid--reverse .cms-story-visual {
+    order: 2;
+  }
+
+  .cms-story-grid--reverse .cms-story-copy {
+    order: 1;
+  }
+
+  .cms-story-copy {
+    max-width: 68ch;
+  }
+
+  .cms-story-eyebrow {
+    color: #f2c94c;
+    font-size: 0.75rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .cms-story-panel--light .cms-story-eyebrow,
+  .cms-story-panel--warm .cms-story-eyebrow {
+    color: #246a84;
+  }
+
+  .cms-story-title {
+    font-family: var(--font-display, "Intro", ui-sans-serif, system-ui, sans-serif);
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+    margin-top: var(--space-2);
+    max-width: 18ch;
+  }
+
+  .cms-story-panel--navy .cms-story-title,
+  .cms-story-panel--backdrop .cms-story-title,
+  .cms-story-panel--poster .cms-story-title {
+    color: #fff;
+  }
+
+  .cms-story-panel--light .cms-story-title,
+  .cms-story-panel--warm .cms-story-title {
+    color: #101827;
+  }
+
+  .cms-story-text {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    line-height: 1.56;
+    margin-top: var(--space-3);
+    max-width: 62ch;
+    opacity: 0.86;
+    white-space: pre-line;
+  }
+
+  .cms-story-action {
+    align-items: center;
+    background: #28a6bd;
+    border-radius: 999px;
+    color: #07111c;
+    display: inline-flex;
+    font-size: 0.875rem;
+    font-weight: 900;
+    justify-content: center;
+    margin-top: var(--space-4);
+    min-height: 48px;
+    padding: var(--space-1) var(--space-3);
+    transition: transform 180ms ease, background-color 180ms ease;
+  }
+
+  .cms-story-action:hover,
+  .cms-story-action:focus-visible {
+    background: #5ac4d5;
+    transform: translateY(-2px);
+  }
+
+  .cms-story-action:focus-visible {
+    outline: 3px solid #f2c94c;
+    outline-offset: 3px;
+  }
+
+  .cms-story-visual,
+  .cms-story-poster {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 32px;
+    box-shadow: 0 32px 64px rgba(7, 17, 28, 0.22);
+    min-height: min(64vh, 42rem);
+    overflow: hidden;
+  }
+
+  .cms-story-panel--light .cms-story-visual,
+  .cms-story-panel--warm .cms-story-visual {
+    border-color: rgba(41, 60, 116, 0.16);
+  }
+
+  .cms-story-visual img {
+    height: 100%;
+    min-height: min(64vh, 42rem);
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .cms-story-poster {
+    align-items: center;
+    backdrop-filter: blur(16px);
+    display: flex;
+    justify-content: center;
+    padding: var(--space-3);
+  }
+
+  .cms-story-poster img {
+    max-height: min(68vh, 44rem);
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .cms-story-panel [data-reveal],
+  .cms-story-panel [data-split-title] .split-word > span {
+    will-change: transform, opacity;
+  }
+
+  .cms-story-panel [data-split-title] .split-word {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+  }
+
+  @media (max-width: 767px) {
+    :global(.cms-story-deck[data-cumbre-static-active='true']) {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    :global(.cms-story-deck[data-cumbre-static-active='true']) .cms-story-panel {
+      clip-path: none;
+      height: auto;
+      min-height: 100svh;
+      pointer-events: auto;
+      position: relative;
+    }
+
+    .cms-story-inner {
+      height: auto;
+      min-height: 100svh;
+      padding: var(--space-12) var(--space-3) var(--space-8);
+    }
+
+    .cms-story-grid--split,
+    .cms-story-grid--poster {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cms-story-grid--reverse .cms-story-visual,
+    .cms-story-grid--reverse .cms-story-copy {
+      order: initial;
+    }
+
+    .cms-story-visual,
+    .cms-story-poster,
+    .cms-story-visual img {
+      min-height: 20rem;
+    }
+
+    .cms-story-visual,
+    .cms-story-poster {
+      border-radius: 24px;
+      max-height: 44vh;
+    }
+
+    .cms-story-visual img,
+    .cms-story-poster img {
+      max-height: 44vh;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cms-story-action {
+      transition: none;
+    }
+  }
+</style>

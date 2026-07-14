@@ -289,6 +289,20 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 - [ ] Entrar a `/portal/content` con `admin`, `superadmin` y una cuenta sin administración. Confirmar que solo las dos primeras acceden al CMS y a sus API.
 - [ ] Decidir si se necesita un rol editorial distinto de `admin` y `superadmin`. No ampliar permisos hasta definir exactamente qué puede crear, editar, publicar y eliminar.
 
+### Historia Maná y páginas locales — revisión después del despliegue
+
+- [ ] En `/portal/content`, crear una página de prueba en una ruta nueva y agregar el bloque `Historia Maná`; no usar todavía `/` ni reemplazar Home.
+- [ ] Elegir desde ImageKit una imagen horizontal, una cuadrada y una vertical. Probar respectivamente “Imagen de fondo”, “Arte protagonista” y una presentación lateral; confirmar que ninguna se deforma ni deja un recorte incómodo.
+- [ ] Cambiar el punto importante entre centro, arriba, abajo, izquierda y derecha; revisar que el rostro o elemento principal permanezca visible.
+- [ ] Guardar una historia de tres escenas, recargar la pestaña antes de guardar otra modificación y confirmar que el borrador local se recupera completo, incluido el número y orden de escenas.
+- [ ] Abrir la vista previa a 390 px y en escritorio. En celular debe leerse como secciones verticales; en escritorio debe sentirse el barrido reversible. Repetir con “Reducir movimiento” activado.
+- [ ] Intentar publicar con una escena sin imagen o sin descripción. Confirmar que el sistema explica qué falta y no publica contenido incompleto.
+- [ ] Publicar únicamente la página controlada, abrir su ruta pública y confirmar header, contenido, footer, enlaces y ausencia de errores; después devolverla a borrador.
+- [ ] Subir el paquete inicial de 10 a 14 imágenes de Home siguiendo `docs/CMS_STORY_IMAGE_GUIDE_2026-07-14.md`, con descripción y permiso de uso.
+- [ ] Aprobar qué escenas del laboratorio `/home-ministerio` pasan a Home oficial; no reemplazar `/` hasta esa decisión.
+- [ ] Definir los primeros datos públicos obligatorios de una iglesia: nombre, dirección, coordenadas, horario, WhatsApp, correo, pastor/equipo y eventos locales.
+- [ ] Definir quién puede editar y quién puede publicar la página local de una iglesia. Recomendación: editor local dentro de su iglesia y publicación/aprobación según alcance regional o nacional.
+
 ## 10. Trabajo que continúa a cargo del equipo web
 
 - [x] Terminar y desplegar la administración visual de equipos financieros por alcance. Completado en `13d9cad`.

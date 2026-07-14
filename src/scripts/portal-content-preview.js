@@ -96,6 +96,30 @@ function renderSection(section, index) {
     </section>`;
   }
 
+  if (section?.kind === 'story') {
+    const scenes = Array.isArray(payload.scenes) ? payload.scenes.slice(0, 8) : [];
+    const sceneMarkup = scenes.map((scene, sceneIndex) => {
+      const image = safeUrl(scene?.image);
+      const focalMap = { center: '50% 50%', top: '50% 15%', bottom: '50% 85%', left: '20% 50%', right: '80% 50%' };
+      const focal = focalMap[scene?.focalPoint] || focalMap.center;
+      return `<article class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        ${image ? `<img src="${escapeAttr(image)}" alt="${escapeAttr(scene?.imageAlt || '')}" data-preview-image class="aspect-video w-full object-cover" style="object-position:${escapeAttr(focal)}" loading="lazy" decoding="async" />` : '<div class="flex aspect-video items-center justify-center bg-slate-100 px-4 text-center text-sm font-bold text-slate-400">Falta elegir una imagen</div>'}
+        <div class="p-6">
+          ${scene?.eyebrow ? `<p class="text-xs font-black uppercase tracking-wider text-brand-teal">${escapeHtml(scene.eyebrow)}</p>` : ''}
+          <h3 class="mt-2 text-2xl font-black text-[#293C74]">${escapeHtml(scene?.title || `Escena ${sceneIndex + 1}`)}</h3>
+          ${scene?.text ? `<p class="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-600">${escapeHtml(scene.text)}</p>` : ''}
+        </div>
+      </article>`;
+    }).join('');
+    return `<section class="rounded-lg bg-[#07111c] px-6 py-8 text-white sm:px-8" aria-labelledby="${headingId}">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div><p class="text-xs font-black uppercase tracking-wider text-brand-gold">Historia Maná</p><h2 id="${headingId}" class="mt-2 text-3xl font-black">${escapeHtml(title || 'Historia guiada')}</h2></div>
+        <p class="text-sm text-white/70">${escapeHtml(scenes.length)} escena${scenes.length === 1 ? '' : 's'} · en la página pública tendrán movimiento adaptable</p>
+      </div>
+      ${sceneMarkup ? `<div class="mt-6 grid gap-4 md:grid-cols-2">${sceneMarkup}</div>` : '<p class="mt-6 text-sm text-white/70">Agrega al menos dos escenas.</p>'}
+    </section>`;
+  }
+
   if (section?.kind === 'rich_text') {
     return `<section class="portal-panel px-6 py-8 sm:px-8" aria-labelledby="${headingId}"><div class="max-w-3xl"><h2 id="${headingId}" class="text-2xl font-bold text-[#293C74]">${escapeHtml(title || 'Contenido')}</h2>${payload.text ? `<p class="mt-4 whitespace-pre-wrap leading-relaxed text-slate-700">${escapeHtml(payload.text)}</p>` : '<p class="mt-4 text-sm text-slate-500">Este bloque todavía no tiene texto.</p>'}</div></section>`;
   }
