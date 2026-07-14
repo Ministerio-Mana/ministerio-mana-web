@@ -10,20 +10,21 @@ import Sidebar from '@components/portal/Sidebar.astro';
       <Sidebar />
 
       <section class="relative flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 xl:p-16" aria-labelledby="integrations-title">
-        <div id="integrations-gate" class="mx-auto max-w-xl rounded-md border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm" role="status" aria-live="polite">
-          <p id="integrations-gate-message">Validando permisos...</p>
-          <a id="integrations-gate-link" href="/portal" class="mt-4 hidden min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
-            Volver al panel
-          </a>
-        </div>
-
-        <div id="integrations-content" class="mx-auto hidden max-w-5xl space-y-6">
+        <div class="mx-auto max-w-5xl space-y-6">
           <header class="border-b border-slate-200 pb-4">
             <p class="text-xs font-bold uppercase text-slate-500">Configuración privada</p>
             <h1 id="integrations-title" class="mt-2 text-2xl font-display font-bold text-[#293C74] md:text-4xl">Integraciones</h1>
             <p class="mt-2 text-sm text-slate-600 md:text-base">Estado técnico de servicios externos autorizados.</p>
           </header>
 
+          <div id="integrations-gate" class="mx-auto max-w-xl rounded-md border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm" role="status" aria-live="polite">
+            <p id="integrations-gate-message">Validando permisos...</p>
+            <a id="integrations-gate-link" href="/portal" class="mt-4 hidden min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">
+              Volver al panel
+            </a>
+          </div>
+
+          <div id="integrations-content" class="hidden space-y-6">
           <div id="integrations-alert" class="hidden rounded-md border px-4 py-4 text-sm" role="status" aria-live="polite"></div>
           <p id="integrations-busy" class="sr-only" role="status" aria-live="polite"></p>
 
@@ -96,6 +97,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </div>
             </div>
           </section>
+          </div>
         </div>
       </section>
     </div>
