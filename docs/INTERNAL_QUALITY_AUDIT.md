@@ -44,7 +44,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Cumple técnicamente en código y producción; decisiones reales y variación por roles pendientes |
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Cumple técnicamente en código y producción; mutaciones controladas, ImageKit y variación por roles pendientes |
 | 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Parcial avanzado: contrato, despliegue y acceso privado verificados; bloques reales y roles pendientes |
-| 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Pendiente |
+| 4 | `/portal/integrations` | Secretos, Microsoft 365 y mínimo privilegio | Parcial avanzado: contrato, despliegue y acceso restringido verificados; lectura real con superadmin individual pendiente |
 | 4 | `/admin/cumbre/manual` | Operación sensible, auditoría y cierre | Pendiente |
 
 ## Registro de la fase 1
@@ -315,6 +315,29 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Pulsar cada enlace de prueba y confirmar que muestra el destino sin abandonar la vista previa ni ejecutar la acción externa.
 - Probar una imagen retirada o URL inválida y confirmar el estado “Imagen no disponible” sin pantalla en blanco.
 - Repetir con `admin`, `superadmin` y una cuenta sin administración; la última debe regresar al Portal y el API debe rechazarla.
+
+## Registro de la fase 4 — `/portal/integrations`
+
+### Evidencia implementada
+
+- La ruta dejó de anidar un segundo `main`, mantiene un único `h1` visible incluso cuando el acceso es rechazado y explica que el diagnóstico pertenece a una configuración privada.
+- Navegación, cliente y API aplican mínimo privilegio: el enlace solo aparece a `superadmin`, la pantalla exige una cuenta individual y el servidor vuelve a rechazar roles distintos o sesiones compartidas por contraseña.
+- El diagnóstico nunca entrega credenciales, secretos ni tokens. La respuesta de verificación también dejó de exponer identificadores internos de sitio o biblioteca; el cliente recibe únicamente nombre del sitio, enlace público seguro y nombres de bibliotecas.
+- Los errores técnicos de Microsoft permanecen en el registro privado con una referencia de soporte. La interfaz recibe un mensaje genérico accionable y la respuesta usa caché privada desactivada.
+- Sitio y bibliotecas se consultan en paralelo. La interfaz impide acciones simultáneas, vence la solicitud a los quince segundos y descarta respuestas tardías para que una comprobación antigua no reemplace la más reciente.
+- “Actualizar” y “Probar conexión de lectura” preservan sus íconos, anuncian progreso, éxito o error y devuelven el foco al terminar. La hora de actualización se presenta en Bogotá y la configuración incompleta solo muestra el número de variables protegidas faltantes, nunca sus valores.
+- La pantalla declara de forma visible que la comprobación es de solo lectura y no crea, modifica ni elimina archivos. El enlace a SharePoint solo se habilita para una URL `https` y abre aislado en otra pestaña.
+- `integrations.astro` y `portal-integrations.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos. El contrato automático de calidad interna suma diecinueve verificaciones; la deuda global bajó a 1.290 clases fuera de escala.
+- Producción desplegada como `dpl_3thjezSDjGyTUZ1jbZMQy7MC7fmi`. A 390 × 844 y 1280 × 720 hubo un solo `h1`, cero objetivos menores de 44 px, cero controles sin nombre y ningún desbordamiento horizontal. La sesión no individual utilizada en QA quedó bloqueada y no mostró el enlace lateral; el API respondió “No autorizado” sin sesión.
+- La ruta productiva entrega CSP, HSTS, `SAMEORIGIN`, política de referencia estricta, política de permisos restrictiva y protección contra interpretación de contenido.
+
+### Cierre humano requerido para `/portal/integrations`
+
+- Entrar con una cuenta Supabase individual cuyo rol efectivo sea `superadmin`; confirmar que aparecen los cuatro estados y la hora de Bogotá.
+- Pulsar “Actualizar” y “Probar conexión de lectura”. Confirmar el mensaje de éxito, que el foco vuelve al botón y que ningún archivo cambia en SharePoint.
+- Comparar el nombre del sitio y las bibliotecas visibles contra Portal Maná en SharePoint. Confirmar que la biblioteca de Eventos y la bandera de carga reflejan la configuración aprobada.
+- Repetir el acceso con `admin`, una cuenta sin administración y una sesión por contraseña; ninguna debe ver el diagnóstico ni recibir datos del API.
+- Revisar en Microsoft Entra que la aplicación conserva permisos mínimos sobre el sitio autorizado y registrar la fecha de rotación del secreto sin copiarlo al Portal, Git ni conversaciones.
 
 ## Regla de actualización
 

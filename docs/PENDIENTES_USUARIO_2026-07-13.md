@@ -191,6 +191,18 @@ Estas tareas son de verificación; no copiar ni enviar las llaves por mensajes.
 - [ ] Confirmar fecha de rotación de secretos de Microsoft, Stripe, Wompi, Supabase y correo.
 - [ ] Revisar el Security Advisor de Supabase después de aplicar migraciones.
 
+### Microsoft 365 y SharePoint
+
+- [ ] Entrar a `/portal/integrations` con una cuenta Supabase individual cuyo rol efectivo sea `superadmin`. La sesión compartida por contraseña no sirve para esta prueba.
+- [ ] Confirmar que aparecen Variables, Integración, Conexión, Carga Eventos y la hora de actualización en Bogotá, sin llaves, tokens ni identificadores técnicos visibles.
+- [ ] Pulsar “Actualizar” y comprobar que el mensaje termina correctamente y el foco regresa al mismo botón.
+- [ ] Pulsar “Probar conexión de lectura”. Confirmar el éxito y verificar en SharePoint que la acción no creó, modificó ni eliminó archivos.
+- [ ] Comparar el sitio y las bibliotecas mostradas contra Portal Maná. Confirmar específicamente la biblioteca Eventos y si la carga de Eventos debe estar activada.
+- [ ] Repetir con una cuenta `admin` y una cuenta común; ninguna debe acceder ni obtener datos del API. La sesión compartida usada durante QA ya quedó rechazada.
+- [ ] Revisar en Microsoft Entra que la aplicación tenga únicamente los permisos aprobados para el sitio y registrar la fecha de rotación del secreto sin copiar su valor.
+
+No hay SQL nuevo para esta revisión.
+
 Opcional, solo si se van a usar:
 
 - [ ] Configurar Google y Facebook como proveedores OAuth en Supabase y validar redirects.
