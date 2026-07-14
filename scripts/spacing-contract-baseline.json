@@ -3,6 +3,7 @@
     "src/pages/portal/events.astro",
     "src/pages/portal/events/[id].astro",
     "src/pages/portal/finances.astro",
+    "src/pages/eventos/[slug].astro",
     "src/scripts/portal-events.js",
     "src/scripts/portal-event-operation.js",
     "src/scripts/portal-finances.js",
@@ -114,9 +115,9 @@
     "cssMagicValue": 0
   },
   "src/pages/eventos": {
-    "tailwindOffScale": 152,
+    "tailwindOffScale": 95,
     "tailwindArbitrary": 0,
-    "cssMagicValue": 152
+    "cssMagicValue": 138
   },
   "src/pages/galeria": {
     "tailwindOffScale": 18,

@@ -144,23 +144,23 @@ const structured = (contentEntry || databaseEvent) ? {
         <div class:list={["container-tight relative z-10 w-full py-10 text-white sm:py-14", imageLayout !== 'HORIZONTAL' && "event-public-hero-poster"]}>
           {useImageHero && imageLayout !== 'HORIZONTAL' && <div class:list={["event-public-hero-image", `event-public-hero-image--${imageLayout.toLowerCase()}`]}><img src={image} alt="" fetchpriority="high" /></div>}
           <div class="event-public-hero-copy max-w-4xl">
-            <p class="event-public-hero-kicker mb-3 text-xs font-bold uppercase text-white/90"><span aria-hidden="true"></span>{isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná'}</p>
+            <p class="event-public-hero-kicker mb-4 text-xs font-bold uppercase text-white/90"><span aria-hidden="true"></span>{isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná'}</p>
             <h1 class="event-public-title text-white">{title}</h1>
             <p class="event-public-lead mt-4 max-w-2xl text-white/90">{description}</p>
             {isValidDate && (
-              <div class="event-public-hero-details mt-7" aria-label={`Detalles de ${title}`}>
+              <div class="event-public-hero-details mt-8" aria-label={`Detalles de ${title}`}>
                 <div class="event-public-hero-date" aria-hidden="true">
                   <strong>{heroDay}</strong>
                   <span>{heroMonth}</span>
                 </div>
                 <div>
                   <p class="font-semibold capitalize text-white">{formattedDate}{formattedTime && ` · ${formattedTime}`}</p>
-                  {location && <p class="mt-1 text-sm text-white/75">{location}</p>}
+                  {location && <p class="mt-2 text-sm text-white/75">{location}</p>}
                 </div>
               </div>
             )}
             {(registrationHref || whatsappHref) && (
-              <div class="mt-6 flex flex-wrap gap-3">
+              <div class="mt-6 flex flex-wrap gap-4">
                 {registrationHref && <a href={registrationHref} class="event-public-hero-action event-public-hero-action--primary">{registrationMode === 'INTERNAL' ? 'Reservar mi lugar' : 'Inscribirme'}</a>}
                 {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="event-public-hero-action event-public-hero-action--secondary">Hablar por WhatsApp</a>}
               </div>
@@ -170,7 +170,7 @@ const structured = (contentEntry || databaseEvent) ? {
       </header>
 
       <section class="event-public-facts-band border-b border-slate-200 bg-white">
-        <div class="container-tight grid gap-3 py-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.78fr_auto] lg:items-stretch">
+        <div class="container-tight grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.78fr_auto] lg:items-stretch">
           <article class="event-public-fact">
             <p>Fecha</p>
             <strong class="capitalize">{formattedDate}{formattedTime && ` · ${formattedTime}`}</strong>
@@ -186,8 +186,8 @@ const structured = (contentEntry || databaseEvent) ? {
             <span>{databaseEvent?.capacity ? `${databaseEvent.capacity} cupos` : 'Cupo abierto'}</span>
           </article>
           <div class="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-            {registrationHref && <a href={registrationHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
-            {brochure && <a href={brochure} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Ver brochure</a>}
+            {registrationHref && <a href={registrationHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
+            {brochure && <a href={brochure} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 px-6 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Ver brochure</a>}
           </div>
         </div>
       </section>
@@ -211,8 +211,8 @@ const structured = (contentEntry || databaseEvent) ? {
             {(whatsappHref || databaseEvent?.contact_email) && (
               <div class="event-public-contact mt-6">
                 <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">¿Necesitas ayuda?</p>
-                <p class="mt-1 text-sm leading-relaxed text-slate-600">El equipo del evento está disponible para orientarte.</p>
-                <div class="mt-3 grid gap-2">
+                <p class="mt-2 text-sm leading-relaxed text-slate-600">El equipo del evento está disponible para orientarte.</p>
+                <div class="mt-4 grid gap-2">
                   {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="event-public-contact-action event-public-contact-action--whatsapp">Escribir por WhatsApp</a>}
                   {databaseEvent?.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="event-public-contact-action">Enviar correo</a>}
                 </div>
@@ -229,7 +229,7 @@ const structured = (contentEntry || databaseEvent) ? {
               <h2 id="event-payment-result-title" class="text-base font-bold text-[#293C74]">
                 {paymentReturnState === 'cancelled' ? 'Pago no completado' : 'Validando tu pago'}
               </h2>
-              <p data-payment-result-message class="mt-1 text-sm text-slate-600">
+              <p data-payment-result-message class="mt-2 text-sm text-slate-600">
                 {paymentReturnState === 'cancelled'
                   ? 'Tu inscripción todavía no está confirmada.'
                   : 'Estamos esperando la confirmación segura del proveedor.'}
@@ -245,7 +245,7 @@ const structured = (contentEntry || databaseEvent) ? {
             <div class="max-w-xl">
               <p class="text-xs font-bold uppercase text-slate-500">Inscripción</p>
               <h2 id="event-registration-title" class="mt-2 text-2xl font-bold text-[#293C74] sm:text-3xl">Reserva tu lugar</h2>
-              <p class="mt-3 leading-relaxed text-slate-600">
+              <p class="mt-4 leading-relaxed text-slate-600">
                 {pricingModel === 'FREE'
                   ? 'Completa tus datos para registrar la asistencia.'
                   : 'Elige un método de pago. Las transferencias manuales se confirman después de que el organizador las revise.'}
@@ -253,11 +253,11 @@ const structured = (contentEntry || databaseEvent) ? {
               <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-1">
                 <div>
                   <dt class="font-bold text-slate-500">Modalidad</dt>
-                  <dd class="mt-1 text-slate-900">{databaseEvent.attendance_mode === 'ONLINE' ? 'Virtual' : databaseEvent.attendance_mode === 'HYBRID' ? 'Híbrido' : 'Presencial'}</dd>
+                  <dd class="mt-2 text-slate-900">{databaseEvent.attendance_mode === 'ONLINE' ? 'Virtual' : databaseEvent.attendance_mode === 'HYBRID' ? 'Híbrido' : 'Presencial'}</dd>
                 </div>
                 <div>
                   <dt class="font-bold text-slate-500">Valor</dt>
-                  <dd class="mt-1 text-slate-900">{priceLabel}</dd>
+                  <dd class="mt-2 text-slate-900">{priceLabel}</dd>
                 </div>
               </dl>
             </div>
@@ -265,7 +265,7 @@ const structured = (contentEntry || databaseEvent) ? {
             {internalRegistrationReady ? (
               <form
                 id="public-event-registration-form"
-                class="event-public-registration-card rounded-md border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+                class="event-public-registration-card rounded-md border border-slate-200 bg-white p-6 shadow-sm sm:p-6"
                 data-event-id={databaseEvent.id}
                 data-pricing-model={pricingModel}
                 data-unit-price={Number(databaseEvent.price || 0)}
@@ -275,38 +275,38 @@ const structured = (contentEntry || databaseEvent) ? {
                 novalidate>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="text-sm font-bold text-slate-700 sm:col-span-2">Nombre completo
-                    <input name="contact_name" type="text" required minlength="3" maxlength="120" autocomplete="name" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                    <input name="contact_name" type="text" required minlength="3" maxlength="120" autocomplete="name" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                   </label>
                   <label class="text-sm font-bold text-slate-700">Correo
-                    <input name="contact_email" type="email" required maxlength="254" autocomplete="email" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                    <input name="contact_email" type="email" required maxlength="254" autocomplete="email" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                   </label>
                   {registrationFormConfig.phone !== 'HIDDEN' && (
                     <label class="text-sm font-bold text-slate-700">WhatsApp o teléfono {registrationFormConfig.phone === 'REQUIRED' ? '' : <span class="font-normal text-slate-500">(opcional)</span>}
-                      <input name="contact_phone" type="tel" maxlength="40" autocomplete="tel" required={registrationFormConfig.phone === 'REQUIRED'} placeholder="Ej. 573001234567" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                      <input name="contact_phone" type="tel" maxlength="40" autocomplete="tel" required={registrationFormConfig.phone === 'REQUIRED'} placeholder="Ej. 573001234567" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                     </label>
                   )}
                   {registrationFormConfig.church && (
                     <label class="text-sm font-bold text-slate-700">Iglesia o congregación <span class="font-normal text-slate-500">(opcional)</span>
-                      <input name="church" type="text" maxlength="120" autocomplete="organization" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                      <input name="church" type="text" maxlength="120" autocomplete="organization" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                     </label>
                   )}
                   <label class="text-sm font-bold text-slate-700">Asistentes
-                    <input name="quantity" type="number" required min="1" max={Math.min(100, Number(databaseEvent.capacity || 100))} step="1" value="1" class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                    <input name="quantity" type="number" required min="1" max={Math.min(100, Number(databaseEvent.capacity || 100))} step="1" value="1" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                   </label>
                   {pricingModel === 'DONATION' && (
                     <label class="text-sm font-bold text-slate-700">Valor del aporte
-                      <input name="donation_amount" type="number" required min="1" max="1000000000" step={databaseEvent.currency === 'COP' ? '1000' : '1'} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
+                      <input name="donation_amount" type="number" required min="1" max="1000000000" step={databaseEvent.currency === 'COP' ? '1000' : '1'} class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                     </label>
                   )}
                   {registrationCustomFields.map((field) => (
                     <fieldset class:list={['min-w-0', field.type === 'LONG_TEXT' || field.type === 'MULTIPLE_CHOICE' ? 'sm:col-span-2' : '']} data-custom-field-id={field.id} data-custom-field-type={field.type} data-custom-field-required={field.required ? 'true' : 'false'}>
-                      <legend class="text-sm font-bold text-slate-700">{field.label}{field.required && <span aria-hidden="true" class="ml-1 text-[#293C74]">*</span>}</legend>
-                      {field.help_text && <p class="mt-1 text-xs leading-relaxed text-slate-500">{field.help_text}</p>}
-                      {field.type === 'SHORT_TEXT' && <input name={`custom_${field.id}`} type="text" maxlength="160" required={field.required} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />}
-                      {field.type === 'LONG_TEXT' && <textarea name={`custom_${field.id}`} rows="4" maxlength="1000" required={field.required} class="mt-1 block w-full rounded-md border-slate-300"></textarea>}
-                      {field.type === 'DATE' && <input name={`custom_${field.id}`} type="date" required={field.required} class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />}
+                      <legend class="text-sm font-bold text-slate-700">{field.label}{field.required && <span aria-hidden="true" class="ml-2 text-[#293C74]">*</span>}</legend>
+                      {field.help_text && <p class="mt-2 text-xs leading-relaxed text-slate-500">{field.help_text}</p>}
+                      {field.type === 'SHORT_TEXT' && <input name={`custom_${field.id}`} type="text" maxlength="160" required={field.required} class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />}
+                      {field.type === 'LONG_TEXT' && <textarea name={`custom_${field.id}`} rows="4" maxlength="1000" required={field.required} class="mt-2 block w-full rounded-md border-slate-300"></textarea>}
+                      {field.type === 'DATE' && <input name={`custom_${field.id}`} type="date" required={field.required} class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />}
                       {field.type === 'YES_NO' && (
-                        <select name={`custom_${field.id}`} required={field.required} class="mt-1 block min-h-11 w-full rounded-md border-slate-300">
+                        <select name={`custom_${field.id}`} required={field.required} class="mt-2 block min-h-11 w-full rounded-md border-slate-300">
                           <option value="">Selecciona una opción</option>
                           <option value="Sí">Sí</option>
                           <option value="No">No</option>
@@ -315,7 +315,7 @@ const structured = (contentEntry || databaseEvent) ? {
                       {field.type === 'SINGLE_CHOICE' && (
                         <div class="mt-2 grid gap-2">
                           {field.options.map((option, optionIndex) => (
-                            <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:border-[#293C74]/40">
+                            <label class="flex min-h-11 items-center gap-4 rounded-md border border-slate-200 px-4 text-sm text-slate-700 hover:border-[#293C74]/40">
                               <input name={`custom_${field.id}`} type="radio" value={option} required={field.required && optionIndex === 0} class="h-4 w-4 border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                               <span>{option}</span>
                             </label>
@@ -325,7 +325,7 @@ const structured = (contentEntry || databaseEvent) ? {
                       {field.type === 'MULTIPLE_CHOICE' && (
                         <div class="mt-2 grid gap-2">
                           {field.options.map((option) => (
-                            <label class="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 px-3 text-sm text-slate-700 hover:border-[#293C74]/40">
+                            <label class="flex min-h-11 items-center gap-4 rounded-md border border-slate-200 px-4 text-sm text-slate-700 hover:border-[#293C74]/40">
                               <input name={`custom_${field.id}`} type="checkbox" value={option} class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                               <span>{option}</span>
                             </label>
@@ -336,7 +336,7 @@ const structured = (contentEntry || databaseEvent) ? {
                   ))}
                   {pricingModel !== 'FREE' && (
                     <label class="text-sm font-bold text-slate-700 sm:col-span-2">Método de pago
-                      <select name="provider" required class="mt-1 block min-h-11 w-full rounded-md border-slate-300">
+                      <select name="provider" required class="mt-2 block min-h-11 w-full rounded-md border-slate-300">
                         {eventPaymentOptions.map((option) => (
                           <option
                             value={option.id}
@@ -352,7 +352,7 @@ const structured = (contentEntry || databaseEvent) ? {
                 </div>
 
                 {pricingModel !== 'FREE' && eventPaymentOptions.some((option) => option.kind !== 'ONLINE') && (
-                  <div class="mt-4 space-y-3">
+                  <div class="mt-4 space-y-4">
                     {eventPaymentOptions.filter((option) => option.kind !== 'ONLINE').map((option) => (
                       <article
                         class="hidden rounded-md border border-slate-200 bg-slate-50 p-4"
@@ -377,7 +377,7 @@ const structured = (contentEntry || databaseEvent) ? {
                             Abrir enlace seguro · {new URL(option.external_url).hostname}
                           </a>
                         )}
-                        <p class="mt-3 text-xs leading-relaxed text-slate-500">Este pago no se confirma automáticamente. El organizador revisará el movimiento en su cuenta.</p>
+                        <p class="mt-4 text-xs leading-relaxed text-slate-500">Este pago no se confirma automáticamente. El organizador revisará el movimiento en su cuenta.</p>
                       </article>
                     ))}
                     <label id="event-manual-reference-wrapper" class="hidden text-sm font-bold text-slate-700">Referencia del pago
@@ -388,35 +388,35 @@ const structured = (contentEntry || databaseEvent) ? {
                         maxlength="120"
                         autocomplete="off"
                         placeholder="Referencia, titular o últimos 4 dígitos"
-                        class="mt-1 block min-h-11 w-full rounded-md border-slate-300" />
-                      <span class="mt-1 block text-xs font-normal text-slate-500">No escribas claves, números completos de tarjeta ni información bancaria privada.</span>
+                        class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+                      <span class="mt-2 block text-xs font-normal text-slate-500">No escribas claves, números completos de tarjeta ni información bancaria privada.</span>
                     </label>
                     <label id="event-payment-evidence-wrapper" class="hidden text-sm font-bold text-slate-700">Comprobante de pago
                       <input
                         name="payment_evidence"
                         type="file"
                         accept="image/jpeg,image/png,image/webp,application/pdf"
-                        class="mt-1 block min-h-11 w-full rounded-md border border-slate-300 bg-white text-sm font-normal text-slate-700 file:mr-3 file:min-h-11 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-4 file:text-sm file:font-bold file:text-[#293C74]" />
-                      <span class="mt-1 block text-xs font-normal leading-relaxed text-slate-500">Captura JPG, PNG o WebP de máximo 4 MB, o PDF de máximo 2 MB. La imagen se optimiza y se guarda de forma privada.</span>
+                        class="mt-2 block min-h-11 w-full rounded-md border border-slate-300 bg-white text-sm font-normal text-slate-700 file:mr-4 file:min-h-11 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-4 file:text-sm file:font-bold file:text-[#293C74]" />
+                      <span class="mt-2 block text-xs font-normal leading-relaxed text-slate-500">Captura JPG, PNG o WebP de máximo 4 MB, o PDF de máximo 2 MB. La imagen se optimiza y se guarda de forma privada.</span>
                     </label>
                   </div>
                 )}
 
                 {pricingModel !== 'FREE' && (
-                  <div class="mt-5 flex items-center justify-between border-y border-slate-200 py-3 text-sm">
+                  <div class="mt-6 flex items-center justify-between border-y border-slate-200 py-4 text-sm">
                     <span class="font-semibold text-slate-600">Total</span>
                     <strong id="event-registration-total" class="text-base text-[#293C74]">—</strong>
                   </div>
                 )}
 
-                <label class="mt-5 flex items-start gap-3 text-sm text-slate-600">
-                  <input name="privacy_accepted" type="checkbox" required class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                <label class="mt-6 flex items-start gap-4 text-sm text-slate-600">
+                  <input name="privacy_accepted" type="checkbox" required class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                   <span>Autorizo el tratamiento de mis datos según la <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="font-bold text-[#293C74] underline">política de privacidad</a>.</span>
                 </label>
 
                 {registrationFormConfig.whatsapp_updates && (
-                  <label class="mt-4 flex items-start gap-3 text-sm text-slate-600">
-                    <input name="whatsapp_updates" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                  <label class="mt-4 flex items-start gap-4 text-sm text-slate-600">
+                    <input name="whatsapp_updates" type="checkbox" class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                     <span>Quiero recibir recordatorios y novedades de este evento por WhatsApp.</span>
                   </label>
                 )}
@@ -424,15 +424,15 @@ const structured = (contentEntry || databaseEvent) ? {
                 <TurnstileProvider />
                 <TurnstileWidget id="event-registration-turnstile" appearance="interaction-only" theme="light" />
 
-                <p id="event-registration-status" class="mt-4 hidden rounded-md px-3 py-2 text-sm" role="status" aria-live="polite"></p>
-                <button type="submit" class="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60">
+                <p id="event-registration-status" class="mt-4 hidden rounded-md px-4 py-2 text-sm" role="status" aria-live="polite"></p>
+                <button type="submit" class="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60">
                   {pricingModel === 'FREE' ? 'Confirmar inscripción' : 'Continuar al pago'}
                 </button>
               </form>
             ) : (
-              <div class="rounded-md border border-slate-200 bg-slate-50 px-5 py-6">
+              <div class="rounded-md border border-slate-200 bg-slate-50 px-6 py-6">
                 <p class="font-bold text-slate-800">Inscripciones temporalmente no disponibles</p>
-                {databaseEvent.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-3 inline-block text-sm font-bold text-[#293C74] underline">Contactar al organizador</a>}
+                {databaseEvent.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-4 inline-block text-sm font-bold text-[#293C74] underline">Contactar al organizador</a>}
               </div>
             )}
           </div>
@@ -442,8 +442,8 @@ const structured = (contentEntry || databaseEvent) ? {
   ) : (
     <div class="container-tight py-20 text-center">
       <h1 class="text-3xl font-bold text-[#293C74]">Evento no encontrado</h1>
-      <p class="mt-3 text-slate-600">El evento solicitado no existe o ya no está publicado.</p>
-      <a href="/eventos" class="mt-6 inline-flex min-h-11 items-center rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white">Ver eventos</a>
+      <p class="mt-4 text-slate-600">El evento solicitado no existe o ya no está publicado.</p>
+      <a href="/eventos" class="mt-6 inline-flex min-h-11 items-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white">Ver eventos</a>
     </div>
   )}
   <script>
@@ -512,7 +512,7 @@ const structured = (contentEntry || databaseEvent) ? {
   .event-public-hero-kicker {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: var(--space-1);
     letter-spacing: 0.12em;
   }
 
@@ -525,8 +525,8 @@ const structured = (contentEntry || databaseEvent) ? {
   .event-public-hero-details {
     display: inline-flex;
     align-items: center;
-    gap: 0.85rem;
-    padding: 0.5rem 1rem 0.5rem 0.55rem;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
     border: 1px solid rgb(255 255 255 / 18%);
     border-radius: 0.75rem;
     background: rgb(11 28 65 / 48%);
@@ -546,7 +546,7 @@ const structured = (contentEntry || databaseEvent) ? {
   }
 
   .event-public-hero-date strong { font-size: 1.3rem; }
-  .event-public-hero-date span { margin-top: 0.15rem; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; }
+  .event-public-hero-date span { margin-top: 0; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; }
 
   .event-public-hero-action,
   .event-public-contact-action {
@@ -555,7 +555,7 @@ const structured = (contentEntry || databaseEvent) ? {
     align-items: center;
     justify-content: center;
     border-radius: 0.55rem;
-    padding: 0.65rem 1rem;
+    padding: var(--space-1) var(--space-2);
     font-size: 0.875rem;
     font-weight: 800;
     transition: transform 160ms ease, background 160ms ease, color 160ms ease;
@@ -578,7 +578,7 @@ const structured = (contentEntry || databaseEvent) ? {
     border-left: 3px solid #3ac1d4;
     border-radius: 0.35rem;
     background: linear-gradient(135deg, #fbfdff, #f4f8ff);
-    padding: 0.9rem 1rem;
+    padding: var(--space-2);
   }
 
   .event-public-fact p {
@@ -592,7 +592,7 @@ const structured = (contentEntry || databaseEvent) ? {
 
   .event-public-fact strong {
     display: block;
-    margin-top: 0.38rem;
+    margin-top: var(--space-1);
     color: #172553;
     font-size: 0.93rem;
     line-height: 1.35;
@@ -600,7 +600,7 @@ const structured = (contentEntry || databaseEvent) ? {
 
   .event-public-fact span {
     display: block;
-    margin-top: 0.22rem;
+    margin-top: var(--space-1);
     color: #66758f;
     font-size: 0.78rem;
     line-height: 1.35;
@@ -609,12 +609,12 @@ const structured = (contentEntry || databaseEvent) ? {
   .event-public-about {
     border-radius: 1rem;
     background: linear-gradient(135deg, #fff 0%, #f7faff 100%);
-    padding: clamp(1.5rem, 3vw, 2.25rem);
+    padding: clamp(var(--space-3), 3vw, var(--space-4));
     box-shadow: 0 15px 35px rgb(41 60 116 / 6%);
   }
 
   .event-public-section-label {
-    margin-bottom: 0.6rem;
+    margin-bottom: var(--space-1);
     color: #2d7090;
     font-size: 0.72rem;
     font-weight: 800;
@@ -622,7 +622,7 @@ const structured = (contentEntry || databaseEvent) ? {
     text-transform: uppercase;
   }
 
-  .event-public-sidebar { align-self: start; padding-top: 1.25rem; }
+  .event-public-sidebar { align-self: start; padding-top: var(--space-2); }
 
   .event-public-registration-card {
     position: relative;
@@ -645,7 +645,7 @@ const structured = (contentEntry || databaseEvent) ? {
     border: 1px solid rgb(58 193 212 / 25%);
     border-radius: 0.85rem;
     background: linear-gradient(145deg, #effbfc, #f6f8ff);
-    padding: 1rem;
+    padding: var(--space-2);
   }
 
   .event-public-contact-action { border: 1px solid #d9e3f4; background: #fff; color: #293c74; }
@@ -663,7 +663,7 @@ const structured = (contentEntry || databaseEvent) ? {
     display: grid;
     grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
     align-items: center;
-    gap: clamp(1.5rem, 4vw, 4rem);
+    gap: clamp(var(--space-3), 4vw, var(--space-8));
   }
 
   .event-public-hero-image {
@@ -691,7 +691,7 @@ const structured = (contentEntry || databaseEvent) ? {
 
     .event-public-hero-poster {
       grid-template-columns: 1fr;
-      gap: 1.5rem;
+      gap: var(--space-3);
     }
 
     .event-public-hero-image--square { width: min(100%, 300px); margin-inline: auto; }
