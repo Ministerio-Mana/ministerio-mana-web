@@ -215,6 +215,11 @@ Primero decidir si el módulo sigue operativo o ya entra en cierre contable.
 
 - [ ] Probar una donación Campus con cada proveedor habilitado.
 - [ ] Confirmar asignación al misionero correcto y visibilidad financiera correcta.
+- [ ] Entrar a `/portal/campus` con una cuenta real de misionero Campus y confirmar que solo ve sus donantes, sin montos administrativos ni contactos de otros misioneros.
+- [ ] Repetir Campus con responsables financieros global, nacional, regional y local; comparar una muestra contra Finanzas y confirmar que cada cuenta solo recibe su alcance.
+- [ ] Desde Campus, abrir un único correo y WhatsApp de prueba sin enviarlo de inmediato; revisar destinatario, nombre y texto pastoral antes de autorizar cualquier mensaje.
+- [ ] Con aportes controlados Wompi/COP y Stripe/USD, confirmar los misioneros elegidos, el monto por misionero y el total contable sin duplicados.
+- [ ] Cuando Campus supere el límite de registros visibles, confirmar que aparece la nota de cobertura y que el histórico completo sigue disponible en Finanzas.
 - [ ] Verificar suscripciones y cron de cobro/recordatorio.
 - [ ] Validar motivos reales de pagos pendientes y fallidos en Finanzas.
 - [ ] Definir el flujo de certificados y si se pedirá documento en aportes internacionales.

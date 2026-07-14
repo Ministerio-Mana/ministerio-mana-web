@@ -40,7 +40,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 2 | `/portal/regions` | Jerarquía territorial y autorización | Cumple técnicamente en código y producción; mutaciones reales y variación por roles pendientes |
 | 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Cumple técnicamente en código y producción; exportes y variación real por alcance pendientes |
 | 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Cumple técnicamente en código y producción; conciliación real y variación por alcance pendientes |
-| 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Pendiente |
+| 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Cumple técnicamente en código y producción; cuentas reales por alcance y misionero pendientes |
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Pendiente |
 | 4 | `/portal/content` | Publicación, imágenes, borradores y auditoría | Pendiente |
 | 4 | `/portal/content-preview` | Vista previa segura y fidelidad visual | Pendiente |
@@ -214,6 +214,32 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Conciliar una sola referencia pendiente autorizada después de compararla con el panel oficial de Wompi; confirmar que no se genera un cobro nuevo y que el estado y la auditoría local se actualizan una sola vez.
 - Si la aprobación manual excepcional está habilitada, probarla únicamente con una referencia controlada y evidencia oficial de Wompi. No aprobar manualmente una referencia que no coincida en monto, moneda y titular.
 - Revisar “Cargar más” con un filtro acotado y comprobar que conteo y acumulados aprobados visibles crecen sin duplicar filas.
+
+## Registro de la fase 3 — `/portal/campus`
+
+### Evidencia implementada
+
+- La ruta mantiene un solo `h1`, alcance visible, estadísticas, filtros por relación y misionero, búsqueda, carga progresiva local y estados de carga, error y vacío anunciables.
+- El permiso adicional de Finanzas ahora se resuelve igual en navegación y API. Un pastor u otro rol principal con una asignación financiera válida puede entrar sin reemplazar su rol pastoral.
+- La vista administrativa aplica en servidor el alcance financiero global, nacional, regional o local. Si las columnas de separación no existen para un alcance limitado, la API falla cerrada en lugar de entregar el libro global.
+- El misionero Campus sin permiso financiero conserva una vista personal construida por asignaciones, identificador y respaldo legado. Si además recibe Finanzas, la vista administrativa respeta únicamente el alcance financiero asignado.
+- Estadísticas y texto ya no prometen un total histórico ilimitado: hablan de donantes y aportes aprobados visibles. Cuando la consulta alcanza su límite, una nota indica cuántos registros se cargaron y remite al histórico contable de Finanzas.
+- COP se presenta sin decimales y USD con dos centavos. Cada aporte administrativo muestra proveedor y moneda; Wompi espera COP y Stripe espera USD, con advertencia visible ante una combinación distinta.
+- El conteo de misioneros usa primero el `slug` canónico y solo recurre a identificador o nombre cuando no existe, evitando contar a la misma persona dos veces.
+- Búsqueda y filtro por misionero consideran todos los destinos del donante, no solo la asignación más reciente. “Mostrar más” enfoca la primera tarjeta nueva para no perder la posición de teclado.
+- Correo y WhatsApp tienen objetivo táctil de 44 px; WhatsApp abre aislado en otra pestaña. No se abrió ni envió ninguna comunicación durante QA.
+- Todos los filtros, campos, reintento, contactos y carga progresiva respetan 44 px. Las etiquetas de misionero y búsqueda son visibles y están asociadas a sus controles.
+- `campus.astro` y `portal-campus.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos. El contrato automático de calidad interna suma quince verificaciones.
+- Producción verificada en `ministeriomana.org`: 17 controles visibles a 390 px y 30 a 1280 px, con cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1` y ningún desbordamiento horizontal. Los cinco donantes visibles mostraron seis misioneros canónicos y cero alertas proveedor/moneda.
+- Los filtros “Recurrentes” y misionero, la búsqueda sin resultados y su restauración se probaron sin escrituras. El foco permaneció en las acciones locales y la vista regresó a “Todos”.
+
+### Cierre humano requerido para `/portal/campus`
+
+- Entrar con una cuenta de misionero Campus y confirmar que solo aparecen sus donantes, sin montos administrativos ni contactos ajenos.
+- Repetir con responsables financieros global, nacional, regional y local; comparar una muestra contra Finanzas y confirmar que el alcance visible coincide.
+- Abrir un único correo y WhatsApp de prueba sin enviar inmediatamente; revisar destinatario, nombre del donante y texto pastoral antes de autorizar el mensaje.
+- Probar un aporte Campus controlado con Wompi/COP y otro con Stripe/USD; confirmar asignaciones por misionero, monto por misionero y total contable sin duplicados.
+- Cuando el histórico supere el límite visible, confirmar que aparece la nota de cobertura y que Finanzas conserva el histórico completo.
 
 ## Regla de actualización
 
