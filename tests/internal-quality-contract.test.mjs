@@ -138,6 +138,7 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /\.event-filter \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-action\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar-confirm\) \{[\s\S]*?min-height: 44px;/);
+  assert.match(eventsView, /:global\(\.event-calendar \.flatpickr-time input\) \{[\s\S]*?min-height: 44px;/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /function requestCloseEventModal\(\)/);

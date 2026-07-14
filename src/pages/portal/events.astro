@@ -633,6 +633,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
       font-weight: 700;
     }
 
+    :global(.event-calendar .flatpickr-time input) {
+      min-height: 44px;
+    }
+
     :global(.event-calendar-confirm) {
       display: block;
       width: calc(100% - var(--space-2));
