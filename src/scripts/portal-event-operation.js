@@ -81,6 +81,8 @@ let permissions = { can_approve: false, can_check_in: false };
 let currentPage = 1;
 let totalPages = 1;
 let pendingReview = null;
+let reviewModalReturnFocus = null;
+let reviewNoteDirty = false;
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -181,7 +183,7 @@ function renderEventDocuments(documents) {
       .filter(Boolean)
       .join(' · ');
     const action = url && !failed
-      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border ${presentation.isWorkbook ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-slate-300 bg-white text-[#293C74] hover:bg-slate-50'} px-4 py-2 text-sm font-bold">${icon(externalLinkIconUrl)} ${escapeHtml(presentation.actionLabel)}</a>`
+      ? `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border ${presentation.isWorkbook ? 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : 'border-slate-300 bg-white text-[#293C74] hover:bg-slate-50'} px-4 py-2 text-sm font-bold">${icon(externalLinkIconUrl)} ${escapeHtml(presentation.actionLabel)}</a>`
       : '';
     return `<div class="flex min-h-16 flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between ${presentation.isWorkbook ? 'bg-emerald-50/30' : ''}">
       <div class="flex min-w-0 items-start gap-4">
@@ -413,17 +415,17 @@ function renderRegistrations() {
           <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">Comprobante privado</p>
           <p class="mt-2 break-words text-sm font-semibold text-slate-800">${escapeHtml(payment.evidence.original_filename || 'Comprobante')} · ${escapeHtml(formatFileSize(payment.evidence.size_bytes))}</p>
         </div>
-        <a href="${escapeAttr(payment.evidence.view_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-[#EEF2FF]">${icon(externalLinkIconUrl)} Ver comprobante</a>
+        <a href="${escapeAttr(payment.evidence.view_url)}" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md border border-[#293C74] bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-[#EEF2FF]">${icon(externalLinkIconUrl)} Ver comprobante</a>
       </div>` : payment.requires_evidence ? `<p class="rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">Esta persona no adjuntó comprobante.</p>` : ''}` : '';
     const missingRequiredEvidence = Boolean(payment?.requires_evidence && !payment?.evidence);
     const reviewActions = status === 'UNDER_REVIEW' && payment?.id && payment?.is_manual && permissions.can_approve ? `
-      <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300" data-action="APPROVE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}" ${missingRequiredEvidence ? 'disabled title="Falta el comprobante obligatorio"' : ''}>${icon(checkCircleIconUrl)} Aprobar pago</button>
-      <button type="button" class="event-review-action inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50" data-action="DECLINE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}">${icon(xCircleIconUrl)} Rechazar</button>` : '';
+      <button type="button" class="event-review-action inline-flex min-h-11 items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white enabled:hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300" data-action="APPROVE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}" ${missingRequiredEvidence ? 'disabled title="Falta el comprobante obligatorio"' : ''}>${icon(checkCircleIconUrl)} Aprobar pago</button>
+      <button type="button" class="event-review-action inline-flex min-h-11 items-center gap-2 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50" data-action="DECLINE" data-payment-id="${escapeAttr(payment.id)}" data-registration-id="${escapeAttr(registration.id)}">${icon(xCircleIconUrl)} Rechazar</button>` : '';
     const checkinAction = status === 'CONFIRMED' && permissions.can_check_in && remaining > 0 ? `
-      <label class="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-slate-700">Asistentes
-        <input type="number" min="1" max="${remaining}" value="${remaining}" data-checkin-quantity class="w-20 rounded-md border-slate-300 py-2" />
+      <label class="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-slate-700">Asistentes
+        <input type="number" min="1" max="${remaining}" value="${remaining}" data-checkin-quantity class="min-h-11 w-20 rounded-md border-slate-300 py-2" />
       </label>
-      <button type="button" class="event-checkin-action inline-flex min-h-10 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]" data-registration-id="${escapeAttr(registration.id)}">${icon(userCheckIconUrl)} Registrar asistencia</button>` : '';
+      <button type="button" class="event-checkin-action inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f]" data-registration-id="${escapeAttr(registration.id)}">${icon(userCheckIconUrl)} Registrar asistencia</button>` : '';
     const attendance = status === 'CONFIRMED'
       ? `<span class="text-sm font-semibold text-slate-600">Asistencia: ${checkedIn} de ${quantity}</span>`
       : '';
@@ -502,21 +504,64 @@ async function loadOperation(page = currentPage) {
   showContent();
 }
 
-function closeReviewModal() {
+function getReviewModalFocusableElements() {
+  if (!reviewModal) return [];
+  return [...reviewModal.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )].filter((element) => !element.closest('[hidden], [aria-hidden="true"]') && element.getClientRects().length > 0);
+}
+
+function closeReviewModal(returnFocusOverride = null) {
   reviewModal?.classList.add('hidden');
   reviewModal?.classList.remove('flex');
+  reviewModal?.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   pendingReview = null;
+  reviewNoteDirty = false;
   if (reviewNote) reviewNote.value = '';
   if (reviewError) {
     reviewError.textContent = '';
     reviewError.classList.add('hidden');
   }
+  const returnFocus = returnFocusOverride || reviewModalReturnFocus;
+  reviewModalReturnFocus = null;
+  window.queueMicrotask(() => {
+    if (returnFocus?.isConnected) returnFocus.focus();
+    else search?.focus();
+  });
+}
+
+function requestCloseReviewModal() {
+  if (reviewNoteDirty && !window.confirm('Hay una nota de revisión sin guardar. ¿Quieres descartarla?')) return;
+  closeReviewModal();
+}
+
+function handleReviewModalKeydown(event) {
+  if (!reviewModal?.classList.contains('flex')) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    reviewClose?.focus();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = getReviewModalFocusableElements();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 function openReviewModal(action, registration) {
   if (!reviewModal || !registration?.payment) return;
+  if (document.activeElement instanceof HTMLElement) reviewModalReturnFocus = document.activeElement;
   pendingReview = { action, registration };
+  reviewNoteDirty = false;
   const approving = action === 'APPROVE';
   if (reviewTitle) reviewTitle.textContent = approving ? 'Aprobar pago' : 'Rechazar pago';
   if (reviewSummary) {
@@ -531,6 +576,7 @@ function openReviewModal(action, registration) {
   }
   reviewModal.classList.remove('hidden');
   reviewModal.classList.add('flex');
+  reviewModal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   reviewNote?.focus();
 }
@@ -561,7 +607,8 @@ async function submitReview() {
       }),
     });
     if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo revisar el pago.');
-    closeReviewModal();
+    reviewNoteDirty = false;
+    closeReviewModal(search);
     await loadOperation(currentPage);
   } catch (error) {
     if (reviewError) {
@@ -629,14 +676,23 @@ pagination?.addEventListener('click', (event) => {
   const nextPage = button.dataset.pageAction === 'next' ? currentPage + 1 : currentPage - 1;
   void loadOperation(nextPage).catch(showFatalError);
 });
-reviewClose?.addEventListener('click', closeReviewModal);
-reviewCancel?.addEventListener('click', closeReviewModal);
+reviewNote?.addEventListener('input', () => {
+  reviewNoteDirty = true;
+});
+reviewClose?.addEventListener('click', requestCloseReviewModal);
+reviewCancel?.addEventListener('click', requestCloseReviewModal);
 reviewConfirm?.addEventListener('click', () => void submitReview());
 reviewModal?.addEventListener('click', (event) => {
-  if (event.target === reviewModal) closeReviewModal();
+  if (event.target === reviewModal) reviewClose?.focus();
 });
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && reviewModal?.classList.contains('flex')) closeReviewModal();
+  handleReviewModalKeydown(event);
+});
+
+window.addEventListener('beforeunload', (event) => {
+  if (!reviewNoteDirty || !reviewModal?.classList.contains('flex')) return;
+  event.preventDefault();
+  event.returnValue = '';
 });
 
 function showFatalError(error) {

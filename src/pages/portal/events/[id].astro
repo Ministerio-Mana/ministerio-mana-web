@@ -19,7 +19,7 @@ const eventId = String(Astro.params.id || '');
         <div id="event-operation-content" class="mx-auto hidden max-w-7xl space-y-6">
           <header class="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div class="min-w-0">
-              <a href="/portal/events" class="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-[#293C74] hover:underline">
+              <a href="/portal/events" class="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[#293C74] hover:underline">
                 <PortalIcon name="arrow-left" size={17} />
                 Eventos
               </a>
@@ -64,7 +64,7 @@ const eventId = String(Astro.params.id || '');
                 <h2 id="event-documents-title" class="mt-2 text-xl font-bold text-[#293C74]">Documentos internos del evento</h2>
                 <p class="mt-2 text-sm text-slate-600"><strong>Inscripciones.xlsx</strong> se actualiza sobre el mismo archivo y abre en Excel web. Los demás documentos permanecen privados por evento.</p>
               </div>
-              <button id="event-documents-refresh" type="button" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
+              <button id="event-documents-refresh" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
                 <PortalIcon name="refresh-cw" size={16} />
                 Actualizar archivos
               </button>
@@ -102,11 +102,11 @@ const eventId = String(Astro.params.id || '');
               <label class="relative block">
                 <span class="sr-only">Buscar persona</span>
                 <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400"><PortalIcon name="search" size={17} /></span>
-                <input id="event-operation-search" type="search" class="w-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm" placeholder="Buscar nombre, correo o referencia" autocomplete="off" />
+                <input id="event-operation-search" type="search" class="min-h-11 w-full border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm" placeholder="Buscar nombre, correo o referencia" autocomplete="off" />
               </label>
               <label>
                 <span class="sr-only">Filtrar estado</span>
-                <select id="event-operation-status" class="w-full border border-slate-200 bg-white px-4 py-2 text-sm">
+                <select id="event-operation-status" class="min-h-11 w-full border border-slate-200 bg-white px-4 py-2 text-sm">
                   <option value="">Todos los estados</option>
                   <option value="UNDER_REVIEW">Por verificar</option>
                   <option value="CONFIRMED">Confirmados</option>
@@ -136,23 +136,23 @@ const eventId = String(Astro.params.id || '');
           </div>
 
           <nav id="event-operation-pagination" class="hidden items-center justify-between border-t border-slate-200 pt-4" aria-label="Paginación de inscripciones">
-            <button type="button" data-page-action="previous" class="min-h-10 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50">Anterior</button>
+            <button type="button" data-page-action="previous" class="min-h-11 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50">Anterior</button>
             <span id="event-operation-page" class="text-sm font-semibold text-slate-600">Página 1</span>
-            <button type="button" data-page-action="next" class="min-h-10 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50">Siguiente</button>
+            <button type="button" data-page-action="next" class="min-h-11 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50">Siguiente</button>
           </nav>
         </div>
       </main>
     </div>
   </div>
 
-  <div id="event-review-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-labelledby="event-review-title">
+  <div id="event-review-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-labelledby="event-review-title" aria-describedby="event-review-summary" aria-hidden="true">
     <div class="w-full max-w-lg rounded-lg border border-slate-200 bg-white shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
         <div>
           <p class="text-xs font-bold uppercase text-slate-500">Verificación manual</p>
           <h2 id="event-review-title" class="text-xl font-bold text-[#293C74]">Revisar pago</h2>
         </div>
-        <button id="event-review-close" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
+        <button id="event-review-close" type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100" aria-label="Cerrar revisión de pago">
           <PortalIcon name="x" size={21} />
         </button>
       </div>

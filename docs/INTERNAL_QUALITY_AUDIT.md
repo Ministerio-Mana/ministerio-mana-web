@@ -35,7 +35,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 1 | `/portal/activar` | Credencial nueva y enlace temporal | Cumple en código y producción; activación real pendiente |
 | 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Parcial avanzado: estructura, formularios, diálogos y controles dinámicos corregidos; producción y roles en revisión |
 | 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Cumple técnicamente en código y producción; creación real y variación por roles pendientes |
-| 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Auditoría funcional avanzada; cierre de los 45 pendiente |
+| 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Parcial avanzado: base productiva revisada y estados dinámicos corregidos; prueba con inscripciones pendiente |
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Pendiente |
 | 2 | `/portal/regions` | Jerarquía territorial y autorización | Pendiente |
 | 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Auditoría funcional avanzada; cierre de los 45 pendiente |
@@ -111,6 +111,23 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 
 - Probar creación y edición con alcances local, regional, nacional y global usando cuentas autorizadas, sin guardar datos de prueba innecesarios.
 - Revisar el flujo de archivar/restaurar y definir el mecanismo de deshacer antes de sustituir la confirmación actual.
+
+## Registro de la fase 2 — `/portal/events/[id]`
+
+### Evidencia implementada
+
+- La operación conserva un solo `h1`, navegación actual, resumen, documentos privados, filtros, carga, vacío, error y paginación anunciables.
+- Enlace de regreso, actualización de archivos, filtros, paginación y acciones dinámicas de documentos, comprobantes, revisión y asistencia tienen objetivo táctil mínimo de 44 px.
+- El diálogo sensible de aprobar o rechazar pago anuncia título y resumen, encierra y devuelve el foco, y protege la nota ante `Escape`, clic de fondo o salida accidental.
+- Nombres, referencias, respuestas adicionales y URLs interpoladas por las tarjetas dinámicas se escapan antes de renderizarse.
+- El contrato automático de calidad interna suma diez verificaciones.
+- La base productiva se revisó a 390 y 1280 px sin desbordamiento ni controles sin nombre. El evento disponible tenía cero inscripciones, por lo que los estados dinámicos permanecen cubiertos por contrato hasta disponer de un registro de prueba autorizado.
+
+### Cierre técnico requerido para `/portal/events/[id]`
+
+- Repetir la revisión productiva con una inscripción manual bajo revisión y un comprobante privado de prueba, sin aprobar ni rechazar pagos reales.
+- Verificar la devolución del foco y preservación de la nota del diálogo abierto.
+- Diseñar una corrección o deshacer seguro para check-in antes de reemplazar la confirmación actual.
 
 ## Regla de actualización
 

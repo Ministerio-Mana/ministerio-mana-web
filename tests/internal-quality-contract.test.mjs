@@ -148,3 +148,26 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(eventsLogic, /event\.target === eventModal\) closeEventModal\(\)/);
 });
+
+test('la operación del evento protege comprobantes, revisión y asistencia', async () => {
+  const [operationView, operationLogic] = await Promise.all([
+    readSource('src/pages/portal/events/[id].astro'),
+    readSource('src/scripts/portal-event-operation.js'),
+  ]);
+
+  assert.match(operationView, /href="\/portal\/events"[^>]*min-h-11/);
+  assert.match(operationView, /id="event-documents-refresh"[^>]*min-h-11/);
+  assert.match(operationView, /data-page-action="previous"[^>]*min-h-11/);
+  assert.match(operationView, /id="event-review-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="event-review-title"[^>]*aria-describedby="event-review-summary"[^>]*aria-hidden="true"/);
+  assert.match(operationView, /id="event-review-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar revisión de pago"/);
+
+  assert.match(operationLogic, /Ver comprobante<\/a>/);
+  assert.match(operationLogic, /event-review-action inline-flex min-h-11/);
+  assert.match(operationLogic, /event-checkin-action inline-flex min-h-11/);
+  assert.match(operationLogic, /function getReviewModalFocusableElements\(\)/);
+  assert.match(operationLogic, /function requestCloseReviewModal\(\)/);
+  assert.match(operationLogic, /event\.key === 'Escape'[\s\S]*?reviewClose\?\.focus\(\)/);
+  assert.match(operationLogic, /reviewModalReturnFocus/);
+  assert.match(operationLogic, /window\.addEventListener\('beforeunload'/);
+  assert.doesNotMatch(operationLogic, /event\.target === reviewModal\) closeReviewModal\(\)/);
+});
