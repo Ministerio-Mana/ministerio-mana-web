@@ -14,6 +14,7 @@
     "test:event-evidence": "node --experimental-strip-types --test tests/event-payment-evidence.test.ts",
     "test:finance-scope": "node --experimental-strip-types --test tests/finance-scope.test.ts",
     "test:finance-reporting": "node --experimental-strip-types --test tests/finance-reporting.test.ts",
+    "test:home-motion": "node --experimental-strip-types --test tests/home-mobile-motion.test.ts",
     "campaign:cumbre:welcome": "node scripts/cumbre-welcome-campaign.mjs",
     "security:scan": "node scripts/security-monitor.cjs",
     "security:alert": "node scripts/security-alert.cjs"

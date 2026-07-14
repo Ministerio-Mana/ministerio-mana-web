@@ -1,12 +1,14 @@
 import Lenis from '@studio-freight/lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { mobileRevealDelay, shouldUseStaticStory } from '../lib/storyMotion.ts';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 let viewportCleanup = null;
 let modeCleanup = null;
+let staticRevealCleanup = null;
 
 if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual';
@@ -19,7 +21,9 @@ function cleanupPreviousStory() {
   }
   viewportCleanup?.();
   modeCleanup?.();
+  staticRevealCleanup?.();
   modeCleanup = null;
+  staticRevealCleanup = null;
   document.documentElement.removeAttribute('data-cumbre-static-story');
   document.querySelectorAll('[data-cumbre-story]').forEach((story) => {
     delete story.dataset.cumbreStaticActive;
@@ -115,10 +119,19 @@ function syncViewportHeight() {
 function setupViewportHeightSync() {
   viewportCleanup?.();
   syncViewportHeight();
+  let lastHeight = getViewportHeight();
+  let refreshFrame = 0;
 
   const refresh = () => {
-    syncViewportHeight();
-    ScrollTrigger.refresh();
+    if (refreshFrame) return;
+    refreshFrame = window.requestAnimationFrame(() => {
+      refreshFrame = 0;
+      const nextHeight = getViewportHeight();
+      if (nextHeight === lastHeight) return;
+      lastHeight = nextHeight;
+      syncViewportHeight();
+      ScrollTrigger.refresh();
+    });
   };
 
   window.addEventListener('resize', refresh);
@@ -126,6 +139,7 @@ function setupViewportHeightSync() {
   window.visualViewport?.addEventListener('resize', refresh);
 
   viewportCleanup = () => {
+    if (refreshFrame) window.cancelAnimationFrame(refreshFrame);
     window.removeEventListener('resize', refresh);
     window.removeEventListener('orientationchange', refresh);
     window.visualViewport?.removeEventListener('resize', refresh);
@@ -142,33 +156,74 @@ function setupModeChangeWatcher(staticBreakpoint) {
   };
 
   breakpointQuery.addEventListener('change', handleModeChange);
+  reducedMotionQuery.addEventListener('change', handleModeChange);
   modeCleanup = () => {
     breakpointQuery.removeEventListener('change', handleModeChange);
+    reducedMotionQuery.removeEventListener('change', handleModeChange);
     modeCleanup = null;
   };
 }
 
+function clearAnimatedStyles(element) {
+  ['clip-path', 'filter', 'opacity', 'transform', 'visibility'].forEach((property) => {
+    element.style.removeProperty(property);
+  });
+}
+
 function revealStaticPanels(panels) {
   panels.forEach((panel, index) => {
-    panel.querySelectorAll('[data-split-title]').forEach(splitTitle);
     panel.classList.add('is-visible', 'is-active');
     panel.style.zIndex = String(index + 1);
-    gsap.set(panel, { clearProps: 'clipPath,transform' });
-    gsap.set(panel.querySelectorAll('[data-split-title] .split-word > span'), {
-      autoAlpha: 1,
-      y: 0,
-      rotateX: 0,
-      scale: 1,
-      filter: 'blur(0px)',
-    });
-    gsap.set(panel.querySelectorAll('[data-reveal]:not([data-split-title])'), {
-      autoAlpha: 1,
-      y: 0,
-      scale: 1,
-      filter: 'blur(0px)',
+    clearAnimatedStyles(panel);
+    panel.querySelectorAll('[data-split-title] .split-word > span, [data-reveal]:not([data-split-title])').forEach((element) => {
+      clearAnimatedStyles(element);
     });
   });
   setActiveTheme(panels[0]);
+}
+
+function setupStaticReveals(panels) {
+  staticRevealCleanup?.();
+  const targets = panels.flatMap((panel) =>
+    Array.from(panel.querySelectorAll('[data-mobile-reveal-group] [data-reveal], [data-mobile-reveal-group] [data-split-title]'))
+  );
+
+  if (reducedMotionQuery.matches || !('IntersectionObserver' in window)) {
+    targets.forEach((target) => {
+      target.dataset.mobileReveal = 'visible';
+    });
+    staticRevealCleanup = () => {
+      targets.forEach((target) => delete target.dataset.mobileReveal);
+      staticRevealCleanup = null;
+    };
+    return;
+  }
+
+  panels.forEach((panel) => {
+    const panelTargets = Array.from(panel.querySelectorAll('[data-mobile-reveal-group] [data-reveal], [data-mobile-reveal-group] [data-split-title]'));
+    panelTargets.forEach((target, index) => {
+      target.dataset.mobileReveal = 'pending';
+      target.style.setProperty('--mobile-reveal-delay', mobileRevealDelay(index));
+    });
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.dataset.mobileReveal = 'visible';
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+  targets.forEach((target) => observer.observe(target));
+  staticRevealCleanup = () => {
+    observer.disconnect();
+    targets.forEach((target) => {
+      delete target.dataset.mobileReveal;
+      target.style.removeProperty('--mobile-reveal-delay');
+    });
+    staticRevealCleanup = null;
+  };
 }
 
 function setupPanelInitialState(panel, index) {
@@ -269,7 +324,6 @@ function addContentExit(timeline, panel, at) {
 
 function setupStory() {
   cleanupPreviousStory();
-  setupViewportHeightSync();
 
   const story = document.querySelector('[data-cumbre-story]');
   const panels = Array.from(document.querySelectorAll('[data-cumbre-panel]'));
@@ -281,17 +335,23 @@ function setupStory() {
   const staticBreakpoint = Number.parseInt(story.dataset.cumbreStaticBreakpoint || '768', 10);
   setupModeChangeWatcher(staticBreakpoint);
 
-  const useStaticPanels =
-    prefersReducedMotion ||
-    (story.dataset.cumbreStaticMobile === 'true' && getViewportHeight() > 0 && window.innerWidth < staticBreakpoint);
+  const useStaticPanels = shouldUseStaticStory({
+    reducedMotion: reducedMotionQuery.matches,
+    staticMobile: story.dataset.cumbreStaticMobile === 'true',
+    viewportWidth: window.innerWidth,
+    staticBreakpoint,
+  });
 
   if (useStaticPanels) {
+    document.documentElement.style.removeProperty('--cumbre-vh');
     story.dataset.cumbreStaticActive = 'true';
     document.documentElement.dataset.cumbreStaticStory = 'true';
     revealStaticPanels(panels);
+    setupStaticReveals(panels);
     window.__cumbreWelcomeCleanup = () => {
       modeCleanup?.();
       viewportCleanup?.();
+      staticRevealCleanup?.();
       document.documentElement.removeAttribute('data-cumbre-welcome-story');
       document.documentElement.removeAttribute('data-cumbre-static-story');
       document.documentElement.style.removeProperty('--cumbre-vh');
@@ -303,6 +363,7 @@ function setupStory() {
   delete story.dataset.cumbreStaticActive;
   document.documentElement.removeAttribute('data-cumbre-static-story');
 
+  setupViewportHeightSync();
   const lenis = setupLenis();
   const lastIndex = panels.length - 1;
   const snapDirectional = getBooleanData(story.dataset.cumbreSnapDirectional, true);

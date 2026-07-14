@@ -45,12 +45,12 @@ const pageDescription = selectedMinistry
     <section class="ven-help-story" data-cumbre-story data-cumbre-static-mobile="true" style="--panel-count: 5;">
       <section class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#07111c] text-white" data-cumbre-panel data-panel-theme="dark">
         <div class="absolute inset-0" data-panel-bg>
-          <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" class="h-full w-full object-cover" />
+          <img src="/images/cumbre/fishermen-bg-highres.jpg" alt="" width="1024" height="576" loading="eager" fetchpriority="high" decoding="async" class="h-full w-full object-cover" />
           <div class="absolute inset-0 bg-[linear-gradient(105deg,rgba(7,17,28,0.98)_0%,rgba(7,17,28,0.86)_48%,rgba(7,17,28,0.42)_100%)]"></div>
           <div class="absolute inset-0 bg-[radial-gradient(circle_at_76%_18%,rgba(40,166,189,0.28),transparent_34%),radial-gradient(circle_at_26%_82%,rgba(242,201,76,0.16),transparent_32%)]"></div>
         </div>
 
-        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner data-mobile-reveal-group>
           <div class="grid w-full items-center gap-10 lg:grid-cols-[1.08fr_0.92fr]">
             <div class="max-w-4xl space-y-7">
               <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 backdrop-blur-sm" data-reveal>
@@ -123,12 +123,12 @@ const pageDescription = selectedMinistry
 
       <section class="cumbre-panel isolate min-h-screen overflow-hidden bg-[#101827] text-white" data-cumbre-panel data-panel-theme="dark">
         <div class="absolute inset-0" data-panel-bg>
-          <img src="/images/cumbre/fishermen-sunset.jpg" alt="" class="h-full w-full object-cover opacity-45" />
+          <img src="/images/cumbre/fishermen-sunset.jpg" alt="" width="1024" height="576" loading="lazy" decoding="async" class="h-full w-full object-cover opacity-45" />
           <div class="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,28,0.98),rgba(26,37,92,0.88)_58%,rgba(16,24,39,0.76))]"></div>
           <div class="ven-net-lines absolute inset-0 opacity-25"></div>
         </div>
 
-        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner data-mobile-reveal-group>
           <div class="grid w-full items-center gap-12 lg:grid-cols-[0.88fr_1.12fr]">
             <article class="relative hidden overflow-hidden rounded-[2rem] border border-white/14 bg-black/34 p-8 shadow-2xl shadow-black/25 backdrop-blur-xl lg:block" data-reveal>
               <p class="text-xs font-black uppercase tracking-[0.24em] text-brand-gold">Hechos 16:9</p>
@@ -173,7 +173,7 @@ const pageDescription = selectedMinistry
           <div class="absolute bottom-[-18%] left-[-10%] h-[540px] w-[540px] rounded-full bg-brand-gold/18 blur-[120px]"></div>
         </div>
 
-        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner data-mobile-reveal-group>
           <div class="grid w-full items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
             <div class="space-y-6">
               <div class="space-y-4" data-reveal>
@@ -254,7 +254,7 @@ const pageDescription = selectedMinistry
           <div class="ven-soft-grid absolute inset-0 opacity-[0.08]"></div>
         </div>
 
-        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner>
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center px-6 py-24 md:px-10" data-panel-inner data-mobile-reveal-group>
           <div class="w-full space-y-10">
             <div class="max-w-3xl space-y-4" data-reveal>
               <p class="text-xs font-black uppercase tracking-[0.26em] text-brand-medium/70">Formas de ayudar</p>
@@ -285,7 +285,7 @@ const pageDescription = selectedMinistry
           <div class="absolute bottom-[-20%] left-[-10%] h-[620px] w-[620px] rounded-full bg-brand-gold/16 blur-[120px] mix-blend-screen"></div>
         </div>
 
-        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center justify-center px-6 py-24 text-center md:px-10" data-panel-inner>
+        <div class="cumbre-panel-inner container-tight relative z-10 flex min-h-screen items-center justify-center px-6 py-24 text-center md:px-10" data-panel-inner data-mobile-reveal-group>
           <div class="mx-auto max-w-4xl space-y-7">
             <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="mx-auto h-14 w-auto md:h-20" data-reveal />
             <p class="text-xs font-black uppercase tracking-[0.3em] text-brand-gold" data-reveal>Da el primer paso</p>
@@ -751,6 +751,13 @@ const pageDescription = selectedMinistry
       min-height: 100svh;
       clip-path: none !important;
       pointer-events: auto;
+      will-change: auto;
+    }
+
+    .ven-help-experience .cumbre-panel [data-panel-bg],
+    .ven-help-experience .cumbre-panel [data-reveal],
+    .ven-help-experience .cumbre-panel [data-split-title] .split-word > span {
+      will-change: auto;
     }
 
     .ven-help-experience .cumbre-panel-inner {
@@ -769,6 +776,22 @@ const pageDescription = selectedMinistry
 
     .ven-ministry-panel[data-active='true'] {
       display: block;
+    }
+  }
+
+  @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+    html[data-cumbre-static-story] .ven-help-experience [data-mobile-reveal='pending'] {
+      opacity: 0;
+      transform: translateY(1.1rem);
+    }
+
+    html[data-cumbre-static-story] .ven-help-experience [data-mobile-reveal] {
+      transition: opacity 420ms ease-out var(--mobile-reveal-delay, 0ms), transform 420ms ease-out var(--mobile-reveal-delay, 0ms);
+    }
+
+    html[data-cumbre-static-story] .ven-help-experience [data-mobile-reveal='visible'] {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 

@@ -4,6 +4,16 @@ Fecha de corte: 13 de julio de 2026.
 
 Este documento reemplaza el inventario operativo que estaba disperso entre la bitácora, el tablero y los mensajes de revisión. No contiene secretos ni valores de producción.
 
+## Revisión programada para el 14 de julio de 2026
+
+El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes y no bloquean el trabajo técnico autónomo:
+
+- [ ] Asignar el primer equipo financiero y comprobar un usuario nacional, regional y local.
+- [ ] Completar la revisión de Eventos: constructor, imágenes, formulario, cobro nacional, cobro global y pago local con comprobante.
+- [ ] Actualizar y abrir `Inscripciones.xlsx` en Excel web; repetir la actualización y confirmar que reemplaza el mismo archivo.
+- [ ] Definir el plazo de retención de comprobantes y quién puede aprobar pagos manuales.
+- [ ] Decidir si se agregará una Lista de SharePoint para inscripciones y si Cumbre Mundial continúa activa, entra en cierre o se archiva.
+
 ## 1. Lo primero que debe hacerse en casa
 
 No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supabase y correr cada archivo por separado, esperando a que termine antes del siguiente.

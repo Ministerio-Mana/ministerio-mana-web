@@ -11,16 +11,6 @@
 
 ## Backlog
 
-- MANA-004 Agregar más data attributes para animaciones
-  - Owner: TBD
-  - Scope: `src/components/home/**`
-  - Description: Agregar `data-fade`, `data-stagger`, `data-scale` a componentes restantes
-
-- MANA-005 Optimizar animaciones para mobile
-  - Owner: TBD
-  - Scope: `src/scripts/home-animations.ts`
-  - Description: Simplificar pinning y parallax en viewports <768px
-
 - MANA-006 Copy final para capítulos del home
   - Owner: ATLAS
   - Scope: Contenido de `src/components/home/**`
@@ -110,6 +100,20 @@
 ---
 
 ## Done
+- MANA-005 Optimizar animaciones para mobile
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: `src/scripts/cumbre-welcome-story.js`, `src/lib/storyMotion.ts`, `src/components/ven-ayudanos/VenAyudanosExperience.astro`
+  - Completed: 2026-07-13
+  - Notes: La portada activa usa flujo estático bajo 768 px, sin Lenis, pinning ni refrescos de ScrollTrigger. Los revelados móviles usan IntersectionObserver, tienen espera máxima de 225 ms y respetan reducción de movimiento.
+
+- MANA-004 Completar atributos de animación de la portada activa
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: `src/components/ven-ayudanos/VenAyudanosExperience.astro`
+  - Completed: 2026-07-13
+  - Notes: Los cinco paneles activos de `/` quedaron agrupados para revelado adaptable. No se modificaron los componentes históricos que ya no renderiza la portada.
+
 - MANA-019 Reportes financieros filtrados y exportación por moneda
   - Owner: Equipo web
   - Branch: `main`
@@ -162,5 +166,5 @@ _Ningún ticket bloqueado actualmente_
 - ✅ **Smooth scroll**: Lenis (aprobado)
 - ✅ **Animaciones**: GSAP ScrollTrigger (aprobado)
 - ✅ **Paleta de colores**: Beige/Navy original (mantener, NO cosmic)
-- ⏳ **Mobile optimization**: Pendiente (MANA-005)
+- ✅ **Mobile optimization**: Flujo estático y revelado ligero completados (MANA-005)
 - ⏳ **Production testing**: Pendiente (MANA-007)

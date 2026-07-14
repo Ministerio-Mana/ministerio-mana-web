@@ -14,6 +14,20 @@
 
 ## Entradas
 
+### 2026-07-13 (Home: movimiento adaptable y rendimiento móvil)
+- Responsable: Equipo web
+- Cambios:
+  - Se corrigió el alcance del tablero para trabajar sobre la portada activa `VenAyudanosExperience`, no sobre componentes históricos que `/` ya no utiliza.
+  - En pantallas menores de 768 px la historia usa desplazamiento nativo y no inicializa Lenis, pinning ni refrescos de ScrollTrigger asociados a la altura variable del navegador.
+  - Los grupos visibles entran con una transición ligera observada por `IntersectionObserver`; el escalonamiento está limitado a 225 ms y desaparece por completo cuando el dispositivo solicita reducción de movimiento.
+  - Se retiró `will-change` de la variante móvil y se declararon dimensiones, prioridad y carga diferida de las imágenes principales para reducir trabajo de renderizado y cambios de diseño.
+- Pruebas:
+  - `test:home-motion`: 4 aprobadas.
+  - Batería de Eventos y Finanzas: 32 aprobadas.
+  - `npm run build`: exitoso.
+- Pendientes:
+  - Revisión perceptual del usuario en un celular de gama media, programada para el 14 de julio de 2026.
+
 ### 2026-07-13 (Finanzas: SQL activos, filtros y exportación separada)
 - Responsable: Equipo web
 - Cambios:
