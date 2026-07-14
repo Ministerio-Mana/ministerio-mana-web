@@ -126,6 +126,7 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
 
   const body = parseJsonBody(await request.text());
   const pageId = cleanText(body.page_id || body.id, 60);
+  const expectedUpdatedAt = cleanText(body.expected_updated_at, 60);
   if (!pageId) return jsonResponse({ ok: false, error: 'page_id es obligatorio' }, 400);
 
   const updates: Record<string, any> = {
@@ -158,15 +159,24 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
   if (body.seo !== undefined) updates.seo = typeof body.seo === 'object' && body.seo ? body.seo : {};
   if (body.settings !== undefined) updates.settings = typeof body.settings === 'object' && body.settings ? body.settings : {};
 
-  const { data: updated, error } = await supabaseAdmin
+  let updateQuery = supabaseAdmin
     .from('cms_pages')
     .update(updates)
-    .eq('id', pageId)
-    .select('*')
-    .single();
+    .eq('id', pageId);
+  if (expectedUpdatedAt) updateQuery = updateQuery.eq('updated_at', expectedUpdatedAt);
 
-  if (error || !updated) {
+  const { data: updated, error } = await updateQuery
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
     return jsonResponse({ ok: false, error: 'No se pudo actualizar página', details: error?.message }, 500);
+  }
+  if (!updated) {
+    return jsonResponse({
+      ok: false,
+      error: 'La página cambió mientras la editabas. Recarga para revisar la versión más reciente antes de guardar.',
+    }, 409);
   }
 
   await insertCmsRevision({

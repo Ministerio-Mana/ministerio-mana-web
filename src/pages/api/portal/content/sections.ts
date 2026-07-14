@@ -130,6 +130,7 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
   }
   const body = parseJsonBody(rawBody);
   const sectionId = cleanText(body.section_id || body.id, 60);
+  const expectedUpdatedAt = cleanText(body.expected_updated_at, 60);
   if (!sectionId) return jsonResponse({ ok: false, error: 'section_id es obligatorio' }, 400);
 
   const updates: Record<string, any> = {
@@ -166,15 +167,24 @@ export const PUT: APIRoute = async ({ request, clientAddress }) => {
     updates.payload = payload;
   }
 
-  const { data: section, error } = await supabaseAdmin
+  let updateQuery = supabaseAdmin
     .from('cms_sections')
     .update(updates)
-    .eq('id', sectionId)
-    .select('*')
-    .single();
+    .eq('id', sectionId);
+  if (expectedUpdatedAt) updateQuery = updateQuery.eq('updated_at', expectedUpdatedAt);
 
-  if (error || !section) {
+  const { data: section, error } = await updateQuery
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
     return jsonResponse({ ok: false, error: 'No se pudo actualizar la sección', details: error?.message }, 500);
+  }
+  if (!section) {
+    return jsonResponse({
+      ok: false,
+      error: 'La sección cambió mientras la editabas. Recarga para revisar la versión más reciente antes de guardar.',
+    }, 409);
   }
 
   await insertCmsRevision({

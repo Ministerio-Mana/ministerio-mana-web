@@ -2,6 +2,8 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import PortalIcon from '@components/portal/PortalIcon.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
+
+const directoryPickerAttributes: Record<string, boolean> = { webkitdirectory: true };
 ---
 
 <BaseLayout title="Gestión de Contenido | Portal Maná" description="CMS para administrar contenido público del sitio." hideHeader hideFooter noindex>
@@ -9,21 +11,21 @@ import Sidebar from '@components/portal/Sidebar.astro';
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />
 
-      <section class="flex-1 p-4 md:p-8 lg:p-12 xl:p-14 relative overflow-y-auto">
+      <section class="relative flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 xl:p-16">
         <div id="cms-gate" class="max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white px-6 py-8 text-center text-slate-500 shadow-sm">
           Validando permisos...
         </div>
 
         <div id="cms-secure-content" class="hidden max-w-7xl mx-auto space-y-6 md:space-y-8">
-          <header class="border-b border-slate-200 pb-5">
+          <header class="border-b border-slate-200 pb-4">
             <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
               <div>
                 <p class="text-xs font-bold text-slate-500 uppercase">Edición del sitio</p>
                 <h1 class="text-2xl md:text-4xl font-display font-bold text-[#293C74]">Contenido</h1>
-                <p class="text-slate-600 mt-1 text-sm md:text-base">Páginas, bloques, imágenes y publicación.</p>
+                <p class="mt-2 text-sm text-slate-600 md:text-base">Páginas, bloques, imágenes y publicación.</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <button id="cms-new-page" data-cms-action class="inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-md bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition">
+                <button id="cms-new-page" type="button" data-cms-action class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1f2f63]">
                   <PortalIcon name="plus" size={18} />
                   Nueva página
                 </button>
@@ -31,9 +33,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
           </header>
 
-          <div id="cms-alert" class="hidden rounded-xl border px-4 py-3 text-sm"></div>
+          <div id="cms-alert" class="hidden rounded-xl border px-4 py-4 text-sm" role="status" aria-live="polite"></div>
 
-          <div id="cms-busy" class="hidden rounded-xl border border-[#293C74]/20 bg-[#293C74]/5 px-4 py-2 text-xs font-bold text-[#293C74] animate-pulse"></div>
+          <div id="cms-busy" class="hidden animate-pulse rounded-xl border border-[#293C74]/20 bg-[#293C74]/5 px-4 py-2 text-xs font-bold text-[#293C74]" role="status" aria-live="polite"></div>
 
           <section id="cms-setup" class="portal-panel hidden overflow-hidden">
             <div class="grid md:grid-cols-[190px_1fr]">
@@ -42,99 +44,102 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </div>
               <div class="p-6 md:p-8">
                 <p class="text-xs font-bold uppercase text-amber-700">Configuración pendiente</p>
-                <h2 class="mt-1 text-xl font-bold text-[#293C74]">Activa la base editorial</h2>
+                <h2 class="mt-2 text-xl font-bold text-[#293C74]">Activa la base editorial</h2>
                 <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">Las tablas de contenido todavía no existen en Supabase. Ejecuta el archivo indicado una sola vez; no modifica eventos, usuarios, donaciones ni pagos.</p>
-                <code class="mt-4 block overflow-x-auto rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">docs/sql/cms_schema.sql</code>
+                <code class="mt-4 block overflow-x-auto rounded-md border border-slate-200 bg-slate-50 px-4 py-4 text-xs text-slate-700">docs/sql/cms_schema.sql</code>
               </div>
             </div>
           </section>
 
-          <div id="cms-workbench" class="grid grid-cols-1 xl:grid-cols-[340px_1fr] gap-5 md:gap-6">
-            <aside class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-5 shadow-sm space-y-4 xl:sticky xl:top-6 xl:h-[calc(100vh-8rem)] xl:overflow-hidden">
+          <div id="cms-workbench" class="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-[340px_1fr]">
+            <aside class="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm md:p-6 xl:sticky xl:top-6 xl:h-[calc(100vh-8rem)] xl:overflow-hidden">
               <div class="space-y-2">
                 <label for="cms-filter" class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Buscar página</label>
-                <input id="cms-filter" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="home, eventos, noticias..." />
+                <input id="cms-filter" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="home, eventos, noticias..." autocomplete="off" />
               </div>
-              <div id="cms-pages" class="space-y-2 xl:max-h-[calc(100vh-14.5rem)] xl:overflow-auto pr-1"></div>
+              <div id="cms-pages" class="space-y-2 pr-2 xl:max-h-[calc(100vh-14.5rem)] xl:overflow-auto"></div>
               <div id="cms-pages-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No hay páginas CMS todavía.</div>
             </aside>
 
-            <section class="space-y-5 md:space-y-6">
+            <section class="space-y-6">
               <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-4">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Configuración de Página</h2>
                   <div class="flex flex-wrap items-center gap-2">
-                    <button id="cms-page-save" data-cms-action class="min-h-10 px-4 py-2 rounded-xl bg-brand-teal text-white text-sm font-bold hover:bg-brand-teal/90 transition">Guardar</button>
-                    <button id="cms-page-publish" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-[#293C74]/30 text-[#293C74] text-sm font-bold hover:bg-[#293C74]/5 transition">Publicar</button>
-                    <button id="cms-page-unpublish" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Borrador</button>
-                    <button id="cms-page-preview" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-brand-teal/40 text-brand-teal text-sm font-bold hover:bg-brand-teal/10 transition">Vista previa</button>
+                    <button id="cms-page-save" type="button" data-cms-action class="min-h-11 rounded-xl bg-brand-teal px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-teal/90">Guardar</button>
+                    <button id="cms-page-publish" type="button" data-cms-action class="min-h-11 rounded-xl border border-[#293C74]/30 px-4 py-2 text-sm font-bold text-[#293C74] transition hover:bg-[#293C74]/5">Publicar</button>
+                    <button id="cms-page-unpublish" type="button" data-cms-action class="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100">Borrador</button>
+                    <button id="cms-page-preview" type="button" data-cms-action class="min-h-11 rounded-xl border border-brand-teal/40 px-4 py-2 text-sm font-bold text-brand-teal transition hover:bg-brand-teal/10">Vista previa</button>
                   </div>
                 </div>
 
                 <div id="cms-page-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <label class="text-xs font-bold text-slate-600">Nombre interno
-                    <input id="cms-page-key" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                    <input id="cms-page-key" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" />
                   </label>
                   <label class="text-xs font-bold text-slate-600">Ruta pública
-                    <input id="cms-page-path" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="/" />
+                    <input id="cms-page-path" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="/" />
                   </label>
                   <label class="text-xs font-bold text-slate-600">Título
-                    <input id="cms-page-title" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                    <input id="cms-page-title" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" />
                   </label>
                   <label class="text-xs font-bold text-slate-600">Idioma
-                    <input id="cms-page-locale" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" value="es" />
+                    <input id="cms-page-locale" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" value="es" />
                   </label>
                   <label class="text-xs font-bold text-slate-600 md:col-span-2">Descripción
-                    <textarea id="cms-page-description" rows="2" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm"></textarea>
+                    <textarea id="cms-page-description" rows="2" class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm"></textarea>
                   </label>
                   <label class="text-xs font-bold text-slate-600">Título para buscadores
-                    <input id="cms-page-seo-title" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                    <input id="cms-page-seo-title" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" />
                   </label>
                   <label class="text-xs font-bold text-slate-600">Descripción para buscadores
-                    <input id="cms-page-seo-description" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" />
+                    <input id="cms-page-seo-description" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" />
                   </label>
                   <label class="text-xs font-bold text-slate-600 md:col-span-2">Imagen al compartir
-                    <input id="cms-page-seo-image" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="https://..." />
+                    <input id="cms-page-seo-image" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="https://..." />
                   </label>
                 </div>
 
-                <div id="cms-page-meta" class="text-xs text-slate-500"></div>
+                <div id="cms-page-meta" class="text-xs text-slate-500" role="status" aria-live="polite"></div>
               </div>
 
-              <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-5">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div class="space-y-6 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Secciones</h2>
-                  <button id="cms-section-new" data-cms-action class="inline-flex min-h-10 items-center gap-2 px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f63] transition"><PortalIcon name="plus" size={17} /> Agregar sección</button>
+                  <button id="cms-section-new" type="button" data-cms-action class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1f2f63]"><PortalIcon name="plus" size={17} /> Agregar sección</button>
                 </div>
 
-                <div id="cms-sections" class="space-y-3"></div>
+                <div id="cms-sections" class="space-y-4"></div>
                 <div id="cms-sections-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">Esta página aún no tiene secciones.</div>
               </div>
 
               <div class="bg-white border border-slate-200 rounded-[1.75rem] p-4 md:p-6 shadow-sm space-y-4">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <h2 class="text-lg md:text-xl font-display font-bold text-[#293C74]">Biblioteca Multimedia</h2>
-                  <button id="cms-media-refresh" data-cms-action class="min-h-10 px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-100 transition">Actualizar</button>
+                  <button id="cms-media-refresh" type="button" data-cms-action class="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100">Actualizar</button>
                 </div>
-                <form id="cms-media-upload-form" class="space-y-3">
-                  <label id="cms-media-dropzone" for="cms-media-file" class="group flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-5 py-6 text-center transition hover:border-[#293C74] hover:bg-[#293C74]/5 focus-within:border-[#293C74] focus-within:ring-2 focus-within:ring-[#293C74]/20">
+                <form id="cms-media-upload-form" class="space-y-4">
+                  <label id="cms-media-dropzone" for="cms-media-file" tabindex="0" role="button" class="group flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center transition hover:border-[#293C74] hover:bg-[#293C74]/5 focus:border-[#293C74] focus:outline-none focus:ring-2 focus:ring-[#293C74]/20">
                     <span class="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#293C74] shadow-sm"><PortalIcon name="upload" size={21} /></span>
                     <span class="text-sm font-bold text-[#293C74]">Arrastra imágenes aquí</span>
                     <span class="text-xs text-slate-500">o haz clic para seleccionar imágenes</span>
-                    <span id="cms-media-file-name" class="hidden max-w-full truncate rounded-md bg-white px-3 py-1 text-xs font-bold text-slate-700"></span>
-                    <input id="cms-media-file" type="file" accept="image/jpeg,image/png,image/webp" multiple class="sr-only" />
+                    <span id="cms-media-file-name" class="hidden max-w-full truncate rounded-md bg-white px-4 py-2 text-xs font-bold text-slate-700"></span>
+                    <input id="cms-media-file" type="file" accept="image/jpeg,image/png,image/webp" multiple class="sr-only" tabindex="-1" />
                   </label>
-                  <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-                    <input id="cms-media-folder" type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="Carpeta (ej: inicio)" />
+                  <div class="grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                    <div class="space-y-2">
+                      <label for="cms-media-folder" class="block text-xs font-bold text-slate-600">Carpeta de destino</label>
+                      <input id="cms-media-folder" type="text" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="Ejemplo: inicio" />
+                    </div>
                     <div class="flex flex-col gap-2 sm:flex-row">
-                      <button id="cms-media-directory-trigger" type="button" data-cms-action class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#293C74]/30 bg-white px-4 py-2.5 text-sm font-bold text-[#293C74] transition hover:bg-[#293C74]/5"><PortalIcon name="archive" size={17} /> Carpeta completa</button>
-                      <button type="submit" data-cms-action class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#1f2f63]"><PortalIcon name="upload" size={17} /> Subir</button>
+                      <button id="cms-media-directory-trigger" type="button" data-cms-action class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#293C74]/30 bg-white px-4 py-2 text-sm font-bold text-[#293C74] transition hover:bg-[#293C74]/5"><PortalIcon name="archive" size={17} /> Carpeta completa</button>
+                      <button type="submit" data-cms-action class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1f2f63]"><PortalIcon name="upload" size={17} /> Subir</button>
                     </div>
                   </div>
-                  <input id="cms-media-directory" type="file" accept="image/jpeg,image/png,image/webp" multiple webkitdirectory class="sr-only" />
+                  <input id="cms-media-directory" type="file" accept="image/jpeg,image/png,image/webp" multiple {...directoryPickerAttributes} class="sr-only" tabindex="-1" />
                 </form>
                 <div id="cms-media-upload-progress" class="hidden space-y-2" aria-live="polite">
-                  <div class="flex items-center justify-between gap-3 text-xs font-bold text-slate-600">
+                  <div class="flex items-center justify-between gap-4 text-xs font-bold text-slate-600">
                     <span id="cms-media-upload-progress-label">Preparando carga...</span>
                     <span id="cms-media-upload-progress-count">0%</span>
                   </div>
@@ -143,8 +148,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   </div>
                 </div>
                 <p class="text-xs text-slate-500">Imágenes JPG, PNG o WebP. El sistema valida tipo, peso y dimensiones antes de publicarlas.</p>
-                <div id="cms-media-status" class="text-xs text-slate-500"></div>
-                <div id="cms-media-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                <div id="cms-media-status" class="text-xs text-slate-500" role="status" aria-live="polite"></div>
+                <div id="cms-media-list" class="grid grid-cols-1 gap-4 md:grid-cols-2"></div>
                 <div id="cms-media-empty" class="hidden rounded-xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">No hay archivos cargados aún.</div>
               </div>
 
@@ -160,42 +165,49 @@ import Sidebar from '@components/portal/Sidebar.astro';
     </div>
   </div>
 
-  <div id="cms-page-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 md:p-6">
-    <div class="mx-auto mt-10 max-w-lg rounded-[1.75rem] bg-white border border-slate-200 p-5 md:p-6 shadow-2xl">
-      <div class="flex items-center justify-between gap-3">
-        <h3 class="text-lg font-bold text-[#293C74]">Nueva Página</h3>
-        <button id="cms-page-modal-close" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300" aria-label="Cerrar"><PortalIcon name="x" size={19} /></button>
+  <div id="cms-page-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 p-4 backdrop-blur-sm md:p-6" role="dialog" aria-modal="true" aria-labelledby="cms-page-modal-title" aria-describedby="cms-page-modal-description" aria-hidden="true">
+    <div class="mx-auto mt-10 max-w-lg rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h2 id="cms-page-modal-title" class="text-lg font-bold text-[#293C74]">Nueva página</h2>
+          <p id="cms-page-modal-description" class="mt-2 text-sm text-slate-500">Se crea como borrador y no aparece públicamente hasta que la publiques.</p>
+        </div>
+        <button id="cms-page-modal-close" type="button" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800" aria-label="Cerrar creación de página"><PortalIcon name="x" size={19} /></button>
       </div>
-      <form id="cms-page-modal-form" class="mt-4 space-y-3">
+      <form id="cms-page-modal-form" class="mt-4 space-y-4">
         <label class="block text-xs font-bold text-slate-600">Nombre interno
-          <input id="cms-modal-page-key" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="home" />
+          <input id="cms-modal-page-key" required class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="home" />
         </label>
         <label class="block text-xs font-bold text-slate-600">Título
-          <input id="cms-modal-page-title" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="Inicio" />
+          <input id="cms-modal-page-title" required class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="Inicio" />
         </label>
         <label class="block text-xs font-bold text-slate-600">Ruta
-          <input id="cms-modal-page-path" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="/" />
+          <input id="cms-modal-page-path" required class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="/" />
         </label>
-        <div class="pt-2 flex items-center justify-end gap-2">
-          <button type="button" id="cms-page-modal-cancel" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold">Cancelar</button>
-          <button type="submit" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold">Crear página</button>
+        <div id="cms-page-modal-feedback" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="cms-page-modal-cancel" class="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancelar</button>
+          <button type="submit" data-cms-action class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Crear página</button>
         </div>
       </form>
     </div>
   </div>
 
-  <div id="cms-section-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm p-4 md:p-6">
-    <div class="mx-auto mt-10 max-w-lg rounded-[1.75rem] bg-white border border-slate-200 p-5 md:p-6 shadow-2xl">
-      <div class="flex items-center justify-between gap-3">
-        <h3 class="text-lg font-bold text-[#293C74]">Nueva Sección</h3>
-        <button id="cms-section-modal-close" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300" aria-label="Cerrar"><PortalIcon name="x" size={19} /></button>
+  <div id="cms-section-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 p-4 backdrop-blur-sm md:p-6" role="dialog" aria-modal="true" aria-labelledby="cms-section-modal-title" aria-describedby="cms-section-modal-description" aria-hidden="true">
+    <div class="mx-auto mt-10 max-w-lg rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h2 id="cms-section-modal-title" class="text-lg font-bold text-[#293C74]">Nueva sección</h2>
+          <p id="cms-section-modal-description" class="mt-2 text-sm text-slate-500">El bloque comienza como borrador dentro de la página seleccionada.</p>
+        </div>
+        <button id="cms-section-modal-close" type="button" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800" aria-label="Cerrar creación de sección"><PortalIcon name="x" size={19} /></button>
       </div>
-      <form id="cms-section-modal-form" class="mt-4 space-y-3">
+      <form id="cms-section-modal-form" class="mt-4 space-y-4">
         <label class="block text-xs font-bold text-slate-600">Nombre interno de la sección
-          <input id="cms-modal-section-key" required class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="hero-principal" />
+          <input id="cms-modal-section-key" required class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="hero-principal" />
         </label>
         <label class="block text-xs font-bold text-slate-600">Tipo
-          <select id="cms-modal-section-kind" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm">
+          <select id="cms-modal-section-kind" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
             <option value="hero">Portada</option>
             <option value="rich_text" selected>Texto</option>
             <option value="gallery">Galería</option>
@@ -206,13 +218,33 @@ import Sidebar from '@components/portal/Sidebar.astro';
           </select>
         </label>
         <label class="block text-xs font-bold text-slate-600">Título
-          <input id="cms-modal-section-title" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm" placeholder="Hero principal" />
+          <input id="cms-modal-section-title" class="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm" placeholder="Hero principal" />
         </label>
-        <div class="pt-2 flex items-center justify-end gap-2">
-          <button type="button" id="cms-section-modal-cancel" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold">Cancelar</button>
-          <button type="submit" data-cms-action class="px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold">Crear sección</button>
+        <div id="cms-section-modal-feedback" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="cms-section-modal-cancel" class="min-h-11 rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700">Cancelar</button>
+          <button type="submit" data-cms-action class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white">Crear sección</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="cms-confirm-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="cms-confirm-title" aria-describedby="cms-confirm-description" aria-hidden="true">
+    <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="mb-2 text-xs font-black uppercase tracking-wider text-brand-teal">Confirmación editorial</p>
+          <h2 id="cms-confirm-title" class="font-display text-xl font-black text-[#293C74]">Confirmar acción</h2>
+        </div>
+        <button id="cms-confirm-close" type="button" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50" aria-label="Cerrar confirmación editorial"><PortalIcon name="x" size={19} /></button>
+      </div>
+      <p id="cms-confirm-description" class="mt-4 text-sm leading-6 text-slate-600"></p>
+      <div id="cms-confirm-summary" class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700"></div>
+      <div id="cms-confirm-feedback" class="mt-4 hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></div>
+      <div class="mt-6 flex flex-col-reverse gap-4 sm:flex-row sm:justify-end">
+        <button id="cms-confirm-cancel" type="button" class="min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">Cancelar</button>
+        <button id="cms-confirm-submit" type="button" class="min-h-11 rounded-md bg-[#293C74] px-4 py-2 text-sm font-black text-white hover:bg-[#1f2f63] disabled:cursor-wait disabled:opacity-60">Confirmar</button>
+      </div>
     </div>
   </div>
 

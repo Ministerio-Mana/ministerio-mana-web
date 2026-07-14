@@ -35,6 +35,14 @@ const state = {
   permissionValidated: false,
   busyCount: 0,
   alertTimeout: null,
+  pageLoadRevision: 0,
+  mediaLoadRevision: 0,
+  pageDirty: false,
+  sectionDraftIds: new Set(),
+  modalReturnFocus: new Map(),
+  modalDiscardArmed: new Map(),
+  confirmAction: null,
+  confirmReturnFocus: null,
 };
 
 const el = {
@@ -87,6 +95,7 @@ const el = {
   pageModalForm: document.getElementById('cms-page-modal-form'),
   pageModalClose: document.getElementById('cms-page-modal-close'),
   pageModalCancel: document.getElementById('cms-page-modal-cancel'),
+  pageModalFeedback: document.getElementById('cms-page-modal-feedback'),
   modalPageKey: document.getElementById('cms-modal-page-key'),
   modalPageTitle: document.getElementById('cms-modal-page-title'),
   modalPagePath: document.getElementById('cms-modal-page-path'),
@@ -95,10 +104,72 @@ const el = {
   sectionModalForm: document.getElementById('cms-section-modal-form'),
   sectionModalClose: document.getElementById('cms-section-modal-close'),
   sectionModalCancel: document.getElementById('cms-section-modal-cancel'),
+  sectionModalFeedback: document.getElementById('cms-section-modal-feedback'),
   modalSectionKey: document.getElementById('cms-modal-section-key'),
   modalSectionKind: document.getElementById('cms-modal-section-kind'),
   modalSectionTitle: document.getElementById('cms-modal-section-title'),
+
+  confirmModal: document.getElementById('cms-confirm-modal'),
+  confirmClose: document.getElementById('cms-confirm-close'),
+  confirmTitle: document.getElementById('cms-confirm-title'),
+  confirmDescription: document.getElementById('cms-confirm-description'),
+  confirmSummary: document.getElementById('cms-confirm-summary'),
+  confirmFeedback: document.getElementById('cms-confirm-feedback'),
+  confirmCancel: document.getElementById('cms-confirm-cancel'),
+  confirmSubmit: document.getElementById('cms-confirm-submit'),
 };
+
+const PAGE_DRAFT_FIELDS = [
+  'pageKey',
+  'pagePath',
+  'pageTitle',
+  'pageLocale',
+  'pageDescription',
+  'pageSeoTitle',
+  'pageSeoDescription',
+  'pageSeoImage',
+];
+
+function readSessionJson(key, fallback = null) {
+  try {
+    const value = window.sessionStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeSessionJson(key, value) {
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // La edición actual permanece en el DOM aunque el navegador bloquee sessionStorage.
+  }
+}
+
+function removeSessionValue(key) {
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // Sin acción: no se debe bloquear una operación por almacenamiento local indisponible.
+  }
+}
+
+function pageDraftKey(pageId = state.selectedPageId) {
+  return pageId ? `mana.cms.page-draft.${pageId}` : '';
+}
+
+function sectionDraftKey(pageId = state.selectedPageId) {
+  return pageId ? `mana.cms.section-drafts.${pageId}` : '';
+}
+
+function pageModalDraftKey() {
+  return 'mana.cms.new-page-draft';
+}
+
+function sectionModalDraftKey(pageId = state.selectedPageId) {
+  return pageId ? `mana.cms.new-section-draft.${pageId}` : '';
+}
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -150,6 +221,7 @@ function setBusy(flag, message = 'Procesando...') {
     btn.classList.toggle('opacity-60', disabled);
     btn.classList.toggle('cursor-not-allowed', disabled);
   });
+  if (!isBusy) setPageActionAvailability();
 }
 
 function applySchemaState() {
@@ -162,6 +234,7 @@ function applySchemaState() {
     btn.classList.toggle('opacity-60', disabled);
     btn.classList.toggle('cursor-not-allowed', disabled);
   });
+  setPageActionAvailability();
 }
 
 function showSecureContent() {
@@ -177,7 +250,7 @@ function showGate(message = 'Validando permisos...') {
   el.secureContent?.classList.add('hidden');
 }
 
-function showAlert(message, tone = 'info', ttlMs = 4500) {
+function showAlert(message, tone = 'info', ttlMs = 4500, action = null) {
   if (!el.alert) return;
 
   if (state.alertTimeout) {
@@ -200,7 +273,29 @@ function showAlert(message, tone = 'info', ttlMs = 4500) {
     el.alert.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
   }
 
-  el.alert.textContent = message;
+  el.alert.replaceChildren();
+  const content = document.createElement('div');
+  content.className = action ? 'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between' : '';
+  const text = document.createElement('span');
+  text.textContent = message;
+  content.appendChild(text);
+
+  if (action?.label && typeof action.onAction === 'function') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'min-h-11 shrink-0 rounded-md border border-current bg-white px-4 py-2 text-sm font-black';
+    button.textContent = action.label;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        await action.onAction();
+      } catch (error) {
+        showAlert(parseError(error, 'No se pudo deshacer la acción.'), 'error', 7000);
+      }
+    });
+    content.appendChild(button);
+  }
+  el.alert.appendChild(content);
 
   if (ttlMs > 0) {
     state.alertTimeout = window.setTimeout(() => {
@@ -212,27 +307,238 @@ function showAlert(message, tone = 'info', ttlMs = 4500) {
 function clearAlert() {
   if (!el.alert) return;
   el.alert.classList.add('hidden');
-  el.alert.textContent = '';
+  el.alert.replaceChildren();
 }
 
 function setPageActionAvailability() {
-  const hasPage = Boolean(state.selectedPageId) && state.cmsSchemaReady !== false;
-  [el.pageSave, el.pagePublish, el.pageUnpublish, el.pagePreview, el.newSection].forEach((node) => {
+  const hasPage = Boolean(state.selectedPageId) && state.cmsSchemaReady !== false && state.busyCount === 0;
+  const status = state.page?.status || 'draft';
+  const controls = [
+    [el.pageSave, hasPage],
+    [el.pagePublish, hasPage && status !== 'published'],
+    [el.pageUnpublish, hasPage && status === 'published'],
+    [el.pagePreview, hasPage],
+    [el.newSection, hasPage],
+  ];
+  controls.forEach(([node, enabled]) => {
     if (!node) return;
-    node.disabled = !hasPage;
-    node.classList.toggle('opacity-60', !hasPage);
-    node.classList.toggle('cursor-not-allowed', !hasPage);
+    node.disabled = !enabled;
+    node.classList.toggle('opacity-60', !enabled);
+    node.classList.toggle('cursor-not-allowed', !enabled);
   });
 }
 
-function openModal(node) {
-  if (!node) return;
-  node.classList.remove('hidden');
+function editorModalParts(node) {
+  if (node === el.pageModal) {
+    return {
+      form: el.pageModalForm,
+      feedback: el.pageModalFeedback,
+      cancel: el.pageModalCancel,
+      close: el.pageModalClose,
+      preferredFocus: el.modalPageKey,
+      draftKey: pageModalDraftKey(),
+      reset: resetPageModal,
+    };
+  }
+  if (node === el.sectionModal) {
+    return {
+      form: el.sectionModalForm,
+      feedback: el.sectionModalFeedback,
+      cancel: el.sectionModalCancel,
+      close: el.sectionModalClose,
+      preferredFocus: el.modalSectionKey,
+      draftKey: sectionModalDraftKey(),
+      reset: resetSectionModal,
+    };
+  }
+  return null;
 }
 
-function closeModal(node) {
-  if (!node) return;
+function setModalFeedback(node, message = '') {
+  const parts = editorModalParts(node);
+  if (!parts?.feedback) return;
+  parts.feedback.textContent = message;
+  parts.feedback.className = message
+    ? 'rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800'
+    : 'hidden rounded-xl border px-4 py-4 text-sm font-semibold';
+}
+
+function modalDraftValues(node) {
+  const parts = editorModalParts(node);
+  if (!parts?.form) return {};
+  return Object.fromEntries(Array.from(parts.form.querySelectorAll('input, select, textarea')).map((field) => [field.id, String(field.value || '')]));
+}
+
+function persistModalDraft(node) {
+  const parts = editorModalParts(node);
+  if (!parts?.draftKey) return;
+  writeSessionJson(parts.draftKey, { savedAt: Date.now(), values: modalDraftValues(node) });
+  state.modalDiscardArmed.set(node, false);
+  if (parts.cancel) parts.cancel.textContent = 'Cancelar';
+  setModalFeedback(node, '');
+}
+
+function restoreModalDraft(node) {
+  const parts = editorModalParts(node);
+  if (!parts?.draftKey || !parts.form) return;
+  const draft = readSessionJson(parts.draftKey);
+  if (!draft?.values) return;
+  parts.form.querySelectorAll('input, select, textarea').forEach((field) => {
+    if (draft.values[field.id] !== undefined) field.value = String(draft.values[field.id]);
+  });
+}
+
+function modalHasDraft(node) {
+  if (node === el.pageModal) {
+    return Boolean(el.modalPageKey?.value.trim() || el.modalPageTitle?.value.trim() || (el.modalPagePath?.value.trim() && el.modalPagePath.value.trim() !== '/'));
+  }
+  if (node === el.sectionModal) {
+    return Boolean(el.modalSectionKey?.value.trim() || el.modalSectionTitle?.value.trim() || (el.modalSectionKind?.value && el.modalSectionKind.value !== 'rich_text'));
+  }
+  return false;
+}
+
+function getDialogFocusableElements(node) {
+  if (!node) return [];
+  return Array.from(node.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'))
+    .filter((element) => !element.closest('.hidden'));
+}
+
+function openEditorModal(node, trigger) {
+  const parts = editorModalParts(node);
+  if (!node || !parts) return;
+  restoreModalDraft(node);
+  state.modalReturnFocus.set(node, trigger instanceof HTMLElement ? trigger : document.activeElement);
+  state.modalDiscardArmed.set(node, false);
+  if (parts.cancel) parts.cancel.textContent = 'Cancelar';
+  setModalFeedback(node, '');
+  node.classList.remove('hidden');
+  node.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('overflow-hidden');
+  window.requestAnimationFrame(() => parts.preferredFocus?.focus());
+}
+
+function closeEditorModal(node, { clearDraft = false } = {}) {
+  const parts = editorModalParts(node);
+  if (!node || !parts || node.classList.contains('hidden')) return;
   node.classList.add('hidden');
+  node.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('overflow-hidden');
+  setModalFeedback(node, '');
+  state.modalDiscardArmed.set(node, false);
+  if (parts.cancel) parts.cancel.textContent = 'Cancelar';
+  if (clearDraft) {
+    parts.reset?.();
+    if (parts.draftKey) removeSessionValue(parts.draftKey);
+  }
+  const returnFocus = state.modalReturnFocus.get(node);
+  if (returnFocus?.isConnected) returnFocus.focus();
+}
+
+function requestCloseEditorModal(node, { allowDiscard = false } = {}) {
+  const parts = editorModalParts(node);
+  if (!parts) return;
+  if (!modalHasDraft(node)) {
+    closeEditorModal(node, { clearDraft: true });
+    return;
+  }
+  if (allowDiscard && state.modalDiscardArmed.get(node)) {
+    closeEditorModal(node, { clearDraft: true });
+    return;
+  }
+  state.modalDiscardArmed.set(node, true);
+  if (parts.cancel) parts.cancel.textContent = 'Borrar borrador y cerrar';
+  setModalFeedback(node, 'El borrador se conservó. Para descartarlo, usa “Borrar borrador y cerrar”.');
+  parts.preferredFocus?.focus();
+}
+
+function setConfirmFeedback(message = '', tone = 'error') {
+  if (!el.confirmFeedback) return;
+  el.confirmFeedback.textContent = message;
+  el.confirmFeedback.className = message
+    ? `mt-4 rounded-xl border px-4 py-4 text-sm font-semibold ${tone === 'error'
+      ? 'border-red-200 bg-red-50 text-red-700'
+      : 'border-amber-200 bg-amber-50 text-amber-800'}`
+    : 'mt-4 hidden rounded-xl border px-4 py-4 text-sm font-semibold';
+}
+
+function openConfirmDialog({ title, description, summary, confirmLabel, tone = 'primary', onConfirm, trigger }) {
+  if (!el.confirmModal || !el.confirmSubmit) return;
+  state.confirmAction = typeof onConfirm === 'function' ? onConfirm : null;
+  state.confirmReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
+  if (el.confirmTitle) el.confirmTitle.textContent = title;
+  if (el.confirmDescription) el.confirmDescription.textContent = description;
+  if (el.confirmSummary) el.confirmSummary.textContent = summary;
+  el.confirmSubmit.textContent = confirmLabel;
+  el.confirmSubmit.className = `min-h-11 rounded-md px-4 py-2 text-sm font-black text-white disabled:cursor-wait disabled:opacity-60 ${tone === 'danger'
+    ? 'bg-red-700 hover:bg-red-800'
+    : 'bg-[#293C74] hover:bg-[#1f2f63]'}`;
+  setConfirmFeedback('');
+  el.confirmModal.classList.remove('hidden');
+  el.confirmModal.classList.add('flex');
+  el.confirmModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('overflow-hidden');
+  window.requestAnimationFrame(() => el.confirmSubmit?.focus());
+}
+
+function closeConfirmDialog() {
+  if (!el.confirmModal || el.confirmModal.classList.contains('hidden')) return;
+  el.confirmModal.classList.add('hidden');
+  el.confirmModal.classList.remove('flex');
+  el.confirmModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('overflow-hidden');
+  setConfirmFeedback('');
+  state.confirmAction = null;
+  const returnFocus = state.confirmReturnFocus;
+  state.confirmReturnFocus = null;
+  if (returnFocus?.isConnected) returnFocus.focus();
+  else el.mediaRefresh?.focus();
+}
+
+async function runConfirmAction() {
+  if (!state.confirmAction || !el.confirmSubmit) return;
+  el.confirmSubmit.disabled = true;
+  const originalLabel = el.confirmSubmit.textContent;
+  el.confirmSubmit.textContent = 'Procesando...';
+  try {
+    await state.confirmAction();
+    closeConfirmDialog();
+  } catch (error) {
+    setConfirmFeedback(parseError(error, 'No se pudo completar la acción.'));
+  } finally {
+    el.confirmSubmit.disabled = false;
+    el.confirmSubmit.textContent = originalLabel;
+  }
+}
+
+function handleDialogKeydown(event) {
+  const openDialog = !el.confirmModal?.classList.contains('hidden')
+    ? el.confirmModal
+    : !el.pageModal?.classList.contains('hidden')
+      ? el.pageModal
+      : !el.sectionModal?.classList.contains('hidden')
+        ? el.sectionModal
+        : null;
+  if (!openDialog) return;
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    if (openDialog === el.confirmModal) closeConfirmDialog();
+    else requestCloseEditorModal(openDialog);
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = getDialogFocusableElements(openDialog);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 async function fetchJson(url, options = {}) {
@@ -269,6 +575,131 @@ async function fetchJson(url, options = {}) {
   }
 }
 
+function pageFormSnapshot() {
+  return Object.fromEntries(PAGE_DRAFT_FIELDS.map((field) => [field, String(el[field]?.value || '')]));
+}
+
+function updatePageMeta() {
+  if (!el.pageMeta || !state.page) return;
+  const updatedLabel = state.page.updated_at
+    ? new Date(state.page.updated_at).toLocaleString('es-CO')
+    : 'sin fecha';
+  const draftLabel = state.pageDirty ? ' · Borrador local sin guardar en servidor' : '';
+  el.pageMeta.textContent = `Estado: ${STATUS_LABELS[state.page.status] || state.page.status || 'Borrador'} · Versión ${state.page.version || 1} · Actualizado ${updatedLabel}${draftLabel}`;
+}
+
+function setPageDirty(dirty) {
+  state.pageDirty = Boolean(dirty);
+  updatePageMeta();
+}
+
+function persistPageDraft() {
+  const key = pageDraftKey();
+  if (!key || !state.page) return;
+  writeSessionJson(key, {
+    savedAt: Date.now(),
+    serverUpdatedAt: state.page.updated_at || null,
+    values: pageFormSnapshot(),
+  });
+  setPageDirty(true);
+}
+
+function clearPageDraft(pageId = state.selectedPageId) {
+  const key = pageDraftKey(pageId);
+  if (key) removeSessionValue(key);
+  if (pageId === state.selectedPageId) setPageDirty(false);
+}
+
+function restorePageDraft() {
+  const key = pageDraftKey();
+  if (!key || !state.page) return false;
+  const draft = readSessionJson(key);
+  if (!draft?.values || Number(draft.savedAt || 0) <= new Date(state.page.updated_at || 0).getTime()) {
+    if (draft) removeSessionValue(key);
+    return false;
+  }
+  PAGE_DRAFT_FIELDS.forEach((field) => {
+    if (el[field] && draft.values[field] !== undefined) el[field].value = String(draft.values[field]);
+  });
+  setPageDirty(true);
+  return true;
+}
+
+function sectionDraftValues(card) {
+  const values = {};
+  card.querySelectorAll('[data-field], [data-payload-field]').forEach((field) => {
+    const key = field.hasAttribute('data-field')
+      ? `field:${field.getAttribute('data-field')}`
+      : `payload:${field.getAttribute('data-payload-field')}`;
+    values[key] = String(field.value ?? '');
+  });
+  return values;
+}
+
+function persistSectionDraft(card) {
+  const sectionId = card?.getAttribute('data-section-id');
+  const key = sectionDraftKey();
+  if (!sectionId || !key) return;
+  const section = state.sections.find((item) => item.id === sectionId);
+  const stored = readSessionJson(key, { drafts: {} }) || { drafts: {} };
+  stored.drafts ||= {};
+  stored.drafts[sectionId] = {
+    savedAt: Date.now(),
+    serverUpdatedAt: section?.updated_at || null,
+    values: sectionDraftValues(card),
+  };
+  writeSessionJson(key, stored);
+  state.sectionDraftIds.add(sectionId);
+  card.querySelector('[data-section-draft-status]')?.classList.remove('hidden');
+}
+
+function clearSectionDraft(sectionId, pageId = state.selectedPageId) {
+  const key = sectionDraftKey(pageId);
+  if (!key || !sectionId) return;
+  const stored = readSessionJson(key, { drafts: {} }) || { drafts: {} };
+  if (stored.drafts) delete stored.drafts[sectionId];
+  if (Object.keys(stored.drafts || {}).length) writeSessionJson(key, stored);
+  else removeSessionValue(key);
+  if (pageId === state.selectedPageId) state.sectionDraftIds.delete(sectionId);
+}
+
+function restoreSectionDrafts() {
+  state.sectionDraftIds.clear();
+  const key = sectionDraftKey();
+  const stored = key ? readSessionJson(key, { drafts: {} }) : { drafts: {} };
+  stored.drafts ||= {};
+  let restored = 0;
+
+  el.sections?.querySelectorAll('[data-section-id]').forEach((card) => {
+    const sectionId = card.getAttribute('data-section-id');
+    const section = state.sections.find((item) => item.id === sectionId);
+    const draft = stored?.drafts?.[sectionId];
+    if (!sectionId || !draft?.values || Number(draft.savedAt || 0) <= new Date(section?.updated_at || 0).getTime()) {
+      if (sectionId && draft) delete stored.drafts[sectionId];
+      return;
+    }
+    card.querySelectorAll('[data-field], [data-payload-field]').forEach((field) => {
+      const fieldKey = field.hasAttribute('data-field')
+        ? `field:${field.getAttribute('data-field')}`
+        : `payload:${field.getAttribute('data-payload-field')}`;
+      if (draft.values[fieldKey] !== undefined) field.value = String(draft.values[fieldKey]);
+    });
+    state.sectionDraftIds.add(sectionId);
+    card.querySelector('[data-section-draft-status]')?.classList.remove('hidden');
+    restored += 1;
+  });
+
+  if (key) {
+    if (Object.keys(stored?.drafts || {}).length) writeSessionJson(key, stored);
+    else removeSessionValue(key);
+  }
+  return restored;
+}
+
+function hasUnsavedEditorDrafts() {
+  return state.pageDirty || state.sectionDraftIds.size > 0;
+}
+
 function applyPageToForm(page) {
   if (!page) return;
   const seo = (page.seo && typeof page.seo === 'object') ? page.seo : {};
@@ -280,7 +711,7 @@ function applyPageToForm(page) {
   el.pageSeoTitle.value = seo.title || '';
   el.pageSeoDescription.value = seo.description || '';
   el.pageSeoImage.value = seo.image || '';
-  el.pageMeta.textContent = `Estado: ${STATUS_LABELS[page.status] || page.status || 'Borrador'} · Versión ${page.version || 1} · Actualizado ${page.updated_at ? new Date(page.updated_at).toLocaleString('es-CO') : '-'}`;
+  setPageDirty(false);
 
   if (el.mediaFolder && !el.mediaFolder.value) {
     el.mediaFolder.value = page.page_key || '';
@@ -309,12 +740,12 @@ function renderPages() {
           : 'text-amber-700 bg-amber-50 border-amber-100';
 
       return `
-        <button type="button" data-page-id="${escapeAttr(page.id)}" class="cms-page-item w-full text-left rounded-xl border px-3 py-3 transition ${active ? 'border-[#293C74]/40 bg-[#293C74]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
+        <button type="button" data-page-id="${escapeAttr(page.id)}" class="cms-page-item min-h-11 w-full rounded-xl border px-4 py-4 text-left transition ${active ? 'border-[#293C74]/40 bg-[#293C74]/5 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'}">
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm font-bold text-[#293C74]">${escapeHtml(page.title || page.page_key)}</p>
             <span class="portal-chip border ${statusTone}">${escapeHtml(STATUS_LABELS[page.status] || page.status || 'Borrador')}</span>
           </div>
-          <p class="text-xs text-slate-500 mt-1">${escapeHtml(page.route_path || '/')}</p>
+          <p class="mt-2 text-xs text-slate-500">${escapeHtml(page.route_path || '/')}</p>
         </button>
       `;
     })
@@ -326,6 +757,9 @@ function renderPages() {
     btn.addEventListener('click', () => {
       const pageId = btn.getAttribute('data-page-id');
       if (!pageId || pageId === state.selectedPageId) return;
+      if (hasUnsavedEditorDrafts()) {
+        showAlert('Tus cambios quedaron como borrador local en esta pestaña y se recuperarán al volver.', 'info', 7000);
+      }
       loadPage(pageId).catch((error) => {
         showAlert(parseError(error, 'No se pudo cargar la página.'), 'error', 5500);
       });
@@ -357,16 +791,36 @@ async function swapSectionsOrder(sectionId, direction) {
 
   setBusy(true, 'Reordenando secciones...');
   try {
-    await Promise.all([
-      fetchJson('/api/portal/content/sections', {
-        method: 'PUT',
-        body: JSON.stringify({ section_id: current.id, position: target.position }),
+    const firstUpdate = await fetchJson('/api/portal/content/sections', {
+      method: 'PUT',
+      body: JSON.stringify({
+        section_id: current.id,
+        position: target.position,
+        expected_updated_at: current.updated_at || null,
       }),
-      fetchJson('/api/portal/content/sections', {
+    });
+    try {
+      await fetchJson('/api/portal/content/sections', {
         method: 'PUT',
-        body: JSON.stringify({ section_id: target.id, position: current.position }),
-      }),
-    ]);
+        body: JSON.stringify({
+          section_id: target.id,
+          position: current.position,
+          expected_updated_at: target.updated_at || null,
+        }),
+      });
+    } catch (error) {
+      await fetchJson('/api/portal/content/sections', {
+        method: 'PUT',
+        body: JSON.stringify({
+          section_id: current.id,
+          position: current.position,
+          expected_updated_at: firstUpdate.section?.updated_at || null,
+        }),
+      }).catch(() => {
+        throw new Error('El orden quedó incompleto y requiere recargar antes de volver a intentarlo.');
+      });
+      throw error;
+    }
 
     await loadPage(state.selectedPageId, true);
     showAlert('Orden actualizado.', 'success');
@@ -376,7 +830,7 @@ async function swapSectionsOrder(sectionId, direction) {
 }
 
 function renderPayloadField(label, key, value, options = {}) {
-  const inputClass = 'mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm';
+  const inputClass = 'mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm';
   if (options.multiline) {
     return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
       <textarea data-payload-field="${escapeAttr(key)}" rows="${options.rows || 3}" class="${inputClass}">${escapeHtml(value || '')}</textarea>
@@ -422,14 +876,29 @@ function renderPayloadEditor(section) {
   }
 
   const payloadText = JSON.stringify(payload, null, 2);
-  const visualFields = fields ? `<div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">${fields}</div>` : '';
+  const visualFields = fields ? `<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">${fields}</div>` : '';
   return `${visualFields}
-    <details class="mt-3 rounded-lg border border-slate-200 bg-white">
-      <summary class="cursor-pointer px-3 py-2 text-xs font-bold text-slate-600">Opciones avanzadas</summary>
-      <div class="border-t border-slate-200 p-3">
-        <textarea data-field="payload" rows="7" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono">${escapeHtml(payloadText)}</textarea>
+    <details class="mt-4 rounded-lg border border-slate-200 bg-white">
+      <summary class="min-h-11 cursor-pointer px-4 py-2 text-xs font-bold text-slate-600">Opciones avanzadas</summary>
+      <div class="border-t border-slate-200 p-4">
+        <textarea data-field="payload" rows="7" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 font-mono text-xs">${escapeHtml(payloadText)}</textarea>
       </div>
     </details>`;
+}
+
+async function updateSectionStatus(sectionId, status) {
+  const current = state.sections.find((item) => item.id === sectionId);
+  if (!current) throw new Error('La sección ya no está disponible.');
+  await fetchJson('/api/portal/content/sections', {
+    method: 'PUT',
+    body: JSON.stringify({
+      section_id: sectionId,
+      status,
+      expected_updated_at: current.updated_at || null,
+    }),
+  });
+  clearSectionDraft(sectionId);
+  await loadPage(state.selectedPageId, true);
 }
 
 function renderSections() {
@@ -438,41 +907,44 @@ function renderSections() {
   if (!state.selectedPageId) {
     el.sections.innerHTML = '';
     el.sectionsEmpty.classList.remove('hidden');
-    return;
+    return 0;
   }
 
   el.sections.innerHTML = state.sections
     .map((section, index) => {
       return `
-      <article class="rounded-2xl border border-slate-200 p-4 md:p-5 bg-slate-50/50" data-section-id="${escapeAttr(section.id)}">
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Bloque ${index + 1}</p>
+      <article class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 md:p-6" data-section-id="${escapeAttr(section.id)}">
+        <div class="mb-4 flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Bloque ${index + 1}</p>
+            <span data-section-draft-status class="hidden rounded-full bg-amber-100 px-2 py-2 text-xs font-bold text-amber-800">Borrador local</span>
+          </div>
           <div class="flex items-center gap-2">
-            <button type="button" class="cms-section-up h-8 w-8 rounded-lg border border-slate-300 text-slate-600" data-cms-action ${index === 0 ? 'disabled' : ''}>↑</button>
-            <button type="button" class="cms-section-down h-8 w-8 rounded-lg border border-slate-300 text-slate-600" data-cms-action ${index === state.sections.length - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" class="cms-section-up h-11 w-11 rounded-lg border border-slate-300 text-slate-600" data-cms-action aria-label="Subir bloque ${index + 1}" ${index === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" class="cms-section-down h-11 w-11 rounded-lg border border-slate-300 text-slate-600" data-cms-action aria-label="Bajar bloque ${index + 1}" ${index === state.sections.length - 1 ? 'disabled' : ''}>↓</button>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <label class="text-xs font-bold text-slate-600">Nombre interno
-            <input data-field="section_key" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value="${escapeAttr(section.section_key || '')}" />
+            <input data-field="section_key" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(section.section_key || '')}" />
           </label>
           <label class="text-xs font-bold text-slate-600">Tipo
-            <select data-field="kind" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">${renderKindOptions(section.kind || 'rich_text')}</select>
+            <select data-field="kind" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${renderKindOptions(section.kind || 'rich_text')}</select>
           </label>
           <label class="text-xs font-bold text-slate-600">Posición
-            <input data-field="position" type="number" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value="${escapeAttr(Number(section.position || 0))}" />
+            <input data-field="position" type="number" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(Number(section.position || 0))}" />
           </label>
           <label class="text-xs font-bold text-slate-600">Estado
-            <select data-field="status" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">${renderStatusOptions(section.status || 'draft')}</select>
+            <select data-field="status" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm">${renderStatusOptions(section.status || 'draft')}</select>
           </label>
         </div>
-        <label class="mt-3 block text-xs font-bold text-slate-600">Título
-          <input data-field="title" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" value="${escapeAttr(section.title || '')}" />
+        <label class="mt-4 block text-xs font-bold text-slate-600">Título
+          <input data-field="title" class="mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm" value="${escapeAttr(section.title || '')}" />
         </label>
         ${renderPayloadEditor(section)}
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-          <button type="button" class="cms-section-save px-3 py-2 rounded-lg bg-brand-teal text-white text-xs font-bold" data-cms-action>Guardar sección</button>
-          <button type="button" class="cms-section-delete px-3 py-2 rounded-lg border border-red-300 text-red-600 text-xs font-bold" data-cms-action>Eliminar</button>
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <button type="button" class="cms-section-save min-h-11 rounded-lg bg-brand-teal px-4 py-2 text-xs font-bold text-white" data-cms-action>Guardar sección</button>
+          <button type="button" class="cms-section-archive min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700" data-cms-action>${section.status === 'archived' ? 'Restaurar' : 'Archivar'}</button>
         </div>
       </article>
       `;
@@ -484,7 +956,7 @@ function renderSections() {
   el.sections.querySelectorAll('[data-section-id]').forEach((card) => {
     const sectionId = card.getAttribute('data-section-id');
     const saveBtn = card.querySelector('.cms-section-save');
-    const deleteBtn = card.querySelector('.cms-section-delete');
+    const archiveBtn = card.querySelector('.cms-section-archive');
     const upBtn = card.querySelector('.cms-section-up');
     const downBtn = card.querySelector('.cms-section-down');
 
@@ -529,6 +1001,7 @@ function renderSections() {
         status: card.querySelector('[data-field="status"]')?.value,
         title: card.querySelector('[data-field="title"]')?.value,
         payload,
+        expected_updated_at: state.sections.find((item) => item.id === sectionId)?.updated_at || null,
       };
 
       setBusy(true, 'Guardando sección...');
@@ -537,6 +1010,7 @@ function renderSections() {
           method: 'PUT',
           body: JSON.stringify(body),
         });
+        clearSectionDraft(sectionId);
         await loadPage(state.selectedPageId, true);
         showAlert('Sección actualizada.', 'success');
       } catch (error) {
@@ -546,26 +1020,43 @@ function renderSections() {
       }
     });
 
-    deleteBtn?.addEventListener('click', async () => {
+    archiveBtn?.addEventListener('click', async () => {
       if (!sectionId) return;
-      const ok = window.confirm('¿Eliminar esta sección? Esta acción no se puede deshacer.');
-      if (!ok) return;
-      setBusy(true, 'Eliminando sección...');
+      const section = state.sections.find((item) => item.id === sectionId);
+      if (!section) return;
+      const restoring = section.status === 'archived';
+      const nextStatus = restoring ? 'draft' : 'archived';
+      const previousStatus = section.status || 'draft';
+      setBusy(true, restoring ? 'Restaurando sección...' : 'Archivando sección...');
       try {
-        await fetchJson(`/api/portal/content/sections?section_id=${encodeURIComponent(sectionId)}`, {
-          method: 'DELETE',
-        });
-        await loadPage(state.selectedPageId, true);
-        showAlert('Sección eliminada.', 'success');
+        await updateSectionStatus(sectionId, nextStatus);
+        if (restoring) {
+          showAlert('Sección restaurada como borrador.', 'success');
+        } else {
+          showAlert('Sección archivada. No se eliminó y puede restaurarse.', 'success', 12000, {
+            label: 'Deshacer',
+            onAction: async () => {
+              setBusy(true, 'Restaurando sección...');
+              try {
+                await updateSectionStatus(sectionId, previousStatus);
+                showAlert('Archivo deshecho; la sección volvió a su estado anterior.', 'success');
+              } finally {
+                setBusy(false);
+              }
+            },
+          });
+        }
       } catch (error) {
-        showAlert(parseError(error, 'No se pudo eliminar sección.'), 'error', 6000);
+        showAlert(parseError(error, 'No se pudo cambiar el estado de la sección.'), 'error', 6000);
       } finally {
         setBusy(false);
       }
     });
   });
 
+  const restoredDrafts = restoreSectionDrafts();
   setPageActionAvailability();
+  return restoredDrafts;
 }
 
 function renderHistory() {
@@ -588,7 +1079,7 @@ function renderHistory() {
 
   el.history.innerHTML = items
     .map((item) => `
-      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2">
         <p class="text-xs font-bold text-slate-700">${escapeHtml(item.label)}</p>
         <p class="text-[11px] text-slate-500">${escapeHtml(item.detail)} · ${escapeHtml(new Date(item.created_at).toLocaleString('es-CO'))}</p>
       </div>
@@ -664,13 +1155,13 @@ function renderMedia() {
       const providerLabel = file.provider === 'imagekit' ? 'ImageKit' : 'Supabase';
       const dimensions = file.width && file.height ? ` · ${file.width} × ${file.height}px` : '';
       return `
-      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+      <article class="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
         ${isImage ? `<img src="${escapeAttr(previewUrl)}" alt="${escapeAttr(file.name)}" loading="lazy" decoding="async" class="h-28 w-full object-cover rounded-lg border border-slate-200 bg-white" />` : ''}
         <p class="text-xs font-bold text-[#293C74] break-all">${escapeHtml(file.name || '')}</p>
         <p class="text-[11px] text-slate-500">${escapeHtml(providerLabel)} · ${escapeHtml(formatBytes(file.size))}${escapeHtml(dimensions)} · ${escapeHtml(file.mime_type || 'archivo')}</p>
         <div class="flex flex-wrap gap-2">
-          <button type="button" class="cms-media-copy px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-bold" data-url="${escapeAttr(file.public_url)}" data-cms-action>Copiar URL</button>
-          <button type="button" class="cms-media-delete px-2.5 py-1.5 rounded-lg border border-red-300 text-red-600 text-xs font-bold" data-media-id="${escapeAttr(file.media_id || '')}" data-path="${escapeAttr(file.path)}" data-cms-action>Eliminar</button>
+          <button type="button" class="cms-media-copy min-h-11 rounded-lg border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700" data-url="${escapeAttr(file.public_url)}" data-cms-action>Copiar URL</button>
+          <button type="button" class="cms-media-delete min-h-11 rounded-lg border border-red-300 px-4 py-2 text-xs font-bold text-red-700" data-media-id="${escapeAttr(file.media_id || '')}" data-media-name="${escapeAttr(file.name || 'Archivo sin nombre')}" data-media-provider="${escapeAttr(providerLabel)}" data-path="${escapeAttr(file.path)}" data-cms-action>Eliminar</button>
         </div>
       </article>
       `;
@@ -698,36 +1189,45 @@ function renderMedia() {
   });
 
   el.mediaList.querySelectorAll('.cms-media-delete').forEach((btn) => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
       const mediaId = btn.getAttribute('data-media-id') || '';
       const path = btn.getAttribute('data-path') || '';
+      const name = btn.getAttribute('data-media-name') || 'Archivo sin nombre';
+      const provider = btn.getAttribute('data-media-provider') || 'Biblioteca';
       if (!mediaId && !path) return;
-      const ok = window.confirm('¿Eliminar este archivo de la biblioteca?');
-      if (!ok) return;
-
-      setBusy(true, 'Eliminando archivo...');
-      try {
-        await fetchJson('/api/portal/content/media', {
-          method: 'DELETE',
-          body: JSON.stringify({ media_id: mediaId, path }),
-        });
-        await loadMedia(true);
-        showAlert('Archivo eliminado.', 'success');
-      } catch (error) {
-        showAlert(parseError(error, 'No se pudo eliminar archivo.'), 'error', 6000);
-      } finally {
-        setBusy(false);
-      }
+      openConfirmDialog({
+        title: 'Eliminar archivo de la biblioteca',
+        description: 'Esta acción elimina el archivo del proveedor multimedia. Verifica primero que ninguna página publicada use esta URL.',
+        summary: `${name} · ${provider}`,
+        confirmLabel: 'Eliminar archivo',
+        tone: 'danger',
+        trigger: btn,
+        onConfirm: async () => {
+          setBusy(true, 'Eliminando archivo...');
+          try {
+            await fetchJson('/api/portal/content/media', {
+              method: 'DELETE',
+              body: JSON.stringify({ media_id: mediaId, path }),
+            });
+            await loadMedia(true);
+            showAlert('Archivo eliminado.', 'success');
+          } finally {
+            setBusy(false);
+          }
+        },
+      });
     });
   });
 }
 
 async function loadMedia(silent = false) {
   if (!el.mediaStatus) return;
+  const requestRevision = ++state.mediaLoadRevision;
 
   const prefix = safeFolder(el.mediaFolder?.value || state.page?.page_key || '');
   const query = prefix ? `?prefix=${encodeURIComponent(prefix)}&limit=80` : '?limit=80';
   const data = await fetchJson(`/api/portal/content/media${query}`);
+  if (requestRevision !== state.mediaLoadRevision) return;
   state.media = data.files || [];
   state.mediaProvider = data.provider === 'imagekit' ? 'imagekit' : 'supabase';
   state.mediaMaxBytes = Number(data.max_bytes || (state.mediaProvider === 'imagekit' ? 5 * 1024 * 1024 : 4 * 1024 * 1024));
@@ -774,12 +1274,14 @@ async function loadPages(selectFirst = false) {
 
 async function loadPage(pageId, silent = false) {
   if (!pageId) return;
+  const requestRevision = ++state.pageLoadRevision;
   state.selectedPageId = pageId;
 
   const [data, history] = await Promise.all([
     fetchJson(`/api/portal/content/pages?page_id=${encodeURIComponent(pageId)}`),
     fetchJson(`/api/portal/content/history?page_id=${encodeURIComponent(pageId)}&limit=40`),
   ]);
+  if (requestRevision !== state.pageLoadRevision || pageId !== state.selectedPageId) return;
 
   state.page = data.page || null;
   state.sections = data.sections || [];
@@ -787,13 +1289,19 @@ async function loadPage(pageId, silent = false) {
   state.logs = history.logs || [];
 
   applyPageToForm(state.page);
+  const restoredPageDraft = restorePageDraft();
   renderPages();
-  renderSections();
+  const restoredSectionDrafts = renderSections();
   renderHistory();
   setPageActionAvailability();
   await loadMedia(true);
+  if (requestRevision !== state.pageLoadRevision || pageId !== state.selectedPageId) return;
 
-  if (!silent) showAlert(`Página cargada: ${state.page?.title || state.page?.page_key || pageId}`);
+  if (restoredPageDraft || restoredSectionDrafts) {
+    showAlert('Se recuperó un borrador local de esta pestaña. Revísalo y guárdalo cuando esté listo.', 'info', 0);
+  } else if (!silent) {
+    showAlert(`Página cargada: ${state.page?.title || state.page?.page_key || pageId}`);
+  }
 }
 
 function resetPageModal() {
@@ -834,11 +1342,12 @@ async function savePage() {
         locale: el.pageLocale.value,
         description: el.pageDescription.value,
         seo,
+        expected_updated_at: state.page?.updated_at || null,
       }),
     });
 
+    clearPageDraft();
     await loadPages();
-    await loadPage(state.selectedPageId, true);
     showAlert('Página actualizada.', 'success');
   } finally {
     setBusy(false);
@@ -855,20 +1364,49 @@ async function setPublishStatus(action) {
   try {
     await fetchJson('/api/portal/content/publish', {
       method: 'POST',
-      body: JSON.stringify({ page_id: state.selectedPageId, action }),
+      body: JSON.stringify({
+        page_id: state.selectedPageId,
+        action,
+        expected_updated_at: state.page?.updated_at || null,
+      }),
     });
 
     await loadPages();
-    await loadPage(state.selectedPageId, true);
     showAlert(action === 'publish' ? 'Página publicada.' : 'Página enviada a borrador.', 'success');
   } finally {
     setBusy(false);
   }
 }
 
+function requestPublishAction(action, trigger) {
+  if (!state.selectedPageId || !state.page) {
+    showAlert('Selecciona una página primero.', 'error', 5000);
+    return;
+  }
+  if (hasUnsavedEditorDrafts()) {
+    showAlert('Guarda primero los borradores locales de la página y sus secciones.', 'error', 7000);
+    return;
+  }
+  const publishing = action === 'publish';
+  openConfirmDialog({
+    title: publishing ? 'Publicar página' : 'Enviar página a borrador',
+    description: publishing
+      ? 'La página y todas sus secciones no archivadas quedarán visibles para el público.'
+      : 'La página dejará de estar disponible públicamente; su contenido seguirá guardado en el CMS.',
+    summary: `${state.page.title || state.page.page_key} · ${state.page.route_path || '/'}`,
+    confirmLabel: publishing ? 'Publicar ahora' : 'Enviar a borrador',
+    trigger,
+    onConfirm: () => setPublishStatus(action),
+  });
+}
+
 async function openPreview() {
   if (!state.selectedPageId) {
     showAlert('Selecciona una página primero.', 'error', 5000);
+    return;
+  }
+  if (hasUnsavedEditorDrafts()) {
+    showAlert('Guarda primero los borradores locales para que la vista previa refleje tus cambios.', 'error', 7000);
     return;
   }
 
@@ -893,7 +1431,8 @@ async function createPageFromModal() {
   const routePath = String(el.modalPagePath?.value || '').trim() || '/';
 
   if (!pageKey || !title) {
-    showAlert('Debes completar clave y título.', 'error', 5000);
+    setModalFeedback(el.pageModal, 'Completa el nombre interno y el título antes de crear la página.');
+    el.modalPageKey?.focus();
     return;
   }
 
@@ -909,10 +1448,9 @@ async function createPageFromModal() {
       }),
     });
 
+    state.selectedPageId = data.page.id;
     await loadPages();
-    await loadPage(data.page.id, true);
-    closeModal(el.pageModal);
-    resetPageModal();
+    closeEditorModal(el.pageModal, { clearDraft: true });
     showAlert('Página creada en borrador.', 'success');
   } finally {
     setBusy(false);
@@ -930,7 +1468,8 @@ async function createSectionFromModal() {
   const title = String(el.modalSectionTitle?.value || key).trim();
 
   if (!key) {
-    showAlert('Debes escribir una clave de sección.', 'error', 5000);
+    setModalFeedback(el.sectionModal, 'Escribe el nombre interno de la sección antes de crearla.');
+    el.modalSectionKey?.focus();
     return;
   }
 
@@ -949,8 +1488,7 @@ async function createSectionFromModal() {
     });
 
     await loadPage(state.selectedPageId, true);
-    closeModal(el.sectionModal);
-    resetSectionModal();
+    closeEditorModal(el.sectionModal, { clearDraft: true });
     showAlert('Sección creada.', 'success');
   } finally {
     setBusy(false);
@@ -1088,44 +1626,59 @@ async function uploadMedia(event) {
 }
 
 function bindModalEvents() {
-  el.newPage?.addEventListener('click', () => {
-    resetPageModal();
-    openModal(el.pageModal);
-    el.modalPageKey?.focus();
+  el.newPage?.addEventListener('click', (event) => {
+    openEditorModal(el.pageModal, event.currentTarget);
   });
 
-  el.pageModalClose?.addEventListener('click', () => closeModal(el.pageModal));
-  el.pageModalCancel?.addEventListener('click', () => closeModal(el.pageModal));
+  el.pageModalClose?.addEventListener('click', () => requestCloseEditorModal(el.pageModal));
+  el.pageModalCancel?.addEventListener('click', () => requestCloseEditorModal(el.pageModal, { allowDiscard: true }));
   el.pageModal?.addEventListener('click', (event) => {
-    if (event.target === el.pageModal) closeModal(el.pageModal);
+    if (event.target !== el.pageModal) return;
+    setModalFeedback(el.pageModal, 'El borrador sigue abierto. Usa Cancelar si quieres cerrarlo o descartarlo.');
+    el.modalPageKey?.focus();
   });
+  el.pageModalForm?.addEventListener('input', () => persistModalDraft(el.pageModal));
+  el.pageModalForm?.addEventListener('change', () => persistModalDraft(el.pageModal));
   el.pageModalForm?.addEventListener('submit', (event) => {
     event.preventDefault();
     createPageFromModal().catch((error) => {
-      showAlert(parseError(error, 'No se pudo crear la página.'), 'error', 6000);
+      setModalFeedback(el.pageModal, parseError(error, 'No se pudo crear la página.'));
     });
   });
 
-  el.newSection?.addEventListener('click', () => {
+  el.newSection?.addEventListener('click', (event) => {
     if (!state.selectedPageId) {
       showAlert('Selecciona una página primero.', 'error', 5000);
       return;
     }
-    resetSectionModal();
-    openModal(el.sectionModal);
-    el.modalSectionKey?.focus();
+    openEditorModal(el.sectionModal, event.currentTarget);
   });
 
-  el.sectionModalClose?.addEventListener('click', () => closeModal(el.sectionModal));
-  el.sectionModalCancel?.addEventListener('click', () => closeModal(el.sectionModal));
+  el.sectionModalClose?.addEventListener('click', () => requestCloseEditorModal(el.sectionModal));
+  el.sectionModalCancel?.addEventListener('click', () => requestCloseEditorModal(el.sectionModal, { allowDiscard: true }));
   el.sectionModal?.addEventListener('click', (event) => {
-    if (event.target === el.sectionModal) closeModal(el.sectionModal);
+    if (event.target !== el.sectionModal) return;
+    setModalFeedback(el.sectionModal, 'El borrador sigue abierto. Usa Cancelar si quieres cerrarlo o descartarlo.');
+    el.modalSectionKey?.focus();
   });
+  el.sectionModalForm?.addEventListener('input', () => persistModalDraft(el.sectionModal));
+  el.sectionModalForm?.addEventListener('change', () => persistModalDraft(el.sectionModal));
   el.sectionModalForm?.addEventListener('submit', (event) => {
     event.preventDefault();
     createSectionFromModal().catch((error) => {
-      showAlert(parseError(error, 'No se pudo crear la sección.'), 'error', 6000);
+      setModalFeedback(el.sectionModal, parseError(error, 'No se pudo crear la sección.'));
     });
+  });
+
+  el.confirmClose?.addEventListener('click', closeConfirmDialog);
+  el.confirmCancel?.addEventListener('click', closeConfirmDialog);
+  el.confirmSubmit?.addEventListener('click', () => {
+    runConfirmAction();
+  });
+  el.confirmModal?.addEventListener('click', (event) => {
+    if (event.target !== el.confirmModal) return;
+    setConfirmFeedback('La acción no se ejecutó. Usa Cancelar para cerrar esta confirmación.', 'info');
+    el.confirmSubmit?.focus();
   });
 }
 
@@ -1172,20 +1725,28 @@ async function boot() {
 }
 
 el.filter?.addEventListener('input', renderPages);
+PAGE_DRAFT_FIELDS.forEach((field) => {
+  el[field]?.addEventListener('input', persistPageDraft);
+  el[field]?.addEventListener('change', persistPageDraft);
+});
+el.sections?.addEventListener('input', (event) => {
+  const card = event.target instanceof Element ? event.target.closest('[data-section-id]') : null;
+  if (card) persistSectionDraft(card);
+});
+el.sections?.addEventListener('change', (event) => {
+  const card = event.target instanceof Element ? event.target.closest('[data-section-id]') : null;
+  if (card) persistSectionDraft(card);
+});
 el.pageSave?.addEventListener('click', () => {
   savePage().catch((error) => {
     showAlert(parseError(error, 'No se pudo guardar la página.'), 'error', 6000);
   });
 });
-el.pagePublish?.addEventListener('click', () => {
-  setPublishStatus('publish').catch((error) => {
-    showAlert(parseError(error, 'No se pudo publicar la página.'), 'error', 6000);
-  });
+el.pagePublish?.addEventListener('click', (event) => {
+  requestPublishAction('publish', event.currentTarget);
 });
-el.pageUnpublish?.addEventListener('click', () => {
-  setPublishStatus('unpublish').catch((error) => {
-    showAlert(parseError(error, 'No se pudo despublicar la página.'), 'error', 6000);
-  });
+el.pageUnpublish?.addEventListener('click', (event) => {
+  requestPublishAction('unpublish', event.currentTarget);
 });
 el.pagePreview?.addEventListener('click', () => {
   openPreview().catch((error) => {
@@ -1210,6 +1771,11 @@ el.mediaFile?.addEventListener('change', () => {
 });
 
 el.mediaDirectoryTrigger?.addEventListener('click', () => el.mediaDirectory?.click());
+el.mediaDropzone?.addEventListener('keydown', (event) => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  event.preventDefault();
+  el.mediaFile?.click();
+});
 el.mediaDirectory?.addEventListener('change', () => {
   state.mediaSelection = Array.from(el.mediaDirectory?.files || [])
     .filter(isSelectableMediaFile);
@@ -1236,10 +1802,11 @@ el.mediaDirectory?.addEventListener('change', () => {
   });
 });
 
-document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape') return;
-  closeModal(el.pageModal);
-  closeModal(el.sectionModal);
+document.addEventListener('keydown', handleDialogKeydown);
+window.addEventListener('beforeunload', (event) => {
+  if (!hasUnsavedEditorDrafts() && !modalHasDraft(el.pageModal) && !modalHasDraft(el.sectionModal)) return;
+  event.preventDefault();
+  event.returnValue = '';
 });
 
 setPageActionAvailability();

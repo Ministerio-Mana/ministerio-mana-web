@@ -14,6 +14,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const body = parseJsonBody(await request.text());
   const pageId = cleanText(body.page_id, 60);
   const action = String(body.action || '').toLowerCase();
+  const expectedUpdatedAt = cleanText(body.expected_updated_at, 60);
 
   if (!pageId || !['publish', 'unpublish'].includes(action)) {
     return jsonResponse({ ok: false, error: 'page_id y action (publish|unpublish) son obligatorios' }, 400);
@@ -31,6 +32,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (pageError || !pageBefore) {
     return jsonResponse({ ok: false, error: 'Página no encontrada' }, 404);
   }
+  if (expectedUpdatedAt && expectedUpdatedAt !== pageBefore.updated_at) {
+    return jsonResponse({
+      ok: false,
+      error: 'La página cambió mientras confirmabas. Recarga y revisa la versión más reciente antes de publicar.',
+    }, 409);
+  }
 
   const { data: updatedPage, error: updatePageError } = await supabaseAdmin
     .from('cms_pages')
@@ -43,11 +50,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       updated_by: auth.userId,
     })
     .eq('id', pageId)
+    .eq('updated_at', pageBefore.updated_at)
     .select('*')
-    .single();
+    .maybeSingle();
 
-  if (updatePageError || !updatedPage) {
+  if (updatePageError) {
     return jsonResponse({ ok: false, error: 'No se pudo actualizar estado de la página', details: updatePageError?.message }, 500);
+  }
+  if (!updatedPage) {
+    return jsonResponse({
+      ok: false,
+      error: 'La página cambió mientras confirmabas. Recarga y revisa la versión más reciente antes de publicar.',
+    }, 409);
   }
 
   const { error: sectionsError } = await supabaseAdmin
@@ -62,7 +76,26 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     .neq('status', 'archived');
 
   if (sectionsError) {
-    return jsonResponse({ ok: false, error: 'No se pudo actualizar estado de las secciones', details: sectionsError.message }, 500);
+    const { error: rollbackError } = await supabaseAdmin
+      .from('cms_pages')
+      .update({
+        status: pageBefore.status,
+        published_at: pageBefore.published_at,
+        published_by: pageBefore.published_by,
+        version: pageBefore.version,
+        updated_at: pageBefore.updated_at,
+        updated_by: pageBefore.updated_by,
+      })
+      .eq('id', pageId)
+      .eq('updated_at', updatedPage.updated_at);
+
+    return jsonResponse({
+      ok: false,
+      error: rollbackError
+        ? 'No se pudo completar la publicación y la página requiere revisión antes de reintentar.'
+        : 'No se pudo completar la publicación. La página volvió a su estado anterior; puedes reintentar.',
+      details: sectionsError.message,
+    }, 500);
   }
 
   await insertCmsRevision({

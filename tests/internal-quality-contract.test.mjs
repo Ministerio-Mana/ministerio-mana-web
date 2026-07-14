@@ -361,3 +361,50 @@ test('peticiones separa intercesión de moderación y protege cada decisión pas
   assert.match(prayersReviewApi, /La petición cambió mientras la revisabas/);
   assert.match(prayersReviewApi, /cache-control': 'private, no-store'/);
 });
+
+test('contenido editorial preserva borradores, evita colisiones y confirma cambios públicos', async () => {
+  const [contentView, contentLogic, pagesApi, sectionsApi, publishApi] = await Promise.all([
+    readSource('src/pages/portal/content.astro'),
+    readSource('src/scripts/portal-content.js'),
+    readSource('src/pages/api/portal/content/pages.ts'),
+    readSource('src/pages/api/portal/content/sections.ts'),
+    readSource('src/pages/api/portal/content/publish.ts'),
+  ]);
+
+  for (const id of ['cms-page-save', 'cms-page-publish', 'cms-page-unpublish', 'cms-page-preview', 'cms-section-new', 'cms-media-refresh']) {
+    assert.match(contentView, new RegExp(`id="${id}"[^>]*min-h-11`));
+  }
+  assert.match(contentView, /label for="cms-media-folder"/);
+  assert.match(contentView, /id="cms-media-dropzone"[^>]*tabindex="0"[^>]*role="button"/);
+  for (const id of ['cms-page-modal', 'cms-section-modal', 'cms-confirm-modal']) {
+    assert.match(contentView, new RegExp(`id="${id}"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-[^>]+aria-hidden="true"`));
+  }
+  for (const id of ['cms-page-modal-close', 'cms-section-modal-close', 'cms-confirm-close']) {
+    assert.match(contentView, new RegExp(`id="${id}"[^>]*(?:h-11 w-11|w-11[^>]*h-11)`));
+  }
+
+  assert.match(contentLogic, /window\.sessionStorage\.setItem/);
+  assert.match(contentLogic, /function restorePageDraft\(\)/);
+  assert.match(contentLogic, /function restoreSectionDrafts\(\)/);
+  assert.match(contentLogic, /state\.pageLoadRevision/);
+  assert.match(contentLogic, /state\.mediaLoadRevision/);
+  assert.match(contentLogic, /function handleDialogKeydown\(event\)/);
+  assert.match(contentLogic, /event\.key !== 'Tab'/);
+  assert.match(contentLogic, /window\.addEventListener\('beforeunload'/);
+  assert.match(contentLogic, /Sección archivada\. No se eliminó y puede restaurarse\./);
+  assert.match(contentLogic, /label: 'Deshacer'/);
+  assert.match(contentLogic, /Eliminar archivo de la biblioteca/);
+  assert.match(contentLogic, /Guarda primero los borradores locales/);
+  assert.doesNotMatch(contentLogic, /window\.(?:confirm|prompt|alert)/);
+
+  assert.match(pagesApi, /expected_updated_at/);
+  assert.match(pagesApi, /updateQuery\.eq\('updated_at', expectedUpdatedAt\)/);
+  assert.match(pagesApi, /\.maybeSingle\(\)/);
+  assert.match(pagesApi, /mientras la editabas[\s\S]*?409/);
+  assert.match(sectionsApi, /updateQuery\.eq\('updated_at', expectedUpdatedAt\)/);
+  assert.match(sectionsApi, /mientras la editabas[\s\S]*?409/);
+  assert.match(publishApi, /expectedUpdatedAt !== pageBefore\.updated_at/);
+  assert.match(publishApi, /\.eq\('updated_at', pageBefore\.updated_at\)/);
+  assert.match(publishApi, /rollbackError/);
+  assert.match(publishApi, /volvió a su estado anterior/);
+});
