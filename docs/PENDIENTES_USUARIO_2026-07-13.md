@@ -305,6 +305,7 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 - [ ] En `/portal/events`, abrir “Nuevo evento” y recorrer el formulario completo; luego abrir la operación de un evento y revisar documentos, filtros, inscritos y el diálogo de pago manual. Confirmar que ningún bloque se siente amontonado ni excesivamente separado.
 - [ ] En `/portal/finances`, revisar filtros, subtotales COP/USD, tabla en escritorio, tarjetas en celular y alertas de pago. Confirmar que sigue siendo fácil distinguir monedas, cuentas y acciones sin exceso de aire.
 - [ ] Abrir una invitación pública en `/eventos/[slug]` con arte horizontal, cuadrado y vertical; revisar portada, franja de datos, bloque de ayuda y formulario en celular y escritorio. Confirmar que el arte no se deforma y que el ritmo visual se siente natural.
+- [ ] Con una cuenta de prueba, recorrer `/portal/ingresar`, recuperación de contraseña, `/portal/registro` y un enlace real de `/portal/activar`. Confirmar que los errores conservan lo escrito, los correos llegan y ninguna cuenta real queda bloqueada.
 - [ ] Reportar cualquier pantalla donde el contenido se vea amontonado o demasiado separado; indicar ruta y captura. La migración se hará por módulo sin aceptar valores aislados nuevos.
 
 No necesitas ejecutar SQL para esta carta ni para el contrato de espaciado. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.

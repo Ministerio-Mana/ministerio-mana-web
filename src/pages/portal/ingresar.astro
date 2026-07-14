@@ -7,7 +7,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
   <div class="portal-auth-shell relative flex min-h-screen items-center justify-center overflow-x-hidden">
     <!-- Login Card -->
     <div id="login-card" class="relative z-10 w-full max-w-md">
-      <div class="portal-auth-card overflow-hidden bg-white p-7 md:p-10">
+      <div class="portal-auth-card overflow-hidden bg-white p-8 md:p-10">
         
         <header class="relative mb-8 text-center">
           <div class="inline-flex items-center justify-center mb-6">
@@ -15,7 +15,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
           </div>
           <h1 class="text-3xl font-display font-bold text-[#293C74] mb-2">Portal Maná</h1>
           <p class="text-slate-600 text-sm leading-relaxed">Bienvenido al portal de usuarios del Ministerio Maná.</p>
-          <a href="/" class="mt-3 inline-flex min-h-8 items-center gap-2 px-2 text-xs font-bold uppercase text-[#293C74]/80 hover:text-[#293C74]">
+          <a href="/" class="mt-4 inline-flex min-h-11 items-center gap-2 px-2 text-xs font-bold uppercase text-[#293C74]/80 hover:text-[#293C74]">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7 7-7" />
             </svg>
@@ -28,37 +28,37 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
           <form id="password-form" class="space-y-4">
             <div class="space-y-4">
               <div>
-                <label for="password-email" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Email</label>
-                <input type="email" id="password-email" required autocomplete="email" inputmode="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
+                <label for="password-email" class="mb-2 ml-2 block text-[10px] font-bold uppercase tracking-widest text-[#293C74]">Correo electrónico</label>
+                <input type="email" id="password-email" required autocomplete="email" inputmode="email" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-[#293C74]" placeholder="email@ejemplo.com">
               </div>
               <div>
-                <label for="login-password" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Contraseña</label>
+                <label for="login-password" class="mb-2 ml-2 block text-[10px] font-bold uppercase tracking-widest text-[#293C74]">Contraseña</label>
                 <div class="relative group">
                   <input 
                     type="password" 
                     id="login-password"
                     required
                     autocomplete="current-password"
-                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] placeholder-slate-500 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all pr-12" 
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 pr-12 text-[#293C74] outline-none transition-all placeholder-slate-500 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]"
                     placeholder="••••••••"
                   >
-                  <button type="button" id="toggle-password-view" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-[#293C74] transition-colors focus:outline-none">
+                  <button type="button" id="toggle-password-view" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#293C74]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                   </button>
                 </div>
               </div>
-              <button type="submit" id="btn-submit-password" class="w-full bg-[#293C74] text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all">
-                Iniciar Sesión
+              <button type="submit" id="btn-submit-password" class="min-h-11 w-full rounded-xl bg-[#293C74] px-6 py-4 font-bold text-white shadow-lg shadow-[#293C74]/20 transition-all hover:-translate-y-0.5">
+                Iniciar sesión
               </button>
               
-              <p class="mt-3 flex flex-wrap items-center justify-center gap-x-1 text-center text-xs text-slate-500">
+              <p class="mt-4 flex flex-wrap items-center justify-center gap-x-2 text-center text-xs text-slate-500">
                  ¿No tienes cuenta? 
-                 <a href="/portal/registro" class="inline-flex min-h-8 items-center font-bold text-[#293C74] hover:underline">Regístrate aquí</a>
+                 <a href="/portal/registro" class="inline-flex min-h-11 items-center font-bold text-[#293C74] hover:underline">Regístrate aquí</a>
               </p>
             </div>
             
             <div class="pt-2 text-center">
-               <button type="button" id="btn-toggle-magic" class="min-h-10 px-2 text-xs font-bold text-slate-600 hover:text-[#293C74] underline">
+               <button type="button" id="btn-toggle-magic" class="min-h-11 px-2 text-xs font-bold text-slate-600 underline hover:text-[#293C74]">
                  Olvidé mi contraseña (Restablecer)
                </button>
             </div>
@@ -71,19 +71,19 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
             </div>
           </div>
 
-          <div class="space-y-3">
-            <button type="button" id="btn-oauth-google" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group">
+          <div class="space-y-4">
+            <button type="button" id="btn-oauth-google" class="group flex min-h-11 w-full items-center justify-center gap-4 rounded-xl border border-slate-200 py-4 transition-all hover:bg-slate-50">
               <span class="h-8 w-8 rounded-full border border-slate-200 flex items-center justify-center text-sm font-bold text-[#293C74] bg-white">G</span>
               <span class="text-sm font-semibold text-slate-700 group-hover:text-[#293C74]">Continuar con Google</span>
             </button>
-            <button type="button" id="btn-oauth-facebook" class="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group">
+            <button type="button" id="btn-oauth-facebook" class="group flex min-h-11 w-full items-center justify-center gap-4 rounded-xl border border-slate-200 py-4 transition-all hover:bg-slate-50">
               <span class="h-8 w-8 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-sm font-bold text-[#1877F2]">f</span>
               <span class="text-sm font-semibold text-slate-700 group-hover:text-[#293C74]">Continuar con Facebook</span>
             </button>
           </div>
 
           <!-- Secondary Options -->
-           <button type="button" id="btn-passkey" class="hidden w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all group mb-4" title="Ingresar con FaceID / TouchID">
+           <button type="button" id="btn-passkey" class="group mb-4 hidden min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 py-4 transition-all hover:bg-slate-50" title="Ingresar con FaceID / TouchID">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400 group-hover:text-[#293C74]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.131A8 8 0 008 8m8.363 12.18c.201-.06.401-.123.6-.192" /></svg>
               <span class="text-xs font-bold text-slate-600 group-hover:text-[#293C74]">Ingresar con Passkey (Huella / Rostro)</span>
            </button>
@@ -101,28 +101,28 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
              <div>
                 <label for="magic-email" class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Correo Electrónico</label>
                 <input type="email" name="email" id="magic-email" required autocomplete="email" inputmode="email"
-                       class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-[#293C74] font-medium outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400"
+                       class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 font-medium text-[#293C74] outline-none transition-all placeholder-slate-400 focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]"
                        placeholder="tu@correo.com">
              </div>
              
-             <button type="submit" id="btn-submit-magic" class="w-full bg-white text-[#293C74] border border-[#293C74]/20 font-bold py-4 rounded-2xl hover:bg-[#293C74]/5 transition-all flex items-center justify-center gap-2 group">
+             <button type="submit" id="btn-submit-magic" class="group flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#293C74]/20 bg-white py-4 font-bold text-[#293C74] transition-all hover:bg-[#293C74]/5">
                 <span id="btn-text-magic">Enviar enlace de restablecimiento</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
              </button>
-             <button type="button" id="btn-cancel-magic" class="w-full text-center text-[10px] font-bold text-slate-400 hover:underline">Cancelar y volver a contraseña</button>
+             <button type="button" id="btn-cancel-magic" class="min-h-11 w-full text-center text-[10px] font-bold text-slate-500 hover:underline">Cancelar y volver a contraseña</button>
           </form>
 
         </div>
 
         <div id="login-status-container" class="hidden mt-6 text-center" role="status" aria-live="polite">
-           <div id="login-status-wrapper" class="inline-flex items-center gap-2 px-4 py-3 rounded-full">
+           <div id="login-status-wrapper" class="inline-flex items-center gap-2 rounded-full px-4 py-4">
               <span id="login-status-icon" class="w-2 h-2 rounded-full animate-ping"></span>
               <p id="login-status" class="text-sm font-semibold"></p>
            </div>
         </div>
 
         <footer class="mt-10 pt-6 border-t border-slate-100 text-center">
-          <a href="https://wa.me/573148297534" class="inline-flex min-h-8 items-center gap-2 px-2 text-slate-600 hover:text-[#293C74] transition-colors text-xs font-bold">
+          <a href="https://wa.me/573148297534" class="inline-flex min-h-11 items-center gap-2 px-2 text-xs font-bold text-slate-600 transition-colors hover:text-[#293C74]">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.855-1.246L3 20l1.246-4.855A9.863 9.863 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>

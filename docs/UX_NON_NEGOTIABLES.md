@@ -4,14 +4,14 @@ Fecha base: 13 de julio de 2026.
 
 Esta carta define el mínimo aceptable para páginas públicas, Portal, operaciones, pagos y herramientas internas de Ministerio Maná. Una excepción debe quedar documentada con motivo, responsable y fecha de revisión; no se aceptan excepciones silenciosas.
 
-## Aclaraciones de medición
+## Aclaraciones de medición — controles Q40-Q45
 
-- El objetivo interno para controles táctiles es **44 × 44 CSS px**. WCAG 2.2 nivel AA exige un mínimo de 24 × 24 px con excepciones; 44 × 44 px corresponde al criterio mejorado AAA. Ministerio Maná conserva 44 px como estándar propio para facilitar el uso a personas mayores.
-- La percepción de respuesta debe comenzar en menos de 100 ms cuando la acción pueda resolverse localmente. Las operaciones que dependen del servidor deben buscar respuesta visible en menos de 400 ms en el percentil 75 o mostrar progreso útil, conservar el trabajo y permitir recuperación.
-- La interfaz optimista se usa solo cuando la acción es reversible y de bajo riesgo. Pagos, permisos, aprobaciones financieras, eliminaciones definitivas y mensajes masivos requieren confirmación real del servidor.
-- `Deshacer` reemplaza confirmaciones únicamente en acciones reversibles. Lo irreversible o sensible requiere contexto, confirmación explícita y auditoría.
-- La paleta de comandos y los atajos son obligatorios en herramientas internas de uso frecuente cuando reduzcan trabajo repetitivo. No se agregan a páginas públicas sin una necesidad comprobada.
-- El funcionamiento local u offline se prioriza donde perder conectividad pueda hacer perder trabajo. No se replica información sensible en el dispositivo sin cifrado, expiración y una razón operativa.
+- **Q40 — Objetivo táctil:** el objetivo interno para controles táctiles es **44 × 44 CSS px**. WCAG 2.2 nivel AA exige un mínimo de 24 × 24 px con excepciones; 44 × 44 px corresponde al criterio mejorado AAA. Ministerio Maná conserva 44 px como estándar propio para facilitar el uso a personas mayores.
+- **Q41 — Umbral de respuesta:** la percepción de respuesta debe comenzar en menos de 100 ms cuando la acción pueda resolverse localmente. Las operaciones que dependen del servidor deben buscar respuesta visible en menos de 400 ms en el percentil 75 o mostrar progreso útil, conservar el trabajo y permitir recuperación.
+- **Q42 — Optimismo seguro:** la interfaz optimista se usa solo cuando la acción es reversible y de bajo riesgo. Pagos, permisos, aprobaciones financieras, eliminaciones definitivas y mensajes masivos requieren confirmación real del servidor.
+- **Q43 — Deshacer seguro:** `Deshacer` reemplaza confirmaciones únicamente en acciones reversibles. Lo irreversible o sensible requiere contexto, confirmación explícita y auditoría.
+- **Q44 — Alcance de atajos:** la paleta de comandos y los atajos son obligatorios en herramientas internas de uso frecuente cuando reduzcan trabajo repetitivo. No se agregan a páginas públicas sin una necesidad comprobada.
+- **Q45 — Trabajo sin conexión:** el funcionamiento local u offline se prioriza donde perder conectividad pueda hacer perder trabajo. No se replica información sensible en el dispositivo sin cifrado, expiración y una razón operativa.
 
 ## Fundamentos
 

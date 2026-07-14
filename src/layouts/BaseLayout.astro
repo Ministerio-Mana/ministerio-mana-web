@@ -55,18 +55,19 @@ if (supabaseUrl) {
     {!isPortalPath && <script src="/js/scroll-reveal.js" defer></script>}
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     {!hideHeader && <Header />}
-    <main class="min-h-[60vh]"><slot /></main>
+    <main id="main-content" tabindex="-1" class="min-h-[60vh]"><slot /></main>
     {!hideFooter && <Footer />}
 
     <!-- App Modal -->
-    <div id="app-modal" class="fixed inset-0 z-[999] hidden items-center justify-center">
-      <div id="app-modal-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div id="app-modal" role="dialog" aria-modal="true" aria-labelledby="app-modal-title" aria-hidden="true" class="fixed inset-0 z-[999] hidden items-center justify-center">
+      <div id="app-modal-overlay" aria-hidden="true" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
       <div class="relative z-10 w-[92%] max-w-lg rounded-2xl border border-white/10 bg-brand-navy/95 p-6 shadow-2xl">
-        <button id="app-modal-close" type="button" class="absolute right-4 top-4 text-white/60 hover:text-white text-xl leading-none">×</button>
+        <button id="app-modal-close" type="button" aria-label="Cerrar aviso" class="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-md text-xl leading-none text-white/70 hover:bg-white/10 hover:text-white">×</button>
         <h3 id="app-modal-title" class="text-xl font-bold text-white mb-2">Aviso</h3>
         <p id="app-modal-message" class="text-sm text-white/60 mb-4"></p>
-        <ul id="app-modal-list" class="hidden space-y-2 text-sm text-white/80 list-disc pl-5"></ul>
+        <ul id="app-modal-list" class="hidden space-y-2 pl-6 text-sm text-white/80 list-disc"></ul>
       </div>
     </div>
     
@@ -141,6 +142,17 @@ if (supabaseUrl) {
     )}
     {!hideFooter && <script src={devotionalFooterPlayerScript} nonce={cspNonce} defer></script>}
     <script type="module" src={appModalScript} nonce={cspNonce}></script>
+    <script>
+      const skipLink = document.querySelector('.skip-link');
+      const mainContent = document.getElementById('main-content');
+      skipLink?.addEventListener('click', (event) => {
+        if (!mainContent) return;
+        event.preventDefault();
+        mainContent.focus({ preventScroll: true });
+        mainContent.scrollIntoView({ block: 'start' });
+        window.history.replaceState(null, '', '#main-content');
+      });
+    </script>
     <script>
       import '@scripts/vercel-speed-insights.js';
     </script>

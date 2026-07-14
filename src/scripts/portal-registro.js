@@ -36,7 +36,7 @@ function showRegistrationResult(title, message, tone) {
     const heading = document.createElement('strong');
     heading.textContent = title;
     const detail = document.createElement('span');
-    detail.className = 'mt-1 block text-sm';
+    detail.className = 'mt-2 block text-sm';
     detail.textContent = message;
     statusEl.append(heading, detail);
     statusEl.classList.remove(

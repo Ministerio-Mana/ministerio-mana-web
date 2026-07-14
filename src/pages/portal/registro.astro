@@ -7,7 +7,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
   <div class="portal-auth-shell relative flex min-h-screen items-center justify-center overflow-x-hidden">
     <!-- Register Card -->
     <div id="register-card" class="relative z-10 w-full max-w-md">
-      <div class="portal-auth-card overflow-hidden bg-white p-7 md:p-10">
+      <div class="portal-auth-card overflow-hidden bg-white p-8 md:p-10">
         
         <header class="relative mb-8 text-center">
           <div class="inline-flex items-center justify-center mb-6">
@@ -18,30 +18,31 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
         </header>
 
         <form id="register-form" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
              <div>
-                <label for="reg-name" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Nombre</label>
-                <input type="text" id="reg-name" required autocomplete="given-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] text-sm" placeholder="Tu Nombre">
+                <label for="reg-name" class="mb-2 ml-2 block text-[10px] font-bold uppercase tracking-widest text-[#293C74]">Nombre</label>
+                <input type="text" id="reg-name" required autocomplete="given-name" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-[#293C74]" placeholder="Tu nombre">
              </div>
              <div>
-                <label for="reg-lastname" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Apellido</label>
-                <input type="text" id="reg-lastname" required autocomplete="family-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] text-sm" placeholder="Tu Apellido">
+                <label for="reg-lastname" class="mb-2 ml-2 block text-[10px] font-bold uppercase tracking-widest text-[#293C74]">Apellido</label>
+                <input type="text" id="reg-lastname" required autocomplete="family-name" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-[#293C74]" placeholder="Tu apellido">
              </div>
           </div>
 
           <div>
-            <label for="reg-email" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Email</label>
-            <input type="email" id="reg-email" required autocomplete="email" inputmode="email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74]" placeholder="email@ejemplo.com">
+            <label for="reg-email" class="mb-2 ml-2 block text-[10px] font-bold uppercase tracking-widest text-[#293C74]">Correo electrónico</label>
+            <input type="email" id="reg-email" required autocomplete="email" inputmode="email" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-[#293C74]" placeholder="email@ejemplo.com">
           </div>
 
           <div>
-             <label for="reg-password" class="block text-[10px] font-bold text-[#293C74] uppercase tracking-widest ml-1 mb-1">Contraseña</label>
+             <label for="reg-password" class="mb-2 ml-2 block text-[10px] font-bold uppercase tracking-widest text-[#293C74]">Contraseña</label>
              <div class="relative">
-                <input type="password" id="reg-password" required minlength="10" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] pr-12" placeholder="Mínimo 10 caracteres">
-                <button type="button" id="toggle-password-reg" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-[#293C74] transition-colors focus:outline-none">
+                <input type="password" id="reg-password" required minlength="10" autocomplete="new-password" aria-describedby="reg-password-help" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 pr-12 text-[#293C74]" placeholder="Mínimo 10 caracteres">
+                <button type="button" id="toggle-password-reg" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#293C74]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 </button>
              </div>
+             <p id="reg-password-help" class="mt-2 text-xs leading-relaxed text-slate-500">Usa al menos 10 caracteres y evita reutilizar una contraseña de otro servicio.</p>
           </div>
 
            <!-- Turnstile -->
@@ -49,7 +50,12 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
             <TurnstileWidget appearance="always" theme="light" />
            </div>
 
-          <button type="submit" id="btn-submit-register" class="w-full bg-[#293C74] text-white px-6 py-4 rounded-xl font-bold shadow-lg shadow-[#293C74]/20 hover:-translate-y-0.5 transition-all mt-4">
+          <div class="mt-4 text-xs leading-relaxed text-slate-500">
+            <p>Usaremos estos datos únicamente para crear y proteger tu cuenta.</p>
+            <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex min-h-11 items-center font-bold text-[#293C74] underline">Leer la política de privacidad</a>
+          </div>
+
+          <button type="submit" id="btn-submit-register" class="mt-4 min-h-11 w-full rounded-xl bg-[#293C74] px-6 py-4 font-bold text-white shadow-lg shadow-[#293C74]/20 transition-all hover:-translate-y-0.5">
             Registrarse
           </button>
         </form>
@@ -57,9 +63,9 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
         <div id="register-status" class="hidden mt-4 p-4 rounded-xl text-center text-sm font-bold" role="status" aria-live="polite"></div>
 
         <div class="mt-6 text-center border-t border-slate-100 pt-6">
-            <p class="flex flex-wrap items-center justify-center gap-x-1 text-xs text-slate-500">
+            <p class="flex flex-wrap items-center justify-center gap-x-2 text-xs text-slate-500">
                 ¿Ya tienes cuenta? 
-                <a href="/portal/ingresar" class="inline-flex min-h-8 items-center font-bold text-[#293C74] hover:underline">Iniciar Sesión</a>
+                <a href="/portal/ingresar" class="inline-flex min-h-11 items-center font-bold text-[#293C74] hover:underline">Iniciar sesión</a>
             </p>
         </div>
 

@@ -5,7 +5,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
 
 <BaseLayout title="Activa tu cuenta | Portal Maná" description="Configura tu contraseña para acceder al Portal Maná." hideHeader hideFooter includeTurnstile noindex>
   <div class="portal-auth-shell flex min-h-screen items-center justify-center">
-    <div class="portal-auth-card w-full max-w-md bg-white p-7 md:p-8">
+    <div class="portal-auth-card w-full max-w-md bg-white p-8 md:p-8">
       <header class="text-center mb-8">
         <img src="/images/cumbre/logo-ministerio-mana-teal.svg" alt="Ministerio Maná" class="h-16 w-auto mx-auto mb-4">
         <h1 class="text-2xl font-display font-bold text-[#293C74]">Activa tu cuenta</h1>
@@ -15,16 +15,16 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
       <div id="activate-guard" class="hidden mb-6 rounded-2xl border border-[#F2C94C]/30 bg-[#F2C94C]/10 p-4 text-sm text-[#7A5B00]">
         Abre el enlace que llegó a tu correo para activar tu cuenta. Si no lo ves, revisa la bandeja de spam o solicita un nuevo enlace desde el portal.
       </div>
-      <button id="activate-retry" type="button" class="hidden mb-6 w-full text-xs font-bold uppercase tracking-widest text-[#293C74] border border-[#293C74]/20 rounded-xl px-4 py-3 hover:bg-[#293C74]/5 transition">
+      <button id="activate-retry" type="button" class="mb-6 hidden min-h-11 w-full rounded-xl border border-[#293C74]/20 px-4 py-4 text-xs font-bold uppercase tracking-widest text-[#293C74] transition hover:bg-[#293C74]/5">
         Reintentar validación
       </button>
 
       <form id="activate-form" class="space-y-4">
         <div class="space-y-2">
-          <label for="password" class="block text-[10px] font-bold text-slate-600 uppercase tracking-widest ml-1">Nueva contraseña</label>
+          <label for="password" class="ml-2 block text-[10px] font-bold uppercase tracking-widest text-slate-600">Nueva contraseña</label>
           <div class="relative">
-            <input id="password" type="password" required minlength="10" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all pr-12" placeholder="Mínimo 10 caracteres">
-            <button type="button" id="toggle-password" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-[#293C74] transition-colors">
+            <input id="password" type="password" required minlength="10" autocomplete="new-password" aria-describedby="activate-password-help" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 pr-12 text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Mínimo 10 caracteres">
+            <button type="button" id="toggle-password" aria-label="Mostrar contraseña" aria-pressed="false" class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#293C74]">
               <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -34,12 +34,13 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
               </svg>
             </button>
           </div>
+          <p id="activate-password-help" class="text-xs leading-relaxed text-slate-500">Usa al menos 10 caracteres y evita reutilizar una contraseña de otro servicio.</p>
         </div>
         <div class="space-y-2">
-          <label for="password-confirm" class="block text-[10px] font-bold text-slate-600 uppercase tracking-widest ml-1">Confirmar contraseña</label>
+          <label for="password-confirm" class="ml-2 block text-[10px] font-bold uppercase tracking-widest text-slate-600">Confirmar contraseña</label>
           <div class="relative">
-            <input id="password-confirm" type="password" required minlength="10" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all pr-12" placeholder="Repite la contraseña">
-            <button type="button" id="toggle-password-confirm" aria-label="Mostrar confirmación de contraseña" aria-pressed="false" class="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-[#293C74] transition-colors">
+            <input id="password-confirm" type="password" required minlength="10" autocomplete="new-password" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-6 py-4 pr-12 text-[#293C74] outline-none transition-all focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74]" placeholder="Repite la contraseña">
+            <button type="button" id="toggle-password-confirm" aria-label="Mostrar confirmación de contraseña" aria-pressed="false" class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-[#293C74]">
               <svg id="eye-icon-confirm" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -56,7 +57,7 @@ import TurnstileWidget from '@components/TurnstileWidget.astro';
         </div>
 
         <div id="activate-status-container" class="hidden mt-4 text-center" role="status" aria-live="polite">
-          <div id="activate-status-wrapper" class="inline-flex items-center gap-2 px-4 py-3 rounded-full">
+          <div id="activate-status-wrapper" class="inline-flex items-center gap-2 rounded-full px-4 py-4">
             <span id="activate-status-icon" class="w-2 h-2 rounded-full animate-ping"></span>
             <p id="activate-status" class="text-sm font-semibold"></p>
           </div>

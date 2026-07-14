@@ -348,13 +348,13 @@ function showStatus(msg, type = 'loading') {
 
   // Update wrapper and text styles
   if (type === 'error') {
-    statusWrapper.className = 'inline-flex items-center gap-2 px-4 py-3 rounded-full bg-red-50 border border-red-200';
+    statusWrapper.className = 'inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-4';
     statusEl.className = 'text-sm font-semibold text-red-700';
   } else if (type === 'success') {
-    statusWrapper.className = 'inline-flex items-center gap-2 px-4 py-3 rounded-full bg-green-50 border border-green-200';
+    statusWrapper.className = 'inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-4';
     statusEl.className = 'text-sm font-semibold text-green-700';
   } else {
-    statusWrapper.className = 'inline-flex items-center gap-2 px-4 py-3 rounded-full bg-blue-50 border border-blue-200';
+    statusWrapper.className = 'inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-4';
     statusEl.className = 'text-sm font-semibold text-blue-700';
   }
 

@@ -1,12 +1,21 @@
 {
   "$strictFiles": [
+    "src/components/portal/Sidebar.astro",
+    "src/layouts/BaseLayout.astro",
+    "src/pages/portal/activar.astro",
     "src/pages/portal/events.astro",
     "src/pages/portal/events/[id].astro",
     "src/pages/portal/finances.astro",
+    "src/pages/portal/ingresar.astro",
+    "src/pages/portal/registro.astro",
     "src/pages/eventos/[slug].astro",
+    "src/scripts/app-modal.js",
+    "src/scripts/portal-activar.js",
     "src/scripts/portal-events.js",
     "src/scripts/portal-event-operation.js",
     "src/scripts/portal-finances.js",
+    "src/scripts/portal-ingresar.js",
+    "src/scripts/portal-registro.js",
     "src/styles/portal.css"
   ],
   "src/components/_root": {
@@ -40,7 +49,7 @@
     "cssMagicValue": 116
   },
   "src/components/portal": {
-    "tailwindOffScale": 187,
+    "tailwindOffScale": 140,
     "tailwindArbitrary": 0,
     "cssMagicValue": 1
   },
@@ -53,11 +62,6 @@
     "tailwindOffScale": 34,
     "tailwindArbitrary": 0,
     "cssMagicValue": 259
-  },
-  "src/layouts": {
-    "tailwindOffScale": 1,
-    "tailwindArbitrary": 0,
-    "cssMagicValue": 0
   },
   "src/lib": {
     "tailwindOffScale": 0,
@@ -150,7 +154,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 426,
+    "tailwindOffScale": 387,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
@@ -160,7 +164,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 410,
+    "tailwindOffScale": 403,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },

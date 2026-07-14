@@ -5,11 +5,11 @@ import PortalIcon from './PortalIcon.astro';
 <div class="flex h-full flex-col p-4 sm:p-6 lg:sticky lg:top-0 lg:h-screen">
     
     <!-- Mobile Header -->
-    <div class="mb-4 flex items-center justify-between px-1 lg:mb-8">
+    <div class="mb-4 flex items-center justify-between px-2 lg:mb-8">
         <div class="flex items-center gap-4">
             <img src="/images/cumbre/logo-ministerio-mana-blanco.svg" alt="Ministerio Maná" class="h-10 lg:h-12 w-auto">
             <div class="border-l border-white/20 pl-4">
-                <p class="mb-1 text-[10px] font-bold uppercase text-white/70">Portal Maná</p>
+                <p class="mb-2 text-[10px] font-bold uppercase text-white/70">Portal Maná</p>
                 <h2 class="text-xs font-display font-bold text-white">Panel General</h2>
             </div>
         </div>
@@ -21,73 +21,73 @@ import PortalIcon from './PortalIcon.astro';
 
     <!-- Collapsible Content -->
     <div id="sidebar-content" class="hidden h-full flex-col space-y-2 lg:flex">
-        <nav aria-label="Navegación del portal" class="max-h-[calc(100vh-11rem)] space-y-1 overflow-y-auto pr-1">
-        <a href="/portal" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="resumen">
+        <nav aria-label="Navegación del portal" class="max-h-[calc(100vh-11rem)] space-y-2 overflow-y-auto pr-2">
+        <a href="/portal" class="nav-link group flex min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10" data-tab="resumen">
             <PortalIcon name="layout-dashboard" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Resumen</span>
         </a>
-        <a href="/portal?tab=reservas" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="reservas">
+        <a href="/portal?tab=reservas" class="nav-link group flex min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10" data-tab="reservas">
             <PortalIcon name="calendar-check" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mis Eventos</span>
         </a>
-        <a href="/portal?tab=pagos" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="pagos">
+        <a href="/portal?tab=pagos" class="nav-link group flex min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10" data-tab="pagos">
             <PortalIcon name="receipt-text" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mis Aportes</span>
         </a>
-        <a href="/portal?tab=perfil" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="perfil">
+        <a href="/portal?tab=perfil" class="nav-link group flex min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10" data-tab="perfil">
             <PortalIcon name="circle-user-round" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Mi Perfil</span>
         </a>
         <!-- Eventos (Visible for ALL users - Cumbre registration) -->
-        <a href="/portal?tab=iglesia" class="nav-link group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10" data-tab="iglesia">
+        <a href="/portal?tab=iglesia" class="nav-link group flex min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10" data-tab="iglesia">
             <PortalIcon name="calendar-days" class="text-white/70 transition-colors group-hover:text-white" />
             <span id="nav-iglesia-label" class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Eventos</span>
         </a>
         <!-- Gestión de Eventos (Restricted - Pastors/Admins) -->
-        <a href="/portal/events" id="nav-link-events" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/events" id="nav-link-events" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="calendar-cog" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Gestión de Eventos</span>
         </a>
         <!-- Usuarios (Restricted - Pastors/Admins) -->
-        <a href="/portal/users" id="nav-link-users" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/users" id="nav-link-users" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="users" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Usuarios</span>
         </a>
-        <a href="/portal/regions" id="nav-link-regions" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/regions" id="nav-link-regions" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="map-pinned" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Regiones</span>
         </a>
         <!-- Campus Link (Campus Missionaries + Admins) -->
-        <a href="/portal/campus" id="nav-link-campus" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/campus" id="nav-link-campus" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="heart-handshake" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Campus</span>
         </a>
         <!-- Donaciones Link (Admins) -->
-        <a href="/portal/donations" id="nav-link-donations" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/donations" id="nav-link-donations" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="hand-coins" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Donaciones</span>
         </a>
-        <a href="/portal/peticiones" id="nav-link-prayers" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/peticiones" id="nav-link-prayers" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="messages-square" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Peticiones</span>
         </a>
         <!-- Finances Link (Admins/Pastors) -->
-        <a href="/portal/finances" id="nav-link-finances" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/finances" id="nav-link-finances" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="wallet-cards" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Finanzas</span>
         </a>
-        <a href="/portal/content" id="nav-link-content" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/content" id="nav-link-content" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="file-pen-line" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Contenido</span>
         </a>
-        <a href="/portal/integrations" id="nav-link-integrations" class="nav-link group hidden w-full items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-white/10">
+        <a href="/portal/integrations" id="nav-link-integrations" class="nav-link group hidden min-h-11 w-full items-center gap-4 rounded-md px-4 py-2 transition-colors hover:bg-white/10">
             <PortalIcon name="settings-2" class="text-white/70 transition-colors group-hover:text-white" />
             <span class="text-sm font-medium text-white/90 group-hover:text-white transition-colors">Integraciones</span>
         </a>
         </nav>
 
         <div class="mt-auto pt-6">
-        <button id="btn-logout" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-white/20 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors hover:bg-white/10 hover:text-white">
+        <button id="btn-logout" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-white/20 px-4 py-2 text-sm font-bold text-white/80 transition-colors hover:bg-white/10 hover:text-white">
             <PortalIcon name="log-out" size={18} />
             Cerrar sesión
         </button>
@@ -112,6 +112,12 @@ import PortalIcon from './PortalIcon.astro';
 
     toggleBtn?.addEventListener('click', () => {
         setMobileMenuOpen(content?.classList.contains('hidden'));
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || toggleBtn?.getAttribute('aria-expanded') !== 'true') return;
+        setMobileMenuOpen(false);
+        toggleBtn?.focus();
     });
 
     content?.querySelectorAll('a.nav-link').forEach((link) => {

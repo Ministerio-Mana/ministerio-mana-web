@@ -142,6 +142,28 @@ main {
 }
 
 @layer components {
+  .skip-link {
+    position: fixed;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: 1000;
+    min-height: 44px;
+    transform: translateY(calc(-100% - var(--space-4)));
+    border-radius: 0.5rem;
+    background: rgb(var(--mana-navy));
+    color: white;
+    font-weight: 700;
+    padding: var(--space-1) var(--space-2);
+    transition: transform 160ms ease;
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+    color: white;
+    outline: 3px solid rgb(var(--mana-teal));
+    outline-offset: 2px;
+  }
+
   .container-tight {
     @apply mx-auto max-w-6xl;
     padding-inline: var(--layout-gutter);

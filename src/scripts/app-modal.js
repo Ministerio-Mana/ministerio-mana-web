@@ -6,9 +6,17 @@ const modal = {
   message: document.getElementById('app-modal-message'),
   list: document.getElementById('app-modal-list'),
 };
+let modalReturnFocus = null;
+
+function getModalFocusableElements() {
+  if (!modal.root) return [];
+  return Array.from(modal.root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+    .filter((element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
+}
 
 function showModal({ title = 'Aviso', message = '', items = [] } = {}) {
   if (!modal.root) return;
+  modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   if (modal.title) modal.title.textContent = title;
   if (modal.message) {
     modal.message.textContent = message || '';
@@ -27,19 +35,47 @@ function showModal({ title = 'Aviso', message = '', items = [] } = {}) {
       modal.list.classList.add('hidden');
     }
   }
+  modal.root.setAttribute('aria-hidden', 'false');
   modal.root.classList.remove('hidden');
   modal.root.classList.add('flex');
+  queueMicrotask(() => modal.close?.focus());
 }
 
 function hideModal() {
   if (!modal.root) return;
+  modal.root.setAttribute('aria-hidden', 'true');
   modal.root.classList.add('hidden');
   modal.root.classList.remove('flex');
+  modalReturnFocus?.focus();
+  modalReturnFocus = null;
 }
 
 function attachModalEvents() {
   modal.close?.addEventListener('click', hideModal);
   modal.overlay?.addEventListener('click', hideModal);
+  document.addEventListener('keydown', (event) => {
+    if (!modal.root || modal.root.classList.contains('hidden')) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      hideModal();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getModalFocusableElements();
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 }
 
 function getLabelFromElement(el, form) {
@@ -75,23 +111,23 @@ function buildValidationMessage(el, form) {
   return `${label}: revisa este campo.`;
 }
 
-function handleFormValidation(event) {
-  const form = event.target;
-  if (!(form instanceof HTMLFormElement)) return;
-  if (form.dataset.skipValidation === 'true') return;
-  if (form.checkValidity()) return;
-
-  event.preventDefault();
-  event.stopImmediatePropagation();
-
-  const invalidFields = Array.from(form.querySelectorAll(':invalid')).filter((el) => {
+function getInvalidFields(form) {
+  return Array.from(form.querySelectorAll(':invalid')).filter((el) => {
     if (!el.willValidate) return false;
     if (el.disabled) return false;
     if (el.type === 'hidden') return false;
     return true;
   });
+}
 
-  invalidFields.forEach((el) => el.classList.add('input-error'));
+function presentFormValidation(form) {
+  const invalidFields = getInvalidFields(form);
+  if (invalidFields.length === 0) return;
+
+  invalidFields.forEach((el) => {
+    el.classList.add('input-error');
+    el.setAttribute('aria-invalid', 'true');
+  });
   const messages = invalidFields.map((el) => buildValidationMessage(el, form));
   const unique = Array.from(new Set(messages));
 
@@ -102,16 +138,38 @@ function handleFormValidation(event) {
   });
 }
 
+function handleFormValidation(event) {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  if (form.dataset.skipValidation === 'true') return;
+  if (form.checkValidity()) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  presentFormValidation(form);
+}
+
 function clearFieldError(event) {
   const target = event?.target;
   if (target?.classList?.contains('input-error')) {
     target.classList.remove('input-error');
+    target.removeAttribute('aria-invalid');
   }
 }
 
 function setupGlobalValidation() {
+  const scheduledForms = new WeakSet();
   document.addEventListener('invalid', (event) => {
     event.preventDefault();
+    const field = event.target;
+    const form = field?.form;
+    if (!(form instanceof HTMLFormElement) || form.dataset.skipValidation === 'true') return;
+    if (scheduledForms.has(form)) return;
+    scheduledForms.add(form);
+    queueMicrotask(() => {
+      scheduledForms.delete(form);
+      presentFormValidation(form);
+    });
   }, true);
 
   document.addEventListener('submit', handleFormValidation, true);
