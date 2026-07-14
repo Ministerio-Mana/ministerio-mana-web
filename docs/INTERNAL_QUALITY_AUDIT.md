@@ -38,7 +38,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Parcial avanzado: base productiva revisada y estados dinámicos corregidos; prueba con inscripciones pendiente |
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Parcial avanzado: lista y creación cumplen en producción; variación de roles y Finanzas pendiente |
 | 2 | `/portal/regions` | Jerarquía territorial y autorización | Cumple técnicamente en código y producción; mutaciones reales y variación por roles pendientes |
-| 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Auditoría funcional avanzada; cierre de los 45 pendiente |
+| 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Cumple técnicamente en código y producción; exportes y variación real por alcance pendientes |
 | 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Pendiente |
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Pendiente |
 | 3 | `/portal/peticiones` | Privacidad pastoral y acceso mínimo | Pendiente |
@@ -169,6 +169,27 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Crear, renombrar, desactivar y reactivar una región de prueba autorizada, comprobando el registro esperado sin alterar regiones reales.
 - Asignar y revocar un liderazgo regional de prueba; confirmar el cambio de rol principal y el alcance efectivo con esa cuenta.
 - Repetir acceso con administrador, pastor regional y colaborador regional para comprobar que solo admin y superadmin pueden administrar la jerarquía.
+
+## Registro de la fase 3 — `/portal/finances`
+
+### Evidencia implementada
+
+- La ruta mantiene un solo `h1`, secciones con `h2`, alcance financiero visible y estados anunciables de carga, error, vacío y paginación.
+- Filtros por período, fechas, cuenta/proveedor y moneda conservan COP y USD separados. Los exportes exigen una moneda explícita y no se ejecutaron durante QA.
+- COP se presenta sin decimales y USD con dos centavos. Se eliminó el acumulador interno de totales mixtos por categoría, incluso aunque no se mostraba en pantalla.
+- Una revisión de datos invalida respuestas antiguas de filtros y cargas paginadas; así una solicitud lenta no puede reemplazar una vista más reciente.
+- Aplicar o limpiar filtros bloquea envíos repetidos, conserva feedback y devuelve el foco al botón que inició la actualización.
+- Exportes, paginación, reintento y acciones de correo, WhatsApp y copiar mensaje tienen objetivo táctil mínimo de 44 px; los enlaces externos usan aislamiento de pestaña.
+- Tabla y alertas se adaptan a celular sin desplazamiento horizontal, y los montos, cuentas, estados y subtotales mantienen jerarquía separada.
+- El contrato automático de calidad interna suma trece verificaciones. Los archivos de Finanzas continúan estrictos respecto al contrato de espaciado.
+- Producción verificada en `ministeriomana.org`: 41 controles visibles a 390 px y 54 a 1280 px, con cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1`, ningún desbordamiento horizontal y cero errores de consola.
+- El filtro de solo USD mostró `$1,188.00` y COP en cero; después “Limpiar” restauró `COP y USD separados`. Ambos controles recuperaron el foco tras la carga.
+
+### Cierre humano requerido para `/portal/finances`
+
+- Descargar un CSV COP y otro USD con un período acotado; comprobar encabezados, alcance, moneda única y apertura correcta en Excel web.
+- Repetir con responsables global, nacional, regional y local para confirmar que interfaz, API y exportes entregan únicamente movimientos autorizados.
+- Abrir un único correo y WhatsApp de prueba desde una alerta autorizada, sin envío masivo, y revisar destinatario y texto antes de enviar.
 
 ## Regla de actualización
 
