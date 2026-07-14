@@ -255,3 +255,35 @@ test('finanzas separa monedas, respuestas tardías y controles operativos', asyn
   assert.match(financesLogic, /requestAnimationFrame\(\(\) => applyFiltersBtn\.focus\(\)\)/);
   assert.match(financesLogic, /requestAnimationFrame\(\(\) => clearFiltersBtn\.focus\(\)\)/);
 });
+
+test('donaciones separa proveedores, protege filtros y concilia Wompi con contexto', async () => {
+  const [donationsView, donationsLogic, donationsApi] = await Promise.all([
+    readSource('src/pages/portal/donations.astro'),
+    readSource('src/scripts/portal-donations.js'),
+    readSource('src/pages/api/portal/donations.ts'),
+  ]);
+
+  for (const id of ['donations-status', 'donations-domain', 'donations-page-size', 'donations-load-more']) {
+    assert.match(donationsView, new RegExp(`id="${id}"[^>]*min-h-11`));
+  }
+  assert.match(donationsView, /COP aprobado visible/);
+  assert.match(donationsView, /USD aprobado visible/);
+  assert.match(donationsView, /id="donations-sync-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="donations-sync-title"[^>]*aria-describedby="donations-sync-description"[^>]*aria-hidden="true"/);
+  assert.match(donationsView, /id="donations-sync-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar conciliación de Wompi"/);
+  assert.match(donationsView, /label for="donations-sync-transaction"/);
+  assert.match(donationsView, /No crea un cobro ni mueve dinero/);
+
+  assert.match(donationsLogic, /const fractionDigits = normalizedCurrency === 'USD' \? 2 : 0/);
+  assert.match(donationsLogic, /expectedCurrency = provider === 'WOMPI' \? 'COP' : provider === 'STRIPE' \? 'USD'/);
+  assert.match(donationsLogic, /data-sync-wompi[^>]+aria-label="Conciliar en Wompi/);
+  assert.match(donationsLogic, /requestRevision !== dataRevision \|\| requestAppendSequence !== appendSequence/);
+  assert.match(donationsLogic, /function getSyncModalFocusableElements\(\)/);
+  assert.match(donationsLogic, /event\.key === 'Escape'/);
+  assert.match(donationsLogic, /El formulario se conservó/);
+  assert.match(donationsLogic, /window\.addEventListener\('beforeunload'/);
+  assert.match(donationsLogic, /manualApprove/);
+  assert.doesNotMatch(donationsLogic, /window\.prompt/);
+
+  assert.match(donationsApi, /if \(domain\) \{[\s\S]*?El filtro por concepto todavía no está activo/);
+  assert.match(donationsApi, /applyFinanceScopeFilter\(query, financeContext\.access\)/);
+});

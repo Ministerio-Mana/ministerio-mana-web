@@ -15,6 +15,18 @@ const statCountEl = document.getElementById('donations-stat-count');
 const statCopEl = document.getElementById('donations-stat-cop');
 const statUsdEl = document.getElementById('donations-stat-usd');
 const scopeLabelEl = document.getElementById('donations-scope-label');
+const pageFeedbackEl = document.getElementById('donations-feedback');
+const syncModal = document.getElementById('donations-sync-modal');
+const syncForm = document.getElementById('donations-sync-form');
+const syncCloseBtn = document.getElementById('donations-sync-close');
+const syncCancelBtn = document.getElementById('donations-sync-cancel');
+const syncSubmitBtn = document.getElementById('donations-sync-submit');
+const syncManualSubmitBtn = document.getElementById('donations-sync-manual-submit');
+const syncReferenceEl = document.getElementById('donations-sync-reference');
+const syncTransactionEl = document.getElementById('donations-sync-transaction');
+const syncFeedbackEl = document.getElementById('donations-sync-feedback');
+const syncManualEl = document.getElementById('donations-sync-manual');
+const syncManualConfirmEl = document.getElementById('donations-sync-manual-confirm');
 let currentAuthHeaders = {};
 let paginationState = {
     page: 1,
@@ -28,6 +40,14 @@ let paginationState = {
 let loadedPageTotalsByCurrency = {};
 let financeSessionChecked = false;
 let canManageDonations = false;
+let dataRevision = 0;
+let appendSequence = 0;
+let pageFeedbackTimer = null;
+let syncInFlight = false;
+let syncState = {
+    reference: '',
+    trigger: null,
+};
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -88,10 +108,10 @@ function showLoadError(error) {
         : error?.message || 'Error al cargar donaciones.';
     loadingEl.className = 'py-12 text-center';
     loadingEl.innerHTML = `
-        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+        <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-4 py-4 text-red-700">
             <p class="font-bold mb-2">Error al cargar donaciones</p>
             <p class="text-sm">${escapeHtml(message)}</p>
-            <button type="button" id="btn-retry-donations" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+            <button type="button" id="btn-retry-donations" class="mt-4 min-h-11 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
                 Reintentar
             </button>
         </div>
@@ -102,10 +122,13 @@ function showLoadError(error) {
 }
 
 function formatCurrency(amount, currency) {
-    return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CO', {
+    const normalizedCurrency = String(currency || 'COP').toUpperCase();
+    const fractionDigits = normalizedCurrency === 'USD' ? 2 : 0;
+    return new Intl.NumberFormat(normalizedCurrency === 'USD' ? 'en-US' : 'es-CO', {
         style: 'currency',
-        currency: currency || 'COP',
-        maximumFractionDigits: 0,
+        currency: normalizedCurrency,
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
     }).format(Number(amount || 0));
 }
 
@@ -131,8 +154,24 @@ function statusBadge(status) {
         ? 'bg-red-100 text-red-700'
         : normalized === 'PENDING'
             ? 'bg-amber-100 text-amber-700'
-            : 'bg-green-100 text-green-700';
+            : normalized === 'PAID' || normalized === 'APPROVED'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-slate-100 text-slate-700';
     return `<span class="portal-chip ${color}">${label}</span>`;
+}
+
+function setPageFeedback(message = '', tone = 'success') {
+    if (!pageFeedbackEl) return;
+    if (pageFeedbackTimer) window.clearTimeout(pageFeedbackTimer);
+    pageFeedbackEl.textContent = message;
+    pageFeedbackEl.className = message
+        ? `rounded-xl border px-4 py-4 text-sm font-semibold ${tone === 'error'
+            ? 'border-red-200 bg-red-50 text-red-700'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`
+        : 'hidden rounded-xl border px-4 py-4 text-sm font-semibold';
+    if (message) {
+        pageFeedbackTimer = window.setTimeout(() => setPageFeedback(''), 8000);
+    }
 }
 
 function resetLoadedTotals() {
@@ -207,9 +246,11 @@ async function ensureFinanceAccess() {
     return true;
 }
 
-async function loadDonations({ append = false } = {}) {
+async function loadDonations({ append = false, restoreFocus = null } = {}) {
     const pageSize = Number(pageSizeEl?.value || paginationState.pageSize || 10);
     const page = append ? paginationState.page + 1 : 1;
+    const requestRevision = append ? dataRevision : ++dataRevision;
+    const requestAppendSequence = append ? ++appendSequence : ++appendSequence;
 
     if (!append) {
         resetLoadedTotals();
@@ -259,13 +300,17 @@ async function loadDonations({ append = false } = {}) {
             throw new Error(data.error || 'No se pudieron cargar las donaciones');
         }
 
+        if (requestRevision !== dataRevision || requestAppendSequence !== appendSequence) return;
+
         if (scopeLabelEl) scopeLabelEl.textContent = scopeLabel(data.financeScope);
         renderDonations(data.donations || [], data.stats || {}, data.pagination || {}, { append });
     } catch (error) {
+        if (requestRevision !== dataRevision || requestAppendSequence !== appendSequence) return;
         console.error('[portal-donations] error', error);
         if (append) {
             setLoadMoreState(false);
             if (loadMoreBtn) loadMoreBtn.textContent = 'Reintentar carga';
+            setPageFeedback(error?.message || 'No se pudo cargar la siguiente página.', 'error');
         } else {
             if (financeSessionChecked) {
                 showSecureContent();
@@ -274,6 +319,10 @@ async function loadDonations({ append = false } = {}) {
                 showGate(error?.message || 'No se pudieron validar permisos.');
             }
         }
+    } finally {
+        if (requestRevision === dataRevision && requestAppendSequence === appendSequence && restoreFocus?.isConnected) {
+            window.requestAnimationFrame(() => restoreFocus.focus());
+        }
     }
 }
 
@@ -281,32 +330,39 @@ function donationRowsHtml(donations) {
     return donations.map((donation) => {
         const contact = [donation.donor_email, donation.donor_phone].filter(Boolean).join(' · ');
         const recurring = donation.is_recurring ? '<span class="portal-chip ml-2 bg-teal-50 text-teal-800">Recurrente</span>' : '';
+        const provider = String(donation.provider || '').toUpperCase();
+        const currency = String(donation.currency || 'COP').toUpperCase();
+        const expectedCurrency = provider === 'WOMPI' ? 'COP' : provider === 'STRIPE' ? 'USD' : null;
+        const currencyMismatch = expectedCurrency && currency !== expectedCurrency
+            ? '<span class="portal-chip mt-2 bg-red-100 text-red-700">Revisar moneda</span>'
+            : '';
         const reference = donation.reference
-            ? `<p class="text-[11px] text-slate-400 mt-1">Ref: ${escapeHtml(donation.reference)}</p>`
+            ? `<p class="mt-2 text-xs text-slate-400">Ref: ${escapeHtml(donation.reference)}</p>`
             : '';
         const canSyncWompi = canManageDonations
             && String(donation.provider || '').toLowerCase() === 'wompi'
             && String(donation.status || '').toUpperCase() === 'PENDING'
             && donation.reference;
         const syncAction = canSyncWompi
-            ? `<button class="mt-2 min-h-10 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
+            ? `<button type="button" class="mt-2 min-h-11 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100" data-sync-wompi="${escapeHtml(donation.reference)}" aria-label="Conciliar en Wompi la referencia ${escapeHtml(donation.reference)}">Sincronizar Wompi</button>`
             : '';
 
         return `
             <tr>
-                <td data-label="Fecha" class="py-3 pl-2 align-top">${formatDate(donation.created_at)}</td>
-                <td data-label="Concepto" class="py-3 align-top">
+                <td data-label="Fecha" class="py-4 pl-2 align-top">${formatDate(donation.created_at)}</td>
+                <td data-label="Concepto" class="py-4 align-top">
                     <p class="font-semibold text-[#293C74]">${escapeHtml(donation.concept_label || 'Otros')}${recurring}</p>
-                    <p class="text-[11px] text-slate-400 uppercase">${escapeHtml(donation.provider || '')}</p>
+                    <p class="text-xs text-slate-400 uppercase">${escapeHtml(provider || 'SIN PROVEEDOR')} · ${escapeHtml(currency)}</p>
+                    ${currencyMismatch}
                 </td>
-                <td data-label="Destino" class="py-3 align-top">
+                <td data-label="Destino" class="py-4 align-top">
                     <p class="font-medium text-slate-700">${escapeHtml(donation.destination || '-')}</p>
                     ${reference}
                 </td>
-                <td data-label="Donante" class="py-3 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
-                <td data-label="Contacto" class="py-3 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
-                <td data-label="Estado" class="py-3 align-top">${statusBadge(donation.status)}${syncAction}</td>
-                <td data-label="Monto" class="py-3 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
+                <td data-label="Donante" class="py-4 align-top">${escapeHtml(donation.donor_name || 'Anónimo')}</td>
+                <td data-label="Contacto" class="py-4 align-top text-slate-500">${escapeHtml(contact || '-')}</td>
+                <td data-label="Estado" class="py-4 align-top">${statusBadge(donation.status)}${syncAction}</td>
+                <td data-label="Monto" class="py-4 align-top text-right font-bold pr-2">${formatCurrency(donation.amount, donation.currency)}</td>
             </tr>
         `;
     }).join('');
@@ -351,72 +407,211 @@ function renderDonations(donations, stats, pagination, { append = false } = {}) 
     if (tableEl) tableEl.classList.remove('hidden');
 }
 
+function getSyncModalFocusableElements() {
+    if (!syncModal) return [];
+    return Array.from(syncModal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]'))
+        .filter((element) => element.offsetParent !== null && !element.classList.contains('hidden') && element.getAttribute('aria-hidden') !== 'true');
+}
+
+function setSyncFeedback(message = '', tone = 'neutral') {
+    if (!syncFeedbackEl) return;
+    syncFeedbackEl.textContent = message;
+    syncFeedbackEl.className = `min-h-6 text-sm font-semibold ${tone === 'error'
+        ? 'text-red-700'
+        : tone === 'success'
+            ? 'text-emerald-700'
+            : 'text-slate-600'}`;
+}
+
+function resetManualApproval() {
+    syncManualEl?.classList.add('hidden');
+    syncManualSubmitBtn?.classList.add('hidden');
+    if (syncManualConfirmEl) syncManualConfirmEl.checked = false;
+    if (syncManualSubmitBtn) syncManualSubmitBtn.disabled = true;
+}
+
+function setSyncBusy(isBusy) {
+    syncInFlight = isBusy;
+    if (syncSubmitBtn) {
+        syncSubmitBtn.disabled = isBusy;
+        syncSubmitBtn.textContent = isBusy ? 'Consultando...' : 'Consultar estado';
+    }
+    if (syncManualSubmitBtn) syncManualSubmitBtn.disabled = isBusy || !syncManualConfirmEl?.checked;
+    if (syncTransactionEl) syncTransactionEl.disabled = isBusy;
+    if (syncCloseBtn) syncCloseBtn.disabled = isBusy;
+    if (syncCancelBtn) syncCancelBtn.disabled = isBusy;
+}
+
+function openSyncModal(reference, trigger) {
+    if (!syncModal || !reference) return;
+    syncState = { reference, trigger };
+    if (syncReferenceEl) syncReferenceEl.textContent = reference;
+    if (syncTransactionEl) syncTransactionEl.value = '';
+    resetManualApproval();
+    setSyncFeedback('Revisa la referencia antes de consultar.');
+    syncModal.classList.remove('hidden');
+    syncModal.classList.add('flex');
+    syncModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('overflow-hidden');
+    window.requestAnimationFrame(() => syncTransactionEl?.focus());
+}
+
+function syncModalHasInput() {
+    return Boolean(syncTransactionEl?.value.trim());
+}
+
+function closeSyncModal({ restoreFocus = true, force = false } = {}) {
+    if (!syncModal || (syncInFlight && !force)) return;
+    syncModal.classList.add('hidden');
+    syncModal.classList.remove('flex');
+    syncModal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('overflow-hidden');
+    const trigger = syncState.trigger;
+    syncState = { reference: '', trigger: null };
+    resetManualApproval();
+    setSyncFeedback('');
+    if (restoreFocus && trigger?.isConnected) window.requestAnimationFrame(() => trigger.focus());
+}
+
+function requestCloseSyncModal() {
+    if (syncInFlight) return;
+    if (syncModalHasInput() && !window.confirm('Hay un ID de transacción escrito. ¿Quieres descartarlo y cerrar?')) return;
+    closeSyncModal();
+}
+
+function handleSyncModalKeydown(event) {
+    if (!syncModal || syncModal.getAttribute('aria-hidden') === 'true') return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        if (syncModalHasInput()) {
+            setSyncFeedback('El formulario se conservó. Usa Cancelar o el botón de cierre si quieres descartarlo.', 'error');
+            syncCloseBtn?.focus();
+            return;
+        }
+        closeSyncModal();
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getSyncModalFocusableElements();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+function revealManualApproval(message) {
+    syncManualEl?.classList.remove('hidden');
+    syncManualSubmitBtn?.classList.remove('hidden');
+    setSyncFeedback(message, 'error');
+    if (!syncTransactionEl?.value.trim()) syncTransactionEl?.focus();
+    else syncManualConfirmEl?.focus();
+}
+
+async function reconcileWompi({ manualApprove = false } = {}) {
+    if (syncInFlight || !syncState.reference) return;
+    const transactionId = syncTransactionEl?.value.trim() || '';
+    if (manualApprove && !transactionId) {
+        setSyncFeedback('Escribe el ID de transacción antes de aprobar manualmente.', 'error');
+        syncTransactionEl?.focus();
+        return;
+    }
+    if (manualApprove && !syncManualConfirmEl?.checked) {
+        setSyncFeedback('Confirma que verificaste el pago directamente en Wompi.', 'error');
+        syncManualConfirmEl?.focus();
+        return;
+    }
+
+    setSyncBusy(true);
+    setSyncFeedback(manualApprove ? 'Registrando la verificación manual...' : 'Consultando el estado oficial en Wompi...');
+    try {
+        const { response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
+            method: 'POST',
+            headers: {
+                ...currentAuthHeaders,
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                reference: syncState.reference,
+                transactionId: transactionId || undefined,
+                manualApprove,
+            }),
+        }, REQUEST_TIMEOUT_MS, 'La conciliación con Wompi');
+
+        if (!response.ok || !payload?.ok) {
+            if (payload?.code === 'TRANSACTION_ID_REQUIRED') {
+                setSyncFeedback(payload.error || 'Escribe el ID de transacción de Wompi.', 'error');
+                syncTransactionEl?.focus();
+                return;
+            }
+            if (payload?.code === 'WOMPI_LOOKUP_FAILED' && payload?.manualAvailable) {
+                revealManualApproval(payload.error || 'Wompi no respondió. Verifica el pago antes de una aprobación manual.');
+                return;
+            }
+            throw new Error(payload?.error || 'No se pudo conciliar la donación.');
+        }
+
+        const reference = syncState.reference;
+        closeSyncModal({ restoreFocus: false, force: true });
+        setPageFeedback(`La referencia ${reference} quedó conciliada sin generar un cobro.`);
+        await loadDonations({ append: false, restoreFocus: statusEl });
+    } catch (error) {
+        console.error('[portal-donations] sync error', error);
+        setSyncFeedback(error?.message || 'No se pudo conciliar la donación.', 'error');
+    } finally {
+        setSyncBusy(false);
+    }
+}
+
 function bindSyncButtons() {
     document.querySelectorAll('[data-sync-wompi]').forEach((button) => {
         if (button.dataset.syncBound === '1') return;
         button.dataset.syncBound = '1';
-        button.addEventListener('click', async () => {
+        button.addEventListener('click', () => {
             const reference = button.getAttribute('data-sync-wompi');
-            if (!reference) return;
-
-            button.textContent = 'Sincronizando...';
-            button.setAttribute('disabled', 'disabled');
-            try {
-                let { response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
-                    method: 'POST',
-                    headers: {
-                        ...currentAuthHeaders,
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({ reference }),
-                }, REQUEST_TIMEOUT_MS, 'La sincronización con Wompi');
-                if (!response.ok && payload?.code === 'TRANSACTION_ID_REQUIRED') {
-                    const transactionId = window.prompt('Pega el ID de transacción de Wompi para esta referencia.');
-                    if (!transactionId) throw new Error(payload.error || 'ID de transacción requerido');
-                    ({ response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
-                        method: 'POST',
-                        headers: {
-                            ...currentAuthHeaders,
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({ reference, transactionId }),
-                    }, REQUEST_TIMEOUT_MS, 'La sincronización con Wompi'));
-                }
-                if (!response.ok && payload?.code === 'WOMPI_LOOKUP_FAILED' && payload?.manualAvailable) {
-                    const transactionId = window.prompt('No pude consultar Wompi automáticamente. Si en Wompi está aprobada, pega nuevamente el ID de transacción para marcarla aprobada manualmente.');
-                    if (!transactionId) throw new Error(payload.error || 'No se pudo consultar Wompi');
-                    ({ response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
-                        method: 'POST',
-                        headers: {
-                            ...currentAuthHeaders,
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({ reference, transactionId, manualApprove: true }),
-                    }, REQUEST_TIMEOUT_MS, 'La sincronización con Wompi'));
-                }
-                if (!response.ok || !payload.ok) {
-                    throw new Error(payload.error || 'No se pudo sincronizar');
-                }
-                await loadDonations({ append: false });
-            } catch (error) {
-                console.error('[portal-donations] sync error', error);
-                button.textContent = 'Error al sincronizar';
-                setTimeout(() => {
-                    button.textContent = 'Sincronizar Wompi';
-                    button.removeAttribute('disabled');
-                }, 2000);
-            }
+            if (reference) openSyncModal(reference, button);
         });
     });
 }
 
-statusEl?.addEventListener('change', () => loadDonations({ append: false }));
-domainEl?.addEventListener('change', () => loadDonations({ append: false }));
-pageSizeEl?.addEventListener('change', () => loadDonations({ append: false }));
-loadMoreBtn?.addEventListener('click', () => loadDonations({ append: true }));
+function handleFilterChange(control) {
+    setPageFeedback('');
+    void loadDonations({ append: false, restoreFocus: control });
+}
+
+statusEl?.addEventListener('change', () => handleFilterChange(statusEl));
+domainEl?.addEventListener('change', () => handleFilterChange(domainEl));
+pageSizeEl?.addEventListener('change', () => handleFilterChange(pageSizeEl));
+loadMoreBtn?.addEventListener('click', () => loadDonations({ append: true, restoreFocus: loadMoreBtn }));
+syncForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void reconcileWompi();
+});
+syncManualSubmitBtn?.addEventListener('click', () => void reconcileWompi({ manualApprove: true }));
+syncManualConfirmEl?.addEventListener('change', () => {
+    if (syncManualSubmitBtn) syncManualSubmitBtn.disabled = syncInFlight || !syncManualConfirmEl.checked;
+});
+syncCloseBtn?.addEventListener('click', requestCloseSyncModal);
+syncCancelBtn?.addEventListener('click', requestCloseSyncModal);
+syncModal?.addEventListener('keydown', handleSyncModalKeydown);
+syncModal?.addEventListener('click', (event) => {
+    if (event.target === syncModal) {
+        setSyncFeedback('La conciliación sigue abierta para evitar un cierre accidental. Usa Cancelar para salir.');
+    }
+});
+
+window.addEventListener('beforeunload', (event) => {
+    if (syncModal?.getAttribute('aria-hidden') === 'false' && syncModalHasInput()) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     showGate();

@@ -5,6 +5,7 @@
     "src/pages/portal/activar.astro",
     "src/pages/portal/events.astro",
     "src/pages/portal/events/[id].astro",
+    "src/pages/portal/donations.astro",
     "src/pages/portal/finances.astro",
     "src/pages/portal/ingresar.astro",
     "src/pages/portal/regions.astro",
@@ -14,6 +15,7 @@
     "src/scripts/portal-activar.js",
     "src/scripts/portal-events.js",
     "src/scripts/portal-event-operation.js",
+    "src/scripts/portal-donations.js",
     "src/scripts/portal-finances.js",
     "src/scripts/portal-ingresar.js",
     "src/scripts/portal-regions.js",
@@ -156,7 +158,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 341,
+    "tailwindOffScale": 328,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
@@ -166,7 +168,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 381,
+    "tailwindOffScale": 371,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },

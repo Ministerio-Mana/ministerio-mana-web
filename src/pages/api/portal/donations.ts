@@ -173,6 +173,15 @@ export const GET: APIRoute = async ({ request }) => {
         headers: { 'content-type': 'application/json' },
       });
     }
+    if (domain) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'El filtro por concepto todavía no está activo. Ejecuta la migración de conceptos financieros.',
+      }), {
+        status: 503,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
     let fallbackQuery = db
       .from('donations')
       .select(fallbackFields, { count: 'exact' })
@@ -187,7 +196,10 @@ export const GET: APIRoute = async ({ request }) => {
 
   if (result.error) {
     console.error('[portal.donations] error', result.error);
-    return new Response(JSON.stringify({ ok: false, error: 'Error loading donations' }), { status: 500 });
+    return new Response(JSON.stringify({ ok: false, error: 'No se pudieron cargar las donaciones.' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   const donations = (result.data || []).map(toClientRow);
