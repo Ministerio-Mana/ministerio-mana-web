@@ -1,0 +1,162 @@
+{
+  "src/components/_root": {
+    "tailwindOffScale": 50,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 199
+  },
+  "src/components/campus": {
+    "tailwindOffScale": 45,
+    "tailwindArbitrary": 4,
+    "cssMagicValue": 3
+  },
+  "src/components/cms": {
+    "tailwindOffScale": 16,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/components/cumbre2026": {
+    "tailwindOffScale": 84,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 3
+  },
+  "src/components/events": {
+    "tailwindOffScale": 3,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/components/home": {
+    "tailwindOffScale": 21,
+    "tailwindArbitrary": 2,
+    "cssMagicValue": 116
+  },
+  "src/components/portal": {
+    "tailwindOffScale": 187,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 1
+  },
+  "src/components/primicias": {
+    "tailwindOffScale": 52,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/components/ven-ayudanos": {
+    "tailwindOffScale": 34,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 259
+  },
+  "src/layouts": {
+    "tailwindOffScale": 1,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/lib": {
+    "tailwindOffScale": 0,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 20
+  },
+  "src/pages/_root": {
+    "tailwindOffScale": 41,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 90
+  },
+  "src/pages/admin": {
+    "tailwindOffScale": 59,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/api": {
+    "tailwindOffScale": 1,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 21
+  },
+  "src/pages/biblia": {
+    "tailwindOffScale": 13,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/campus": {
+    "tailwindOffScale": 25,
+    "tailwindArbitrary": 4,
+    "cssMagicValue": 25
+  },
+  "src/pages/cumbre2026": {
+    "tailwindOffScale": 3,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/devocional": {
+    "tailwindOffScale": 0,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 17
+  },
+  "src/pages/donaciones": {
+    "tailwindOffScale": 11,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/escuela-biblica": {
+    "tailwindOffScale": 9,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/evangeliza": {
+    "tailwindOffScale": 1,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/eventos": {
+    "tailwindOffScale": 152,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 152
+  },
+  "src/pages/galeria": {
+    "tailwindOffScale": 18,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 1
+  },
+  "src/pages/iglesias": {
+    "tailwindOffScale": 24,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 3
+  },
+  "src/pages/mujeres": {
+    "tailwindOffScale": 13,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/noticias": {
+    "tailwindOffScale": 1,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/peregrinaciones": {
+    "tailwindOffScale": 0,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 268
+  },
+  "src/pages/plan-lectura": {
+    "tailwindOffScale": 1,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/pages/portal": {
+    "tailwindOffScale": 562,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 15
+  },
+  "src/pages/primicias": {
+    "tailwindOffScale": 3,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/scripts": {
+    "tailwindOffScale": 476,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 0
+  },
+  "src/styles": {
+    "tailwindOffScale": 0,
+    "tailwindArbitrary": 0,
+    "cssMagicValue": 19
+  }
+}

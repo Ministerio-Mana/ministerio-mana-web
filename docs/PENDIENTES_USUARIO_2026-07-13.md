@@ -299,4 +299,9 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 - **Parcial:** accesibilidad integral, tokens y escala tipográfica, recuperación universal de formularios, internacionalización completa, tablas homogéneas y privacidad autoservicio.
 - **Pendiente de construir o medir:** paleta de comandos, vistas guardadas/densidad, presupuesto p75, restauración probada con RPO/RTO y auditoría WCAG 2.2 AA completa.
 
-No necesitas ejecutar SQL para esta carta. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.
+### Revisión visual del contrato de espaciado
+
+- [ ] Después del próximo despliegue, revisar en celular y escritorio los botones, badges, tarjetas y gutters compartidos. Confirmar que el ritmo de múltiplos de 8 se siente cómodo y no demasiado amplio, especialmente para pastores mayores.
+- [ ] Reportar cualquier pantalla donde el contenido se vea amontonado o demasiado separado; indicar ruta y captura. La migración se hará por módulo sin aceptar valores aislados nuevos.
+
+No necesitas ejecutar SQL para esta carta ni para el contrato de espaciado. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.

@@ -20,13 +20,6 @@
 
 ## Ready
 
-- MANA-025 Carta de calidad y auditoría UX transversal
-  - Owner: Equipo web
-  - Branch: `main`
-  - Scope: sistema visual, accesibilidad, rendimiento, formularios, navegación, datos, privacidad, resiliencia y seguridad percibida
-  - Description: Convertir los no negociables del producto en criterios medibles, pruebas de aceptación y una auditoría gradual sin romper flujos operativos existentes.
-  - Status: Carta base consolidada en `docs/UX_NON_NEGOTIABLES.md`; decisiones del usuario registradas en el inventario de pendientes. Después se audita por módulo y se corrige por prioridad/riesgo.
-
 - MANA-011 Revisión en vivo del constructor de formularios de Eventos
   - Owner: Usuario
   - Scope: `/portal/events` y página pública del evento
@@ -42,6 +35,13 @@
 ---
 
 ## In Progress
+- MANA-025 Carta de calidad y auditoría UX transversal
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: sistema visual, accesibilidad, rendimiento, formularios, navegación, datos, privacidad, resiliencia y seguridad percibida
+  - Description: Convertir los no negociables del producto en criterios medibles, pruebas de aceptación y una auditoría gradual sin romper flujos operativos existentes.
+  - Status: Carta base consolidada. Contrato de espaciado base 8, tokens semánticos y control automático de deuda implementados; en curso migración visual por módulos, comenzando por componentes compartidos y Portal/Eventos.
+
 - MANA-021 Revisión visual y móvil de páginas públicas
   - Owner: Equipo web
   - Branch: `main`

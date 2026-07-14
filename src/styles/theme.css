@@ -18,6 +18,31 @@
   --mana-border: rgb(var(--mana-sky) / 0.62);
   --mana-border-strong: rgb(var(--mana-teal-2) / 0.38);
 
+  /*
+   * Contrato de espaciado: base 8 px.
+   * Los nombres expresan pasos de la escala, no valores libres.
+   */
+  --space-0: 0;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+  --space-5: 2.5rem;
+  --space-6: 3rem;
+  --space-8: 4rem;
+  --space-10: 5rem;
+  --space-12: 6rem;
+  --space-14: 7rem;
+  --space-16: 8rem;
+
+  /* Espaciado semántico para que los layouts no repitan valores. */
+  --layout-gutter: clamp(var(--space-2), 4vw, var(--space-4));
+  --layout-section-y: clamp(var(--space-6), 8vw, var(--space-12));
+  --layout-stack-sm: var(--space-1);
+  --layout-stack-md: var(--space-2);
+  --layout-stack-lg: var(--space-3);
+  --layout-grid-gap: var(--space-3);
+
   /* Gradiente principal */
   --mana-gradient: linear-gradient(135deg,
       rgb(var(--mana-navy)) 0%,

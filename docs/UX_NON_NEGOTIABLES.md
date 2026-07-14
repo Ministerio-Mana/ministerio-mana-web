@@ -15,7 +15,7 @@ Esta carta define el mínimo aceptable para páginas públicas, Portal, operacio
 
 ## Fundamentos
 
-1. **Espacio y rejilla:** una escala base de 8 —8, 16, 24 y 32— con tokens desde el inicio. Un valor excepcional necesita nombre y justificación.
+1. **Espacio y rejilla:** una escala base de 8 —preferentemente 8, 16, 24 y 32; siempre múltiplos de 8— con tokens desde el inicio. Un valor excepcional necesita nombre y justificación. El contrato ejecutable está en [`docs/SPACING_CONTRACT.md`](./SPACING_CONTRACT.md).
 2. **Tipografía:** entre cuatro y seis tamaños funcionales, interlineado legible, líneas de 45 a 75 caracteres y ningún párrafo completo en mayúsculas.
 3. **Color:** paleta limitada, un acento dominante, colores semánticos y contraste WCAG 2.2 AA. El color nunca comunica estado por sí solo.
 4. **Jerarquía:** el contenido esencial aparece primero y cada pantalla tiene una acción primaria inequívoca.
