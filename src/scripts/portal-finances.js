@@ -53,6 +53,9 @@ let issuesPagination = createEmptyPagination(ISSUES_PAGE_SIZE);
 let loadedTotalsByCurrency = {};
 let loadedByCategory = createEmptyCategoryStats();
 let loadedTransactionCount = 0;
+let dataRevision = 0;
+let transactionAppendSequence = 0;
+let issuesAppendSequence = 0;
 
 function createEmptyPagination(pageSize) {
   return {
@@ -68,7 +71,7 @@ function createEmptyPagination(pageSize) {
 
 function createEmptyCategoryStats() {
   return Object.fromEntries(
-    DEFAULT_CATEGORIES.map((label) => [label, { total: 0, byCurrency: {} }]),
+    DEFAULT_CATEGORIES.map((label) => [label, { byCurrency: {} }]),
   );
 }
 
@@ -93,10 +96,13 @@ function scopeLabel(scope = {}) {
 }
 
 function formatCurrency(val, currency) {
-  return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CO', {
+  const normalizedCurrency = String(currency || 'COP').toUpperCase() === 'USD' ? 'USD' : 'COP';
+  const fractionDigits = normalizedCurrency === 'USD' ? 2 : 0;
+  return new Intl.NumberFormat(normalizedCurrency === 'USD' ? 'en-US' : 'es-CO', {
     style: 'currency',
-    currency: currency || 'COP',
-    maximumFractionDigits: 0,
+    currency: normalizedCurrency,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(val || 0);
 }
 
@@ -311,7 +317,7 @@ function showLoadError(error) {
     <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-6 py-4 text-red-700">
       <p class="font-bold mb-2">Error al cargar finanzas</p>
       <p class="text-sm">${escapeHtml(message)}</p>
-      <button type="button" id="btn-retry-finances" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
+      <button type="button" id="btn-retry-finances" class="mt-4 min-h-11 rounded-full border border-red-100 bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm">
         Reintentar
       </button>
     </div>
@@ -352,17 +358,31 @@ async function loadFinances({ appendTransactions = false, appendIssues = false }
   const includeIssues = !appendTransactions;
   const nextTransactionsPage = appendTransactions ? transactionsPagination.page + 1 : 1;
   const nextIssuesPage = appendIssues ? issuesPagination.page + 1 : 1;
+  let requestRevision = dataRevision;
+  let appendSequence = 0;
 
   if (!appendTransactions && !appendIssues) {
+    requestRevision = ++dataRevision;
+    transactionAppendSequence += 1;
+    issuesAppendSequence += 1;
     resetLoadedStats();
     transactionsPagination = createEmptyPagination(TRANSACTIONS_PAGE_SIZE);
     issuesPagination = createEmptyPagination(ISSUES_PAGE_SIZE);
     setLoading();
   } else if (appendTransactions) {
+    appendSequence = ++transactionAppendSequence;
     setLoadMoreState(true);
   } else if (appendIssues) {
+    appendSequence = ++issuesAppendSequence;
     setIssuesLoadMoreState(true);
   }
+
+  const isCurrentRequest = () => {
+    if (requestRevision !== dataRevision) return false;
+    if (appendTransactions) return appendSequence === transactionAppendSequence;
+    if (appendIssues) return appendSequence === issuesAppendSequence;
+    return true;
+  };
 
   try {
     const params = new URLSearchParams({
@@ -386,18 +406,22 @@ async function loadFinances({ appendTransactions = false, appendIssues = false }
     }
 
     if (!res.ok || !data.ok) throw new Error(data.error || 'Error de carga');
+    if (!isCurrentRequest()) return;
 
     renderDashboard(data, { appendTransactions, appendIssues, includeTransactions, includeIssues });
   } catch (err) {
+    if (!isCurrentRequest()) return;
     console.error(err);
     if (appendTransactions) {
       setLoadMoreState(false);
       if (loadMoreBtn) loadMoreBtn.textContent = 'Reintentar carga';
+      setFilterFeedback(err?.message || 'No se pudieron cargar más movimientos.');
       return;
     }
     if (appendIssues) {
       setIssuesLoadMoreState(false);
       if (issuesLoadMoreBtn) issuesLoadMoreBtn.textContent = 'Reintentar carga';
+      setFilterFeedback(err?.message || 'No se pudieron cargar más alertas.');
       return;
     }
     showLoadError(err);
@@ -438,13 +462,12 @@ function mergeLoadedStats(stats) {
   });
 
   Object.entries(stats.byCategory || {}).forEach(([label, value]) => {
-    const current = loadedByCategory[label] || { total: 0, byCurrency: {} };
+    const current = loadedByCategory[label] || { byCurrency: {} };
     const nextByCurrency = value?.byCurrency || {};
     Object.entries(nextByCurrency).forEach(([currency, amount]) => {
       const key = String(currency || 'COP').toUpperCase();
       current.byCurrency[key] = (current.byCurrency[key] || 0) + Number(amount || 0);
     });
-    current.total += Number(value?.total || 0);
     loadedByCategory[label] = current;
   });
 }
@@ -540,7 +563,7 @@ function renderCategories(byCategory) {
   const entries = Object.entries(byCategory || {});
   const finalEntries = entries.length
     ? entries
-    : DEFAULT_CATEGORIES.map((label) => [label, { total: 0, byCurrency: {} }]);
+    : DEFAULT_CATEGORIES.map((label) => [label, { byCurrency: {} }]);
 
   categoriesEl.innerHTML = finalEntries.map(([label, value]) => {
     const currencyMap = value?.byCurrency || {};
@@ -634,9 +657,9 @@ function issueCardHtml(issue) {
     : '';
 
   const actions = [
-    mailto ? `<a class="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
-    whatsapp ? `<a class="inline-flex min-h-10 items-center rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>` : '',
-    `<button class="min-h-10 rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`,
+    mailto ? `<a class="inline-flex min-h-11 items-center rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
+    whatsapp ? `<a class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="${escapeHtml(whatsapp)}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : '',
+    `<button type="button" class="min-h-11 rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`,
   ].filter(Boolean).join('');
 
   return `
@@ -717,7 +740,10 @@ filtersForm?.addEventListener('submit', async (event) => {
   }
 });
 
-clearFiltersBtn?.addEventListener('click', () => {
+clearFiltersBtn?.addEventListener('click', async () => {
+  const originalText = clearFiltersBtn.textContent;
+  clearFiltersBtn.disabled = true;
+  clearFiltersBtn.textContent = 'Limpiando…';
   if (periodFilter) periodFilter.value = 'all';
   if (accountFilter) accountFilter.value = '';
   if (currencyFilter) currencyFilter.value = '';
@@ -725,7 +751,12 @@ clearFiltersBtn?.addEventListener('click', () => {
   if (dateToFilter) dateToFilter.value = '';
   updateCustomDatesVisibility();
   setFilterFeedback();
-  void loadFinances();
+  try {
+    await loadFinances();
+  } finally {
+    clearFiltersBtn.disabled = false;
+    clearFiltersBtn.textContent = originalText;
+  }
 });
 
 exportCopBtn?.addEventListener('click', () => {

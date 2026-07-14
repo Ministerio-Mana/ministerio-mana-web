@@ -226,3 +226,30 @@ test('regiones protege jerarquía territorial, edición y tablas móviles', asyn
   assert.match(regionsLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(regionsLogic, /window\.prompt/);
 });
+
+test('finanzas separa monedas, respuestas tardías y controles operativos', async () => {
+  const [financesView, financesLogic] = await Promise.all([
+    readSource('src/pages/portal/finances.astro'),
+    readSource('src/scripts/portal-finances.js'),
+  ]);
+
+  assert.match(financesView, /id="finances-export-cop"[^>]*min-h-11/);
+  assert.match(financesView, /id="finances-export-usd"[^>]*min-h-11/);
+  assert.match(financesView, /id="finances-load-more"[^>]*min-h-11/);
+  assert.match(financesView, /id="finances-issues-load-more"[^>]*min-h-11/);
+  assert.match(financesView, /<p id="stat-total-cop"/);
+  assert.match(financesView, /<p id="stat-total-usd"/);
+  assert.match(financesView, /<h2 id="finances-categories-title"/);
+  assert.match(financesView, /<h2 id="finances-transactions-title"/);
+  assert.match(financesView, /<h2 id="finances-issues-title"/);
+
+  assert.match(financesLogic, /const fractionDigits = normalizedCurrency === 'USD' \? 2 : 0/);
+  assert.match(financesLogic, /minimumFractionDigits: fractionDigits/);
+  assert.doesNotMatch(financesLogic, /current\.total \+=/);
+  assert.match(financesLogic, /requestRevision !== dataRevision/);
+  assert.match(financesLogic, /appendSequence === transactionAppendSequence/);
+  assert.match(financesLogic, /appendSequence === issuesAppendSequence/);
+  assert.match(financesLogic, /inline-flex min-h-11 items-center/);
+  assert.match(financesLogic, /type="button" class="min-h-11[^>]+data-copy-text/);
+  assert.match(financesLogic, /rel="noopener noreferrer"/);
+});
