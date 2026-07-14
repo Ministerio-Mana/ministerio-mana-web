@@ -25,6 +25,8 @@ const pageNextBtn = document.getElementById('users-page-next');
 const modal = document.getElementById('create-user-modal');
 const btnOpen = document.getElementById('btn-open-create-user');
 const btnCancel = document.getElementById('btn-cancel-create');
+const createUserClose = document.getElementById('create-user-close');
+const createUserFeedback = document.getElementById('create-user-feedback');
 const form = document.getElementById('create-user-form');
 const btnSubmit = document.getElementById('btn-submit-create');
 const roleSelect = document.getElementById('user-role-select');
@@ -82,6 +84,60 @@ const pendingRoleChanges = new Map();
 let financeAssignmentUserId = '';
 let activeFinanceAssignments = [];
 let financeHierarchyMigrationRequired = false;
+let createUserDirty = false;
+const dialogReturnFocus = new Map();
+
+function getDialogFocusableElements(dialog) {
+    if (!dialog) return [];
+    return [...dialog.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )].filter((element) => !element.closest('[hidden], [aria-hidden="true"]') && element.getClientRects().length > 0);
+}
+
+function showAccessibleDialog(dialog, preferredFocus = null) {
+    if (!dialog) return;
+    if (document.activeElement instanceof HTMLElement) dialogReturnFocus.set(dialog, document.activeElement);
+    dialog.setAttribute('aria-hidden', 'false');
+    dialog.classList.remove('hidden');
+    dialog.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(() => (preferredFocus || getDialogFocusableElements(dialog)[0])?.focus());
+}
+
+function hideAccessibleDialog(dialog, fallbackFocus = null) {
+    if (!dialog) return;
+    dialog.setAttribute('aria-hidden', 'true');
+    dialog.classList.add('hidden');
+    dialog.classList.remove('flex');
+    document.body.style.overflow = '';
+    const returnFocus = dialogReturnFocus.get(dialog) || fallbackFocus;
+    dialogReturnFocus.delete(dialog);
+    window.queueMicrotask(() => {
+        if (returnFocus?.isConnected) returnFocus.focus();
+        else fallbackFocus?.focus();
+    });
+}
+
+function handleAccessibleDialogKeydown(event, dialog, closeButton) {
+    if (!dialog || dialog.getAttribute('aria-hidden') !== 'false') return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeButton?.focus();
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getDialogFocusableElements(dialog);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
+}
 
 function showSecureContent() {
     gateEl?.classList.add('hidden');
@@ -814,11 +870,11 @@ function renderRoleCell(user) {
             .join('');
         return `
             <div class="space-y-1">
-                <select data-action="role" data-user-id="${escapeAttr(user.user_id || '')}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
+                <select data-action="role" aria-label="Cambiar rol de ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
                     ${options}
                 </select>
                 ${selectedRole === 'campus_missionary' ? `
-                    <select data-action="campus-missionary" data-user-id="${escapeAttr(user.user_id || '')}" class="max-w-48 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-slate-600">
+                    <select data-action="campus-missionary" aria-label="Asignar misionero Campus a ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 max-w-48 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-slate-600">
                         <option value="">Selecciona misionero</option>
                         ${campusOptions}
                     </select>
@@ -848,25 +904,25 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
     const resetButton = canSendAccessLink
         ? (isDeleted
             ? '<span class="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cuenta eliminada</span>'
-            : `<button data-action="reset" data-email="${safeEmailAttr}" class="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`)
+            : `<button type="button" data-action="reset" data-email="${safeEmailAttr}" class="min-h-11 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`)
         : '';
     const accessLinkButton = canCopyAccessLink && !isDeleted
-        ? `<button data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="px-3 py-2 rounded-lg border border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100">Copiar enlace</button>`
+        ? `<button type="button" data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="min-h-11 px-3 py-2 rounded-lg border border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100">Copiar enlace</button>`
         : '';
     const financeCount = Number(user?.finance_assignment_count || 0);
     const financeButton = isActorSuperadmin && !isDeleted && !isTargetGlobalAdmin
-        ? `<button data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-800 hover:bg-amber-100">Finanzas${financeCount ? ` (${financeCount})` : ''}</button>`
+        ? `<button type="button" data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-800 hover:bg-amber-100">Finanzas${financeCount ? ` (${financeCount})` : ''}</button>`
         : '';
     let lifecycleButtons = '';
     if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
         if (isDeleted) {
-            lifecycleButtons = `<button data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100">Restaurar</button>`;
+            lifecycleButtons = `<button type="button" data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100">Restaurar</button>`;
         } else {
             const blockLabel = isBlocked ? 'Desbloquear' : 'Bloquear';
             const blockAction = isBlocked ? 'unblock-user' : 'block-user';
             lifecycleButtons = `
-                <button data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-700 hover:bg-amber-100">${blockLabel}</button>
-                <button data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar</button>
+                <button type="button" data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-700 hover:bg-amber-100">${blockLabel}</button>
+                <button type="button" data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar</button>
             `;
         }
     }
@@ -881,8 +937,8 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
 
     return `
         <div class="flex items-center justify-end gap-2 flex-wrap">
-            <button data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
+            <button type="button" data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
             ${financeButton}
             ${lifecycleButtons}
             ${accessLinkButton}
@@ -1292,7 +1348,7 @@ function renderFinanceAssignments() {
                 <p class="text-sm font-bold text-[#293C74]">${escapeHtml(assignment.scope_label || 'Alcance financiero')}</p>
                 <p class="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Permiso financiero secundario</p>
             </div>
-            <button type="button" data-finance-action="remove" data-assignment-id="${escapeAttr(assignment.id || '')}" class="min-h-10 rounded-md border border-rose-200 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">Retirar</button>
+            <button type="button" data-finance-action="remove" data-assignment-id="${escapeAttr(assignment.id || '')}" class="min-h-11 rounded-md border border-rose-200 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">Retirar</button>
         </div>
     `).join('');
 }
@@ -1325,8 +1381,7 @@ async function openFinanceAssignmentModal(userId) {
         financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">Cargando asignaciones…</p>';
     }
     setFinanceAssignmentFeedback();
-    financeAssignmentModal.classList.remove('hidden');
-    financeAssignmentModal.classList.add('flex');
+    showAccessibleDialog(financeAssignmentModal, financeAssignmentClose);
     setFinanceAssignmentFormDisabled(true);
 
     try {
@@ -1355,27 +1410,24 @@ async function openFinanceAssignmentModal(userId) {
 }
 
 function closeFinanceAssignmentModal() {
-    financeAssignmentModal?.classList.add('hidden');
-    financeAssignmentModal?.classList.remove('flex');
     financeAssignmentUserId = '';
     activeFinanceAssignments = [];
     financeHierarchyMigrationRequired = false;
     financeAssignmentForm?.reset();
     setFinanceAssignmentFeedback();
     updateFinanceAssignmentFields();
+    hideAccessibleDialog(financeAssignmentModal, btnOpen);
 }
 
 function setupFinanceAssignmentModal() {
     financeAssignmentClose?.addEventListener('click', closeFinanceAssignmentModal);
     financeAssignmentCancel?.addEventListener('click', closeFinanceAssignmentModal);
     financeAssignmentModal?.addEventListener('click', (event) => {
-        if (event.target === financeAssignmentModal) closeFinanceAssignmentModal();
+        if (event.target === financeAssignmentModal) financeAssignmentClose?.focus();
     });
     financeAssignmentScope?.addEventListener('change', updateFinanceAssignmentFields);
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !financeAssignmentModal?.classList.contains('hidden')) {
-            closeFinanceAssignmentModal();
-        }
+        handleAccessibleDialogKeydown(event, financeAssignmentModal, financeAssignmentClose);
     });
 
     financeAssignmentForm?.addEventListener('submit', async (event) => {
@@ -1480,14 +1532,43 @@ async function copySensitiveText(value) {
     if (!copied) throw new Error('El navegador no permitió copiar el enlace');
 }
 
+function setCreateUserFeedback(message = '', type = 'info') {
+    if (!createUserFeedback) return;
+    if (!message) {
+        createUserFeedback.textContent = '';
+        createUserFeedback.className = 'hidden rounded-xl px-4 py-4 text-sm';
+        return;
+    }
+    const styles = type === 'error'
+        ? 'border border-red-200 bg-red-50 text-red-800'
+        : type === 'success'
+            ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+            : 'border border-sky-200 bg-sky-50 text-sky-800';
+    createUserFeedback.className = `rounded-xl px-4 py-4 text-sm ${styles}`;
+    createUserFeedback.textContent = message;
+}
+
+function closeCreateUserModal({ reset = true } = {}) {
+    if (reset) {
+        form?.reset();
+        updateScopeFields(roleSelect?.value || 'user');
+    }
+    createUserDirty = false;
+    setCreateUserFeedback();
+    hideAccessibleDialog(modal, btnOpen);
+}
+
+function requestCloseCreateUserModal() {
+    if (createUserDirty && !window.confirm('Hay datos de usuario sin guardar. ¿Quieres descartarlos?')) return;
+    closeCreateUserModal();
+}
+
 function setupModal(token) {
     btnOpen?.addEventListener('click', () => {
         if (!currentCreatableRoles.length) {
             alert('No tienes permisos para crear usuarios.');
             return;
         }
-
-        modal?.classList.remove('hidden');
 
         // Populate Roles dynamically
         if (roleSelect) {
@@ -1503,7 +1584,6 @@ function setupModal(token) {
 
             if (!allowedRoles.length) {
                 alert('No tienes permisos para crear usuarios.');
-                modal?.classList.add('hidden');
                 return;
             }
             roleSelect.value = allowedRoles[0];
@@ -1517,14 +1597,29 @@ function setupModal(token) {
                 updateScopeFields(roleSelect.value);
             });
         }
+        createUserDirty = false;
+        setCreateUserFeedback();
+        showAccessibleDialog(modal, document.getElementById('create-user-first-name'));
     });
 
-    btnCancel?.addEventListener('click', () => {
-        modal?.classList.add('hidden');
+    form?.addEventListener('input', () => {
+        createUserDirty = true;
+    });
+    form?.addEventListener('change', () => {
+        createUserDirty = true;
+    });
+    createUserClose?.addEventListener('click', requestCloseCreateUserModal);
+    btnCancel?.addEventListener('click', requestCloseCreateUserModal);
+    modal?.addEventListener('click', (event) => {
+        if (event.target === modal) createUserClose?.focus();
+    });
+    document.addEventListener('keydown', (event) => {
+        handleAccessibleDialogKeydown(event, modal, createUserClose);
     });
 
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        setCreateUserFeedback();
         const formData = new FormData(form);
         const body = Object.fromEntries(formData);
 
@@ -1555,8 +1650,8 @@ function setupModal(token) {
                 successMessage = 'Usuario creado con contraseña temporal, pero no se pudo enviar el correo. Entrégale la contraseña temporal o usa Reenviar acceso.';
             }
             alert(successMessage);
-            modal?.classList.add('hidden');
-            form.reset();
+            createUserDirty = false;
+            closeCreateUserModal();
             loadUsers(token); // Reload list
 
         } catch (err) {
@@ -1564,6 +1659,7 @@ function setupModal(token) {
             const message = err?.name === 'AbortError'
                 ? 'La creación tardó demasiado y se canceló. Revisa si el usuario se creó antes de intentarlo otra vez.'
                 : err?.message || 'No se pudo crear el usuario.';
+            setCreateUserFeedback(message, 'error');
             alert(`Error: ${message}`);
         } finally {
             btnSubmit.textContent = originalText;
@@ -1571,6 +1667,12 @@ function setupModal(token) {
         }
     });
 }
+
+window.addEventListener('beforeunload', (event) => {
+    if (!createUserDirty || modal?.getAttribute('aria-hidden') !== 'false') return;
+    event.preventDefault();
+    event.returnValue = '';
+});
 
 init().catch((error) => {
     console.error('[portal-users] init error', error);

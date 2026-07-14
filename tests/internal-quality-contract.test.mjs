@@ -171,3 +171,30 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
   assert.match(operationLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(operationLogic, /event\.target === reviewModal\) closeReviewModal\(\)/);
 });
+
+test('usuarios protege creación, roles y alcances financieros', async () => {
+  const [usersView, usersLogic] = await Promise.all([
+    readSource('src/pages/portal/users.astro'),
+    readSource('src/scripts/portal-users.js'),
+  ]);
+
+  assert.match(usersView, /id="btn-open-create-user" type="button"[^>]*min-h-11/);
+  assert.match(usersView, /id="create-user-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="create-user-title"[^>]*aria-describedby="create-user-description"[^>]*aria-hidden="true"/);
+  assert.match(usersView, /label for="create-user-first-name"/);
+  assert.match(usersView, /id="create-user-first-name"[^>]*name="firstName"[^>]*autocomplete="given-name"[^>]*min-h-11/);
+  assert.match(usersView, /id="create-user-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar creación de usuario"/);
+  assert.match(usersView, /id="create-user-feedback"[^>]*role="status" aria-live="polite"/);
+  assert.match(usersView, /id="finance-assignment-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="finance-assignment-title"[^>]*aria-describedby="finance-assignment-user"[^>]*aria-hidden="true"/);
+  assert.match(usersView, /id="finance-assignment-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar alcances financieros"/);
+
+  assert.match(usersLogic, /data-action="copy-access-link"[^>]*min-h-11/);
+  assert.match(usersLogic, /data-action="manage-finance"[^>]*min-h-11/);
+  assert.match(usersLogic, /function getDialogFocusableElements\(dialog\)/);
+  assert.match(usersLogic, /function showAccessibleDialog\(dialog, preferredFocus = null\)/);
+  assert.match(usersLogic, /function handleAccessibleDialogKeydown\(event, dialog, closeButton\)/);
+  assert.match(usersLogic, /event\.key === 'Escape'[\s\S]*?closeButton\?\.focus\(\)/);
+  assert.match(usersLogic, /if \(createUserDirty && !window\.confirm/);
+  assert.match(usersLogic, /window\.addEventListener\('beforeunload'/);
+  assert.doesNotMatch(usersLogic, /event\.target === modal\) closeCreateUserModal\(\)/);
+  assert.doesNotMatch(usersLogic, /event\.target === financeAssignmentModal\) closeFinanceAssignmentModal\(\)/);
+});
