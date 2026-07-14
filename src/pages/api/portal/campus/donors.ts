@@ -3,7 +3,8 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { MISIONEROS } from '@data/misioneros';
-import { getRoleCapabilities } from '@lib/portalRbac';
+import { applyFinanceScopeFilter, getFinanceAccessContext } from '@lib/financeAccess';
+import { serializeFinanceScopeAccess, type FinanceScopeAccess } from '@lib/financeScope';
 import {
     attachCampusAllocationsToDonations,
     loadCampusAllocationsByDonationIds,
@@ -246,12 +247,12 @@ function mergeDonationRows(current: any[], rows: any[]): any[] {
         .slice(0, 200);
 }
 
-async function loadCampusDonationsBase() {
-    if (!supabaseAdmin) return { data: [], error: null };
+async function loadCampusDonationsBase(access: FinanceScopeAccess) {
+    if (!supabaseAdmin) return { data: [], error: null, count: 0 };
 
-    let query = supabaseAdmin
+    let query = applyFinanceScopeFilter(supabaseAdmin
         .from('donations')
-        .select(campusDonationSelect)
+        .select(campusDonationSelect, { count: 'exact' }), access)
         .in('status', CAMPUS_STATUSES)
         .or('payment_domain.eq.CAMPUS,donation_type.eq.campus,source.ilike.%campus%,campus.ilike.%Campus%')
         .order('created_at', { ascending: false })
@@ -259,9 +260,9 @@ async function loadCampusDonationsBase() {
 
     let result = await query;
     if (result.error && isMissingColumnError(result.error)) {
-        result = await supabaseAdmin
+        result = await applyFinanceScopeFilter(supabaseAdmin
             .from('donations')
-            .select(donationSelect)
+            .select(donationSelect, { count: 'exact' }), access)
             .in('status', CAMPUS_STATUSES)
             .or('donation_type.eq.campus,source.ilike.%campus%,campus.ilike.%Campus%')
             .order('created_at', { ascending: false })
@@ -269,9 +270,9 @@ async function loadCampusDonationsBase() {
     }
 
     if (result.error && isMissingColumnError(result.error)) {
-        result = await supabaseAdmin
+        result = await applyFinanceScopeFilter(supabaseAdmin
             .from('donations')
-            .select(donationSelect)
+            .select(donationSelect, { count: 'exact' }), access)
             .in('status', CAMPUS_STATUSES)
             .ilike('campus', '%Campus%')
             .order('created_at', { ascending: false })
@@ -315,16 +316,26 @@ export const GET: APIRoute = async ({ request }) => {
 
     const role = passwordSession ? 'superadmin' : (userProfile?.role || 'user');
 
-    const capabilities = getRoleCapabilities(role);
-    if (!capabilities.can_access_campus) {
-        return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
+    const isPrimaryCampusMissionary = role === 'campus_missionary';
+    const resolvedFinanceContext = await getFinanceAccessContext(request);
+    const financeContext = resolvedFinanceContext.ok ? resolvedFinanceContext : null;
+    const isCampusMissionary = isPrimaryCampusMissionary && !financeContext;
+    if (!isCampusMissionary && !financeContext?.ok) {
+        return new Response(JSON.stringify({
+            ok: false,
+            error: resolvedFinanceContext.access.hasInvalidAssignments
+                ? 'El alcance financiero está incompleto.'
+                : 'No tienes acceso financiero a Campus.',
+        }), {
+            status: resolvedFinanceContext.status || 403,
+            headers: { 'content-type': 'application/json' },
+        });
     }
-
-    const isCampusMissionary = role === 'campus_missionary';
-    const isAdmin = capabilities.can_access_campus && !isCampusMissionary;
+    const isAdmin = Boolean(financeContext?.ok);
 
     let donations: any[] = [];
     let error: any = null;
+    let totalDonationRows: number | null = null;
 
     if (isCampusMissionary && user?.id) {
         const missionarySlug = resolveCampusMissionarySlug(userProfile);
@@ -383,10 +394,11 @@ export const GET: APIRoute = async ({ request }) => {
             }
         }
     } else {
-        // Administrative Campus view. The global donations ledger lives in /portal/donations.
-        const campusRows = await loadCampusDonationsBase();
+        // Administrative Campus view follows the caller's explicit financial scope.
+        const campusRows = await loadCampusDonationsBase(financeContext!.access);
         error = campusRows.error;
         donations = campusRows.data || [];
+        totalDonationRows = Number(campusRows.count ?? donations.length);
         if (!error && donations.length > 0) {
             const allocationLookup = await loadCampusAllocationsByDonationIds(donations.map((donation) => donation.id));
             donations = attachCampusAllocationsToDonations(donations, allocationLookup.allocationsByDonationId);
@@ -399,7 +411,19 @@ export const GET: APIRoute = async ({ request }) => {
             message: error?.message || String(error),
             code: error?.code,
         });
-        return new Response(JSON.stringify({ ok: false, error: 'Failed to load donors' }), { status: 500 });
+        if (financeContext && !financeContext.access.isGlobal && isMissingColumnError(error)) {
+            return new Response(JSON.stringify({
+                ok: false,
+                error: 'La separación financiera todavía no está activa para Campus.',
+            }), {
+                status: 503,
+                headers: { 'content-type': 'application/json' },
+            });
+        }
+        return new Response(JSON.stringify({ ok: false, error: 'No se pudieron cargar los donantes.' }), {
+            status: 500,
+            headers: { 'content-type': 'application/json' },
+        });
     }
 
     // Group donations by donor
@@ -466,8 +490,14 @@ export const GET: APIRoute = async ({ request }) => {
     const uniqueMissionaries = new Set();
     if (isAdmin) {
         donations.forEach(donation => {
-            if (donation.missionary_id) uniqueMissionaries.add(donation.missionary_id);
-            getMissionarySlugs(donation).forEach((slug) => uniqueMissionaries.add(slug));
+            const slugs = getMissionarySlugs(donation);
+            if (slugs.length) {
+                slugs.forEach((slug) => uniqueMissionaries.add(`slug:${slug}`));
+            } else if (donation.missionary_id) {
+                uniqueMissionaries.add(`id:${donation.missionary_id}`);
+            } else {
+                getMissionaryNames(donation).forEach((name) => uniqueMissionaries.add(`name:${name.toLowerCase()}`));
+            }
         });
     }
     const stats = {
@@ -497,6 +527,14 @@ export const GET: APIRoute = async ({ request }) => {
         isAdmin,
         isCampusMissionary,
         viewMode: isCampusMissionary ? 'missionary' : 'administrative',
+        financeScope: financeContext ? serializeFinanceScopeAccess(financeContext.access) : null,
+        coverage: {
+            loadedDonationRows: donations.length,
+            totalDonationRows,
+            isTruncated: isAdmin
+                ? Number(totalDonationRows || 0) > donations.length
+                : donations.length >= 200,
+        },
     }), {
         status: 200,
         headers: {

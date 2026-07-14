@@ -12,6 +12,8 @@ const missionaryFilterContainerEl = document.getElementById('donor-missionary-fi
 const missionaryFilterEl = document.getElementById('donor-missionary-filter');
 const resultCountEl = document.getElementById('donors-result-count');
 const loadMoreEl = document.getElementById('donors-load-more');
+const scopeLabelEl = document.getElementById('campus-scope-label');
+const coverageNoteEl = document.getElementById('campus-coverage-note');
 const filterButtons = Array.from(document.querySelectorAll('[data-donor-filter]'));
 const adminStatEls = Array.from(document.querySelectorAll('.admin-campus-stat'));
 
@@ -33,6 +35,7 @@ let currentFilter = 'all';
 let currentMissionarySlug = 'all';
 let visibleDonorLimit = DONORS_PAGE_SIZE;
 let isAdminView = false;
+let loadRevision = 0;
 
 function showSecureContent() {
     gateEl?.classList.add('hidden');
@@ -64,24 +67,55 @@ function normalizeSearch(value) {
         .trim();
 }
 
+function scopeLabel(scope = {}, isMissionary = false) {
+    if (isMissionary) return 'Alcance personal · solo tus donantes';
+    if (scope.is_global) return 'Alcance financiero global';
+    const countries = Array.isArray(scope.country_keys) ? scope.country_keys : [];
+    const regions = Array.isArray(scope.region_ids) ? scope.region_ids : [];
+    const churches = Array.isArray(scope.church_ids) ? scope.church_ids : [];
+    if (countries.length) {
+        const names = countries.map((value) => String(value).replace(/-/g, ' ')).join(', ');
+        return `Alcance financiero nacional · ${names}`;
+    }
+    if (regions.length) return `Alcance financiero regional · ${regions.length} ${regions.length === 1 ? 'región' : 'regiones'}`;
+    if (churches.length) return `Alcance financiero local · ${churches.length} ${churches.length === 1 ? 'iglesia' : 'iglesias'}`;
+    return 'Sin alcance financiero';
+}
+
 function formatCurrency(amount, currency) {
-    if (!amount && amount !== 0) return '$0';
-    return new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'es-CO', {
+    const normalizedCurrency = String(currency || 'COP').toUpperCase();
+    const fractionDigits = normalizedCurrency === 'USD' ? 2 : 0;
+    if (!amount && amount !== 0) return formatCurrency(0, normalizedCurrency);
+    return new Intl.NumberFormat(normalizedCurrency === 'USD' ? 'en-US' : 'es-CO', {
         style: 'currency',
-        currency: currency || 'COP',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: currency === 'USD' ? 2 : 0,
+        currency: normalizedCurrency,
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
     }).format(amount);
 }
 
 function formatTotals(totalsByCurrency, className = '') {
     const entries = Object.entries(totalsByCurrency || {})
-        .filter(([, amount]) => Number.isFinite(Number(amount)))
-        .sort(([currencyA]) => currencyA === 'COP' ? -1 : 1);
+        .filter(([, amount]) => Number.isFinite(Number(amount)));
     if (!entries.length) return '—';
     return entries
+        .sort(([currencyA], [currencyB]) => {
+            const order = { COP: 0, USD: 1 };
+            return (order[currencyA] ?? 2) - (order[currencyB] ?? 2) || currencyA.localeCompare(currencyB);
+        })
         .map(([currency, amount]) => `<p class="${className}">${formatCurrency(Number(amount), currency)}</p>`)
         .join('');
+}
+
+function formatDate(value) {
+    if (!value) return 'Sin fecha';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Sin fecha';
+    return date.toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
 }
 
 function makeTimeoutError(label) {
@@ -132,6 +166,7 @@ function showLoading() {
     emptyEl?.classList.add('hidden');
     resultCountEl?.classList.add('hidden');
     loadMoreEl?.classList.add('hidden');
+    contentEl?.setAttribute('aria-busy', 'true');
 }
 
 function showLoadError(error) {
@@ -141,10 +176,10 @@ function showLoadError(error) {
         : error?.message || 'No se pudieron cargar los donantes.';
     loadingEl.className = 'py-12 text-center';
     loadingEl.innerHTML = `
-        <div class="mx-auto max-w-md rounded-lg border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+        <div class="mx-auto max-w-md rounded-lg border border-red-100 bg-red-50 px-4 py-4 text-red-700">
             <p class="mb-2 font-bold">Error al cargar donantes</p>
             <p class="text-sm">${escapeHtml(message)}</p>
-            <button type="button" id="btn-retry-donors" class="mt-4 rounded-lg border border-red-100 bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm">
+            <button type="button" id="btn-retry-donors" class="mt-4 min-h-11 rounded-lg border border-red-100 bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm">
                 Reintentar
             </button>
         </div>
@@ -215,11 +250,15 @@ function getFilteredDonors() {
         if (currentFilter !== 'all' && donor.givingType !== currentFilter) return false;
         if (currentMissionarySlug !== 'all' && !getDonorMissionarySlugs(donor).has(currentMissionarySlug)) return false;
         if (!query) return true;
+        const missionaryNames = (donor.donations || [])
+            .flatMap((donation) => donation?.missionary?.names || [donation?.missionary?.name])
+            .filter(Boolean);
         return normalizeSearch([
             donor.name,
             donor.email,
             donor.phone,
             donor.missionary?.name,
+            ...missionaryNames,
         ].filter(Boolean).join(' ')).includes(query);
     });
 }
@@ -232,18 +271,14 @@ function getEmptyMessage() {
     return 'No se encontraron donantes todavía.';
 }
 
-function buildDonorCard(donor) {
+function buildDonorCard(donor, donorIndex) {
     const isRecurring = donor.givingType === 'recurring';
     const donorNameRaw = donor.name || 'Donante Anónimo';
     const donorName = escapeHtml(donorNameRaw);
     const donorEmail = escapeHtml(donor.email || '');
     const donorPhone = escapeHtml(donor.phone || '');
     const donorInitial = escapeHtml(String(donorNameRaw).trim().charAt(0).toUpperCase() || '?');
-    const lastDonationDate = new Date(donor.lastDonation).toLocaleDateString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const lastDonationDate = formatDate(donor.lastDonation);
     const relationshipBadge = isRecurring
         ? '<span class="portal-chip border border-emerald-200 bg-emerald-50 text-emerald-800">Donante recurrente</span>'
         : '<span class="portal-chip border border-sky-200 bg-sky-50 text-sky-800">Donación única</span>';
@@ -257,10 +292,10 @@ function buildDonorCard(donor) {
     const phoneDigits = String(donor.phone || '').replace(/\D/g, '');
     const contactActions = [
         donor.email
-            ? `<a class="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-[#293C74]/30 hover:text-[#293C74]" href="mailto:${encodeURIComponent(donor.email)}?subject=${subject}&body=${thanksMessage}">Correo</a>`
+            ? `<a class="inline-flex min-h-11 items-center rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-[#293C74]/30 hover:text-[#293C74]" href="mailto:${encodeURIComponent(donor.email)}?subject=${subject}&body=${thanksMessage}">Correo</a>`
             : '',
         phoneDigits.length >= 8
-            ? `<a class="inline-flex min-h-10 items-center rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noreferrer">WhatsApp</a>`
+            ? `<a class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
             : '',
     ].filter(Boolean).join('');
 
@@ -269,12 +304,19 @@ function buildDonorCard(donor) {
             <div class="mt-4 space-y-2 border-t border-slate-100 pt-4">
                 ${donor.donations.slice(0, 4).map((donation) => {
                     const recurringDonation = donation.frequency === 'recurring';
+                    const provider = String(donation.provider || '').toUpperCase();
+                    const currency = String(donation.currency || '').toUpperCase();
+                    const expectedCurrency = provider === 'WOMPI' ? 'COP' : provider === 'STRIPE' ? 'USD' : null;
                     const typeBadge = recurringDonation
                         ? '<span class="portal-chip bg-emerald-100 text-emerald-800">Mensual</span>'
                         : '<span class="portal-chip bg-sky-100 text-sky-800">Una vez</span>';
-                    const date = donation.created_at
-                        ? new Date(donation.created_at).toLocaleDateString('es-CO')
+                    const providerBadge = isAdminView && provider
+                        ? `<span class="portal-chip bg-slate-100 text-slate-700">${escapeHtml(provider)} · ${escapeHtml(currency || 'SIN MONEDA')}</span>`
                         : '';
+                    const currencyMismatch = isAdminView && expectedCurrency && currency !== expectedCurrency
+                        ? '<span class="portal-chip bg-red-100 text-red-700">Revisar moneda</span>'
+                        : '';
+                    const date = donation.created_at ? formatDate(donation.created_at) : '';
                     const names = donation.missionary?.names?.length
                         ? donation.missionary.names.join(', ')
                         : donation.missionary?.name || 'Campus';
@@ -288,6 +330,8 @@ function buildDonorCard(donor) {
                         <div class="flex flex-col gap-2 border-b border-slate-200/70 pb-2 text-xs text-slate-500 last:border-0 last:pb-0 md:flex-row md:items-center md:justify-between">
                             <span class="flex flex-wrap items-center gap-2">
                                 ${typeBadge}
+                                ${providerBadge}
+                                ${currencyMismatch}
                                 <strong class="text-[#293C74]">${escapeHtml(names)}</strong>
                                 ${date ? `<span>· ${escapeHtml(date)}</span>` : ''}
                             </span>
@@ -296,7 +340,7 @@ function buildDonorCard(donor) {
                     `;
                 }).join('')}
                 ${donor.donations.length > 4
-                    ? `<p class="pt-1 text-xs font-semibold text-slate-400">+${donor.donations.length - 4} donaciones anteriores</p>`
+                    ? `<p class="pt-2 text-xs font-semibold text-slate-400">+${donor.donations.length - 4} donaciones anteriores</p>`
                     : ''}
             </div>
         `
@@ -304,15 +348,15 @@ function buildDonorCard(donor) {
 
     const amountDisplay = isAdminView && donor.totalsByCurrency
         ? `
-            <div class="w-full border-t border-slate-100 pt-4 sm:w-auto sm:min-w-[160px] sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0 sm:text-right">
-                <p class="mb-1 text-xs font-bold uppercase text-slate-400">Total donado</p>
+            <div class="w-full border-t border-slate-100 pt-4 sm:w-auto sm:min-w-[160px] sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0 sm:text-right">
+                <p class="mb-2 text-xs font-bold uppercase text-slate-400">Total donado</p>
                 ${formatTotals(donor.totalsByCurrency, 'break-words text-lg font-bold text-brand-teal')}
             </div>
         `
         : '';
 
     return `
-        <article class="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm md:p-5">
+        <article class="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm md:p-6" data-donor-index="${donorIndex}" tabindex="-1">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 flex-1 items-start gap-4">
                     <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#293C74] text-lg font-bold text-white">
@@ -323,10 +367,10 @@ function buildDonorCard(donor) {
                             <h3 class="text-lg font-bold text-[#293C74]">${donorName}</h3>
                             ${relationshipBadge}
                         </div>
-                        ${donor.email ? `<p class="mb-1 break-all text-sm text-slate-600">${donorEmail}</p>` : ''}
+                        ${donor.email ? `<p class="mb-2 break-all text-sm text-slate-600">${donorEmail}</p>` : ''}
                         ${donor.phone ? `<p class="break-words text-sm text-slate-500">${donorPhone}</p>` : ''}
 
-                        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
                             <span><strong>${donor.donationCount}</strong> donación${donor.donationCount > 1 ? 'es' : ''}</span>
                             ${donor.recurringDonationCount > 0 ? `<span><strong>${donor.recurringDonationCount}</strong> mensual${donor.recurringDonationCount > 1 ? 'es' : ''}</span>` : ''}
                             ${donor.oneTimeDonationCount > 0 ? `<span><strong>${donor.oneTimeDonationCount}</strong> de una vez</span>` : ''}
@@ -334,7 +378,7 @@ function buildDonorCard(donor) {
                         </div>
 
                         ${donor.missionary?.name ? `
-                            <div class="mt-3">
+                            <div class="mt-4">
                                 <span class="portal-chip bg-[#293C74]/10 text-[#293C74]">
                                     ${escapeHtml(donor.missionary.name)}
                                 </span>
@@ -356,6 +400,7 @@ function renderDonors() {
     const visibleDonors = filteredDonors.slice(0, visibleDonorLimit);
 
     loadingEl?.classList.add('hidden');
+    contentEl?.setAttribute('aria-busy', 'false');
     if (!filteredDonors.length) {
         contentEl?.classList.add('hidden');
         loadMoreEl?.classList.add('hidden');
@@ -369,14 +414,31 @@ function renderDonors() {
 
     emptyEl?.classList.add('hidden');
     if (contentEl) {
-        contentEl.innerHTML = visibleDonors.map(buildDonorCard).join('');
+        contentEl.innerHTML = visibleDonors.map((donor, index) => buildDonorCard(donor, index)).join('');
         contentEl.classList.remove('hidden');
+        contentEl.setAttribute('aria-busy', 'false');
     }
     if (resultCountEl) {
         resultCountEl.textContent = `Mostrando ${visibleDonors.length} de ${filteredDonors.length} donantes`;
         resultCountEl.classList.remove('hidden');
     }
     loadMoreEl?.classList.toggle('hidden', visibleDonors.length >= filteredDonors.length);
+}
+
+function updateCoverage(coverage = {}, isMissionary = false) {
+    if (!coverageNoteEl) return;
+    const loaded = Number(coverage.loadedDonationRows || 0);
+    const total = Number(coverage.totalDonationRows || 0);
+    const isTruncated = coverage.isTruncated === true;
+    if (!isTruncated) {
+        coverageNoteEl.textContent = '';
+        coverageNoteEl.classList.add('hidden');
+        return;
+    }
+    coverageNoteEl.textContent = isMissionary || !total
+        ? `Se muestran los ${loaded} aportes aprobados más recientes. Usa Finanzas para el histórico contable completo.`
+        : `Se muestran ${loaded} de ${total} aportes aprobados de este alcance. Usa Finanzas para el histórico contable completo.`;
+    coverageNoteEl.classList.remove('hidden');
 }
 
 function updateStats(stats, isAdmin) {
@@ -402,6 +464,7 @@ function updateStats(stats, isAdmin) {
 }
 
 async function loadDonors() {
+    const requestRevision = ++loadRevision;
     showLoading();
     try {
         const auth = await withTimeout(
@@ -423,6 +486,7 @@ async function loadDonors() {
             credentials: 'include',
         }, REQUEST_TIMEOUT_MS, 'La carga de donantes');
         const [sessionResult, donorsResult] = await Promise.all([sessionRequest, donorsRequest]);
+        if (requestRevision !== loadRevision) return;
 
         if (sessionResult) {
             const { ok, data: sessionData } = sessionResult;
@@ -457,10 +521,13 @@ async function loadDonors() {
         } else if (data.viewMode === 'administrative' || data.isAdmin) {
             subtitleEl.textContent = 'Vista administrativa de donantes Campus';
         }
+        if (scopeLabelEl) scopeLabelEl.textContent = scopeLabel(data.financeScope, data.isCampusMissionary);
 
         updateStats(data.stats, isAdminView);
+        updateCoverage(data.coverage, data.isCampusMissionary);
         renderDonors();
     } catch (error) {
+        if (requestRevision !== loadRevision) return;
         console.error('[campus] Error loading donors:', error);
         if (campusSessionChecked) {
             showSecureContent();
@@ -491,8 +558,12 @@ missionaryFilterEl?.addEventListener('change', () => {
 });
 
 loadMoreEl?.addEventListener('click', () => {
+    const previousVisibleCount = Math.min(getFilteredDonors().length, visibleDonorLimit);
     visibleDonorLimit += DONORS_PAGE_SIZE;
     renderDonors();
+    window.requestAnimationFrame(() => {
+        contentEl?.querySelector(`[data-donor-index="${previousVisibleCount}"]`)?.focus();
+    });
 });
 
 document.addEventListener('DOMContentLoaded', () => {

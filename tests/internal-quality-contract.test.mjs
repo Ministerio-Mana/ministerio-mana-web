@@ -287,3 +287,39 @@ test('donaciones separa proveedores, protege filtros y concilia Wompi con contex
   assert.match(donationsApi, /if \(domain\) \{[\s\S]*?El filtro por concepto todavía no está activo/);
   assert.match(donationsApi, /applyFinanceScopeFilter\(query, financeContext\.access\)/);
 });
+
+test('campus respeta asignaciones, alcance financiero y contactos táctiles', async () => {
+  const [campusView, campusLogic, campusApi] = await Promise.all([
+    readSource('src/pages/portal/campus.astro'),
+    readSource('src/scripts/portal-campus.js'),
+    readSource('src/pages/api/portal/campus/donors.ts'),
+  ]);
+
+  assert.match(campusView, /id="campus-scope-label"/);
+  assert.match(campusView, /Donantes visibles/);
+  assert.match(campusView, /Aportes aprobados visibles/);
+  assert.match(campusView, /id="campus-coverage-note"[^>]*role="status" aria-live="polite"/);
+  for (const id of ['donor-missionary-filter', 'donor-search']) {
+    assert.match(campusView, new RegExp(`label for="${id}"`));
+    assert.match(campusView, new RegExp(`id="${id}"[^>]*min-h-11`));
+  }
+  assert.equal([...campusView.matchAll(/data-donor-filter=/g)].length, 3);
+  assert.equal([...campusView.matchAll(/donor-filter min-h-11/g)].length, 3);
+  assert.match(campusView, /id="donors-load-more"[^>]*min-h-11/);
+
+  assert.match(campusLogic, /const fractionDigits = normalizedCurrency === 'USD' \? 2 : 0/);
+  assert.match(campusLogic, /expectedCurrency = provider === 'WOMPI' \? 'COP' : provider === 'STRIPE' \? 'USD'/);
+  assert.match(campusLogic, /inline-flex min-h-11 items-center/);
+  assert.match(campusLogic, /rel="noopener noreferrer"/);
+  assert.match(campusLogic, /requestRevision !== loadRevision/);
+  assert.match(campusLogic, /data-donor-index="\$\{donorIndex\}" tabindex="-1"/);
+  assert.match(campusLogic, /previousVisibleCount/);
+
+  assert.match(campusApi, /getFinanceAccessContext\(request\)/);
+  assert.match(campusApi, /loadCampusDonationsBase\(financeContext!\.access\)/);
+  assert.match(campusApi, /applyFinanceScopeFilter\(supabaseAdmin/);
+  assert.match(campusApi, /serializeFinanceScopeAccess\(financeContext\.access\)/);
+  assert.match(campusApi, /uniqueMissionaries\.add\(`slug:\$\{slug\}`\)/);
+  assert.match(campusApi, /totalDonationRows/);
+  assert.match(campusApi, /La separación financiera todavía no está activa para Campus/);
+});
