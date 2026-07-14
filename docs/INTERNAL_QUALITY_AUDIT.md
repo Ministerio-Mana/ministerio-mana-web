@@ -37,7 +37,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Cumple técnicamente en código y producción; creación real y variación por roles pendientes |
 | 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Parcial avanzado: base productiva revisada y estados dinámicos corregidos; prueba con inscripciones pendiente |
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Parcial avanzado: lista y creación cumplen en producción; variación de roles y Finanzas pendiente |
-| 2 | `/portal/regions` | Jerarquía territorial y autorización | Pendiente |
+| 2 | `/portal/regions` | Jerarquía territorial y autorización | Cumple técnicamente en código y producción; mutaciones reales y variación por roles pendientes |
 | 3 | `/portal/finances` | Monedas, alcance, exportes y datos complejos | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 3 | `/portal/donations` | Wompi/Stripe, campañas y conciliación | Pendiente |
 | 3 | `/portal/campus` | Misioneros, monedas y asignación de destino | Pendiente |
@@ -147,6 +147,28 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Abrir el diálogo de Finanzas con una cuenta superadmin autorizada y recorrerlo por teclado sin guardar cambios; confirmar alcance global, nacional, regional y local.
 - Repetir la pantalla con cuentas de administración nacional, regional y local para confirmar que las acciones visibles y efectivas respetan el alcance.
 - Probar una creación real únicamente con una cuenta y correo autorizados, confirmando invitación, error recuperable y auditoría sin exponer credenciales.
+
+## Registro de la fase 2 — `/portal/regions`
+
+### Evidencia implementada
+
+- La ruta mantiene un solo `h1`, ubicación actual, validación administrativa antes de mostrar datos y carga en paralelo de regiones, ciudades y liderazgos.
+- Los nueve campos tienen etiqueta persistente, asociación programática, ayuda contextual y objetivo táctil mínimo de 44 px. Errores y éxitos se anuncian por separado.
+- Las tres tablas usan el componente adaptable del Portal: en anchos pequeños cada fila se convierte en una tarjeta con etiquetas visibles, sin desplazamiento horizontal.
+- Editar una región ya no depende de un `prompt`: el formulario conserva el país y código como solo lectura, enfoca el nombre, permite cancelar y advierte antes de perder cambios.
+- Crear, asignar ciudades y asignar liderazgo preservan lo escrito ante errores, bloquean envíos duplicados y protegen la salida con cambios pendientes.
+- Asignar un rol regional, quitar una región de ciudades y revocar liderazgo exigen confirmación contextual; activar o desactivar permanece reversible desde la misma lista y lo informa al usuario.
+- Datos dinámicos y atributos se escapan antes de insertarse; las acciones de editar, activar, desactivar y revocar tienen 44 px.
+- `regions.astro` y `portal-regions.js` llegaron a cero deuda de espaciado y quedaron como archivos estrictos. La deuda del módulo `src/pages/portal` bajó de 359 a 341 clases fuera de escala.
+- El contrato automático de calidad interna suma doce verificaciones.
+- Producción verificada en `ministeriomana.org`: 31 controles visibles a 390 px y 44 a 1280 px, con cero objetivos menores de 44 px, cero controles sin nombre, un solo `h1`, ningún desbordamiento horizontal y cero errores de consola.
+- La edición de una región se abrió sin guardar: país y código quedaron protegidos, el foco llegó al nombre y el descarte solicitó confirmación. No se llamó a una operación de escritura durante QA.
+
+### Cierre humano requerido para `/portal/regions`
+
+- Crear, renombrar, desactivar y reactivar una región de prueba autorizada, comprobando el registro esperado sin alterar regiones reales.
+- Asignar y revocar un liderazgo regional de prueba; confirmar el cambio de rol principal y el alcance efectivo con esa cuenta.
+- Repetir acceso con administrador, pastor regional y colaborador regional para comprobar que solo admin y superadmin pueden administrar la jerarquía.
 
 ## Regla de actualización
 
