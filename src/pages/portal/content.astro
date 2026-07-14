@@ -136,7 +136,7 @@ const directoryPickerAttributes: Record<string, boolean> = { webkitdirectory: tr
                       <button type="submit" data-cms-action class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1f2f63]"><PortalIcon name="upload" size={17} /> Subir</button>
                     </div>
                   </div>
-                  <input id="cms-media-directory" type="file" accept="image/jpeg,image/png,image/webp" multiple {...directoryPickerAttributes} class="sr-only" tabindex="-1" />
+                  <input id="cms-media-directory" type="file" accept="image/jpeg,image/png,image/webp" multiple {...directoryPickerAttributes} class="sr-only" tabindex="-1" aria-label="Seleccionar carpeta de imágenes" />
                 </form>
                 <div id="cms-media-upload-progress" class="hidden space-y-2" aria-live="polite">
                   <div class="flex items-center justify-between gap-4 text-xs font-bold text-slate-600">

@@ -376,6 +376,7 @@ test('contenido editorial preserva borradores, evita colisiones y confirma cambi
   }
   assert.match(contentView, /label for="cms-media-folder"/);
   assert.match(contentView, /id="cms-media-dropzone"[^>]*tabindex="0"[^>]*role="button"/);
+  assert.match(contentView, /id="cms-media-directory"[^>]*tabindex="-1"[^>]*aria-label="Seleccionar carpeta de imágenes"/);
   for (const id of ['cms-page-modal', 'cms-section-modal', 'cms-confirm-modal']) {
     assert.match(contentView, new RegExp(`id="${id}"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-[^>]+aria-hidden="true"`));
   }
