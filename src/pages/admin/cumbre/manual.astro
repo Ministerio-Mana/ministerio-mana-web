@@ -3,6 +3,8 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 
 const cspNonce = Astro.locals?.cspNonce;
 const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '2026-05-15') as string;
+Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
 ---
 
 <BaseLayout title="Cumbre 2026 Manual | Ministerio Maná" description="Operación privada para reservas y pagos físicos." hideHeader hideFooter noindex>

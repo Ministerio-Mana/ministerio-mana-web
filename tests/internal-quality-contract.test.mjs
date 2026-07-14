@@ -507,6 +507,8 @@ test('Cumbre manual exige identidad individual y evita abonos duplicados', async
   assert.equal([...manualView.matchAll(/<h1\b/g)].length, 1);
   assert.doesNotMatch(manualView, /<main\b/);
   assert.match(manualView, /hideHeader hideFooter noindex/);
+  assert.match(manualView, /Cache-Control', 'private, no-store, max-age=0'/);
+  assert.match(manualView, /X-Robots-Tag', 'noindex, nofollow, noarchive'/);
   assert.match(manualView, /id="cumbre-manual-gate"[^>]*role="status" aria-live="polite"/);
   assert.match(manualView, /id="cumbre-manual-content" class="hidden/);
   assert.match(manualView, /Operación financiera sensible/);
