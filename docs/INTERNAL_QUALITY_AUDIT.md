@@ -33,7 +33,7 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 | 1 | `/portal/ingresar` | Autenticación, recuperación y privacidad | Cumple en código y producción; ingreso y recuperación reales pendientes |
 | 1 | `/portal/registro` | Datos personales, contraseña y validación | Cumple en código y producción; registro real pendiente |
 | 1 | `/portal/activar` | Credencial nueva y enlace temporal | Cumple en código y producción; activación real pendiente |
-| 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Parcial: estructura, formularios y diálogos corregidos; datos dinámicos y roles en revisión |
+| 2 | `/portal` | Resumen, perfil, aportes y eventos del usuario | Parcial avanzado: estructura, formularios, diálogos y controles dinámicos corregidos; producción y roles en revisión |
 | 2 | `/portal/events` | Creación, imágenes, formularios, monedas y alcance | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 2 | `/portal/events/[id]` | Inscripciones, documentos y comprobantes | Auditoría funcional avanzada; cierre de los 45 pendiente |
 | 2 | `/portal/users` | Roles y finanzas adicionales por alcance | Pendiente |
@@ -80,15 +80,17 @@ Q40-Q45 corresponden a las seis aclaraciones obligatorias de medición de [`UX_N
 - Un solo `h1` para el panel; cada pestaña usa un título asociado a su región y actualiza `aria-hidden` al cambiar.
 - Carga, error y datos parciales tienen estados anunciables y acciones de reintento sin eventos inline.
 - Perfil, seguridad, onboarding, filtros operativos e invitaciones cuentan con nombres accesibles y ayuda persistente cuando aplica.
-- Objetivos táctiles estáticos críticos migrados a 44 px; la deuda de espaciado de `src/pages/portal` bajó de 387 a 359 clases.
+- Objetivos táctiles estáticos y dinámicos críticos migrados a 44 px; la deuda de espaciado de `src/pages/portal` bajó de 387 a 359 clases y la de `src/scripts` de 403 a 381.
 - Onboarding, aviso, confirmación y detalle de reserva tienen semántica de diálogo, encierro de foco, cierre seguro con `Escape` y devolución del foco. El onboarding obligatorio no se descarta con `Escape`.
-- Contrato automático ampliado de cuatro a seis verificaciones.
+- El registro manual conserva el formulario ante clics accidentales o `Escape`; el selector de iglesia tiene diálogo accesible, filtros etiquetados, foco controlado y salida dinámica escapada.
+- Paginación, filtros, asignación de iglesia, planes, pagos, donaciones, Campus y calendario generados dinámicamente tienen nombre accesible y objetivo táctil mínimo.
+- Contrato automático ampliado de cuatro a ocho verificaciones.
 
 ### Cierre técnico requerido para `/portal`
 
-- Auditar y migrar los componentes generados dinámicamente por `portal-dashboard.js`, `portal-user-event-view.js`, `RegistrationModal` y `ChurchSelector`.
+- Terminar la migración gradual de espaciado en `portal-dashboard.js`, `portal-user-event-view.js`, `RegistrationModal` y el resto del panel hasta poder marcarlos estrictos.
 - Probar las cinco pestañas con roles usuario, pastor, finanzas y administrador, sin ampliar permisos visibles ni efectivos.
-- Verificar en producción a 390 y 1280 px después del despliegue de esta fase.
+- Verificar en producción a 390 y 1280 px los controles dinámicos, el registro manual y el selector de iglesia después del despliegue de esta subfase.
 
 ## Regla de actualización
 

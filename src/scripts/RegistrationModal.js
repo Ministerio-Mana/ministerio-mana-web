@@ -30,6 +30,8 @@ export class RegistrationModal {
         this.defaultModalSubtitle = 'Nueva Inscripción';
         this.defaultSubmitLabel = 'Registrar Grupo';
         this.isSubmitting = false;
+        this.returnFocus = null;
+        this.alertReturnFocus = null;
 
         // Pricing structure (from Cumbre)
         this.prices = {
@@ -181,9 +183,7 @@ export class RegistrationModal {
         // Modal controls
         this.closeBtn?.addEventListener('click', () => this.close());
         this.cancelBtn?.addEventListener('click', () => this.close());
-        this.modal?.addEventListener('click', (e) => {
-            if (e.target === this.modal) this.close(); // Close only if clicking clicking the backdrop
-        });
+        this.modal?.addEventListener('keydown', (e) => this.handleModalKeydown(e));
 
         // Alert controls
         this.btnCloseAlert?.addEventListener('click', () => this.closeAlert());
@@ -191,6 +191,7 @@ export class RegistrationModal {
             // Allow closing by clicking outside the white box
             if (e.target === this.alertModal) this.closeAlert();
         });
+        this.alertModal?.addEventListener('keydown', (e) => this.handleAlertKeydown(e));
 
         // Leader updates
         this.leaderName?.addEventListener('input', () => this.updateLeaderParticipant());
@@ -339,6 +340,10 @@ export class RegistrationModal {
             this.alertIconSuccess?.classList.add('hidden');
         }
 
+        if (document.activeElement instanceof HTMLElement) {
+            this.alertReturnFocus = document.activeElement;
+        }
+        this.alertModal.setAttribute('aria-hidden', 'false');
         this.alertModal.classList.remove('hidden');
         this.alertModal.classList.add('flex');
 
@@ -349,8 +354,51 @@ export class RegistrationModal {
     }
 
     closeAlert() {
+        this.alertModal?.setAttribute('aria-hidden', 'true');
         this.alertModal?.classList.add('hidden');
         this.alertModal?.classList.remove('flex');
+        this.alertReturnFocus?.focus();
+        this.alertReturnFocus = null;
+    }
+
+    getFocusableElements(container) {
+        if (!container) return [];
+        return [...container.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+            .filter((element) => element.getClientRects().length > 0);
+    }
+
+    trapFocus(event, container) {
+        if (event.key !== 'Tab') return;
+        const focusable = this.getFocusableElements(container);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
+
+    handleAlertKeydown(event) {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closeAlert();
+            return;
+        }
+        this.trapFocus(event, this.alertModal);
+    }
+
+    handleModalKeydown(event) {
+        if (this.alertModal?.getAttribute('aria-hidden') === 'false') return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closeBtn?.focus();
+            return;
+        }
+        this.trapFocus(event, this.modal);
     }
 
     setModalMode(isEditing, bookingRef = '') {
@@ -1887,19 +1935,27 @@ export class RegistrationModal {
 
     // Modal Controls
     open() {
+        if (document.activeElement instanceof HTMLElement) {
+            this.returnFocus = document.activeElement;
+        }
+        this.modal?.setAttribute('aria-hidden', 'false');
         this.modal?.classList.remove('hidden');
         this.modal?.classList.add('flex');
         document.body.style.overflow = 'hidden';
 
         // Ensure leader is added
         this.updateLeaderParticipant();
+        requestAnimationFrame(() => this.leaderName?.focus());
     }
 
     close() {
+        this.modal?.setAttribute('aria-hidden', 'true');
         this.modal?.classList.add('hidden');
         this.modal?.classList.remove('flex');
         document.body.style.overflow = '';
         this.reset();
+        this.returnFocus?.focus();
+        this.returnFocus = null;
     }
 
     reset() {

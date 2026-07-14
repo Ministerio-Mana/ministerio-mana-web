@@ -1,12 +1,12 @@
 <!-- Premium Church Selector Component -->
-<div id="church-selector-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-  <div class="w-full max-w-2xl bg-gradient-to-br from-[#293C74] to-[#1e2b58] rounded-3xl shadow-2xl border border-white/10 overflow-hidden">
+<div id="church-selector-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="church-selector-title" aria-describedby="church-selector-description" aria-hidden="true">
+  <div class="flex w-full max-w-2xl max-h-[calc(100vh-2rem)] flex-col overflow-hidden bg-gradient-to-br from-[#293C74] to-[#1e2b58] rounded-3xl shadow-2xl border border-white/10" tabindex="-1">
     
     <!-- Header -->
     <div class="p-6 border-b border-white/10">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-xl font-bold text-white">Seleccionar Iglesia</h3>
-        <button id="close-church-selector" class="text-white/60 hover:text-white transition-colors">
+        <h3 id="church-selector-title" class="text-xl font-bold text-white">Seleccionar Iglesia</h3>
+        <button id="close-church-selector" type="button" aria-label="Cerrar selector de iglesias" class="flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -15,6 +15,7 @@
       
       <!-- Search Bar -->
       <div class="relative">
+        <label for="church-search-input" class="sr-only">Buscar iglesia</label>
         <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
@@ -29,7 +30,7 @@
           spellcheck="false"
           inputmode="search"
           aria-autocomplete="none"
-          class="w-full bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/40 focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all"
+          class="w-full min-h-11 bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-3 text-white placeholder-white/40 focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all"
         >
       </div>
     </div>
@@ -37,11 +38,13 @@
     <!-- Filters -->
     <div class="px-6 py-4 bg-black/20 border-b border-white/10">
       <div class="grid grid-cols-2 gap-3">
-        <select id="church-country-filter" class="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all">
+        <label for="church-country-filter" class="sr-only">Filtrar por país</label>
+        <select id="church-country-filter" class="min-h-11 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all">
           <option value="">Todos los países</option>
           <!-- Populated dynamically -->
         </select>
-        <select id="church-city-filter" class="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all">
+        <label for="church-city-filter" class="sr-only">Filtrar por ciudad</label>
+        <select id="church-city-filter" class="min-h-11 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all">
           <option value="">Todas las ciudades</option>
           <!-- Populated dynamically -->
         </select>
@@ -51,13 +54,13 @@
     <!-- Special Options -->
     <div class="px-6 py-3 bg-black/10 border-b border-white/10">
       <div class="flex flex-wrap gap-2">
-        <button data-special="virtual" class="special-church-btn px-4 py-2 bg-white/5 hover:bg-brand-teal/20 border border-white/10 hover:border-brand-teal rounded-xl text-xs font-bold text-white/80 hover:text-white transition-all cursor-pointer">
+        <button type="button" data-special="virtual" class="special-church-btn min-h-11 px-4 py-2 bg-white/5 hover:bg-brand-teal/20 border border-white/10 hover:border-brand-teal rounded-xl text-xs font-bold text-white/80 hover:text-white transition-all cursor-pointer">
           🌐 Maná Virtual (elige país)
         </button>
-        <button data-special="none" class="special-church-btn px-4 py-2 bg-white/5 hover:bg-brand-teal/20 border border-white/10 hover:border-brand-teal rounded-xl text-xs font-bold text-white/80 hover:text-white transition-all cursor-pointer">
+        <button type="button" data-special="none" class="special-church-btn min-h-11 px-4 py-2 bg-white/5 hover:bg-brand-teal/20 border border-white/10 hover:border-brand-teal rounded-xl text-xs font-bold text-white/80 hover:text-white transition-all cursor-pointer">
           ⛪ No asisto a ninguna iglesia
         </button>
-        <button data-special="other" class="special-church-btn px-4 py-2 bg-white/5 hover:bg-brand-teal/20 border border-white/10 hover:border-brand-teal rounded-xl text-xs font-bold text-white/80 hover:text-white transition-all cursor-pointer">
+        <button type="button" data-special="other" class="special-church-btn min-h-11 px-4 py-2 bg-white/5 hover:bg-brand-teal/20 border border-white/10 hover:border-brand-teal rounded-xl text-xs font-bold text-white/80 hover:text-white transition-all cursor-pointer">
           ➕ Otra iglesia
         </button>
       </div>
@@ -65,6 +68,7 @@
       <!-- Manual Input (Hidden by default) -->
       <div id="manual-church-container" class="hidden mt-3">
         <div class="flex gap-2">
+          <label for="manual-church-input" class="sr-only">Nombre de otra iglesia</label>
           <input 
             type="text" 
             id="manual-church-input" 
@@ -73,18 +77,20 @@
             autocapitalize="words"
             autocorrect="off"
             spellcheck="false"
-            class="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/40 focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all text-sm capitalize"
+            aria-describedby="manual-church-help manual-church-status"
+            class="min-h-11 flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white placeholder-white/40 focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/50 outline-none transition-all text-sm capitalize"
           >
-          <button id="manual-church-confirm" class="px-4 py-2 bg-brand-teal text-white font-bold rounded-xl text-xs hover:bg-brand-teal/80 transition-colors">
+          <button id="manual-church-confirm" type="button" class="min-h-11 px-4 py-2 bg-brand-teal text-white font-bold rounded-xl text-xs hover:bg-brand-teal/80 transition-colors">
             Confirmar
           </button>
         </div>
-        <p class="text-[10px] text-white/40 mt-1 ml-1">Escribe solo la ciudad o el nombre principal (nosotros lo estandarizamos)</p>
+        <p id="manual-church-help" class="text-[10px] text-white/60 mt-1 ml-1">Escribe solo la ciudad o el nombre principal (nosotros lo estandarizamos).</p>
+        <p id="manual-church-status" class="text-xs text-red-200" role="status" aria-live="polite"></p>
       </div>
     </div>
 
     <!-- Results List (Virtual Scroll) -->
-    <div class="h-96 overflow-y-auto" id="church-results-container">
+    <div class="min-h-0 flex-1 overflow-y-auto" id="church-results-container">
       <div id="church-results-list" class="space-y-3 px-4 pb-4 pt-2">
         <!-- Populated dynamically -->
       </div>
@@ -102,7 +108,7 @@
 
     <!-- Footer -->
     <div class="p-4 bg-black/20 border-t border-white/10 text-center">
-      <p class="text-xs text-white/40">
+      <p id="church-selector-description" class="text-xs text-white/60">
         Selecciona una iglesia para continuar con el registro
       </p>
     </div>
@@ -113,7 +119,6 @@
 <style>
   .church-item {
     cursor: pointer;
-    padding: 16px 20px;
     border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.03);
@@ -127,6 +132,10 @@
   .church-item.selected {
     background: rgba(45, 212, 191, 0.18);
     border-left: 4px solid #22d3ee;
+  }
+  .church-item:focus-visible {
+    outline: 3px solid #22d3ee;
+    outline-offset: 2px;
   }
   .special-church-btn:hover {
     transform: translateY(-1px) scale(1.02);

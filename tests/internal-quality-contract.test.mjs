@@ -89,3 +89,38 @@ test('los diálogos del panel controlan foco, Escape y tamaños táctiles', asyn
   assert.match(dashboard, /content\.setAttribute\('aria-hidden', 'false'\)/);
   assert.match(dashboard, /content\.setAttribute\('aria-hidden', 'true'\)/);
 });
+
+test('los controles generados por el panel mantienen objetivos táctiles y nombres accesibles', async () => {
+  const [panel, dashboard] = await Promise.all([
+    readSource('src/pages/portal/index.astro'),
+    readSource('src/scripts/portal-dashboard.js'),
+  ]);
+
+  assert.match(panel, /id="church-participants-page-size"[^>]*min-h-11 min-w-11/);
+  assert.match(dashboard, /btn-view-participant-booking min-h-11/);
+  assert.match(dashboard, /church-installment-action min-h-11/);
+  assert.match(dashboard, /admin-followups-page-btn min-h-11/);
+  assert.match(dashboard, /data-role="assign-church" aria-label="Asignar una iglesia a \$\{safeContactLabel\}"[^>]*min-h-11/);
+});
+
+test('el selector de iglesias y el registro manual protegen foco, datos y formularios largos', async () => {
+  const [selectorView, selectorLogic, registrationView, registrationLogic] = await Promise.all([
+    readSource('src/components/portal/ChurchSelector.astro'),
+    readSource('src/scripts/ChurchSelector.js'),
+    readSource('src/components/portal/RegistrationModal.astro'),
+    readSource('src/scripts/RegistrationModal.js'),
+  ]);
+
+  assert.match(selectorView, /id="church-selector-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-hidden="true"/);
+  assert.match(selectorView, /id="close-church-selector"[^>]*aria-label="Cerrar selector de iglesias"[^>]*h-11 w-11/);
+  assert.match(selectorLogic, /const escapeHtml =/);
+  assert.match(selectorLogic, /handleModalKeydown\(event\)/);
+  assert.match(selectorLogic, /setAttribute\('aria-hidden', 'false'\)/);
+  assert.match(selectorLogic, /this\.returnFocus\?\.focus\(\)/);
+
+  assert.match(registrationView, /id="manual-registration-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-hidden="true"/);
+  assert.match(registrationView, /id="custom-alert-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-hidden="true"/);
+  assert.match(registrationLogic, /handleModalKeydown\(event\)/);
+  assert.match(registrationLogic, /handleAlertKeydown\(event\)/);
+  assert.doesNotMatch(registrationLogic, /if \(e\.target === this\.modal\) this\.close\(\)/);
+});

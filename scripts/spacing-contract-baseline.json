@@ -49,9 +49,9 @@
     "cssMagicValue": 116
   },
   "src/components/portal": {
-    "tailwindOffScale": 140,
+    "tailwindOffScale": 137,
     "tailwindArbitrary": 0,
-    "cssMagicValue": 1
+    "cssMagicValue": 0
   },
   "src/components/primicias": {
     "tailwindOffScale": 52,
@@ -164,7 +164,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 403,
+    "tailwindOffScale": 381,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },

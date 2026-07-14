@@ -4,8 +4,8 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
 ---
 
 <!-- Manual Registration Modal -->
-<div id="manual-registration-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-  <div class="w-full max-w-6xl bg-white rounded-[2rem] shadow-2xl border border-slate-100 my-8 relative flex flex-col max-h-[90vh]">
+<div id="manual-registration-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="manual-modal-title" aria-describedby="manual-modal-subtitle" aria-hidden="true">
+  <div class="w-full max-w-6xl bg-white rounded-[2rem] shadow-2xl border border-slate-100 relative flex flex-col max-h-[calc(100vh-2rem)]" tabindex="-1">
     
     <!-- Modal Header -->
     <div class="p-6 md:p-8 border-b border-slate-100 flex items-start justify-between bg-white z-10 rounded-t-[2rem]">
@@ -13,7 +13,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
         <p id="manual-modal-subtitle" class="text-[10px] font-bold text-[#293C74] uppercase tracking-[0.3em]">Nueva Inscripción</p>
         <h2 id="manual-modal-title" class="text-2xl font-display font-bold text-[#293C74]">Registrar Participante</h2>
       </div>
-      <button id="btn-close-manual-modal" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+      <button id="btn-close-manual-modal" type="button" aria-label="Cerrar registro de participante" class="flex h-11 w-11 items-center justify-center hover:bg-slate-100 rounded-full transition-colors">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
     </div>
@@ -37,7 +37,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
             <div class="space-y-5">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Tipo Identificación</label>
+                    <label for="reg-leader-doc-type" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Tipo Identificación</label>
                     <div class="relative">
                         <select id="reg-leader-doc-type" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] appearance-none transition-all">
                           <option value="CC">Cédula (CC)</option>
@@ -51,34 +51,34 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Número Documento</label>
+                    <label for="reg-leader-doc-number" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Número Documento</label>
                     <input type="text" id="reg-leader-doc-number" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="Ej: 1000123456">
                   </div>
                 </div>
 
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre Completo</label>
+                  <label for="reg-leader-name" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Nombre Completo</label>
                   <input type="text" id="reg-leader-name" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="Nombres y Apellidos">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Email <span class="text-slate-400 font-normal normal-case tracking-normal">(Opcional)</span></label>
+                    <label for="reg-leader-email" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Email <span class="text-slate-400 font-normal normal-case tracking-normal">(Opcional)</span></label>
                     <input type="email" id="reg-leader-email" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="correo@ejemplo.com">
                   </div>
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Celular / WhatsApp</label>
+                    <label for="reg-leader-phone" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Celular / WhatsApp</label>
                     <input type="tel" id="reg-leader-phone" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="+57 300...">
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Edad</label>
+                    <label for="reg-leader-age" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Edad</label>
                     <input type="number" id="reg-leader-age" min="0" max="120" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="00">
                   </div>
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Alimentación</label>
+                    <label for="reg-leader-menu" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Alimentación</label>
                     <div class="relative">
                         <select id="reg-leader-menu" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] appearance-none transition-all">
                           <option value="TRADICIONAL">Menú tradicional</option>
@@ -90,7 +90,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     </div>
                   </div>
                   <div class="space-y-2 md:col-span-1">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Paquete</label>
+                    <label for="reg-leader-package" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Paquete</label>
                     <div class="relative">
                         <select id="reg-leader-package" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] appearance-none transition-all">
                           <option value="no_lodging">Sin Alojamiento</option>
@@ -106,11 +106,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Fecha de nacimiento</label>
+                    <label for="reg-leader-birthdate" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Fecha de nacimiento</label>
                     <input type="date" id="reg-leader-birthdate" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400">
                   </div>
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Género</label>
+                    <label for="reg-leader-gender" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Género</label>
                     <select id="reg-leader-gender" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all">
                       <option value="">Selecciona</option>
                       <option value="F">Femenino</option>
@@ -129,7 +129,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                 <span class="w-8 h-8 rounded-full bg-[#293C74]/10 text-[#293C74] flex items-center justify-center text-sm font-bold">2</span>
                 Acompañantes
               </h3>
-              <button type="button" id="btn-add-companion" class="px-5 py-2.5 bg-brand-teal text-white rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-brand-teal/20 transition-all flex items-center gap-2">
+              <button type="button" id="btn-add-companion" class="min-h-11 px-5 py-2 bg-brand-teal text-white rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-brand-teal/20 transition-all flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 Agregar
               </button>
@@ -137,7 +137,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
 
             <!-- Add Companion Form (Hidden by default) -->
             <div id="add-companion-form" class="hidden bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-5 mb-6 relative">
-               <button type="button" id="btn-cancel-companion" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+               <button type="button" id="btn-cancel-companion" aria-label="Cerrar formulario del acompañante" class="absolute top-4 right-4 flex h-11 w-11 items-center justify-center text-slate-400 hover:text-red-500 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                </button>
                <h4 id="companion-form-title" class="text-xs font-bold text-[#293C74] uppercase tracking-widest mb-2">Nuevo Acompañante</h4>
@@ -145,9 +145,9 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               <!-- Document Info -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Documento</label>
+                  <label for="companion-doc-number" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Documento</label>
                   <div class="flex gap-2">
-                      <select id="companion-doc-type" class="w-24 bg-white border border-slate-200 rounded-xl px-2 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
+                      <select id="companion-doc-type" aria-label="Tipo de documento del acompañante" class="w-24 min-h-11 bg-white border border-slate-200 rounded-xl px-2 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
                         <option value="TI">TI</option>
                         <option value="RC">RC</option>
                         <option value="CC">CC</option>
@@ -158,18 +158,18 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                   </div>
                 </div>
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Edad</label>
+                  <label for="companion-age" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Edad</label>
                   <input type="number" id="companion-age" min="0" max="120" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="Años">
                 </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Fecha de nacimiento</label>
+                  <label for="companion-birthdate" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Fecha de nacimiento</label>
                   <input type="date" id="companion-birthdate" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="AAAA-MM-DD">
                 </div>
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Género</label>
+                  <label for="companion-gender" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Género</label>
                   <select id="companion-gender" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
                     <option value="">Selecciona</option>
                     <option value="F">Femenino</option>
@@ -180,18 +180,18 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               </div>
 
               <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Nombre Completo</label>
+                  <label for="companion-name" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Nombre Completo</label>
                   <input type="text" id="companion-name" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="Nombre del acompañante">
               </div>
 
               <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Email <span class="text-slate-400 font-normal normal-case">(Opcional)</span></label>
+                  <label for="companion-email" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Email <span class="text-slate-400 font-normal normal-case">(Opcional)</span></label>
                   <input type="email" id="companion-email" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="correo@ejemplo.com">
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div id="companion-package-container" class="space-y-2">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Paquete</label>
+                    <label for="companion-package" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Paquete</label>
                     <select id="companion-package" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
                       <option value="no_lodging">Sin Alojamiento</option>
                       <option value="lodging" disabled>Con Alojamiento (existente)</option>
@@ -199,7 +199,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     <p class="mt-1 text-xs text-slate-400">Hospedaje agotado. Continúa sin alojamiento.</p>
                   </div>
                   <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Alimentación</label>
+                    <label for="companion-menu" class="text-[11px] font-bold text-slate-500 uppercase ml-1">Alimentación</label>
                     <select id="companion-menu" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
                       <option value="TRADICIONAL">Menú tradicional</option>
                       <option value="VEGETARIANO">Menú vegetariano</option>
@@ -207,7 +207,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                   </div>
               </div>
               
-              <button type="button" id="btn-save-companion" class="w-full py-3 bg-[#293C74] text-white rounded-xl text-sm font-bold shadow-lg hover:bg-[#293C74]/90 transition-all transform active:scale-95">
+              <button type="button" id="btn-save-companion" class="w-full min-h-11 py-3 bg-[#293C74] text-white rounded-xl text-sm font-bold shadow-lg hover:bg-[#293C74]/90 transition-all transform active:scale-95">
                   Confirmar Acompañante
               </button>
             </div>
@@ -231,9 +231,9 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
             
             <div class="space-y-5">
               <div class="space-y-2">
-                <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Iglesia / Sede Asignada</label>
+                <span id="selected-church-label" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Iglesia / Sede Asignada</span>
                 <div class="relative">
-                    <button type="button" id="btn-open-church-selector" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-left text-[#293C74] hover:border-brand-teal transition-colors flex items-center justify-between group">
+                    <button type="button" id="btn-open-church-selector" aria-labelledby="selected-church-label selected-church-display" class="w-full min-h-11 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-left text-[#293C74] hover:border-brand-teal transition-colors flex items-center justify-between group">
                       <span id="selected-church-display" class="text-slate-400 group-hover:text-[#293C74]">Seleccionar iglesia...</span>
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-300 group-hover:text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
@@ -243,11 +243,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div class="space-y-2">
-                    <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País / Región</label>
+                    <label for="reg-country" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">País / Región</label>
                   <input type="text" id="reg-country" value="Colombia" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]">
                 </div>
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
+                  <label for="reg-city" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Ciudad</label>
                   <input type="text" id="reg-city" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74]" placeholder="Ciudad de residencia">
                 </div>
               </div>
@@ -263,7 +263,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
               <div class="space-y-2">
-                <label class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Moneda de pago</label>
+                <label for="reg-currency" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Moneda de pago</label>
                 <div class="relative">
                   <select id="reg-currency" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] appearance-none transition-all">
                     <option value="COP">Pesos colombianos (COP)</option>
@@ -275,11 +275,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                 </div>
               </div>
               <div id="manual-payment-amount-field" class="space-y-2">
-                <label id="manual-payment-amount-label" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Valor pagado hoy</label>
+                <label for="manual-payment-amount" id="manual-payment-amount-label" class="text-[11px] font-bold text-[#293C74] uppercase tracking-widest ml-1">Valor pagado hoy</label>
                 <input type="text" id="manual-payment-amount" inputmode="decimal" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold text-[#293C74] outline-none focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] transition-all placeholder-slate-400" placeholder="0">
                 <div class="flex items-center justify-between text-[11px] text-slate-500 ml-1">
                   <span id="manual-payment-hint">Automático: $0</span>
-                  <label class="inline-flex items-center gap-2 font-semibold text-slate-500 cursor-pointer">
+                  <label class="inline-flex min-h-11 items-center gap-2 font-semibold text-slate-500 cursor-pointer">
                     <input id="manual-payment-custom-toggle" type="checkbox" class="h-3.5 w-3.5 rounded border-slate-300 text-brand-teal focus:ring-brand-teal">
                     Aporte libre
                   </label>
@@ -314,11 +314,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               <div id="physical-payment-action" class="hidden bg-white border border-slate-200 rounded-2xl p-4 space-y-3">
                 <div class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_160px] gap-3">
                   <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Abono físico</label>
+                    <label for="physical-payment-amount" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Abono físico</label>
                     <input type="text" id="physical-payment-amount" inputmode="decimal" autocomplete="off" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all" placeholder="0">
                   </div>
                   <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Método</label>
+                    <label for="physical-payment-method" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Método</label>
                     <select id="physical-payment-method" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
                       <option value="cash">Efectivo</option>
                       <option value="bank_transfer">Transferencia</option>
@@ -329,7 +329,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <p id="physical-payment-action-hint" class="text-[11px] text-slate-500"></p>
-                  <button type="button" id="btn-record-physical-payment" class="shrink-0 px-4 py-2.5 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f5f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <button type="button" id="btn-record-physical-payment" class="min-h-11 shrink-0 px-4 py-2 rounded-xl bg-[#293C74] text-white text-sm font-bold hover:bg-[#1f2f5f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     Registrar abono
                   </button>
                 </div>
@@ -341,16 +341,16 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
                     <p id="payment-plan-status" class="text-sm font-bold text-[#293C74] truncate">Plan activo</p>
                     <p id="payment-plan-next" class="text-[11px] text-slate-500 mt-1"></p>
                   </div>
-                  <button type="button" id="btn-stop-payment-plan" class="shrink-0 px-4 py-2.5 rounded-xl border border-amber-300 text-amber-700 bg-amber-50 text-sm font-bold hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <button type="button" id="btn-stop-payment-plan" class="min-h-11 shrink-0 px-4 py-2 rounded-xl border border-amber-300 text-amber-700 bg-amber-50 text-sm font-bold hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     Detener cobros futuros
                   </button>
                 </div>
                 <div id="payment-plan-date-action" class="hidden mt-4 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-3 items-end">
                   <div class="space-y-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nueva fecha de próximo cobro</label>
+                    <label for="payment-plan-next-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nueva fecha de próximo cobro</label>
                     <input type="date" id="payment-plan-next-date" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
                   </div>
-                  <button type="button" id="btn-update-plan-date" class="px-4 py-3 rounded-xl border border-[#293C74]/20 text-[#293C74] bg-white text-sm font-bold hover:bg-[#293C74]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  <button type="button" id="btn-update-plan-date" class="min-h-11 px-4 py-3 rounded-xl border border-[#293C74]/20 text-[#293C74] bg-white text-sm font-bold hover:bg-[#293C74]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     Actualizar plazo
                   </button>
                 </div>
@@ -449,7 +449,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               </p>
               <div class="grid md:grid-cols-[1fr_auto] gap-4 items-end">
                 <div>
-                  <label class="block text-[11px] font-bold text-[#293C74] uppercase tracking-widest mb-2">Fecha de segundo pago</label>
+                  <label for="deposit-due-date" class="block text-[11px] font-bold text-[#293C74] uppercase tracking-widest mb-2">Fecha de segundo pago</label>
                   <input type="date" id="deposit-due-date" name="deposit_due_date" max={installmentDeadline} class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-[#293C74] outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-all">
                 </div>
                 <div class="text-[11px] text-slate-500">
@@ -488,11 +488,11 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
             </div>
 
             <div class="mt-6 space-y-3">
-              <button type="button" id="btn-cancel-manual-reg" class="w-full py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors font-bold">Cancelar</button>
-              <button type="button" id="btn-delete-manual-booking" class="hidden w-full py-3 rounded-xl border border-red-300 text-red-100 hover:text-white hover:bg-red-500/20 hover:border-red-300 transition-colors font-bold">
+              <button type="button" id="btn-cancel-manual-reg" class="w-full min-h-11 py-3 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors font-bold">Cancelar</button>
+              <button type="button" id="btn-delete-manual-booking" class="hidden w-full min-h-11 py-3 rounded-xl border border-red-300 text-red-100 hover:text-white hover:bg-red-500/20 hover:border-red-300 transition-colors font-bold">
                 Eliminar registro manual
               </button>
-              <button id="btn-submit-manual-reg" type="submit" class="w-full bg-gradient-to-r from-brand-teal to-[#4CC9E0] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-transform hover:-translate-y-0.5">
+              <button id="btn-submit-manual-reg" type="submit" class="w-full min-h-11 bg-gradient-to-r from-brand-teal to-[#4CC9E0] text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:brightness-110 transition-transform hover:-translate-y-0.5">
                 Registrar Grupo
               </button>
             </div>
@@ -500,7 +500,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
               Solo se habilita para perfiles manuales sin pagos online asociados.
             </p>
             
-            <div id="manual-reg-status" class="mt-4 text-sm text-center text-white/60"></div>
+            <div id="manual-reg-status" class="mt-4 text-sm text-center text-white/60" role="status" aria-live="polite"></div>
           </div>
         </div>
 
@@ -510,8 +510,8 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
   </div>
 
   <!-- Custom Alert Modal (Inside main modal container to handle z-index) -->
-  <div id="custom-alert-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all scale-100">
+  <div id="custom-alert-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="alert-title" aria-describedby="alert-message" aria-hidden="true">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all scale-100" tabindex="-1">
       <div id="alert-icon-container" class="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
         <svg id="alert-icon-error" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -522,7 +522,7 @@ const installmentDeadline = (import.meta.env?.CUMBRE_INSTALLMENT_DEADLINE ?? '20
       </div>
       <h3 id="alert-title" class="text-lg font-bold text-slate-900 mb-2">Atención</h3>
       <p id="alert-message" class="text-sm text-slate-500 mb-6">Mensaje de alerta</p>
-      <button id="btn-close-alert" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">
+      <button id="btn-close-alert" type="button" class="w-full min-h-11 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors">
         Entendido
       </button>
     </div>

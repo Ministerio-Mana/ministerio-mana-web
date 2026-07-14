@@ -2099,7 +2099,7 @@ function buildParticipantRow(data = {}) {
   row.innerHTML = `
     <div class="flex items-center justify-between">
       <p class="text-xs font-bold text-[#293C74]">Persona ${churchParticipantsCount}</p>
-      <button type="button" class="text-xs font-bold text-red-500 hover:underline" data-action="remove">Quitar</button>
+      <button type="button" class="min-h-11 px-2 text-xs font-bold text-red-500 hover:underline" data-action="remove">Quitar</button>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <input type="text" data-field="fullName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[#293C74] focus:border-[#293C74] focus:ring-1 focus:ring-[#293C74] outline-none transition-all font-medium" placeholder="Nombre completo" value="${fullNameValue}">
@@ -2610,11 +2610,11 @@ function renderChurchBookingsPagination(meta) {
   churchBookingsPagination.innerHTML = `
     <span class="font-medium text-slate-500">Mostrando ${safeStart}-${safeEnd} de ${meta.total}</span>
     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-      <button type="button" class="church-bookings-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+      <button type="button" class="church-bookings-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
         Anterior
       </button>
       <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
-      <button type="button" class="church-bookings-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+      <button type="button" class="church-bookings-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
         Siguiente
       </button>
     </div>
@@ -2786,10 +2786,10 @@ function renderChurchBookings(list, meta) {
       </div>
       ${canEdit ? `
         <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
-          <button type="button" class="btn-view-booking w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50" data-booking-id="${safeItemId}">
+          <button type="button" class="btn-view-booking min-h-11 w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50" data-booking-id="${safeItemId}">
             Ver detalle
           </button>
-          <button type="button" class="btn-edit-booking w-full sm:w-auto px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
+          <button type="button" class="btn-edit-booking min-h-11 w-full sm:w-auto px-4 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10" data-booking-id="${safeItemId}">
             Editar perfil
           </button>
         </div>
@@ -3015,11 +3015,11 @@ function renderChurchParticipantsPagination(meta) {
   churchParticipantsPagination.innerHTML = `
     <span class="font-medium text-slate-500">Mostrando ${safeStart}-${safeEnd} de ${meta.total}</span>
     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-      <button type="button" class="church-participants-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+      <button type="button" class="church-participants-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
         Anterior
       </button>
       <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
-      <button type="button" class="church-participants-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+      <button type="button" class="church-participants-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
         Siguiente
       </button>
     </div>
@@ -3125,10 +3125,10 @@ function renderChurchParticipantsTableRows(items) {
         </td>
         <td class="min-w-[150px] px-4 py-3 align-top">
           <div class="flex flex-col gap-2">
-            <button type="button" class="btn-view-participant-booking px-3 py-2 rounded-lg border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+            <button type="button" class="btn-view-participant-booking min-h-11 px-3 py-2 rounded-lg border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
               Ver detalle
             </button>
-            <button type="button" class="btn-edit-participant-booking px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+            <button type="button" class="btn-edit-participant-booking min-h-11 px-3 py-2 rounded-lg border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
               Editar perfil
             </button>
           </div>
@@ -3307,10 +3307,10 @@ function renderChurchParticipants(list) {
           </div>
 
           <div class="flex flex-col gap-2 sm:flex-row xl:justify-end">
-            <button type="button" class="btn-view-participant-booking px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
+            <button type="button" class="btn-view-participant-booking min-h-11 px-4 py-2 rounded-xl border border-slate-200 bg-white text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-booking-id="${safeBookingId}">
               Ver detalle
             </button>
-            <button type="button" class="btn-edit-participant-booking px-4 py-2.5 rounded-xl border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
+            <button type="button" class="btn-edit-participant-booking min-h-11 px-4 py-2 rounded-xl border border-brand-teal text-brand-teal text-xs font-bold hover:bg-brand-teal/10 transition" data-booking-id="${safeBookingId}">
               Editar perfil
             </button>
           </div>
@@ -3598,11 +3598,11 @@ function renderChurchPaymentsPagination(meta) {
   churchPaymentsPagination.innerHTML = `
     <span class="font-medium text-slate-500">Mostrando ${meta.start + 1}-${meta.end} de ${meta.total}</span>
     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-      <button type="button" class="church-payments-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+      <button type="button" class="church-payments-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
         Anterior
       </button>
       <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
-      <button type="button" class="church-payments-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+      <button type="button" class="church-payments-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
         Siguiente
       </button>
     </div>
@@ -3841,11 +3841,11 @@ function renderChurchInstallmentsPagination(meta) {
   churchInstallmentsPagination.innerHTML = `
     <span class="font-medium text-slate-500">Mostrando ${meta.start + 1}-${meta.end} de ${meta.total}</span>
     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-      <button type="button" class="church-installments-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+      <button type="button" class="church-installments-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
         Anterior
       </button>
       <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
-      <button type="button" class="church-installments-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+      <button type="button" class="church-installments-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
         Siguiente
       </button>
     </div>
@@ -3911,10 +3911,10 @@ function renderChurchInstallments(list) {
     const actionsHtml = isAutoCharge
         ? '<div class="text-xs font-semibold text-emerald-700">Cobro automático activo</div>'
         : `
-          <button class="church-installment-action px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${safeInstallmentId}">
+          <button type="button" class="church-installment-action min-h-11 px-3 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-action="copy-link" data-installment="${safeInstallmentId}">
             ${isBalanceOnly ? 'Crear link' : 'Copiar link'}
           </button>
-          <button class="church-installment-action px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-action="send-reminder" data-installment="${safeInstallmentId}">
+          <button type="button" class="church-installment-action min-h-11 px-3 py-2 rounded-xl bg-white border border-slate-200 text-[#293C74] text-xs font-bold hover:bg-slate-50 transition" data-action="send-reminder" data-installment="${safeInstallmentId}">
             Enviar recordatorio
           </button>
         `;
@@ -4298,7 +4298,7 @@ function renderAdminUsers(users) {
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           ${roleSelect}
-          <button data-action="reset" data-email="${safeAttr(user.email || '')}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
+          <button type="button" data-action="reset" data-email="${safeAttr(user.email || '')}" class="min-h-11 whitespace-nowrap px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
             Reset contraseña
           </button>
         </div>
@@ -4393,11 +4393,11 @@ function renderAdminFollowupsPagination(meta) {
   adminFollowupsPagination.innerHTML = `
     <span class="font-medium text-slate-500">Mostrando ${meta.start + 1}-${meta.end} de ${meta.total}</span>
     <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-      <button type="button" class="admin-followups-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
+      <button type="button" class="admin-followups-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page - 1}" ${canPrev ? '' : 'disabled'}>
         Anterior
       </button>
       <span class="whitespace-nowrap text-[11px] font-semibold text-slate-500">Página ${meta.page} / ${meta.totalPages}</span>
-      <button type="button" class="admin-followups-page-btn whitespace-nowrap px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
+      <button type="button" class="admin-followups-page-btn min-h-11 whitespace-nowrap px-4 py-2 rounded-lg border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed" data-page="${meta.page + 1}" ${canNext ? '' : 'disabled'}>
         Siguiente
       </button>
     </div>
@@ -4580,12 +4580,12 @@ function renderAdminFollowups(items, counts = {}) {
       <p class="text-[10px] uppercase tracking-widest text-slate-400" data-field="whatsapp-status">${safeWhatsappStatusLabel}</p>
       ${canAssignChurch ? `
         <div class="flex flex-col md:flex-row md:items-center gap-2 min-w-0">
-          <select data-role="assign-church" class="w-full min-w-0 md:flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
+          <select data-role="assign-church" aria-label="Asignar una iglesia a ${safeContactLabel}" class="w-full min-h-11 min-w-0 md:flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-[#293C74]">
             <option value="">Selecciona iglesia</option>
             <option value="__virtual__">Ministerio Virtual</option>
             ${churchOptions}
           </select>
-          <button data-action="assign-church" data-booking="${safeItemId}" class="w-full md:w-auto shrink-0 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
+          <button type="button" data-action="assign-church" data-booking="${safeItemId}" class="w-full min-h-11 md:w-auto shrink-0 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800">
             Asignar
           </button>
         </div>
@@ -4594,16 +4594,16 @@ function renderAdminFollowups(items, counts = {}) {
         <span class="text-[10px] uppercase tracking-widest text-slate-400">Estado: ${safeStatus}</span>
         <div class="flex items-center gap-2 flex-wrap">
           ${canRecompute ? `
-            <button data-action="recompute" data-booking="${safeItemId}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
+            <button type="button" data-action="recompute" data-booking="${safeItemId}" class="min-h-11 whitespace-nowrap px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">
               Recalcular
             </button>
           ` : ''}
           ${canEmail ? `
-            <button data-action="notify-email" data-booking="${safeItemId}" data-kind="${safeKind}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">
+            <button type="button" data-action="notify-email" data-booking="${safeItemId}" data-kind="${safeKind}" class="min-h-11 whitespace-nowrap px-3 py-2 rounded-lg bg-[#293C74] text-white text-xs font-bold hover:bg-[#293C74]/90">
               Enviar correo
             </button>
           ` : ''}
-          <button data-action="whatsapp" data-booking="${safeItemId}" class="whitespace-nowrap px-3 py-2 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
+          <button type="button" data-action="whatsapp" data-booking="${safeItemId}" class="min-h-11 whitespace-nowrap px-3 py-2 rounded-lg bg-teal-600 text-white text-xs font-bold hover:bg-teal-700">
             ${safeWhatsappLabel}
           </button>
         </div>
@@ -4911,11 +4911,11 @@ function renderBookings(bookings) {
     const calendarLinks = eventStart ? `
       <div class="flex flex-wrap gap-2 pt-1">
         <a href="${safeCalendarUrl}" target="_blank" rel="noreferrer"
-           class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full border border-slate-200 text-slate-600 hover:border-slate-300">
+           class="inline-flex min-h-11 items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full border border-slate-200 text-slate-600 hover:border-slate-300">
           Google Calendar
         </a>
         <button type="button"
-          class="calendar-download inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+          class="calendar-download inline-flex min-h-11 items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
           data-calendar-title="${safeCalendarTitle}"
           data-calendar-start="${safeCalendarStart}"
           data-calendar-end="${safeCalendarEnd}"
@@ -5029,7 +5029,7 @@ function renderPlans(plans, bookings) {
 
       <div class="flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-4">
          <span>Próximo abono: ${safeNextDue}</span>
-         <button class="plan-action px-4 py-2 rounded-lg text-xs font-bold transition-all ${actionClass}" data-plan="${safePlanId}" data-action="${plan.status === 'PAUSED' ? 'resume' : 'pause'}">
+         <button type="button" class="plan-action min-h-11 px-4 py-2 rounded-lg text-xs font-bold transition-all ${actionClass}" data-plan="${safePlanId}" data-action="${plan.status === 'PAUSED' ? 'resume' : 'pause'}">
           ${safeActionLabel}
          </button>
       </div>
@@ -5124,10 +5124,10 @@ function renderInstallments(installments, plans, bookings) {
       </div>
       <div class="flex items-center gap-2 flex-wrap md:justify-end">
         <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusClass} whitespace-nowrap">${safeStatusLabel}</span>
-        <button class="installment-reschedule whitespace-nowrap px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition" data-installment="${safeInstallmentId}" data-due-date="${safeDueDateRaw}">
+        <button type="button" class="installment-reschedule min-h-11 whitespace-nowrap px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition" data-installment="${safeInstallmentId}" data-due-date="${safeDueDateRaw}">
           Cambiar fecha
         </button>
-        <button class="installment-pay whitespace-nowrap px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${safeInstallmentId}">
+        <button type="button" class="installment-pay min-h-11 whitespace-nowrap px-4 py-2 rounded-xl bg-[#293C74] text-white text-xs font-bold hover:shadow-md transition" data-installment="${safeInstallmentId}">
           Pagar ahora
         </button>
       </div>
@@ -5404,21 +5404,21 @@ function renderGivingSummary(donations, subscriptions, recurringSubscriptions = 
       ${canManageReal ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
-            class="giving-recurring-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            class="giving-recurring-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
             data-giving-subscription-id="${safeSubscriptionId}"
             data-giving-subscription-action="${primaryAction}">
             ${safePrimaryLabel}
           </button>
           ${canOpenProviderPortal ? `
             <button type="button"
-              class="giving-recurring-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+              class="giving-recurring-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
               data-giving-subscription-id="${safeSubscriptionId}"
               data-giving-subscription-action="manage">
               Metodo de pago
             </button>
           ` : ''}
           <button type="button"
-            class="giving-recurring-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            class="giving-recurring-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
             data-giving-subscription-id="${safeSubscriptionId}"
             data-giving-subscription-action="cancel">
             Cancelar
@@ -5427,20 +5427,20 @@ function renderGivingSummary(donations, subscriptions, recurringSubscriptions = 
       ` : canManageReminder ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
-            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            class="subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="${primaryAction}">
             ${safePrimaryLabel}
           </button>
           <button type="button"
-            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            class="subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="reschedule"
             data-subscription-next-date="${safeNextReminderDate}">
             Cambiar fecha
           </button>
           <button type="button"
-            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            class="subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="cancel">
             Cancelar
@@ -5571,21 +5571,21 @@ function renderCampusSummary(donations, subscriptions, campusSubscriptions = [])
       ${canManageReal ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
-            class="campus-subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            class="campus-subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
             data-campus-subscription-id="${safeSubscriptionId}"
             data-campus-subscription-action="${primaryAction}">
             ${safePrimaryLabel}
           </button>
           ${canOpenProviderPortal ? `
             <button type="button"
-              class="campus-subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+              class="campus-subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
               data-campus-subscription-id="${safeSubscriptionId}"
               data-campus-subscription-action="manage">
               Metodo de pago
             </button>
           ` : ''}
           <button type="button"
-            class="campus-subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            class="campus-subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
             data-campus-subscription-id="${safeSubscriptionId}"
             data-campus-subscription-action="cancel">
             Cancelar
@@ -5594,20 +5594,20 @@ function renderCampusSummary(donations, subscriptions, campusSubscriptions = [])
       ` : canManageReminder ? `
         <div class="mt-4 flex flex-wrap gap-2">
           <button type="button"
-            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            class="subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="${primaryAction}">
             ${safePrimaryLabel}
           </button>
           <button type="button"
-            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
+            class="subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-slate-200 text-slate-600 hover:bg-slate-50"
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="reschedule"
             data-subscription-next-date="${safeNextReminderDate}">
             Cambiar fecha
           </button>
           <button type="button"
-            class="subscription-action inline-flex items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
+            class="subscription-action inline-flex min-h-11 items-center justify-center px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-50 text-red-600 hover:bg-red-100"
             data-subscription-id="${safeSubscriptionId}"
             data-subscription-action="cancel">
             Cancelar
