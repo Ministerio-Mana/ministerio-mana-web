@@ -175,13 +175,13 @@ function setFilterFeedback(message = '', tone = 'error') {
   if (!filterFeedbackEl) return;
   if (!message) {
     filterFeedbackEl.textContent = '';
-    filterFeedbackEl.className = 'mt-4 hidden rounded-md px-4 py-3 text-sm';
+    filterFeedbackEl.className = 'mt-4 hidden rounded-md px-4 py-4 text-sm';
     return;
   }
   const styles = tone === 'success'
     ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
     : 'border border-red-200 bg-red-50 text-red-700';
-  filterFeedbackEl.className = `mt-4 rounded-md px-4 py-3 text-sm ${styles}`;
+  filterFeedbackEl.className = `mt-4 rounded-md px-4 py-4 text-sm ${styles}`;
   filterFeedbackEl.textContent = message;
 }
 
@@ -308,7 +308,7 @@ function showLoadError(error) {
     : error?.message || 'No se pudieron cargar las finanzas.';
   loadingEl.className = 'py-12 text-center';
   loadingEl.innerHTML = `
-    <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-red-700">
+    <div class="mx-auto max-w-md rounded-2xl border border-red-100 bg-red-50 px-6 py-4 text-red-700">
       <p class="font-bold mb-2">Error al cargar finanzas</p>
       <p class="text-sm">${escapeHtml(message)}</p>
       <button type="button" id="btn-retry-finances" class="mt-4 rounded-full bg-white px-4 py-2 text-xs font-bold text-red-700 shadow-sm border border-red-100">
@@ -475,12 +475,12 @@ function renderTransactions(transactions, pagination, { append = false } = {}) {
   if (tbody) {
     const rows = transactions.map((t) => `
       <tr>
-        <td data-label="Fecha" class="py-3 pl-2">${formatDate(t.created_at)}</td>
-        <td data-label="Concepto" class="py-3 font-medium text-[#293C74]">${escapeHtml(t.concept_label || 'Aporte')}</td>
-        <td data-label="Donante" class="py-3 text-slate-500">${escapeHtml(t.donor_name || 'Anónimo')}</td>
-        <td data-label="Cuenta" class="py-3 text-xs font-semibold text-slate-600">${escapeHtml(financeRecordOriginLabel(t))}</td>
-        <td data-label="Estado" class="py-3"><span class="portal-chip bg-green-100 text-green-800">${escapeHtml(t.status || 'APROBADO')}</span></td>
-        <td data-label="Monto" class="py-3 text-right font-bold pr-2">${formatCurrency(t.amount, t.currency)}</td>
+        <td data-label="Fecha" class="py-4 pl-2">${formatDate(t.created_at)}</td>
+        <td data-label="Concepto" class="py-4 font-medium text-[#293C74]">${escapeHtml(t.concept_label || 'Aporte')}</td>
+        <td data-label="Donante" class="py-4 text-slate-500">${escapeHtml(t.donor_name || 'Anónimo')}</td>
+        <td data-label="Cuenta" class="py-4 text-xs font-semibold text-slate-600">${escapeHtml(financeRecordOriginLabel(t))}</td>
+        <td data-label="Estado" class="py-4"><span class="portal-chip bg-green-100 text-green-800">${escapeHtml(t.status || 'APROBADO')}</span></td>
+        <td data-label="Monto" class="py-4 text-right font-bold pr-2">${formatCurrency(t.amount, t.currency)}</td>
       </tr>
     `).join('');
 
@@ -550,9 +550,9 @@ function renderCategories(byCategory) {
     const usdLine = usdValue ? `<span class="text-sm font-bold text-[#293C74]">${formatCurrency(usdValue, 'USD')}</span>` : '';
     const emptyLine = (!copValue && !usdValue) ? `<span class="text-sm font-bold text-[#293C74]">${formatCurrency(0, 'COP')}</span>` : '';
     return `
-      <div class="rounded-md border border-slate-200 bg-slate-50/70 p-3">
+      <div class="rounded-md border border-slate-200 bg-slate-50/70 p-4">
         <p class="text-xs font-bold uppercase text-slate-500">${escapeHtml(label)}</p>
-        <div class="mt-2 flex flex-col gap-1">
+        <div class="mt-2 flex flex-col gap-2">
           ${copLine}
           ${usdLine}
           ${emptyLine}
@@ -634,14 +634,14 @@ function issueCardHtml(issue) {
     : '';
 
   const actions = [
-    mailto ? `<a class="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
-    whatsapp ? `<a class="inline-flex min-h-10 items-center rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>` : '',
-    `<button class="min-h-10 rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`,
+    mailto ? `<a class="inline-flex min-h-10 items-center rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" href="${escapeHtml(mailto)}">Correo</a>` : '',
+    whatsapp ? `<a class="inline-flex min-h-10 items-center rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="${whatsapp}" target="_blank" rel="noreferrer">WhatsApp</a>` : '',
+    `<button class="min-h-10 rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300" data-copy-text="${encodedMessage}">Copiar mensaje</button>`,
   ].filter(Boolean).join('');
 
   return `
     <div class="rounded-md border border-slate-200 p-4">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <div class="flex items-center gap-2">
             <span class="portal-chip ${statusClass}">${statusLabel}</span>
@@ -655,10 +655,10 @@ function issueCardHtml(issue) {
           <p class="text-xs text-slate-400">${escapeHtml(reference || dateLabel)}</p>
         </div>
       </div>
-      <div class="mt-3 border-l-2 border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+      <div class="mt-4 border-l-2 border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-700">
         Motivo: ${escapeHtml(reason)}
       </div>
-      <div class="mt-3 flex flex-wrap gap-2">
+      <div class="mt-4 flex flex-wrap gap-2">
         ${actions}
       </div>
     </div>

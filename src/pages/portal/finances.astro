@@ -14,7 +14,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
          </div>
 
          <div id="finances-secure-content" class="hidden max-w-6xl mx-auto space-y-8">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                <div>
                   <h1 class="text-3xl font-display font-bold text-[#293C74]">Finanzas</h1>
                   <p class="text-slate-600">Resumen de los movimientos autorizados para tu alcance.</p>
@@ -25,10 +25,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <form id="finances-filters" class="portal-panel p-4 md:p-6" aria-labelledby="finances-filters-title">
-               <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                      <h2 id="finances-filters-title" class="text-lg font-bold text-[#293C74]">Filtrar movimientos</h2>
-                     <p id="finances-filter-summary" class="mt-1 text-xs text-slate-500">Todo el historial · Todas las cuentas · COP y USD separados</p>
+                     <p id="finances-filter-summary" class="mt-2 text-xs text-slate-500">Todo el historial · Todas las cuentas · COP y USD separados</p>
                   </div>
                   <div class="flex flex-wrap gap-2">
                      <button id="finances-export-cop" type="button" class="min-h-10 rounded-md border border-[#293C74]/20 bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:bg-[#293C74]/5 disabled:cursor-wait disabled:opacity-50">
@@ -40,9 +40,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   </div>
                </div>
 
-               <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+               <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div>
-                     <label for="finances-period-filter" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Período</label>
+                     <label for="finances-period-filter" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Período</label>
                      <select id="finances-period-filter" class="min-h-11 w-full rounded-md border-slate-200 bg-white text-sm text-[#293C74]">
                         <option value="all">Todo el historial</option>
                         <option value="month">Este mes</option>
@@ -52,7 +52,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                      </select>
                   </div>
                   <div>
-                     <label for="finances-account-filter" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Cuenta o proveedor</label>
+                     <label for="finances-account-filter" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Cuenta o proveedor</label>
                      <select id="finances-account-filter" class="min-h-11 w-full rounded-md border-slate-200 bg-white text-sm text-[#293C74]">
                         <option value="">Todas las cuentas autorizadas</option>
                         <option value="WOMPI">Wompi · Nacional Colombia</option>
@@ -64,7 +64,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                      </select>
                   </div>
                   <div>
-                     <label for="finances-currency-filter" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Moneda en pantalla</label>
+                     <label for="finances-currency-filter" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Moneda en pantalla</label>
                      <select id="finances-currency-filter" class="min-h-11 w-full rounded-md border-slate-200 bg-white text-sm text-[#293C74]">
                         <option value="">COP y USD, sin sumarlos</option>
                         <option value="COP">Solo COP</option>
@@ -75,19 +75,19 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
                <div id="finances-custom-dates" class="mt-4 hidden grid gap-4 sm:grid-cols-2" aria-hidden="true">
                   <div>
-                     <label for="finances-date-from" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Desde</label>
+                     <label for="finances-date-from" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Desde</label>
                      <input id="finances-date-from" type="date" class="min-h-11 w-full rounded-md border-slate-200 bg-white text-sm text-[#293C74]">
                   </div>
                   <div>
-                     <label for="finances-date-to" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Hasta</label>
+                     <label for="finances-date-to" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Hasta</label>
                      <input id="finances-date-to" type="date" class="min-h-11 w-full rounded-md border-slate-200 bg-white text-sm text-[#293C74]">
                   </div>
                </div>
 
-               <p id="finances-filter-feedback" class="mt-4 hidden rounded-md px-4 py-3 text-sm" role="status"></p>
-               <div class="mt-5 flex flex-wrap justify-end gap-2">
-                  <button id="finances-clear-filters" type="button" class="min-h-11 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Limpiar</button>
-                  <button id="finances-apply-filters" type="submit" class="min-h-11 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-wait disabled:opacity-60">Aplicar filtros</button>
+               <p id="finances-filter-feedback" class="mt-4 hidden rounded-md px-4 py-4 text-sm" role="status"></p>
+               <div class="mt-6 flex flex-wrap justify-end gap-2">
+                  <button id="finances-clear-filters" type="button" class="min-h-11 rounded-md border border-slate-200 bg-white px-6 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Limpiar</button>
+                  <button id="finances-apply-filters" type="submit" class="min-h-11 rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-wait disabled:opacity-60">Aplicar filtros</button>
                </div>
             </form>
 
@@ -95,14 +95,14 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <div class="portal-stat-grid grid-cols-1 sm:grid-cols-2">
                 <div class="portal-stat">
 		                     <p class="portal-stat-label">Recaudo cargado</p>
-                     <div class="grid grid-cols-2 gap-3">
+                     <div class="grid grid-cols-2 gap-4">
                         <div>
                            <span class="text-xs font-bold uppercase text-slate-500">COP</span>
-                           <h3 id="stat-total-cop" class="portal-stat-value mt-1">$ 0</h3>
+                           <h3 id="stat-total-cop" class="portal-stat-value mt-2">$ 0</h3>
                         </div>
                         <div>
                            <span class="text-xs font-bold uppercase text-slate-500">USD</span>
-                           <h3 id="stat-total-usd" class="portal-stat-value mt-1">$ 0</h3>
+                           <h3 id="stat-total-usd" class="portal-stat-value mt-2">$ 0</h3>
                         </div>
                      </div>
 		                     <p class="mt-2 text-xs text-slate-500">Transacciones visibles</p>
@@ -142,12 +142,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
                     <table id="finances-table" class="portal-responsive-table hidden w-full text-left border-collapse">
                         <thead>
                             <tr class="text-xs text-slate-400 border-b border-slate-100">
-                                <th class="font-bold uppercase tracking-widest py-3 pl-2">Fecha</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Concepto</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Donante</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Cuenta</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Estado</th>
-                                <th class="font-bold uppercase tracking-widest py-3 text-right pr-2">Monto</th>
+                                <th class="font-bold uppercase tracking-widest py-4 pl-2">Fecha</th>
+                                <th class="font-bold uppercase tracking-widest py-4">Concepto</th>
+                                <th class="font-bold uppercase tracking-widest py-4">Donante</th>
+                                <th class="font-bold uppercase tracking-widest py-4">Cuenta</th>
+                                <th class="font-bold uppercase tracking-widest py-4">Estado</th>
+                                <th class="font-bold uppercase tracking-widest py-4 text-right pr-2">Monto</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm text-slate-600 divide-y divide-slate-50">
@@ -157,7 +157,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
 	                <div id="finances-empty" class="hidden text-center py-10 text-slate-400 text-sm">No hay registros financieros recientes.</div>
 	                <div class="mt-6 flex justify-center">
-		                    <button id="finances-load-more" type="button" class="hidden min-h-10 rounded-md border border-[#293C74]/20 px-5 py-2 text-xs font-bold uppercase text-[#293C74] hover:border-[#293C74]/50 hover:bg-[#293C74]/5 disabled:cursor-wait disabled:opacity-60">
+		                    <button id="finances-load-more" type="button" class="hidden min-h-10 rounded-md border border-[#293C74]/20 px-6 py-2 text-xs font-bold uppercase text-[#293C74] hover:border-[#293C74]/50 hover:bg-[#293C74]/5 disabled:cursor-wait disabled:opacity-60">
 	                        Cargar más
 	                    </button>
 	                </div>
@@ -177,7 +177,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
 	                </div>
 	                <div id="finances-issues-empty" class="hidden text-center py-6 text-slate-400 text-sm">No hay alertas de pago por ahora.</div>
 	                <div class="mt-6 flex justify-center">
-		                    <button id="finances-issues-load-more" type="button" class="hidden min-h-10 rounded-md border border-amber-200 bg-amber-50 px-5 py-2 text-xs font-bold uppercase text-amber-800 hover:bg-amber-100 disabled:cursor-wait disabled:opacity-60">
+		                    <button id="finances-issues-load-more" type="button" class="hidden min-h-10 rounded-md border border-amber-200 bg-amber-50 px-6 py-2 text-xs font-bold uppercase text-amber-800 hover:bg-amber-100 disabled:cursor-wait disabled:opacity-60">
 	                        Cargar más alertas
 	                    </button>
 	                </div>

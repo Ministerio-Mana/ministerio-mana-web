@@ -303,6 +303,7 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 
 - [ ] Después del próximo despliegue, revisar en celular y escritorio los botones, badges, tarjetas y gutters compartidos. Confirmar que el ritmo de múltiplos de 8 se siente cómodo y no demasiado amplio, especialmente para pastores mayores.
 - [ ] En `/portal/events`, abrir “Nuevo evento” y recorrer el formulario completo; luego abrir la operación de un evento y revisar documentos, filtros, inscritos y el diálogo de pago manual. Confirmar que ningún bloque se siente amontonado ni excesivamente separado.
+- [ ] En `/portal/finances`, revisar filtros, subtotales COP/USD, tabla en escritorio, tarjetas en celular y alertas de pago. Confirmar que sigue siendo fácil distinguir monedas, cuentas y acciones sin exceso de aire.
 - [ ] Reportar cualquier pantalla donde el contenido se vea amontonado o demasiado separado; indicar ruta y captura. La migración se hará por módulo sin aceptar valores aislados nuevos.
 
 No necesitas ejecutar SQL para esta carta ni para el contrato de espaciado. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.

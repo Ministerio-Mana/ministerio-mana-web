@@ -40,7 +40,7 @@
   - Branch: `main`
   - Scope: sistema visual, accesibilidad, rendimiento, formularios, navegación, datos, privacidad, resiliencia y seguridad percibida
   - Description: Convertir los no negociables del producto en criterios medibles, pruebas de aceptación y una auditoría gradual sin romper flujos operativos existentes.
-  - Status: Carta base consolidada. Contrato base 8, tokens semánticos y control automático implementados. Gestión y Operación de Eventos quedaron en cero infracciones de espaciado; la deuda global bajó de 1.906 a 1.748 clases fuera de escala y de 1.212 a 1.186 declaraciones CSS. Continúa migración por módulos.
+  - Status: Carta base consolidada. Contrato base 8, tokens semánticos y control automático implementados. Gestión/Operación de Eventos y Finanzas quedaron en cero infracciones de espaciado; la deuda global bajó de 1.906 a 1.704 clases fuera de escala y de 1.212 a 1.186 declaraciones CSS. Continúa migración por módulos.
 
 - MANA-021 Revisión visual y móvil de páginas públicas
   - Owner: Equipo web

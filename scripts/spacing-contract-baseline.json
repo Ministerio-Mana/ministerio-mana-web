@@ -2,8 +2,10 @@
   "$strictFiles": [
     "src/pages/portal/events.astro",
     "src/pages/portal/events/[id].astro",
+    "src/pages/portal/finances.astro",
     "src/scripts/portal-events.js",
     "src/scripts/portal-event-operation.js",
+    "src/scripts/portal-finances.js",
     "src/styles/portal.css"
   ],
   "src/components/_root": {
@@ -147,7 +149,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 452,
+    "tailwindOffScale": 426,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
@@ -157,7 +159,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 428,
+    "tailwindOffScale": 410,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
