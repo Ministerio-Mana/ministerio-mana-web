@@ -20,6 +20,12 @@
 
 ## Ready
 
+- MANA-026 Traducción automática con revisión humana
+  - Owner: Equipo web
+  - Scope: páginas de iglesias, eventos públicos y CMS multidioma
+  - Description: Mantener español como fuente, generar inglés con Azure Translator y exigir revisión antes de publicar contenido pastoral o financiero.
+  - Notes: Arquitectura y minimización de datos definidas en `docs/AUTOMATIC_TRANSLATION_PLAN_2026-07-14.md`. Pendiente crear el recurso de Azure, configurar sus variables solo en Vercel y aprobar el almacenamiento versionado de traducciones.
+
 - MANA-011 Revisión en vivo del constructor de formularios de Eventos
   - Owner: Usuario
   - Scope: `/portal/events` y página pública del evento

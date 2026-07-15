@@ -32,7 +32,11 @@ const formatEventDate = (value: string) => new Intl.DateTimeFormat('es-CO', {
 }).format(new Date(value));
 ---
 
-<main class:list={['church-public', `church-public--${page.template.toLowerCase()}`]}>
+<main class:list={[
+  'church-public',
+  `church-public--${page.template.toLowerCase()}`,
+  `church-public--theme-${page.story_config.theme}`,
+]}>
   {page.template === 'STORY' ? (
     <>
       <h1 class="sr-only">{page.display_name}</h1>
@@ -189,8 +193,22 @@ const formatEventDate = (value: string) => new Intl.DateTimeFormat('es-CO', {
     --church-blue: #293c74;
     --church-teal: #28a6bd;
     --church-paper: #f5f8fb;
+    --church-leadership: #e8f4f4;
+    --church-gallery: #fff;
     background: var(--church-paper);
     color: #172151;
+  }
+
+  .church-public--theme-light {
+    --church-paper: #f8fbfb;
+    --church-leadership: #edf6f4;
+    --church-gallery: #fff;
+  }
+
+  .church-public--theme-warm {
+    --church-paper: #f7f2e7;
+    --church-leadership: #efe3cc;
+    --church-gallery: #fffaf0;
   }
 
   .church-shell {
@@ -239,12 +257,12 @@ const formatEventDate = (value: string) => new Intl.DateTimeFormat('es-CO', {
   .church-info__details span { color: #64748b; display: block; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
   .church-info__details strong { display: block; line-height: 1.5; margin-top: var(--space-1); white-space: pre-line; }
 
-  .church-leadership { background: #e8f4f4; }
+  .church-leadership { background: var(--church-leadership); }
   .church-leadership__grid { align-items: center; }
   .church-leadership figure { border-radius: 32px; min-height: 24rem; overflow: hidden; }
   .church-leadership img { height: 100%; min-height: 24rem; object-fit: cover; width: 100%; }
 
-  .church-gallery { background: #fff; }
+  .church-gallery { background: var(--church-gallery); }
   .church-gallery__grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--space-5); }
   .church-gallery figure { aspect-ratio: 4 / 3; border-radius: 24px; overflow: hidden; }
   .church-gallery img { height: 100%; object-fit: cover; transition: transform .35s ease; width: 100%; }

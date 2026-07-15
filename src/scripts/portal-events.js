@@ -72,6 +72,8 @@ const eventCurrencyInput = document.getElementById('event-currency');
 const eventSinglePriceSettings = document.getElementById('event-single-price-settings');
 const eventDualPriceSettings = document.getElementById('event-dual-price-settings');
 const eventOnlineProvider = document.getElementById('event-online-provider');
+const eventOnlineProviderWompi = eventOnlineProvider?.querySelector('option[value="WOMPI"]');
+const eventOnlineProviderStripe = eventOnlineProvider?.querySelector('option[value="STRIPE"]');
 const eventOnlineProviderDual = document.getElementById('event-online-provider-dual');
 const eventOnlineProviderHint = document.getElementById('event-online-provider-hint');
 const eventOnlineProviderWrapper = document.getElementById('event-online-provider-wrapper');
@@ -174,6 +176,8 @@ let eventSlugManuallyEdited = false;
 let eventCustomFields = [];
 let eventFormDirty = false;
 let eventModalReturnFocus = null;
+let eventModalMode = 'create';
+let eventPaymentSelectionTouched = false;
 const eventDatePickers = new Map();
 
 const churchesById = new Map();
@@ -296,7 +300,8 @@ function initEventDatePickers() {
             minDate: `${MIN_EVENT_YEAR}-01-01`,
             maxDate: `${MAX_EVENT_YEAR}-12-31 23:59`,
             monthSelectorType: 'static',
-            position: 'auto left',
+            position: 'below left',
+            static: true,
             onReady: (_dates, _value, instance) => {
                 instance.calendarContainer.classList.add('event-calendar');
                 if (instance._input) instance._input.placeholder = input.placeholder || 'Selecciona fecha y hora';
@@ -309,6 +314,11 @@ function initEventDatePickers() {
                     updateEventPreview();
                 });
                 instance.calendarContainer.append(confirmButton);
+            },
+            onOpen: (_dates, _value, instance) => {
+                window.requestAnimationFrame(() => {
+                    instance.calendarContainer.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                });
             },
             onChange: () => updateEventPreview(),
             onClose: () => updateEventPreview(),
@@ -463,28 +473,27 @@ function renderCustomFieldBuilder() {
     eventCustomFields.forEach((field, index) => {
         const card = document.createElement('article');
         card.dataset.customFieldIndex = String(index);
-        card.className = 'rounded-md border border-slate-200 bg-white p-4 shadow-sm';
+        card.className = 'event-custom-field-card';
 
         const header = document.createElement('div');
-        header.className = 'flex items-center justify-between gap-4';
+        header.className = 'event-custom-field-header';
         const title = document.createElement('p');
-        title.className = 'text-xs font-bold uppercase tracking-[0.08em] text-slate-500';
+        title.className = 'event-custom-field-title';
         title.textContent = `Pregunta ${index + 1}`;
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.dataset.customFieldAction = 'remove';
-        remove.className = 'inline-flex min-h-11 items-center rounded px-2 py-2 text-xs font-bold text-red-700 hover:bg-red-50';
+        remove.className = 'event-custom-field-remove';
         remove.textContent = 'Quitar';
         header.append(title, remove);
 
         const grid = document.createElement('div');
-        grid.className = 'mt-4 grid gap-4 sm:grid-cols-2';
+        grid.className = 'event-custom-field-grid';
         const typeLabel = document.createElement('label');
         typeLabel.className = 'event-field';
         typeLabel.textContent = 'Tipo de respuesta';
         const type = document.createElement('select');
         type.name = 'custom_field_type';
-        type.className = 'mt-2';
         EVENT_CUSTOM_FIELD_TYPES.forEach((value) => {
             const option = document.createElement('option');
             option.value = value;
@@ -495,17 +504,16 @@ function renderCustomFieldBuilder() {
         typeLabel.append(type);
 
         const requiredLabel = document.createElement('label');
-        requiredLabel.className = 'flex items-center gap-2 self-end pb-2 text-sm font-semibold text-slate-700';
+        requiredLabel.className = 'event-custom-field-required';
         const required = document.createElement('input');
         required.type = 'checkbox';
         required.name = 'custom_field_required';
         required.checked = Boolean(field.required);
-        required.className = 'h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]';
         requiredLabel.append(required, document.createTextNode('Respuesta obligatoria'));
         grid.append(typeLabel, requiredLabel);
 
         const label = document.createElement('label');
-        label.className = 'event-field sm:col-span-2';
+        label.className = 'event-field event-custom-field-wide';
         label.textContent = 'Pregunta para la persona';
         const labelInput = document.createElement('input');
         labelInput.type = 'text';
@@ -517,7 +525,7 @@ function renderCustomFieldBuilder() {
         grid.append(label);
 
         const help = document.createElement('label');
-        help.className = 'event-field sm:col-span-2';
+        help.className = 'event-field event-custom-field-wide';
         help.textContent = 'Texto de ayuda (opcional)';
         const helpInput = document.createElement('input');
         helpInput.type = 'text';
@@ -530,7 +538,7 @@ function renderCustomFieldBuilder() {
 
         if (isEventCustomChoiceField(field.type)) {
             const options = document.createElement('label');
-            options.className = 'event-field sm:col-span-2';
+            options.className = 'event-field event-custom-field-wide';
             options.textContent = 'Opciones (una por línea)';
             const optionsInput = document.createElement('textarea');
             optionsInput.name = 'custom_field_options';
@@ -540,7 +548,7 @@ function renderCustomFieldBuilder() {
             optionsInput.value = Array.isArray(field.options) ? field.options.join('\n') : '';
             options.append(optionsInput);
             const hint = document.createElement('small');
-            hint.className = 'mt-2 block text-xs font-normal text-slate-500';
+            hint.className = 'event-custom-field-hint';
             hint.textContent = 'Incluye entre 2 y 12 opciones claras.';
             options.append(hint);
             grid.append(options);
@@ -615,14 +623,37 @@ function syncFinanceFields() {
     const hasFixedPrice = pricingModel === 'PAID';
     const usesInternalRegistration = eventRegistrationMode?.value === 'INTERNAL';
     const scope = String(eventScopeSelect?.value || 'LOCAL').toUpperCase();
+    const country = String(eventCountryInput?.value || '').trim();
     if (eventPricingModel) eventPricingModel.disabled = !usesInternalRegistration;
+    if (eventModalMode === 'create' && !eventPaymentSelectionTouched && usesInternalRegistration && !isFree) {
+        const recommendedMode = scope === 'GLOBAL' && eventDualFinanceReady
+            ? 'DUAL'
+            : canUseEventPaymentModeForScope('WOMPI', scope, country)
+            ? 'WOMPI'
+            : 'NONE';
+        if (eventOnlineProvider && eventOnlineProvider.value !== recommendedMode) {
+            eventOnlineProvider.value = recommendedMode;
+            preparePriceFieldsForPaymentMode(recommendedMode);
+        }
+    }
     let paymentMode = normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
-    const dualAllowed = eventDualFinanceReady && canUseEventPaymentModeForScope('DUAL', scope);
+    const wompiAllowed = canUseEventPaymentModeForScope('WOMPI', scope, country);
+    const stripeAllowed = canUseEventPaymentModeForScope('STRIPE', scope, country);
+    const dualAllowed = eventDualFinanceReady && canUseEventPaymentModeForScope('DUAL', scope, country);
+    if (eventOnlineProviderWompi) {
+        eventOnlineProviderWompi.hidden = !wompiAllowed;
+        eventOnlineProviderWompi.disabled = !wompiAllowed;
+    }
+    if (eventOnlineProviderStripe) {
+        eventOnlineProviderStripe.hidden = !stripeAllowed;
+        eventOnlineProviderStripe.disabled = !stripeAllowed;
+    }
     if (eventOnlineProviderDual) {
         eventOnlineProviderDual.hidden = !dualAllowed;
         eventOnlineProviderDual.disabled = !dualAllowed;
     }
-    if (paymentMode === 'DUAL' && !dualAllowed) {
+    if (!canUseEventPaymentModeForScope(paymentMode, scope, country)
+        || (paymentMode === 'DUAL' && !dualAllowed)) {
         paymentMode = 'NONE';
         if (eventOnlineProvider) eventOnlineProvider.value = 'NONE';
     }
@@ -665,7 +696,11 @@ function syncFinanceFields() {
             ? 'Wompi cobra siempre en pesos y se registra como recaudo nacional.'
             : paymentMode === 'STRIPE'
             ? 'Stripe cobra en dólares para pagos internacionales.'
-            : '';
+            : scope === 'GLOBAL'
+            ? 'Para un evento global recomendamos Wompi en COP y Stripe en USD.'
+            : scope === 'NATIONAL' && wompiAllowed
+            ? 'En Colombia puedes usar Wompi o registrar un pago manual.'
+            : 'Usa pago manual para QR, transferencia, PayPal, Zelle o un enlace externo.';
     }
     formatMoneyInput();
     syncManualPaymentFields();
@@ -687,7 +722,7 @@ function syncManualPaymentFields() {
         eventManualPaymentHint.textContent = hasOnlineProvider
             ? `${onlineMode === 'DUAL' ? 'Wompi y Stripe procesan' : onlineMode === 'WOMPI' ? 'Wompi procesa' : 'Stripe procesa'} el cobro automático; el pago manual queda desactivado.`
             : available
-            ? 'Actívalo para recibir un QR, transferencia, enlace externo o efectivo y revisar el comprobante.'
+            ? 'Actívalo para recibir un QR, transferencia, PayPal, Zelle, enlace externo o efectivo y revisar el comprobante.'
             : 'Selecciona “Inscripción en Maná” y un precio distinto de gratuito para habilitarlo.';
     }
     const enabled = available && Boolean(eventManualPaymentEnabled?.checked);
@@ -1477,6 +1512,8 @@ function openEventModal(mode, eventData = null) {
     if (!eventModal || !eventForm) return;
     if (document.activeElement instanceof HTMLElement) eventModalReturnFocus = document.activeElement;
     clearPendingInvitationImage();
+    eventModalMode = mode;
+    eventPaymentSelectionTouched = mode === 'edit';
     eventForm.reset();
     eventDatePickers.forEach((picker) => picker.clear(false));
     eventSlugManuallyEdited = Boolean(eventData?.slug);
@@ -1677,6 +1714,11 @@ eventScopeSelect?.addEventListener('change', () => {
 });
 eventRegionSelect?.addEventListener('change', () => {
     syncCountryFromRegion();
+    syncFinanceFields();
+    updateEventPreview();
+});
+eventCountryInput?.addEventListener('input', () => {
+    syncFinanceFields();
     updateEventPreview();
 });
 eventRegistrationMode?.addEventListener('change', () => {
@@ -1749,6 +1791,7 @@ eventPricingModel?.addEventListener('change', () => {
     updateEventPreview();
 });
 eventOnlineProvider?.addEventListener('change', () => {
+    eventPaymentSelectionTouched = true;
     preparePriceFieldsForPaymentMode(eventOnlineProvider.value);
     syncFinanceFields();
     updateEventPreview();
@@ -1901,13 +1944,16 @@ eventForm?.addEventListener('submit', async (event) => {
         const paymentMode = pricingModel === 'FREE'
             ? 'NONE'
             : normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
+        const paymentCountry = String(eventCountryInput?.value || payload.country || '').trim();
+        if (!canUseEventPaymentModeForScope(paymentMode, payload.scope, paymentCountry)) {
+            throw new Error(paymentMode === 'WOMPI'
+                ? 'Wompi solo se puede usar en eventos nacionales de Colombia o en eventos globales.'
+                : 'Stripe y el cobro Wompi + Stripe están disponibles para eventos globales.');
+        }
         let currency = String(eventForm.querySelector('[name="currency"]')?.value || 'COP').toUpperCase();
         let parsedPrice = pricingModel === 'PAID' ? parseMoneyInput(eventPriceInput?.value, currency) : 0;
         if (paymentMode === 'DUAL') {
             if (!eventDualFinanceReady) throw new Error('Falta ejecutar la migración de cobro dual en Supabase.');
-            if (!canUseEventPaymentModeForScope(paymentMode, payload.scope)) {
-                throw new Error('El cobro Wompi + Stripe está disponible únicamente para eventos globales.');
-            }
             const priceCop = pricingModel === 'PAID' ? parseMoneyInput(eventPriceCopInput?.value, 'COP') : null;
             const priceUsd = pricingModel === 'PAID' ? parseMoneyInput(eventPriceUsdInput?.value, 'USD') : null;
             if (pricingModel === 'PAID' && (!Number.isFinite(priceCop) || priceCop <= 0 || priceCop > 1_000_000_000)) {

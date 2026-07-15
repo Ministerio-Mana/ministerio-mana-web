@@ -279,7 +279,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <section id="event-registration-form-settings" class="hidden rounded-lg border border-[#293C74]/15 bg-[#F7F9FF] p-4" aria-labelledby="event-registration-form-title">
               <h4 id="event-registration-form-title" class="text-sm font-bold text-[#293C74]">Datos del formulario</h4>
-              <p class="mt-2 text-xs leading-relaxed text-slate-500">Nombre y correo siempre se solicitan para poder confirmar la inscripción. Elige únicamente los datos adicionales que realmente usarán.</p>
+              <p class="mt-2 text-xs leading-relaxed text-slate-500">Estos tres datos ya aparecen en la inscripción pública y no tienes que crearlos como preguntas adicionales.</p>
+              <div class="event-required-fields" aria-label="Campos incluidos siempre">
+                <div><strong>Nombre completo</strong><span>Obligatorio</span></div>
+                <div><strong>Correo</strong><span>Obligatorio</span></div>
+                <div><strong>Número de asistentes</strong><span>Obligatorio</span></div>
+              </div>
               <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <label class="event-field">Número para WhatsApp
                   <select id="event-registration-phone-mode" data-platform-field disabled>
@@ -361,8 +366,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <label id="event-online-provider-wrapper" class="event-field" hidden style="display: none;">Cobro automático
               <select id="event-online-provider" data-finance-field disabled>
                 <option value="NONE">Sin cobro en línea</option>
-                <option value="WOMPI">Wompi</option>
-                <option value="STRIPE">Stripe</option>
+                <option value="WOMPI">Wompi · Colombia</option>
+                <option value="STRIPE">Stripe · internacional</option>
                 <option id="event-online-provider-dual" value="DUAL">Wompi Colombia + Stripe internacional</option>
               </select>
               <span id="event-online-provider-hint" class="mt-2 block text-xs font-normal text-slate-500"></span>
@@ -372,7 +377,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <input id="event-manual-payment-enabled" type="checkbox" data-finance-field disabled class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                 Aceptar pago verificado manualmente
               </label>
-              <p id="event-manual-payment-hint" class="text-xs leading-relaxed text-slate-500">Disponible para eventos con inscripción en Maná y precio fijo o aporte voluntario.</p>
+              <p id="event-manual-payment-hint" class="text-xs leading-relaxed text-slate-500">Disponible para QR, transferencia, PayPal, Zelle, enlace externo o efectivo.</p>
               <div id="event-manual-payment-settings" class="hidden space-y-4 border-t border-slate-200 pt-4">
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="event-field">Tipo de pago
@@ -479,15 +484,16 @@ import Sidebar from '@components/portal/Sidebar.astro';
       color: #fff;
     }
 
-    .event-field {
+    :global(.event-field) {
       display: block;
       color: #475569;
       font-size: 0.75rem;
       font-weight: 700;
     }
 
-    .event-field :is(input, select, textarea) {
+    :global(.event-field :is(input, select, textarea)) {
       display: block;
+      box-sizing: border-box;
       width: 100%;
       margin-top: var(--space-1);
       border: 1px solid #dce2ea;
@@ -498,12 +504,117 @@ import Sidebar from '@components/portal/Sidebar.astro';
       font-weight: 400;
     }
 
-    .event-field :is(input, select) {
+    :global(.event-field :is(input, select)) {
       min-height: 44px;
     }
 
-    .event-field textarea {
+    :global(.event-field textarea) {
       resize: vertical;
+    }
+
+    .event-required-fields {
+      display: grid;
+      gap: var(--space-1);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: var(--space-2);
+    }
+
+    .event-required-fields > div {
+      background: #fff;
+      border: 1px solid #dce2ea;
+      border-radius: 6px;
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+      padding: var(--space-2);
+    }
+
+    .event-required-fields strong {
+      color: #293c74;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .event-required-fields span {
+      color: #64748b;
+      font-size: 0.7rem;
+    }
+
+    :global(.event-custom-field-card) {
+      background: #fff;
+      border: 1px solid #dce2ea;
+      border-radius: 6px;
+      padding: var(--space-2);
+      box-shadow: 0 4px 12px rgb(23 32 51 / 5%);
+    }
+
+    :global(.event-custom-field-header) {
+      align-items: center;
+      display: flex;
+      gap: var(--space-2);
+      justify-content: space-between;
+    }
+
+    :global(.event-custom-field-title) {
+      color: #64748b;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    :global(.event-custom-field-remove) {
+      align-items: center;
+      border-radius: 4px;
+      color: #b42318;
+      display: inline-flex;
+      font-size: 0.75rem;
+      font-weight: 800;
+      min-height: 44px;
+      padding: var(--space-1);
+    }
+
+    :global(.event-custom-field-remove:hover) {
+      background: #fef2f2;
+    }
+
+    :global(.event-custom-field-grid) {
+      display: grid;
+      gap: var(--space-2);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: var(--space-2);
+    }
+
+    :global(.event-custom-field-wide) {
+      grid-column: 1 / -1;
+    }
+
+    :global(.event-custom-field-required) {
+      align-items: center;
+      align-self: end;
+      color: #334155;
+      display: flex;
+      font-size: 0.8rem;
+      font-weight: 700;
+      gap: var(--space-1);
+      min-height: 44px;
+      padding-bottom: var(--space-1);
+    }
+
+    :global(.event-custom-field-required input) {
+      flex: 0 0 auto;
+      height: 20px;
+      margin: 0;
+      width: 20px;
+    }
+
+    :global(.event-custom-field-hint) {
+      color: #64748b;
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 400;
+      line-height: 1.45;
+      margin-top: var(--space-1);
     }
 
     .event-date-grid {
@@ -516,8 +627,15 @@ import Sidebar from '@components/portal/Sidebar.astro';
       min-width: 0;
     }
 
-    .event-date-field > span {
+    :global(.event-date-field > span) {
       display: block;
+    }
+
+    :global(.event-date-field .flatpickr-wrapper) {
+      display: block;
+      min-width: 0;
+      position: relative;
+      width: 100%;
     }
 
     .event-date-field :global(.event-datetime-display) {
@@ -544,7 +662,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
       color: #7b8798;
     }
 
-    .event-field :is(input, select, textarea):disabled {
+    :global(.event-field :is(input, select, textarea):disabled) {
       cursor: not-allowed;
       background: #f1f5f9;
       color: #7b8798;
@@ -560,6 +678,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
       box-shadow: 0 18px 45px rgb(23 32 51 / 18%);
       color: #172033;
       font-family: inherit;
+    }
+
+    :global(.flatpickr-calendar.event-calendar.static) {
+      left: 0;
+      max-width: calc(100vw - var(--space-4));
+      right: auto;
+      top: calc(100% + var(--space-1));
     }
 
     :global(.event-calendar .flatpickr-months) {
@@ -657,6 +782,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
       background: #20315f;
     }
 
+    :global(.event-calendar-confirm:focus-visible) {
+      outline: 3px solid #26a9c3;
+      outline-offset: 2px;
+    }
+
     .event-invitation-image-dropzone {
       display: grid;
       min-height: 116px;
@@ -674,6 +804,17 @@ import Sidebar from '@components/portal/Sidebar.astro';
     .event-invitation-image-dropzone strong {
       color: #293c74;
       font-size: 0.875rem;
+    }
+
+    @media (max-width: 640px) {
+      .event-required-fields,
+      :global(.event-custom-field-grid) {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      :global(.event-custom-field-wide) {
+        grid-column: auto;
+      }
     }
 
     .event-invitation-image-dropzone span {

@@ -259,8 +259,13 @@ export const PUT: APIRoute = async ({ request }) => {
 
   const providers = getEventPaymentProvidersForMode(mode);
   const dualPaymentReady = hasDualPaymentSchema(event as Record<string, unknown>);
-  if (!canUseEventPaymentModeForScope(mode, event.scope)) {
-    return json({ ok: false, error: 'El cobro Wompi + Stripe está disponible únicamente para eventos globales.' }, 409);
+  if (!canUseEventPaymentModeForScope(mode, event.scope, event.country)) {
+    return json({
+      ok: false,
+      error: mode === 'WOMPI'
+        ? 'Wompi solo se puede usar para eventos nacionales de Colombia o como parte de un evento global.'
+        : 'Stripe y el cobro dual están disponibles para eventos globales.',
+    }, 409);
   }
   if (mode === 'DUAL' && !dualPaymentReady) {
     return json({

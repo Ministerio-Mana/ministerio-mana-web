@@ -42,6 +42,7 @@ const el = {
   heroPreview: document.getElementById('church-page-hero-preview'),
   pastorPreview: document.getElementById('church-page-pastor-preview'),
   templates: document.getElementById('church-page-templates'),
+  themes: document.getElementById('church-page-themes'),
   storySection: document.getElementById('church-page-story-section'),
   scenes: document.getElementById('church-page-scenes'),
   addScene: document.getElementById('church-page-add-scene'),
@@ -157,7 +158,13 @@ function normalizePage(page, church) {
     ...value,
     template: ['ESSENTIAL', 'STORY', 'MOSAIC'].includes(String(value.template || '').toUpperCase()) ? String(value.template).toUpperCase() : 'ESSENTIAL',
     status: ['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(String(value.status || '').toUpperCase()) ? String(value.status).toUpperCase() : 'DRAFT',
-    story_config: { preset: story.preset || 'editorial', theme: story.theme || 'navy', scenes },
+    story_config: {
+      preset: story.preset || 'editorial',
+      theme: ['navy', 'light', 'warm'].includes(String(story.theme || '').toLowerCase())
+        ? String(story.theme).toLowerCase()
+        : 'navy',
+      scenes,
+    },
     gallery: Array.isArray(value.gallery) ? value.gallery.slice(0, MAX_GALLERY) : [],
   };
 }
@@ -267,7 +274,7 @@ function renderScenes() {
           <button type="button" data-scene-action="remove" class="min-h-12 rounded-lg px-4 text-xs font-black text-red-700" ${scenes.length <= 2 ? 'disabled' : ''}>Quitar</button>
         </div>
       </div>
-      <div class="church-scene-image" style="${safeUrl(scene.image) ? `background-image:url('${escapeHtml(safeUrl(scene.image))}')` : ''}"></div>
+      <div class="church-scene-image" data-image-target="scene:${index}" data-image-drop-target="scene:${index}" role="button" tabindex="0" aria-label="Elegir o arrastrar imagen para la escena ${index + 1}" style="${safeUrl(scene.image) ? `background-image:url('${escapeHtml(safeUrl(scene.image))}')` : ''}"></div>
       <button type="button" data-scene-action="image" class="church-secondary-button mt-4">Elegir imagen</button>
       <div class="church-scene-grid mt-4">
         <label class="church-field">Título<input data-scene-field="title" maxlength="90" value="${escapeHtml(scene.title)}" /></label>
@@ -311,17 +318,18 @@ function renderPreview() {
   if (!el.preview || !state.page) return;
   const page = state.page;
   const hero = safeUrl(page.hero_image_url);
+  const theme = ['navy', 'light', 'warm'].includes(page.story_config?.theme) ? page.story_config.theme : 'navy';
   const labels = { ESSENTIAL: 'Esencial', STORY: 'Historia', MOSAIC: 'Mosaico' };
   if (el.previewLabel) el.previewLabel.textContent = labels[page.template] || 'Esencial';
   if (page.template === 'STORY') {
-    el.preview.innerHTML = `<div class="preview-story">${page.story_config.scenes.map((scene, index) => previewScene(scene, index)).join('')}</div>`;
+    el.preview.innerHTML = `<div class="preview-story preview-shell--${theme}">${page.story_config.scenes.map((scene, index) => previewScene(scene, index)).join('')}</div>`;
     return;
   }
   if (page.template === 'MOSAIC') {
-    el.preview.innerHTML = `<div class="preview-mosaic"><header><small>${escapeHtml(page.tagline || 'Bienvenidos')}</small><strong>${escapeHtml(page.display_name || 'Iglesia Maná')}</strong></header><div>${page.story_config.scenes.map((scene, index) => previewScene(scene, index, true)).join('')}</div></div>`;
+    el.preview.innerHTML = `<div class="preview-mosaic preview-shell--${theme}"><header><small>${escapeHtml(page.tagline || 'Bienvenidos')}</small><strong>${escapeHtml(page.display_name || 'Iglesia Maná')}</strong></header><div>${page.story_config.scenes.map((scene, index) => previewScene(scene, index, true)).join('')}</div></div>`;
     return;
   }
-  el.preview.innerHTML = `<div class="preview-essential">
+  el.preview.innerHTML = `<div class="preview-essential preview-shell--${theme}">
     <header style="${hero ? `background-image:linear-gradient(0deg,rgba(7,17,28,.78),rgba(7,17,28,.15)),url('${escapeHtml(hero)}')` : ''}">
       <small>${escapeHtml([state.church?.city, state.church?.country].filter(Boolean).join(', '))}</small>
       <strong>${escapeHtml(page.display_name || 'Iglesia Maná')}</strong><span>${escapeHtml(page.tagline || '')}</span>
@@ -346,6 +354,7 @@ function populateForm() {
   el.email.value = page.contact_email || '';
   el.whatsappMessage.value = page.contact_whatsapp_message || '';
   el.templates?.querySelectorAll('input[name="template"]').forEach((input) => { input.checked = input.value === page.template; });
+  el.themes?.querySelectorAll('input[name="story_theme"]').forEach((input) => { input.checked = input.value === page.story_config.theme; });
   setImagePreview(el.heroPreview, page.hero_image_url, 'Sin portada');
   setImagePreview(el.pastorPreview, page.pastor_image_url, 'Sin imagen');
   renderScenes();
@@ -434,15 +443,25 @@ function closeMedia() {
   state.modalTrigger = null;
 }
 
-async function uploadMedia(event) {
-  event.preventDefault();
-  const file = el.mediaFile?.files?.[0];
-  if (!file || !state.church) return;
-  if (file.size <= 0 || file.size > 5 * 1024 * 1024 || !['image/jpeg','image/png','image/webp'].includes(file.type)) {
-    el.mediaUploadStatus.textContent = 'Usa JPG, PNG o WebP de máximo 5 MB.';
+function getMediaFileError(file) {
+  if (!file || file.size <= 0 || file.size > 5 * 1024 * 1024 || !['image/jpeg','image/png','image/webp'].includes(file.type)) {
+    return 'Usa JPG, PNG o WebP de máximo 5 MB.';
+  }
+  return '';
+}
+
+async function uploadMediaFile(file, target = state.mediaTarget) {
+  if (!file || !state.church || state.busy) return;
+  const validationError = getMediaFileError(file);
+  if (validationError) {
+    if (el.mediaUploadStatus) el.mediaUploadStatus.textContent = validationError;
+    showAlert(validationError, 'error');
     return;
   }
-  el.mediaUploadStatus.textContent = 'Subiendo y verificando imagen...';
+  state.mediaTarget = target;
+  setBusy(true, 'Subiendo y optimizando la imagen...');
+  if (el.mediaUploadStatus) el.mediaUploadStatus.textContent = 'Subiendo y verificando imagen...';
+  showAlert('Subiendo la imagen. No cierres esta página.', 'info');
   try {
     const authorization = await fetchJson('/api/portal/church-media-upload-token', {
       method: 'POST',
@@ -459,12 +478,24 @@ async function uploadMedia(event) {
       method: 'POST',
       body: JSON.stringify({ church_id: state.church.id, file_id: uploaded.fileId, registration_token: authorization.registration_token, original_name: file.name }),
     });
-    el.mediaUploadStatus.textContent = 'Imagen lista.';
-    el.mediaFile.value = '';
+    if (el.mediaUploadStatus) el.mediaUploadStatus.textContent = 'Imagen lista.';
+    if (el.mediaFile) el.mediaFile.value = '';
     applyMedia(registered.file?.public_url || uploaded.url);
+    showAlert('Imagen lista. El diseño la adapta sin deformarla.', 'success');
   } catch (error) {
-    el.mediaUploadStatus.textContent = error.message || 'No se pudo subir la imagen.';
+    const message = error.message || 'No se pudo subir la imagen.';
+    if (el.mediaUploadStatus) el.mediaUploadStatus.textContent = message;
+    showAlert(message, 'error');
+  } finally {
+    setBusy(false);
   }
+}
+
+async function uploadMedia(event) {
+  event.preventDefault();
+  const file = el.mediaFile?.files?.[0];
+  if (!file) return;
+  await uploadMediaFile(file);
 }
 
 async function savePage() {
@@ -541,8 +572,33 @@ function bindEvents() {
     markDirty();
   });
   document.addEventListener('click', (event) => {
-    const imageButton = event.target.closest('[data-image-target]');
+    const imageButton = event.target instanceof Element ? event.target.closest('[data-image-target]') : null;
     if (imageButton) openMedia(imageButton.dataset.imageTarget, imageButton);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (!['Enter', ' '].includes(event.key)) return;
+    const imageTarget = event.target instanceof Element ? event.target.closest('[data-image-drop-target]') : null;
+    if (!imageTarget) return;
+    event.preventDefault();
+    openMedia(imageTarget.dataset.imageDropTarget, imageTarget);
+  });
+  document.addEventListener('dragover', (event) => {
+    const imageTarget = event.target instanceof Element ? event.target.closest('[data-image-drop-target]') : null;
+    if (!imageTarget) return;
+    event.preventDefault();
+    imageTarget.classList.add('is-dragging');
+  });
+  document.addEventListener('dragleave', (event) => {
+    const imageTarget = event.target instanceof Element ? event.target.closest('[data-image-drop-target]') : null;
+    imageTarget?.classList.remove('is-dragging');
+  });
+  document.addEventListener('drop', (event) => {
+    const imageTarget = event.target instanceof Element ? event.target.closest('[data-image-drop-target]') : null;
+    if (!imageTarget) return;
+    event.preventDefault();
+    imageTarget.classList.remove('is-dragging');
+    const file = event.dataTransfer?.files?.[0];
+    if (file) void uploadMediaFile(file, imageTarget.dataset.imageDropTarget);
   });
   el.scenes?.addEventListener('input', (event) => {
     const field = event.target.closest('[data-scene-field]');
@@ -572,6 +628,12 @@ function bindEvents() {
     if (button.dataset.sceneAction === 'down' && index < scenes.length - 1) [scenes[index + 1], scenes[index]] = [scenes[index], scenes[index + 1]];
     markDirty();
     renderScenes();
+  });
+  el.themes?.addEventListener('change', (event) => {
+    const input = event.target.closest('input[name="story_theme"]');
+    if (!input || !state.page || !['navy', 'light', 'warm'].includes(input.value)) return;
+    state.page.story_config.theme = input.value;
+    markDirty();
   });
   el.addScene?.addEventListener('click', () => {
     if (!state.page || state.page.story_config.scenes.length >= MAX_SCENES) return;

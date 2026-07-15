@@ -22,9 +22,26 @@ export function getEventPaymentProvidersForMode(value) {
   return mode === 'NONE' ? [] : [mode];
 }
 
-export function canUseEventPaymentModeForScope(mode, scope) {
-  return normalizeEventOnlinePaymentMode(mode) !== 'DUAL'
-    || String(scope || '').trim().toUpperCase() === 'GLOBAL';
+function normalizeCountryKey(value) {
+  return String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+export function canUseEventPaymentModeForScope(mode, scope, country = '') {
+  const normalizedMode = normalizeEventOnlinePaymentMode(mode);
+  const normalizedScope = String(scope || '').trim().toUpperCase();
+  if (normalizedMode === 'NONE') return true;
+  if (normalizedMode === 'DUAL' || normalizedMode === 'STRIPE') {
+    return normalizedScope === 'GLOBAL';
+  }
+  if (normalizedMode === 'WOMPI') {
+    return normalizedScope === 'GLOBAL'
+      || (normalizedScope === 'NATIONAL' && normalizeCountryKey(country) === 'colombia');
+  }
+  return false;
 }
 
 export function getRequiredEventProviderCurrency(value) {

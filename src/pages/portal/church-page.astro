@@ -63,6 +63,16 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                       <strong>Mosaico</strong><small>Editorial, visual y con tarjetas que aparecen al recorrer.</small>
                     </label>
                   </fieldset>
+                  <div class="mt-6 border-t border-slate-100 pt-4">
+                    <h3 class="text-sm font-black text-[#293C74]">Paleta protegida</h3>
+                    <p class="mt-2 text-xs leading-relaxed text-slate-500">El sistema elige el color del texto y la capa sobre las fotos para conservar la lectura. No necesitas combinar colores.</p>
+                    <fieldset id="church-page-themes" class="mt-4 grid gap-2 sm:grid-cols-3">
+                      <legend class="sr-only">Paleta de color</legend>
+                      <label class="church-theme-card"><input type="radio" name="story_theme" value="navy" class="sr-only" /><span class="church-theme-swatch church-theme-swatch--navy"></span><strong>Azul Maná</strong></label>
+                      <label class="church-theme-card"><input type="radio" name="story_theme" value="light" class="sr-only" /><span class="church-theme-swatch church-theme-swatch--light"></span><strong>Claro editorial</strong></label>
+                      <label class="church-theme-card"><input type="radio" name="story_theme" value="warm" class="sr-only" /><span class="church-theme-swatch church-theme-swatch--warm"></span><strong>Cálido</strong></label>
+                    </fieldset>
+                  </div>
                 </section>
 
                 <details open class="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -79,15 +89,24 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                 <details open class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">3. Imágenes principales</summary>
                   <div class="grid gap-4 border-t border-slate-100 p-4 md:grid-cols-2 md:p-6">
+                    <div class="church-image-guide md:col-span-2">
+                      <strong>Guía rápida de imágenes</strong>
+                      <ul>
+                        <li><b>Fondo o portada:</b> horizontal, ideal 1600 × 900 px.</li>
+                        <li><b>Retrato o arte:</b> cuadrada 1080 × 1080 o vertical 1080 × 1350 px.</li>
+                        <li><b>Sin deformaciones:</b> “Imagen de fondo” recorta con punto importante; “Arte protagonista” muestra la pieza completa.</li>
+                      </ul>
+                      <p>JPG, PNG o WebP · máximo 5 MB. Arrastra la foto directamente al recuadro o abre la biblioteca.</p>
+                    </div>
                     <div class="church-image-field md:col-span-2">
-                      <span>Portada</span>
-                      <div id="church-page-hero-preview" class="church-image-preview church-image-preview--wide"></div>
+                      <span>Portada o fondo principal</span>
+                      <div id="church-page-hero-preview" class="church-image-preview church-image-preview--wide" data-image-target="hero" data-image-drop-target="hero" role="button" tabindex="0" aria-label="Elegir o arrastrar la portada"></div>
                       <button type="button" data-image-target="hero" class="church-secondary-button"><PortalIcon name="image" size={17} /> Elegir o subir imagen</button>
                       <label class="church-field">Descripción accesible<input id="church-page-hero-alt" maxlength="160" placeholder="Personas reunidas en la iglesia..." /></label>
                     </div>
                     <div class="church-image-field">
-                      <span>Pastor o equipo</span>
-                      <div id="church-page-pastor-preview" class="church-image-preview"></div>
+                      <span>Pastor, equipo o arte cuadrado</span>
+                      <div id="church-page-pastor-preview" class="church-image-preview" data-image-target="pastor" data-image-drop-target="pastor" role="button" tabindex="0" aria-label="Elegir o arrastrar el retrato"></div>
                       <button type="button" data-image-target="pastor" class="church-secondary-button"><PortalIcon name="image" size={17} /> Elegir o subir imagen</button>
                       <label class="church-field">Descripción accesible<input id="church-page-pastor-alt" maxlength="160" /></label>
                     </div>
@@ -198,41 +217,62 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   .church-template-thumb--story i:nth-child(2) { background: #f2c94c; }
   .church-template-thumb--mosaic { grid-template-columns: 1.5fr 1fr; grid-template-rows: 1fr 1fr; }
   .church-template-thumb--mosaic i:first-child { grid-row: 1 / -1; }
+  .church-theme-card { align-items: center; border: 1px solid #dce4ec; border-radius: 12px; cursor: pointer; display: flex; gap: var(--space-1); min-height: 52px; padding: var(--space-1); }
+  .church-theme-card:has(input:checked) { border-color: #293c74; box-shadow: 0 0 0 3px rgba(41,60,116,.12); }
+  .church-theme-card:focus-within { outline: 3px solid rgba(40,166,189,.35); outline-offset: 2px; }
+  .church-theme-card strong { color: #293c74; font-size: .75rem; line-height: 1.25; }
+  .church-theme-swatch { border: 1px solid rgba(23,33,81,.14); border-radius: 8px; display: block; flex: 0 0 auto; height: 34px; width: 42px; }
+  .church-theme-swatch--navy { background: linear-gradient(135deg,#111936 0 55%,#28a6bd 55%); }
+  .church-theme-swatch--light { background: linear-gradient(135deg,#edf6f4 0 55%,#246a84 55%); }
+  .church-theme-swatch--warm { background: linear-gradient(135deg,#f7f2e7 0 55%,#9a5c28 55%); }
   .church-secondary-button { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: 44px; padding: var(--space-1) var(--space-2); }
+  .church-image-guide { background: #f7f9ff; border: 1px solid rgba(41,60,116,.16); border-radius: 16px; color: #475569; padding: var(--space-2); }
+  .church-image-guide > strong { color: #293c74; font-size: .85rem; }
+  .church-image-guide ul { display: grid; gap: var(--space-1); list-style: disc; margin: var(--space-2) 0 0 var(--space-3); }
+  .church-image-guide li, .church-image-guide p { font-size: .75rem; line-height: 1.5; }
+  .church-image-guide p { border-top: 1px solid rgba(41,60,116,.1); margin-top: var(--space-2); padding-top: var(--space-2); }
   .church-image-field { display: grid; gap: var(--space-2); }
   .church-image-field > span { color: #475569; font-size: .75rem; font-weight: 900; }
-  .church-image-preview { align-items: center; aspect-ratio: 4 / 3; background: #eef2f7; background-position: center; background-size: cover; border: 1px dashed #cbd5e1; border-radius: 16px; display: flex; justify-content: center; overflow: hidden; }
+  .church-image-preview { align-items: center; aspect-ratio: 4 / 3; background: #eef2f7; background-position: center; background-size: cover; border: 1px dashed #94a3b8; border-radius: 16px; cursor: pointer; display: flex; justify-content: center; overflow: hidden; position: relative; transition: border-color 160ms ease, box-shadow 160ms ease; }
   .church-image-preview--wide { aspect-ratio: 16 / 7; }
+  .church-image-preview:focus-visible, .church-image-preview.is-dragging { border-color: #293c74; box-shadow: 0 0 0 4px rgba(40,166,189,.18); outline: none; }
+  .church-image-preview::after, :global(.church-scene-image::after) { background: rgba(7,17,28,.76); border-radius: 999px; bottom: var(--space-1); color: #fff; content: 'Arrastra o toca'; font-size: .68rem; font-weight: 900; left: 50%; opacity: 0; padding: var(--space-1) var(--space-2); pointer-events: none; position: absolute; transform: translateX(-50%); transition: opacity 160ms ease; white-space: nowrap; }
+  .church-image-preview:hover::after, .church-image-preview:focus-visible::after, .church-image-preview.is-dragging::after, :global(.church-scene-image:hover::after), :global(.church-scene-image:focus-visible::after), :global(.church-scene-image.is-dragging::after) { opacity: 1; }
   .church-live-preview { background: #111936; min-height: 34rem; overflow: hidden; }
-  :global(.preview-essential header) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd); background-position: center; background-size: cover; color: white; display: flex; flex-direction: column; justify-content: end; min-height: 22rem; padding: var(--space-4); }
+  :global(.preview-shell--navy) { --preview-bg: #111936; --preview-copy: #fff; --preview-surface: #fff; --preview-surface-copy: #172151; --preview-muted: #64748b; }
+  :global(.preview-shell--light) { --preview-bg: #edf6f4; --preview-copy: #101827; --preview-surface: #fff; --preview-surface-copy: #101827; --preview-muted: #526174; }
+  :global(.preview-shell--warm) { --preview-bg: #f7f2e7; --preview-copy: #101827; --preview-surface: #fffaf0; --preview-surface-copy: #101827; --preview-muted: #6b6258; }
+  :global(.preview-essential header) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd); background-position: center; background-size: cover; color: #fff; display: flex; flex-direction: column; justify-content: end; min-height: 22rem; padding: var(--space-4); }
+  :global(.preview-essential header :is(small, strong, span)) { color: #fff !important; text-shadow: 0 2px 16px rgba(7,17,28,.34); }
   :global(.preview-essential header small) { align-self: flex-start; font-size: .65rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
   :global(.preview-essential header strong) { align-self: flex-start; font-size: clamp(2rem,5vw,3.4rem); font-weight: 900; line-height: .95; margin-top: var(--space-2); }
   :global(.preview-essential header span) { align-self: flex-start; line-height: 1.45; margin-top: var(--space-2); }
-  :global(.preview-essential section) { background: white; color: #172151; padding: var(--space-4); }
-  :global(.preview-essential section strong) { display: block; font-size: 1.45rem; font-weight: 900; }
-  :global(.preview-essential section p) { color: #64748b; line-height: 1.55; margin-top: var(--space-2); }
-  :global(.preview-story) { display: grid; min-height: 34rem; }
-  :global(.preview-story-card) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd) center/cover; color: white; display: flex; min-height: 17rem; padding: var(--space-3); position: relative; }
+  :global(.preview-essential section) { background: var(--preview-surface); color: var(--preview-surface-copy); padding: var(--space-4); }
+  :global(.preview-essential section strong) { color: var(--preview-surface-copy) !important; display: block; font-size: 1.45rem; font-weight: 900; }
+  :global(.preview-essential section p) { color: var(--preview-muted); line-height: 1.55; margin-top: var(--space-2); }
+  :global(.preview-story) { background: var(--preview-bg); color: var(--preview-copy); display: grid; min-height: 34rem; }
+  :global(.preview-story-card) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd) center/cover; color: #fff; display: flex; min-height: 17rem; padding: var(--space-3); position: relative; }
   :global(.preview-story-card::after) { background: linear-gradient(0deg,rgba(7,17,28,.9),transparent); content: ''; inset: 0; position: absolute; }
   :global(.preview-story-card div) { position: relative; z-index: 1; }
-  :global(.preview-story-card small), :global(.preview-story-card strong) { display: block; }
+  :global(.preview-story-card small), :global(.preview-story-card strong) { display: block; position: relative; z-index: 1; }
   :global(.preview-story-card small) { color: #f2c94c; font-size: .65rem; font-weight: 900; text-transform: uppercase; }
-  :global(.preview-story-card strong) { font-size: 1.6rem; line-height: 1; margin-top: var(--space-1); }
-  :global(.preview-mosaic) { color: white; padding: var(--space-2); }
+  :global(.preview-story-card strong) { color: #fff !important; font-size: 1.6rem; line-height: 1; margin-top: var(--space-1); text-shadow: 0 2px 14px rgba(7,17,28,.34); }
+  :global(.preview-mosaic) { background: var(--preview-bg); color: var(--preview-copy); min-height: 34rem; padding: var(--space-2); }
   :global(.preview-mosaic header) { padding: var(--space-3) var(--space-2); }
   :global(.preview-mosaic header small), :global(.preview-mosaic header strong) { display: block; }
   :global(.preview-mosaic header small) { color: #28a6bd; font-size: .65rem; font-weight: 900; text-transform: uppercase; }
-  :global(.preview-mosaic header strong) { font-size: 2rem; line-height: 1; margin-top: var(--space-1); }
+  :global(.preview-mosaic header strong) { color: var(--preview-copy) !important; font-size: 2rem; line-height: 1; margin-top: var(--space-1); }
   :global(.preview-mosaic > div) { display: grid; gap: var(--space-2); grid-template-columns: repeat(2,minmax(0,1fr)); }
   :global(.preview-mosaic-card) { align-items: end; background: linear-gradient(145deg,#20315f,#28a6bd) center/cover; border-radius: 16px; display: flex; min-height: 12rem; padding: var(--space-2); position: relative; }
   :global(.preview-mosaic-card::after) { background: linear-gradient(0deg,rgba(7,17,28,.9),transparent); border-radius: inherit; content: ''; inset: 0; position: absolute; }
   :global(.preview-mosaic-card div) { position: relative; z-index: 1; }
   :global(.preview-mosaic-card small), :global(.preview-mosaic-card strong) { display: block; }
   :global(.preview-mosaic-card small) { color: #f2c94c; font-size: .6rem; text-transform: uppercase; }
-  :global(.preview-mosaic-card strong) { line-height: 1.05; margin-top: var(--space-1); }
+  :global(.preview-mosaic-card strong) { color: #fff !important; line-height: 1.05; margin-top: var(--space-1); text-shadow: 0 2px 14px rgba(7,17,28,.34); }
   :global(.church-scene-card) { border: 1px solid #dce4ec; border-radius: 16px; padding: var(--space-2); }
   :global(.church-scene-grid) { display: grid; gap: var(--space-2); grid-template-columns: repeat(2,minmax(0,1fr)); }
-  :global(.church-scene-image) { aspect-ratio: 16 / 9; background: #eef2f7 center/cover; border-radius: 12px; margin-top: var(--space-2); }
+  :global(.church-scene-image) { aspect-ratio: 16 / 9; background: #eef2f7 center/cover; border: 1px dashed #94a3b8; border-radius: 12px; cursor: pointer; margin-top: var(--space-2); overflow: hidden; position: relative; }
+  :global(.church-scene-image:focus-visible), :global(.church-scene-image.is-dragging) { border-color: #293c74; box-shadow: 0 0 0 4px rgba(40,166,189,.18); outline: none; }
   :global(.church-media-card) { background: #fff; border: 1px solid #dce4ec; border-radius: 16px; min-height: 44px; overflow: hidden; text-align: left; width: 100%; }
   :global(.church-media-card img) { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
   :global(.church-media-card span) { display: block; font-size: .72rem; font-weight: 800; overflow: hidden; padding: var(--space-1); text-overflow: ellipsis; white-space: nowrap; }

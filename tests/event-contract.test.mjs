@@ -56,6 +56,11 @@ test('configura cobro dual únicamente para eventos globales', () => {
   assert.deepEqual(getEventPaymentProvidersForMode('STRIPE'), ['STRIPE']);
   assert.equal(canUseEventPaymentModeForScope('DUAL', 'GLOBAL'), true);
   assert.equal(canUseEventPaymentModeForScope('DUAL', 'NATIONAL'), false);
+  assert.equal(canUseEventPaymentModeForScope('WOMPI', 'NATIONAL', 'Colombia'), true);
+  assert.equal(canUseEventPaymentModeForScope('WOMPI', 'NATIONAL', 'Francia'), false);
+  assert.equal(canUseEventPaymentModeForScope('WOMPI', 'LOCAL', 'Colombia'), false);
+  assert.equal(canUseEventPaymentModeForScope('STRIPE', 'GLOBAL'), true);
+  assert.equal(canUseEventPaymentModeForScope('STRIPE', 'NATIONAL', 'Ecuador'), false);
 });
 
 test('mantiene precios COP y USD separados con respaldo para eventos anteriores', () => {

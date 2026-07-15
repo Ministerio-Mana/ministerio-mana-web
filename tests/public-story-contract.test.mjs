@@ -106,6 +106,26 @@ test('el selector de idioma funciona con CSP y declara el idioma del documento',
   assert.match(layout, /<html lang=\{documentLocale\}/);
 });
 
+test('la cuenta pública se resincroniza después de navegar sin mostrar un login falso', async () => {
+  const [view, logic] = await Promise.all([
+    readProjectFile('src/components/AccountButton.astro'),
+    readProjectFile('src/scripts/account-button.js'),
+  ]);
+
+  assert.match(view, /data-account-button aria-busy="true"/);
+  assert.match(view, /data-account-loading/);
+  assert.match(logic, /document\.addEventListener\('astro:page-load', checkSession\)/);
+  assert.match(logic, /supabase\.auth\.onAuthStateChange/);
+  assert.match(logic, /window\.addEventListener\('pageshow', checkSession\)/);
+});
+
+test('las historias mantienen texto claro sobre fotos aunque la paleta base sea clara', async () => {
+  const source = await readProjectFile('src/components/cms/CmsStorySection.astro');
+
+  assert.match(source, /\.cms-story-panel--backdrop,[\s\S]*?\.cms-story-panel--poster \{[\s\S]*?color: #fff;/);
+  assert.match(source, /\.cms-story-panel--backdrop \.cms-story-title,[\s\S]*?color: #fff;/);
+});
+
 test('Campus etiqueta los datos de pago y deshabilita la acción inválida', async () => {
   const [view, logic] = await Promise.all([
     readProjectFile('src/components/campus/DonationForm.astro'),

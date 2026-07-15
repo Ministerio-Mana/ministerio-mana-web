@@ -141,8 +141,12 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /:global\(\.event-action\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar-confirm\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar \.flatpickr-time input\) \{[\s\S]*?min-height: 44px;/);
+  assert.match(eventsView, /Nombre completo[\s\S]*?Correo[\s\S]*?Número de asistentes/);
+  assert.match(eventsView, /:global\(\.event-custom-field-grid\)/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
+  assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
+  assert.match(eventsLogic, /recommendedMode = scope === 'GLOBAL'[\s\S]*?'DUAL'/);
   assert.match(eventsLogic, /function requestCloseEventModal\(\)/);
   assert.match(eventsLogic, /event\.key === 'Escape'[\s\S]*?closeModal\?\.focus\(\)/);
   assert.match(eventsLogic, /event\.key !== 'Tab'/);
@@ -193,6 +197,10 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.match(logic, /event\.key !== 'Tab'/);
   assert.match(logic, /state\.modalTrigger\?\.focus\?\.\(\)/);
   assert.match(logic, /expected_version: Number\(state\.page\.version \|\| 0\)/);
+  assert.match(view, /id="church-page-themes"/);
+  assert.match(view, /data-image-drop-target="hero"/);
+  assert.match(logic, /async function uploadMediaFile\(file, target = state\.mediaTarget\)/);
+  assert.match(logic, /state\.page\.story_config\.theme = input\.value/);
   assert.match(api, /requireChurchPageEditor\(request\)/);
   assert.match(api, /published_snapshot: snapshot/);
   assert.match(api, /\.eq\('version', expectedVersion\)/);

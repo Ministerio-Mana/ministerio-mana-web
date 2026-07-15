@@ -20,11 +20,14 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 ### Segundo: Eventos de punta a punta
 
 - [ ] Crear y guardar un evento local gratuito con `Colombia · Bogotá` y modalidad `Presencial`.
+- [ ] Abrir los cuatro calendarios dentro del formulario largo, desplazarse con uno abierto y confirmar que permanece unido al campo y que `Listo` siempre puede alcanzarse.
+- [ ] Activar `Inscripción en Maná` y confirmar que Nombre completo, Correo y Número de asistentes aparecen como campos incluidos; agregar una pregunta y revisar su diseño en celular.
 - [ ] Probar una imagen horizontal, una cuadrada y una vertical; revisar tarjeta, invitación pública y celular.
 - [ ] Crear un formulario Maná con una pregunta adicional obligatoria y otra opcional.
 - [ ] Enviar una inscripción desde celular y revisar el consentimiento y enlace de WhatsApp.
 - [ ] Crear un evento nacional Wompi/COP y comprobar que no ofrece USD ni pago manual simultáneo.
 - [ ] Crear un evento global Wompi/COP + Stripe/USD y comprobar que muestra ambos precios sin conversión.
+- [ ] Crear un evento nacional de Francia o Ecuador y confirmar que no ofrece Wompi ni Stripe, pero sí permite QR, transferencia, PayPal, Zelle o enlace externo con comprobante.
 - [ ] Crear un evento local con QR o transferencia, adjuntar un comprobante pequeño y revisar su auditoría.
 
 ### Tercero: Excel web y OneDrive
@@ -41,6 +44,9 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Entrar con una cuenta individual a `/portal/church-page`.
 - [ ] Elegir una iglesia autorizada y probar `Esencial`, `Historia` y `Mosaico` sin publicar datos reales incompletos.
 - [ ] Cargar una imagen horizontal, una cuadrada y una vertical; confirmar que cada una queda en la biblioteca de esa iglesia y no se deforma.
+- [ ] Probar las paletas Azul Maná, Claro editorial y Cálido. Confirmar que títulos y textos se leen sobre fondos claros, oscuros y fotografías.
+- [ ] Arrastrar una imagen directamente a Portada, Pastor/equipo y una escena; confirmar que se carga en ImageKit y queda en el recuadro correcto.
+- [ ] En una escena, comparar Imagen de fondo, imagen lateral y Arte protagonista; confirmar que una foto se recorta con punto importante y que un afiche se muestra completo.
 - [ ] Guardar el borrador, recargar y confirmar que se recupera. Verificar que la página pública no cambió antes de pulsar `Publicar`.
 - [ ] Publicar una sede controlada y revisar `/iglesias/`, su mapa, `/iglesias/{slug}`, WhatsApp, correo, ubicación y próximos eventos en celular y escritorio.
 - [ ] Repetir el acceso con una cuenta local, regional y nacional; cada una debe ver únicamente las iglesias de su alcance.
@@ -60,6 +66,7 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Decidir si se agrega una Lista de SharePoint para inscripciones en tiempo real además del Excel.
 - [ ] Definir si Cumbre Mundial 2026 continúa activa, entra en cierre contable o se archiva.
 - [ ] Registrar el vencimiento del secreto de Microsoft Entra y confirmar biblioteca privada, permisos mínimos y variables de Vercel.
+- [ ] Crear o autorizar un recurso Azure Translator, definir región y presupuesto, y configurar sus tres variables directamente en Vercel sin compartir llaves por mensajes. La arquitectura está en `docs/AUTOMATIC_TRANSLATION_PLAN_2026-07-14.md`.
 
 ### Pendientes añadidos por la revisión técnica del 13 de julio
 
