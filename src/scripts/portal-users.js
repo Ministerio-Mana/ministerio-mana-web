@@ -8,7 +8,10 @@ import {
 import {
     filterPortalChurches,
     filterPortalRegions,
+    findPortalCountry,
+    listPortalCities,
     listPortalCountries,
+    normalizePortalCountryKey,
     normalizeTerritoryKey,
 } from '@lib/portalGeography';
 
@@ -494,6 +497,7 @@ async function loadChurches() {
         const data = await res.json();
         churchesCatalog = Array.isArray(data) ? data : [];
         populateScopeOptions();
+        populateLocationFilters();
     } catch (err) {
         console.error(err);
     }
@@ -508,15 +512,18 @@ async function loadRegions(token) {
         if (!res.ok) {
             regionsCatalog = [];
             populateRegionOptions();
+            populateLocationFilters();
             return;
         }
         const payload = await res.json();
         regionsCatalog = Array.isArray(payload?.regions) ? payload.regions : [];
         populateRegionOptions();
+        populateLocationFilters();
     } catch (err) {
         console.error(err);
         regionsCatalog = [];
         populateRegionOptions();
+        populateLocationFilters();
     }
 }
 
@@ -536,10 +543,10 @@ function ensureScopeCatalogs(token) {
 function populateCountrySelect(select, selectedValue = '') {
     if (!select) return;
     const countries = listPortalCountries(churchesCatalog, regionsCatalog);
-    const selectedKey = normalizeTerritoryKey(selectedValue || select.value);
+    const selectedKey = normalizePortalCountryKey(selectedValue || select.value);
     select.innerHTML = '<option value="">Selecciona un país</option>'
         + countries.map((country) => `<option value="${escapeAttr(country)}">${escapeHtml(country)}</option>`).join('');
-    const matchedCountry = countries.find((country) => normalizeTerritoryKey(country) === selectedKey);
+    const matchedCountry = countries.find((country) => normalizePortalCountryKey(country) === selectedKey);
     select.value = matchedCountry || '';
 }
 
@@ -767,41 +774,22 @@ function populateLocationFilters() {
     const selectedCountry = countryFilter?.value || '';
     const selectedCity = cityFilter?.value || '';
 
-    const countries = Array.from(new Set(
-        (allUsers || [])
-            .map((user) => getUserCountry(user))
-            .filter(Boolean),
-    )).sort((a, b) => a.localeCompare(b, 'es'));
+    const countries = listPortalCountries(churchesCatalog, regionsCatalog);
 
     if (countryFilter) {
         countryFilter.innerHTML = '<option value="">Todos los países</option>'
             + countries.map((country) => `<option value="${escapeAttr(country)}">${escapeHtml(country)}</option>`).join('');
-        if (countries.includes(selectedCountry)) {
-            countryFilter.value = selectedCountry;
-        } else {
-            countryFilter.value = '';
-        }
+        countryFilter.value = findPortalCountry(selectedCountry, churchesCatalog, regionsCatalog) || '';
     }
 
     const countryScope = countryFilter?.value || '';
-    const cities = Array.from(new Set(
-        (allUsers || [])
-            .filter((user) => {
-                if (!countryScope) return true;
-                return getUserCountry(user) === countryScope;
-            })
-            .map((user) => getUserCity(user))
-            .filter(Boolean),
-    )).sort((a, b) => a.localeCompare(b, 'es'));
+    const cities = listPortalCities(churchesCatalog, { country: countryScope });
 
     if (cityFilter) {
         cityFilter.innerHTML = '<option value="">Todas las ciudades</option>'
             + cities.map((city) => `<option value="${escapeAttr(city)}">${escapeHtml(city)}</option>`).join('');
-        if (cities.includes(selectedCity)) {
-            cityFilter.value = selectedCity;
-        } else {
-            cityFilter.value = '';
-        }
+        const selectedCityKey = normalizeTerritoryKey(selectedCity);
+        cityFilter.value = cities.find((city) => normalizeTerritoryKey(city) === selectedCityKey) || '';
     }
 }
 
@@ -855,8 +843,8 @@ function applyFilters(options = {}) {
         if (roleValue === 'finance' && !hasFinanceAccess) return false;
         if (roleValue && roleValue !== 'finance' && user.role !== roleValue) return false;
         if (statusValue && user.access_status !== statusValue) return false;
-        if (countryValue && getUserCountry(user) !== countryValue) return false;
-        if (cityValue && getUserCity(user) !== cityValue) return false;
+        if (countryValue && normalizePortalCountryKey(getUserCountry(user)) !== normalizePortalCountryKey(countryValue)) return false;
+        if (cityValue && normalizeTerritoryKey(getUserCity(user)) !== normalizeTerritoryKey(cityValue)) return false;
         if (scopeValue && getScopeCategory(user) !== scopeValue) return false;
         return true;
     });
