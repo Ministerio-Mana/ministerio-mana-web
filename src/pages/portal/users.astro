@@ -14,11 +14,12 @@ import { MISIONEROS } from '@data/misioneros';
             Validando permisos...
          </div>
 
-         <div id="users-secure-content" class="hidden max-w-6xl mx-auto space-y-8">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+         <div id="users-secure-content" class="hidden mx-auto max-w-7xl space-y-8">
+            <div class="flex flex-col gap-6 border-b border-slate-200 pb-8 sm:flex-row sm:items-end sm:justify-between">
                <div>
-                   <h1 class="text-3xl font-display font-bold text-[#293C74]">Usuarios</h1>
-                   <p class="text-slate-600">Gestiona los miembros de tu iglesia/red.</p>
+                   <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#28A6BD]">Accesos y responsabilidades</p>
+                   <h1 class="text-3xl font-display font-bold text-[#293C74] md:text-4xl">Usuarios</h1>
+                   <p class="mt-2 max-w-2xl text-slate-600">Administra quién entra al Portal y limita cada permiso al país, región, iglesia o responsabilidad que le corresponde.</p>
                </div>
                <button id="btn-open-create-user" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#20315f] sm:w-auto">
                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
@@ -27,7 +28,14 @@ import { MISIONEROS } from '@data/misioneros';
             </div>
 
             <!-- Users List -->
-            <div class="portal-panel p-4 md:p-6">
+            <div class="portal-panel p-4 md:p-8">
+                <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-[#293C74]">Directorio del Portal</h2>
+                        <p class="mt-2 text-sm text-slate-500">Busca, filtra y administra una cuenta sin perder de vista su alcance.</p>
+                    </div>
+                    <div id="users-count" class="text-xs font-bold uppercase tracking-widest text-slate-500">0 usuarios</div>
+                </div>
                 <div class="mb-5">
                     <div id="users-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
                 </div>
@@ -66,7 +74,6 @@ import { MISIONEROS } from '@data/misioneros';
                                 <option value="unknown">Sin diagnóstico</option>
                             </select>
                         </div>
-                        <div id="users-count" class="text-xs text-slate-400 font-bold uppercase tracking-widest">0 usuarios</div>
                     </div>
 
                     <div class="flex flex-col lg:flex-row lg:items-center gap-3">
@@ -133,16 +140,19 @@ import { MISIONEROS } from '@data/misioneros';
 
     <!-- Create User Modal -->
     <div id="create-user-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="create-user-title" aria-describedby="create-user-description" aria-hidden="true">
-        <div class="my-auto max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-8">
-            <div class="mb-6 flex items-start justify-between gap-4">
+        <div class="my-auto max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 p-6 sm:p-8">
                 <div>
-                    <h3 id="create-user-title" class="text-xl font-bold text-[#293C74]">Crear nuevo usuario</h3>
+                    <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#28A6BD]">Nuevo acceso</p>
+                    <h3 id="create-user-title" class="text-2xl font-bold text-[#293C74]">Crear nuevo usuario</h3>
                     <p id="create-user-description" class="mt-2 text-sm text-slate-500">Asigna únicamente el rol y alcance que esta persona necesita.</p>
                 </div>
                 <button id="create-user-close" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 text-xl text-slate-500 hover:bg-slate-50" aria-label="Cerrar creación de usuario">×</button>
             </div>
             
-            <form id="create-user-form" class="space-y-4">
+            <form id="create-user-form" class="space-y-6 p-6 sm:p-8">
+                <fieldset class="space-y-4">
+                    <legend class="mb-4 text-sm font-bold text-[#293C74]">1. Datos de la persona</legend>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label for="create-user-first-name" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Nombre</label>
@@ -162,6 +172,10 @@ import { MISIONEROS } from '@data/misioneros';
                     <input id="create-user-password" type="password" name="password" autocomplete="new-password" minlength="10" aria-describedby="create-user-password-help" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                     <p id="create-user-password-help" class="mt-1 text-[11px] leading-snug text-slate-500">Déjala vacía para enviar correo de activación. Si escribes una contraseña, la cuenta se crea con esa clave y se intenta enviar un enlace de acceso.</p>
                 </div>
+                </fieldset>
+
+                <fieldset class="space-y-4 border-t border-slate-100 pt-6">
+                    <legend class="mb-4 text-sm font-bold text-[#293C74]">2. Responsabilidad y alcance</legend>
                  <div>
                      <label for="user-role-select" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
                      <select name="role" id="user-role-select" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
@@ -180,6 +194,38 @@ import { MISIONEROS } from '@data/misioneros';
                             <option value={missionary.slug}>{missionary.nombre}</option>
                         ))}
                     </select>
+                </div>
+
+                <div id="user-finance-scope" class="hidden rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-6">
+                    <div class="mb-4">
+                        <p class="text-sm font-bold text-amber-950">Alcance financiero obligatorio</p>
+                        <p class="mt-2 text-xs leading-5 text-amber-900">Esta persona verá únicamente la información financiera del nivel seleccionado. El acceso queda registrado para auditoría.</p>
+                    </div>
+                    <div>
+                        <label for="user-finance-scope-type" class="mb-2 block text-xs font-bold uppercase tracking-widest text-amber-900">Nivel financiero</label>
+                        <select id="user-finance-scope-type" name="financeScopeType" class="min-h-11 w-full rounded-xl border border-amber-200 bg-white px-4 py-4 text-sm text-[#293C74]">
+                            <option value="country">Nacional · un país</option>
+                            <option value="region">Regional · una región</option>
+                            <option value="church">Local · una iglesia</option>
+                            <option value="global">Global · todos los países</option>
+                        </select>
+                    </div>
+                    <div id="user-finance-country-wrapper" class="mt-4">
+                        <label for="user-finance-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-amber-900">País</label>
+                        <input id="user-finance-country" name="financeScopeKey" list="user-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-amber-200 bg-white px-4 py-4 text-sm" placeholder="Ej: Colombia">
+                    </div>
+                    <div id="user-finance-region-wrapper" class="mt-4 hidden">
+                        <label for="user-finance-region" class="mb-2 block text-xs font-bold uppercase tracking-widest text-amber-900">Región</label>
+                        <select id="user-finance-region" name="financeScopeId" class="min-h-11 w-full rounded-xl border border-amber-200 bg-white px-4 py-4 text-sm">
+                            <option value="">Selecciona una región</option>
+                        </select>
+                    </div>
+                    <div id="user-finance-church-wrapper" class="mt-4 hidden">
+                        <label for="user-finance-church" class="mb-2 block text-xs font-bold uppercase tracking-widest text-amber-900">Iglesia</label>
+                        <select id="user-finance-church" name="financeScopeId" class="min-h-11 w-full rounded-xl border border-amber-200 bg-white px-4 py-4 text-sm">
+                            <option value="">Selecciona una iglesia</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div id="user-scope-country" class="hidden">
@@ -202,10 +248,11 @@ import { MISIONEROS } from '@data/misioneros';
                 </div>
 
                 <datalist id="user-country-list"></datalist>
+                </fieldset>
 
                 <p id="create-user-feedback" class="hidden rounded-xl px-4 py-4 text-sm" role="status" aria-live="polite"></p>
 
-                <div class="flex gap-3 pt-4">
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
                     <button type="button" id="btn-cancel-create" class="min-h-11 flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200">Cancelar</button>
                     <button type="submit" id="btn-submit-create" class="min-h-11 flex-1 rounded-xl bg-[#293C74] py-3 text-sm font-bold text-white shadow-lg transition-colors hover:brightness-110">Crear usuario</button>
                 </div>

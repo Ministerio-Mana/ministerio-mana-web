@@ -39,6 +39,14 @@ const scopeChurchWrapper = document.getElementById('user-scope-church');
 const scopeChurchSelect = document.getElementById('user-church-select');
 const scopeCampusMissionaryWrapper = document.getElementById('user-campus-missionary');
 const scopeCampusMissionarySelect = document.getElementById('user-campus-missionary-select');
+const financeOnboardingWrapper = document.getElementById('user-finance-scope');
+const financeOnboardingScope = document.getElementById('user-finance-scope-type');
+const financeOnboardingCountryWrapper = document.getElementById('user-finance-country-wrapper');
+const financeOnboardingCountry = document.getElementById('user-finance-country');
+const financeOnboardingRegionWrapper = document.getElementById('user-finance-region-wrapper');
+const financeOnboardingRegion = document.getElementById('user-finance-region');
+const financeOnboardingChurchWrapper = document.getElementById('user-finance-church-wrapper');
+const financeOnboardingChurch = document.getElementById('user-finance-church');
 const financeAssignmentModal = document.getElementById('finance-assignment-modal');
 const financeAssignmentClose = document.getElementById('finance-assignment-close');
 const financeAssignmentCancel = document.getElementById('finance-assignment-cancel');
@@ -555,6 +563,9 @@ function populateScopeOptions() {
                 return `<option value="${safeId}">${safeCity} · ${safeName}${countryLabel}</option>`;
             })
             .join('');
+    if (financeOnboardingChurch) {
+        financeOnboardingChurch.innerHTML = scopeChurchSelect.innerHTML;
+    }
 
     const countries = Array.from(new Set(churchesCatalog.map(c => c.country).filter(Boolean))).sort();
     scopeCountryList.innerHTML = countries.map(c => `<option value="${escapeAttr(c)}"></option>`).join('');
@@ -585,6 +596,41 @@ function populateRegionOptions() {
                 return `<option value="${escapeAttr(region.id || '')}">${escapeHtml(label)}</option>`;
             })
             .join('');
+    if (financeOnboardingRegion) {
+        financeOnboardingRegion.innerHTML = scopeRegionSelect.innerHTML;
+    }
+}
+
+function updateFinanceOnboardingFields() {
+    const isFinance = roleSelect?.value === 'finance';
+    const scopeType = financeOnboardingScope?.value || 'country';
+    const needsCountry = isFinance && scopeType === 'country';
+    const needsRegion = isFinance && scopeType === 'region';
+    const needsChurch = isFinance && scopeType === 'church';
+
+    financeOnboardingWrapper?.classList.toggle('hidden', !isFinance);
+    if (financeOnboardingScope) financeOnboardingScope.disabled = !isFinance;
+
+    financeOnboardingCountryWrapper?.classList.toggle('hidden', !needsCountry);
+    if (financeOnboardingCountry) {
+        financeOnboardingCountry.disabled = !needsCountry;
+        financeOnboardingCountry.required = needsCountry;
+        if (!needsCountry) financeOnboardingCountry.value = '';
+    }
+
+    financeOnboardingRegionWrapper?.classList.toggle('hidden', !needsRegion);
+    if (financeOnboardingRegion) {
+        financeOnboardingRegion.disabled = !needsRegion;
+        financeOnboardingRegion.required = needsRegion;
+        if (!needsRegion) financeOnboardingRegion.value = '';
+    }
+
+    financeOnboardingChurchWrapper?.classList.toggle('hidden', !needsChurch);
+    if (financeOnboardingChurch) {
+        financeOnboardingChurch.disabled = !needsChurch;
+        financeOnboardingChurch.required = needsChurch;
+        if (!needsChurch) financeOnboardingChurch.value = '';
+    }
 }
 
 function updateScopeFields(role) {
@@ -647,11 +693,14 @@ function updateScopeFields(role) {
             scopeCampusMissionarySelect.value = '';
         }
     }
+
+    updateFinanceOnboardingFields();
 }
 
 function attachScopeListener() {
     if (scopeListenerAttached || !roleSelect) return;
     roleSelect.addEventListener('change', () => updateScopeFields(roleSelect.value));
+    financeOnboardingScope?.addEventListener('change', updateFinanceOnboardingFields);
     scopeListenerAttached = true;
 }
 
@@ -904,25 +953,25 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
     const resetButton = canSendAccessLink
         ? (isDeleted
             ? '<span class="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cuenta eliminada</span>'
-            : `<button type="button" data-action="reset" data-email="${safeEmailAttr}" class="min-h-11 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-bold text-[#293C74] hover:bg-slate-100">${escapeHtml(resetLabel)}</button>`)
+            : `<button type="button" data-action="reset" data-email="${safeEmailAttr}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">${escapeHtml(resetLabel)}</button>`)
         : '';
     const accessLinkButton = canCopyAccessLink && !isDeleted
-        ? `<button type="button" data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="min-h-11 px-3 py-2 rounded-lg border border-cyan-200 bg-cyan-50 text-xs font-bold text-cyan-800 hover:bg-cyan-100">Copiar enlace</button>`
+        ? `<button type="button" data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">Copiar enlace de acceso</button>`
         : '';
     const financeCount = Number(user?.finance_assignment_count || 0);
     const financeButton = isActorSuperadmin && !isDeleted && !isTargetGlobalAdmin
-        ? `<button type="button" data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-800 hover:bg-amber-100">Finanzas${financeCount ? ` (${financeCount})` : ''}</button>`
+        ? `<button type="button" data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs font-bold text-amber-900 hover:bg-amber-100">Alcances financieros${financeCount ? ` (${financeCount})` : ''}</button>`
         : '';
     let lifecycleButtons = '';
     if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
         if (isDeleted) {
-            lifecycleButtons = `<button type="button" data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100">Restaurar</button>`;
+            lifecycleButtons = `<button type="button" data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left text-xs font-bold text-emerald-800 hover:bg-emerald-100">Restaurar cuenta</button>`;
         } else {
             const blockLabel = isBlocked ? 'Desbloquear' : 'Bloquear';
             const blockAction = isBlocked ? 'unblock-user' : 'block-user';
             lifecycleButtons = `
-                <button type="button" data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-amber-200 bg-amber-50 text-xs font-bold text-amber-700 hover:bg-amber-100">${blockLabel}</button>
-                <button type="button" data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-rose-200 bg-rose-50 text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar</button>
+                <button type="button" data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50">${blockLabel} cuenta</button>
+                <button type="button" data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-left text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar cuenta</button>
             `;
         }
     }
@@ -932,7 +981,16 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
         if (!combined) {
             return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
         }
-        return `<div class="flex items-center justify-end gap-2 flex-wrap">${combined}</div>`;
+        return `
+            <details class="relative inline-block text-left">
+                <summary class="flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:border-[#293C74]/30 hover:bg-slate-50">
+                    Gestionar <span aria-hidden="true">⌄</span>
+                </summary>
+                <div class="absolute right-0 z-30 mt-2 w-56 space-y-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-xl">
+                    ${combined}
+                </div>
+            </details>
+        `;
     }
 
     return `
@@ -1573,7 +1631,10 @@ function setupModal(token) {
         // Populate Roles dynamically
         if (roleSelect) {
             roleSelect.innerHTML = '';
-            const allowedRoles = roleOrder.filter((role) => currentCreatableRoles.includes(role) && role !== 'finance');
+            const allowedRoles = roleOrder.filter((role) => (
+                currentCreatableRoles.includes(role)
+                && (role !== 'finance' || currentUserRole === 'superadmin')
+            ));
 
             allowedRoles.forEach((role) => {
                 const opt = document.createElement('option');
@@ -1648,6 +1709,11 @@ function setupModal(token) {
                 successMessage = 'Usuario creado con contraseña temporal. También enviamos un enlace para activar o cambiar su contraseña.';
             } else {
                 successMessage = 'Usuario creado con contraseña temporal, pero no se pudo enviar el correo. Entrégale la contraseña temporal o usa Reenviar acceso.';
+            }
+            if (data.financeAssignmentCreated) {
+                successMessage = `${successMessage} Acceso financiero: ${data.financeScopeLabel || 'alcance limitado'}.`;
+            } else if (data.financeAssignmentError) {
+                successMessage = `${successMessage} ${data.financeAssignmentError} Abre “Finanzas” en la fila de esta persona para completarlo.`;
             }
             alert(successMessage);
             createUserDirty = false;

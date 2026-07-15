@@ -87,6 +87,16 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'content-type': 'application/json' },
     });
   }
+  if (submittedTransactionId && submittedTransactionId === reference) {
+    return new Response(JSON.stringify({
+      ok: false,
+      code: 'REFERENCE_IS_NOT_TRANSACTION_ID',
+      error: 'Pegaste la referencia del Portal. Abre el detalle del pago en Wompi y copia el valor “Transacción #”, por ejemplo 1178211-1783194180-26798.',
+    }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
 
   const donation = await getDonationByReference('wompi', reference);
   if (!donation) {
@@ -168,8 +178,8 @@ export const POST: APIRoute = async ({ request }) => {
       ok: false,
       code: transactionId ? 'WOMPI_LOOKUP_FAILED' : 'TRANSACTION_ID_REQUIRED',
       error: transactionId
-        ? 'No pude consultar Wompi con ese ID. Revisa la configuración de Wompi o reenvía el evento desde Wompi.'
-        : 'No tengo el ID de transacción de Wompi para consultar ese pago. Cópialo desde Wompi e inténtalo de nuevo.',
+        ? 'No pude consultar Wompi con esa “Transacción #”. Revisa que copiaste el número completo desde el detalle de Wompi.'
+        : 'Wompi no entregó el ID de esta referencia. Abre el detalle del pago y copia el valor “Transacción #”; no copies la referencia.',
       detail: lookupError,
       manualAvailable: allowsManualApproval(),
     }), {

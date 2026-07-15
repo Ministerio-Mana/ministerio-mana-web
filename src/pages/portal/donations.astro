@@ -120,9 +120,9 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
       <form id="donations-sync-form" class="mt-8 space-y-8" novalidate>
         <div>
-          <label for="donations-sync-transaction" class="mb-2 block text-sm font-bold text-slate-700">ID de transacción de Wompi <span class="font-normal text-slate-500">(opcional)</span></label>
-          <input id="donations-sync-transaction" name="transactionId" type="text" inputmode="text" autocomplete="off" spellcheck="false" class="min-h-11 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-800 focus:border-[#293C74] focus:ring-[#293C74]" aria-describedby="donations-sync-transaction-help donations-sync-feedback" />
-          <p id="donations-sync-transaction-help" class="mt-2 text-xs leading-5 text-slate-500">Déjalo vacío si la referencia ya tiene una transacción asociada. No pegues llaves privadas ni credenciales.</p>
+          <label for="donations-sync-transaction" class="mb-2 block text-sm font-bold text-slate-700">Transacción # de Wompi <span class="font-normal text-slate-500">(opcional)</span></label>
+          <input id="donations-sync-transaction" name="transactionId" type="text" inputmode="text" autocomplete="one-time-code" spellcheck="false" placeholder="Ej. 1178211-1783194180-26798" class="min-h-11 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-800 focus:border-[#293C74] focus:ring-[#293C74]" aria-describedby="donations-sync-transaction-help donations-sync-feedback" />
+          <p id="donations-sync-transaction-help" class="mt-2 text-xs leading-5 text-slate-500"><strong>La referencia mostrada arriba no es este ID.</strong> Primero intenta dejarlo vacío. Si Wompi no envió el evento, copia el valor “Transacción #” desde el detalle de Wompi. Nunca pegues llaves privadas.</p>
         </div>
 
         <div id="donations-sync-manual" class="hidden rounded-xl border border-red-200 bg-red-50 p-4">

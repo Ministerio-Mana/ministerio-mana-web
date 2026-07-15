@@ -1,8 +1,33 @@
 # Pendientes de activación y revisión
 
-Fecha de corte: 14 de julio de 2026.
+Fecha de corte: 15 de julio de 2026.
 
 Este documento reemplaza el inventario operativo que estaba disperso entre la bitácora, el tablero y los mensajes de revisión. No contiene secretos ni valores de producción.
+
+## Revisión prioritaria después del despliegue del 15 de julio
+
+### Usuarios y equipo financiero
+
+- [ ] Entrar como `superadmin` a `/portal/users`, pulsar `Nuevo usuario` y confirmar que aparece `Equipo Financiero`.
+- [ ] Crear una cuenta financiera de prueba y escoger obligatoriamente uno de estos niveles: global, nacional, regional o local. No usar datos de una persona real si todavía no se ha autorizado su acceso.
+- [ ] Confirmar que la cuenta recién creada muestra su alcance en el directorio y que no puede ver movimientos fuera de ese alcance.
+- [ ] Sobre un pastor ya existente, abrir `Gestionar` → `Alcances financieros` y confirmar que puede conservar su rol pastoral mientras recibe un permiso financiero adicional.
+- [ ] Revisar `/portal/users` a 390 px y en escritorio: búsqueda, filtros, menú `Gestionar`, modal largo, foco de teclado y cierre sin perder lo escrito.
+
+### Campus y sus informes
+
+- [ ] Entrar a `/portal/campus` con una financiera autorizada y confirmar que los totales COP y USD aparecen separados.
+- [ ] Descargar `Informe general` y abrirlo en Excel web. Verificar las hojas `Resumen por misionero`, `Aportes` y `Donantes`.
+- [ ] Elegir un misionero en el filtro, descargar su informe individual y comparar una muestra de montos contra Wompi o Stripe.
+- [ ] Confirmar que el informe respeta el alcance financiero de la cuenta y que una financiera local no recibe donantes ni aportes de otra iglesia.
+- [ ] Abrir y cerrar el historial de un donante; confirmar que las tarjetas son legibles y que Correo y WhatsApp no se activan accidentalmente.
+
+### Wompi
+
+- [ ] Para una referencia histórica pendiente, primero pulsar `Sincronizar Wompi` dejando vacío el campo opcional.
+- [ ] Si el Portal pide el dato manual, abrir el detalle oficial en Wompi y copiar `Transacción #` —por ejemplo `1178211-1783194180-26798`—. No pegar la referencia `MANA-DON-...` y nunca pegar credenciales.
+- [ ] Confirmar que la transacción aprobada cambia una sola vez a aprobada y que una declinada nunca se marca como aprobada.
+- [ ] Confirmar en Vercel que el webhook y el cron `/api/wompi/reconcile-pending` continúan activos para que los pagos nuevos se actualicen sin intervención manual.
 
 ## Revisión programada para el 14 de julio de 2026
 
@@ -113,12 +138,12 @@ No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supaba
   - Activa borradores, publicación, tres plantillas y auditoría para la página pública de cada iglesia.
   - No modifica eventos, pagos, roles, membresías ni la información territorial existente.
   - Resultado esperado: aparecen `church_public_pages` y `church_public_page_audit_logs`.
-- [ ] 7. Ejecutar `docs/sql/event_registration_people_upgrade.sql`.
+- [x] 7. Ejecutar `docs/sql/event_registration_people_upgrade.sql`.
   - Crea una ficha por cada asistente y una ficha financiera privada para quien realiza el pago.
   - No modifica pagos existentes, Wompi, Stripe, SharePoint, Campus ni los roles.
   - Resultado esperado: aparecen `event_registration_attendees`, `event_registration_payers` y `save_event_registration_people_secure(uuid,uuid,jsonb,jsonb)`.
 
-Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El usuario confirmó la ejecución de los puntos 5 y 6 el 14 de julio de 2026. El punto 7 es el único SQL pendiente antes de publicar esta mejora.
+Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El usuario confirmó la ejecución de los puntos 5 y 6 el 14 de julio de 2026 y la del punto 7 con sus tablas y RPC el 15 de julio de 2026. No queda SQL de esta lista pendiente.
 
 ## 2. Activar el primer equipo financiero
 

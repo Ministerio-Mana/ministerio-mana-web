@@ -20,6 +20,11 @@ import {
   needsCountryForRole,
 } from '@lib/portalRbac';
 import { resolveBaseUrl } from '@lib/url';
+import {
+  financeAssignmentScopeLabel,
+  normalizeFinanceAssignmentInput,
+  type NormalizedFinanceAssignment,
+} from '@lib/financeAssignments';
 
 const MANAGEMENT_ALLOWED_ROLES: PortalChurchRole[] = [
   'superadmin',
@@ -103,7 +108,20 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const body = await request.json().catch(() => null);
-  const { email, password, firstName, lastName, role, churchId, country, regionId, campusMissionarySlug } = body || {};
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    role,
+    churchId,
+    country,
+    regionId,
+    campusMissionarySlug,
+    financeScopeType,
+    financeScopeId,
+    financeScopeKey,
+  } = body || {};
   const normalizedEmail = String(email || '').trim().toLowerCase();
   const normalizedFirstName = String(firstName || '').trim();
   const normalizedLastName = String(lastName || '').trim();
@@ -171,14 +189,44 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
 
   const targetRole = String(role || 'user');
-  if (targetRole === 'finance') {
+  const isFinanceOnboarding = targetRole === 'finance';
+  if (isFinanceOnboarding && effectiveRole !== 'superadmin') {
     return new Response(JSON.stringify({
       ok: false,
-      error: 'Crea la cuenta con su rol principal y luego agrega Finanzas con el alcance correspondiente.',
-    }), { status: 409 });
+      error: 'Solo superadmin puede crear una cuenta del equipo financiero.',
+    }), { status: 403 });
   }
   if (!canCreateRole(effectiveRole, targetRole)) {
     return new Response(JSON.stringify({ ok: false, error: `No tienes permiso para crear un usuario con el rol: ${targetRole}` }), { status: 403 });
+  }
+
+  let financeAssignmentInput: Omit<NormalizedFinanceAssignment, 'userId'> | null = null;
+  if (isFinanceOnboarding) {
+    const normalizedFinance = normalizeFinanceAssignmentInput({
+      userId: '00000000-0000-4000-8000-000000000000',
+      scopeType: financeScopeType,
+      scopeId: financeScopeId,
+      scopeKey: financeScopeKey,
+    });
+    if (!normalizedFinance.ok) {
+      return new Response(JSON.stringify({ ok: false, error: normalizedFinance.error }), { status: 400 });
+    }
+    financeAssignmentInput = {
+      scopeType: normalizedFinance.value.scopeType,
+      scopeId: normalizedFinance.value.scopeId,
+      scopeKey: normalizedFinance.value.scopeKey,
+    };
+
+    const readiness = await supabaseAdmin
+      .from('portal_role_assignments')
+      .select('id', { head: true })
+      .limit(1);
+    if (readiness.error) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Los alcances financieros todavía no están disponibles. Verifica la migración financiera antes de crear esta cuenta.',
+      }), { status: 409 });
+    }
   }
   const requestedCampusMissionarySlug = String(campusMissionarySlug || '').trim();
   if (targetRole === 'campus_missionary' && !requestedCampusMissionarySlug) {
@@ -209,6 +257,33 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   let churchInfo: any = null;
   let regionInfo: any = null;
+  let financeRegionInfo: any = null;
+  let financeChurchInfo: any = null;
+
+  if (financeAssignmentInput?.scopeType === 'region' && financeAssignmentInput.scopeId) {
+    const { data: region, error } = await supabaseAdmin
+      .from('regions')
+      .select('id, country, code, name, is_active')
+      .eq('id', financeAssignmentInput.scopeId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error || !region?.id) {
+      return new Response(JSON.stringify({ ok: false, error: 'La región financiera seleccionada no está disponible.' }), { status: 400 });
+    }
+    financeRegionInfo = region;
+  }
+
+  if (financeAssignmentInput?.scopeType === 'church' && financeAssignmentInput.scopeId) {
+    const { data: church, error } = await supabaseAdmin
+      .from('churches')
+      .select('id, name, city, country')
+      .eq('id', financeAssignmentInput.scopeId)
+      .maybeSingle();
+    if (error || !church?.id) {
+      return new Response(JSON.stringify({ ok: false, error: 'La iglesia financiera seleccionada no está disponible.' }), { status: 400 });
+    }
+    financeChurchInfo = church;
+  }
 
   if (requestedRegionId) {
     const { data: region } = await supabaseAdmin
@@ -427,13 +502,40 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
   }
 
+  let financeAssignmentCreated = false;
+  let financeAssignmentId: string | null = null;
+  let financeAssignmentError: string | null = null;
+  if (financeAssignmentInput && userId) {
+    const { data: assignment, error: assignmentError } = await supabaseAdmin
+      .from('portal_role_assignments')
+      .insert({
+        user_id: userId,
+        role: 'finance',
+        scope_type: financeAssignmentInput.scopeType,
+        scope_id: financeAssignmentInput.scopeId,
+        scope_key: financeAssignmentInput.scopeKey,
+        status: 'active',
+        created_by: access.userId,
+        updated_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+    if (assignmentError) {
+      console.error('[create-user] finance assignment error', assignmentError);
+      financeAssignmentError = 'La cuenta se creó, pero no se pudo activar su alcance financiero.';
+    } else {
+      financeAssignmentCreated = true;
+      financeAssignmentId = assignment?.id || null;
+    }
+  }
+
   const profilePayload: Record<string, unknown> = {
     user_id: userId,
     email: normalizedEmail,
     first_name: normalizedFirstName,
     last_name: normalizedLastName,
     full_name: fullName,
-    role: targetRole,
+    role: isFinanceOnboarding && !financeAssignmentCreated ? 'user' : targetRole,
     church_id: targetChurchId,
     church_name: targetChurchName,
     city: targetCity,
@@ -459,6 +561,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   if (profileError) {
     console.error('Profile Error', profileError);
+    if (financeAssignmentId) {
+      await supabaseAdmin.from('portal_role_assignments').delete().eq('id', financeAssignmentId);
+    }
     if (isUniqueViolation(profileError)) {
       return new Response(JSON.stringify({
         ok: false,
@@ -497,5 +602,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     accessEmailMethod,
     accessEmailError,
     campusMissionarySlug: resolvedCampusMissionarySlug,
+    financeAssignmentCreated,
+    financeAssignmentError,
+    financeScopeLabel: financeAssignmentInput
+      ? financeAssignmentScopeLabel({
+          scopeType: financeAssignmentInput.scopeType,
+          scopeKey: financeAssignmentInput.scopeKey,
+          regionLabel: financeRegionInfo
+            ? [financeRegionInfo.code, financeRegionInfo.name, financeRegionInfo.country].filter(Boolean).join(' · ')
+            : null,
+          churchLabel: financeChurchInfo
+            ? [financeChurchInfo.name, financeChurchInfo.city, financeChurchInfo.country].filter(Boolean).join(' · ')
+            : null,
+        })
+      : null,
   }), { status: 200 });
 };

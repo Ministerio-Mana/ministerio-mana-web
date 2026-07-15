@@ -14,13 +14,18 @@ const resultCountEl = document.getElementById('donors-result-count');
 const loadMoreEl = document.getElementById('donors-load-more');
 const scopeLabelEl = document.getElementById('campus-scope-label');
 const coverageNoteEl = document.getElementById('campus-coverage-note');
+const reportActionsEl = document.getElementById('campus-report-actions');
+const exportGeneralEl = document.getElementById('campus-export-general');
+const exportMissionaryEl = document.getElementById('campus-export-missionary');
+const exportFeedbackEl = document.getElementById('campus-export-feedback');
 const filterButtons = Array.from(document.querySelectorAll('[data-donor-filter]'));
 const adminStatEls = Array.from(document.querySelectorAll('.admin-campus-stat'));
 
 const statTotalDonors = document.getElementById('stat-total-donors');
 const statRecurringDonors = document.getElementById('stat-recurring-donors');
 const statOneTimeDonors = document.getElementById('stat-one-time-donors');
-const statCampusTotals = document.getElementById('stat-campus-totals');
+const statCampusCop = document.getElementById('stat-campus-cop');
+const statCampusUsd = document.getElementById('stat-campus-usd');
 const statActiveMissionaries = document.getElementById('stat-active-missionaries');
 const filterCountAll = document.getElementById('filter-count-all');
 const filterCountRecurring = document.getElementById('filter-count-recurring');
@@ -36,6 +41,8 @@ let currentMissionarySlug = 'all';
 let visibleDonorLimit = DONORS_PAGE_SIZE;
 let isAdminView = false;
 let loadRevision = 0;
+let currentAuthHeaders = {};
+let exportInFlight = false;
 
 function showSecureContent() {
     gateEl?.classList.add('hidden');
@@ -242,6 +249,87 @@ function populateMissionaryFilter(donors, showFilter) {
         });
     currentMissionarySlug = 'all';
     missionaryFilterEl.value = currentMissionarySlug;
+    updateMissionaryExportButton();
+}
+
+function selectedMissionaryName() {
+    if (!missionaryFilterEl || currentMissionarySlug === 'all') return '';
+    return missionaryFilterEl.selectedOptions?.[0]?.textContent?.trim() || '';
+}
+
+function updateMissionaryExportButton() {
+    if (!exportMissionaryEl) return;
+    const missionaryName = selectedMissionaryName();
+    exportMissionaryEl.disabled = exportInFlight || !missionaryName;
+    exportMissionaryEl.textContent = missionaryName
+        ? `Descargar informe de ${missionaryName}`
+        : 'Informe por misionero';
+}
+
+function setExportFeedback(message = '', tone = 'info') {
+    if (!exportFeedbackEl) return;
+    if (!message) {
+        exportFeedbackEl.textContent = '';
+        exportFeedbackEl.classList.add('hidden');
+        return;
+    }
+    const styles = tone === 'error'
+        ? 'border-red-200 bg-red-50 text-red-800'
+        : 'border-sky-200 bg-sky-50 text-sky-900';
+    exportFeedbackEl.className = `rounded-xl border px-4 py-4 text-sm font-semibold ${styles}`;
+    exportFeedbackEl.textContent = message;
+}
+
+function setExportBusy(isBusy) {
+    exportInFlight = isBusy;
+    if (exportGeneralEl) {
+        exportGeneralEl.disabled = isBusy;
+        exportGeneralEl.textContent = isBusy ? 'Preparando Excel…' : 'Descargar informe general';
+    }
+    updateMissionaryExportButton();
+}
+
+function fileNameFromDisposition(value, fallback) {
+    const match = String(value || '').match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
+    return match ? decodeURIComponent(match[1].replace(/\"/g, '').trim()) : fallback;
+}
+
+async function downloadCampusReport(missionarySlug = '') {
+    if (exportInFlight || !isAdminView) return;
+    setExportBusy(true);
+    setExportFeedback(missionarySlug
+        ? 'Preparando el informe del misionero seleccionado…'
+        : 'Preparando el informe general de Campus…');
+    try {
+        const url = new URL('/api/portal/campus/export', window.location.origin);
+        if (missionarySlug) url.searchParams.set('missionary', missionarySlug);
+        const response = await fetch(url, {
+            headers: currentAuthHeaders,
+            credentials: 'include',
+        });
+        if (!response.ok) {
+            const payload = await response.json().catch(() => null);
+            throw new Error(payload?.error || 'No se pudo generar el informe de Campus.');
+        }
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = fileNameFromDisposition(
+            response.headers.get('content-disposition'),
+            missionarySlug ? `campus-${missionarySlug}.xlsx` : 'campus-informe-general.xlsx',
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+        setExportFeedback('Informe listo. Puedes abrirlo en Excel web, OneDrive o descargarlo en tu equipo.');
+    } catch (error) {
+        console.error('[campus] export error', error);
+        setExportFeedback(error?.message || 'No se pudo generar el informe de Campus.', 'error');
+    } finally {
+        setExportBusy(false);
+    }
 }
 
 function getFilteredDonors() {
@@ -295,13 +383,17 @@ function buildDonorCard(donor, donorIndex) {
             ? `<a class="inline-flex min-h-11 items-center rounded-md border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:border-[#293C74]/30 hover:text-[#293C74]" href="mailto:${encodeURIComponent(donor.email)}?subject=${subject}&body=${thanksMessage}">Correo</a>`
             : '',
         phoneDigits.length >= 8
-            ? `<a class="inline-flex min-h-11 items-center rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
+            ? `<a class="inline-flex min-h-11 items-center rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-100" href="https://wa.me/${phoneDigits}?text=${thanksMessage}" target="_blank" rel="noopener noreferrer">WhatsApp</a>`
             : '',
     ].filter(Boolean).join('');
 
     const donationLines = Array.isArray(donor.donations) && donor.donations.length
         ? `
-            <div class="mt-4 space-y-2 border-t border-slate-100 pt-4">
+            <details class="mt-4 border-t border-slate-100 pt-4">
+                <summary class="flex min-h-11 cursor-pointer list-none items-center text-xs font-bold text-[#293C74] hover:text-[#20315f]">
+                    Ver historial de ${donor.donations.length} aporte${donor.donations.length === 1 ? '' : 's'}
+                </summary>
+                <div class="space-y-2 pt-2">
                 ${donor.donations.slice(0, 4).map((donation) => {
                     const recurringDonation = donation.frequency === 'recurring';
                     const provider = String(donation.provider || '').toUpperCase();
@@ -342,7 +434,8 @@ function buildDonorCard(donor, donorIndex) {
                 ${donor.donations.length > 4
                     ? `<p class="pt-2 text-xs font-semibold text-slate-400">+${donor.donations.length - 4} donaciones anteriores</p>`
                     : ''}
-            </div>
+                </div>
+            </details>
         `
         : '';
 
@@ -356,15 +449,15 @@ function buildDonorCard(donor, donorIndex) {
         : '';
 
     return `
-        <article class="rounded-lg border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm md:p-6" data-donor-index="${donorIndex}" tabindex="-1">
+        <article class="rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-sm" data-donor-index="${donorIndex}" tabindex="-1">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 flex-1 items-start gap-4">
-                    <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#293C74] text-lg font-bold text-white">
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#293C74] text-sm font-bold text-white">
                         ${donorInitial}
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="mb-2 flex flex-wrap items-center gap-2">
-                            <h3 class="text-lg font-bold text-[#293C74]">${donorName}</h3>
+                            <h3 class="text-base font-bold text-[#293C74]">${donorName}</h3>
                             ${relationshipBadge}
                         </div>
                         ${donor.email ? `<p class="mb-2 break-all text-sm text-slate-600">${donorEmail}</p>` : ''}
@@ -443,8 +536,6 @@ function updateCoverage(coverage = {}, isMissionary = false) {
 
 function updateStats(stats, isAdmin) {
     donorStatsEl?.classList.remove('hidden');
-    donorStatsEl?.classList.toggle('lg:grid-cols-5', isAdmin);
-    donorStatsEl?.classList.toggle('lg:grid-cols-3', !isAdmin);
     if (statTotalDonors) statTotalDonors.textContent = String(stats?.totalDonors || 0);
     if (statRecurringDonors) statRecurringDonors.textContent = String(stats?.recurringDonors || 0);
     if (statOneTimeDonors) statOneTimeDonors.textContent = String(stats?.oneTimeDonors || 0);
@@ -454,9 +545,8 @@ function updateStats(stats, isAdmin) {
 
     adminStatEls.forEach((element) => element.classList.toggle('hidden', !isAdmin));
     if (isAdmin) {
-        if (statCampusTotals) {
-            statCampusTotals.innerHTML = formatTotals(stats?.totalsByCurrency, 'leading-6');
-        }
+        if (statCampusCop) statCampusCop.textContent = formatCurrency(Number(stats?.totalsByCurrency?.COP || 0), 'COP');
+        if (statCampusUsd) statCampusUsd.textContent = formatCurrency(Number(stats?.totalsByCurrency?.USD || 0), 'USD');
         if (statActiveMissionaries) {
             statActiveMissionaries.textContent = String(stats?.activeMissionaries || 0);
         }
@@ -477,6 +567,7 @@ async function loadDonors() {
             return;
         }
         const headers = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
+        currentAuthHeaders = headers;
 
         const sessionRequest = campusSessionChecked
             ? Promise.resolve(null)
@@ -512,6 +603,8 @@ async function loadDonors() {
         }
 
         isAdminView = Boolean(data.isAdmin);
+        reportActionsEl?.classList.toggle('hidden', !isAdminView);
+        reportActionsEl?.classList.toggle('flex', isAdminView);
         allDonors = Array.isArray(data.donors) ? data.donors : [];
         visibleDonorLimit = DONORS_PAGE_SIZE;
         populateMissionaryFilter(allDonors, isAdminView);
@@ -554,7 +647,14 @@ searchEl?.addEventListener('input', () => {
 missionaryFilterEl?.addEventListener('change', () => {
     currentMissionarySlug = missionaryFilterEl.value || 'all';
     visibleDonorLimit = DONORS_PAGE_SIZE;
+    updateMissionaryExportButton();
     renderDonors();
+});
+
+exportGeneralEl?.addEventListener('click', () => void downloadCampusReport());
+exportMissionaryEl?.addEventListener('click', () => {
+    if (currentMissionarySlug === 'all') return;
+    void downloadCampusReport(currentMissionarySlug);
 });
 
 loadMoreEl?.addEventListener('click', () => {

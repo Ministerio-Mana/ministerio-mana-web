@@ -243,9 +243,10 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
 });
 
 test('usuarios protege creación, roles y alcances financieros', async () => {
-  const [usersView, usersLogic, portalStyles] = await Promise.all([
+  const [usersView, usersLogic, createUserApi, portalStyles] = await Promise.all([
     readSource('src/pages/portal/users.astro'),
     readSource('src/scripts/portal-users.js'),
+    readSource('src/pages/api/portal/admin/users/create.ts'),
     readSource('src/styles/portal.css'),
   ]);
 
@@ -257,9 +258,19 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersView, /id="create-user-feedback"[^>]*role="status" aria-live="polite"/);
   assert.match(usersView, /id="finance-assignment-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="finance-assignment-title"[^>]*aria-describedby="finance-assignment-user"[^>]*aria-hidden="true"/);
   assert.match(usersView, /id="finance-assignment-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar alcances financieros"/);
+  assert.match(usersView, /id="user-finance-scope"/);
+  assert.match(usersView, /id="user-finance-scope-type"[^>]*name="financeScopeType"/);
+  assert.match(usersView, /id="user-finance-country"[^>]*name="financeScopeKey"/);
+  assert.equal([...usersView.matchAll(/name="financeScopeId"/g)].length, 2);
+  assert.match(usersView, /Global · todos los países/);
 
   assert.match(usersLogic, /data-action="copy-access-link"[^>]*min-h-11/);
   assert.match(usersLogic, /data-action="manage-finance"[^>]*min-h-11/);
+  assert.match(usersLogic, /role !== 'finance' \|\| currentUserRole === 'superadmin'/);
+  assert.match(usersLogic, /function updateFinanceOnboardingFields\(\)/);
+  assert.match(usersLogic, /const body = Object\.fromEntries\(formData\)/);
+  assert.match(usersLogic, /financeAssignmentCreated/);
+  assert.match(usersLogic, /<details class="relative inline-block text-left">/);
   assert.match(usersLogic, /function getDialogFocusableElements\(dialog\)/);
   assert.match(usersLogic, /function showAccessibleDialog\(dialog, preferredFocus = null\)/);
   assert.match(usersLogic, /function handleAccessibleDialogKeydown\(event, dialog, closeButton\)/);
@@ -268,6 +279,10 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(usersLogic, /event\.target === modal\) closeCreateUserModal\(\)/);
   assert.doesNotMatch(usersLogic, /event\.target === financeAssignmentModal\) closeFinanceAssignmentModal\(\)/);
+  assert.match(createUserApi, /isFinanceOnboarding && effectiveRole !== 'superadmin'/);
+  assert.match(createUserApi, /normalizeFinanceAssignmentInput/);
+  assert.match(createUserApi, /\.from\('portal_role_assignments'\)[\s\S]*?\.insert\(/);
+  assert.match(createUserApi, /role: isFinanceOnboarding && !financeAssignmentCreated \? 'user' : targetRole/);
   assert.match(portalStyles, /\.portal-shell \.portal-responsive-table \[data-action\] \{\s*min-height: 44px;/);
 });
 
@@ -327,10 +342,11 @@ test('finanzas separa monedas, respuestas tardías y controles operativos', asyn
 });
 
 test('donaciones separa proveedores, protege filtros y concilia Wompi con contexto', async () => {
-  const [donationsView, donationsLogic, donationsApi] = await Promise.all([
+  const [donationsView, donationsLogic, donationsApi, syncWompiApi] = await Promise.all([
     readSource('src/pages/portal/donations.astro'),
     readSource('src/scripts/portal-donations.js'),
     readSource('src/pages/api/portal/donations.ts'),
+    readSource('src/pages/api/portal/donations/sync-wompi.ts'),
   ]);
 
   for (const id of ['donations-status', 'donations-domain', 'donations-page-size', 'donations-load-more']) {
@@ -341,6 +357,8 @@ test('donaciones separa proveedores, protege filtros y concilia Wompi con contex
   assert.match(donationsView, /id="donations-sync-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="donations-sync-title"[^>]*aria-describedby="donations-sync-description"[^>]*aria-hidden="true"/);
   assert.match(donationsView, /id="donations-sync-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar conciliación de Wompi"/);
   assert.match(donationsView, /label for="donations-sync-transaction"/);
+  assert.match(donationsView, /Transacción # de Wompi/);
+  assert.match(donationsView, /La referencia mostrada arriba no es este ID/);
   assert.match(donationsView, /No crea un cobro ni mueve dinero/);
 
   assert.match(donationsLogic, /const fractionDigits = normalizedCurrency === 'USD' \? 2 : 0/);
@@ -352,22 +370,30 @@ test('donaciones separa proveedores, protege filtros y concilia Wompi con contex
   assert.match(donationsLogic, /El formulario se conservó/);
   assert.match(donationsLogic, /window\.addEventListener\('beforeunload'/);
   assert.match(donationsLogic, /manualApprove/);
+  assert.match(donationsLogic, /transactionId && transactionId === syncState\.reference/);
+  assert.match(donationsLogic, /REFERENCE_IS_NOT_TRANSACTION_ID/);
   assert.doesNotMatch(donationsLogic, /window\.prompt/);
 
   assert.match(donationsApi, /if \(domain\) \{[\s\S]*?El filtro por concepto todavía no está activo/);
   assert.match(donationsApi, /applyFinanceScopeFilter\(query, financeContext\.access\)/);
+  assert.match(syncWompiApi, /submittedTransactionId && submittedTransactionId === reference/);
+  assert.match(syncWompiApi, /REFERENCE_IS_NOT_TRANSACTION_ID/);
 });
 
 test('campus respeta asignaciones, alcance financiero y contactos táctiles', async () => {
-  const [campusView, campusLogic, campusApi] = await Promise.all([
+  const [campusView, campusLogic, campusApi, campusExportApi] = await Promise.all([
     readSource('src/pages/portal/campus.astro'),
     readSource('src/scripts/portal-campus.js'),
     readSource('src/pages/api/portal/campus/donors.ts'),
+    readSource('src/pages/api/portal/campus/export.ts'),
   ]);
 
   assert.match(campusView, /id="campus-scope-label"/);
   assert.match(campusView, /Donantes visibles/);
-  assert.match(campusView, /Aportes aprobados visibles/);
+  assert.match(campusView, /Aprobado en COP/);
+  assert.match(campusView, /Aprobado en USD/);
+  assert.match(campusView, /id="campus-export-general"[^>]*min-h-11/);
+  assert.match(campusView, /id="campus-export-missionary"[^>]*min-h-11/);
   assert.match(campusView, /id="campus-coverage-note"[^>]*role="status" aria-live="polite"/);
   for (const id of ['donor-missionary-filter', 'donor-search']) {
     assert.match(campusView, new RegExp(`label for="${id}"`));
@@ -384,6 +410,9 @@ test('campus respeta asignaciones, alcance financiero y contactos táctiles', as
   assert.match(campusLogic, /requestRevision !== loadRevision/);
   assert.match(campusLogic, /data-donor-index="\$\{donorIndex\}" tabindex="-1"/);
   assert.match(campusLogic, /previousVisibleCount/);
+  assert.match(campusLogic, /downloadCampusReport\(missionarySlug = ''\)/);
+  assert.match(campusLogic, /content-disposition/);
+  assert.match(campusLogic, /Ver historial de \$\{donor\.donations\.length\}/);
 
   assert.match(campusApi, /getFinanceAccessContext\(request\)/);
   assert.match(campusApi, /loadCampusDonationsBase\(financeContext!\.access\)/);
@@ -392,6 +421,14 @@ test('campus respeta asignaciones, alcance financiero y contactos táctiles', as
   assert.match(campusApi, /uniqueMissionaries\.add\(`slug:\$\{slug\}`\)/);
   assert.match(campusApi, /totalDonationRows/);
   assert.match(campusApi, /La separación financiera todavía no está activa para Campus/);
+  assert.match(campusExportApi, /getFinanceAccessContext\(request\)/);
+  assert.match(campusExportApi, /applyFinanceScopeFilter\(/);
+  assert.match(campusExportApi, /addWorksheet\('Resumen por misionero'\)/);
+  assert.match(campusExportApi, /addWorksheet\('Aportes'\)/);
+  assert.match(campusExportApi, /addWorksheet\('Donantes'\)/);
+  assert.match(campusExportApi, /Total COP/);
+  assert.match(campusExportApi, /Total USD/);
+  assert.match(campusExportApi, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
 });
 
 test('peticiones separa intercesión de moderación y protege cada decisión pastoral', async () => {

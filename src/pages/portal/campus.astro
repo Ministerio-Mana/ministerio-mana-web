@@ -12,18 +12,28 @@ import Sidebar from '@components/portal/Sidebar.astro';
             Validando permisos...
          </div>
 
-         <div id="campus-secure-content" class="hidden max-w-7xl mx-auto space-y-8">
-            <div class="flex items-center justify-between">
+         <div id="campus-secure-content" class="hidden mx-auto max-w-7xl space-y-8">
+            <div class="flex flex-col gap-6 border-b border-slate-200 pb-8 lg:flex-row lg:items-end lg:justify-between">
                <div>
-                   <h1 class="text-3xl font-display font-bold text-[#293C74]">Campus</h1>
-                   <p class="text-slate-600" id="campus-subtitle">Gestión de donantes y relaciones</p>
+                   <p class="mb-2 text-xs font-bold uppercase tracking-widest text-[#28A6BD]">Relaciones y sostenimiento</p>
+                   <h1 class="text-3xl font-display font-bold text-[#293C74] md:text-4xl">Campus</h1>
+                   <p class="mt-2 max-w-2xl text-slate-600" id="campus-subtitle">Gestión de donantes y relaciones</p>
                    <p id="campus-scope-label" class="mt-4 w-fit rounded-full border border-[#293C74]/15 bg-white px-4 py-2 text-xs font-bold text-[#293C74]">
                        Verificando alcance…
                    </p>
                </div>
+               <div id="campus-report-actions" class="hidden w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                   <button id="campus-export-general" type="button" class="min-h-11 rounded-lg bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-wait disabled:opacity-60">
+                       Descargar informe general
+                   </button>
+                   <button id="campus-export-missionary" type="button" class="min-h-11 rounded-lg border border-slate-200 bg-white px-6 py-2 text-sm font-bold text-[#293C74] hover:border-[#293C74]/30 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" disabled>
+                       Informe por misionero
+                   </button>
+               </div>
             </div>
+            <p id="campus-export-feedback" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></p>
 
-            <div id="donor-stats" class="portal-stat-grid hidden grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+            <div id="donor-stats" class="portal-stat-grid hidden grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <div class="portal-stat">
                     <p class="portal-stat-label">Donantes visibles</p>
                     <p class="portal-stat-value" id="stat-total-donors">0</p>
@@ -37,8 +47,12 @@ import Sidebar from '@components/portal/Sidebar.astro';
                     <p class="portal-stat-value !text-sky-700" id="stat-one-time-donors">0</p>
                 </div>
                 <div class="admin-campus-stat portal-stat hidden">
-                    <p class="portal-stat-label">Aportes aprobados visibles</p>
-                    <div class="text-sm font-bold text-brand-teal" id="stat-campus-totals">—</div>
+                    <p class="portal-stat-label">Aprobado en COP</p>
+                    <p class="portal-stat-value !text-[#13869A]" id="stat-campus-cop">$ 0</p>
+                </div>
+                <div class="admin-campus-stat portal-stat hidden">
+                    <p class="portal-stat-label">Aprobado en USD</p>
+                    <p class="portal-stat-value !text-[#13869A]" id="stat-campus-usd">US$ 0.00</p>
                 </div>
                 <div class="admin-campus-stat portal-stat hidden">
                     <p class="portal-stat-label">Misioneros activos</p>
@@ -46,16 +60,20 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </div>
             </div>
 
-            <div class="portal-panel p-4 md:p-6">
-                <div class="mb-6 flex flex-col gap-4 border-b border-slate-100 pb-4 xl:flex-row xl:items-end xl:justify-between">
-                    <div class="inline-flex w-full rounded-lg bg-slate-100 p-2 sm:w-auto" role="group" aria-label="Filtrar donantes">
+            <div class="portal-panel p-4 md:p-8">
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-[#293C74]">Donantes y aportes</h2>
+                    <p class="mt-2 text-sm text-slate-500">Filtra por relación o misionero y abre el detalle solo cuando lo necesites.</p>
+                </div>
+                <div class="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 xl:flex-row xl:items-end xl:justify-between">
+                    <div class="grid w-full grid-cols-3 rounded-lg bg-white p-2 shadow-sm sm:w-auto" role="group" aria-label="Filtrar donantes">
                         <button type="button" class="donor-filter min-h-11 flex-1 rounded-md bg-white px-4 py-2 text-xs font-bold text-[#293C74] shadow-sm sm:flex-none" data-donor-filter="all" aria-pressed="true">
                             Todos <span id="filter-count-all" class="ml-2 text-slate-400">0</span>
                         </button>
-                        <button type="button" class="donor-filter min-h-11 flex-1 rounded-md px-4 py-2 text-xs font-bold text-slate-500 sm:flex-none" data-donor-filter="recurring" aria-pressed="false">
+                        <button type="button" class="donor-filter min-h-11 rounded-md px-4 py-2 text-xs font-bold text-slate-500" data-donor-filter="recurring" aria-pressed="false">
                             Recurrentes <span id="filter-count-recurring" class="ml-2 text-slate-400">0</span>
                         </button>
-                        <button type="button" class="donor-filter min-h-11 flex-1 rounded-md px-4 py-2 text-xs font-bold text-slate-500 sm:flex-none" data-donor-filter="one_time" aria-pressed="false">
+                        <button type="button" class="donor-filter min-h-11 rounded-md px-4 py-2 text-xs font-bold text-slate-500" data-donor-filter="one_time" aria-pressed="false">
                             Una vez <span id="filter-count-one-time" class="ml-2 text-slate-400">0</span>
                         </button>
                     </div>

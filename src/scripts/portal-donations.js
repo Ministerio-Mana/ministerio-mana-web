@@ -448,7 +448,7 @@ function openSyncModal(reference, trigger) {
     if (syncReferenceEl) syncReferenceEl.textContent = reference;
     if (syncTransactionEl) syncTransactionEl.value = '';
     resetManualApproval();
-    setSyncFeedback('Revisa la referencia antes de consultar.');
+    setSyncFeedback('Primero intentaremos conciliar con el evento ya recibido. Solo escribe la “Transacción #” si el sistema la solicita.');
     syncModal.classList.remove('hidden');
     syncModal.classList.add('flex');
     syncModal.setAttribute('aria-hidden', 'false');
@@ -516,6 +516,12 @@ function revealManualApproval(message) {
 async function reconcileWompi({ manualApprove = false } = {}) {
     if (syncInFlight || !syncState.reference) return;
     const transactionId = syncTransactionEl?.value.trim() || '';
+    if (transactionId && transactionId === syncState.reference) {
+        setSyncFeedback('Ese valor es la referencia del Portal. Copia desde Wompi el número que aparece como “Transacción #”, por ejemplo 1178211-1783194180-26798.', 'error');
+        syncTransactionEl?.focus();
+        syncTransactionEl?.select();
+        return;
+    }
     if (manualApprove && !transactionId) {
         setSyncFeedback('Escribe el ID de transacción antes de aprobar manualmente.', 'error');
         syncTransactionEl?.focus();
@@ -548,6 +554,12 @@ async function reconcileWompi({ manualApprove = false } = {}) {
             if (payload?.code === 'TRANSACTION_ID_REQUIRED') {
                 setSyncFeedback(payload.error || 'Escribe el ID de transacción de Wompi.', 'error');
                 syncTransactionEl?.focus();
+                return;
+            }
+            if (payload?.code === 'REFERENCE_IS_NOT_TRANSACTION_ID') {
+                setSyncFeedback(payload.error || 'La referencia del Portal no es el ID de transacción de Wompi.', 'error');
+                syncTransactionEl?.focus();
+                syncTransactionEl?.select();
                 return;
             }
             if (payload?.code === 'WOMPI_LOOKUP_FAILED' && payload?.manualAvailable) {
