@@ -9,12 +9,16 @@ import { createEvidenceUploadCredential } from '@lib/eventPaymentEvidence';
 
 export const prerender = false;
 
-const MAX_BODY_CHARS = 14_000;
+const MAX_BODY_CHARS = 64_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ONLINE_PROVIDERS = new Set(['WOMPI', 'STRIPE']);
 const MANUAL_PROVIDERS = new Set(['MANUAL', 'EXTERNAL']);
 const PROVIDERS = new Set([...ONLINE_PROVIDERS, ...MANUAL_PROVIDERS]);
+const ATTENDEE_AGE_GROUPS = new Set(['0_5', '6_12', '13_17', '18_25', '26_59', '60_PLUS']);
+const ATTENDEE_GENDERS = new Set(['FEMALE', 'MALE', 'OTHER', 'PREFER_NOT_TO_SAY']);
+const PAYER_PERSON_TYPES = new Set(['NATURAL', 'LEGAL']);
+const PAYER_DOCUMENT_TYPES = new Set(['CC', 'CE', 'PPT', 'PASSPORT', 'NIT', 'FOREIGN_ID', 'OTHER']);
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -39,17 +43,20 @@ function registrationErrorMessage(message: string): { status: number; message: s
 }
 
 async function getRegistrationFormConfig(eventId: string) {
-  if (!supabaseAdmin) return DEFAULT_EVENT_REGISTRATION_FORM_CONFIG;
+  if (!supabaseAdmin) return { formConfig: DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, pricingModel: 'FREE' };
   const { data, error } = await supabaseAdmin
     .from('events')
-    .select('registration_form_config')
+    .select('registration_form_config,pricing_model,price')
     .eq('id', eventId)
     .maybeSingle();
   // El formulario básico sigue funcionando mientras una instalación antigua
   // termina de aplicar la migración de campos configurables.
-  if (error?.code === '42703') return DEFAULT_EVENT_REGISTRATION_FORM_CONFIG;
+  if (error?.code === '42703') return { formConfig: DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, pricingModel: 'FREE' };
   if (error) throw new Error('No se pudo validar la configuración del formulario.');
-  return normalizeEventRegistrationFormConfig(data?.registration_form_config);
+  return {
+    formConfig: normalizeEventRegistrationFormConfig(data?.registration_form_config),
+    pricingModel: String(data?.pricing_model || (Number(data?.price || 0) > 0 ? 'PAID' : 'FREE')).toUpperCase(),
+  };
 }
 
 async function persistRegistrationResponses(registrationId: string, responses: Record<string, unknown>) {
@@ -60,6 +67,96 @@ async function persistRegistrationResponses(registrationId: string, responses: R
     .eq('id', registrationId);
   if (error && error.code !== '42703') {
     console.error('[events.register] optional responses persistence failed', error);
+  }
+}
+
+function readAttendees(value: unknown, quantity: number, formConfig: ReturnType<typeof normalizeEventRegistrationFormConfig>) {
+  if (!Array.isArray(value) || value.length !== quantity) {
+    throw new Error('La cantidad de fichas no coincide con los asistentes.');
+  }
+  return value.map((raw, index) => {
+    const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+    const fullNameRaw = String(source.full_name || '');
+    const fullName = sanitizePlainText(fullNameRaw, 120);
+    const ageGroup = String(source.age_group || '').trim().toUpperCase();
+    const gender = String(source.gender || '').trim().toUpperCase();
+    if (fullName.length < 3 || containsBlockedSequence(fullNameRaw)) {
+      throw new Error(`Escribe el nombre completo del asistente ${index + 1}.`);
+    }
+    if (formConfig.attendee_age === 'REQUIRED' && !ageGroup) {
+      throw new Error(`Selecciona la edad del asistente ${index + 1}.`);
+    }
+    if (ageGroup && (formConfig.attendee_age === 'HIDDEN' || !ATTENDEE_AGE_GROUPS.has(ageGroup))) {
+      throw new Error(`La edad del asistente ${index + 1} no es válida.`);
+    }
+    if (formConfig.attendee_gender === 'REQUIRED' && !gender) {
+      throw new Error(`Selecciona el género del asistente ${index + 1}.`);
+    }
+    if (gender && (formConfig.attendee_gender === 'HIDDEN' || !ATTENDEE_GENDERS.has(gender))) {
+      throw new Error(`El género del asistente ${index + 1} no es válido.`);
+    }
+    return {
+      position: index + 1,
+      full_name: fullName,
+      age_group: ageGroup || null,
+      gender: gender || null,
+    };
+  });
+}
+
+function readPayer(
+  value: unknown,
+  pricingModel: string,
+  formConfig: ReturnType<typeof normalizeEventRegistrationFormConfig>,
+) {
+  if (pricingModel === 'FREE' || formConfig.payer_document === 'HIDDEN') return null;
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const personType = String(source.person_type || 'NATURAL').trim().toUpperCase();
+  const documentType = String(source.document_type || '').trim().toUpperCase();
+  const documentNumberRaw = String(source.document_number || '').trim().toUpperCase();
+  const documentNumber = documentNumberRaw.replace(/\s+/g, '');
+  const documentCountryRaw = String(source.document_country || '');
+  const documentCountry = sanitizePlainText(documentCountryRaw, 80);
+  const legalNameRaw = String(source.legal_name || '');
+  const legalName = sanitizePlainText(legalNameRaw, 160);
+  const billingEmail = String(source.billing_email || '').trim().toLowerCase().slice(0, 254);
+  if (!PAYER_PERSON_TYPES.has(personType)) throw new Error('Selecciona el tipo de persona que realiza el pago.');
+  if (!documentCountry || containsBlockedSequence(documentCountryRaw)) throw new Error('Escribe el país del documento.');
+  if (legalName.length < 3 || containsBlockedSequence(legalNameRaw)) throw new Error('Escribe el nombre o razón social del pagador.');
+  if (!EMAIL_PATTERN.test(billingEmail) || containsBlockedSequence(billingEmail)) throw new Error('Escribe el correo del pagador.');
+  const documentRequired = formConfig.payer_document === 'REQUIRED';
+  if (documentRequired && (!documentType || !documentNumber)) throw new Error('Completa la identificación del pagador.');
+  if ((documentType || documentNumber) && (!PAYER_DOCUMENT_TYPES.has(documentType) || !/^[A-Z0-9.\-]{3,40}$/.test(documentNumber))) {
+    throw new Error('La identificación del pagador no es válida.');
+  }
+  return {
+    is_contact: source.is_contact === true,
+    person_type: personType,
+    document_type: documentType || null,
+    document_number: documentNumber || null,
+    document_country: documentCountry,
+    legal_name: legalName,
+    billing_email: billingEmail,
+    tax_document_requested: source.tax_document_requested === true,
+  };
+}
+
+async function persistRegistrationPeople(params: {
+  eventId: string;
+  registrationId: string;
+  payer: Record<string, unknown> | null;
+  attendees: Array<Record<string, unknown>>;
+}) {
+  if (!supabaseAdmin) throw new Error('La inscripción no está disponible.');
+  const { error } = await supabaseAdmin.rpc('save_event_registration_people_secure', {
+    p_event_id: params.eventId,
+    p_registration_id: params.registrationId,
+    p_payer: params.payer,
+    p_attendees: params.attendees,
+  });
+  if (error) {
+    console.error('[events.register] people persistence failed', { code: error.code, message: error.message });
+    throw new Error('No se pudieron guardar las fichas de los asistentes.');
   }
 }
 
@@ -230,10 +327,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!privacyAccepted) return json({ ok: false, error: 'Debes autorizar el tratamiento de datos.' }, 400);
 
   let formConfig;
+  let pricingModel = 'FREE';
+  let attendees: Array<Record<string, unknown>> = [];
+  let payer: Record<string, unknown> | null = null;
   try {
-    formConfig = await getRegistrationFormConfig(eventId);
+    const settings = await getRegistrationFormConfig(eventId);
+    formConfig = settings.formConfig;
+    pricingModel = settings.pricingModel;
+  } catch {
+    return json({ ok: false, error: 'No se pudo consultar la configuración del evento.' }, 503);
+  }
+  try {
+    attendees = readAttendees(body.attendees, quantity, formConfig);
+    payer = readPayer(body.payer, pricingModel, formConfig);
   } catch (error: any) {
-    return json({ ok: false, error: error?.message || 'No se pudo validar el formulario.' }, 503);
+    return json({ ok: false, error: error?.message || 'No se pudo validar el formulario.' }, 400);
   }
   if (formConfig.phone === 'REQUIRED' && !contactPhone) {
     return json({ ok: false, error: 'Escribe tu número de WhatsApp o teléfono.' }, 400);
@@ -305,8 +413,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     if (!manualRegistration?.registration_id || !manualRegistration?.payment_id) {
       return json({ ok: false, error: 'No se pudo registrar el pago reportado.' }, 500);
     }
-    if (!manualRegistration.reused) {
-      await persistRegistrationResponses(String(manualRegistration.registration_id), formResponses);
+    try {
+      await persistRegistrationPeople({
+        eventId,
+        registrationId: String(manualRegistration.registration_id),
+        payer,
+        attendees,
+      });
+      if (!manualRegistration.reused) {
+        await persistRegistrationResponses(String(manualRegistration.registration_id), formResponses);
+      }
+    } catch (peopleError: any) {
+      return json({ ok: false, error: peopleError?.message || 'No se pudieron guardar los asistentes.' }, 503);
     }
     await supabaseAdmin.from('event_finance_audit_logs').insert({
       event_id: eventId,
@@ -363,8 +481,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!registration?.registration_id) {
     return json({ ok: false, error: 'No se pudo confirmar la inscripción.' }, 500);
   }
-  if (!registration.reused) {
-    await persistRegistrationResponses(String(registration.registration_id), formResponses);
+  try {
+    await persistRegistrationPeople({
+      eventId,
+      registrationId: String(registration.registration_id),
+      payer,
+      attendees,
+    });
+    if (!registration.reused) {
+      await persistRegistrationResponses(String(registration.registration_id), formResponses);
+    }
+  } catch (peopleError: any) {
+    return json({ ok: false, error: peopleError?.message || 'No se pudieron guardar los asistentes.' }, 503);
   }
 
   await supabaseAdmin.from('event_finance_audit_logs').insert({

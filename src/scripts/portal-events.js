@@ -82,6 +82,9 @@ const eventRegistrationFormSettings = document.getElementById('event-registratio
 const eventRegistrationPhoneMode = document.getElementById('event-registration-phone-mode');
 const eventRegistrationCollectChurch = document.getElementById('event-registration-collect-church');
 const eventRegistrationWhatsAppUpdates = document.getElementById('event-registration-whatsapp-updates');
+const eventRegistrationAttendeeAge = document.getElementById('event-registration-attendee-age');
+const eventRegistrationAttendeeGender = document.getElementById('event-registration-attendee-gender');
+const eventRegistrationPayerDocument = document.getElementById('event-registration-payer-document');
 const eventCustomFieldsContainer = document.getElementById('event-custom-fields');
 const eventCustomFieldAdd = document.getElementById('event-custom-field-add');
 const eventCustomFieldEmpty = document.getElementById('event-custom-field-empty');
@@ -1573,6 +1576,9 @@ function openEventModal(mode, eventData = null) {
     if (eventRegistrationPhoneMode) eventRegistrationPhoneMode.value = formConfig.phone;
     if (eventRegistrationCollectChurch) eventRegistrationCollectChurch.checked = formConfig.church;
     if (eventRegistrationWhatsAppUpdates) eventRegistrationWhatsAppUpdates.checked = formConfig.whatsapp_updates;
+    if (eventRegistrationAttendeeAge) eventRegistrationAttendeeAge.value = formConfig.attendee_age;
+    if (eventRegistrationAttendeeGender) eventRegistrationAttendeeGender.value = formConfig.attendee_gender;
+    if (eventRegistrationPayerDocument) eventRegistrationPayerDocument.value = formConfig.payer_document;
     eventCustomFields = formConfig.fields.map((field) => ({ ...field, options: [...field.options] }));
     renderCustomFieldBuilder();
 
@@ -1867,6 +1873,9 @@ eventForm?.addEventListener('submit', async (event) => {
                 phone: String(eventRegistrationPhoneMode?.value || 'OPTIONAL').toUpperCase(),
                 church: Boolean(eventRegistrationCollectChurch?.checked),
                 whatsapp_updates: Boolean(eventRegistrationWhatsAppUpdates?.checked),
+                attendee_age: String(eventRegistrationAttendeeAge?.value || 'HIDDEN').toUpperCase(),
+                attendee_gender: String(eventRegistrationAttendeeGender?.value || 'HIDDEN').toUpperCase(),
+                payer_document: String(eventRegistrationPayerDocument?.value || 'REQUIRED').toUpperCase(),
                 fields: registrationMode === 'INTERNAL' ? getCustomFieldsForSaving() : [],
             };
         }

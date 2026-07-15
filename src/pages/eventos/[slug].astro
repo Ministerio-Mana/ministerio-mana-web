@@ -272,6 +272,10 @@ const structured = (contentEntry || databaseEvent) ? {
                 data-price-cop={priceCop}
                 data-price-usd={priceUsd}
                 data-currency={databaseEvent.currency || 'COP'}
+                data-event-country={databaseEvent.country || ''}
+                data-attendee-age-mode={registrationFormConfig.attendee_age}
+                data-attendee-gender-mode={registrationFormConfig.attendee_gender}
+                data-payer-document-mode={registrationFormConfig.payer_document}
                 novalidate>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="text-sm font-bold text-slate-700 sm:col-span-2">Nombre completo
@@ -291,7 +295,7 @@ const structured = (contentEntry || databaseEvent) ? {
                     </label>
                   )}
                   <label class="text-sm font-bold text-slate-700">Asistentes
-                    <input name="quantity" type="number" required min="1" max={Math.min(100, Number(databaseEvent.capacity || 100))} step="1" value="1" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+                    <input id="event-registration-quantity" name="quantity" type="number" required min="1" max={Math.min(100, Number(databaseEvent.capacity || 100))} step="1" value="1" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
                   </label>
                   {pricingModel === 'DONATION' && (
                     <label class="text-sm font-bold text-slate-700">Valor del aporte
@@ -350,6 +354,70 @@ const structured = (contentEntry || databaseEvent) ? {
                     </label>
                   )}
                 </div>
+
+                <section class="mt-6 rounded-md border border-[#293C74]/15 bg-[#F7F9FF] p-4" aria-labelledby="event-attendees-title">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 id="event-attendees-title" class="text-sm font-bold text-[#293C74]">Información de los asistentes</h3>
+                      <p class="mt-2 text-xs leading-relaxed text-slate-600">Se crea una ficha por cada cupo. El nombre sí es necesario; edad y género solo aparecen si el organizador los activó.</p>
+                    </div>
+                    <label class="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
+                      <input id="event-contact-is-attendee" name="contact_is_attendee" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                      <span>El responsable también asiste</span>
+                    </label>
+                  </div>
+                  <div id="event-attendee-fields" class="mt-4 grid gap-4" aria-live="polite"></div>
+                </section>
+
+                {pricingModel !== 'FREE' && registrationFormConfig.payer_document !== 'HIDDEN' && (
+                  <section class="mt-6 rounded-md border border-amber-200 bg-amber-50/70 p-4" aria-labelledby="event-payer-title">
+                    <div>
+                      <p class="text-xs font-bold uppercase tracking-[0.06em] text-amber-800">Conciliación financiera</p>
+                      <h3 id="event-payer-title" class="mt-2 text-sm font-bold text-slate-900">¿Quién realiza el pago?</h3>
+                      <p class="mt-2 text-xs leading-relaxed text-slate-600">Estos datos se guardan separados del formulario pastoral. Finanzas los usa para relacionar el pago, emitir el soporte solicitado y evitar confusiones entre personas con nombres similares.</p>
+                    </div>
+                    <label class="mt-4 flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
+                      <input id="event-payer-is-contact" name="payer_is_contact" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                      <span>El responsable también realiza el pago</span>
+                    </label>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                      <label class="text-sm font-bold text-slate-700">Tipo de persona
+                        <select name="payer_person_type" required class="mt-2 block min-h-11 w-full rounded-md border-slate-300">
+                          <option value="NATURAL">Persona natural</option>
+                          <option value="LEGAL">Empresa u organización</option>
+                        </select>
+                      </label>
+                      <label class="text-sm font-bold text-slate-700">País del documento
+                        <input name="payer_document_country" type="text" required maxlength="80" value={databaseEvent.country || ''} autocomplete="country-name" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+                      </label>
+                      <label class="text-sm font-bold text-slate-700">Tipo de identificación {registrationFormConfig.payer_document === 'OPTIONAL' && <span class="font-normal text-slate-500">(opcional)</span>}
+                        <select name="payer_document_type" required={registrationFormConfig.payer_document === 'REQUIRED'} class="mt-2 block min-h-11 w-full rounded-md border-slate-300">
+                          <option value="">Selecciona</option>
+                          <option value="CC">Cédula de ciudadanía</option>
+                          <option value="CE">Cédula de extranjería</option>
+                          <option value="PPT">Permiso por protección temporal</option>
+                          <option value="PASSPORT">Pasaporte</option>
+                          <option value="NIT">NIT / identificación tributaria</option>
+                          <option value="FOREIGN_ID">Documento de identidad extranjero</option>
+                          <option value="OTHER">Otro</option>
+                        </select>
+                      </label>
+                      <label class="text-sm font-bold text-slate-700">Número de identificación {registrationFormConfig.payer_document === 'OPTIONAL' && <span class="font-normal text-slate-500">(opcional)</span>}
+                        <input name="payer_document_number" type="text" required={registrationFormConfig.payer_document === 'REQUIRED'} minlength="3" maxlength="40" inputmode="text" autocomplete="off" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+                      </label>
+                      <label class="text-sm font-bold text-slate-700">Nombre o razón social
+                        <input name="payer_legal_name" type="text" required minlength="3" maxlength="160" autocomplete="name" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+                      </label>
+                      <label class="text-sm font-bold text-slate-700">Correo para el soporte
+                        <input name="payer_billing_email" type="email" required maxlength="254" autocomplete="email" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+                      </label>
+                    </div>
+                    <label class="mt-4 flex min-h-11 items-start gap-2 text-sm text-slate-700">
+                      <input name="payer_tax_document_requested" type="checkbox" class="mt-2 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                      <span><strong>Solicito factura o certificado, si aplica.</strong><small class="mt-2 block text-xs leading-relaxed text-slate-500">La expedición depende del tipo de operación y de las obligaciones tributarias del Ministerio.</small></span>
+                    </label>
+                  </section>
+                )}
 
                 {pricingModel !== 'FREE' && eventPaymentOptions.some((option) => option.kind !== 'ONLINE') && (
                   <div class="mt-4 space-y-4">

@@ -109,7 +109,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   }
 
   const registrationIds = (registrationsResult.data || []).map((row: any) => String(row.id));
-  const [paymentsResult, checkinsResult] = registrationIds.length ? await Promise.all([
+  const [paymentsResult, checkinsResult, attendeesResult, payersResult] = registrationIds.length ? await Promise.all([
     supabaseAdmin
       .from('event_payments')
       .select('id, registration_id, payment_option_id, provider, reference, method, amount, currency, status, provider_payload, received_at, verified_at, verified_by, created_at')
@@ -119,11 +119,22 @@ export const GET: APIRoute = async ({ request, url }) => {
       .from('event_checkins')
       .select('registration_id, quantity, checked_in_at')
       .in('registration_id', registrationIds),
+    supabaseAdmin
+      .from('event_registration_attendees')
+      .select('registration_id,position,full_name,age_group,gender')
+      .in('registration_id', registrationIds)
+      .order('position', { ascending: true }),
+    supabaseAdmin
+      .from('event_registration_payers')
+      .select('registration_id,is_contact,person_type,document_type,document_last4,document_country,legal_name,billing_email,tax_document_requested')
+      .in('registration_id', registrationIds),
   ]) : [
     { data: [], error: null },
     { data: [], error: null },
+    { data: [], error: null },
+    { data: [], error: null },
   ];
-  if (paymentsResult.error || checkinsResult.error) {
+  if (paymentsResult.error || checkinsResult.error || attendeesResult.error || payersResult.error) {
     return json({ ok: false, error: 'No se pudo cargar la operación del evento.' }, 500);
   }
 
@@ -143,6 +154,17 @@ export const GET: APIRoute = async ({ request, url }) => {
   );
 
   const paymentsByRegistration = selectPreferredEventPayments(paymentsResult.data || []);
+  const attendeesByRegistration = new Map<string, any[]>();
+  for (const attendee of attendeesResult.data || []) {
+    const registrationId = String((attendee as any).registration_id || '');
+    attendeesByRegistration.set(registrationId, [
+      ...(attendeesByRegistration.get(registrationId) || []),
+      attendee,
+    ]);
+  }
+  const payersByRegistration = new Map(
+    (payersResult.data || []).map((payer: any) => [String(payer.registration_id), payer]),
+  );
   const checkedByRegistration = new Map<string, number>();
   for (const checkin of checkinsResult.data || []) {
     const registrationId = String((checkin as any).registration_id || '');
@@ -156,8 +178,20 @@ export const GET: APIRoute = async ({ request, url }) => {
     const payment = paymentsByRegistration.get(String(registration.id)) as any;
     const option = payment?.payment_option_id ? optionsById.get(String(payment.payment_option_id)) as any : null;
     const evidence = payment?.id ? evidenceByPayment.get(String(payment.id)) as any : null;
+    const payer = payersByRegistration.get(String(registration.id)) as any;
     return {
       ...registration,
+      attendees: attendeesByRegistration.get(String(registration.id)) || [],
+      payer: payer ? {
+        is_contact: payer.is_contact,
+        person_type: payer.person_type,
+        document_type: payer.document_type,
+        document_masked: payer.document_last4 ? `••••${payer.document_last4}` : '',
+        document_country: payer.document_country,
+        legal_name: payer.legal_name,
+        billing_email: payer.billing_email,
+        tax_document_requested: payer.tax_document_requested,
+      } : null,
       checked_in_quantity: checkedByRegistration.get(String(registration.id)) || 0,
       payment: payment ? {
         id: payment.id,

@@ -24,6 +24,9 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Activar `Inscripción en Maná` y confirmar que Nombre completo, Correo y Número de asistentes aparecen como campos incluidos; agregar una pregunta y revisar su diseño en celular.
 - [ ] Probar una imagen horizontal, una cuadrada y una vertical; revisar tarjeta, invitación pública y celular.
 - [ ] Crear un formulario Maná con una pregunta adicional obligatoria y otra opcional.
+- [ ] En un evento para dos o más personas, confirmar que aparece una ficha nominal por cada asistente y que la cantidad coincide.
+- [ ] Probar edad y género primero ocultos y luego opcionales; no volverlos obligatorios sin una necesidad operativa documentada.
+- [ ] En un evento pago, completar la identificación del pagador y confirmar que Operación muestra solo los últimos cuatro caracteres.
 - [ ] Enviar una inscripción desde celular y revisar el consentimiento y enlace de WhatsApp.
 - [ ] Crear un evento nacional Wompi/COP y comprobar que no ofrece USD ni pago manual simultáneo.
 - [ ] Crear un evento global Wompi/COP + Stripe/USD y comprobar que muestra ambos precios sin conversión.
@@ -36,6 +39,7 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 - [ ] Pulsar `Actualizar Excel en OneDrive` y abrir `Inscripciones.xlsx` desde Documentos internos.
 - [ ] Confirmar que abre en Excel web sin instalar Microsoft 365.
 - [ ] Revisar las hojas `Inscripciones` y `Resumen financiero`, las preguntas adicionales y la separación COP/USD.
+- [ ] Revisar también `Asistentes` y `Pagadores`; confirmar que el documento completo aparece únicamente en el Excel financiero privado.
 - [ ] Ejecutar una segunda actualización y confirmar que cambia la hora de `Actualizado` y reemplaza el mismo archivo.
 - [ ] Usar `Descargar una copia` una vez para validar la alternativa fuera de línea.
 
@@ -109,8 +113,12 @@ No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supaba
   - Activa borradores, publicación, tres plantillas y auditoría para la página pública de cada iglesia.
   - No modifica eventos, pagos, roles, membresías ni la información territorial existente.
   - Resultado esperado: aparecen `church_public_pages` y `church_public_page_audit_logs`.
+- [ ] 7. Ejecutar `docs/sql/event_registration_people_upgrade.sql`.
+  - Crea una ficha por cada asistente y una ficha financiera privada para quien realiza el pago.
+  - No modifica pagos existentes, Wompi, Stripe, SharePoint, Campus ni los roles.
+  - Resultado esperado: aparecen `event_registration_attendees`, `event_registration_payers` y `save_event_registration_people_secure(uuid,uuid,jsonb,jsonb)`.
 
-Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El usuario confirmó la ejecución de los puntos 5 y 6 el 14 de julio de 2026; ya no quedan SQL pendientes de esta lista.
+Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El usuario confirmó la ejecución de los puntos 5 y 6 el 14 de julio de 2026. El punto 7 es el único SQL pendiente antes de publicar esta mejora.
 
 ## 2. Activar el primer equipo financiero
 
@@ -375,6 +383,7 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 
 ### Seguridad, privacidad y continuidad
 
+- [ ] Confirmar con Contabilidad cuándo la identificación del pagador será obligatoria, opcional u oculta según país y tipo de evento, y aprobar el texto para factura o certificado. La configuración técnica ya admite documentos colombianos y extranjeros sin pedir cédula en eventos gratuitos.
 - [ ] Definir qué roles tendrán 2FA obligatorio. Recomendación: superadmin, finanzas, administradores nacionales y cualquier rol que apruebe pagos o gestione permisos.
 - [ ] Nombrar el responsable interno de privacidad y el canal para solicitudes de acceso, corrección, exportación y supresión de datos.
 - [ ] Aprobar una matriz de retención para inscripciones, comprobantes, auditorías, notificaciones y respaldos; no asumir que “borrar” elimina de inmediato una obligación contable o legal.

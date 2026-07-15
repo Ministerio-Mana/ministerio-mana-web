@@ -98,12 +98,55 @@ test('normaliza una configuración simple de formulario y WhatsApp', () => {
     phone: 'required',
     church: 1,
     whatsapp_updates: true,
-  }), { phone: 'REQUIRED', church: true, whatsapp_updates: true, fields: [] });
+  }), {
+    phone: 'REQUIRED',
+    church: true,
+    whatsapp_updates: true,
+    attendee_age: 'HIDDEN',
+    attendee_gender: 'HIDDEN',
+    payer_document: 'REQUIRED',
+    fields: [],
+  });
   assert.deepEqual(normalizeEventRegistrationFormConfig({ phone: 'cualquiera' }), {
-    phone: 'OPTIONAL', church: false, whatsapp_updates: false, fields: [],
+    phone: 'OPTIONAL',
+    church: false,
+    whatsapp_updates: false,
+    attendee_age: 'HIDDEN',
+    attendee_gender: 'HIDDEN',
+    payer_document: 'REQUIRED',
+    fields: [],
   });
   assert.equal(normalizeWhatsAppNumber('+57 (300) 123-4567'), '573001234567');
   assert.equal(normalizeWhatsAppNumber('123'), '');
+});
+
+test('permite configurar demografía mínima e identificación del pagador sin valores abiertos', () => {
+  assert.deepEqual(normalizeEventRegistrationFormConfig({
+    attendee_age: 'optional',
+    attendee_gender: 'required',
+    payer_document: 'hidden',
+  }), {
+    phone: 'OPTIONAL',
+    church: false,
+    whatsapp_updates: false,
+    attendee_age: 'OPTIONAL',
+    attendee_gender: 'REQUIRED',
+    payer_document: 'HIDDEN',
+    fields: [],
+  });
+  assert.deepEqual(normalizeEventRegistrationFormConfig({
+    attendee_age: 'exacta',
+    attendee_gender: 'libre',
+    payer_document: 'depende',
+  }), {
+    phone: 'OPTIONAL',
+    church: false,
+    whatsapp_updates: false,
+    attendee_age: 'HIDDEN',
+    attendee_gender: 'HIDDEN',
+    payer_document: 'REQUIRED',
+    fields: [],
+  });
 });
 
 test('limita y normaliza las preguntas configurables de un evento', () => {

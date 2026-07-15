@@ -297,6 +297,30 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   <label class="flex items-start gap-2"><input id="event-registration-collect-church" type="checkbox" data-platform-field disabled class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" /> <span><strong>Preguntar iglesia o congregación</strong><small class="mt-2 block text-xs text-slate-500">Campo opcional para la persona.</small></span></label>
                   <label class="flex items-start gap-2"><input id="event-registration-whatsapp-updates" type="checkbox" data-platform-field disabled class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" /> <span><strong>Ofrecer recordatorios por WhatsApp</strong><small class="mt-2 block text-xs text-slate-500">La persona decide si los autoriza.</small></span></label>
                 </div>
+                <label class="event-field">Edad por asistente
+                  <select id="event-registration-attendee-age" data-platform-field disabled>
+                    <option value="HIDDEN">No pedirla</option>
+                    <option value="OPTIONAL">Pedir rango como opcional</option>
+                    <option value="REQUIRED">Pedir rango como obligatorio</option>
+                  </select>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Usamos rangos; no pedimos fecha de nacimiento salvo que el evento realmente la necesite.</span>
+                </label>
+                <label class="event-field">Género por asistente
+                  <select id="event-registration-attendee-gender" data-platform-field disabled>
+                    <option value="HIDDEN">No pedirlo</option>
+                    <option value="OPTIONAL">Pedirlo como opcional</option>
+                    <option value="REQUIRED">Pedirlo como obligatorio</option>
+                  </select>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Actívalo únicamente cuando tenga una finalidad logística clara.</span>
+                </label>
+                <label class="event-field sm:col-span-2">Identificación del pagador en eventos con cobro
+                  <select id="event-registration-payer-document" data-platform-field disabled>
+                    <option value="REQUIRED">Obligatoria para conciliación</option>
+                    <option value="OPTIONAL">Opcional</option>
+                    <option value="HIDDEN">No pedirla</option>
+                  </select>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Se guarda aparte de las respuestas pastorales, se muestra enmascarada y sirve para relacionar la inscripción, el pago y los soportes financieros.</span>
+                </label>
               </div>
               <div class="mt-6 border-t border-[#293C74]/10 pt-4">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

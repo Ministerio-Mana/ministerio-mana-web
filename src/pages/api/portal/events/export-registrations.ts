@@ -159,6 +159,63 @@ async function loadAllPayments(eventId: string) {
   return { data: rows, error: null };
 }
 
+async function loadAllAttendees(eventId: string) {
+  if (!supabaseAdmin) return { data: [], error: new Error('Server Config Error') };
+  const rows: any[] = [];
+  const pageSize = 1_000;
+  for (let from = 0; from < 10_000; from += pageSize) {
+    const result = await supabaseAdmin
+      .from('event_registration_attendees')
+      .select('registration_id,position,full_name,age_group,gender')
+      .eq('event_id', eventId)
+      .order('registration_id', { ascending: true })
+      .order('position', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (result.error) return { data: [], error: result.error };
+    rows.push(...(result.data || []));
+    if ((result.data || []).length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
+async function loadAllPayers(eventId: string) {
+  if (!supabaseAdmin) return { data: [], error: new Error('Server Config Error') };
+  const rows: any[] = [];
+  const pageSize = 1_000;
+  for (let from = 0; from < 10_000; from += pageSize) {
+    const result = await supabaseAdmin
+      .from('event_registration_payers')
+      .select('registration_id,is_contact,person_type,document_type,document_number,document_country,legal_name,billing_email,tax_document_requested')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (result.error) return { data: [], error: result.error };
+    rows.push(...(result.data || []));
+    if ((result.data || []).length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
+function styleDataSheet(sheet: ExcelJS.Worksheet) {
+  const header = sheet.getRow(1);
+  header.height = 24;
+  header.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Calibri' };
+  header.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF293C74' } };
+  if (sheet.columnCount > 0) {
+    sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: sheet.columnCount } };
+  }
+  for (let index = 2; index <= sheet.rowCount; index += 1) {
+    if (index % 2 === 0) sheet.getRow(index).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F7FA' } };
+  }
+  sheet.columns.forEach((column) => {
+    if (!column?.eachCell) return;
+    let longest = String(column.header || '').length;
+    column.eachCell({ includeEmpty: true }, (cell) => { longest = Math.max(longest, String(cell.value || '').length); });
+    column.width = Math.max(14, Math.min(42, longest + 2));
+  });
+}
+
 export const GET: APIRoute = async ({ request, url }) => {
   if (!supabaseAdmin) return json({ ok: false, error: 'Supabase no configurado.' }, 500);
   const ctx = await getEventAccessContext(request);
@@ -182,15 +239,18 @@ export const GET: APIRoute = async ({ request, url }) => {
     return json({ ok: false, error: 'No tienes permiso para exportar este evento.' }, 403);
   }
 
-  const [registrationsResult, paymentsResult] = await Promise.all([
+  const [registrationsResult, paymentsResult, attendeesResult, payersResult] = await Promise.all([
     loadAllRegistrations(event.id),
     loadAllPayments(event.id),
+    loadAllAttendees(event.id),
+    loadAllPayers(event.id),
   ]);
-  if (registrationsResult.error || paymentsResult.error) {
-    return json({ ok: false, error: 'No se pudieron consultar las inscripciones y sus pagos.' }, 500);
+  if (registrationsResult.error || paymentsResult.error || attendeesResult.error || payersResult.error) {
+    return json({ ok: false, error: 'No se pudieron consultar inscripciones, asistentes y pagos.' }, 500);
   }
 
   const paymentsByRegistration = selectPreferredEventPayments(paymentsResult.data);
+  const registrationsById = new Map(registrationsResult.data.map((registration: any) => [String(registration.id), registration]));
 
   const customColumns = new Map<string, string>();
   for (const registration of registrationsResult.data) {
@@ -254,21 +314,89 @@ export const GET: APIRoute = async ({ request, url }) => {
     sheet.addRow(row);
   }
 
-  const header = sheet.getRow(1);
-  header.height = 24;
-  header.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Calibri' };
-  header.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-  header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF293C74' } };
-  sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: columns.length } };
-  for (let index = 2; index <= sheet.rowCount; index += 1) {
-    if (index % 2 === 0) sheet.getRow(index).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F7FA' } };
+  styleDataSheet(sheet);
+
+  const ageLabels: Record<string, string> = {
+    '0_5': '0 a 5 años',
+    '6_12': '6 a 12 años',
+    '13_17': '13 a 17 años',
+    '18_25': '18 a 25 años',
+    '26_59': '26 a 59 años',
+    '60_PLUS': '60 años o más',
+  };
+  const genderLabels: Record<string, string> = {
+    FEMALE: 'Mujer',
+    MALE: 'Hombre',
+    OTHER: 'Otro',
+    PREFER_NOT_TO_SAY: 'Prefiere no responder',
+  };
+  const attendeeSheet = workbook.addWorksheet('Asistentes');
+  attendeeSheet.views = [{ state: 'frozen', ySplit: 1 }];
+  attendeeSheet.columns = [
+    { key: 'registration_id', header: 'ID inscripción' },
+    { key: 'contact_name', header: 'Responsable' },
+    { key: 'position', header: 'Asistente número' },
+    { key: 'full_name', header: 'Nombre del asistente' },
+    { key: 'age_group', header: 'Rango de edad' },
+    { key: 'gender', header: 'Género' },
+    { key: 'registration_status', header: 'Estado inscripción' },
+    { key: 'payment_reference', header: 'Referencia Maná' },
+  ];
+  for (const attendee of attendeesResult.data || []) {
+    const registration = registrationsById.get(String((attendee as any).registration_id)) as any;
+    const payment = paymentsByRegistration.get(String((attendee as any).registration_id));
+    attendeeSheet.addRow({
+      registration_id: safeCell((attendee as any).registration_id),
+      contact_name: safeCell(registration?.contact_name),
+      position: Number((attendee as any).position || 0),
+      full_name: safeCell((attendee as any).full_name),
+      age_group: safeCell(ageLabels[String((attendee as any).age_group || '')] || ''),
+      gender: safeCell(genderLabels[String((attendee as any).gender || '')] || ''),
+      registration_status: safeCell(registration?.status),
+      payment_reference: safeCell(payment?.reference),
+    });
   }
-  sheet.columns.forEach((column) => {
-    if (!column?.eachCell) return;
-    let longest = String(column.header || '').length;
-    column.eachCell({ includeEmpty: true }, (cell) => { longest = Math.max(longest, String(cell.value || '').length); });
-    column.width = Math.max(14, Math.min(42, longest + 2));
-  });
+  styleDataSheet(attendeeSheet);
+
+  const payerSheet = workbook.addWorksheet('Pagadores');
+  payerSheet.views = [{ state: 'frozen', ySplit: 1 }];
+  payerSheet.columns = [
+    { key: 'registration_id', header: 'ID inscripción' },
+    { key: 'contact_name', header: 'Responsable' },
+    { key: 'legal_name', header: 'Nombre o razón social del pagador' },
+    { key: 'person_type', header: 'Tipo de persona' },
+    { key: 'document_type', header: 'Tipo de documento' },
+    { key: 'document_number', header: 'Número de documento' },
+    { key: 'document_country', header: 'País del documento' },
+    { key: 'billing_email', header: 'Correo para soporte' },
+    { key: 'tax_document_requested', header: 'Solicita factura o certificado' },
+    { key: 'payment_provider', header: 'Proveedor' },
+    { key: 'payment_reference', header: 'Referencia Maná' },
+    { key: 'payment_status', header: 'Estado del pago' },
+    { key: 'payment_amount', header: 'Valor' },
+    { key: 'payment_currency', header: 'Moneda' },
+  ];
+  for (const payer of payersResult.data || []) {
+    const registration = registrationsById.get(String((payer as any).registration_id)) as any;
+    const payment = paymentsByRegistration.get(String((payer as any).registration_id));
+    payerSheet.addRow({
+      registration_id: safeCell((payer as any).registration_id),
+      contact_name: safeCell(registration?.contact_name),
+      legal_name: safeCell((payer as any).legal_name),
+      person_type: (payer as any).person_type === 'LEGAL' ? 'Empresa u organización' : 'Persona natural',
+      document_type: safeCell((payer as any).document_type),
+      document_number: safeCell((payer as any).document_number),
+      document_country: safeCell((payer as any).document_country),
+      billing_email: safeCell((payer as any).billing_email),
+      tax_document_requested: (payer as any).tax_document_requested ? 'Sí' : 'No',
+      payment_provider: safeCell(getEventPaymentProviderLabel(String(payment?.provider || ''))),
+      payment_reference: safeCell(payment?.reference),
+      payment_status: safeCell(payment?.status),
+      payment_amount: payment ? Number(payment.amount || 0) : '',
+      payment_currency: safeCell(payment?.currency),
+    });
+  }
+  styleDataSheet(payerSheet);
 
   const financeRows = summarizeEventPayments(paymentsResult.data);
 
@@ -309,6 +437,8 @@ export const GET: APIRoute = async ({ request, url }) => {
     action: 'EVENT_REGISTRATIONS_EXPORTED',
     after_data: {
       registrations: registrationsResult.data.length,
+      attendees: attendeesResult.data?.length || 0,
+      payers: payersResult.data?.length || 0,
       payments: paymentsResult.data.length,
       finance_groups: financeRows.length,
       custom_fields: customColumns.size,

@@ -143,6 +143,9 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /:global\(\.event-calendar \.flatpickr-time input\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /Nombre completo[\s\S]*?Correo[\s\S]*?Número de asistentes/);
   assert.match(eventsView, /:global\(\.event-custom-field-grid\)/);
+  assert.match(eventsView, /id="event-registration-attendee-age"/);
+  assert.match(eventsView, /id="event-registration-attendee-gender"/);
+  assert.match(eventsView, /id="event-registration-payer-document"/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
@@ -176,6 +179,34 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
   assert.match(operationLogic, /reviewModalReturnFocus/);
   assert.match(operationLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(operationLogic, /event\.target === reviewModal\) closeReviewModal\(\)/);
+  assert.match(operationLogic, /ATTENDEE_AGE_LABELS/);
+  assert.match(operationLogic, /document_masked/);
+});
+
+test('la inscripción pública separa cupos, asistentes e identidad financiera privada', async () => {
+  const [publicView, publicLogic, registerApi, operationApi, exportApi, sql] = await Promise.all([
+    readSource('src/pages/eventos/[slug].astro'),
+    readSource('src/scripts/public-event-registration.js'),
+    readSource('src/pages/api/events/register.ts'),
+    readSource('src/pages/api/portal/event-payments/manual.ts'),
+    readSource('src/pages/api/portal/events/export-registrations.ts'),
+    readSource('docs/sql/event_registration_people_upgrade.sql'),
+  ]);
+
+  assert.match(publicView, /id="event-attendee-fields"[^>]*aria-live="polite"/);
+  assert.match(publicView, /name="payer_document_number"[^>]*autocomplete="off"/);
+  assert.match(publicView, /Solicito factura o certificado, si aplica/);
+  assert.match(publicLogic, /attendees,/);
+  assert.match(publicLogic, /payer,/);
+  assert.match(registerApi, /save_event_registration_people_secure/);
+  assert.match(registerApi, /value\.length !== quantity/);
+  assert.match(operationApi, /document_last4/);
+  assert.doesNotMatch(operationApi, /document_number,/);
+  assert.match(exportApi, /addWorksheet\('Asistentes'\)/);
+  assert.match(exportApi, /addWorksheet\('Pagadores'\)/);
+  assert.match(sql, /enable row level security/);
+  assert.match(sql, /revoke all on table public\.event_registration_payers from public, anon, authenticated/);
+  assert.match(sql, /grant execute on function public\.save_event_registration_people_secure[^;]+to service_role/s);
 });
 
 test('el editor de iglesias separa borrador, publicación, alcance e imágenes', async () => {

@@ -2,10 +2,14 @@ export const DEFAULT_EVENT_REGISTRATION_FORM_CONFIG = Object.freeze({
   phone: 'OPTIONAL',
   church: false,
   whatsapp_updates: false,
+  attendee_age: 'HIDDEN',
+  attendee_gender: 'HIDDEN',
+  payer_document: 'REQUIRED',
   fields: [],
 });
 
 const PHONE_MODES = new Set(['HIDDEN', 'OPTIONAL', 'REQUIRED']);
+const FIELD_MODES = new Set(['HIDDEN', 'OPTIONAL', 'REQUIRED']);
 export const EVENT_CUSTOM_FIELD_TYPES = Object.freeze([
   'SHORT_TEXT',
   'LONG_TEXT',
@@ -72,6 +76,9 @@ export function isEventCustomChoiceField(type) {
 export function normalizeEventRegistrationFormConfig(value) {
   const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   const phone = String(source.phone || DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.phone).toUpperCase();
+  const attendeeAge = String(source.attendee_age || DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.attendee_age).toUpperCase();
+  const attendeeGender = String(source.attendee_gender || DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.attendee_gender).toUpperCase();
+  const payerDocument = String(source.payer_document || DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.payer_document).toUpperCase();
   const usedIds = new Set();
   const fields = (Array.isArray(source.fields) ? source.fields : [])
     .map(normalizeCustomField)
@@ -85,6 +92,9 @@ export function normalizeEventRegistrationFormConfig(value) {
     phone: PHONE_MODES.has(phone) ? phone : DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.phone,
     church: Boolean(source.church),
     whatsapp_updates: Boolean(source.whatsapp_updates),
+    attendee_age: FIELD_MODES.has(attendeeAge) ? attendeeAge : DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.attendee_age,
+    attendee_gender: FIELD_MODES.has(attendeeGender) ? attendeeGender : DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.attendee_gender,
+    payer_document: FIELD_MODES.has(payerDocument) ? payerDocument : DEFAULT_EVENT_REGISTRATION_FORM_CONFIG.payer_document,
     fields,
   };
 }

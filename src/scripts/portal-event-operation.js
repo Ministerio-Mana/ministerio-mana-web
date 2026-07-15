@@ -144,6 +144,21 @@ function getRegistrationExtraDetails(registration) {
   return details.slice(0, 12);
 }
 
+const ATTENDEE_AGE_LABELS = {
+  '0_5': '0 a 5 años',
+  '6_12': '6 a 12 años',
+  '13_17': '13 a 17 años',
+  '18_25': '18 a 25 años',
+  '26_59': '26 a 59 años',
+  '60_PLUS': '60 años o más',
+};
+const ATTENDEE_GENDER_LABELS = {
+  FEMALE: 'Mujer',
+  MALE: 'Hombre',
+  OTHER: 'Otro',
+  PREFER_NOT_TO_SAY: 'Prefiere no responder',
+};
+
 function safeHttpsUrl(value) {
   try {
     const url = new URL(String(value || ''));
@@ -384,8 +399,10 @@ function renderRegistrations() {
   const visible = registrations.filter((registration) => {
     if (!query) return true;
     const payment = registration.payment || {};
+    const attendeeSearch = (registration.attendees || []).map((attendee) => attendee.full_name).join(' ');
+    const payerSearch = `${registration.payer?.legal_name || ''} ${registration.payer?.document_masked || ''}`;
     const additionalAnswers = getRegistrationExtraDetails(registration).map((detail) => `${detail.label} ${detail.value}`).join(' ');
-    return `${registration.contact_name || ''} ${registration.contact_email || ''} ${registration.contact_phone || ''} ${payment.reported_reference || ''} ${payment.reference || ''} ${additionalAnswers}`
+    return `${registration.contact_name || ''} ${registration.contact_email || ''} ${registration.contact_phone || ''} ${payment.reported_reference || ''} ${payment.reference || ''} ${attendeeSearch} ${payerSearch} ${additionalAnswers}`
       .toLowerCase()
       .includes(query);
   });
@@ -434,6 +451,26 @@ function renderRegistrations() {
       <dl class="grid gap-2 border-t border-slate-100 pt-4 text-sm sm:grid-cols-2">
         ${extraDetails.map((detail) => `<div><dt class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">${escapeHtml(detail.label)}</dt><dd class="mt-2 break-words text-slate-700">${escapeHtml(detail.value)}</dd></div>`).join('')}
       </dl>` : '';
+    const attendeeInfo = Array.isArray(registration.attendees) && registration.attendees.length ? `
+      <section class="rounded-md border border-slate-200 bg-slate-50 px-4 py-4" aria-label="Asistentes de la inscripción">
+        <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">Asistentes registrados</p>
+        <ol class="mt-4 grid gap-2 sm:grid-cols-2">
+          ${registration.attendees.map((attendee) => {
+            const details = [ATTENDEE_AGE_LABELS[attendee.age_group], ATTENDEE_GENDER_LABELS[attendee.gender]].filter(Boolean).join(' · ');
+            return `<li class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm"><strong class="text-slate-800">${escapeHtml(attendee.position)}. ${escapeHtml(attendee.full_name)}</strong>${details ? `<span class="mt-2 block text-xs text-slate-500">${escapeHtml(details)}</span>` : ''}</li>`;
+          }).join('')}
+        </ol>
+      </section>` : '';
+    const payerInfo = registration.payer ? `
+      <section class="rounded-md border border-amber-200 bg-amber-50/70 px-4 py-4" aria-label="Identificación financiera enmascarada">
+        <p class="text-xs font-bold uppercase tracking-[0.06em] text-amber-800">Pagador · identificación protegida</p>
+        <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div><dt class="text-xs font-bold uppercase text-slate-500">Nombre o razón social</dt><dd class="mt-2 font-semibold text-slate-800">${escapeHtml(registration.payer.legal_name || '')}</dd></div>
+          <div><dt class="text-xs font-bold uppercase text-slate-500">Documento</dt><dd class="mt-2 font-semibold text-slate-800">${escapeHtml([registration.payer.document_type, registration.payer.document_masked].filter(Boolean).join(' '))}</dd></div>
+          <div><dt class="text-xs font-bold uppercase text-slate-500">País</dt><dd class="mt-2 text-slate-700">${escapeHtml(registration.payer.document_country || '')}</dd></div>
+          <div><dt class="text-xs font-bold uppercase text-slate-500">Soporte tributario</dt><dd class="mt-2 text-slate-700">${registration.payer.tax_document_requested ? 'Solicitado' : 'No solicitado'}</dd></div>
+        </dl>
+      </section>` : '';
 
     return `
       <article class="portal-panel p-4 sm:p-6" data-registration-row="${escapeAttr(registration.id)}">
@@ -450,6 +487,8 @@ function renderRegistrations() {
             <strong class="text-base text-[#293C74]">${escapeHtml(formatAmount(registration.total_amount, registration.currency))}</strong>
           </div>
           ${additionalInfo}
+          ${attendeeInfo}
+          ${payerInfo}
           ${paymentInfo}
           <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
             ${attendance}

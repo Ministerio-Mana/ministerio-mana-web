@@ -82,6 +82,89 @@ function readCustomResponses(form) {
   return responses;
 }
 
+const ATTENDEE_AGE_OPTIONS = [
+  ['', 'Selecciona'],
+  ['0_5', '0 a 5 años'],
+  ['6_12', '6 a 12 años'],
+  ['13_17', '13 a 17 años'],
+  ['18_25', '18 a 25 años'],
+  ['26_59', '26 a 59 años'],
+  ['60_PLUS', '60 años o más'],
+];
+const ATTENDEE_GENDER_OPTIONS = [
+  ['', 'Selecciona'],
+  ['FEMALE', 'Mujer'],
+  ['MALE', 'Hombre'],
+  ['OTHER', 'Otro'],
+  ['PREFER_NOT_TO_SAY', 'Prefiero no responder'],
+];
+
+function escapeAttribute(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function optionMarkup(options, selected = '') {
+  return options.map(([value, label]) => (
+    `<option value="${value}"${value === selected ? ' selected' : ''}>${label}</option>`
+  )).join('');
+}
+
+function getAttendeeDrafts(container) {
+  return [...(container?.querySelectorAll('[data-attendee-card]') || [])].map((card) => ({
+    full_name: String(card.querySelector('[data-attendee-name]')?.value || '').trim(),
+    age_group: String(card.querySelector('[data-attendee-age]')?.value || ''),
+    gender: String(card.querySelector('[data-attendee-gender]')?.value || ''),
+  }));
+}
+
+function readAttendees(form) {
+  const cards = [...form.querySelectorAll('[data-attendee-card]')];
+  const ageMode = String(form.dataset.attendeeAgeMode || 'HIDDEN').toUpperCase();
+  const genderMode = String(form.dataset.attendeeGenderMode || 'HIDDEN').toUpperCase();
+  return cards.map((card, index) => {
+    const nameInput = card.querySelector('[data-attendee-name]');
+    const ageInput = card.querySelector('[data-attendee-age]');
+    const genderInput = card.querySelector('[data-attendee-gender]');
+    const fullName = String(nameInput?.value || '').trim();
+    const ageGroup = String(ageInput?.value || '').trim().toUpperCase();
+    const gender = String(genderInput?.value || '').trim().toUpperCase();
+    if (fullName.length < 3) {
+      nameInput?.focus();
+      throw new Error(`Escribe el nombre completo del asistente ${index + 1}.`);
+    }
+    if (ageMode === 'REQUIRED' && !ageGroup) {
+      ageInput?.focus();
+      throw new Error(`Selecciona la edad del asistente ${index + 1}.`);
+    }
+    if (genderMode === 'REQUIRED' && !gender) {
+      genderInput?.focus();
+      throw new Error(`Selecciona el género del asistente ${index + 1}.`);
+    }
+    return { position: index + 1, full_name: fullName, age_group: ageGroup || null, gender: gender || null };
+  });
+}
+
+function readPayer(form, formData) {
+  if (String(form.dataset.pricingModel || 'FREE').toUpperCase() === 'FREE') return null;
+  const documentMode = String(form.dataset.payerDocumentMode || 'REQUIRED').toUpperCase();
+  if (documentMode === 'HIDDEN') return null;
+  return {
+    is_contact: formData.get('payer_is_contact') === 'on',
+    person_type: formData.get('payer_person_type'),
+    document_type: formData.get('payer_document_type'),
+    document_number: formData.get('payer_document_number'),
+    document_country: formData.get('payer_document_country'),
+    legal_name: formData.get('payer_legal_name'),
+    billing_email: formData.get('payer_billing_email'),
+    tax_document_requested: formData.get('payer_tax_document_requested') === 'on',
+  };
+}
+
 async function fetchJson(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -109,6 +192,61 @@ if (registrationForm) {
   const evidenceInput = registrationForm.elements.payment_evidence;
   const donationAmountInput = registrationForm.elements.donation_amount;
   const manualPaymentDetails = [...registrationForm.querySelectorAll('[data-manual-payment-details]')];
+  const quantityInput = registrationForm.elements.quantity;
+  const contactNameInput = registrationForm.elements.contact_name;
+  const contactEmailInput = registrationForm.elements.contact_email;
+  const contactIsAttendeeInput = registrationForm.elements.contact_is_attendee;
+  const attendeeFields = document.getElementById('event-attendee-fields');
+  const payerIsContactInput = registrationForm.elements.payer_is_contact;
+  const payerLegalNameInput = registrationForm.elements.payer_legal_name;
+  const payerBillingEmailInput = registrationForm.elements.payer_billing_email;
+
+  function syncContactAttendee() {
+    const firstName = attendeeFields?.querySelector('[data-attendee-name]');
+    if (!firstName) return;
+    const samePerson = Boolean(contactIsAttendeeInput?.checked);
+    firstName.readOnly = samePerson;
+    firstName.classList.toggle('bg-slate-100', samePerson);
+    if (samePerson) firstName.value = String(contactNameInput?.value || '');
+  }
+
+  function renderAttendees() {
+    if (!attendeeFields || !quantityInput) return;
+    const drafts = getAttendeeDrafts(attendeeFields);
+    const max = Math.max(1, Number(quantityInput.max || 100));
+    const quantity = Math.max(1, Math.min(max, Math.floor(Number(quantityInput.value || 1))));
+    const ageMode = String(registrationForm.dataset.attendeeAgeMode || 'HIDDEN').toUpperCase();
+    const genderMode = String(registrationForm.dataset.attendeeGenderMode || 'HIDDEN').toUpperCase();
+    attendeeFields.innerHTML = Array.from({ length: quantity }, (_, index) => {
+      const draft = drafts[index] || {};
+      return `<article class="rounded-md border border-slate-200 bg-white p-4" data-attendee-card data-attendee-index="${index + 1}">
+        <p class="text-xs font-bold uppercase tracking-[0.06em] text-slate-500">Asistente ${index + 1}</p>
+        <div class="mt-4 grid gap-4 ${ageMode !== 'HIDDEN' || genderMode !== 'HIDDEN' ? 'sm:grid-cols-2' : ''}">
+          <label class="text-sm font-bold text-slate-700 ${ageMode !== 'HIDDEN' || genderMode !== 'HIDDEN' ? 'sm:col-span-2' : ''}">Nombre completo
+            <input type="text" data-attendee-name required minlength="3" maxlength="120" autocomplete="name" value="${escapeAttribute(draft.full_name)}" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
+          </label>
+          ${ageMode !== 'HIDDEN' ? `<label class="text-sm font-bold text-slate-700">Rango de edad ${ageMode === 'OPTIONAL' ? '<span class="font-normal text-slate-500">(opcional)</span>' : ''}<select data-attendee-age ${ageMode === 'REQUIRED' ? 'required' : ''} class="mt-2 block min-h-11 w-full rounded-md border-slate-300">${optionMarkup(ATTENDEE_AGE_OPTIONS, draft.age_group)}</select></label>` : ''}
+          ${genderMode !== 'HIDDEN' ? `<label class="text-sm font-bold text-slate-700">Género ${genderMode === 'OPTIONAL' ? '<span class="font-normal text-slate-500">(opcional)</span>' : ''}<select data-attendee-gender ${genderMode === 'REQUIRED' ? 'required' : ''} class="mt-2 block min-h-11 w-full rounded-md border-slate-300">${optionMarkup(ATTENDEE_GENDER_OPTIONS, draft.gender)}</select></label>` : ''}
+        </div>
+      </article>`;
+    }).join('');
+    syncContactAttendee();
+  }
+
+  function syncPayerContact() {
+    if (!payerIsContactInput) return;
+    const samePerson = Boolean(payerIsContactInput.checked);
+    if (payerLegalNameInput) {
+      payerLegalNameInput.readOnly = samePerson;
+      payerLegalNameInput.classList.toggle('bg-slate-100', samePerson);
+      if (samePerson) payerLegalNameInput.value = String(contactNameInput?.value || '');
+    }
+    if (payerBillingEmailInput) {
+      payerBillingEmailInput.readOnly = samePerson;
+      payerBillingEmailInput.classList.toggle('bg-slate-100', samePerson);
+      if (samePerson) payerBillingEmailInput.value = String(contactEmailInput?.value || '');
+    }
+  }
 
   function syncPaymentMethod() {
     const selectedOption = providerSelect?.selectedOptions?.[0];
@@ -140,20 +278,31 @@ if (registrationForm) {
     updateRegistrationTotal();
   }
 
-  registrationForm.addEventListener('input', updateRegistrationTotal);
-  registrationForm.addEventListener('change', () => {
+  registrationForm.addEventListener('input', (event) => {
+    updateRegistrationTotal();
+    if (event.target === contactNameInput) syncContactAttendee();
+    if (event.target === contactNameInput || event.target === contactEmailInput) syncPayerContact();
+  });
+  registrationForm.addEventListener('change', (event) => {
+    if (event.target === quantityInput) renderAttendees();
     updateRegistrationTotal();
     syncPaymentMethod();
   });
   updateRegistrationTotal();
   syncPaymentMethod();
+  renderAttendees();
+  syncPayerContact();
+  contactIsAttendeeInput?.addEventListener('change', syncContactAttendee);
+  payerIsContactInput?.addEventListener('change', syncPayerContact);
 
   registrationForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     showRegistrationStatus();
     let customResponses;
+    let attendees;
     try {
       customResponses = readCustomResponses(registrationForm);
+      attendees = readAttendees(registrationForm);
     } catch (error) {
       showRegistrationStatus(error?.message || 'Revisa las preguntas obligatorias.');
       return;
@@ -164,6 +313,7 @@ if (registrationForm) {
     }
 
     const formData = new FormData(registrationForm);
+    const payer = readPayer(registrationForm, formData);
     const selectedProviderOption = providerSelect?.selectedOptions?.[0];
     const evidenceFile = evidenceInput?.files?.[0] || null;
     if (evidenceFile) {
@@ -201,6 +351,8 @@ if (registrationForm) {
           church: formData.get('church'),
           whatsapp_updates: formData.get('whatsapp_updates') === 'on',
           custom_responses: customResponses,
+          attendees,
+          payer,
           quantity: Number(formData.get('quantity') || 1),
           donation_amount: formData.get('donation_amount') || null,
           provider: selectedProviderOption?.dataset.provider || null,
