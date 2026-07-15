@@ -264,6 +264,11 @@ function getUserCity(user) {
     return String(user?.church?.city || user?.city || '').trim();
 }
 
+function getCanonicalCountryLabel(value) {
+    const raw = String(value || '').trim();
+    return findPortalCountry(raw, churchesCatalog, regionsCatalog) || raw;
+}
+
 function getScopeCategory(user) {
     const role = String(user?.role || 'user');
     if (role === 'campus_missionary') return 'campus';
@@ -498,6 +503,7 @@ async function loadChurches() {
         churchesCatalog = Array.isArray(data) ? data : [];
         populateScopeOptions();
         populateLocationFilters();
+        applyFilters({ resetPage: false });
     } catch (err) {
         console.error(err);
     }
@@ -519,6 +525,7 @@ async function loadRegions(token) {
         regionsCatalog = Array.isArray(payload?.regions) ? payload.regions : [];
         populateRegionOptions();
         populateLocationFilters();
+        applyFilters({ resetPage: false });
     } catch (err) {
         console.error(err);
         regionsCatalog = [];
@@ -574,7 +581,7 @@ function populateScopeOptions() {
                 const cityLabel = c.city || c.country || 'Ciudad';
                 const safeCity = escapeHtml(cityLabel);
                 const safeName = escapeHtml(c.name || '');
-                const countryLabel = c.country ? ` · ${escapeHtml(c.country)}` : '';
+                const countryLabel = c.country ? ` · ${escapeHtml(getCanonicalCountryLabel(c.country))}` : '';
                 return `<option value="${safeId}">${safeCity} · ${safeName}${countryLabel}</option>`;
             })
             .join('');
@@ -590,7 +597,7 @@ function populateScopeOptions() {
         });
         financeOnboardingChurch.innerHTML = '<option value="">Selecciona una iglesia</option>'
             + financeChurches.map((church) => {
-                const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
+                const label = [church.name, church.city, getCanonicalCountryLabel(church.country)].filter(Boolean).join(' · ');
                 return `<option value="${escapeAttr(church.id || '')}">${escapeHtml(label || 'Iglesia')}</option>`;
             }).join('');
     }
@@ -606,7 +613,8 @@ function populateRegionOptions() {
     scopeRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' +
         scopedRegions
             .map((region) => {
-                const label = `${region.code || 'REG'} · ${region.name || 'Región'}${region.country ? ` (${region.country})` : ''}`;
+                const countryLabel = getCanonicalCountryLabel(region.country);
+                const label = `${region.code || 'REG'} · ${region.name || 'Región'}${countryLabel ? ` (${countryLabel})` : ''}`;
                 return `<option value="${escapeAttr(region.id || '')}">${escapeHtml(label)}</option>`;
             })
             .join('');
@@ -616,7 +624,7 @@ function populateRegionOptions() {
         });
         financeOnboardingRegion.innerHTML = '<option value="">Selecciona una región</option>'
             + financeRegions.map((region) => {
-                const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
+                const label = [region.code, region.name, getCanonicalCountryLabel(region.country)].filter(Boolean).join(' · ');
                 return `<option value="${escapeAttr(region.id || '')}">${escapeHtml(label || 'Región')}</option>`;
             }).join('');
     }
@@ -890,7 +898,7 @@ function getScopeLabel(user) {
     const region = user?.region || null;
     const churchName = church?.name || user?.church_name || '';
     const cityName = church?.city || user?.city || '';
-    const countryName = church?.country || user?.country || '';
+    const countryName = getCanonicalCountryLabel(church?.country || user?.country || '');
     const regionName = region?.name || '';
     const regionCode = region?.code || '';
 
@@ -1237,7 +1245,7 @@ function populateRoleScopeOptions(selectedRegionId = '', selectedChurchId = '') 
             + filterPortalRegions(regionsCatalog, { country })
                 .filter((region) => region?.id)
                 .map((region) => {
-                    const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
+                    const label = [region.code, region.name, getCanonicalCountryLabel(region.country)].filter(Boolean).join(' · ');
                     return `<option value="${escapeAttr(region.id)}">${escapeHtml(label || 'Región')}</option>`;
                 }).join('');
         if ([...roleScopeRegion.options].some((option) => option.value === regionValue)) {
@@ -1253,7 +1261,7 @@ function populateRoleScopeOptions(selectedRegionId = '', selectedChurchId = '') 
             })
                 .filter((church) => church?.id)
                 .map((church) => {
-                    const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
+                    const label = [church.name, church.city, getCanonicalCountryLabel(church.country)].filter(Boolean).join(' · ');
                     return `<option value="${escapeAttr(church.id)}">${escapeHtml(label || 'Iglesia')}</option>`;
                 }).join('');
         if ([...roleScopeChurch.options].some((option) => option.value === churchValue)) {
@@ -1432,7 +1440,7 @@ function populateFinanceAssignmentOptions() {
             + filterPortalRegions(regionsCatalog, { country })
                 .filter((region) => region?.id)
                 .map((region) => {
-                    const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
+                const label = [region.code, region.name, getCanonicalCountryLabel(region.country)].filter(Boolean).join(' · ');
                     return `<option value="${escapeAttr(region.id)}">${escapeHtml(label || 'Región')}</option>`;
                 })
                 .join('');
@@ -1448,7 +1456,7 @@ function populateFinanceAssignmentOptions() {
             })
                 .filter((church) => church?.id)
                 .map((church) => {
-                    const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
+                const label = [church.name, church.city, getCanonicalCountryLabel(church.country)].filter(Boolean).join(' · ');
                     return `<option value="${escapeAttr(church.id)}">${escapeHtml(label || 'Iglesia')}</option>`;
                 })
                 .join('');
