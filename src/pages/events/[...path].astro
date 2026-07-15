@@ -1,0 +1,6 @@
+---
+const path = String(Astro.params.path || '').replace(/^\/+|\/+$/g, '');
+const destination = `/eventos${path ? `/${path}` : ''}${Astro.url.search}`;
+
+return Astro.redirect(destination, 301);
+---

@@ -119,6 +119,13 @@ test('la cuenta pública se resincroniza después de navegar sin mostrar un logi
   assert.match(logic, /window\.addEventListener\('pageshow', checkSession\)/);
 });
 
+test('la ruta histórica en inglés de eventos conserva compatibilidad', async () => {
+  const source = await readProjectFile('src/pages/events/[...path].astro');
+
+  assert.match(source, /`\/eventos\$\{path \? `\/\$\{path\}` : ''\}\$\{Astro\.url\.search\}`/);
+  assert.match(source, /Astro\.redirect\(destination, 301\)/);
+});
+
 test('las historias mantienen texto claro sobre fotos aunque la paleta base sea clara', async () => {
   const source = await readProjectFile('src/components/cms/CmsStorySection.astro');
 
