@@ -91,6 +91,21 @@ test('el mapa público mantiene marcadores y acciones con área táctil accesibl
   assert.match(directory, /class="flex min-h-11 items-center justify-center gap-2 py-3/);
 });
 
+test('el selector de idioma funciona con CSP y declara el idioma del documento', async () => {
+  const [switchView, switchLogic, layout] = await Promise.all([
+    readProjectFile('src/components/LangSwitch.astro'),
+    readProjectFile('src/scripts/lang-switch.js'),
+    readProjectFile('src/layouts/BaseLayout.astro'),
+  ]);
+
+  assert.match(switchView, /data-language-switch/);
+  assert.match(switchView, /data-next-locale=\{next\}/);
+  assert.doesNotMatch(switchView, /onclick=/);
+  assert.match(switchLogic, /document\.addEventListener\('click'/);
+  assert.match(switchLogic, /SameSite=Lax/);
+  assert.match(layout, /<html lang=\{documentLocale\}/);
+});
+
 test('Campus etiqueta los datos de pago y deshabilita la acción inválida', async () => {
   const [view, logic] = await Promise.all([
     readProjectFile('src/components/campus/DonationForm.astro'),

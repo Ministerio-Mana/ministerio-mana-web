@@ -21,10 +21,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <h1 class="font-display text-3xl font-bold text-[#293C74]">Eventos</h1>
               <p class="mt-2 max-w-2xl text-sm text-slate-600">Organiza el calendario de tu iglesia, región o país según tus permisos.</p>
             </div>
-            <button id="btn-new-event" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#20315f]">
+            <button id="btn-new-event" type="button" disabled aria-describedby="events-new-event-status" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#20315f] disabled:cursor-wait disabled:opacity-60">
               <PortalIcon name="plus" size={18} />
               Nuevo evento
             </button>
+            <span id="events-new-event-status" class="sr-only" role="status" aria-live="polite">Cargando configuración de eventos.</span>
           </header>
 
           <section aria-label="Resumen de eventos" class="portal-stat-grid grid-cols-2 lg:grid-cols-4">

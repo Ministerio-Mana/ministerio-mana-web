@@ -2047,6 +2047,11 @@ async function init() {
         await Promise.all([loadChurchesCatalog(), loadRegionsCatalog(), loadEvents(false)]);
         syncScopeOptions();
         renderEvents();
+        if (btnNewEvent && canEditAnyEvent()) {
+            btnNewEvent.disabled = false;
+            const readyStatus = document.getElementById('events-new-event-status');
+            if (readyStatus) readyStatus.textContent = 'Configuración de eventos lista.';
+        }
     } catch (error) {
         console.error('[portal-events] init error', error);
         if (eventPermissionValidated) {

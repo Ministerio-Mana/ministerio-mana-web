@@ -135,6 +135,8 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /data-event-filter="active" aria-pressed="true"/);
   assert.match(eventsView, /id="event-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="event-modal-title"[^>]*aria-hidden="true"/);
   assert.match(eventsView, /id="close-modal"[^>]*h-11 w-11[^>]*aria-label="Cerrar formulario de evento"/);
+  assert.match(eventsView, /id="btn-new-event"[^>]*disabled[^>]*aria-describedby="events-new-event-status"/);
+  assert.match(eventsLogic, /await Promise\.all\(\[loadChurchesCatalog\(\), loadRegionsCatalog\(\), loadEvents\(false\)\]\)[\s\S]*?btnNewEvent\.disabled = false/);
   assert.match(eventsView, /\.event-filter \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-action\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar-confirm\) \{[\s\S]*?min-height: 44px;/);
@@ -185,6 +187,9 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.equal([...view.matchAll(/<h1\b/g)].length, 1);
   assert.match(view, /id="church-media-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="church-media-title"[^>]*aria-hidden="true"/);
   assert.match(logic, /window\.addEventListener\('beforeunload', saveLocalDraft\)/);
+  assert.match(logic, /ensureAuthenticated\(\)/);
+  assert.match(logic, /Authorization: `Bearer \$\{auth\.token\}`/);
+  assert.match(logic, /Object\.entries\(authHeaders\)/);
   assert.match(logic, /event\.key !== 'Tab'/);
   assert.match(logic, /state\.modalTrigger\?\.focus\?\.\(\)/);
   assert.match(logic, /expected_version: Number\(state\.page\.version \|\| 0\)/);

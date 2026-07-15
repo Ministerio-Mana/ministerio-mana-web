@@ -1,6 +1,6 @@
 # Pendientes de activación y revisión
 
-Fecha de corte: 13 de julio de 2026.
+Fecha de corte: 14 de julio de 2026.
 
 Este documento reemplaza el inventario operativo que estaba disperso entre la bitácora, el tablero y los mensajes de revisión. No contiene secretos ni valores de producción.
 
@@ -38,7 +38,7 @@ El usuario confirmó que realizará estas pruebas mañana. Permanecen pendientes
 
 ### Cuarto: página pública de una iglesia
 
-- [ ] Después de ejecutar el punto 6, entrar con una cuenta individual a `/portal/church-page`.
+- [ ] Entrar con una cuenta individual a `/portal/church-page`.
 - [ ] Elegir una iglesia autorizada y probar `Esencial`, `Historia` y `Mosaico` sin publicar datos reales incompletos.
 - [ ] Cargar una imagen horizontal, una cuadrada y una vertical; confirmar que cada una queda en la biblioteca de esa iglesia y no se deforma.
 - [ ] Guardar el borrador, recargar y confirmar que se recupera. Verificar que la página pública no cambió antes de pulsar `Publicar`.
@@ -94,16 +94,16 @@ No ejecutar desde el celular. Usar el SQL Editor del proyecto correcto de Supaba
 - [x] 4. Ejecutar `docs/sql/events_dual_currency_payments.sql`.
   - Activa precio COP para Wompi y precio USD para Stripe dentro del mismo evento global.
   - Resultado esperado: existen `price_cop`, `price_usd` y los RPC seguros incluidos en el script.
-- [ ] 5. Ejecutar `docs/sql/cumbre_manual_payment_idempotency.sql`.
+- [x] 5. Ejecutar `docs/sql/cumbre_manual_payment_idempotency.sql`.
   - Evita duplicar abonos de Cumbre por doble clic, reintento o dos solicitudes concurrentes.
   - El script no borra ni modifica pagos. Si encuentra duplicados históricos, se detiene y muestra un error: no eliminar nada; compartir únicamente el resultado para revisar cada caso.
   - Resultado esperado: existen `idx_cumbre_payments_provider_tx_unique` e `idx_cumbre_payments_booking_reference_unique`.
-- [ ] 6. Ejecutar `docs/sql/church_public_pages.sql`.
+- [x] 6. Ejecutar `docs/sql/church_public_pages.sql`.
   - Activa borradores, publicación, tres plantillas y auditoría para la página pública de cada iglesia.
   - No modifica eventos, pagos, roles, membresías ni la información territorial existente.
   - Resultado esperado: aparecen `church_public_pages` y `church_public_page_audit_logs`.
 
-Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. Los puntos 5 y 6 quedan pendientes.
+Los primeros cuatro scripts fueron ejecutados y verificados el 13 de julio de 2026. Los contratos finales devolvieron documentos, comprobantes, 27 movimientos Wompi nacionales de Colombia, 16 movimientos Stripe globales y las tres funciones de cobro dual esperadas. El usuario confirmó la ejecución de los puntos 5 y 6 el 14 de julio de 2026; ya no quedan SQL pendientes de esta lista.
 
 ## 2. Activar el primer equipo financiero
 

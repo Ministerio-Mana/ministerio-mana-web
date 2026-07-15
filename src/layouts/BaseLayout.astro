@@ -26,6 +26,7 @@ const {
 } = Astro.props;
 const isPortalPath = Astro.url.pathname.startsWith('/portal');
 const enableClientRouter = !isPortalPath;
+const documentLocale = Astro.cookies.get('lang')?.value === 'en' ? 'en' : 'es';
 const cspNonce = Astro.locals?.cspNonce;
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? import.meta.env.SUPABASE_URL;
 let supabaseOrigin = '';
@@ -38,7 +39,7 @@ if (supabaseUrl) {
 }
 ---
 <!doctype html>
-<html lang="es" class="scroll-smooth">
+<html lang={documentLocale} class="scroll-smooth">
   <head>
     <SEO {title} {description} {image} {imageAlt} {imageWidth} {imageHeight} {imageType} {type} {structuredData} {noindex} />
     {enableClientRouter && <ClientRouter fallback="swap" />}

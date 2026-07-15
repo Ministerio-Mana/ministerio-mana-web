@@ -1,15 +1,21 @@
 
 ---
-import { LOCALES } from '@i18n/locales';
 const current = Astro.cookies.get('lang')?.value ?? 'es';
 const next = current === 'es' ? 'en' : 'es';
 const { variant = 'light' } = Astro.props;
 const buttonClass = variant === 'dark'
   ? 'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2.5 font-display text-xs font-semibold uppercase tracking-[0.12em] text-white transition-all duration-200 hover:bg-white/15 hover:text-white focus-visible:bg-white/15 focus-visible:text-white sm:px-6'
   : 'btn-outline btn-sm';
-function setLang(l) {
-  document.cookie = `lang=${l};path=/;max-age=${60*60*24*365}`;
-  location.reload();
-}
 ---
-<button class={buttonClass} onclick={`(${setLang.toString()})('${next}')`}>{next.toUpperCase()}</button>
+<button
+  type="button"
+  class={buttonClass}
+  data-language-switch
+  data-next-locale={next}
+  aria-label={next === 'es' ? 'Cambiar el sitio a español' : 'Switch site to English'}>
+  {next.toUpperCase()}
+</button>
+
+<script>
+  import '@scripts/lang-switch.js';
+</script>

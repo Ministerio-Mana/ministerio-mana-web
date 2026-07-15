@@ -1,7 +1,11 @@
+import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+
 const API_URL = '/api/portal/church-pages';
 const MEDIA_URL = '/api/portal/church-media';
 const MAX_GALLERY = 6;
 const MAX_SCENES = 6;
+
+let authHeaders = {};
 
 const state = {
   churches: [],
@@ -200,10 +204,12 @@ function setBusy(busy, message = '') {
 
 async function fetchJson(url, options = {}) {
   const headers = new Headers(options.headers || {});
+  Object.entries(authHeaders).forEach(([key, value]) => headers.set(key, value));
   if (options.body && !(options.body instanceof FormData)) headers.set('content-type', 'application/json');
-  const response = await fetch(url, { credentials: 'same-origin', ...options, headers });
+  const response = await fetch(url, { credentials: 'include', ...options, headers });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401) redirectToLogin();
     const error = new Error(payload.error || 'No se pudo completar la operación.');
     error.payload = payload;
     error.status = response.status;
@@ -643,6 +649,12 @@ function bindEvents() {
 async function init() {
   bindEvents();
   try {
+    const auth = await ensureAuthenticated();
+    if (!auth.isAuthenticated) {
+      redirectToLogin();
+      return;
+    }
+    authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
     const payload = await fetchJson(API_URL);
     el.gate?.classList.add('hidden');
     el.app?.classList.remove('hidden');
