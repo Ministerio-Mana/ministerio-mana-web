@@ -209,6 +209,24 @@
     padding: var(--space-2);
   }
 
+  .portal-shell .portal-responsive-table tr {
+    padding: var(--space-2);
+  }
+
+  .portal-shell .portal-responsive-table td {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+    padding: var(--space-2) 0 !important;
+  }
+
+  .portal-shell .portal-responsive-table td[data-label]::before {
+    display: block;
+  }
+
+  .portal-shell .portal-responsive-table :is(select, button, summary) {
+    width: 100%;
+  }
+
   .portal-auth-shell {
     align-items: flex-start !important;
     padding-top: max(var(--space-2), env(safe-area-inset-top));

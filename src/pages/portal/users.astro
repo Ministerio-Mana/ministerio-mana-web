@@ -9,7 +9,7 @@ import { MISIONEROS } from '@data/misioneros';
     <div class="flex flex-col lg:flex-row min-h-screen">
       <Sidebar />
       
-      <section class="flex-1 p-4 md:p-10 lg:p-16 relative overflow-y-auto">
+      <section class="relative flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-12">
          <div id="users-gate" class="portal-panel max-w-xl mx-auto px-6 py-8 text-center text-slate-500">
             Validando permisos...
          </div>
@@ -21,14 +21,14 @@ import { MISIONEROS } from '@data/misioneros';
                    <h1 class="text-3xl font-display font-bold text-[#293C74] md:text-4xl">Usuarios</h1>
                    <p class="mt-2 max-w-2xl text-slate-600">Administra quién entra al Portal y limita cada permiso al país, región, iglesia o responsabilidad que le corresponde.</p>
                </div>
-               <button id="btn-open-create-user" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#20315f] sm:w-auto">
-                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+               <button id="btn-open-create-user" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#20315f] sm:w-auto">
+                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5V19M5 12H19" /></svg>
                    Nuevo Usuario
                </button>
             </div>
 
             <!-- Users List -->
-            <div class="portal-panel p-4 md:p-8">
+            <div class="portal-panel p-4 sm:p-6 lg:p-8">
                 <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h2 class="text-xl font-bold text-[#293C74]">Directorio del Portal</h2>
@@ -36,18 +36,19 @@ import { MISIONEROS } from '@data/misioneros';
                     </div>
                     <div id="users-count" class="text-xs font-bold uppercase tracking-widest text-slate-500">0 usuarios</div>
                 </div>
-                <div class="mb-5">
+                <div class="mb-4">
                     <div id="users-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
                 </div>
 
-                <div class="space-y-3 mb-6">
-                    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                            <div class="relative">
-                                <input id="users-search" type="search" autocomplete="off" aria-label="Buscar usuarios" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20 sm:w-80" placeholder="Buscar nombre, email, iglesia, región, ciudad...">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <div class="mb-6 space-y-2">
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                            <div class="relative sm:col-span-2">
+                                <input id="users-search" type="search" autocomplete="off" aria-label="Buscar usuarios" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-sm text-[#293C74] placeholder-slate-400 focus:ring-1 focus:ring-[#293C74]/20" placeholder="Buscar nombre, email, iglesia o ciudad">
+                                <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21L15 15M17 10A7 7 0 1 1 3 10A7 7 0 0 1 17 10Z" /></svg>
+                                </span>
                             </div>
-                            <select id="users-role-filter" aria-label="Filtrar usuarios por rol" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 sm:w-auto">
+                            <select id="users-role-filter" aria-label="Filtrar usuarios por rol" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                                 <option value="">Todos los roles</option>
                                 <option value="superadmin">Superadmin</option>
                                 <option value="admin">Admin</option>
@@ -63,7 +64,7 @@ import { MISIONEROS } from '@data/misioneros';
                                 <option value="leader">Líder</option>
                                 <option value="user">Usuario (Asistente)</option>
                             </select>
-                            <select id="users-status-filter" aria-label="Filtrar usuarios por estado" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 sm:w-auto">
+                            <select id="users-status-filter" aria-label="Filtrar usuarios por estado" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                                 <option value="">Todos los estados</option>
                                 <option value="active">Activo</option>
                                 <option value="invited">Invitado</option>
@@ -73,17 +74,16 @@ import { MISIONEROS } from '@data/misioneros';
                                 <option value="deleted">Eliminado</option>
                                 <option value="unknown">Sin diagnóstico</option>
                             </select>
-                        </div>
                     </div>
 
-                    <div class="flex flex-col lg:flex-row lg:items-center gap-3">
-                        <select id="users-country-filter" aria-label="Filtrar usuarios por país" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 lg:w-auto lg:min-w-[200px]">
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                        <select id="users-country-filter" aria-label="Filtrar usuarios por país" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                             <option value="">Todos los países</option>
                         </select>
-                        <select id="users-city-filter" aria-label="Filtrar usuarios por ciudad" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 lg:w-auto lg:min-w-[200px]">
+                        <select id="users-city-filter" aria-label="Filtrar usuarios por ciudad" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                             <option value="">Todas las ciudades</option>
                         </select>
-                        <select id="users-scope-filter" aria-label="Filtrar usuarios por alcance" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20 lg:w-auto lg:min-w-[210px]">
+                        <select id="users-scope-filter" aria-label="Filtrar usuarios por alcance" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                             <option value="">Todas las categorías</option>
                             <option value="global">Global (Administración/Finanzas)</option>
                             <option value="national">Nacional</option>
@@ -92,7 +92,7 @@ import { MISIONEROS } from '@data/misioneros';
                             <option value="campus">Campus</option>
                             <option value="assistant">Asistente/usuario base</option>
                         </select>
-                        <button id="users-clear-filters" type="button" class="min-h-11 w-full rounded-md border border-slate-200 px-4 py-2 text-xs font-bold uppercase text-slate-700 hover:bg-slate-50 lg:w-auto">
+                        <button id="users-clear-filters" type="button" class="min-h-11 w-full rounded-md border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
                             Limpiar filtros
                         </button>
                     </div>
@@ -103,13 +103,13 @@ import { MISIONEROS } from '@data/misioneros';
                     <table id="users-table" class="portal-responsive-table hidden w-full text-left border-collapse">
                         <thead>
                             <tr class="text-xs text-slate-400 border-b border-slate-100">
-                                <th class="font-bold uppercase tracking-widest py-3 pl-2">Nombre</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Email</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Rol</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Alcance</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Estado acceso</th>
-                                <th class="font-bold uppercase tracking-widest py-3">Último ingreso</th>
-                                <th class="font-bold uppercase tracking-widest py-3 text-right pr-2">Acciones</th>
+                                <th class="py-4 pl-2 font-bold uppercase tracking-widest">Nombre</th>
+                                <th class="py-4 font-bold uppercase tracking-widest">Email</th>
+                                <th class="py-4 font-bold uppercase tracking-widest">Rol</th>
+                                <th class="py-4 font-bold uppercase tracking-widest">Alcance</th>
+                                <th class="py-4 font-bold uppercase tracking-widest">Estado acceso</th>
+                                <th class="py-4 font-bold uppercase tracking-widest">Último ingreso</th>
+                                <th class="py-4 pr-2 text-right font-bold uppercase tracking-widest">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="text-sm text-slate-600 divide-y divide-slate-50">
@@ -118,10 +118,10 @@ import { MISIONEROS } from '@data/misioneros';
                     </table>
                 </div>
                 <div id="users-empty" class="hidden text-center py-10 text-slate-400 text-sm">No se encontraron usuarios.</div>
-                <div id="users-pagination" class="mt-5 hidden flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-3">
+                <div id="users-pagination" class="mt-4 hidden flex-col gap-4 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-4">
                         <span id="users-page-info" class="text-xs font-semibold text-slate-500">Mostrando 0 usuarios</span>
-                        <select id="users-page-size" aria-label="Usuarios por página" class="min-h-11 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                        <select id="users-page-size" aria-label="Usuarios por página" class="min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700">
                             <option value="10">10 por página</option>
                             <option value="20">20 por página</option>
                             <option value="50">50 por página</option>
@@ -139,7 +139,7 @@ import { MISIONEROS } from '@data/misioneros';
     </div>
 
     <!-- Create User Modal -->
-    <div id="create-user-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="create-user-title" aria-describedby="create-user-description" aria-hidden="true">
+    <div id="create-user-modal" class="fixed inset-0 z-50 hidden items-start justify-center overflow-y-auto bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="create-user-title" aria-describedby="create-user-description" aria-hidden="true">
         <div class="my-auto max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
             <div class="flex items-start justify-between gap-4 border-b border-slate-100 p-6 sm:p-8">
                 <div>
@@ -155,30 +155,30 @@ import { MISIONEROS } from '@data/misioneros';
                     <legend class="mb-4 text-sm font-bold text-[#293C74]">1. Datos de la persona</legend>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <label for="create-user-first-name" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Nombre</label>
-                        <input id="create-user-first-name" type="text" name="firstName" required autocomplete="given-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                        <label for="create-user-first-name" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Nombre</label>
+                        <input id="create-user-first-name" type="text" name="firstName" required autocomplete="given-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                     </div>
                     <div>
-                        <label for="create-user-last-name" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Apellido</label>
-                        <input id="create-user-last-name" type="text" name="lastName" required autocomplete="family-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                        <label for="create-user-last-name" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Apellido</label>
+                        <input id="create-user-last-name" type="text" name="lastName" required autocomplete="family-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                     </div>
                 </div>
                 <div>
-                    <label for="create-user-email" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Email</label>
-                    <input id="create-user-email" type="email" name="email" required autocomplete="email" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <label for="create-user-email" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Email</label>
+                    <input id="create-user-email" type="email" name="email" required autocomplete="email" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                 </div>
                 <div>
-                    <label for="create-user-password" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Contraseña temporal (opcional)</label>
-                    <input id="create-user-password" type="password" name="password" autocomplete="new-password" minlength="10" aria-describedby="create-user-password-help" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-                    <p id="create-user-password-help" class="mt-1 text-[11px] leading-snug text-slate-500">Déjala vacía para enviar correo de activación. Si escribes una contraseña, la cuenta se crea con esa clave y se intenta enviar un enlace de acceso.</p>
+                    <label for="create-user-password" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Contraseña temporal (opcional)</label>
+                    <input id="create-user-password" type="password" name="password" autocomplete="new-password" minlength="10" aria-describedby="create-user-password-help" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
+                    <p id="create-user-password-help" class="mt-2 text-[11px] leading-snug text-slate-500">Déjala vacía para enviar correo de activación. Si escribes una contraseña, la cuenta se crea con esa clave y se intenta enviar un enlace de acceso.</p>
                 </div>
                 </fieldset>
 
                 <fieldset class="space-y-4 border-t border-slate-100 pt-6">
                     <legend class="mb-4 text-sm font-bold text-[#293C74]">2. Responsabilidad y alcance</legend>
                  <div>
-                     <label for="user-role-select" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
-                     <select name="role" id="user-role-select" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                     <label for="user-role-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
+                     <select name="role" id="user-role-select" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                          <option value="user">Usuario (Asistente)</option>
                          <option value="leader">Líder</option>
                          <option value="pastor" class="admin-only hidden">Pastor</option>
@@ -187,8 +187,8 @@ import { MISIONEROS } from '@data/misioneros';
                 </div>
 
                 <div id="user-campus-missionary" class="hidden">
-                    <label for="user-campus-missionary-select" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Misionero asociado</label>
-                    <select id="user-campus-missionary-select" name="campusMissionarySlug" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <label for="user-campus-missionary-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Misionero asociado</label>
+                    <select id="user-campus-missionary-select" name="campusMissionarySlug" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                         <option value="">Selecciona un misionero Campus</option>
                         {MISIONEROS.map((missionary) => (
                             <option value={missionary.slug}>{missionary.nombre}</option>
@@ -229,20 +229,20 @@ import { MISIONEROS } from '@data/misioneros';
                 </div>
 
                 <div id="user-scope-country" class="hidden">
-                    <label for="user-country-input" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">País (Rol Nacional)</label>
-                    <input id="user-country-input" type="text" name="country" list="user-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" placeholder="Ej: Colombia">
+                    <label for="user-country-input" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País (Rol Nacional)</label>
+                    <input id="user-country-input" type="text" name="country" list="user-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm" placeholder="Ej: Colombia">
                 </div>
 
                 <div id="user-scope-region" class="hidden">
-                    <label for="user-region-select" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Región (Rol Regional)</label>
-                    <select id="user-region-select" name="regionId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <label for="user-region-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región (Rol Regional)</label>
+                    <select id="user-region-select" name="regionId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                         <option value="">Selecciona una región</option>
                     </select>
                 </div>
 
                 <div id="user-scope-church" class="hidden">
-                    <label for="user-church-select" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Iglesia / Ciudad (Pastor Local)</label>
-                    <select id="user-church-select" name="churchId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                    <label for="user-church-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Iglesia / Ciudad (Pastor Local)</label>
+                    <select id="user-church-select" name="churchId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                         <option value="">Selecciona una iglesia</option>
                     </select>
                 </div>
@@ -252,54 +252,54 @@ import { MISIONEROS } from '@data/misioneros';
 
                 <p id="create-user-feedback" class="hidden rounded-xl px-4 py-4 text-sm" role="status" aria-live="polite"></p>
 
-                <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
-                    <button type="button" id="btn-cancel-create" class="min-h-11 flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200">Cancelar</button>
-                    <button type="submit" id="btn-submit-create" class="min-h-11 flex-1 rounded-xl bg-[#293C74] py-3 text-sm font-bold text-white shadow-lg transition-colors hover:brightness-110">Crear usuario</button>
+                <div class="flex flex-col-reverse gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
+                    <button type="button" id="btn-cancel-create" class="min-h-11 flex-1 rounded-xl bg-slate-100 py-4 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" id="btn-submit-create" class="min-h-11 flex-1 rounded-xl bg-[#293C74] py-4 text-sm font-bold text-white shadow-lg transition-colors hover:brightness-110">Crear usuario</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="finance-assignment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="finance-assignment-title" aria-describedby="finance-assignment-user" aria-hidden="true">
-        <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-5 md:px-7">
+    <div id="finance-assignment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-labelledby="finance-assignment-title" aria-describedby="finance-assignment-user" aria-hidden="true">
+        <div class="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 p-4 sm:p-6">
                 <div>
-                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#28A6BD]">Permiso adicional</p>
-                    <h3 id="finance-assignment-title" class="mt-1 text-xl font-bold text-[#293C74]">Equipo financiero</h3>
-                    <p id="finance-assignment-user" class="mt-1 text-sm text-slate-500">Selecciona un usuario.</p>
+                    <p class="text-xs font-bold text-[#28A6BD]">Permiso adicional</p>
+                    <h3 id="finance-assignment-title" class="mt-2 text-xl font-bold text-[#293C74] sm:text-2xl">Acceso financiero</h3>
+                    <p id="finance-assignment-user" class="mt-2 text-sm text-slate-500">Selecciona un usuario.</p>
                 </div>
                 <button id="finance-assignment-close" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 text-xl text-slate-500 hover:bg-slate-50" aria-label="Cerrar alcances financieros">×</button>
             </div>
 
-            <div class="space-y-6 px-5 py-6 md:px-7">
-                <div class="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                    El usuario conserva su rol pastoral o administrativo. Finanzas se agrega con el alcance exacto que selecciones.
+            <div class="space-y-6 p-4 sm:p-6">
+                <div class="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+                    <strong>La cuenta y su rol principal no cambian.</strong> Aquí agregas o retiras el acceso a información financiera y decides exactamente qué país, región o iglesia puede consultar.
                 </div>
 
-                <div id="finance-assignment-migration" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <div id="finance-assignment-migration" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
                     <p class="font-bold">Activación pendiente en Supabase</p>
-                    <p class="mt-1">Ejecuta <code>docs/sql/finance_scopes_hierarchy.sql</code>. Después podrás usar esta pantalla sin escribir asignaciones SQL.</p>
+                    <p class="mt-2">Ejecuta <code>docs/sql/finance_scopes_hierarchy.sql</code>. Después podrás usar esta pantalla sin escribir asignaciones SQL.</p>
                 </div>
 
                 <section aria-labelledby="finance-current-title">
-                    <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center justify-between gap-4">
                         <h4 id="finance-current-title" class="text-sm font-bold text-[#293C74]">Alcances activos</h4>
-                        <span id="finance-assignment-count" class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">0 asignaciones</span>
+                        <span id="finance-assignment-count" class="rounded-full bg-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600">0 asignaciones</span>
                     </div>
-                    <div id="finance-assignment-list" class="mt-3 space-y-2">
-                        <p class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">Cargando asignaciones…</p>
+                    <div id="finance-assignment-list" class="mt-4 space-y-2">
+                        <p class="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-center text-sm text-slate-400">Cargando asignaciones…</p>
                     </div>
                 </section>
 
-                <form id="finance-assignment-form" class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:p-5">
+                <form id="finance-assignment-form" class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-6">
                     <div>
-                        <h4 class="text-sm font-bold text-[#293C74]">Agregar un alcance</h4>
-                        <p class="mt-1 text-xs text-slate-500">Puede tener más de uno. Nunca se mezclan movimientos fuera de los alcances asignados.</p>
+                        <h4 class="text-sm font-bold text-[#293C74]">Asignar acceso financiero</h4>
+                        <p class="mt-2 text-xs text-slate-500">Puede tener más de uno. Nunca se mezclan movimientos fuera de los alcances asignados.</p>
                     </div>
 
                     <div>
-                        <label for="finance-assignment-scope" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Nivel financiero</label>
-                        <select id="finance-assignment-scope" name="scopeType" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-[#293C74]">
+                        <label for="finance-assignment-scope" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Nivel financiero</label>
+                        <select id="finance-assignment-scope" name="scopeType" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-[#293C74]">
                             <option value="church">Local · una iglesia</option>
                             <option value="region">Regional · una región</option>
                             <option value="country">Nacional · un país</option>
@@ -308,30 +308,30 @@ import { MISIONEROS } from '@data/misioneros';
                     </div>
 
                     <div id="finance-assignment-country-wrapper" class="hidden">
-                        <label for="finance-assignment-country" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
-                        <input id="finance-assignment-country" name="scopeKey" list="finance-assignment-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" placeholder="Ej: Colombia">
+                        <label for="finance-assignment-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
+                        <input id="finance-assignment-country" name="scopeKey" list="finance-assignment-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm" placeholder="Ej: Colombia">
                         <datalist id="finance-assignment-country-list"></datalist>
                     </div>
 
                     <div id="finance-assignment-region-wrapper" class="hidden">
-                        <label for="finance-assignment-region" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Región</label>
-                        <select id="finance-assignment-region" name="scopeId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        <label for="finance-assignment-region" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región</label>
+                        <select id="finance-assignment-region" name="scopeId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
                             <option value="">Selecciona una región</option>
                         </select>
                     </div>
 
                     <div id="finance-assignment-church-wrapper">
-                        <label for="finance-assignment-church" class="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">Iglesia</label>
-                        <select id="finance-assignment-church" name="scopeId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        <label for="finance-assignment-church" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Iglesia</label>
+                        <select id="finance-assignment-church" name="scopeId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
                             <option value="">Selecciona una iglesia</option>
                         </select>
                     </div>
 
-                    <p id="finance-assignment-feedback" class="hidden rounded-xl px-4 py-3 text-sm" role="status"></p>
+                    <p id="finance-assignment-feedback" class="hidden rounded-xl px-4 py-4 text-sm" role="status"></p>
 
-                    <div class="flex flex-col-reverse gap-3 pt-1 sm:flex-row sm:justify-end">
-                        <button id="finance-assignment-cancel" type="button" class="min-h-11 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">Cerrar</button>
-                        <button id="finance-assignment-save" type="submit" class="min-h-11 rounded-md bg-[#293C74] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-50">Agregar alcance</button>
+                    <div class="flex flex-col-reverse gap-4 pt-2 sm:flex-row sm:justify-end">
+                        <button id="finance-assignment-cancel" type="button" class="min-h-11 w-full rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 sm:w-auto">Cerrar</button>
+                        <button id="finance-assignment-save" type="submit" class="min-h-11 w-full rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">Asignar acceso</button>
                     </div>
                 </form>
             </div>

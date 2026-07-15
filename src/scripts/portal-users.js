@@ -308,6 +308,7 @@ function getSearchableUserText(user) {
     const status = String(user?.access_status || '');
     const statusLabel = accessStatusTranslations[status] || status;
     const scopeLabel = getScopeLabel(user);
+    const financeScopeLabel = getFinanceAssignmentSummary(user);
     const scopeCategory = scopeCategoryLabels[getScopeCategory(user)] || '';
     const name = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim();
     return normalizeSearchText([
@@ -323,6 +324,7 @@ function getSearchableUserText(user) {
         status,
         statusLabel,
         scopeLabel,
+        financeScopeLabel,
         scopeCategory,
     ].join(' '));
 }
@@ -795,7 +797,7 @@ function renderSummaryCards() {
             <button
                 type="button"
                 data-summary-status="${escapeAttr(isAll ? '' : statusKey)}"
-                class="min-h-16 rounded-md border px-3 py-2 text-left transition-colors ${style}"
+                class="min-h-16 rounded-md border px-4 py-2 text-left transition-colors ${style}"
             >
                 <p class="text-[10px] uppercase tracking-widest font-bold">${escapeHtml(title)}</p>
                 <p class="text-lg font-black leading-tight">${escapeHtml(count)}</p>
@@ -819,7 +821,10 @@ function applyFilters(options = {}) {
     const filtered = (allUsers || []).filter((user) => {
         const searchable = getSearchableUserText(user);
         if (queryTokens.length && queryTokens.some((token) => !searchable.includes(token))) return false;
-        if (roleValue && user.role !== roleValue) return false;
+        const hasFinanceAccess = String(user?.role || '') === 'finance'
+            || Number(user?.finance_assignment_count || 0) > 0;
+        if (roleValue === 'finance' && !hasFinanceAccess) return false;
+        if (roleValue && roleValue !== 'finance' && user.role !== roleValue) return false;
         if (statusValue && user.access_status !== statusValue) return false;
         if (countryValue && getUserCountry(user) !== countryValue) return false;
         if (cityValue && getUserCity(user) !== cityValue) return false;
@@ -903,12 +908,19 @@ function renderRoleCell(user) {
     const pendingRole = pendingRoleChanges.get(user.user_id);
     const selectedRole = pendingRole?.nextRole || user.role;
     if (currentUserRole === 'superadmin') {
+        const financeCount = Number(user?.finance_assignment_count || 0);
+        const canManageFinance = !['admin', 'superadmin'].includes(String(user?.role || ''))
+            && user?.access_status !== 'deleted'
+            && user?.is_account_deleted !== true;
         const options = roleOrder.filter((role) => quickRoleChangeRoles.has(role) || role === selectedRole).map((role) => {
             const label = escapeHtml(roleTranslations[role] || role);
             const safeRole = escapeAttr(role);
             const selected = selectedRole === role ? 'selected' : '';
             return `<option value="${safeRole}" ${selected}>${label}</option>`;
         }).join('');
+        const financeOption = canManageFinance
+            ? `<option value="__manage_finance__">${financeCount ? 'Administrar acceso financiero…' : 'Dar acceso financiero…'}</option>`
+            : '';
         const selectedCampusSlug = pendingRole?.campusMissionarySlug ?? user.campus_missionary_slug ?? '';
         const campusOptions = Array.from(scopeCampusMissionarySelect?.options || [])
             .filter((option) => option.value)
@@ -918,17 +930,19 @@ function renderRoleCell(user) {
             })
             .join('');
         return `
-            <div class="space-y-1">
-                <select data-action="role" aria-label="Cambiar rol de ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-[#293C74]">
+            <div class="min-w-0 space-y-2">
+                <select data-action="role" aria-label="Cambiar rol principal de ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-[#293C74]">
                     ${options}
+                    ${financeOption}
                 </select>
                 ${selectedRole === 'campus_missionary' ? `
-                    <select data-action="campus-missionary" aria-label="Asignar misionero Campus a ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 max-w-48 bg-white border border-slate-200 rounded-lg px-2 py-2 text-[11px] font-semibold text-slate-600">
+                    <select data-action="campus-missionary" aria-label="Asignar misionero Campus a ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600">
                         <option value="">Selecciona misionero</option>
                         ${campusOptions}
                     </select>
                 ` : ''}
-                ${pendingRole ? '<p class="text-[10px] text-amber-600 font-bold uppercase tracking-wider">Cambio pendiente</p>' : ''}
+                ${financeCount ? `<p class="flex items-center gap-2 text-xs font-bold text-[#1E6B78]"><span class="h-2 w-2 rounded-full bg-[#28A6BD]"></span>Finanzas habilitadas · ${financeCount} ${financeCount === 1 ? 'alcance' : 'alcances'}</p>` : ''}
+                ${pendingRole ? '<p class="text-xs font-bold text-amber-700">Cambio de rol pendiente</p>' : ''}
             </div>
         `;
     }
@@ -952,26 +966,26 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
     const isSelf = Boolean(currentUserId && user?.user_id === currentUserId);
     const resetButton = canSendAccessLink
         ? (isDeleted
-            ? '<span class="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cuenta eliminada</span>'
-            : `<button type="button" data-action="reset" data-email="${safeEmailAttr}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">${escapeHtml(resetLabel)}</button>`)
+            ? '<span class="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Cuenta eliminada</span>'
+            : `<button type="button" data-action="reset" data-email="${safeEmailAttr}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">${escapeHtml(resetLabel)}</button>`)
         : '';
     const accessLinkButton = canCopyAccessLink && !isDeleted
-        ? `<button type="button" data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">Copiar enlace de acceso</button>`
+        ? `<button type="button" data-action="copy-access-link" data-email="${safeEmailAttr}" title="Generar y copiar enlace temporal de acceso" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">Copiar enlace de acceso</button>`
         : '';
     const financeCount = Number(user?.finance_assignment_count || 0);
     const financeButton = isActorSuperadmin && !isDeleted && !isTargetGlobalAdmin
-        ? `<button type="button" data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-left text-xs font-bold text-amber-900 hover:bg-amber-100">Alcances financieros${financeCount ? ` (${financeCount})` : ''}</button>`
+        ? `<button type="button" data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-[#28A6BD]/30 bg-[#EAF9FC] px-4 py-2 text-left text-xs font-bold text-[#1E5F6C] hover:bg-[#D9F4F8]">${financeCount ? `Administrar acceso financiero (${financeCount})` : 'Dar acceso financiero'}</button>`
         : '';
     let lifecycleButtons = '';
     if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
         if (isDeleted) {
-            lifecycleButtons = `<button type="button" data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-left text-xs font-bold text-emerald-800 hover:bg-emerald-100">Restaurar cuenta</button>`;
+            lifecycleButtons = `<button type="button" data-action="restore-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-left text-xs font-bold text-emerald-800 hover:bg-emerald-100">Restaurar cuenta</button>`;
         } else {
             const blockLabel = isBlocked ? 'Desbloquear' : 'Bloquear';
             const blockAction = isBlocked ? 'unblock-user' : 'block-user';
             lifecycleButtons = `
-                <button type="button" data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50">${blockLabel} cuenta</button>
-                <button type="button" data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-left text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar cuenta</button>
+                <button type="button" data-action="${blockAction}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50">${blockLabel} cuenta</button>
+                <button type="button" data-action="delete-user" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-left text-xs font-bold text-rose-700 hover:bg-rose-100">Eliminar cuenta</button>
             `;
         }
     }
@@ -982,11 +996,11 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
             return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
         }
         return `
-            <details class="relative inline-block text-left">
-                <summary class="flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:border-[#293C74]/30 hover:bg-slate-50">
+            <details class="user-actions-menu relative w-full text-left lg:inline-block lg:w-auto">
+                <summary class="flex min-h-11 w-full cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:border-[#293C74]/30 hover:bg-slate-50 lg:justify-center">
                     Gestionar <span aria-hidden="true">⌄</span>
                 </summary>
-                <div class="absolute right-0 z-30 mt-2 w-56 space-y-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-xl">
+                <div class="relative z-30 mt-2 w-full space-y-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-xl lg:absolute lg:right-0 lg:w-64">
                     ${combined}
                 </div>
             </details>
@@ -995,8 +1009,8 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
 
     return `
         <div class="flex items-center justify-end gap-2 flex-wrap">
-            <button type="button" data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="button" data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 px-3 py-2 rounded-lg bg-[#293C74] text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
+            <button type="button" data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button type="button" data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 rounded-lg bg-[#293C74] px-4 py-2 text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
             ${financeButton}
             ${lifecycleButtons}
             ${accessLinkButton}
@@ -1071,19 +1085,19 @@ function renderTable(users) {
                 && (currentUserRole === 'superadmin' || !protectedAccessLinkRoles.includes(u.role));
             return `
                 <tr class="group hover:bg-slate-50 transition-colors">
-                    <td data-label="Nombre" class="py-3 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
-                    <td data-label="Email" class="py-3 text-slate-500">${safeEmail}</td>
-                    <td data-label="Rol" class="py-3">
+                    <td data-label="Nombre" class="py-4 pl-2 font-medium text-[#293C74]">${safeFullName}</td>
+                    <td data-label="Email" class="py-4 text-slate-500">${safeEmail}</td>
+                    <td data-label="Rol" class="py-4">
                         ${renderRoleCell(u)}
                     </td>
-                    <td data-label="Alcance" class="py-3 text-slate-500 text-xs font-semibold">${safeScope}</td>
-                    <td data-label="Estado acceso" class="py-3">
+                    <td data-label="Alcance" class="py-4 text-slate-500 text-xs font-semibold">${safeScope}</td>
+                    <td data-label="Estado acceso" class="py-4">
                         <span class="portal-chip uppercase ${accessStatusClass}">
                             ${safeStatusLabel}
                         </span>
                     </td>
-                    <td data-label="Último ingreso" class="py-3 text-slate-500 text-xs">${safeLastSignIn}</td>
-                    <td data-label="Acciones" class="py-3 text-right pr-2">
+                    <td data-label="Último ingreso" class="py-4 text-slate-500 text-xs">${safeLastSignIn}</td>
+                    <td data-label="Acciones" class="py-4 text-right pr-2">
                         ${renderActionsCell(u, canSendAccessLink, canCopyAccessLink, safeEmailAttr, resetLabel)}
                     </td>
                 </tr>
@@ -1101,6 +1115,12 @@ tbody?.addEventListener('change', async (event) => {
     const role = target.value;
     const user = allUsers.find((item) => item.user_id === userId);
     if (!user) return;
+
+    if (target.dataset.action === 'role' && role === '__manage_finance__') {
+        target.value = pendingRoleChanges.get(userId)?.nextRole || user.role;
+        await openFinanceAssignmentModal(userId);
+        return;
+    }
 
     if (target.dataset.action === 'campus-missionary') {
         const pending = pendingRoleChanges.get(userId) || {
@@ -1310,7 +1330,7 @@ function setFinanceAssignmentFeedback(message = '', type = 'info') {
     if (!financeAssignmentFeedback) return;
     if (!message) {
         financeAssignmentFeedback.textContent = '';
-        financeAssignmentFeedback.className = 'hidden rounded-xl px-4 py-3 text-sm';
+        financeAssignmentFeedback.className = 'hidden rounded-xl px-4 py-4 text-sm';
         return;
     }
     const styles = type === 'error'
@@ -1318,7 +1338,7 @@ function setFinanceAssignmentFeedback(message = '', type = 'info') {
         : type === 'success'
             ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
             : 'border border-sky-200 bg-sky-50 text-sky-800';
-    financeAssignmentFeedback.className = `rounded-xl px-4 py-3 text-sm ${styles}`;
+    financeAssignmentFeedback.className = `rounded-xl px-4 py-4 text-sm ${styles}`;
     financeAssignmentFeedback.textContent = message;
 }
 
@@ -1393,18 +1413,18 @@ function renderFinanceAssignments() {
     }
     if (!financeAssignmentList) return;
     if (financeHierarchyMigrationRequired) {
-        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 px-4 py-5 text-center text-sm text-amber-800">La pantalla quedará habilitada cuando ejecutes la migración financiera.</p>';
+        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 px-4 py-4 text-center text-sm text-amber-800">La pantalla quedará habilitada cuando ejecutes la migración financiera.</p>';
         return;
     }
     if (!activeFinanceAssignments.length) {
-        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-500">Este usuario todavía no tiene acceso a Finanzas.</p>';
+        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-center text-sm text-slate-500">Este usuario todavía no tiene acceso a Finanzas.</p>';
         return;
     }
     financeAssignmentList.innerHTML = activeFinanceAssignments.map((assignment) => `
-        <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="text-sm font-bold text-[#293C74]">${escapeHtml(assignment.scope_label || 'Alcance financiero')}</p>
-                <p class="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Permiso financiero secundario</p>
+                <p class="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Permiso financiero secundario</p>
             </div>
             <button type="button" data-finance-action="remove" data-assignment-id="${escapeAttr(assignment.id || '')}" class="min-h-11 rounded-md border border-rose-200 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">Retirar</button>
         </div>
@@ -1436,7 +1456,7 @@ async function openFinanceAssignmentModal(userId) {
     if (financeAssignmentUser) financeAssignmentUser.textContent = `${name} · ${user.email || ''}`;
     financeAssignmentMigration?.classList.add('hidden');
     if (financeAssignmentList) {
-        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">Cargando asignaciones…</p>';
+        financeAssignmentList.innerHTML = '<p class="rounded-xl border border-dashed border-slate-200 px-4 py-4 text-center text-sm text-slate-400">Cargando asignaciones…</p>';
     }
     setFinanceAssignmentFeedback();
     showAccessibleDialog(financeAssignmentModal, financeAssignmentClose);
@@ -1526,7 +1546,7 @@ function setupFinanceAssignmentModal() {
             activeFinanceAssignments = Array.isArray(data.assignments) ? data.assignments : [];
             syncFinanceAssignmentsToUser(activeFinanceAssignments);
             renderFinanceAssignments();
-            setFinanceAssignmentFeedback('Alcance financiero agregado correctamente.', 'success');
+            setFinanceAssignmentFeedback('Acceso financiero asignado correctamente. La cuenta conserva su rol principal.', 'success');
         } catch (error) {
             console.error(error);
             setFinanceAssignmentFeedback(error?.message || 'No se pudo guardar el alcance financiero.', 'error');

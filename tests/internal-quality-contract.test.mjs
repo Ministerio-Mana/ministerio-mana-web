@@ -266,11 +266,15 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
 
   assert.match(usersLogic, /data-action="copy-access-link"[^>]*min-h-11/);
   assert.match(usersLogic, /data-action="manage-finance"[^>]*min-h-11/);
+  assert.match(usersLogic, /value="__manage_finance__"/);
+  assert.match(usersLogic, /role === '__manage_finance__'[\s\S]*?openFinanceAssignmentModal\(userId\)/);
+  assert.match(usersLogic, /roleValue === 'finance' && !hasFinanceAccess/);
+  assert.match(usersLogic, /Administrar acceso financiero/);
   assert.match(usersLogic, /role !== 'finance' \|\| currentUserRole === 'superadmin'/);
   assert.match(usersLogic, /function updateFinanceOnboardingFields\(\)/);
   assert.match(usersLogic, /const body = Object\.fromEntries\(formData\)/);
   assert.match(usersLogic, /financeAssignmentCreated/);
-  assert.match(usersLogic, /<details class="relative inline-block text-left">/);
+  assert.match(usersLogic, /<details class="user-actions-menu relative w-full text-left lg:inline-block lg:w-auto">/);
   assert.match(usersLogic, /function getDialogFocusableElements\(dialog\)/);
   assert.match(usersLogic, /function showAccessibleDialog\(dialog, preferredFocus = null\)/);
   assert.match(usersLogic, /function handleAccessibleDialogKeydown\(event, dialog, closeButton\)/);
@@ -284,6 +288,7 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(createUserApi, /\.from\('portal_role_assignments'\)[\s\S]*?\.insert\(/);
   assert.match(createUserApi, /role: isFinanceOnboarding && !financeAssignmentCreated \? 'user' : targetRole/);
   assert.match(portalStyles, /\.portal-shell \.portal-responsive-table \[data-action\] \{\s*min-height: 44px;/);
+  assert.match(portalStyles, /@media \(max-width: 639px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 });
 
 test('regiones protege jerarquía territorial, edición y tablas móviles', async () => {

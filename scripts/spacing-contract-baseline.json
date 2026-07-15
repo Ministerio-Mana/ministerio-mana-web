@@ -16,6 +16,7 @@
     "src/pages/portal/peticiones.astro",
     "src/pages/portal/regions.astro",
     "src/pages/portal/registro.astro",
+    "src/pages/portal/users.astro",
     "src/pages/eventos/[slug].astro",
     "src/scripts/app-modal.js",
     "src/scripts/cumbre-manual-auth.js",
@@ -32,6 +33,7 @@
     "src/scripts/portal-prayers.js",
     "src/scripts/portal-regions.js",
     "src/scripts/portal-registro.js",
+    "src/scripts/portal-users.js",
     "src/styles/portal.css"
   ],
   "src/components/_root": {
@@ -165,7 +167,7 @@
     "cssMagicValue": 0
   },
   "src/pages/portal": {
-    "tailwindOffScale": 230,
+    "tailwindOffScale": 157,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
@@ -175,7 +177,7 @@
     "cssMagicValue": 0
   },
   "src/scripts": {
-    "tailwindOffScale": 300,
+    "tailwindOffScale": 273,
     "tailwindArbitrary": 0,
     "cssMagicValue": 0
   },
