@@ -25,6 +25,7 @@ import {
   normalizeFinanceAssignmentInput,
   type NormalizedFinanceAssignment,
 } from '@lib/financeAssignments';
+import { resolvePortalCountryFromDatabase } from '@lib/portalGeographyServer';
 
 const MANAGEMENT_ALLOWED_ROLES: PortalChurchRole[] = [
   'superadmin',
@@ -217,6 +218,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       scopeKey: normalizedFinance.value.scopeKey,
     };
 
+    if (financeAssignmentInput.scopeType === 'country') {
+      const resolvedFinanceCountry = await resolvePortalCountryFromDatabase(financeAssignmentInput.scopeKey);
+      if (!resolvedFinanceCountry.ok) {
+        console.error('[create-user] finance country catalog failed', resolvedFinanceCountry.error);
+        return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el país financiero.' }), { status: 500 });
+      }
+      if (!resolvedFinanceCountry.country) {
+        return new Response(JSON.stringify({ ok: false, error: 'Selecciona un país disponible en el Portal.' }), { status: 400 });
+      }
+    }
+
     const readiness = await supabaseAdmin
       .from('portal_role_assignments')
       .select('id', { head: true })
@@ -322,7 +334,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         if (!requestedCountry) {
           return new Response(JSON.stringify({ ok: false, error: 'Selecciona un país para este rol.' }), { status: 400 });
         }
-        targetCountry = requestedCountry;
+        const resolvedCountry = await resolvePortalCountryFromDatabase(requestedCountry);
+        if (!resolvedCountry.ok) {
+          console.error('[create-user] country catalog failed', resolvedCountry.error);
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar el país.' }), { status: 500 });
+        }
+        if (!resolvedCountry.country) {
+          return new Response(JSON.stringify({ ok: false, error: 'Selecciona un país disponible en el Portal.' }), { status: 400 });
+        }
+        targetCountry = resolvedCountry.country;
       }
     }
   }

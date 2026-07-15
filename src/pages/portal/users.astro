@@ -2,6 +2,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Sidebar from '@components/portal/Sidebar.astro';
 import { MISIONEROS } from '@data/misioneros';
+import { PORTAL_ROLE_DEFINITIONS } from '@lib/portalRbac';
 ---
 
 <BaseLayout title="Usuarios | Portal Maná" description="Gestión de usuarios." hideHeader hideFooter noindex>
@@ -50,19 +51,9 @@ import { MISIONEROS } from '@data/misioneros';
                             </div>
                             <select id="users-role-filter" aria-label="Filtrar usuarios por rol" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                                 <option value="">Todos los roles</option>
-                                <option value="superadmin">Superadmin</option>
-                                <option value="admin">Admin</option>
-                                <option value="finance">Equipo Financiero</option>
-                                <option value="national_pastor">Pastor Nacional</option>
-                                <option value="national_collaborator">Colaborador Nacional</option>
-                                <option value="regional_pastor">Pastor Regional</option>
-                                <option value="regional_collaborator">Colaborador Regional</option>
-                                <option value="campus_missionary">Misionero Campus</option>
-                                <option value="intercessor">Intercesor</option>
-                                <option value="pastor">Pastor Local</option>
-                                <option value="local_collaborator">Colaborador Local</option>
-                                <option value="leader">Líder</option>
-                                <option value="user">Usuario (Asistente)</option>
+                                {PORTAL_ROLE_DEFINITIONS.map(({ role, label }) => (
+                                    <option value={role}>{label}</option>
+                                ))}
                             </select>
                             <select id="users-status-filter" aria-label="Filtrar usuarios por estado" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-[#293C74] focus:ring-1 focus:ring-[#293C74]/20">
                                 <option value="">Todos los estados</option>
@@ -179,10 +170,7 @@ import { MISIONEROS } from '@data/misioneros';
                  <div>
                      <label for="user-role-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Rol</label>
                      <select name="role" id="user-role-select" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
-                         <option value="user">Usuario (Asistente)</option>
-                         <option value="leader">Líder</option>
-                         <option value="pastor" class="admin-only hidden">Pastor</option>
-                         <option value="admin" class="admin-only hidden">Admin</option>
+                         <option value="">Cargando roles disponibles…</option>
                      </select>
                 </div>
 
@@ -212,7 +200,9 @@ import { MISIONEROS } from '@data/misioneros';
                     </div>
                     <div id="user-finance-country-wrapper" class="mt-4">
                         <label for="user-finance-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-amber-900">País</label>
-                        <input id="user-finance-country" name="financeScopeKey" list="user-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-amber-200 bg-white px-4 py-4 text-sm" placeholder="Ej: Colombia">
+                        <select id="user-finance-country" name="financeScopeKey" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-amber-200 bg-white px-4 py-4 text-sm">
+                            <option value="">Selecciona un país</option>
+                        </select>
                     </div>
                     <div id="user-finance-region-wrapper" class="mt-4 hidden">
                         <label for="user-finance-region" class="mb-2 block text-xs font-bold uppercase tracking-widest text-amber-900">Región</label>
@@ -229,12 +219,15 @@ import { MISIONEROS } from '@data/misioneros';
                 </div>
 
                 <div id="user-scope-country" class="hidden">
-                    <label for="user-country-input" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País (Rol Nacional)</label>
-                    <input id="user-country-input" type="text" name="country" list="user-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm" placeholder="Ej: Colombia">
+                    <label id="user-country-label" for="user-country-input" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
+                    <select id="user-country-input" name="country" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
+                        <option value="">Selecciona un país</option>
+                    </select>
+                    <p id="user-country-help" class="mt-2 text-xs text-slate-500">Primero elige el país; después verás únicamente sus regiones e iglesias.</p>
                 </div>
 
                 <div id="user-scope-region" class="hidden">
-                    <label for="user-region-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región (Rol Regional)</label>
+                    <label id="user-region-label" for="user-region-select" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región</label>
                     <select id="user-region-select" name="regionId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
                         <option value="">Selecciona una región</option>
                     </select>
@@ -247,7 +240,6 @@ import { MISIONEROS } from '@data/misioneros';
                     </select>
                 </div>
 
-                <datalist id="user-country-list"></datalist>
                 </fieldset>
 
                 <p id="create-user-feedback" class="hidden rounded-xl px-4 py-4 text-sm" role="status" aria-live="polite"></p>
@@ -255,6 +247,73 @@ import { MISIONEROS } from '@data/misioneros';
                 <div class="flex flex-col-reverse gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
                     <button type="button" id="btn-cancel-create" class="min-h-11 flex-1 rounded-xl bg-slate-100 py-4 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200">Cancelar</button>
                     <button type="submit" id="btn-submit-create" class="min-h-11 flex-1 rounded-xl bg-[#293C74] py-4 text-sm font-bold text-white shadow-lg transition-colors hover:brightness-110">Crear usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="role-scope-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-labelledby="role-scope-title" aria-describedby="role-scope-user" aria-hidden="true">
+        <div class="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-100 p-4 sm:p-6">
+                <div>
+                    <p class="text-xs font-bold text-[#28A6BD]">Responsabilidad principal</p>
+                    <h3 id="role-scope-title" class="mt-2 text-xl font-bold text-[#293C74] sm:text-2xl">Editar rol y alcance</h3>
+                    <p id="role-scope-user" class="mt-2 text-sm text-slate-500">Selecciona un usuario.</p>
+                </div>
+                <button id="role-scope-close" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 text-xl text-slate-500 hover:bg-slate-50" aria-label="Cerrar edición de rol">×</button>
+            </div>
+
+            <form id="role-scope-form" class="space-y-6 p-4 sm:p-6">
+                <div class="rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+                    El rol define qué puede hacer la persona. El alcance limita dónde puede hacerlo. El acceso financiero se administra aparte para no reemplazar el rol pastoral.
+                </div>
+
+                <div>
+                    <label for="role-scope-role" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Rol principal</label>
+                    <select id="role-scope-role" name="role" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-[#293C74]">
+                        {PORTAL_ROLE_DEFINITIONS.filter(({ role, legacy }) => role !== 'finance' && !legacy).map(({ role, label }) => (
+                            <option value={role}>{label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div id="role-scope-country-wrapper" class="hidden">
+                    <label for="role-scope-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
+                    <select id="role-scope-country" name="country" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
+                        <option value="">Selecciona un país</option>
+                    </select>
+                    <p class="mt-2 text-xs text-slate-500">La lista proviene de las iglesias y regiones activas del Portal.</p>
+                </div>
+
+                <div id="role-scope-region-wrapper" class="hidden">
+                    <label for="role-scope-region" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Región</label>
+                    <select id="role-scope-region" name="regionId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
+                        <option value="">Selecciona una región</option>
+                    </select>
+                </div>
+
+                <div id="role-scope-church-wrapper" class="hidden">
+                    <label for="role-scope-church" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Iglesia</label>
+                    <select id="role-scope-church" name="churchId" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
+                        <option value="">Selecciona una iglesia</option>
+                    </select>
+                </div>
+
+                <div id="role-scope-campus-wrapper" class="hidden">
+                    <label for="role-scope-campus" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">Misionero Campus</label>
+                    <select id="role-scope-campus" name="campusMissionarySlug" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
+                        <option value="">Selecciona un misionero Campus</option>
+                        {MISIONEROS.map((missionary) => (
+                            <option value={missionary.slug}>{missionary.nombre}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <p id="role-scope-feedback" class="hidden rounded-xl px-4 py-4 text-sm" role="status" aria-live="polite"></p>
+
+                <div class="flex flex-col-reverse gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
+                    <button id="role-scope-cancel" type="button" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm font-bold text-slate-700 hover:bg-slate-50 sm:w-auto">Cancelar</button>
+                    <button id="role-scope-save" type="submit" class="min-h-11 w-full rounded-xl bg-[#293C74] px-4 py-4 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">Guardar rol y alcance</button>
                 </div>
             </form>
         </div>
@@ -309,8 +368,9 @@ import { MISIONEROS } from '@data/misioneros';
 
                     <div id="finance-assignment-country-wrapper" class="hidden">
                         <label for="finance-assignment-country" class="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">País</label>
-                        <input id="finance-assignment-country" name="scopeKey" list="finance-assignment-country-list" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm" placeholder="Ej: Colombia">
-                        <datalist id="finance-assignment-country-list"></datalist>
+                        <select id="finance-assignment-country" name="scopeKey" autocomplete="country-name" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm">
+                            <option value="">Selecciona un país</option>
+                        </select>
                     </div>
 
                     <div id="finance-assignment-region-wrapper" class="hidden">

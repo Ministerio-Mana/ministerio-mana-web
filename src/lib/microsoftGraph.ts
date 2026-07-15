@@ -324,15 +324,27 @@ export async function uploadMicrosoftEventDocument(params: {
     params.eventFolder,
     rootFolder.id,
   );
-  const destinationFolder = params.subfolder
-    ? await ensureFolderPath(
-        config,
-        drive.id,
-        `Portal Eventos/${params.eventFolder}`,
-        params.subfolder,
-        eventFolder.id,
-      )
-    : eventFolder;
+  const subfolderSegments = String(params.subfolder || '')
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (subfolderSegments.length > 6 || subfolderSegments.some((segment) => (
+    segment === '.' || segment === '..' || segment.length > 120 || /["*:<>?\\|]/.test(segment)
+  ))) {
+    throw new Error('La ruta de destino del documento no es válida.');
+  }
+  let destinationFolder = eventFolder;
+  let destinationPath = `Portal Eventos/${params.eventFolder}`;
+  for (const segment of subfolderSegments) {
+    destinationFolder = await ensureFolderPath(
+      config,
+      drive.id,
+      destinationPath,
+      segment,
+      destinationFolder.id,
+    );
+    destinationPath = `${destinationPath}/${segment}`;
+  }
   const uploadBody = params.content.buffer.slice(
     params.content.byteOffset,
     params.content.byteOffset + params.content.byteLength,

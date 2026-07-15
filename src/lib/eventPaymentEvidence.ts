@@ -48,6 +48,17 @@ export function buildEvidenceStoredName(contactName: string, registrationId: str
   return `comprobante-${person}-${suffix || 'registro'}.${extension}`;
 }
 
+export function buildEvidenceRegistrationFolder(
+  contactName: string,
+  registrationId: string,
+  paymentId: string,
+): string {
+  const person = cleanEvidenceName(contactName, 56);
+  const registration = String(registrationId || '').replace(/-/g, '').slice(0, 8).toLowerCase() || 'registro';
+  const payment = String(paymentId || '').replace(/-/g, '').slice(0, 8).toLowerCase() || 'pago';
+  return `${person}-${registration}-${payment}`;
+}
+
 export async function preparePaymentEvidence(file: File): Promise<{
   content: Uint8Array;
   contentType: string;

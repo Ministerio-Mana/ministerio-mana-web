@@ -263,11 +263,17 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersView, /id="user-finance-country"[^>]*name="financeScopeKey"/);
   assert.equal([...usersView.matchAll(/name="financeScopeId"/g)].length, 2);
   assert.match(usersView, /Global · todos los países/);
+  assert.match(usersView, /id="role-scope-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="role-scope-title"[^>]*aria-describedby="role-scope-user"[^>]*aria-hidden="true"/);
+  assert.match(usersView, /id="role-scope-role"[^>]*name="role"/);
+  assert.match(usersView, /id="role-scope-country"[^>]*name="country"/);
+  assert.match(usersView, /id="role-scope-save"[^>]*min-h-11/);
 
   assert.match(usersLogic, /data-action="copy-access-link"[^>]*min-h-11/);
   assert.match(usersLogic, /data-action="manage-finance"[^>]*min-h-11/);
-  assert.match(usersLogic, /value="__manage_finance__"/);
-  assert.match(usersLogic, /role === '__manage_finance__'[\s\S]*?openFinanceAssignmentModal\(userId\)/);
+  assert.match(usersLogic, /data-action="edit-role-scope"[^>]*min-h-11/);
+  assert.match(usersLogic, /getPortalRoleDefinition\(roleScopeRole\.value\)/);
+  assert.doesNotMatch(usersLogic, /value="__manage_finance__"/);
+  assert.doesNotMatch(usersLogic, /pendingRoleChanges/);
   assert.match(usersLogic, /roleValue === 'finance' && !hasFinanceAccess/);
   assert.match(usersLogic, /Administrar acceso financiero/);
   assert.match(usersLogic, /role !== 'finance' \|\| currentUserRole === 'superadmin'/);

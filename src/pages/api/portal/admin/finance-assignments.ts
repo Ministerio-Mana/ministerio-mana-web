@@ -9,6 +9,7 @@ import { ensureUserProfile } from '@lib/portalAuth';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { logSecurityEvent } from '@lib/securityEvents';
+import { resolvePortalCountryFromDatabase } from '@lib/portalGeographyServer';
 
 export const prerender = false;
 
@@ -221,6 +222,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (input.scopeType === 'region') {
     const { data: region, error } = await supabaseAdmin.from('regions').select('id').eq('id', input.scopeId).eq('is_active', true).maybeSingle();
     if (error || !region?.id) return json({ ok: false, error: 'La región seleccionada no está disponible.' }, 400);
+  }
+  if (input.scopeType === 'country') {
+    const country = await resolvePortalCountryFromDatabase(input.scopeKey);
+    if (!country.ok) {
+      console.error('[portal.admin.finance-assignments] country catalog failed', country.error);
+      return json({ ok: false, error: 'No se pudo validar el país financiero.' }, 500);
+    }
+    if (!country.country) return json({ ok: false, error: 'Selecciona un país disponible en el Portal.' }, 400);
   }
   if (input.scopeType === 'church') {
     const { data: church, error } = await supabaseAdmin.from('churches').select('id').eq('id', input.scopeId).maybeSingle();

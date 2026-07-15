@@ -3,6 +3,37 @@ import type { PortalRole } from '@lib/portalAuth';
 export type PortalScope = 'self' | 'church' | 'region' | 'country' | 'global';
 export type EventScope = 'LOCAL' | 'REGIONAL' | 'NATIONAL' | 'GLOBAL';
 
+export type PortalRoleAssignmentMode = 'primary' | 'additional' | 'primary_or_additional';
+
+export type PortalRoleDefinition = {
+  role: PortalRole;
+  label: string;
+  shortLabel: string;
+  scope: PortalScope;
+  assignmentMode: PortalRoleAssignmentMode;
+  legacy?: boolean;
+};
+
+export const PORTAL_ROLE_DEFINITIONS: readonly PortalRoleDefinition[] = Object.freeze([
+  { role: 'superadmin', label: 'Superadmin', shortLabel: 'Superadmin', scope: 'global', assignmentMode: 'primary' },
+  { role: 'admin', label: 'Administrador', shortLabel: 'Admin', scope: 'global', assignmentMode: 'primary' },
+  { role: 'national_pastor', label: 'Pastor nacional', shortLabel: 'Pastor nacional', scope: 'country', assignmentMode: 'primary' },
+  { role: 'national_collaborator', label: 'Colaborador nacional', shortLabel: 'Colaborador nacional', scope: 'country', assignmentMode: 'primary' },
+  { role: 'regional_pastor', label: 'Pastor regional', shortLabel: 'Pastor regional', scope: 'region', assignmentMode: 'primary' },
+  { role: 'regional_collaborator', label: 'Colaborador regional', shortLabel: 'Colaborador regional', scope: 'region', assignmentMode: 'primary' },
+  { role: 'pastor', label: 'Pastor local', shortLabel: 'Pastor local', scope: 'church', assignmentMode: 'primary' },
+  { role: 'local_collaborator', label: 'Colaborador local', shortLabel: 'Colaborador local', scope: 'church', assignmentMode: 'primary' },
+  { role: 'campus_missionary', label: 'Misionero Campus', shortLabel: 'Misionero Campus', scope: 'self', assignmentMode: 'primary' },
+  { role: 'finance', label: 'Equipo financiero', shortLabel: 'Finanzas', scope: 'global', assignmentMode: 'primary_or_additional' },
+  { role: 'intercessor', label: 'Intercesor', shortLabel: 'Intercesión', scope: 'global', assignmentMode: 'primary_or_additional' },
+  { role: 'leader', label: 'Líder', shortLabel: 'Líder', scope: 'church', assignmentMode: 'primary', legacy: true },
+  { role: 'user', label: 'Usuario (asistente)', shortLabel: 'Asistente', scope: 'self', assignmentMode: 'primary' },
+]);
+
+const PORTAL_ROLE_DEFINITION_BY_ROLE = new Map(
+  PORTAL_ROLE_DEFINITIONS.map((definition) => [definition.role, definition]),
+);
+
 export type PortalCapabilities = {
   can_manage_users: boolean;
   can_create_users: boolean;
@@ -19,21 +50,13 @@ export type PortalCapabilities = {
   can_access_prayers: boolean;
 };
 
-export const KNOWN_PORTAL_ROLES: PortalRole[] = [
-  'user',
-  'local_collaborator',
-  'pastor',
-  'regional_collaborator',
-  'regional_pastor',
-  'national_collaborator',
-  'national_pastor',
-  'campus_missionary',
-  'finance',
-  'intercessor',
-  'leader',
-  'admin',
-  'superadmin',
-];
+export const KNOWN_PORTAL_ROLES: PortalRole[] = PORTAL_ROLE_DEFINITIONS.map(({ role }) => role);
+
+export const PORTAL_ROLE_ORDER: PortalRole[] = [...KNOWN_PORTAL_ROLES];
+
+export const PORTAL_ROLE_LABELS: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(PORTAL_ROLE_DEFINITIONS.map(({ role, label }) => [role, label])),
+);
 
 const BASE_USER_CAPABILITIES: PortalCapabilities = {
   can_manage_users: false,
@@ -158,21 +181,9 @@ const ROLE_CAPABILITIES: Record<string, PortalCapabilities> = {
   },
 };
 
-const ROLE_SCOPE: Record<string, PortalScope> = {
-  superadmin: 'global',
-  admin: 'global',
-  finance: 'global',
-  national_pastor: 'country',
-  national_collaborator: 'country',
-  regional_pastor: 'region',
-  regional_collaborator: 'region',
-  pastor: 'church',
-  local_collaborator: 'church',
-  leader: 'church',
-  campus_missionary: 'self',
-  intercessor: 'global',
-  user: 'self',
-};
+const ROLE_SCOPE: Record<string, PortalScope> = Object.fromEntries(
+  PORTAL_ROLE_DEFINITIONS.map(({ role, scope }) => [role, scope]),
+);
 
 const CREATABLE_BY_ROLE: Record<string, string[]> = {
   superadmin: [
@@ -244,6 +255,15 @@ export function mergePortalCapabilities(roles: Array<string | null | undefined>)
 
 export function getRoleScope(role?: string | null): PortalScope {
   return ROLE_SCOPE[normalizePortalRole(role)] || 'self';
+}
+
+export function getPortalRoleDefinition(role?: string | null): PortalRoleDefinition | null {
+  return PORTAL_ROLE_DEFINITION_BY_ROLE.get(normalizePortalRole(role) as PortalRole) || null;
+}
+
+export function getPortalRoleLabel(role?: string | null): string {
+  const normalized = normalizePortalRole(role);
+  return getPortalRoleDefinition(normalized)?.label || normalized;
 }
 
 export function getCreatableRoles(creatorRole?: string | null): string[] {

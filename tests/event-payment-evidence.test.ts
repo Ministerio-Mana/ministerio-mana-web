@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import sharp from 'sharp';
 import {
+  buildEvidenceRegistrationFolder,
   buildEvidenceStoredName,
   cleanEvidenceName,
   createEvidenceUploadCredential,
@@ -15,6 +16,14 @@ test('organiza el nombre del comprobante por persona e inscripción', () => {
   assert.equal(
     buildEvidenceStoredName('María Pérez', '12345678-1234-4234-9234-123456789abc', 'webp'),
     'comprobante-maria-perez-12345678.webp',
+  );
+  assert.equal(
+    buildEvidenceRegistrationFolder(
+      'María Pérez',
+      '12345678-1234-4234-9234-123456789abc',
+      'abcdef12-1234-4234-9234-123456789abc',
+    ),
+    'maria-perez-12345678-abcdef12',
   );
 });
 

@@ -1,4 +1,16 @@
 import { getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
+import {
+    PORTAL_ROLE_LABELS,
+    PORTAL_ROLE_ORDER,
+    getPortalRoleDefinition,
+    getRoleScope,
+} from '@lib/portalRbac';
+import {
+    filterPortalChurches,
+    filterPortalRegions,
+    listPortalCountries,
+    normalizeTerritoryKey,
+} from '@lib/portalGeography';
 
 const tableEl = document.getElementById('users-table');
 const gateEl = document.getElementById('users-gate');
@@ -32,9 +44,10 @@ const btnSubmit = document.getElementById('btn-submit-create');
 const roleSelect = document.getElementById('user-role-select');
 const scopeCountryWrapper = document.getElementById('user-scope-country');
 const scopeCountryInput = document.getElementById('user-country-input');
-const scopeCountryList = document.getElementById('user-country-list');
+const scopeCountryLabel = document.getElementById('user-country-label');
 const scopeRegionWrapper = document.getElementById('user-scope-region');
 const scopeRegionSelect = document.getElementById('user-region-select');
+const scopeRegionLabel = document.getElementById('user-region-label');
 const scopeChurchWrapper = document.getElementById('user-scope-church');
 const scopeChurchSelect = document.getElementById('user-church-select');
 const scopeCampusMissionaryWrapper = document.getElementById('user-campus-missionary');
@@ -47,6 +60,22 @@ const financeOnboardingRegionWrapper = document.getElementById('user-finance-reg
 const financeOnboardingRegion = document.getElementById('user-finance-region');
 const financeOnboardingChurchWrapper = document.getElementById('user-finance-church-wrapper');
 const financeOnboardingChurch = document.getElementById('user-finance-church');
+const roleScopeModal = document.getElementById('role-scope-modal');
+const roleScopeForm = document.getElementById('role-scope-form');
+const roleScopeClose = document.getElementById('role-scope-close');
+const roleScopeCancel = document.getElementById('role-scope-cancel');
+const roleScopeSave = document.getElementById('role-scope-save');
+const roleScopeUser = document.getElementById('role-scope-user');
+const roleScopeRole = document.getElementById('role-scope-role');
+const roleScopeCountryWrapper = document.getElementById('role-scope-country-wrapper');
+const roleScopeCountry = document.getElementById('role-scope-country');
+const roleScopeRegionWrapper = document.getElementById('role-scope-region-wrapper');
+const roleScopeRegion = document.getElementById('role-scope-region');
+const roleScopeChurchWrapper = document.getElementById('role-scope-church-wrapper');
+const roleScopeChurch = document.getElementById('role-scope-church');
+const roleScopeCampusWrapper = document.getElementById('role-scope-campus-wrapper');
+const roleScopeCampus = document.getElementById('role-scope-campus');
+const roleScopeFeedback = document.getElementById('role-scope-feedback');
 const financeAssignmentModal = document.getElementById('finance-assignment-modal');
 const financeAssignmentClose = document.getElementById('finance-assignment-close');
 const financeAssignmentCancel = document.getElementById('finance-assignment-cancel');
@@ -58,7 +87,6 @@ const financeAssignmentForm = document.getElementById('finance-assignment-form')
 const financeAssignmentScope = document.getElementById('finance-assignment-scope');
 const financeAssignmentCountryWrapper = document.getElementById('finance-assignment-country-wrapper');
 const financeAssignmentCountry = document.getElementById('finance-assignment-country');
-const financeAssignmentCountryList = document.getElementById('finance-assignment-country-list');
 const financeAssignmentRegionWrapper = document.getElementById('finance-assignment-region-wrapper');
 const financeAssignmentRegion = document.getElementById('finance-assignment-region');
 const financeAssignmentChurchWrapper = document.getElementById('finance-assignment-church-wrapper');
@@ -88,8 +116,8 @@ let regionsCatalog = [];
 let scopeListenerAttached = false;
 let scopeCatalogsPromise = null;
 let usersPage = 1;
-const pendingRoleChanges = new Map();
 let financeAssignmentUserId = '';
+let roleScopeUserId = '';
 let activeFinanceAssignments = [];
 let financeHierarchyMigrationRequired = false;
 let createUserDirty = false;
@@ -160,45 +188,8 @@ function showGate(message = 'Validando permisos...') {
     secureContentEl?.classList.add('hidden');
 }
 
-const roleTranslations = {
-    'superadmin': 'Super Admin',
-    'admin': 'Admin',
-    'national_pastor': 'Pastor Nacional',
-    'national_collaborator': 'Colaborador Nacional',
-    'regional_pastor': 'Pastor Regional',
-    'regional_collaborator': 'Colaborador Regional',
-    'campus_missionary': 'Misionero Campus',
-    'finance': 'Equipo Financiero',
-    'intercessor': 'Intercesor',
-    'pastor': 'Pastor Local',
-    'local_collaborator': 'Colaborador Local',
-    'leader': 'Líder (Legacy)',
-    'user': 'Usuario (Asistente)'
-};
-
-const roleOrder = [
-    'superadmin',
-    'admin',
-    'national_pastor',
-    'national_collaborator',
-    'regional_pastor',
-    'regional_collaborator',
-    'campus_missionary',
-    'finance',
-    'intercessor',
-    'pastor',
-    'local_collaborator',
-    'leader',
-    'user',
-];
-
-const quickRoleChangeRoles = new Set([
-    'superadmin',
-    'admin',
-    'campus_missionary',
-    'intercessor',
-    'user',
-]);
+const roleTranslations = PORTAL_ROLE_LABELS;
+const roleOrder = PORTAL_ROLE_ORDER;
 
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 30000) {
     const controller = new AbortController();
@@ -272,12 +263,13 @@ function getUserCity(user) {
 
 function getScopeCategory(user) {
     const role = String(user?.role || 'user');
-    if (role === 'superadmin' || role === 'admin' || role === 'finance') return 'global';
-    if (role === 'national_pastor' || role === 'national_collaborator') return 'national';
-    if (role === 'regional_pastor' || role === 'regional_collaborator') return 'regional';
-    if (role === 'pastor' || role === 'local_collaborator' || role === 'leader') return 'church';
     if (role === 'campus_missionary') return 'campus';
     if (role === 'intercessor') return 'intercession';
+    const scope = getRoleScope(role);
+    if (scope === 'global') return 'global';
+    if (scope === 'country') return 'national';
+    if (scope === 'region') return 'regional';
+    if (scope === 'church') return 'church';
     return 'assistant';
 }
 
@@ -447,6 +439,7 @@ async function init() {
 
     // 3. Setup Events
     setupModal(token);
+    setupRoleScopeModal();
     setupFinanceAssignmentModal();
 
     searchInput?.addEventListener('input', () => applyFilters());
@@ -494,7 +487,7 @@ async function init() {
 }
 
 async function loadChurches() {
-    if (!scopeChurchSelect || !scopeCountryList) return;
+    if (!scopeChurchSelect) return;
     try {
         const res = await fetch('/api/portal/churches');
         if (!res.ok) return;
@@ -540,20 +533,33 @@ function ensureScopeCatalogs(token) {
     return scopeCatalogsPromise;
 }
 
+function populateCountrySelect(select, selectedValue = '') {
+    if (!select) return;
+    const countries = listPortalCountries(churchesCatalog, regionsCatalog);
+    const selectedKey = normalizeTerritoryKey(selectedValue || select.value);
+    select.innerHTML = '<option value="">Selecciona un país</option>'
+        + countries.map((country) => `<option value="${escapeAttr(country)}">${escapeHtml(country)}</option>`).join('');
+    const matchedCountry = countries.find((country) => normalizeTerritoryKey(country) === selectedKey);
+    select.value = matchedCountry || '';
+}
+
+function getCreatorAllowedRegionIds() {
+    if (currentUserRole !== 'regional_pastor' && currentUserRole !== 'regional_collaborator') return [];
+    return currentAllowedRegionIds.length
+        ? currentAllowedRegionIds
+        : (currentUserRegionId ? [currentUserRegionId] : []);
+}
+
 function populateScopeOptions() {
-    if (!scopeChurchSelect || !scopeCountryList) return;
-    let scoped = churchesCatalog;
-    if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
-        scoped = scoped.filter(c => (c.country || '').toLowerCase() === currentUserCountry.toLowerCase());
-    }
-    if (currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') {
-        const allowedRegionIds = currentAllowedRegionIds.length
-            ? currentAllowedRegionIds
-            : (currentUserRegionId ? [currentUserRegionId] : []);
-        if (allowedRegionIds.length) {
-            scoped = scoped.filter(c => allowedRegionIds.includes(c.region_id));
-        }
-    }
+    if (!scopeChurchSelect) return;
+    const selectedCountry = scopeCountryInput?.value || currentUserCountry || '';
+    const selectedRegionId = scopeRegionSelect?.value || '';
+    const allowedRegionIds = getCreatorAllowedRegionIds();
+    const scoped = filterPortalChurches(churchesCatalog, {
+        country: selectedCountry,
+        regionId: selectedRegionId,
+        allowedRegionIds,
+    });
     scopeChurchSelect.innerHTML = '<option value="">Selecciona una iglesia</option>' +
         scoped
             .map(c => {
@@ -565,49 +571,56 @@ function populateScopeOptions() {
                 return `<option value="${safeId}">${safeCity} · ${safeName}${countryLabel}</option>`;
             })
             .join('');
-    if (financeOnboardingChurch) {
-        financeOnboardingChurch.innerHTML = scopeChurchSelect.innerHTML;
-    }
 
-    const countries = Array.from(new Set(churchesCatalog.map(c => c.country).filter(Boolean))).sort();
-    scopeCountryList.innerHTML = countries.map(c => `<option value="${escapeAttr(c)}"></option>`).join('');
+    populateCountrySelect(scopeCountryInput, selectedCountry);
+    populateCountrySelect(financeOnboardingCountry, financeOnboardingCountry?.value || currentUserCountry);
+    populateCountrySelect(financeAssignmentCountry, financeAssignmentCountry?.value || currentUserCountry);
+
+    if (financeOnboardingChurch) {
+        const financeChurches = filterPortalChurches(churchesCatalog, {
+            country: financeOnboardingCountry?.value || '',
+            regionId: financeOnboardingRegion?.value || '',
+        });
+        financeOnboardingChurch.innerHTML = '<option value="">Selecciona una iglesia</option>'
+            + financeChurches.map((church) => {
+                const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
+                return `<option value="${escapeAttr(church.id || '')}">${escapeHtml(label || 'Iglesia')}</option>`;
+            }).join('');
+    }
 }
 
 function populateRegionOptions() {
     if (!scopeRegionSelect) return;
-    let scopedRegions = regionsCatalog;
-
-    if ((currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator') && currentUserCountry) {
-        scopedRegions = scopedRegions.filter(r => (r.country || '').toLowerCase() === currentUserCountry.toLowerCase());
-    }
-
-    if (currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator') {
-        const allowedRegionIds = currentAllowedRegionIds.length
-            ? currentAllowedRegionIds
-            : (currentUserRegionId ? [currentUserRegionId] : []);
-        if (allowedRegionIds.length) {
-            scopedRegions = scopedRegions.filter(r => allowedRegionIds.includes(r.id));
-        }
-    }
+    const scopedRegions = filterPortalRegions(regionsCatalog, {
+        country: scopeCountryInput?.value || currentUserCountry || '',
+        allowedRegionIds: getCreatorAllowedRegionIds(),
+    });
 
     scopeRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' +
         scopedRegions
-            .filter(r => r?.is_active !== false)
             .map((region) => {
                 const label = `${region.code || 'REG'} · ${region.name || 'Región'}${region.country ? ` (${region.country})` : ''}`;
                 return `<option value="${escapeAttr(region.id || '')}">${escapeHtml(label)}</option>`;
             })
             .join('');
     if (financeOnboardingRegion) {
-        financeOnboardingRegion.innerHTML = scopeRegionSelect.innerHTML;
+        const financeRegions = filterPortalRegions(regionsCatalog, {
+            country: financeOnboardingCountry?.value || '',
+        });
+        financeOnboardingRegion.innerHTML = '<option value="">Selecciona una región</option>'
+            + financeRegions.map((region) => {
+                const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
+                return `<option value="${escapeAttr(region.id || '')}">${escapeHtml(label || 'Región')}</option>`;
+            }).join('');
     }
 }
 
 function updateFinanceOnboardingFields() {
     const isFinance = roleSelect?.value === 'finance';
     const scopeType = financeOnboardingScope?.value || 'country';
-    const needsCountry = isFinance && scopeType === 'country';
+    const needsCountry = isFinance && scopeType !== 'global';
     const needsRegion = isFinance && scopeType === 'region';
+    const usesRegionFilter = isFinance && scopeType === 'church';
     const needsChurch = isFinance && scopeType === 'church';
 
     financeOnboardingWrapper?.classList.toggle('hidden', !isFinance);
@@ -620,11 +633,12 @@ function updateFinanceOnboardingFields() {
         if (!needsCountry) financeOnboardingCountry.value = '';
     }
 
-    financeOnboardingRegionWrapper?.classList.toggle('hidden', !needsRegion);
+    financeOnboardingRegionWrapper?.classList.toggle('hidden', !(needsRegion || usesRegionFilter));
     if (financeOnboardingRegion) {
-        financeOnboardingRegion.disabled = !needsRegion;
+        financeOnboardingRegion.disabled = !(needsRegion || usesRegionFilter);
         financeOnboardingRegion.required = needsRegion;
-        if (!needsRegion) financeOnboardingRegion.value = '';
+        financeOnboardingRegion.name = needsRegion ? 'financeScopeId' : '';
+        if (!(needsRegion || usesRegionFilter)) financeOnboardingRegion.value = '';
     }
 
     financeOnboardingChurchWrapper?.classList.toggle('hidden', !needsChurch);
@@ -639,6 +653,7 @@ function updateScopeFields(role) {
     const needsCountry = role === 'national_pastor' || role === 'national_collaborator';
     const needsRegion = role === 'regional_pastor' || role === 'regional_collaborator';
     const needsChurch = role === 'pastor' || role === 'local_collaborator' || role === 'leader';
+    const usesTerritory = needsCountry || needsRegion || needsChurch;
     const needsCampusMissionary = role === 'campus_missionary';
     const isNationalCreator = currentUserRole === 'national_pastor' || currentUserRole === 'national_collaborator';
     const isRegionalCreator = currentUserRole === 'regional_pastor' || currentUserRole === 'regional_collaborator';
@@ -648,18 +663,22 @@ function updateScopeFields(role) {
         : (currentUserRegionId ? [currentUserRegionId] : []);
 
     if (scopeCountryWrapper && scopeCountryInput) {
-        scopeCountryWrapper.classList.toggle('hidden', !needsCountry);
-        scopeCountryInput.disabled = !needsCountry || (needsCountry && isNationalCreator);
-        if (!needsCountry) {
+        scopeCountryWrapper.classList.toggle('hidden', !usesTerritory);
+        scopeCountryInput.required = usesTerritory;
+        scopeCountryInput.disabled = !usesTerritory || (usesTerritory && (isNationalCreator || isRegionalCreator || isLocalCreator));
+        if (!usesTerritory) {
             scopeCountryInput.value = '';
-        } else if (isNationalCreator && currentUserCountry) {
+        } else if ((isNationalCreator || isRegionalCreator || isLocalCreator) && currentUserCountry) {
             scopeCountryInput.value = currentUserCountry;
         }
+        if (scopeCountryLabel) scopeCountryLabel.textContent = needsCountry ? 'País del rol nacional' : 'País';
     }
 
     if (scopeRegionWrapper && scopeRegionSelect) {
-        scopeRegionWrapper.classList.toggle('hidden', !needsRegion);
-        if (!needsRegion) {
+        const showRegion = needsRegion || needsChurch;
+        scopeRegionWrapper.classList.toggle('hidden', !showRegion);
+        scopeRegionSelect.required = needsRegion;
+        if (!showRegion) {
             scopeRegionSelect.disabled = true;
             scopeRegionSelect.value = '';
         } else {
@@ -673,6 +692,7 @@ function updateScopeFields(role) {
                 }
             }
         }
+        if (scopeRegionLabel) scopeRegionLabel.textContent = needsRegion ? 'Región del rol regional' : 'Región (filtro opcional)';
     }
 
     if (scopeChurchWrapper && scopeChurchSelect) {
@@ -703,6 +723,16 @@ function attachScopeListener() {
     if (scopeListenerAttached || !roleSelect) return;
     roleSelect.addEventListener('change', () => updateScopeFields(roleSelect.value));
     financeOnboardingScope?.addEventListener('change', updateFinanceOnboardingFields);
+    scopeCountryInput?.addEventListener('change', () => {
+        populateRegionOptions();
+        populateScopeOptions();
+    });
+    scopeRegionSelect?.addEventListener('change', populateScopeOptions);
+    financeOnboardingCountry?.addEventListener('change', () => {
+        populateRegionOptions();
+        populateScopeOptions();
+    });
+    financeOnboardingRegion?.addEventListener('change', populateScopeOptions);
     scopeListenerAttached = true;
 }
 
@@ -721,7 +751,6 @@ async function loadUsers(token) {
         if (!data.ok) throw new Error(data.error);
 
         allUsers = data.users || [];
-        pendingRoleChanges.clear();
         populateLocationFilters();
         renderSummaryCards();
         applyFilters();
@@ -877,6 +906,10 @@ function getScopeLabel(user) {
     const regionName = region?.name || '';
     const regionCode = region?.code || '';
 
+    if (getRoleScope(role) === 'global') {
+        return 'Global';
+    }
+
     if (role === 'national_pastor' || role === 'national_collaborator') {
         return countryName ? `País: ${countryName}` : 'País no asignado';
     }
@@ -905,59 +938,19 @@ function getScopeLabel(user) {
 }
 
 function renderRoleCell(user) {
-    const pendingRole = pendingRoleChanges.get(user.user_id);
-    const selectedRole = pendingRole?.nextRole || user.role;
-    if (currentUserRole === 'superadmin') {
-        const financeCount = Number(user?.finance_assignment_count || 0);
-        const canManageFinance = !['admin', 'superadmin'].includes(String(user?.role || ''))
-            && user?.access_status !== 'deleted'
-            && user?.is_account_deleted !== true;
-        const options = roleOrder.filter((role) => quickRoleChangeRoles.has(role) || role === selectedRole).map((role) => {
-            const label = escapeHtml(roleTranslations[role] || role);
-            const safeRole = escapeAttr(role);
-            const selected = selectedRole === role ? 'selected' : '';
-            return `<option value="${safeRole}" ${selected}>${label}</option>`;
-        }).join('');
-        const financeOption = canManageFinance
-            ? `<option value="__manage_finance__">${financeCount ? 'Administrar acceso financiero…' : 'Dar acceso financiero…'}</option>`
-            : '';
-        const selectedCampusSlug = pendingRole?.campusMissionarySlug ?? user.campus_missionary_slug ?? '';
-        const campusOptions = Array.from(scopeCampusMissionarySelect?.options || [])
-            .filter((option) => option.value)
-            .map((option) => {
-                const selected = option.value === selectedCampusSlug ? 'selected' : '';
-                return `<option value="${escapeAttr(option.value)}" ${selected}>${escapeHtml(option.textContent || option.value)}</option>`;
-            })
-            .join('');
-        return `
-            <div class="min-w-0 space-y-2">
-                <select data-action="role" aria-label="Cambiar rol principal de ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-[#293C74]">
-                    ${options}
-                    ${financeOption}
-                </select>
-                ${selectedRole === 'campus_missionary' ? `
-                    <select data-action="campus-missionary" aria-label="Asignar misionero Campus a ${escapeAttr(user.full_name || user.email || 'usuario')}" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full min-w-0 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600">
-                        <option value="">Selecciona misionero</option>
-                        ${campusOptions}
-                    </select>
-                ` : ''}
-                ${financeCount ? `<p class="flex items-center gap-2 text-xs font-bold text-[#1E6B78]"><span class="h-2 w-2 rounded-full bg-[#28A6BD]"></span>Finanzas habilitadas · ${financeCount} ${financeCount === 1 ? 'alcance' : 'alcances'}</p>` : ''}
-                ${pendingRole ? '<p class="text-xs font-bold text-amber-700">Cambio de rol pendiente</p>' : ''}
-            </div>
-        `;
-    }
-
+    const selectedRole = user.role || 'user';
     const label = escapeHtml(roleTranslations[selectedRole] || selectedRole || 'Usuario');
     const badgeClass = roleBadgeClass(selectedRole);
+    const financeCount = Number(user?.finance_assignment_count || 0);
     return `
-        <span class="portal-chip uppercase ${badgeClass}">
-            ${label}
-        </span>
+        <div class="min-w-0 space-y-2">
+            <span class="portal-chip uppercase ${badgeClass}">${label}</span>
+            ${financeCount ? `<p class="flex items-center gap-2 text-xs font-bold text-[#1E6B78]"><span class="h-2 w-2 rounded-full bg-[#28A6BD]"></span>Finanzas · ${financeCount}</p>` : ''}
+        </div>
     `;
 }
 
 function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmailAttr, resetLabel) {
-    const pendingRole = pendingRoleChanges.get(user.user_id);
     const isDeleted = user?.access_status === 'deleted' || user?.is_account_deleted === true;
     const isBlocked = user?.access_status === 'blocked' || user?.is_blocked === true;
     const isActorSuperadmin = currentUserRole === 'superadmin';
@@ -976,6 +969,9 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
     const financeButton = isActorSuperadmin && !isDeleted && !isTargetGlobalAdmin
         ? `<button type="button" data-action="manage-finance" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-[#28A6BD]/30 bg-[#EAF9FC] px-4 py-2 text-left text-xs font-bold text-[#1E5F6C] hover:bg-[#D9F4F8]">${financeCount ? `Administrar acceso financiero (${financeCount})` : 'Dar acceso financiero'}</button>`
         : '';
+    const roleScopeButton = isActorSuperadmin && !isDeleted
+        ? `<button type="button" data-action="edit-role-scope" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-left text-xs font-bold text-[#293C74] hover:bg-slate-50">Editar rol y alcance</button>`
+        : '';
     let lifecycleButtons = '';
     if (isActorSuperadmin && !isSelf && !isTargetSuperadmin) {
         if (isDeleted) {
@@ -990,32 +986,19 @@ function renderActionsCell(user, canSendAccessLink, canCopyAccessLink, safeEmail
         }
     }
 
-    if (!pendingRole) {
-        const combined = [financeButton, lifecycleButtons, accessLinkButton, resetButton].filter(Boolean).join('');
-        if (!combined) {
-            return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
-        }
-        return `
-            <details class="user-actions-menu relative w-full text-left lg:inline-block lg:w-auto">
-                <summary class="flex min-h-11 w-full cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:border-[#293C74]/30 hover:bg-slate-50 lg:justify-center">
-                    Gestionar <span aria-hidden="true">⌄</span>
-                </summary>
-                <div class="relative z-30 mt-2 w-full space-y-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-xl lg:absolute lg:right-0 lg:w-64">
-                    ${combined}
-                </div>
-            </details>
-        `;
+    const combined = [roleScopeButton, financeButton, lifecycleButtons, accessLinkButton, resetButton].filter(Boolean).join('');
+    if (!combined) {
+        return '<span class="text-[10px] text-slate-400 uppercase tracking-widest">-</span>';
     }
-
     return `
-        <div class="flex items-center justify-end gap-2 flex-wrap">
-            <button type="button" data-action="cancel-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancelar</button>
-            <button type="button" data-action="save-role" data-user-id="${escapeAttr(user.user_id || '')}" class="min-h-11 rounded-lg bg-[#293C74] px-4 py-2 text-xs font-bold text-white hover:brightness-110">Guardar rol</button>
-            ${financeButton}
-            ${lifecycleButtons}
-            ${accessLinkButton}
-            ${resetButton}
-        </div>
+        <details class="user-actions-menu relative w-full text-left lg:inline-block lg:w-auto">
+            <summary class="flex min-h-11 w-full cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-[#293C74] hover:border-[#293C74]/30 hover:bg-slate-50 lg:justify-center">
+                Gestionar <span aria-hidden="true">⌄</span>
+            </summary>
+            <div class="relative z-30 mt-2 w-full space-y-2 rounded-xl border border-slate-200 bg-white p-2 text-left shadow-xl lg:absolute lg:right-0 lg:w-64">
+                ${combined}
+            </div>
+        </details>
     `;
 }
 
@@ -1106,49 +1089,17 @@ function renderTable(users) {
     }
 }
 
-tbody?.addEventListener('change', async (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLSelectElement)) return;
-    if (!['role', 'campus-missionary'].includes(target.dataset.action)) return;
-    const userId = target.dataset.userId;
-    if (!userId || !currentToken) return;
-    const role = target.value;
-    const user = allUsers.find((item) => item.user_id === userId);
-    if (!user) return;
-
-    if (target.dataset.action === 'role' && role === '__manage_finance__') {
-        target.value = pendingRoleChanges.get(userId)?.nextRole || user.role;
-        await openFinanceAssignmentModal(userId);
-        return;
-    }
-
-    if (target.dataset.action === 'campus-missionary') {
-        const pending = pendingRoleChanges.get(userId) || {
-            previousRole: user.role,
-            nextRole: 'campus_missionary',
-        };
-        pending.campusMissionarySlug = target.value;
-        pendingRoleChanges.set(userId, pending);
-        applyFilters({ resetPage: false });
-        return;
-    }
-
-    if (user.role === role) {
-        pendingRoleChanges.delete(userId);
-    } else {
-        pendingRoleChanges.set(userId, {
-            previousRole: user.role,
-            nextRole: role,
-            campusMissionarySlug: role === 'campus_missionary' ? (user.campus_missionary_slug || '') : null,
-        });
-    }
-    applyFilters({ resetPage: false });
-});
-
 tbody?.addEventListener('click', async (event) => {
     const target = event.target.closest('[data-action]');
     if (!target || !currentToken) return;
     const action = target.dataset.action;
+
+    if (action === 'edit-role-scope') {
+        const userId = target.dataset.userId;
+        if (!userId) return;
+        await openRoleScopeModal(userId);
+        return;
+    }
 
     if (action === 'manage-finance') {
         const userId = target.dataset.userId;
@@ -1186,61 +1137,6 @@ tbody?.addEventListener('click', async (event) => {
             target.removeAttribute('disabled');
             alert(err.message || 'No se pudo generar el enlace.');
         }
-        return;
-    }
-
-    if (action === 'save-role') {
-        const userId = target.dataset.userId;
-        const pending = userId ? pendingRoleChanges.get(userId) : null;
-        if (!userId || !pending) return;
-        const user = allUsers.find((item) => item.user_id === userId);
-        if (!user) return;
-        const roleLabel = roleTranslations[pending.nextRole] || pending.nextRole;
-        if (pending.nextRole === 'campus_missionary' && !pending.campusMissionarySlug) {
-            alert('Selecciona el misionero Campus que corresponde a esta cuenta.');
-            return;
-        }
-        const confirmed = window.confirm(`¿Guardar cambio de rol para ${user.email}?\nNuevo rol: ${roleLabel}`);
-        if (!confirmed) return;
-
-        const originalText = target.textContent;
-        target.textContent = 'Guardando...';
-        target.setAttribute('disabled', 'disabled');
-        try {
-            const res = await fetch('/api/portal/admin/role', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
-                body: JSON.stringify({
-                    userId,
-                    role: pending.nextRole,
-                    campusMissionarySlug: pending.campusMissionarySlug || null,
-                })
-            });
-            const data = await res.json();
-            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el rol');
-            const idx = allUsers.findIndex((item) => item.user_id === userId);
-            if (idx !== -1) {
-                allUsers[idx].role = pending.nextRole;
-                allUsers[idx].campus_missionary_slug = pending.nextRole === 'campus_missionary'
-                    ? pending.campusMissionarySlug
-                    : null;
-            }
-            pendingRoleChanges.delete(userId);
-            applyFilters({ resetPage: false });
-        } catch (err) {
-            console.error(err);
-            target.textContent = originalText;
-            target.removeAttribute('disabled');
-            alert(err.message || 'No se pudo actualizar el rol.');
-        }
-        return;
-    }
-
-    if (action === 'cancel-role') {
-        const userId = target.dataset.userId;
-        if (!userId) return;
-        pendingRoleChanges.delete(userId);
-        applyFilters({ resetPage: false });
         return;
     }
 
@@ -1326,6 +1222,189 @@ tbody?.addEventListener('click', async (event) => {
     }
 });
 
+function setRoleScopeFeedback(message = '', type = 'info') {
+    if (!roleScopeFeedback) return;
+    if (!message) {
+        roleScopeFeedback.textContent = '';
+        roleScopeFeedback.className = 'hidden rounded-xl px-4 py-4 text-sm';
+        return;
+    }
+    const styles = type === 'error'
+        ? 'border border-red-200 bg-red-50 text-red-800'
+        : type === 'success'
+            ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+            : 'border border-sky-200 bg-sky-50 text-sky-800';
+    roleScopeFeedback.className = `rounded-xl px-4 py-4 text-sm ${styles}`;
+    roleScopeFeedback.textContent = message;
+}
+
+function populateRoleScopeOptions(selectedRegionId = '', selectedChurchId = '') {
+    const country = roleScopeCountry?.value || '';
+    const regionValue = selectedRegionId || roleScopeRegion?.value || '';
+    const churchValue = selectedChurchId || roleScopeChurch?.value || '';
+    populateCountrySelect(roleScopeCountry, country);
+
+    if (roleScopeRegion) {
+        roleScopeRegion.innerHTML = '<option value="">Selecciona una región</option>'
+            + filterPortalRegions(regionsCatalog, { country })
+                .filter((region) => region?.id)
+                .map((region) => {
+                    const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
+                    return `<option value="${escapeAttr(region.id)}">${escapeHtml(label || 'Región')}</option>`;
+                }).join('');
+        if ([...roleScopeRegion.options].some((option) => option.value === regionValue)) {
+            roleScopeRegion.value = regionValue;
+        }
+    }
+
+    if (roleScopeChurch) {
+        roleScopeChurch.innerHTML = '<option value="">Selecciona una iglesia</option>'
+            + filterPortalChurches(churchesCatalog, {
+                country,
+                regionId: roleScopeRegion?.value || '',
+            })
+                .filter((church) => church?.id)
+                .map((church) => {
+                    const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
+                    return `<option value="${escapeAttr(church.id)}">${escapeHtml(label || 'Iglesia')}</option>`;
+                }).join('');
+        if ([...roleScopeChurch.options].some((option) => option.value === churchValue)) {
+            roleScopeChurch.value = churchValue;
+        }
+    }
+}
+
+function updateRoleScopeFields() {
+    const definition = getPortalRoleDefinition(roleScopeRole?.value || 'user');
+    const scope = definition?.scope || 'self';
+    const usesTerritory = ['country', 'region', 'church'].includes(scope);
+    const usesRegion = scope === 'region' || scope === 'church';
+    const usesChurch = scope === 'church';
+    const usesCampus = definition?.role === 'campus_missionary';
+
+    roleScopeCountryWrapper?.classList.toggle('hidden', !usesTerritory);
+    roleScopeRegionWrapper?.classList.toggle('hidden', !usesRegion);
+    roleScopeChurchWrapper?.classList.toggle('hidden', !usesChurch);
+    roleScopeCampusWrapper?.classList.toggle('hidden', !usesCampus);
+
+    if (roleScopeCountry) {
+        roleScopeCountry.disabled = !usesTerritory;
+        roleScopeCountry.required = usesTerritory;
+    }
+    if (roleScopeRegion) {
+        roleScopeRegion.disabled = !usesRegion;
+        roleScopeRegion.required = scope === 'region';
+    }
+    if (roleScopeChurch) {
+        roleScopeChurch.disabled = !usesChurch;
+        roleScopeChurch.required = usesChurch;
+    }
+    if (roleScopeCampus) {
+        roleScopeCampus.disabled = !usesCampus;
+        roleScopeCampus.required = usesCampus;
+    }
+}
+
+async function openRoleScopeModal(userId) {
+    if (currentUserRole !== 'superadmin' || !currentToken || !roleScopeModal) return;
+    const user = allUsers.find((item) => item.user_id === userId);
+    if (!user) return;
+    roleScopeUserId = userId;
+    const name = user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Usuario';
+    if (roleScopeUser) roleScopeUser.textContent = `${name} · ${user.email || ''}`;
+    setRoleScopeFeedback();
+    if (roleScopeSave) roleScopeSave.disabled = true;
+    showAccessibleDialog(roleScopeModal, roleScopeRole);
+
+    try {
+        await ensureScopeCatalogs(currentToken);
+        const roleExists = roleScopeRole
+            ? [...roleScopeRole.options].some((option) => option.value === user.role)
+            : false;
+        if (roleScopeRole) roleScopeRole.value = roleExists ? user.role : 'user';
+        populateCountrySelect(roleScopeCountry, user.country || '');
+        populateRoleScopeOptions(
+            user.region_id || '',
+            user.church_id || user.portal_church_id || '',
+        );
+        if (roleScopeCampus) roleScopeCampus.value = user.campus_missionary_slug || '';
+        updateRoleScopeFields();
+        if (roleScopeSave) roleScopeSave.disabled = false;
+    } catch (error) {
+        console.error(error);
+        setRoleScopeFeedback('No se pudieron cargar los países, regiones e iglesias.', 'error');
+    }
+}
+
+function closeRoleScopeModal() {
+    roleScopeUserId = '';
+    roleScopeForm?.reset();
+    setRoleScopeFeedback();
+    hideAccessibleDialog(roleScopeModal, btnOpen);
+}
+
+function setupRoleScopeModal() {
+    roleScopeClose?.addEventListener('click', closeRoleScopeModal);
+    roleScopeCancel?.addEventListener('click', closeRoleScopeModal);
+    roleScopeModal?.addEventListener('click', (event) => {
+        if (event.target === roleScopeModal) roleScopeClose?.focus();
+    });
+    roleScopeRole?.addEventListener('change', updateRoleScopeFields);
+    roleScopeCountry?.addEventListener('change', () => populateRoleScopeOptions('', ''));
+    roleScopeRegion?.addEventListener('change', () => populateRoleScopeOptions(roleScopeRegion.value, ''));
+    document.addEventListener('keydown', (event) => {
+        handleAccessibleDialogKeydown(event, roleScopeModal, roleScopeClose);
+    });
+
+    roleScopeForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!roleScopeUserId || !currentToken || !roleScopeRole) return;
+        const targetUser = allUsers.find((item) => item.user_id === roleScopeUserId);
+        if (!targetUser) return;
+        const definition = getPortalRoleDefinition(roleScopeRole.value);
+        if (!definition) return;
+        const confirmed = window.confirm(
+            `¿Guardar el rol principal de ${targetUser.email || 'esta cuenta'} como ${definition.label}?`,
+        );
+        if (!confirmed) return;
+
+        const payload = {
+            userId: roleScopeUserId,
+            role: definition.role,
+            country: roleScopeCountry?.value || null,
+            regionId: roleScopeRegion?.value || null,
+            churchId: roleScopeChurch?.value || null,
+            campusMissionarySlug: roleScopeCampus?.value || null,
+        };
+        const originalText = roleScopeSave?.textContent || 'Guardar rol y alcance';
+        if (roleScopeSave) {
+            roleScopeSave.textContent = 'Guardando…';
+            roleScopeSave.disabled = true;
+        }
+        setRoleScopeFeedback();
+        try {
+            const { res, data } = await fetchJsonWithTimeout('/api/portal/admin/role', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentToken}` },
+                credentials: 'include',
+                body: JSON.stringify(payload),
+            }, 20000);
+            if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar el rol.');
+            setRoleScopeFeedback('Rol y alcance actualizados correctamente.', 'success');
+            await loadUsers(currentToken);
+            window.setTimeout(closeRoleScopeModal, 600);
+        } catch (error) {
+            console.error(error);
+            setRoleScopeFeedback(error?.message || 'No se pudo actualizar el rol.', 'error');
+        } finally {
+            if (roleScopeSave) {
+                roleScopeSave.textContent = originalText;
+                roleScopeSave.disabled = false;
+            }
+        }
+    });
+}
+
 function setFinanceAssignmentFeedback(message = '', type = 'info') {
     if (!financeAssignmentFeedback) return;
     if (!message) {
@@ -1357,29 +1436,28 @@ function setFinanceAssignmentFormDisabled(disabled) {
 }
 
 function populateFinanceAssignmentOptions() {
-    const countries = Array.from(new Set([
-        ...churchesCatalog.map((church) => church?.country),
-        ...regionsCatalog.map((region) => region?.country),
-    ].filter(Boolean))).sort((left, right) => String(left).localeCompare(String(right), 'es'));
-
-    if (financeAssignmentCountryList) {
-        financeAssignmentCountryList.innerHTML = countries
-            .map((country) => `<option value="${escapeAttr(country)}"></option>`)
-            .join('');
-    }
+    populateCountrySelect(financeAssignmentCountry, financeAssignmentCountry?.value || '');
+    const country = financeAssignmentCountry?.value || '';
+    const selectedRegion = financeAssignmentRegion?.value || '';
     if (financeAssignmentRegion) {
         financeAssignmentRegion.innerHTML = '<option value="">Selecciona una región</option>'
-            + regionsCatalog
-                .filter((region) => region?.id && region?.is_active !== false)
+            + filterPortalRegions(regionsCatalog, { country })
+                .filter((region) => region?.id)
                 .map((region) => {
                     const label = [region.code, region.name, region.country].filter(Boolean).join(' · ');
                     return `<option value="${escapeAttr(region.id)}">${escapeHtml(label || 'Región')}</option>`;
                 })
                 .join('');
+        if ([...financeAssignmentRegion.options].some((option) => option.value === selectedRegion)) {
+            financeAssignmentRegion.value = selectedRegion;
+        }
     }
     if (financeAssignmentChurch) {
         financeAssignmentChurch.innerHTML = '<option value="">Selecciona una iglesia</option>'
-            + churchesCatalog
+            + filterPortalChurches(churchesCatalog, {
+                country,
+                regionId: financeAssignmentRegion?.value || '',
+            })
                 .filter((church) => church?.id)
                 .map((church) => {
                     const label = [church.name, church.city, church.country].filter(Boolean).join(' · ');
@@ -1391,16 +1469,17 @@ function populateFinanceAssignmentOptions() {
 
 function updateFinanceAssignmentFields() {
     const scopeType = financeAssignmentScope?.value || 'church';
-    const needsCountry = scopeType === 'country';
+    const needsCountry = scopeType !== 'global';
     const needsRegion = scopeType === 'region';
+    const usesRegionFilter = scopeType === 'church';
     const needsChurch = scopeType === 'church';
 
     financeAssignmentCountryWrapper?.classList.toggle('hidden', !needsCountry);
-    financeAssignmentRegionWrapper?.classList.toggle('hidden', !needsRegion);
+    financeAssignmentRegionWrapper?.classList.toggle('hidden', !(needsRegion || usesRegionFilter));
     financeAssignmentChurchWrapper?.classList.toggle('hidden', !needsChurch);
 
     if (financeAssignmentCountry) financeAssignmentCountry.disabled = financeHierarchyMigrationRequired || !needsCountry;
-    if (financeAssignmentRegion) financeAssignmentRegion.disabled = financeHierarchyMigrationRequired || !needsRegion;
+    if (financeAssignmentRegion) financeAssignmentRegion.disabled = financeHierarchyMigrationRequired || !(needsRegion || usesRegionFilter);
     if (financeAssignmentChurch) financeAssignmentChurch.disabled = financeHierarchyMigrationRequired || !needsChurch;
     if (financeAssignmentScope) financeAssignmentScope.disabled = financeHierarchyMigrationRequired;
     if (financeAssignmentSave) financeAssignmentSave.disabled = financeHierarchyMigrationRequired;
@@ -1503,7 +1582,12 @@ function setupFinanceAssignmentModal() {
     financeAssignmentModal?.addEventListener('click', (event) => {
         if (event.target === financeAssignmentModal) financeAssignmentClose?.focus();
     });
-    financeAssignmentScope?.addEventListener('change', updateFinanceAssignmentFields);
+    financeAssignmentScope?.addEventListener('change', () => {
+        updateFinanceAssignmentFields();
+        populateFinanceAssignmentOptions();
+    });
+    financeAssignmentCountry?.addEventListener('change', populateFinanceAssignmentOptions);
+    financeAssignmentRegion?.addEventListener('change', populateFinanceAssignmentOptions);
     document.addEventListener('keydown', (event) => {
         handleAccessibleDialogKeydown(event, financeAssignmentModal, financeAssignmentClose);
     });

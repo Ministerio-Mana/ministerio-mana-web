@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import type { APIRoute } from 'astro';
 import {
+  buildEvidenceRegistrationFolder,
   buildEvidenceStoredName,
   cleanEvidenceName,
   MAX_EVIDENCE_INPUT_BYTES,
@@ -146,9 +147,15 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     registrationId,
     prepared.extension,
   );
+  const registrationFolder = buildEvidenceRegistrationFolder(
+    String(registrationResult.data.contact_name || 'persona'),
+    registrationId,
+    paymentId,
+  );
   const eventFolder = buildEventFolder(eventResult.data);
   const sha256 = crypto.createHash('sha256').update(prepared.content).digest('hex');
-  const storagePath = `Portal Eventos/${eventFolder}/Comprobantes de pago/${storedName}`;
+  const evidenceSubfolder = `Comprobantes de pago/${registrationFolder}`;
+  const storagePath = `Portal Eventos/${eventFolder}/${evidenceSubfolder}/${storedName}`;
   const { data: evidence, error: reservationError } = await supabaseAdmin
     .from('event_payment_evidence')
     .insert({
@@ -190,7 +197,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     uploaded = await uploadMicrosoftEventDocument({
       eventFolder,
-      subfolder: 'Comprobantes de pago',
+      subfolder: evidenceSubfolder,
       fileName: storedName,
       contentType: prepared.contentType,
       content: prepared.content,

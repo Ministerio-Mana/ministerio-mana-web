@@ -6,8 +6,20 @@ Este documento reemplaza el inventario operativo que estaba disperso entre la bi
 
 ## Revisión prioritaria después del despliegue del 15 de julio
 
+### Conciliación exacta Wompi y Stripe
+
+- [ ] Ejecutar `docs/sql/finance_provider_reconciliation.sql` en Supabase y compartir únicamente la fila final con los nombres de las tablas y vistas.
+- [ ] Confirmar en el comercio Wompi si la iglesia opera como Agregador, Gateway o bajo una tarifa negociada. No compartir llaves ni credenciales.
+- [ ] Descargar de Wompi una muestra del reporte oficial de ventas/desembolsos de un período ya cerrado. Antes de compartirla, conservar solo referencia, ID de transacción, fecha, bruto, comisión, impuestos/retenciones, neto, ID de desembolso y referencia bancaria; retirar nombres, correos, teléfonos, documentos y datos de tarjetas.
+- [ ] Confirmar con Finanzas si el extracto bancario identifica cada desembolso Wompi por una referencia estable y cuál columna utilizan hoy para cotejarlo.
+- [ ] Autorizar una prueba controlada de conciliación Stripe con `Balance Transactions` y `Payouts`; no copiar la llave secreta fuera de Vercel.
+- [ ] Comparar un desembolso Wompi y un `Payout` Stripe contra el banco antes de habilitar el informe como fuente contable.
+- [ ] Aprobar el plazo de retención de comprobantes manuales. Hasta entonces no se elimina ningún archivo automáticamente.
+
 ### Usuarios y equipo financiero
 
+- [ ] Buscar una cuenta ya existente, abrir `Gestionar` → `Editar rol y alcance`, asignarle un rol nacional, regional, local o Campus y confirmar que los selectores obligan a seguir país → región → iglesia cuando corresponda.
+- [ ] Volver a abrir esa cuenta y confirmar que el rol, país, región o iglesia guardados aparecen correctamente; después devolver la cuenta de prueba a su responsabilidad real.
 - [ ] Entrar como `superadmin` a `/portal/users`, pulsar `Nuevo usuario` y confirmar que aparece `Equipo Financiero`.
 - [ ] Crear una cuenta financiera de prueba y escoger obligatoriamente uno de estos niveles: global, nacional, regional o local. No usar datos de una persona real si todavía no se ha autorizado su acceso.
 - [ ] Confirmar que la cuenta recién creada muestra su alcance en el directorio y que no puede ver movimientos fuera de ese alcance.

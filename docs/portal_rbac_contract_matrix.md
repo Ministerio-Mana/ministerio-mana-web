@@ -1,12 +1,12 @@
 # Portal RBAC Contract Matrix
 
-Fecha: 2026-02-19  
-Estado: Activo (fases 1-7 aplicadas en backend + auditoria SQL)
+Fecha: 2026-07-15
+Estado: Activo; catálogo compartido por backend y directorio de usuarios
 
 ## Objetivo
 
 Definir una fuente de verdad para permisos de roles del portal sin romper compatibilidad.
-Este contrato se implementa principalmente en `src/lib/portalRbac.ts`.
+Este contrato se implementa en `src/lib/portalRbac.ts`. `PORTAL_ROLE_DEFINITIONS` es la fuente de verdad para orden, etiqueta, alcance y modalidad de asignación. No se deben crear listas manuales de roles en páginas o scripts.
 
 ## Scope por rol
 
@@ -21,6 +21,8 @@ Este contrato se implementa principalmente en `src/lib/portalRbac.ts`.
 | `regional_collaborator` | `region` |
 | `national_pastor` | `country` |
 | `national_collaborator` | `country` |
+| `finance` | `global` por rol principal; alcance efectivo mediante asignaciones global/nacional/regional/local |
+| `intercessor` | `global` como responsabilidad adicional compatible |
 | `admin` | `global` |
 | `superadmin` | `global` |
 
@@ -39,16 +41,18 @@ Este contrato se implementa principalmente en `src/lib/portalRbac.ts`.
 | `national_pastor` | si | si | si | si | si | si | no | no | no |
 | `admin` | si | si | si | si | si | si | si | si | si |
 | `superadmin` | si | si | si | si | si | si | si | si | si |
+| `finance` | no | no | no | no | no | no | no | si, según asignaciones | si, según asignaciones |
+| `intercessor` | no | no | no | no | no | no | no | no | no |
 
 ## Reglas de creacion de rol (fase 1)
 
 | Creador | Puede crear |
 | --- | --- |
-| `superadmin` | todos |
-| `admin` | todos excepto `admin` y `superadmin` |
-| `national_pastor` | `national_collaborator`, `regional_pastor`, `regional_collaborator`, `pastor`, `local_collaborator`, `leader`, `user` |
-| `regional_pastor` | `regional_collaborator`, `pastor`, `local_collaborator`, `leader`, `user` |
-| `pastor` | `local_collaborator`, `leader`, `user` |
+| `superadmin` | todos los roles activos; `leader` queda solo para compatibilidad histórica |
+| `admin` | todos los roles activos excepto `admin` y `superadmin`; Finanzas requiere además superadmin en la operación sensible |
+| `national_pastor` | `national_collaborator`, `regional_pastor`, `regional_collaborator`, `pastor`, `local_collaborator`, `user` |
+| `regional_pastor` | `regional_collaborator`, `pastor`, `local_collaborator`, `user` |
+| `pastor` | `local_collaborator`, `user` |
 | `national_collaborator` | ninguno |
 | `regional_collaborator` | ninguno |
 | `local_collaborator` | ninguno |
@@ -59,8 +63,11 @@ Este contrato se implementa principalmente en `src/lib/portalRbac.ts`.
 1. Todo rol `church` requiere `church_id` o `portal_church_id`.
 2. Todo rol `region` requiere `region_id`.
 3. Todo rol `country` requiere `country`.
-4. Para creaciones desde pastor/regional/nacional, la entidad creada debe quedar dentro de su scope.
-5. `admin` no crea `admin` ni `superadmin`; solo `superadmin` puede hacerlo.
+4. El país se selecciona del catálogo derivado de iglesias y regiones activas; no se admite texto libre.
+5. La selección territorial sigue país → región → iglesia y cada paso filtra el siguiente.
+6. Para creaciones desde pastor/regional/nacional, la entidad creada debe quedar dentro de su scope.
+7. `admin` no crea `admin` ni `superadmin`; solo `superadmin` puede hacerlo.
+8. Finanzas puede coexistir con el rol pastoral mediante `portal_role_assignments`; no se reemplaza el rol pastoral para conceder acceso financiero.
 
 ## Cambios aplicados en fase 1 (backend)
 
@@ -78,8 +85,14 @@ Este contrato se implementa principalmente en `src/lib/portalRbac.ts`.
 4. Guardrail: no reenviar recovery automático a cuentas eliminadas por autoservicio.
 5. Auditoria operativa: `docs/sql/portal_account_deletion_audit.sql`.
 
+## Reglas visuales transversales
+
+1. El espaciado usa `docs/SPACING_CONTRACT.md` y tokens base 8.
+2. `npm run test:spacing` impide agregar deuda nueva de `padding`, `margin` o `gap`.
+3. La jerarquía de filtros reutilizable es país → región → iglesia; no se muestran listas planas interminables.
+
 ## Siguientes fases
 
-1. Unificar todos los endpoints de usuarios/eventos con este contrato.
-2. Exponer validaciones de scope en UI de admin antes de enviar.
-3. Automatizar ejecucion periodica de auditorias SQL (RBAC y eliminación).
+1. Migrar filtros secundarios restantes al catálogo compartido.
+2. Convertir tablas operativas extensas en una lista reutilizable con filtros, paginación y tarjetas móviles.
+3. Automatizar ejecución periódica de auditorías SQL de RBAC y eliminación.
