@@ -31,6 +31,20 @@ const clearFiltersBtn = document.getElementById('finances-clear-filters');
 const applyFiltersBtn = document.getElementById('finances-apply-filters');
 const exportCopBtn = document.getElementById('finances-export-cop');
 const exportUsdBtn = document.getElementById('finances-export-usd');
+const reconciliationSection = document.getElementById('finance-reconciliation');
+const reconciliationForm = document.getElementById('finance-reconciliation-form');
+const reconciliationProvider = document.getElementById('finance-reconciliation-provider');
+const reconciliationFile = document.getElementById('finance-reconciliation-file');
+const reconciliationPreviewButton = document.getElementById('finance-reconciliation-preview-button');
+const reconciliationFeedback = document.getElementById('finance-reconciliation-feedback');
+const reconciliationPreview = document.getElementById('finance-reconciliation-preview');
+const reconciliationPreviewTitle = document.getElementById('finance-reconciliation-preview-title');
+const reconciliationPreviewMeta = document.getElementById('finance-reconciliation-preview-meta');
+const reconciliationExactness = document.getElementById('finance-reconciliation-exactness');
+const reconciliationTotals = document.getElementById('finance-reconciliation-totals');
+const reconciliationWarnings = document.getElementById('finance-reconciliation-warnings');
+const reconciliationCancel = document.getElementById('finance-reconciliation-cancel');
+const reconciliationCommit = document.getElementById('finance-reconciliation-commit');
 
 const REQUEST_TIMEOUT_MS = 15000;
 const EXPORT_TIMEOUT_MS = 30000;
@@ -56,6 +70,7 @@ let loadedTransactionCount = 0;
 let dataRevision = 0;
 let transactionAppendSequence = 0;
 let issuesAppendSequence = 0;
+let reconciliationPreviewHash = '';
 
 function createEmptyPagination(pageSize) {
   return {
@@ -104,6 +119,145 @@ function formatCurrency(val, currency) {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(val || 0);
+}
+
+function formatMinorAmount(amountMinor, currency, exponent = 2) {
+  if (amountMinor === null || amountMinor === undefined) return 'Pendiente';
+  return formatCurrency(Number(amountMinor) / (10 ** Number(exponent || 0)), currency);
+}
+
+function setReconciliationFeedback(message = '', tone = 'error') {
+  if (!reconciliationFeedback) return;
+  if (!message) {
+    reconciliationFeedback.textContent = '';
+    reconciliationFeedback.className = 'mt-4 hidden rounded-md border px-4 py-4 text-sm';
+    return;
+  }
+  const styles = tone === 'success'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+    : tone === 'warning'
+      ? 'border-amber-200 bg-amber-50 text-amber-800'
+      : 'border-red-200 bg-red-50 text-red-700';
+  reconciliationFeedback.className = `mt-4 rounded-md border px-4 py-4 text-sm ${styles}`;
+  reconciliationFeedback.textContent = message;
+}
+
+function resetReconciliationPreview({ focusFile = false } = {}) {
+  reconciliationPreviewHash = '';
+  reconciliationPreview?.classList.add('hidden');
+  if (reconciliationCommit) {
+    reconciliationCommit.disabled = true;
+    reconciliationCommit.textContent = 'Importar reporte';
+  }
+  if (focusFile) window.requestAnimationFrame(() => reconciliationFile?.focus());
+}
+
+function configureReconciliationAccess(scope = {}) {
+  const countries = Array.isArray(scope.country_keys) ? scope.country_keys : [];
+  const canImportWompi = Boolean(scope.is_global || countries.includes('colombia'));
+  const canImportStripe = Boolean(scope.is_global);
+  reconciliationSection?.classList.toggle('hidden', !canImportWompi && !canImportStripe);
+  const stripeOption = reconciliationProvider?.querySelector('option[value="STRIPE"]');
+  if (stripeOption) stripeOption.disabled = !canImportStripe;
+  if (!canImportStripe && reconciliationProvider?.value === 'STRIPE') reconciliationProvider.value = canImportWompi ? 'WOMPI' : 'AUTO';
+}
+
+function renderReconciliationPreview(data) {
+  const preview = data?.preview || {};
+  reconciliationPreviewHash = data?.canCommit ? String(preview.fileSha256 || '') : '';
+  reconciliationPreview?.classList.remove('hidden');
+  if (reconciliationPreviewTitle) {
+    reconciliationPreviewTitle.textContent = `${preview.provider === 'WOMPI' ? 'Wompi' : 'Stripe'} · ${preview.sourceFileName || 'Reporte CSV'}`;
+  }
+  if (reconciliationPreviewMeta) {
+    const rows = new Intl.NumberFormat('es-CO').format(Number(preview.rowCount || 0));
+    const settlements = new Intl.NumberFormat('es-CO').format(Number(preview.settlementCount || 0));
+    reconciliationPreviewMeta.textContent = `${rows} movimientos · ${settlements} abonos identificados · ${String(preview.periodStart || '').slice(0, 10)} a ${String(preview.periodEnd || '').slice(0, 10)}`;
+  }
+  if (reconciliationExactness) {
+    const exact = Boolean(preview.exactNet);
+    reconciliationExactness.className = exact
+      ? 'w-fit rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-800'
+      : 'w-fit rounded-full bg-amber-100 px-4 py-2 text-xs font-bold text-amber-800';
+    reconciliationExactness.textContent = exact ? 'Neto exacto del proveedor' : 'Neto pendiente';
+  }
+  if (reconciliationTotals) {
+    reconciliationTotals.innerHTML = (preview.totals || []).map((total) => `
+      <article class="rounded-md border border-slate-200 bg-white p-4">
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">${escapeHtml(total.currency)}</p>
+        <dl class="mt-4 grid gap-4 text-sm">
+          <div class="flex items-center justify-between gap-4"><dt class="text-slate-500">Bruto</dt><dd class="font-bold text-[#293C74]">${escapeHtml(formatMinorAmount(total.grossAmountMinor, total.currency, total.currencyExponent))}</dd></div>
+          <div class="flex items-center justify-between gap-4"><dt class="text-slate-500">Comisión</dt><dd class="font-bold text-[#293C74]">${escapeHtml(formatMinorAmount(total.feeAmountMinor, total.currency, total.currencyExponent))}</dd></div>
+          <div class="flex items-center justify-between gap-4 border-t border-slate-100 pt-4"><dt class="font-semibold text-slate-700">Neto</dt><dd class="font-bold text-emerald-800">${escapeHtml(formatMinorAmount(total.netAmountMinor, total.currency, total.currencyExponent))}</dd></div>
+        </dl>
+      </article>
+    `).join('');
+  }
+  if (reconciliationWarnings) {
+    reconciliationWarnings.innerHTML = (preview.warnings || []).map((warning) => `
+      <p class="rounded-md border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-900">${escapeHtml(warning.message)}</p>
+    `).join('');
+  }
+  if (reconciliationCommit) {
+    reconciliationCommit.disabled = !data?.canCommit;
+    reconciliationCommit.textContent = data?.duplicate ? 'Archivo ya importado' : 'Importar reporte';
+  }
+  if (data?.duplicate) {
+    setReconciliationFeedback('Este mismo archivo ya fue importado. No se permitirá duplicarlo.', 'warning');
+  } else {
+    setReconciliationFeedback('Vista previa lista. Verifica bruto, comisión y neto antes de importar.', 'success');
+  }
+}
+
+async function sendReconciliationReport(action) {
+  const file = reconciliationFile?.files?.[0];
+  if (!file) {
+    setReconciliationFeedback('Selecciona un archivo CSV.');
+    reconciliationFile?.focus();
+    return;
+  }
+  const button = action === 'commit' ? reconciliationCommit : reconciliationPreviewButton;
+  const originalText = button?.textContent || '';
+  if (button) {
+    button.disabled = true;
+    button.textContent = action === 'commit' ? 'Importando…' : 'Revisando…';
+  }
+  setReconciliationFeedback();
+  try {
+    const form = new FormData();
+    form.set('action', action);
+    form.set('provider', reconciliationProvider?.value || 'AUTO');
+    form.set('report', file);
+    if (action === 'commit') form.set('confirmationSha256', reconciliationPreviewHash);
+    const { res, data } = await fetchJsonWithTimeout('/api/portal/finance-reconciliation-import', {
+      method: 'POST',
+      headers: currentAuthHeaders,
+      credentials: 'include',
+      body: form,
+    }, EXPORT_TIMEOUT_MS, action === 'commit' ? 'La importación' : 'La revisión del reporte');
+    if (!res.ok || !data.ok) throw new Error(data.error || 'No fue posible procesar el reporte.');
+    if (action === 'preview') {
+      renderReconciliationPreview(data);
+      window.requestAnimationFrame(() => reconciliationPreview?.focus?.());
+      return;
+    }
+    reconciliationPreviewHash = '';
+    if (reconciliationCommit) {
+      reconciliationCommit.disabled = true;
+      reconciliationCommit.textContent = 'Reporte importado';
+    }
+    setReconciliationFeedback(`Reporte importado sin cargas parciales: ${new Intl.NumberFormat('es-CO').format(Number(data?.result?.row_count || data?.preview?.rowCount || 0))} movimientos procesados.`, 'success');
+  } catch (error) {
+    setReconciliationFeedback(error?.message || 'No fue posible procesar el reporte.');
+  } finally {
+    if (button && !(action === 'commit' && !reconciliationPreviewHash)) {
+      button.disabled = action === 'commit' ? !reconciliationPreviewHash : false;
+      button.textContent = originalText;
+    } else if (button && action === 'preview') {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
 }
 
 function escapeHtml(value) {
@@ -440,6 +594,7 @@ function renderDashboard(data, options = {}) {
   gateEl?.classList.add('hidden');
   secureContentEl?.classList.remove('hidden');
   if (scopeLabelEl) scopeLabelEl.textContent = scopeLabel(data.financeScope);
+  configureReconciliationAccess(data.financeScope);
   renderFilterSummary(data.filters || {});
 
   if (includeTransactions) {
@@ -767,6 +922,35 @@ exportCopBtn?.addEventListener('click', () => {
 
 exportUsdBtn?.addEventListener('click', () => {
   void downloadFinanceExport('USD', exportUsdBtn);
+});
+
+reconciliationForm?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  resetReconciliationPreview();
+  void sendReconciliationReport('preview');
+});
+
+reconciliationCommit?.addEventListener('click', () => {
+  if (!reconciliationPreviewHash) {
+    setReconciliationFeedback('Vuelve a revisar el archivo antes de importarlo.');
+    return;
+  }
+  void sendReconciliationReport('commit');
+});
+
+reconciliationCancel?.addEventListener('click', () => {
+  resetReconciliationPreview({ focusFile: true });
+  setReconciliationFeedback();
+});
+
+reconciliationFile?.addEventListener('change', () => {
+  resetReconciliationPreview();
+  setReconciliationFeedback();
+});
+
+reconciliationProvider?.addEventListener('change', () => {
+  resetReconciliationPreview();
+  setReconciliationFeedback();
 });
 
 updateCustomDatesVisibility();

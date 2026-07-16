@@ -8,11 +8,14 @@ Este documento reemplaza el inventario operativo que estaba disperso entre la bi
 
 ### Conciliación exacta Wompi y Stripe
 
-- [ ] Ejecutar `docs/sql/finance_provider_reconciliation.sql` en Supabase y compartir únicamente la fila final con los nombres de las tablas y vistas.
+- [x] Ejecutar `docs/sql/finance_provider_reconciliation.sql` en Supabase. El 15 de julio se confirmaron lotes, abonos, transacciones, distribuciones y las dos vistas de conciliación.
+- [ ] Ejecutar `docs/sql/finance_provider_report_import.sql` en Supabase y compartir únicamente la fila final `import_function`. Este SQL activa el guardado atómico del importador; no importa archivos ni mueve dinero por sí solo.
 - [ ] Confirmar en el comercio Wompi si la iglesia opera como Agregador, Gateway o bajo una tarifa negociada. No compartir llaves ni credenciales.
-- [ ] Descargar de Wompi una muestra del reporte oficial de ventas/desembolsos de un período ya cerrado. Antes de compartirla, conservar solo referencia, ID de transacción, fecha, bruto, comisión, impuestos/retenciones, neto, ID de desembolso y referencia bancaria; retirar nombres, correos, teléfonos, documentos y datos de tarjetas.
+- [x] Revisar el reporte de transacciones Wompi del período abril-julio: contiene 39 movimientos y bruto COP 19.712.429, pero no trae comisión ni neto como columnas. El importador lo admite sin guardar datos personales y deja el neto pendiente.
+- [ ] Descargar de Wompi una muestra del reporte oficial de desembolsos de un período ya cerrado que sí incluya comisión, impuestos/retenciones y neto. El Portal ignorará automáticamente nombres, correos, teléfonos y documentos si el archivo los incluye.
 - [ ] Confirmar con Finanzas si el extracto bancario identifica cada desembolso Wompi por una referencia estable y cuál columna utilizan hoy para cotejarlo.
-- [ ] Autorizar una prueba controlada de conciliación Stripe con `Balance Transactions` y `Payouts`; no copiar la llave secreta fuera de Vercel.
+- [x] Verificar el reporte Stripe `Itemized payout reconciliation`: 33 movimientos, 25 payouts, USD 10.494 bruto, USD 358,69 comisión y USD 10.135,31 neto exacto.
+- [ ] Después de ejecutar el SQL de importación, cargar primero los dos archivos desde la vista previa de `/portal/finances`; confirmar que Wompi muestra `Neto pendiente` y Stripe `Neto exacto del proveedor` antes de pulsar `Importar reporte`.
 - [ ] Comparar un desembolso Wompi y un `Payout` Stripe contra el banco antes de habilitar el informe como fuente contable.
 - [ ] Aprobar el plazo de retención de comprobantes manuales. Hasta entonces no se elimina ningún archivo automáticamente.
 

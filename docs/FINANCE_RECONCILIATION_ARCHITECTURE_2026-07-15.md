@@ -76,6 +76,23 @@ El script `docs/sql/finance_provider_reconciliation.sql` crea:
 
 No guarda llaves, números completos de tarjeta ni archivos financieros dentro de las tablas. Los archivos de origen permanecen en el almacenamiento privado aprobado y la base conserva su hash y trazabilidad.
 
+## Importación operativa
+
+El panel de Finanzas incorpora una carga en dos pasos:
+
+1. `Revisar archivo` detecta Wompi o Stripe, valida UTF-8, encabezados, fechas, monedas, ecuaciones y transacciones repetidas, y presenta bruto, comisión y neto antes de guardar.
+2. `Importar reporte` exige la misma huella SHA-256 de la vista previa y llama una única función transaccional. Si una fila contradice bruto, moneda o valores exactos ya guardados, se revierte el lote completo.
+
+Límites iniciales: CSV oficial, 4 MB y 10.000 movimientos. Las columnas personales se reconocen para informar que fueron omitidas, pero no forman parte del JSON normalizado ni de las tablas de conciliación.
+
+Contratos:
+
+- `src/lib/providerReportImport.ts`: parser y normalización sin datos personales;
+- `src/pages/api/portal/finance-reconciliation-import.ts`: autenticación, alcance y confirmación de huella;
+- `docs/sql/finance_provider_report_import.sql`: guardado atómico exclusivo de `service_role`.
+
+Finanzas Global puede importar Stripe y Wompi. Finanzas Nacional Colombia puede importar Wompi. Los demás alcances no reciben el control de carga.
+
 ## Comprobantes manuales de eventos
 
 Los comprobantes siguen esta ruta privada en la biblioteca `Eventos` de SharePoint:
