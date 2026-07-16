@@ -29,6 +29,8 @@ const reviewClose = document.getElementById('event-review-close');
 const reviewCancel = document.getElementById('event-review-cancel');
 const documentsForm = document.getElementById('event-documents-form');
 const documentsFile = document.getElementById('event-documents-file');
+const documentsDropzone = document.getElementById('event-documents-dropzone');
+const documentsSelection = document.getElementById('event-documents-selection');
 const documentsSubmit = document.getElementById('event-documents-submit');
 const documentsRefresh = document.getElementById('event-documents-refresh');
 const documentsMessage = document.getElementById('event-documents-message');
@@ -83,6 +85,7 @@ let totalPages = 1;
 let pendingReview = null;
 let reviewModalReturnFocus = null;
 let reviewNoteDirty = false;
+let pendingDocumentFile = null;
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -180,6 +183,17 @@ function setDocumentsMessage(message = '', tone = 'info') {
     : 'hidden rounded-md border px-4 py-2 text-sm';
 }
 
+function setPendingDocument(file = null) {
+  pendingDocumentFile = file;
+  if (documentsSelection) {
+    documentsSelection.textContent = file
+      ? `${file.name} · ${formatFileSize(file.size) || 'archivo seleccionado'}`
+      : 'Permiso, logística, presupuesto u otro documento interno';
+    documentsSelection.className = `text-xs leading-relaxed ${file ? 'font-bold text-emerald-700' : 'text-slate-500'}`;
+  }
+  if (documentsSubmit) documentsSubmit.disabled = !file;
+}
+
 function renderEventDocuments(documents) {
   if (!documentsList || !documentsEmpty || !documentsLoading) return;
   documentsLoading.classList.add('hidden');
@@ -250,7 +264,7 @@ async function loadEventDocuments({ quiet = false } = {}) {
 
 async function uploadEventDocument(event) {
   event.preventDefault();
-  const file = documentsFile?.files?.[0];
+  const file = pendingDocumentFile || documentsFile?.files?.[0];
   if (!file) {
     setDocumentsMessage('Selecciona un archivo.', 'error');
     return;
@@ -276,12 +290,13 @@ async function uploadEventDocument(event) {
     });
     if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo subir el archivo.');
     documentsForm.reset();
+    setPendingDocument();
     await loadEventDocuments({ quiet: true });
     setDocumentsMessage('Archivo guardado en la biblioteca del evento.', 'success');
   } catch (error) {
     setDocumentsMessage(error?.message || 'No se pudo subir el archivo.', 'error');
   } finally {
-    documentsSubmit.disabled = false;
+    documentsSubmit.disabled = !pendingDocumentFile;
     documentsSubmit.innerHTML = originalMarkup;
   }
 }
@@ -709,6 +724,25 @@ documentsRefresh?.addEventListener('click', () => void loadEventDocuments().catc
   setDocumentsMessage(error?.message || 'No se pudieron cargar los archivos.', 'error');
 }));
 documentsForm?.addEventListener('submit', (event) => void uploadEventDocument(event));
+documentsFile?.addEventListener('change', () => setPendingDocument(documentsFile.files?.[0] || null));
+documentsDropzone?.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    documentsFile?.click();
+  }
+});
+documentsDropzone?.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  documentsDropzone.classList.add('border-[#293C74]', 'bg-[#eef3ff]');
+});
+documentsDropzone?.addEventListener('dragleave', () => {
+  documentsDropzone.classList.remove('border-[#293C74]', 'bg-[#eef3ff]');
+});
+documentsDropzone?.addEventListener('drop', (event) => {
+  event.preventDefault();
+  documentsDropzone.classList.remove('border-[#293C74]', 'bg-[#eef3ff]');
+  setPendingDocument(event.dataTransfer?.files?.[0] || null);
+});
 pagination?.addEventListener('click', (event) => {
   const button = event.target.closest('[data-page-action]');
   if (!button || button.disabled) return;

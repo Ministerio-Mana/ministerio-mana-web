@@ -209,13 +209,20 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
-            <label class="event-field">Enlace público
+            <div class="event-field">
+              <label for="event-slug">Enlace público</label>
               <div class="mt-2 flex min-w-0 items-center rounded-md border border-slate-200 bg-white focus-within:border-[#293C74]">
                 <span class="hidden flex-none border-r border-slate-200 px-4 text-sm text-slate-500 sm:inline">/eventos/</span>
                 <input id="event-slug" class="min-w-0 flex-1 border-0 !mt-0 focus:ring-0" type="text" name="slug" data-platform-field disabled maxlength="180" placeholder="encuentro-de-familias" autocapitalize="none" autocomplete="off" spellcheck="false" />
               </div>
               <span id="event-slug-hint" class="mt-2 block text-xs font-medium text-slate-500">Los espacios se convierten automáticamente en guiones.</span>
-            </label>
+              <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button id="event-public-link-copy" type="button" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" disabled>Copiar enlace</button>
+                <a id="event-public-link-open" href="#" target="_blank" rel="noopener noreferrer" class="pointer-events-none inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] opacity-50 hover:bg-slate-50" aria-disabled="true">Abrir invitación</a>
+              </div>
+              <span id="event-public-link-feedback" class="mt-2 hidden text-xs font-medium" role="status" aria-live="polite"></span>
+              <p class="mt-2 text-xs leading-relaxed text-slate-500"><strong>Solo por enlace</strong> significa que el evento no aparece en la agenda pública: copia este enlace y compártelo por WhatsApp, correo o redes.</p>
+            </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">Inscripción
@@ -444,9 +451,17 @@ import Sidebar from '@components/portal/Sidebar.astro';
                   <input id="event-manual-payment-url" type="url" data-finance-field disabled maxlength="500" placeholder="https://..." />
                 </label>
                 <div id="event-manual-payment-qr-wrapper" class="hidden space-y-4">
-                  <label class="event-field">Imagen del código QR
-                    <input id="event-manual-payment-qr" type="file" data-finance-field disabled accept="image/png,image/jpeg,image/webp" />
-                  </label>
+                  <div class="event-field">
+                    <span>Imagen del código QR</span>
+                    <div id="event-manual-payment-qr-dropzone" class="event-upload-dropzone mt-2" tabindex="0" role="button" aria-describedby="event-manual-payment-qr-help event-manual-payment-qr-status" aria-disabled="true">
+                      <input id="event-manual-payment-qr" type="file" data-finance-field disabled accept="image/png,image/jpeg,image/webp" class="sr-only !m-0 !h-px !min-h-0 !w-px !p-0" tabindex="-1" aria-hidden="true" />
+                      <strong>Arrastra el QR aquí o selecciónalo</strong>
+                      <span>PNG, JPG o WebP · máximo 3 MB</span>
+                      <span>Debe medir entre 160 y 4096 píxeles por lado.</span>
+                    </div>
+                    <p id="event-manual-payment-qr-help" class="mt-2 text-xs leading-relaxed text-slate-500">Usa el QR oficial de la cuenta receptora. Verifica que siga siendo legible antes de publicar.</p>
+                    <p id="event-manual-payment-qr-status" class="mt-2 hidden text-xs font-medium" role="status" aria-live="polite"></p>
+                  </div>
                   <input id="event-manual-payment-qr-path" type="hidden" />
                   <img id="event-manual-payment-qr-preview" class="hidden aspect-square w-full max-w-48 rounded-md border border-slate-200 bg-white object-contain p-2" alt="Vista previa del código QR" />
                 </div>
@@ -877,7 +892,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
       outline-offset: 2px;
     }
 
-    .event-invitation-image-dropzone {
+    .event-invitation-image-dropzone,
+    .event-upload-dropzone {
       display: grid;
       min-height: 116px;
       place-content: center;
@@ -891,7 +907,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
       cursor: pointer;
     }
 
-    .event-invitation-image-dropzone strong {
+    .event-invitation-image-dropzone strong,
+    .event-upload-dropzone strong {
       color: #293c74;
       font-size: 0.875rem;
     }
@@ -917,17 +934,26 @@ import Sidebar from '@components/portal/Sidebar.astro';
       }
     }
 
-    .event-invitation-image-dropzone span {
+    .event-invitation-image-dropzone span,
+    .event-upload-dropzone span {
       font-size: 0.75rem;
       line-height: 1.25rem;
     }
 
     .event-invitation-image-dropzone:hover,
     .event-invitation-image-dropzone:focus,
-    .event-invitation-image-dropzone.is-dragging {
+    .event-invitation-image-dropzone.is-dragging,
+    .event-upload-dropzone:hover,
+    .event-upload-dropzone:focus,
+    .event-upload-dropzone.is-dragging {
       border-color: #293c74;
       background: #eef3ff;
       outline: none;
+    }
+
+    .event-upload-dropzone[aria-disabled="true"] {
+      cursor: not-allowed;
+      opacity: 0.6;
     }
 
     :global(.event-list-media) {

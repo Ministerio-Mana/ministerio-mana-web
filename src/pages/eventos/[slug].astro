@@ -29,7 +29,7 @@ if (!contentEntry && !databaseEvent) Astro.response.status = 404;
 const rendered = contentEntry ? await render(contentEntry) : null;
 const Content = rendered?.Content;
 const title = contentEntry?.data.title || databaseEvent?.title || 'Evento no encontrado';
-const description = contentEntry?.data.summary || databaseEvent?.description || 'El evento solicitado no está disponible.';
+const description = contentEntry?.data.summary || databaseEvent?.description || 'Próximamente compartiremos más detalles de este evento.';
 const startDateValue = contentEntry?.data.date || databaseEvent?.start_date || '';
 const endDateValue = contentEntry?.data.date || databaseEvent?.end_date || databaseEvent?.start_date || '';
 const startDate = new Date(startDateValue);
@@ -84,6 +84,35 @@ const getPaymentOptionUnitPrice = (option: typeof eventPaymentOptions[number]) =
 const internalRegistrationReady = internalRegistrationIsOpen
   && (pricingModel === 'FREE' || eventPaymentOptions.length > 0);
 const registrationHref = externalRegistrationIsOpen ? registrationUrl : internalRegistrationReady ? '#inscripcion' : '';
+const registrationDisplayHref = registrationHref || (databaseEvent && registrationMode !== 'NONE' ? '#inscripcion' : '');
+const registrationCtaLabel = registrationHref
+  ? registrationMode === 'INTERNAL' ? 'Reservar mi lugar' : 'Inscribirme'
+  : 'Ver inscripción';
+const registrationOpensInFuture = registrationOpens !== null && registrationOpens > now;
+const registrationWindowClosed = isCompleted || (registrationCloses !== null && registrationCloses < now);
+const formatRegistrationMoment = (timestamp: number | null) => timestamp === null
+  ? ''
+  : new Intl.DateTimeFormat('es-CO', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+      timeZone: databaseEvent?.timezone || 'America/Bogota',
+    }).format(new Date(timestamp));
+const registrationStatusTitle = registrationOpensInFuture
+  ? 'Las inscripciones abrirán pronto'
+  : registrationWindowClosed
+    ? 'Las inscripciones están cerradas'
+    : registrationMode === 'EXTERNAL' && externalRegistrationIsOpen
+      ? 'Inscripción disponible'
+      : 'Inscripción en preparación';
+const registrationStatusMessage = registrationOpensInFuture
+  ? `Podrás reservar tu lugar desde el ${formatRegistrationMoment(registrationOpens)}.`
+  : registrationWindowClosed
+    ? registrationCloses !== null
+      ? `El registro cerró el ${formatRegistrationMoment(registrationCloses)}.`
+      : 'Este evento ya finalizó.'
+    : registrationMode === 'EXTERNAL' && externalRegistrationIsOpen
+      ? 'El registro se completa en el formulario oficial del organizador.'
+      : 'El equipo organizador está terminando de habilitar el formulario. Vuelve a intentarlo pronto.';
 const paymentReturnRaw = String(Astro.url.searchParams.get('payment') || '').toLowerCase();
 const paymentReturnState = ['success', 'return', 'cancelled'].includes(paymentReturnRaw) ? paymentReturnRaw : '';
 const eventTimeZone = databaseEvent?.timezone || 'America/Bogota';
@@ -176,9 +205,9 @@ const structured = (contentEntry || databaseEvent) ? {
                 </div>
               </div>
             )}
-            {(registrationHref || whatsappHref) && (
+            {(registrationDisplayHref || whatsappHref) && (
               <div class="mt-6 flex flex-wrap gap-4">
-                {registrationHref && <a href={registrationHref} class="event-public-hero-action event-public-hero-action--primary">{registrationMode === 'INTERNAL' ? 'Reservar mi lugar' : 'Inscribirme'}</a>}
+                {registrationDisplayHref && <a href={registrationDisplayHref} class="event-public-hero-action event-public-hero-action--primary">{registrationCtaLabel}</a>}
                 {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="event-public-hero-action event-public-hero-action--secondary">Hablar por WhatsApp</a>}
               </div>
             )}
@@ -203,7 +232,7 @@ const structured = (contentEntry || databaseEvent) ? {
             <span>{databaseEvent?.capacity ? `${databaseEvent.capacity} cupos` : 'Cupo abierto'}</span>
           </article>
           <div class="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-            {registrationHref && <a href={registrationHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
+            {registrationDisplayHref && <a href={registrationDisplayHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f]">{registrationCtaLabel}</a>}
             {calendarHref && <a href={calendarHref} class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">Agregar al calendario</a>}
             {brochure && <a href={brochure} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 px-6 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Ver brochure</a>}
           </div>
@@ -211,7 +240,7 @@ const structured = (contentEntry || databaseEvent) ? {
       </section>
 
       <section class="container-tight py-10 sm:py-14">
-        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
           <article class="event-public-about min-w-0">
             <p class="event-public-section-label">Información del evento</p>
             {Content ? <div class="prose max-w-none prose-slate"><Content /></div> : (
@@ -273,6 +302,23 @@ const structured = (contentEntry || databaseEvent) ? {
                   ? 'Tu inscripción todavía no está confirmada.'
                   : 'Estamos esperando la confirmación segura del proveedor.'}
               </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {databaseEvent && registrationMode !== 'NONE' && !internalRegistrationIsOpen && (
+        <section id="inscripcion" class="scroll-mt-24 border-t border-slate-200 bg-white" aria-labelledby="event-registration-status-title">
+          <div class="container-tight py-10 sm:py-14">
+            <div class="event-public-registration-notice mx-auto max-w-3xl rounded-md border border-slate-200 bg-slate-50 px-6 py-6 sm:px-8 sm:py-8">
+              <p class="text-xs font-bold uppercase tracking-[0.12em] text-[#2d7090]">Inscripción</p>
+              <h2 id="event-registration-status-title" class="mt-2 text-2xl font-bold text-[#293C74]">{registrationStatusTitle}</h2>
+              <p class="mt-4 max-w-2xl leading-relaxed text-slate-600">{registrationStatusMessage}</p>
+              <div class="mt-6 flex flex-col gap-2 sm:flex-row">
+                {externalRegistrationIsOpen && <a href={registrationUrl} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Abrir formulario de inscripción</a>}
+                {whatsappHref && <a href={whatsappHref} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-6 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">Preguntar por WhatsApp</a>}
+                {!whatsappHref && databaseEvent.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-6 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">Contactar al organizador</a>}
+              </div>
             </div>
           </div>
         </section>

@@ -98,6 +98,9 @@ const eventRegistrationWindow = document.getElementById('event-registration-wind
 const eventCapacityWrapper = document.getElementById('event-capacity-wrapper');
 const eventSlugInput = document.getElementById('event-slug');
 const eventSlugHint = document.getElementById('event-slug-hint');
+const eventPublicLinkCopy = document.getElementById('event-public-link-copy');
+const eventPublicLinkOpen = document.getElementById('event-public-link-open');
+const eventPublicLinkFeedback = document.getElementById('event-public-link-feedback');
 const eventFinanceRegistrationHint = document.getElementById('event-finance-registration-hint');
 const eventManualPaymentEnabled = document.getElementById('event-manual-payment-enabled');
 const eventManualPaymentPanel = document.getElementById('event-manual-payment-panel');
@@ -110,6 +113,8 @@ const eventManualPaymentUrlWrapper = document.getElementById('event-manual-payme
 const eventManualPaymentUrl = document.getElementById('event-manual-payment-url');
 const eventManualPaymentQrWrapper = document.getElementById('event-manual-payment-qr-wrapper');
 const eventManualPaymentQr = document.getElementById('event-manual-payment-qr');
+const eventManualPaymentQrDropzone = document.getElementById('event-manual-payment-qr-dropzone');
+const eventManualPaymentQrStatus = document.getElementById('event-manual-payment-qr-status');
 const eventManualPaymentQrPath = document.getElementById('event-manual-payment-qr-path');
 const eventManualPaymentQrPreview = document.getElementById('event-manual-payment-qr-preview');
 const eventInvitationImage = document.getElementById('event-invitation-image');
@@ -179,6 +184,7 @@ let eventPlatformReady = false;
 let eventFinanceReady = false;
 let eventDualFinanceReady = false;
 let manualQrPreviewObjectUrl = '';
+let pendingManualQrFile = null;
 let invitationImagePreviewObjectUrl = '';
 let pendingInvitationImageFile = null;
 let eventSlugManuallyEdited = false;
@@ -252,12 +258,53 @@ function syncSlugInput({ finalize = false } = {}) {
     if (!eventSlugInput) return;
     const normalized = normalizeEventSlug(eventSlugInput.value, { trimTrailing: finalize });
     const finalSlug = normalizeEventSlug(normalized);
+    const isPublished = String(eventStatusSelect?.value || '').toUpperCase() === 'PUBLISHED';
     if (eventSlugInput.value !== normalized) eventSlugInput.value = normalized;
     if (eventSlugHint) {
         eventSlugHint.textContent = finalSlug
-            ? `Enlace final: /eventos/${finalSlug}`
+            ? isPublished
+                ? `Enlace final: /eventos/${finalSlug}`
+                : `Enlace reservado: /eventos/${finalSlug}. Estará disponible cuando publiques el evento.`
             : 'Los espacios se convierten automáticamente en guiones.';
     }
+    const publicPath = finalSlug && isPublished ? `/eventos/${finalSlug}` : '';
+    if (eventPublicLinkCopy) eventPublicLinkCopy.disabled = !publicPath;
+    if (eventPublicLinkOpen) {
+        eventPublicLinkOpen.href = publicPath || '#';
+        eventPublicLinkOpen.classList.toggle('pointer-events-none', !publicPath);
+        eventPublicLinkOpen.classList.toggle('opacity-50', !publicPath);
+        eventPublicLinkOpen.setAttribute('aria-disabled', publicPath ? 'false' : 'true');
+    }
+    setPublicLinkFeedback();
+}
+
+function setPublicLinkFeedback(message = '', tone = 'success') {
+    if (!eventPublicLinkFeedback) return;
+    eventPublicLinkFeedback.textContent = message;
+    eventPublicLinkFeedback.className = message
+        ? `mt-2 text-xs font-medium ${tone === 'error' ? 'text-red-700' : 'text-emerald-700'}`
+        : 'mt-2 hidden text-xs font-medium';
+}
+
+async function copyPublicEventLink() {
+    const slug = normalizeEventSlug(eventSlugInput?.value || '');
+    if (!slug) return;
+    const url = new URL(`/eventos/${slug}`, window.location.origin).href;
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch {
+        const helper = document.createElement('textarea');
+        helper.value = url;
+        helper.setAttribute('readonly', '');
+        helper.style.position = 'fixed';
+        helper.style.opacity = '0';
+        document.body.append(helper);
+        helper.select();
+        const copied = document.execCommand('copy');
+        helper.remove();
+        if (!copied) throw new Error('No se pudo copiar');
+    }
+    setPublicLinkFeedback('Enlace copiado. Ya puedes pegarlo en WhatsApp, correo o redes.');
 }
 
 function getDateTimeYear(value) {
@@ -759,10 +806,52 @@ function syncManualPaymentFields() {
         eventManualPaymentUrl.required = usesUrl;
     }
     if (eventManualPaymentQr) eventManualPaymentQr.disabled = !usesQr;
+    if (eventManualPaymentQrDropzone) {
+        eventManualPaymentQrDropzone.setAttribute('aria-disabled', usesQr ? 'false' : 'true');
+        eventManualPaymentQrDropzone.tabIndex = usesQr ? 0 : -1;
+    }
+}
+
+function setManualQrStatus(message = '', tone = 'info') {
+    if (!eventManualPaymentQrStatus) return;
+    eventManualPaymentQrStatus.textContent = message;
+    eventManualPaymentQrStatus.className = message
+        ? `mt-2 text-xs font-medium ${tone === 'error' ? 'text-red-700' : tone === 'success' ? 'text-emerald-700' : 'text-slate-600'}`
+        : 'mt-2 hidden text-xs font-medium';
+}
+
+function clearPendingManualQr({ preservePreview = false } = {}) {
+    pendingManualQrFile = null;
+    if (manualQrPreviewObjectUrl) URL.revokeObjectURL(manualQrPreviewObjectUrl);
+    manualQrPreviewObjectUrl = '';
+    if (eventManualPaymentQr) eventManualPaymentQr.value = '';
+    if (!preservePreview && eventManualPaymentQrPreview) {
+        eventManualPaymentQrPreview.removeAttribute('src');
+        eventManualPaymentQrPreview.classList.add('hidden');
+    }
+    setManualQrStatus();
+}
+
+function setPendingManualQr(file) {
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size <= 0 || file.size > 3 * 1024 * 1024) {
+        pendingManualQrFile = null;
+        setManualQrStatus('Usa una imagen PNG, JPG o WebP de máximo 3 MB.', 'error');
+        return;
+    }
+    if (manualQrPreviewObjectUrl) URL.revokeObjectURL(manualQrPreviewObjectUrl);
+    pendingManualQrFile = file;
+    manualQrPreviewObjectUrl = URL.createObjectURL(file);
+    if (eventManualPaymentQrPreview) {
+        eventManualPaymentQrPreview.src = manualQrPreviewObjectUrl;
+        eventManualPaymentQrPreview.classList.remove('hidden');
+    }
+    setManualQrStatus(`${file.name} listo para guardarse de forma segura.`, 'success');
 }
 
 async function loadEventPaymentOption(eventData) {
     if (!eventOnlineProvider) return;
+    clearPendingManualQr();
     eventOnlineProvider.value = 'NONE';
     if (eventManualPaymentEnabled) eventManualPaymentEnabled.checked = false;
     if (eventManualPaymentQrPath) eventManualPaymentQrPath.value = '';
@@ -802,6 +891,7 @@ async function loadEventPaymentOption(eventData) {
             if (eventManualPaymentQrPreview && activeManual.qr_signed_url) {
                 eventManualPaymentQrPreview.src = activeManual.qr_signed_url;
                 eventManualPaymentQrPreview.classList.remove('hidden');
+                setManualQrStatus('QR actual cargado. Puedes reemplazarlo arrastrando otra imagen.', 'info');
             }
         }
     } catch (error) {
@@ -821,7 +911,7 @@ async function saveEventPaymentOption(eventId, mode) {
 }
 
 async function uploadManualPaymentQr(eventId) {
-    const file = eventManualPaymentQr?.files?.[0];
+    const file = pendingManualQrFile || eventManualPaymentQr?.files?.[0];
     if (!file) return String(eventManualPaymentQrPath?.value || '');
     if (file.size > 3 * 1024 * 1024 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
         throw new Error('El QR debe ser una imagen PNG, JPG o WebP de máximo 3 MB.');
@@ -835,6 +925,13 @@ async function uploadManualPaymentQr(eventId) {
     }, REQUEST_TIMEOUT_MS, 'La carga del código QR');
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el código QR.');
     if (eventManualPaymentQrPath) eventManualPaymentQrPath.value = data.path || '';
+    const stablePreviewUrl = String(data.signed_url || '');
+    clearPendingManualQr({ preservePreview: Boolean(stablePreviewUrl) });
+    if (stablePreviewUrl && eventManualPaymentQrPreview) {
+        eventManualPaymentQrPreview.src = stablePreviewUrl;
+        eventManualPaymentQrPreview.classList.remove('hidden');
+        setManualQrStatus('QR guardado correctamente.', 'success');
+    }
     return String(data.path || '');
 }
 
@@ -1529,11 +1626,21 @@ async function uploadInvitationImage(eventId) {
         body: formData,
     }, REQUEST_TIMEOUT_MS * 2, 'La carga de la imagen de invitación');
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar la imagen de invitación.');
+    const stableBannerUrl = String(data.banner_url || '');
     const bannerField = eventForm?.querySelector('[name="banner_url"]');
-    if (bannerField) bannerField.value = String(data.banner_url || '');
+    if (bannerField) bannerField.value = stableBannerUrl;
     clearPendingInvitationImage();
+    if (stableBannerUrl && previewImage) {
+        previewImage.src = stableBannerUrl;
+        previewImage.classList.remove('hidden');
+    }
+    if (stableBannerUrl && previewImageBackdrop) {
+        previewImageBackdrop.style.backgroundImage = `url("${stableBannerUrl.replace(/"/g, '%22')}")`;
+        previewImageBackdrop.classList.remove('hidden');
+    }
+    setInvitationImageStatus('Imagen guardada correctamente en SharePoint.', 'success');
     return {
-        bannerUrl: String(data.banner_url || ''),
+        bannerUrl: stableBannerUrl,
         layout: normalizeEventInvitationLayout(data.layout),
     };
 }
@@ -1655,6 +1762,7 @@ function closeEventModal(returnFocusOverride = null) {
     document.body.style.overflow = '';
     showFormError();
     clearPendingInvitationImage();
+    clearPendingManualQr();
     eventFormDirty = false;
     const returnFocus = returnFocusOverride || eventModalReturnFocus;
     eventModalReturnFocus = null;
@@ -1804,6 +1912,10 @@ eventSlugInput?.addEventListener('input', () => {
     syncSlugInput();
 });
 eventSlugInput?.addEventListener('blur', () => syncSlugInput({ finalize: true }));
+eventStatusSelect?.addEventListener('change', () => syncSlugInput());
+eventPublicLinkCopy?.addEventListener('click', () => {
+    void copyPublicEventLink().catch(() => setPublicLinkFeedback('No se pudo copiar el enlace. Selecciónalo manualmente.', 'error'));
+});
 eventTitleInput?.addEventListener('input', () => {
     if (!eventSlugInput || eventSlugManuallyEdited) return;
     eventSlugInput.value = normalizeEventSlug(eventTitleInput.value);
@@ -1811,18 +1923,27 @@ eventTitleInput?.addEventListener('input', () => {
 });
 eventManualPaymentEnabled?.addEventListener('change', syncManualPaymentFields);
 eventManualPaymentKind?.addEventListener('change', syncManualPaymentFields);
-eventManualPaymentQr?.addEventListener('change', () => {
-    if (manualQrPreviewObjectUrl) URL.revokeObjectURL(manualQrPreviewObjectUrl);
-    manualQrPreviewObjectUrl = '';
-    const file = eventManualPaymentQr.files?.[0];
-    if (!eventManualPaymentQrPreview) return;
-    if (!file) {
-        eventManualPaymentQrPreview.classList.toggle('hidden', !eventManualPaymentQrPreview.getAttribute('src'));
-        return;
+eventManualPaymentQr?.addEventListener('change', () => setPendingManualQr(eventManualPaymentQr.files?.[0]));
+eventManualPaymentQrDropzone?.addEventListener('click', () => {
+    if (eventManualPaymentQrDropzone.getAttribute('aria-disabled') !== 'true') eventManualPaymentQr?.click();
+});
+eventManualPaymentQrDropzone?.addEventListener('keydown', (event) => {
+    if ((event.key === 'Enter' || event.key === ' ') && eventManualPaymentQrDropzone.getAttribute('aria-disabled') !== 'true') {
+        event.preventDefault();
+        eventManualPaymentQr?.click();
     }
-    manualQrPreviewObjectUrl = URL.createObjectURL(file);
-    eventManualPaymentQrPreview.src = manualQrPreviewObjectUrl;
-    eventManualPaymentQrPreview.classList.remove('hidden');
+});
+eventManualPaymentQrDropzone?.addEventListener('dragover', (event) => {
+    if (eventManualPaymentQrDropzone.getAttribute('aria-disabled') === 'true') return;
+    event.preventDefault();
+    eventManualPaymentQrDropzone.classList.add('is-dragging');
+});
+eventManualPaymentQrDropzone?.addEventListener('dragleave', () => eventManualPaymentQrDropzone.classList.remove('is-dragging'));
+eventManualPaymentQrDropzone?.addEventListener('drop', (event) => {
+    if (eventManualPaymentQrDropzone.getAttribute('aria-disabled') === 'true') return;
+    event.preventDefault();
+    eventManualPaymentQrDropzone.classList.remove('is-dragging');
+    setPendingManualQr(event.dataTransfer?.files?.[0]);
 });
 eventPricingModel?.addEventListener('change', () => {
     syncFinanceFields();
@@ -2050,7 +2171,7 @@ eventForm?.addEventListener('submit', async (event) => {
             if (String(eventManualPaymentInstructions?.value || '').trim().length < 5) {
                 throw new Error('Escribe las instrucciones del pago manual.');
             }
-            if (manualKind === 'QR_TRANSFER' && !eventManualPaymentQr?.files?.[0] && !eventManualPaymentQrPath?.value) {
+            if (manualKind === 'QR_TRANSFER' && !pendingManualQrFile && !eventManualPaymentQr?.files?.[0] && !eventManualPaymentQrPath?.value) {
                 throw new Error('Sube la imagen del código QR.');
             }
             if (manualKind === 'EXTERNAL' && !String(eventManualPaymentUrl?.value || '').trim().startsWith('https://')) {

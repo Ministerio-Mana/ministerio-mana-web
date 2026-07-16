@@ -151,6 +151,9 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /id="event-registration-attendee-age"/);
   assert.match(eventsView, /id="event-registration-attendee-gender"/);
   assert.match(eventsView, /id="event-registration-payer-document"/);
+  assert.match(eventsView, /id="event-public-link-copy"[^>]*min-h-11/);
+  assert.match(eventsView, /id="event-public-link-open"[^>]*min-h-11/);
+  assert.match(eventsView, /id="event-manual-payment-qr-dropzone"[^>]*role="button"/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
@@ -164,6 +167,9 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /event\.key !== 'Tab'/);
   assert.match(eventsLogic, /eventModalReturnFocus/);
   assert.match(eventsLogic, /selectedScope !== 'GLOBAL' && selectedCountry/);
+  assert.match(eventsLogic, /async function copyPublicEventLink\(\)/);
+  assert.match(eventsLogic, /function setPendingManualQr\(file\)/);
+  assert.match(eventsLogic, /data\.signed_url/);
   assert.match(eventsApi, /Selecciona el país del evento nacional/);
   assert.match(eventsApi, /Selecciona una región para el evento regional/);
   assert.match(eventsLogic, /window\.addEventListener\('beforeunload'/);
@@ -178,6 +184,9 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
 
   assert.match(operationView, /href="\/portal\/events"[^>]*min-h-11/);
   assert.match(operationView, /id="event-documents-refresh"[^>]*min-h-11/);
+  assert.match(operationView, /id="event-documents-dropzone"[^>]*role="button"/);
+  assert.match(operationView, /Archivos privados del equipo/);
+  assert.match(operationView, /no publica imágenes ni reemplaza los comprobantes/);
   assert.match(operationView, /data-page-action="previous"[^>]*min-h-11/);
   assert.match(operationView, /id="event-review-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="event-review-title"[^>]*aria-describedby="event-review-summary"[^>]*aria-hidden="true"/);
   assert.match(operationView, /id="event-review-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar revisión de pago"/);
@@ -193,6 +202,8 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
   assert.doesNotMatch(operationLogic, /event\.target === reviewModal\) closeReviewModal\(\)/);
   assert.match(operationLogic, /ATTENDEE_AGE_LABELS/);
   assert.match(operationLogic, /document_masked/);
+  assert.match(operationLogic, /function setPendingDocument\(file = null\)/);
+  assert.match(operationLogic, /documentsDropzone\?\.addEventListener\('drop'/);
 });
 
 test('la inscripción pública separa cupos, asistentes e identidad financiera privada', async () => {
@@ -209,6 +220,9 @@ test('la inscripción pública separa cupos, asistentes e identidad financiera p
   assert.match(publicView, /id="event-attendee-fields"[^>]*aria-live="polite"/);
   assert.match(publicView, /name="payer_document_number"[^>]*autocomplete="off"/);
   assert.match(publicView, /Solicito factura o certificado, si aplica/);
+  assert.match(publicView, /Las inscripciones abrirán pronto/);
+  assert.match(publicView, /Podrás reservar tu lugar desde el/);
+  assert.match(publicView, /id="inscripcion"/);
   assert.match(publicLogic, /attendees,/);
   assert.match(publicLogic, /payer,/);
   assert.match(registerApi, /save_event_registration_people_secure/);

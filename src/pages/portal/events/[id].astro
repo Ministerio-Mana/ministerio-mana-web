@@ -61,8 +61,8 @@ const eventId = String(Astro.params.id || '');
             <div class="flex flex-col gap-4 border-b border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <p class="text-xs font-bold uppercase text-slate-500">Microsoft 365</p>
-                <h2 id="event-documents-title" class="mt-2 text-xl font-bold text-[#293C74]">Documentos internos del evento</h2>
-                <p class="mt-2 text-sm text-slate-600"><strong>Inscripciones.xlsx</strong> se actualiza sobre el mismo archivo y abre en Excel web. Los demás documentos permanecen privados por evento.</p>
+                <h2 id="event-documents-title" class="mt-2 text-xl font-bold text-[#293C74]">Archivos privados del equipo</h2>
+                <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600"><strong>Inscripciones.xlsx</strong> se actualiza automáticamente y abre en Excel web. Esta carga adicional sirve únicamente para permisos, logística, presupuestos o documentos de trabajo; no publica imágenes ni reemplaza los comprobantes que envían los asistentes.</p>
               </div>
               <button id="event-documents-refresh" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">
                 <PortalIcon name="refresh-cw" size={16} />
@@ -73,17 +73,18 @@ const eventId = String(Astro.params.id || '');
             <div class="space-y-4 p-4 sm:p-6">
               <p id="event-documents-message" class="hidden rounded-md border px-4 py-2 text-sm" role="status" aria-live="polite"></p>
 
-              <form id="event-documents-form" class="hidden gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" enctype="multipart/form-data">
-                <label class="block min-w-0">
-                  <span class="sr-only">Seleccionar archivo del evento</span>
-                  <input id="event-documents-file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" class="block min-h-11 w-full rounded-md border border-slate-300 bg-white text-sm text-slate-700 file:mr-4 file:min-h-11 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-4 file:text-sm file:font-bold file:text-[#293C74]" />
+              <form id="event-documents-form" class="hidden gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch" enctype="multipart/form-data">
+                <label id="event-documents-dropzone" class="grid min-h-28 min-w-0 cursor-pointer place-content-center gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center hover:border-[#293C74] hover:bg-[#eef3ff] focus:outline-none focus:ring-2 focus:ring-[#26a9c3] focus:ring-offset-2" tabindex="0" role="button" aria-describedby="event-documents-help event-documents-selection">
+                  <input id="event-documents-file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" class="sr-only" />
+                  <strong class="text-sm text-[#293C74]">Arrastra un archivo privado aquí o selecciónalo</strong>
+                  <span id="event-documents-selection" class="text-xs leading-relaxed text-slate-500">Permiso, logística, presupuesto u otro documento interno</span>
                 </label>
-                <button id="event-documents-submit" type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60">
+                <button id="event-documents-submit" type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f] disabled:cursor-not-allowed disabled:opacity-60" disabled>
                   <PortalIcon name="upload" size={17} />
-                  Subir archivo
+                  Guardar archivo privado
                 </button>
               </form>
-              <p id="event-documents-help" class="hidden text-xs text-slate-500">PDF, JPG, PNG o WebP. Máximo 4 MB. Las galerías y fotografías públicas se administran con ImageKit.</p>
+              <p id="event-documents-help" class="hidden text-xs leading-relaxed text-slate-500">PDF, JPG, PNG o WebP · máximo 4 MB. Las invitaciones y galerías públicas se administran en sus secciones correspondientes; los comprobantes de pago llegan dentro de cada inscripción.</p>
 
               <div id="event-documents-loading" class="space-y-2" aria-live="polite">
                 {[1, 2].map(() => <div class="h-16 animate-pulse rounded-md bg-slate-100"></div>)}
