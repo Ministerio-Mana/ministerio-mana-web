@@ -116,6 +116,7 @@ const eventInvitationImage = document.getElementById('event-invitation-image');
 const eventInvitationImageDropzone = document.getElementById('event-invitation-image-dropzone');
 const eventInvitationImageStatus = document.getElementById('event-invitation-image-status');
 const previewImage = document.getElementById('event-preview-image');
+const previewImageBackdrop = document.getElementById('event-preview-image-backdrop');
 const previewDate = document.getElementById('event-preview-date');
 const previewScope = document.getElementById('event-preview-scope');
 const previewStatus = document.getElementById('event-preview-status');
@@ -1480,6 +1481,10 @@ function updateEventPreview() {
         previewImage.classList.toggle('hidden', !imageUrl);
         previewImage.src = imageUrl || '';
         previewImage.alt = imageUrl ? title || 'Imagen del evento' : '';
+    }
+    if (previewImageBackdrop) {
+        previewImageBackdrop.classList.toggle('hidden', !imageUrl);
+        previewImageBackdrop.style.backgroundImage = imageUrl ? `url("${imageUrl.replace(/"/g, '%22')}")` : '';
     }
     syncRegistrationFields();
 }

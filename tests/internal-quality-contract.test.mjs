@@ -144,6 +144,7 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /:global\(\.event-calendar \.flatpickr-time input\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /max-w-6xl overflow-clip/);
   assert.match(eventsView, /<aside[^>]*>[\s\S]*?lg:sticky lg:top-6/);
+  assert.match(eventsView, /id="event-preview-image-backdrop"[\s\S]*?id="event-preview-image"[^>]*object-contain/);
   assert.match(eventsView, /Nombre completo[\s\S]*?Correo[\s\S]*?Número de asistentes/);
   assert.match(eventsView, /:global\(\.event-custom-field-grid\)/);
   assert.match(eventsView, /:global\(\.event-custom-field-card\)[\s\S]*?border-radius: var\(--portal-card-radius\)/);
@@ -154,6 +155,7 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
   assert.match(eventsLogic, /compactViewport[\s\S]*?block: compactViewport \? 'center' : 'nearest'/);
+  assert.match(eventsLogic, /previewImageBackdrop\.style\.backgroundImage/);
   assert.doesNotMatch(eventsView, /position: fixed !important;[\s\S]*?\.event-calendar/);
   assert.match(eventsLogic, /recommendedMode = scope === 'GLOBAL'[\s\S]*?'DUAL'/);
   assert.match(eventsLogic, /function requestCloseEventModal\(\)/);

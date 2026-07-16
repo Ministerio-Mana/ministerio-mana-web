@@ -471,8 +471,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <p class="mb-4 text-xs font-bold uppercase text-slate-500">Vista previa de la invitación</p>
             <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div id="event-preview-media" class="relative aspect-[16/9] bg-[#293C74]">
-              <img id="event-preview-image" class="hidden h-full w-full object-cover" alt="" />
-              <div id="event-preview-date" class="absolute bottom-3 left-3 rounded-md bg-white px-4 py-2 text-center shadow-sm">
+              <div id="event-preview-image-backdrop" class="absolute -inset-4 hidden scale-110 bg-cover bg-center opacity-50 blur-xl" aria-hidden="true"></div>
+              <div class="absolute inset-0 bg-[#172151]/25" aria-hidden="true"></div>
+              <img id="event-preview-image" class="relative z-10 hidden h-full w-full object-contain" alt="" />
+              <div id="event-preview-date" class="absolute bottom-3 left-3 z-20 rounded-md bg-white px-4 py-2 text-center shadow-sm">
                 <span class="block text-xs font-bold uppercase text-slate-500">Fecha</span>
                 <strong class="block text-lg text-[#293C74]">Por definir</strong>
               </div>
