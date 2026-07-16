@@ -248,6 +248,8 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.match(view, /:global\(\.church-field input\)[\s\S]*?min-height: var\(--control-min-size\)/);
   assert.match(view, /:global\(\[data-scene-action\]\)[\s\S]*?min-height: var\(--control-min-size\)/);
   assert.match(view, /:global\(\.church-scene-grid\)[\s\S]*?grid-template-columns: minmax\(0,1fr\)/);
+  assert.match(view, /\.church-editor-section[^}]+container-type: inline-size/);
+  assert.match(view, /@container \(min-width: 60rem\)[\s\S]*?:global\(\.church-scene-editor\)/);
   assert.match(logic, /church-scene-badge/);
   assert.match(logic, /Diseño de la imagen[\s\S]*?El contraste del texto se protege automáticamente/);
   assert.match(logic, /showAlert[\s\S]*?el\.alert\.focus/);

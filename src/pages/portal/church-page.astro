@@ -215,7 +215,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
 </script>
 
 <style>
-  .church-editor-section { background: rgb(var(--mana-white)); border: 1px solid rgb(var(--portal-control-border)); border-radius: var(--portal-card-radius); box-shadow: 0 8px 24px rgb(var(--mana-navy) / .06); overflow: clip; }
+  .church-editor-section { background: rgb(var(--mana-white)); border: 1px solid rgb(var(--portal-control-border)); border-radius: var(--portal-card-radius); box-shadow: 0 8px 24px rgb(var(--mana-navy) / .06); container-type: inline-size; overflow: clip; }
   .church-section-summary { align-items: center; cursor: pointer; display: grid; gap: var(--space-2); grid-template-columns: auto minmax(0, 1fr) auto; list-style: none; min-height: var(--space-10); padding: var(--space-2) var(--space-3); }
   .church-section-summary::-webkit-details-marker { display: none; }
   .church-section-summary:focus-visible { box-shadow: var(--portal-focus-ring); outline: none; }
@@ -325,7 +325,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   :global(.church-gallery-card) { border: 1px solid #dce4ec; border-radius: 16px; overflow: hidden; padding: var(--space-2); }
   :global(.church-gallery-card img) { aspect-ratio: 4 / 3; border-radius: 10px; object-fit: cover; width: 100%; }
   :global(.church-gallery-card button) { min-height: 44px; color: #b42318; font-size: .75rem; font-weight: 900; }
-  @media (min-width: 900px) { :global(.church-scene-editor) { grid-template-columns: minmax(15rem,.78fr) minmax(0,1.22fr); } }
+  @container (min-width: 60rem) { :global(.church-scene-editor) { grid-template-columns: minmax(18rem,.78fr) minmax(0,1.22fr); } }
   @media (max-width: 640px) {
     .church-section-summary { align-items: start; padding: var(--space-2); }
     .church-section-summary small { display: none; }
