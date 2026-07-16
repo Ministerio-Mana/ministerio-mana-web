@@ -203,6 +203,12 @@ function showAlert(message, mode = 'info') {
   el.alert.classList.add(mode === 'error' ? 'bg-red-50' : mode === 'success' ? 'bg-emerald-50' : 'bg-blue-50');
   el.alert.classList.add(mode === 'error' ? 'text-red-800' : mode === 'success' ? 'text-emerald-800' : 'text-blue-800');
   el.alert.classList.remove('hidden');
+  if (mode === 'error') {
+    window.requestAnimationFrame(() => {
+      el.alert.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      el.alert.focus({ preventScroll: true });
+    });
+  }
 }
 
 function setBusy(busy, message = '') {
@@ -277,30 +283,38 @@ function renderScenes() {
   const scenes = state.page.story_config.scenes;
   el.scenes.innerHTML = scenes.map((scene, index) => `
     <article class="church-scene-card" data-scene-index="${index}">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <strong class="text-sm text-[#293C74]">Escena ${index + 1}</strong>
-        <div class="flex gap-2">
-          <button type="button" data-scene-action="up" class="min-h-12 min-w-12 rounded-lg border border-slate-200 text-xs font-black" aria-label="Subir escena ${index + 1}" ${index === 0 ? 'disabled' : ''}>↑</button>
-          <button type="button" data-scene-action="down" class="min-h-12 min-w-12 rounded-lg border border-slate-200 text-xs font-black" aria-label="Bajar escena ${index + 1}" ${index === scenes.length - 1 ? 'disabled' : ''}>↓</button>
-          <button type="button" data-scene-action="remove" class="min-h-12 rounded-lg px-4 text-xs font-black text-red-700" ${scenes.length <= 2 ? 'disabled' : ''}>Quitar</button>
+      <header class="church-scene-header">
+        <div class="church-scene-heading">
+          <span class="church-scene-badge">${index + 1}</span>
+          <span><strong>Escena ${index + 1}</strong><small>${index === 0 ? 'Primera impresión de la página' : 'Siguiente momento de la historia'}</small></span>
         </div>
-      </div>
-      <div class="church-scene-image" data-image-target="scene:${index}" data-image-drop-target="scene:${index}" role="button" tabindex="0" aria-label="Elegir o arrastrar imagen para la escena ${index + 1}" style="${safeUrl(scene.image) ? `background-image:url('${escapeHtml(safeUrl(scene.image))}')` : ''}"></div>
-      <button type="button" data-scene-action="image" class="church-secondary-button mt-4">Elegir imagen</button>
-      <div class="church-scene-grid mt-4">
-        <label class="church-field">Título<input data-scene-field="title" maxlength="90" value="${escapeHtml(scene.title)}" /></label>
-        <label class="church-field">Frase pequeña<input data-scene-field="eyebrow" maxlength="60" value="${escapeHtml(scene.eyebrow)}" /></label>
-        <label class="church-field">Presentación<select data-scene-field="layout">
-          <option value="backdrop" ${scene.layout === 'backdrop' ? 'selected' : ''}>Imagen de fondo</option>
-          <option value="split-left" ${scene.layout === 'split-left' ? 'selected' : ''}>Imagen a la izquierda</option>
-          <option value="split-right" ${scene.layout === 'split-right' ? 'selected' : ''}>Imagen a la derecha</option>
-          <option value="poster" ${scene.layout === 'poster' ? 'selected' : ''}>Arte protagonista</option>
-        </select></label>
-        <label class="church-field">Punto importante<select data-scene-field="focalPoint">
-          ${['center','top','bottom','left','right'].map((value) => `<option value="${value}" ${scene.focalPoint === value ? 'selected' : ''}>${{center:'Centro',top:'Arriba',bottom:'Abajo',left:'Izquierda',right:'Derecha'}[value]}</option>`).join('')}
-        </select></label>
-        <label class="church-field sm:col-span-2">Texto<textarea data-scene-field="text" rows="3" maxlength="520">${escapeHtml(scene.text)}</textarea></label>
-        <label class="church-field sm:col-span-2">Descripción de imagen<input data-scene-field="imageAlt" maxlength="160" value="${escapeHtml(scene.imageAlt)}" /></label>
+        <div class="church-scene-actions" aria-label="Organizar escena ${index + 1}">
+          <button type="button" data-scene-action="up" class="church-scene-action" aria-label="Mover escena ${index + 1} hacia arriba" ${index === 0 ? 'disabled' : ''}>↑ <span aria-hidden="true">Subir</span></button>
+          <button type="button" data-scene-action="down" class="church-scene-action" aria-label="Mover escena ${index + 1} hacia abajo" ${index === scenes.length - 1 ? 'disabled' : ''}>↓ <span aria-hidden="true">Bajar</span></button>
+          <button type="button" data-scene-action="remove" class="church-scene-action church-scene-action--danger" ${scenes.length <= 2 ? 'disabled' : ''}>Quitar</button>
+        </div>
+      </header>
+      <div class="church-scene-editor">
+        <section class="church-scene-media-panel" aria-label="Imagen de la escena ${index + 1}">
+          <div class="church-scene-image" data-image-target="scene:${index}" data-image-drop-target="scene:${index}" role="button" tabindex="0" aria-label="Elegir o arrastrar imagen para la escena ${index + 1}" style="${safeUrl(scene.image) ? `background-image:url('${escapeHtml(safeUrl(scene.image))}')` : ''}">${safeUrl(scene.image) ? '' : 'Sin imagen · toca para elegir'}</div>
+          <button type="button" data-scene-action="image" class="church-secondary-button mt-4">Elegir o subir imagen</button>
+          <p class="church-scene-media-help">La foto se adapta al diseño escogido sin estirarse.</p>
+          <label class="church-field mt-4"><span class="church-field-label">Descripción de la imagen</span><input data-scene-field="imageAlt" maxlength="160" value="${escapeHtml(scene.imageAlt)}" placeholder="Personas reunidas durante el servicio" /><span class="church-field-help">Ayuda a quienes usan lectores de pantalla.</span></label>
+        </section>
+        <div class="church-scene-grid">
+          <label class="church-field"><span class="church-field-label">Título principal</span><input data-scene-field="title" maxlength="90" value="${escapeHtml(scene.title)}" placeholder="Una iglesia para caminar juntos" /><span class="church-field-help">La idea más importante de esta escena.</span></label>
+          <label class="church-field"><span class="church-field-label">Texto pequeño superior</span><input data-scene-field="eyebrow" maxlength="60" value="${escapeHtml(scene.eyebrow)}" placeholder="Bienvenidos" /><span class="church-field-help">Entre 2 y 5 palabras.</span></label>
+          <label class="church-field"><span class="church-field-label">Diseño de la imagen</span><select data-scene-field="layout">
+            <option value="backdrop" ${scene.layout === 'backdrop' ? 'selected' : ''}>Fondo completo con texto encima</option>
+            <option value="split-left" ${scene.layout === 'split-left' ? 'selected' : ''}>Imagen a la izquierda</option>
+            <option value="split-right" ${scene.layout === 'split-right' ? 'selected' : ''}>Imagen a la derecha</option>
+            <option value="poster" ${scene.layout === 'poster' ? 'selected' : ''}>Mostrar el arte completo</option>
+          </select><span class="church-field-help">El contraste del texto se protege automáticamente.</span></label>
+          <label class="church-field"><span class="church-field-label">Parte importante de la foto</span><select data-scene-field="focalPoint">
+            ${['center','top','bottom','left','right'].map((value) => `<option value="${value}" ${scene.focalPoint === value ? 'selected' : ''}>${{center:'Centro',top:'Parte superior',bottom:'Parte inferior',left:'Lado izquierdo',right:'Lado derecho'}[value]}</option>`).join('')}
+          </select><span class="church-field-help">Evita cortar rostros o elementos importantes.</span></label>
+          <label class="church-field"><span class="church-field-label">Texto de apoyo</span><textarea data-scene-field="text" rows="4" maxlength="520" placeholder="Explica este momento en dos o tres frases.">${escapeHtml(scene.text)}</textarea><span class="church-field-help">El texto queda limitado a una longitud cómoda de lectura.</span></label>
+        </div>
       </div>
     </article>
   `).join('');

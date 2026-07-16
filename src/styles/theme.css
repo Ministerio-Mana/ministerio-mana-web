@@ -46,6 +46,16 @@
   /* Área mínima táctil: usa el siguiente paso de la escala de 8 px (48 px). */
   --control-min-size: var(--space-6);
 
+  /* Controles del Portal: contrato visual compartido para editores y formularios. */
+  --portal-control-bg: rgb(var(--mana-white));
+  --portal-control-bg-muted: 248 250 252;
+  --portal-control-border: 203 213 225;
+  --portal-control-copy: 23 33 81;
+  --portal-control-muted: 71 85 105;
+  --portal-control-radius: 12px;
+  --portal-card-radius: 16px;
+  --portal-focus-ring: 0 0 0 4px rgb(var(--mana-teal) / 0.18);
+
   /* Capas compartidas: contenido < navegación < diálogos < controles flotantes. */
   --layer-content: 10;
   --layer-sticky: 30;

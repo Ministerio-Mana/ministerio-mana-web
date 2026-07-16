@@ -142,14 +142,19 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /:global\(\.event-action\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar-confirm\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar \.flatpickr-time input\) \{[\s\S]*?min-height: 44px;/);
+  assert.match(eventsView, /max-w-6xl overflow-clip/);
+  assert.match(eventsView, /<aside[^>]*>[\s\S]*?lg:sticky lg:top-6/);
   assert.match(eventsView, /Nombre completo[\s\S]*?Correo[\s\S]*?Número de asistentes/);
   assert.match(eventsView, /:global\(\.event-custom-field-grid\)/);
+  assert.match(eventsView, /:global\(\.event-custom-field-card\)[\s\S]*?border-radius: var\(--portal-card-radius\)/);
   assert.match(eventsView, /id="event-registration-attendee-age"/);
   assert.match(eventsView, /id="event-registration-attendee-gender"/);
   assert.match(eventsView, /id="event-registration-payer-document"/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
+  assert.match(eventsLogic, /compactViewport[\s\S]*?block: compactViewport \? 'center' : 'nearest'/);
+  assert.doesNotMatch(eventsView, /position: fixed !important;[\s\S]*?\.event-calendar/);
   assert.match(eventsLogic, /recommendedMode = scope === 'GLOBAL'[\s\S]*?'DUAL'/);
   assert.match(eventsLogic, /function requestCloseEventModal\(\)/);
   assert.match(eventsLogic, /event\.key === 'Escape'[\s\S]*?requestCloseEventModal\(\)/);
@@ -240,6 +245,10 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.match(view, /Hasta 8 fotos de la comunidad/);
   assert.match(view, /:global\(\.church-field input\)[\s\S]*?min-height: var\(--control-min-size\)/);
   assert.match(view, /:global\(\[data-scene-action\]\)[\s\S]*?min-height: var\(--control-min-size\)/);
+  assert.match(view, /:global\(\.church-scene-grid\)[\s\S]*?grid-template-columns: minmax\(0,1fr\)/);
+  assert.match(logic, /church-scene-badge/);
+  assert.match(logic, /Diseño de la imagen[\s\S]*?El contraste del texto se protege automáticamente/);
+  assert.match(logic, /showAlert[\s\S]*?el\.alert\.focus/);
   assert.match(theme, /--control-min-size: var\(--space-6\)/);
   assert.match(view, /data-image-drop-target="hero"/);
   assert.match(logic, /async function uploadMediaFile\(file, target = state\.mediaTarget\)/);

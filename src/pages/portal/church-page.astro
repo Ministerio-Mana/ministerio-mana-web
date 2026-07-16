@@ -35,7 +35,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
             <code class="mt-4 block overflow-x-auto rounded-xl bg-white px-4 py-4 text-sm font-bold text-[#293C74]">docs/sql/church_public_pages.sql</code>
           </section>
 
-          <div id="church-page-alert" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></div>
+          <div id="church-page-alert" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite" tabindex="-1"></div>
 
           <form id="church-page-form" class="hidden space-y-6">
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,.72fr)] xl:items-start">
@@ -75,19 +75,27 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                   </div>
                 </section>
 
-                <details open class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">2. Bienvenida e información</summary>
+                <details open class="church-editor-section">
+                  <summary class="church-section-summary">
+                    <span class="church-section-number">2</span>
+                    <span><strong>Bienvenida e información</strong><small>Lo esencial que verá una persona al entrar a la página.</small></span>
+                    <span class="church-section-chevron" aria-hidden="true">⌄</span>
+                  </summary>
                   <div class="grid gap-4 border-t border-slate-100 p-4 md:grid-cols-2 md:p-6">
-                    <label class="church-field md:col-span-2">Nombre público<input id="church-page-name" maxlength="120" required /></label>
-                    <label class="church-field md:col-span-2">Frase de bienvenida<input id="church-page-tagline" maxlength="180" required placeholder="Una familia para crecer en la fe" /></label>
-                    <label class="church-field md:col-span-2">Descripción<textarea id="church-page-description" rows="5" maxlength="1600" required></textarea></label>
-                    <label class="church-field">Enlace público<div class="church-slug"><span>/iglesias/</span><input id="church-page-slug" maxlength="160" required /></div></label>
-                    <label class="church-field">Horarios<textarea id="church-page-schedule" rows="3" maxlength="600" required placeholder="Domingos · 10:00 a. m."></textarea></label>
+                    <label class="church-field md:col-span-2"><span class="church-field-label">Nombre público <small>Obligatorio</small></span><input id="church-page-name" maxlength="120" required placeholder="Ministerio Maná Medellín" /><span class="church-field-help">Usa el nombre con el que la comunidad reconoce esta iglesia.</span></label>
+                    <label class="church-field md:col-span-2"><span class="church-field-label">Frase de bienvenida <small>Obligatoria</small></span><input id="church-page-tagline" maxlength="180" required placeholder="Una familia para crecer en la fe" /><span class="church-field-help">Una oración corta; el diseño le dará el tamaño y contraste correctos.</span></label>
+                    <label class="church-field md:col-span-2"><span class="church-field-label">Descripción <small>Obligatoria</small></span><textarea id="church-page-description" rows="5" maxlength="1600" required placeholder="Cuenta en pocas líneas quiénes son, a quiénes reciben y cómo acompañan a la comunidad."></textarea><span class="church-field-help">Recomendado: entre 2 y 4 frases claras.</span></label>
+                    <label class="church-field"><span class="church-field-label">Enlace público <small>Obligatorio</small></span><div class="church-slug"><span>/iglesias/</span><input id="church-page-slug" maxlength="160" required /></div><span class="church-field-help">Solo letras, números y guiones. Se corrige automáticamente.</span></label>
+                    <label class="church-field"><span class="church-field-label">Horarios <small>Obligatorios</small></span><textarea id="church-page-schedule" rows="3" maxlength="600" required placeholder="Domingos · 10:00 a. m."></textarea><span class="church-field-help">Escribe un horario por línea para facilitar la lectura.</span></label>
                   </div>
                 </details>
 
-                <details open class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">3. Imágenes principales</summary>
+                <details open class="church-editor-section">
+                  <summary class="church-section-summary">
+                    <span class="church-section-number">3</span>
+                    <span><strong>Imágenes principales</strong><small>El sistema adapta las fotos sin estirarlas ni deformarlas.</small></span>
+                    <span class="church-section-chevron" aria-hidden="true">⌄</span>
+                  </summary>
                   <div class="grid gap-4 border-t border-slate-100 p-4 md:grid-cols-2 md:p-6">
                     <div class="church-image-guide md:col-span-2">
                       <strong>Guía rápida de imágenes</strong>
@@ -117,8 +125,12 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                   </div>
                 </details>
 
-                <details id="church-page-story-section" class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">4. Escenas de la historia</summary>
+                <details id="church-page-story-section" class="church-editor-section">
+                  <summary class="church-section-summary">
+                    <span class="church-section-number">4</span>
+                    <span><strong>Escenas de la historia</strong><small>Arma la página por momentos; el movimiento se aplica solo.</small></span>
+                    <span class="church-section-chevron" aria-hidden="true">⌄</span>
+                  </summary>
                   <div class="space-y-4 border-t border-slate-100 p-4 md:p-6">
                     <p class="text-sm leading-relaxed text-slate-600">Para Historia y Mosaico agrega entre 2 y 6 escenas. Solo completas texto e imágenes; el movimiento queda protegido.</p>
                     <div id="church-page-scenes" class="space-y-4"></div>
@@ -126,8 +138,12 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                   </div>
                 </details>
 
-                <details class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  <summary class="cursor-pointer list-none px-4 py-4 font-black text-[#293C74] md:px-6">5. Galería y contacto</summary>
+                <details class="church-editor-section">
+                  <summary class="church-section-summary">
+                    <span class="church-section-number">5</span>
+                    <span><strong>Galería y contacto</strong><small>Fotos de comunidad y canales para acompañar a las personas.</small></span>
+                    <span class="church-section-chevron" aria-hidden="true">⌄</span>
+                  </summary>
                   <div class="space-y-6 border-t border-slate-100 p-4 md:p-6">
                     <div>
                       <div class="flex flex-wrap items-center justify-between gap-4">
@@ -199,9 +215,23 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
 </script>
 
 <style>
-  :global(.church-field) { color: #475569; display: block; font-size: .75rem; font-weight: 800; }
-  :global(.church-field input), :global(.church-field textarea), :global(.church-field select) { background: #f8fafc; border: 1px solid #dce4ec; border-radius: 12px; color: #172151; display: block; font-size: .875rem; font-weight: 500; margin-top: var(--space-1); min-height: var(--control-min-size); padding: var(--space-2); width: 100%; }
-  :global(.church-field input:focus), :global(.church-field textarea:focus), :global(.church-field select:focus) { border-color: #293c74; outline: 3px solid rgba(41,60,116,.14); }
+  .church-editor-section { background: rgb(var(--mana-white)); border: 1px solid rgb(var(--portal-control-border)); border-radius: var(--portal-card-radius); box-shadow: 0 8px 24px rgb(var(--mana-navy) / .06); overflow: clip; }
+  .church-section-summary { align-items: center; cursor: pointer; display: grid; gap: var(--space-2); grid-template-columns: auto minmax(0, 1fr) auto; list-style: none; min-height: var(--space-10); padding: var(--space-2) var(--space-3); }
+  .church-section-summary::-webkit-details-marker { display: none; }
+  .church-section-summary:focus-visible { box-shadow: var(--portal-focus-ring); outline: none; }
+  .church-section-summary strong, .church-section-summary small { display: block; }
+  .church-section-summary strong { color: rgb(var(--mana-navy)); font-size: 1rem; font-weight: 900; }
+  .church-section-summary small { color: rgb(var(--portal-control-muted)); font-size: .75rem; font-weight: 500; line-height: 1.5; margin-top: var(--space-1); }
+  .church-section-number { align-items: center; background: rgb(var(--mana-teal) / .12); border-radius: 999px; color: rgb(var(--mana-navy)); display: inline-flex; font-size: .75rem; font-weight: 900; height: var(--space-4); justify-content: center; width: var(--space-4); }
+  .church-section-chevron { color: rgb(var(--portal-control-muted)); font-size: 1.25rem; transform: rotate(0deg); transition: transform 160ms ease; }
+  .church-editor-section[open] .church-section-chevron { transform: rotate(180deg); }
+  :global(.church-field) { color: rgb(var(--portal-control-muted)); display: block; font-size: .75rem; font-weight: 800; min-width: 0; }
+  :global(.church-field-label) { align-items: baseline; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  :global(.church-field-label small) { color: rgb(var(--mana-teal-2)); font-size: .68rem; font-weight: 700; }
+  :global(.church-field-help) { color: rgb(var(--portal-control-muted)); display: block; font-size: .7rem; font-weight: 500; line-height: 1.5; margin-top: var(--space-1); }
+  :global(.church-field input), :global(.church-field textarea), :global(.church-field select) { background: rgb(var(--portal-control-bg-muted)); border: 1px solid rgb(var(--portal-control-border)); border-radius: var(--portal-control-radius); color: rgb(var(--portal-control-copy)); display: block; font-size: 1rem; font-weight: 500; line-height: 1.5; margin-top: var(--space-1); min-height: var(--control-min-size); padding: var(--space-2); transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; width: 100%; }
+  :global(.church-field input:hover), :global(.church-field textarea:hover), :global(.church-field select:hover) { border-color: rgb(var(--mana-teal-2) / .62); }
+  :global(.church-field input:focus), :global(.church-field textarea:focus), :global(.church-field select:focus) { background: rgb(var(--mana-white)); border-color: rgb(var(--mana-navy)); box-shadow: var(--portal-focus-ring); outline: none; }
   .church-slug { align-items: center; display: flex; margin-top: var(--space-1); }
   .church-slug span { background: #eef2f7; border: 1px solid #dce4ec; border-radius: 12px 0 0 12px; color: #64748b; min-height: 44px; padding: var(--space-2); }
   .church-slug input { border-left: 0; border-radius: 0 12px 12px 0; margin: 0; }
@@ -269,10 +299,25 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   :global(.preview-mosaic-card small), :global(.preview-mosaic-card strong) { display: block; }
   :global(.preview-mosaic-card small) { color: #f2c94c; font-size: .6rem; text-transform: uppercase; }
   :global(.preview-mosaic-card strong) { color: #fff !important; line-height: 1.05; margin-top: var(--space-1); text-shadow: 0 2px 14px rgba(7,17,28,.34); }
-  :global(.church-scene-card) { border: 1px solid #dce4ec; border-radius: 16px; padding: var(--space-2); }
+  :global(.church-scene-card) { background: rgb(var(--portal-control-bg-muted)); border: 1px solid rgb(var(--portal-control-border)); border-radius: var(--portal-card-radius); box-shadow: 0 8px 24px rgb(var(--mana-navy) / .05); overflow: hidden; }
+  :global(.church-scene-header) { align-items: center; background: rgb(var(--mana-white)); border-bottom: 1px solid rgb(var(--portal-control-border)); display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: space-between; padding: var(--space-2) var(--space-3); }
+  :global(.church-scene-heading) { align-items: center; display: flex; gap: var(--space-2); min-width: 0; }
+  :global(.church-scene-badge) { align-items: center; background: rgb(var(--mana-navy)); border-radius: 999px; color: rgb(var(--mana-white)); display: inline-flex; flex: 0 0 auto; font-size: .75rem; font-weight: 900; height: var(--space-4); justify-content: center; width: var(--space-4); }
+  :global(.church-scene-heading strong), :global(.church-scene-heading small) { display: block; }
+  :global(.church-scene-heading strong) { color: rgb(var(--mana-navy)); font-size: .9rem; font-weight: 900; }
+  :global(.church-scene-heading small) { color: rgb(var(--portal-control-muted)); font-size: .7rem; line-height: 1.4; margin-top: var(--space-1); }
+  :global(.church-scene-actions) { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+  :global(.church-scene-action) { align-items: center; background: rgb(var(--mana-white)); border: 1px solid rgb(var(--portal-control-border)); border-radius: var(--portal-control-radius); color: rgb(var(--mana-navy)); display: inline-flex; font-size: .72rem; font-weight: 800; justify-content: center; min-height: var(--control-min-size); min-width: var(--control-min-size); padding: var(--space-1) var(--space-2); }
+  :global(.church-scene-action:hover:not(:disabled)) { background: rgb(var(--mana-teal) / .08); border-color: rgb(var(--mana-teal)); }
+  :global(.church-scene-action:focus-visible) { box-shadow: var(--portal-focus-ring); outline: none; }
+  :global(.church-scene-action:disabled) { cursor: not-allowed; opacity: .42; }
+  :global(.church-scene-action--danger) { color: #b42318; }
+  :global(.church-scene-editor) { display: grid; gap: var(--space-3); padding: var(--space-3); }
+  :global(.church-scene-media-panel) { min-width: 0; }
+  :global(.church-scene-media-help) { color: rgb(var(--portal-control-muted)); font-size: .7rem; line-height: 1.5; margin-top: var(--space-1); }
   :global([data-scene-action]) { min-height: var(--control-min-size); min-width: var(--control-min-size); }
-  :global(.church-scene-grid) { display: grid; gap: var(--space-2); grid-template-columns: repeat(2,minmax(0,1fr)); }
-  :global(.church-scene-image) { aspect-ratio: 16 / 9; background: #eef2f7 center/cover; border: 1px dashed #94a3b8; border-radius: 12px; cursor: pointer; margin-top: var(--space-2); overflow: hidden; position: relative; }
+  :global(.church-scene-grid) { display: grid; gap: var(--space-2); grid-template-columns: minmax(0,1fr); }
+  :global(.church-scene-image) { align-items: center; aspect-ratio: 16 / 10; background: #eef2f7 center/cover; border: 1px dashed #94a3b8; border-radius: var(--portal-card-radius); color: rgb(var(--portal-control-muted)); cursor: pointer; display: flex; font-size: .75rem; font-weight: 800; justify-content: center; overflow: hidden; position: relative; text-align: center; }
   :global(.church-scene-image:focus-visible), :global(.church-scene-image.is-dragging) { border-color: #293c74; box-shadow: 0 0 0 4px rgba(40,166,189,.18); outline: none; }
   :global(.church-media-card) { background: #fff; border: 1px solid #dce4ec; border-radius: 16px; min-height: 44px; overflow: hidden; text-align: left; width: 100%; }
   :global(.church-media-card img) { aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
@@ -280,5 +325,13 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   :global(.church-gallery-card) { border: 1px solid #dce4ec; border-radius: 16px; overflow: hidden; padding: var(--space-2); }
   :global(.church-gallery-card img) { aspect-ratio: 4 / 3; border-radius: 10px; object-fit: cover; width: 100%; }
   :global(.church-gallery-card button) { min-height: 44px; color: #b42318; font-size: .75rem; font-weight: 900; }
-  @media (max-width: 640px) { :global(.church-scene-grid), :global(.preview-mosaic > div) { grid-template-columns: 1fr; } }
+  @media (min-width: 900px) { :global(.church-scene-editor) { grid-template-columns: minmax(15rem,.78fr) minmax(0,1.22fr); } }
+  @media (max-width: 640px) {
+    .church-section-summary { align-items: start; padding: var(--space-2); }
+    .church-section-summary small { display: none; }
+    :global(.church-scene-header), :global(.church-scene-editor) { padding: var(--space-2); }
+    :global(.church-scene-actions) { width: 100%; }
+    :global(.church-scene-action) { flex: 1 1 auto; }
+    :global(.church-scene-grid), :global(.preview-mosaic > div) { grid-template-columns: 1fr; }
+  }
 </style>

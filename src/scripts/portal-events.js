@@ -325,7 +325,11 @@ function initEventDatePickers() {
             },
             onOpen: (_dates, _value, instance) => {
                 window.requestAnimationFrame(() => {
-                    instance.calendarContainer.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                    const compactViewport = window.matchMedia('(max-width: 640px)').matches;
+                    instance.calendarContainer.scrollIntoView({
+                        block: compactViewport ? 'center' : 'nearest',
+                        inline: 'nearest',
+                    });
                 });
             },
             onChange: () => updateEventPreview(),
@@ -485,6 +489,11 @@ function renderCustomFieldBuilder() {
 
         const header = document.createElement('div');
         header.className = 'event-custom-field-header';
+        const heading = document.createElement('div');
+        heading.className = 'event-custom-field-heading';
+        const badge = document.createElement('span');
+        badge.className = 'event-custom-field-badge';
+        badge.textContent = String(index + 1);
         const title = document.createElement('p');
         title.className = 'event-custom-field-title';
         title.textContent = `Pregunta ${index + 1}`;
@@ -493,7 +502,8 @@ function renderCustomFieldBuilder() {
         remove.dataset.customFieldAction = 'remove';
         remove.className = 'event-custom-field-remove';
         remove.textContent = 'Quitar';
-        header.append(title, remove);
+        heading.append(badge, title);
+        header.append(heading, remove);
 
         const grid = document.createElement('div');
         grid.className = 'event-custom-field-grid';
