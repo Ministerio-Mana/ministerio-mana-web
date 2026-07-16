@@ -1280,6 +1280,10 @@ function populateScopeCountryOptions(selectedCountry = '') {
 function populateRegionOptions(selectedRegionId = '') {
     if (!eventRegionSelect) return;
     const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    if (!country) {
+        eventRegionSelect.innerHTML = '<option value="">Elige primero un país</option>';
+        return;
+    }
     eventRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' + getScopedRegions(country)
         .map((region) => {
             const label = `${region.code || 'REG'} · ${region.name || 'Región'}${region.country ? ` (${region.country})` : ''}`;
@@ -1291,6 +1295,10 @@ function populateRegionOptions(selectedRegionId = '') {
 function populateLocalRegionOptions(selectedRegionId = '') {
     if (!eventLocalRegionFilter) return;
     const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    if (!country) {
+        eventLocalRegionFilter.innerHTML = '<option value="">Elige primero un país</option>';
+        return;
+    }
     const regionIds = new Set(getScopedChurches()
         .filter((church) => !country || sameCountry(church.country, country))
         .map((church) => String(church.region_id || '').trim())
@@ -1303,6 +1311,7 @@ function populateLocalRegionOptions(selectedRegionId = '') {
 
 function getFilteredLocalChurches({ ignoreCity = false } = {}) {
     const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    if (!country) return [];
     const regionId = String(eventLocalRegionFilter?.value || '').trim();
     const city = String(eventScopeCitySelect?.value || '').trim();
     return getScopedChurches().filter((church) => {
@@ -1315,6 +1324,11 @@ function getFilteredLocalChurches({ ignoreCity = false } = {}) {
 
 function populateScopeCityOptions(selectedCity = '') {
     if (!eventScopeCitySelect) return;
+    const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    if (!country) {
+        eventScopeCitySelect.innerHTML = '<option value="">Elige primero un país</option>';
+        return;
+    }
     const cities = listPortalCities(getFilteredLocalChurches({ ignoreCity: true }));
     eventScopeCitySelect.innerHTML = '<option value="">Selecciona una ciudad</option>' + cities
         .map((city) => `<option value="${escapeAttr(city)}"${selectedCity === city ? ' selected' : ''}>${escapeHtml(city)}</option>`)
@@ -1381,11 +1395,12 @@ function syncScopeInputs(options = {}) {
             if (eventScopeCountrySelect.value) eventCountryInput.value = eventScopeCountrySelect.value;
         }
     }
+    const selectedScopeCountry = String(eventScopeCountrySelect?.value || '').trim();
 
     if (eventRegionWrapper && eventRegionSelect) {
         eventRegionWrapper.classList.toggle('hidden', !needsRegion);
         eventRegionSelect.required = needsRegion;
-        eventRegionSelect.disabled = !needsRegion;
+        eventRegionSelect.disabled = !needsRegion || !selectedScopeCountry;
         if (needsRegion) {
             populateRegionOptions(preserveSelections ? currentRegion : '');
             if (isRegionalRole() && currentAllowedRegionIds.length === 1) {
@@ -1399,7 +1414,7 @@ function syncScopeInputs(options = {}) {
 
     if (eventLocalRegionWrapper && eventLocalRegionFilter) {
         eventLocalRegionWrapper.classList.toggle('hidden', !needsChurch);
-        eventLocalRegionFilter.disabled = !needsChurch;
+        eventLocalRegionFilter.disabled = !needsChurch || !selectedScopeCountry;
         if (needsChurch) populateLocalRegionOptions(preserveSelections ? currentLocalRegion : '');
         else eventLocalRegionFilter.value = '';
     }
@@ -1407,7 +1422,7 @@ function syncScopeInputs(options = {}) {
     if (eventScopeCityWrapper && eventScopeCitySelect) {
         eventScopeCityWrapper.classList.toggle('hidden', !needsChurch);
         eventScopeCitySelect.required = needsChurch;
-        eventScopeCitySelect.disabled = !needsChurch;
+        eventScopeCitySelect.disabled = !needsChurch || !selectedScopeCountry;
         if (needsChurch) populateScopeCityOptions(preserveSelections ? currentScopeCity : '');
         else eventScopeCitySelect.value = '';
     }
@@ -1415,7 +1430,7 @@ function syncScopeInputs(options = {}) {
     if (eventChurchWrapper && eventChurchSelect) {
         eventChurchWrapper.classList.toggle('hidden', !needsChurch);
         eventChurchSelect.required = needsChurch;
-        eventChurchSelect.disabled = !needsChurch;
+        eventChurchSelect.disabled = !needsChurch || !selectedScopeCountry;
         if (needsChurch) {
             populateChurchOptions(preserveSelections ? currentChurch : '');
             if (isLocalRole() && currentChurchId) {

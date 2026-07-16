@@ -187,6 +187,8 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /function syncEventDurationFields/);
   assert.match(eventsLogic, /function syncAttendanceFields/);
   assert.match(eventsLogic, /listPortalCountries\(getScopedChurches\(\), getScopedRegions\(\)\)/);
+  assert.match(eventsLogic, /eventScopeCitySelect\.innerHTML = '<option value="">Elige primero un país<\/option>'/);
+  assert.match(eventsLogic, /eventChurchSelect\.disabled = !needsChurch \|\| !selectedScopeCountry/);
   assert.match(eventsLogic, /payload\.attendance_mode === 'ONLINE'[\s\S]*?payload\.location_name = null[\s\S]*?payload\.location_address = null/);
   assert.match(eventsLogic, /id="btn-retry-events" class="mt-4 min-h-11/);
   assert.match(eventsApi, /Selecciona el país del evento nacional/);
