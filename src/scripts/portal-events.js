@@ -28,6 +28,7 @@ import {
     normalizeEventOnlinePaymentProvider,
 } from '@lib/eventPaymentContract.js';
 import { normalizeEventInvitationLayout } from '@lib/eventInvitationLayout.js';
+import { normalizeEventLandingSettings } from '@lib/eventLanding';
 import {
     EVENT_CUSTOM_FIELD_TYPES,
     MAX_EVENT_CUSTOM_FIELDS,
@@ -85,6 +86,10 @@ const eventRegistrationWhatsAppUpdates = document.getElementById('event-registra
 const eventRegistrationAttendeeAge = document.getElementById('event-registration-attendee-age');
 const eventRegistrationAttendeeGender = document.getElementById('event-registration-attendee-gender');
 const eventRegistrationPayerDocument = document.getElementById('event-registration-payer-document');
+const eventLandingExpect = document.getElementById('event-landing-expect');
+const eventLandingAgenda = document.getElementById('event-landing-agenda');
+const eventLandingPractical = document.getElementById('event-landing-practical');
+const eventLandingHost = document.getElementById('event-landing-host');
 const eventCustomFieldsContainer = document.getElementById('event-custom-fields');
 const eventCustomFieldAdd = document.getElementById('event-custom-field-add');
 const eventCustomFieldEmpty = document.getElementById('event-custom-field-empty');
@@ -1581,6 +1586,11 @@ function openEventModal(mode, eventData = null) {
     if (eventRegistrationPayerDocument) eventRegistrationPayerDocument.value = formConfig.payer_document;
     eventCustomFields = formConfig.fields.map((field) => ({ ...field, options: [...field.options] }));
     renderCustomFieldBuilder();
+    const landingSettings = normalizeEventLandingSettings(eventData?.page_settings);
+    if (eventLandingExpect) eventLandingExpect.value = landingSettings.what_to_expect;
+    if (eventLandingAgenda) eventLandingAgenda.value = landingSettings.agenda;
+    if (eventLandingPractical) eventLandingPractical.value = landingSettings.practical_info;
+    if (eventLandingHost) eventLandingHost.value = landingSettings.host_info;
 
     const presetScope = String(eventData?.scope || getAllowedScopes()[0] || 'LOCAL').toUpperCase();
     if (eventScopeSelect) eventScopeSelect.value = presetScope;
@@ -1878,6 +1888,12 @@ eventForm?.addEventListener('submit', async (event) => {
                 payer_document: String(eventRegistrationPayerDocument?.value || 'REQUIRED').toUpperCase(),
                 fields: registrationMode === 'INTERNAL' ? getCustomFieldsForSaving() : [],
             };
+            payload.page_settings = normalizeEventLandingSettings({
+                what_to_expect: eventLandingExpect?.value,
+                agenda: eventLandingAgenda?.value,
+                practical_info: eventLandingPractical?.value,
+                host_info: eventLandingHost?.value,
+            });
         }
         payload.attendance_mode = normalizeAttendanceMode(eventForm.querySelector('[name="attendance_mode"]')?.value);
         payload.timezone = normalizeEventTimeZone(

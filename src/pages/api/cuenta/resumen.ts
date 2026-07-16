@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { getUserFromRequest } from '@lib/supabaseAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
+import { discoverEventsForProfile } from '@lib/eventDiscovery';
 
 export const prerender = false;
 
@@ -25,6 +26,86 @@ async function runOptionalQuery(label: string, query: PromiseLike<{ data: any[] 
   }
 }
 
+async function loadProfile(userId: string | undefined, email: string): Promise<Record<string, any> | null> {
+  const enhanced = userId
+    ? await supabaseAdmin!.from('user_profiles').select('full_name, city, country, church_id, church_name, region_id').eq('user_id', userId).maybeSingle()
+    : await supabaseAdmin!.from('user_profiles').select('full_name, city, country, church_id, church_name, region_id').eq('email', email).maybeSingle();
+  if (!enhanced.error) return enhanced.data;
+  if (enhanced.error.code !== '42703') {
+    console.error('[cuenta.resumen] profile error', enhanced.error);
+    return null;
+  }
+  const fallback = userId
+    ? await supabaseAdmin!.from('user_profiles').select('full_name, city, country, church_id, church_name').eq('user_id', userId).maybeSingle()
+    : await supabaseAdmin!.from('user_profiles').select('full_name, city, country, church_id, church_name').eq('email', email).maybeSingle();
+  if (fallback.error) {
+    console.error('[cuenta.resumen] profile fallback error', fallback.error);
+    return null;
+  }
+  return fallback.data ? { ...fallback.data, region_id: null } : null;
+}
+
+async function loadPublicEvents(): Promise<any[]> {
+  const enhancedFields = 'id,title,description,scope,status,start_date,end_date,banner_url,banner_layout,location_name,location_address,city,country,church_id,region_id,slug,visibility,category,registration_mode';
+  const platformFields = 'id,title,description,scope,status,start_date,end_date,banner_url,banner_layout,location_name,location_address,city,country,church_id,slug,visibility,category,registration_mode';
+  const platformBeforeLayoutFields = 'id,title,description,scope,status,start_date,end_date,banner_url,location_name,location_address,city,country,church_id,slug,visibility,category,registration_mode';
+  const legacyFields = 'id,title,description,scope,status,start_date,end_date,banner_url,location_name,location_address,city,country,church_id';
+
+  const enhanced = await supabaseAdmin!
+    .from('events')
+    .select(enhancedFields)
+    .eq('status', 'PUBLISHED')
+    .eq('visibility', 'PUBLIC')
+    .order('start_date', { ascending: true })
+    .limit(120);
+  if (!enhanced.error) return enhanced.data || [];
+
+  if (enhanced.error.code === '42703') {
+    const platform = await supabaseAdmin!
+      .from('events')
+      .select(platformFields)
+      .eq('status', 'PUBLISHED')
+      .eq('visibility', 'PUBLIC')
+      .order('start_date', { ascending: true })
+      .limit(120);
+    if (!platform.error) return (platform.data || []).map((event) => ({ ...event, region_id: null }));
+    if (platform.error.code !== '42703') {
+      console.error('[cuenta.resumen] public events fallback error', platform.error);
+      return [];
+    }
+
+    const platformBeforeLayout = await supabaseAdmin!
+      .from('events')
+      .select(platformBeforeLayoutFields)
+      .eq('status', 'PUBLISHED')
+      .eq('visibility', 'PUBLIC')
+      .order('start_date', { ascending: true })
+      .limit(120);
+    if (!platformBeforeLayout.error) {
+      return (platformBeforeLayout.data || []).map((event) => ({ ...event, banner_layout: null, region_id: null }));
+    }
+    if (platformBeforeLayout.error.code !== '42703') {
+      console.error('[cuenta.resumen] public events pre-layout error', platformBeforeLayout.error);
+      return [];
+    }
+
+    const legacy = await supabaseAdmin!
+      .from('events')
+      .select(legacyFields)
+      .eq('status', 'PUBLISHED')
+      .order('start_date', { ascending: true })
+      .limit(120);
+    if (!legacy.error) {
+      return (legacy.data || []).map((event) => ({ ...event, region_id: null, slug: null, visibility: 'PUBLIC' }));
+    }
+    console.error('[cuenta.resumen] public events legacy error', legacy.error);
+    return [];
+  }
+
+  console.error('[cuenta.resumen] public events error', enhanced.error);
+  return [];
+}
+
 export const GET: APIRoute = async ({ request }) => {
   const startedAt = Date.now();
   if (!supabaseAdmin) {
@@ -46,9 +127,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
     email = passwordSession.email.toLowerCase();
   }
-  const profileQuery = user?.id
-    ? supabaseAdmin.from('user_profiles').select('full_name, city, country, church_id, church_name').eq('user_id', user.id).maybeSingle()
-    : supabaseAdmin.from('user_profiles').select('full_name, city, country, church_id, church_name').eq('email', email).maybeSingle();
+  const profilePromise = loadProfile(user?.id, email);
 
   const bookingsQuery = supabaseAdmin
     .from('cumbre_bookings')
@@ -98,8 +177,8 @@ export const GET: APIRoute = async ({ request }) => {
     campusQuery.order('created_at', { ascending: false }).limit(80),
   );
 
-  const [{ data: profile }, { data: bookings, error: bookingsError }] = await Promise.all([
-    profileQuery,
+  const [profile, { data: bookings, error: bookingsError }] = await Promise.all([
+    profilePromise,
     bookingsQuery,
   ]);
 
@@ -139,28 +218,31 @@ export const GET: APIRoute = async ({ request }) => {
     payments = paymentsData;
   }
 
-  let orFilter = 'scope.eq.GLOBAL';
-  if (profile?.country) {
-    orFilter += `,and(scope.eq.NATIONAL,country.eq.${profile.country})`;
-  }
-  if (profile?.church_id) {
-    orFilter += `,and(scope.eq.LOCAL,church_id.eq.${profile.church_id})`;
+  const latestBooking = bookings?.[0] || null;
+  const discoveryProfile = {
+    churchId: profile?.church_id || null,
+    regionId: profile?.region_id || null,
+    city: profile?.city || latestBooking?.contact_city || null,
+    country: profile?.country || latestBooking?.contact_country || null,
+  };
+  if (!discoveryProfile.regionId && discoveryProfile.churchId) {
+    const churchScope = await supabaseAdmin
+      .from('churches')
+      .select('region_id')
+      .eq('id', discoveryProfile.churchId)
+      .maybeSingle();
+    if (!churchScope.error) discoveryProfile.regionId = churchScope.data?.region_id || null;
+    else if (churchScope.error.code !== '42703') console.error('[cuenta.resumen] church region error', churchScope.error);
   }
 
-  const eventsPromise = runOptionalQuery('events', supabaseAdmin
-      .from('events')
-      .select('id, title, description, scope, status, start_date, end_date, banner_url, location_name, location_address, city, country, church_id')
-      .or(orFilter)
-      .eq('status', 'PUBLISHED')
-      .order('start_date', { ascending: true })
-      .limit(20));
+  const eventsPromise = loadPublicEvents();
 
   const [
     donations,
     donationSubscriptions,
     donationRecurringSubscriptions,
     campusSubscriptions,
-    events,
+    rawEvents,
   ] = await Promise.all([
     donationsPromise,
     donationSubscriptionsPromise,
@@ -169,6 +251,7 @@ export const GET: APIRoute = async ({ request }) => {
     eventsPromise,
   ]);
 
+  const events = discoverEventsForProfile(rawEvents, discoveryProfile, { limit: 20 });
   const elapsedMs = Date.now() - startedAt;
   if (elapsedMs > 2500) {
     console.warn('[cuenta.resumen] slow response', {

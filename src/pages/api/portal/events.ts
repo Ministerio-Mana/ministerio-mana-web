@@ -19,6 +19,7 @@ import {
   normalizeEventTimeZone,
 } from '@lib/eventContract.js';
 import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@lib/eventRegistrationForm.js';
+import { normalizeEventLandingSettings } from '@lib/eventLanding';
 
 const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
 const CUMBRE_EVENT = {
@@ -101,6 +102,7 @@ const EVENT_FIELDS = [
   'contact_whatsapp',
   'contact_whatsapp_message',
   'registration_form_config',
+  'page_settings',
   'timezone',
   'price',
   'price_cop',
@@ -124,6 +126,7 @@ const PLATFORM_EVENT_FIELDS = new Set([
   'contact_whatsapp',
   'contact_whatsapp_message',
   'registration_form_config',
+  'page_settings',
   'timezone',
   'price_cop',
   'price_usd',
@@ -197,6 +200,10 @@ function sanitizeEventPayload(body: Record<string, any>) {
     }
     if (field === 'registration_form_config') {
       payload.registration_form_config = normalizeEventRegistrationFormConfig(value);
+      return;
+    }
+    if (field === 'page_settings') {
+      payload.page_settings = normalizeEventLandingSettings(value);
       return;
     }
     if (EVENT_ENUM_FIELDS.has(field)) {

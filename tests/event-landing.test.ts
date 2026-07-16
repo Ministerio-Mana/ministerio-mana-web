@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { hasEventLandingContent, normalizeEventLandingSettings } from '../src/lib/eventLanding.ts';
+
+test('normaliza los bloques guiados sin aceptar markup ni estructura libre', () => {
+  const settings = normalizeEventLandingSettings({
+    whatToExpect: '  Adoración   y palabra  ',
+    agenda: '09:00 Registro\n\n\n10:00 Plenaria',
+    practicalInfo: 'Trae tu documento',
+    hostInfo: 'Equipo pastoral',
+    arbitrary_html: '<script>alert(1)</script>',
+  });
+  assert.deepEqual(settings, {
+    what_to_expect: 'Adoración y palabra',
+    agenda: '09:00 Registro\n\n10:00 Plenaria',
+    practical_info: 'Trae tu documento',
+    host_info: 'Equipo pastoral',
+  });
+  assert.equal(hasEventLandingContent(settings), true);
+});
+
+test('limita cada bloque y reconoce una landing vacía', () => {
+  assert.equal(normalizeEventLandingSettings({ agenda: 'x'.repeat(3000) }).agenda.length, 1600);
+  assert.equal(hasEventLandingContent({}), false);
+});

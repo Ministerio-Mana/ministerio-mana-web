@@ -1,11 +1,12 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
-import { getEntry, render } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import { getPublicDatabaseEvent, listPublicEventPaymentOptions } from '@lib/publicEvents';
 import { getEventProviderPrice } from '@lib/eventPaymentContract.js';
 import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@lib/eventRegistrationForm.js';
 import TurnstileProvider from '@components/TurnstileProvider.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
+import { normalizeEventLandingSettings } from '@lib/eventLanding';
 
 type RegistrationCustomField = {
   id: string;
@@ -19,7 +20,8 @@ type RegistrationCustomField = {
 export const prerender = false;
 
 const slug = String(Astro.params.slug || '').replace(/\/$/, '').toLowerCase();
-const contentEntry = slug ? await getEntry('events', slug) : undefined;
+const contentEntries = slug ? await getCollection('events') : [];
+const contentEntry = contentEntries.find((entry) => String(entry.id || '').toLowerCase() === slug);
 const databaseEvent = contentEntry ? null : await getPublicDatabaseEvent(slug);
 
 if (!contentEntry && !databaseEvent) Astro.response.status = 404;
@@ -87,11 +89,21 @@ const paymentReturnState = ['success', 'return', 'cancelled'].includes(paymentRe
 const eventTimeZone = databaseEvent?.timezone || 'America/Bogota';
 const registrationFormConfig = normalizeEventRegistrationFormConfig(databaseEvent?.registration_form_config);
 const registrationCustomFields = registrationFormConfig.fields as RegistrationCustomField[];
+const landingSettings = normalizeEventLandingSettings(databaseEvent?.page_settings);
+const landingSections = [
+  { key: 'expect', eyebrow: 'La experiencia', title: 'Qué vivirás', text: landingSettings.what_to_expect },
+  { key: 'agenda', eyebrow: 'Programa', title: 'Agenda', text: landingSettings.agenda },
+  { key: 'practical', eyebrow: 'Información práctica', title: 'Antes de asistir', text: landingSettings.practical_info },
+  { key: 'host', eyebrow: 'Organiza', title: 'Quiénes acompañan', text: landingSettings.host_info },
+].filter((section) => section.text);
 const contactWhatsApp = normalizeWhatsAppNumber(databaseEvent?.contact_whatsapp);
 const whatsappMessage = String(databaseEvent?.contact_whatsapp_message || `Hola, quiero información sobre ${title}.`).trim();
 const whatsappHref = contactWhatsApp
   ? `https://wa.me/${contactWhatsApp}?text=${encodeURIComponent(whatsappMessage.slice(0, 280))}`
   : '';
+const calendarHref = databaseEvent ? `/api/events/${databaseEvent.id}/calendar.ics` : '';
+const mapsQuery = [address, location].filter(Boolean).join(', ');
+const mapsHref = mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : '';
 const formattedDate = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: eventTimeZone }).format(startDate)
   : 'Fecha por confirmar';
@@ -130,6 +142,11 @@ const structured = (contentEntry || databaseEvent) ? {
   location: location ? { '@type': 'Place', name: location, address: address || undefined } : undefined,
   image: image ? [new URL(image, Astro.url.origin).toString()] : undefined,
   url: canonical,
+  organizer: {
+    '@type': 'Organization',
+    name: 'Ministerio Maná',
+    url: Astro.url.origin,
+  },
 } : undefined;
 ---
 
@@ -187,6 +204,7 @@ const structured = (contentEntry || databaseEvent) ? {
           </article>
           <div class="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
             {registrationHref && <a href={registrationHref} class="inline-flex min-h-11 items-center justify-center rounded-md bg-[#293C74] px-6 py-2 text-sm font-bold text-white hover:bg-[#20315f]">Inscribirme</a>}
+            {calendarHref && <a href={calendarHref} class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] hover:bg-slate-50">Agregar al calendario</a>}
             {brochure && <a href={brochure} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 px-6 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Ver brochure</a>}
           </div>
         </div>
@@ -202,12 +220,33 @@ const structured = (contentEntry || databaseEvent) ? {
                 <p class="mt-4 max-w-3xl whitespace-pre-line leading-relaxed text-slate-600">{description}</p>
               </div>
             )}
+            {landingSections.length > 0 && (
+              <div class="event-public-content-grid">
+                {landingSections.map((section) => (
+                  <section aria-labelledby={`event-landing-${section.key}`}>
+                    <p>{section.eyebrow}</p>
+                    <h3 id={`event-landing-${section.key}`}>{section.title}</h3>
+                    <div>{section.text}</div>
+                  </section>
+                ))}
+              </div>
+            )}
           </article>
           <aside class="event-public-sidebar border-l-0 border-slate-200 lg:border-l lg:pl-6">
             <h2 class="text-sm font-bold uppercase tracking-[0.12em] text-slate-500">Estado</h2>
             <p class="mt-2 text-lg font-bold text-slate-900">{isCompleted ? 'Finalizado' : 'Programado'}</p>
             {databaseEvent?.capacity != null && databaseEvent.capacity > 0 && <p class="mt-2 text-sm text-slate-600">Cupo: {databaseEvent.capacity} personas</p>}
             <p class="mt-2 text-sm font-bold text-[#293C74]">{priceLabel}</p>
+            {(calendarHref || mapsHref) && (
+              <div class="event-public-plan mt-6">
+                <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">Planifica tu asistencia</p>
+                <p class="mt-2 text-sm leading-relaxed text-slate-600">Guarda la fecha y revisa la ruta antes de salir.</p>
+                <div class="mt-4 grid gap-2">
+                  {calendarHref && <a href={calendarHref} class="event-public-contact-action">Guardar en mi calendario</a>}
+                  {mapsHref && <a href={mapsHref} target="_blank" rel="noopener noreferrer" class="event-public-contact-action">Abrir ubicación</a>}
+                </div>
+              </div>
+            )}
             {(whatsappHref || databaseEvent?.contact_email) && (
               <div class="event-public-contact mt-6">
                 <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">¿Necesitas ayuda?</p>
@@ -681,6 +720,42 @@ const structured = (contentEntry || databaseEvent) ? {
     box-shadow: 0 15px 35px rgb(41 60 116 / 6%);
   }
 
+  .event-public-content-grid {
+    display: grid;
+    gap: var(--space-2);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: var(--space-6);
+  }
+
+  .event-public-content-grid section {
+    border: 1px solid rgb(41 60 116 / 14%);
+    border-radius: 0.85rem;
+    background: #fff;
+    padding: var(--space-3);
+  }
+
+  .event-public-content-grid section > p {
+    color: #2d7090;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .event-public-content-grid h3 {
+    margin-top: var(--space-1);
+    color: #172553;
+    font-size: 1.15rem;
+    font-weight: 800;
+  }
+
+  .event-public-content-grid section > div {
+    margin-top: var(--space-2);
+    color: #526174;
+    line-height: 1.65;
+    white-space: pre-line;
+  }
+
   .event-public-section-label {
     margin-bottom: var(--space-1);
     color: #2d7090;
@@ -713,6 +788,13 @@ const structured = (contentEntry || databaseEvent) ? {
     border: 1px solid rgb(58 193 212 / 25%);
     border-radius: 0.85rem;
     background: linear-gradient(145deg, #effbfc, #f6f8ff);
+    padding: var(--space-2);
+  }
+
+  .event-public-plan {
+    border: 1px solid rgb(41 60 116 / 16%);
+    border-radius: 0.85rem;
+    background: #fff;
     padding: var(--space-2);
   }
 
@@ -768,5 +850,6 @@ const structured = (contentEntry || databaseEvent) ? {
     .event-public-title { max-width: 100%; font-size: clamp(2.45rem, 13vw, 3.5rem); }
     .event-public-hero-orbit--one { right: -14rem; }
     .event-public-hero-orbit--two { right: -4rem; }
+    .event-public-content-grid { grid-template-columns: minmax(0, 1fr); }
   }
 </style>

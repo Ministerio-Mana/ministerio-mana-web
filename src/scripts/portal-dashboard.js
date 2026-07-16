@@ -17,6 +17,22 @@ const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#96;');
 const safeText = (value, fallback = '') => escapeHtml(value ?? fallback);
 const safeAttr = (value, fallback = '') => escapeAttr(value ?? fallback);
 
+function safePublicMediaUrl(value) {
+  const raw = String(value || '').trim();
+  if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function safePublicEventPath(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  return /^\/eventos\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(raw) ? raw : '/eventos';
+}
+
 function animateIn(element, { x = 0, y = 0, duration = 300 } = {}) {
   if (!element?.animate || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
   element.animate([
@@ -5639,27 +5655,31 @@ function renderLocalEvents(events) {
     const dateLabel = start ? formatDateTime(start) : 'Fecha por confirmar';
     const locationParts = [event.location_name, event.location_address, event.city, event.country].filter(Boolean);
     const location = locationParts.join(' · ') || 'Ubicación por confirmar';
-    const scopeLabel = event.scope === 'GLOBAL'
-      ? 'Global'
+    const scopeLabel = event.audience_label || (event.scope === 'GLOBAL'
+      ? 'Para toda la familia Maná'
       : event.scope === 'NATIONAL'
-        ? 'Nacional'
-        : 'Local';
+        ? 'En tu país'
+        : event.scope === 'REGIONAL'
+          ? 'En tu región'
+          : 'Cerca de ti');
     const safeScopeLabel = safeText(scopeLabel);
     const safeTitle = safeText(event.title || '');
     const safeDateLabel = safeText(dateLabel);
     const safeEndLabel = safeText(end ? formatDate(end) : '');
     const safeLocation = safeText(location);
+    const publicPath = safeAttr(safePublicEventPath(event.public_path || `/eventos/${event.slug || event.id || ''}`));
+    const bannerUrl = safePublicMediaUrl(event.banner_url);
     const card = document.createElement('div');
-    card.className = 'rounded-2xl border border-slate-100 bg-white p-5 shadow-sm';
+    card.className = 'overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm';
     card.innerHTML = `
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">${safeScopeLabel}</p>
-          <h3 class="text-base font-bold text-[#293C74] mt-1">${safeTitle}</h3>
-          <p class="text-xs text-slate-500 mt-2">${safeDateLabel}</p>
-          ${end ? `<p class="text-[11px] text-slate-400">Finaliza: ${safeEndLabel}</p>` : ''}
-          <p class="text-xs text-slate-500 mt-2">${safeLocation}</p>
-        </div>
+      ${bannerUrl ? `<div class="flex aspect-[16/7] items-center justify-center bg-[#111936] p-2"><img src="${safeAttr(bannerUrl)}" alt="" class="h-full w-full object-contain" loading="lazy" decoding="async" /></div>` : ''}
+      <div class="p-5">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-brand-teal">${safeScopeLabel}</p>
+        <h3 class="mt-2 text-base font-bold leading-snug text-[#293C74]"><a href="${publicPath}" class="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[#293C74] focus-visible:ring-offset-2">${safeTitle}</a></h3>
+        <p class="mt-4 text-xs font-semibold text-slate-600">${safeDateLabel}</p>
+        ${end ? `<p class="mt-1 text-[11px] text-slate-500">Finaliza: ${safeEndLabel}</p>` : ''}
+        <p class="mt-2 text-xs leading-relaxed text-slate-500">${safeLocation}</p>
+        <a href="${publicPath}" class="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#20315f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#293C74] focus-visible:ring-offset-2">Ver evento</a>
       </div>
     `;
     localEventsList.appendChild(card);

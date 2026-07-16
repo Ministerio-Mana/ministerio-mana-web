@@ -38,6 +38,7 @@ const PLATFORM_PUBLIC_FIELDS_BASE = [
   'attendance_mode',
   'pricing_model',
   'registration_requires_approval',
+  'page_settings',
 ].join(',');
 
 const PLATFORM_PUBLIC_FIELDS_BEFORE_EXPERIENCE = [PLATFORM_PUBLIC_FIELDS_BASE, 'banner_layout'].join(',');
@@ -84,6 +85,7 @@ export type PublicEvent = {
   attendance_mode?: 'IN_PERSON' | 'ONLINE' | 'HYBRID' | null;
   pricing_model?: 'FREE' | 'PAID' | 'DONATION' | null;
   registration_requires_approval?: boolean | null;
+  page_settings?: unknown;
 };
 
 export type PublicEventPaymentOption = {

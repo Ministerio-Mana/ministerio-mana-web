@@ -10,9 +10,25 @@ const churchPage = await getPublicChurchPage(slug);
 if (!churchPage) Astro.response.status = 404;
 const title = churchPage ? `${churchPage.page.display_name} | Ministerio Maná` : 'Iglesia no encontrada | Ministerio Maná';
 const description = churchPage?.page.description || 'La página solicitada no está publicada.';
+const structured = churchPage ? {
+  '@context': 'https://schema.org',
+  '@type': 'Church',
+  name: churchPage.page.display_name,
+  description: churchPage.page.description,
+  image: churchPage.page.hero_image_url || undefined,
+  url: `${Astro.url.origin}/iglesias/${churchPage.slug}`,
+  email: churchPage.page.contact_email || churchPage.church.contact_email || undefined,
+  telephone: churchPage.page.contact_whatsapp || churchPage.church.contact_phone || undefined,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: churchPage.church.address || undefined,
+    addressLocality: churchPage.church.city || undefined,
+    addressCountry: churchPage.church.country || undefined,
+  },
+} : undefined;
 ---
 
-<BaseLayout {title} {description} hideHeader={false} hideFooter={false}>
+<BaseLayout {title} {description} structuredData={structured} hideHeader={false} hideFooter={false}>
   {churchPage ? (
     <ChurchPublicExperience data={churchPage} />
   ) : (

@@ -277,6 +277,27 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
+            <details class="rounded-lg border border-[#293C74]/15 bg-[#F7F9FF]">
+              <summary class="cursor-pointer list-none px-4 py-4 text-sm font-bold text-[#293C74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#293C74]">Contenido de la landing <span class="font-normal text-slate-500">(opcional)</span></summary>
+              <div class="grid gap-4 border-t border-[#293C74]/10 p-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                  <p class="text-xs leading-relaxed text-slate-600">Completa solo los bloques que necesites. El sitio conserva tipografía, contraste, espacios y orden; nadie tiene que maquetar ni escoger colores.</p>
+                </div>
+                <label class="event-field">Qué vivirán los asistentes
+                  <textarea id="event-landing-expect" data-platform-field disabled rows="4" maxlength="1200" placeholder="Adoración, enseñanza, espacios de conversación..."></textarea>
+                </label>
+                <label class="event-field">Agenda o momentos principales
+                  <textarea id="event-landing-agenda" data-platform-field disabled rows="4" maxlength="1600" placeholder="9:00 a. m. · Registro&#10;10:00 a. m. · Plenaria"></textarea>
+                </label>
+                <label class="event-field">Antes de asistir
+                  <textarea id="event-landing-practical" data-platform-field disabled rows="4" maxlength="1200" placeholder="Qué llevar, acceso, alimentación, recomendaciones..."></textarea>
+                </label>
+                <label class="event-field">Quién organiza o acompaña
+                  <textarea id="event-landing-host" data-platform-field disabled rows="4" maxlength="900" placeholder="Equipo pastoral, invitados o ministerio responsable..."></textarea>
+                </label>
+              </div>
+            </details>
+
             <section id="event-registration-form-settings" class="hidden rounded-lg border border-[#293C74]/15 bg-[#F7F9FF] p-4" aria-labelledby="event-registration-form-title">
               <h4 id="event-registration-form-title" class="text-sm font-bold text-[#293C74]">Datos del formulario</h4>
               <p class="mt-2 text-xs leading-relaxed text-slate-500">Estos tres datos ya aparecen en la inscripción pública y no tienes que crearlos como preguntas adicionales.</p>
