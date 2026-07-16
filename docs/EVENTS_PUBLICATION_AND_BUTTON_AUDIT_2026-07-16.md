@@ -15,14 +15,14 @@ Son decisiones distintas. Elegir una visibilidad no publica un borrador.
 | Borrador | Cualquiera | No | No | No | No |
 | Publicado | Público en la agenda | Sí | Sí | Sí | Sí, si la inscripción está activa |
 | Publicado | Solo por enlace | No | Sí | No (`noindex`) | Sí, si la inscripción está activa |
-| Publicado | Privado | No | No | No | No |
+| Publicado | Interno | No | No | No | No |
 | Archivado | Cualquiera | No | No | No | No |
 
 ### Cuándo usar cada visibilidad
 
 - **Público en la agenda:** congresos, cultos, encuentros y convocatorias abiertas. Aparece con imagen, fecha, categoría, título, resumen y lugar. También puede recomendarse según el alcance local, regional, nacional o global.
 - **Solo por enlace:** reuniones dirigidas a un grupo, preinscripciones o invitaciones que se compartirán por WhatsApp. La persona que tenga el enlace puede abrir la landing, pero el evento no aparece en la agenda ni en recomendaciones.
-- **Privado:** planeación interna, reuniones de equipo y actividades cerradas que se administran dentro del Portal. No genera landing, enlace ni formulario público.
+- **Interno · sin página pública:** planeación interna, reuniones de equipo y actividades cerradas que se administran dentro del Portal. No genera landing, enlace ni formulario público.
 
 ## Controles auditados
 
@@ -36,17 +36,23 @@ Son decisiones distintas. Elegir una visibilidad no publica un borrador.
 - **Editar:** respeta el alcance pastoral del usuario.
 - **Publicar / Archivar / Restaurar:** actualizan el ciclo de vida sin eliminar el histórico.
 
-Cada tarjeta muestra ahora el resultado de visibilidad: **En agenda pública**, **Solo por enlace** o **Privado**.
+Cada tarjeta muestra ahora el resultado de visibilidad: **En agenda pública**, **Solo por enlace** o **Interno**.
 
 ### Editor
 
 - Cerrar, Cancelar y Escape preservan el trabajo con confirmación cuando hay cambios.
+- Título, publicación, descripción, duración, modalidad, alcance e inscripción incluyen ayudas contextuales accesibles por mouse, teclado y toque.
+- La descripción propone un ejemplo pastoral y una longitud recomendada sin usar el placeholder como etiqueta.
+- Un evento de un día pide una sola fecha; “Varios días” revela inicio y finalización.
+- La modalidad es independiente del cobro. Virtual oculta lugar, dirección y mapa; presencial e híbrido los muestran.
+- El alcance local se elige en cascada por país, región, ciudad e iglesia; al escoger la sede se completan ciudad, país, lugar y dirección desde el catálogo autorizado.
 - Título, descripción, fechas, alcance, región/iglesia, ubicación, modalidad y zona horaria alimentan la landing y la operación.
 - La imagen acepta horizontal, cuadrada o vertical; conserva el contenido y adapta la presentación.
 - Publicación y visibilidad incluyen ayuda dinámica en lenguaje pastoral.
 - Copiar enlace y Abrir invitación solo se habilitan cuando existe una landing pública válida.
-- Inscripción permite: sin formulario, formulario externo o formulario Maná.
+- Inscripción permite: sin formulario, formulario externo o formulario Maná; cada opción explica si informa, reserva cupos o envía a otra plataforma.
 - El formulario Maná mantiene datos base y preguntas adicionales configurables.
+- El cobro permanece asociado al formulario Maná porque necesita una inscripción y un pagador identificables para evitar duplicados y aportes huérfanos. Un checkout sin inscripción requerirá un flujo contable de “solo pagador” separado antes de habilitarse.
 - Cobro permite Wompi COP, Stripe USD, ambos para alcance global y opciones manuales como QR, transferencia, PayPal, Zelle o enlace externo.
 - El QR admite selección y arrastre, muestra vista previa y no se publica hasta guardar correctamente.
 - Guardar valida fechas, alcance, moneda, métodos de pago, formulario e imagen antes de confirmar.
@@ -98,6 +104,7 @@ Mejoras posteriores, solo cuando el evento lo necesite:
 5. perfil público de conferencistas o pastores;
 6. solicitudes privadas de acomodación, con recolección mínima de datos;
 7. galería posterior y memoria del evento separadas de los documentos internos.
+8. plantillas visuales Esencial, Historia y Mosaico reutilizando el sistema Stories Plus, con bloques guiados e imágenes adaptables sin permitir maquetación libre.
 
 ## Decisión Wompi que no se debe olvidar
 

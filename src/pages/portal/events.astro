@@ -108,10 +108,22 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <input type="hidden" name="id" id="event-id" />
 
           <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
-            <label class="event-field">Título
+            <label class="event-field">
+              <span class="event-field-heading">Título
+                <span class="event-context-help">
+                  <button type="button" aria-label="Ayuda sobre el título" aria-describedby="event-title-help">?</button>
+                  <span id="event-title-help" role="tooltip">Es el nombre principal que verán las personas en la agenda, la invitación y el formulario. Usa un nombre corto y reconocible.</span>
+                </span>
+              </span>
               <input type="text" name="title" required maxlength="160" placeholder="Encuentro de familias" />
             </label>
-            <label class="event-field">Publicación
+            <label class="event-field">
+              <span class="event-field-heading">Publicación
+                <span class="event-context-help">
+                  <button type="button" aria-label="Ayuda sobre la publicación" aria-describedby="event-status-help">?</button>
+                  <span id="event-status-help" role="tooltip">Borrador permite preparar y revisar sin salir al aire. Publicado activa la visibilidad elegida. Archivado conserva el historial y lo retira de circulación.</span>
+                </span>
+              </span>
               <select name="status" id="event-status">
                 <option value="DRAFT">Borrador</option>
                 <option value="PUBLISHED">Publicado</option>
@@ -125,21 +137,60 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <p class="mt-2 text-xs leading-relaxed text-slate-600" data-help-description>Puedes completar y revisar el evento sin que nadie lo vea afuera del Portal. Publicarlo será una decisión aparte.</p>
           </div>
 
-          <label class="event-field">Descripción
-            <textarea name="description" rows="3" maxlength="600" placeholder="Información principal para los asistentes"></textarea>
+          <label class="event-field">
+            <span class="event-field-heading">Descripción
+              <span class="event-context-help">
+                <button type="button" aria-label="Ayuda sobre la descripción" aria-describedby="event-description-help">?</button>
+                <span id="event-description-help" role="tooltip">Resume en dos o tres frases qué ocurrirá, para quién es y por qué vale la pena asistir. Los detalles extensos pueden ir en los bloques de la landing.</span>
+              </span>
+            </span>
+            <textarea name="description" rows="4" maxlength="600" placeholder="Ej.: Una jornada para familias con enseñanza, adoración y espacios de conversación. Pueden asistir adultos y niños; tendremos acompañamiento para cada edad."></textarea>
+            <span class="event-field-support">Recomendación: 120–300 caracteres, lenguaje claro y la información más importante al comienzo.</span>
           </label>
 
+          <fieldset class="event-choice-group">
+            <legend class="event-field-heading">Duración
+              <span class="event-context-help">
+                <button type="button" aria-label="Ayuda sobre la duración" aria-describedby="event-duration-help">?</button>
+                <span id="event-duration-help" role="tooltip">Elige “Un día” para pedir una sola fecha. “Varios días” habilita una fecha de inicio y otra de finalización.</span>
+              </span>
+            </legend>
+            <div class="event-choice-options">
+              <label><input type="radio" name="ui_duration_mode" value="ONE_DAY" checked /><span><strong>Un día</strong><small>Una sola fecha y hora</small></span></label>
+              <label><input type="radio" name="ui_duration_mode" value="MULTI_DAY" /><span><strong>Varios días</strong><small>Inicio y finalización</small></span></label>
+            </div>
+          </fieldset>
+
           <div class="event-date-grid">
-            <label class="event-field event-date-field"><span>Inicio</span>
+            <label class="event-field event-date-field"><span id="event-start-date-label">Fecha y hora</span>
               <input class="js-event-datetime" type="text" name="start_date" required autocomplete="off" placeholder="Selecciona fecha y hora" />
             </label>
-            <label class="event-field event-date-field"><span>Fin</span>
+            <label id="event-end-date-wrapper" class="event-field event-date-field hidden"><span>Fin</span>
               <input class="js-event-datetime" type="text" name="end_date" autocomplete="off" placeholder="Selecciona fecha y hora" />
             </label>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
-            <label class="event-field">Alcance
+            <label class="event-field">
+              <span class="event-field-heading">Modalidad
+                <span class="event-context-help">
+                  <button type="button" aria-label="Ayuda sobre la modalidad" aria-describedby="event-attendance-help">?</button>
+                  <span id="event-attendance-help" role="tooltip">Presencial e híbrido solicitan el lugar físico. Virtual oculta dirección y mapa para no pedir datos que no aplican.</span>
+                </span>
+              </span>
+              <select id="event-attendance-mode" name="attendance_mode">
+                <option value="IN_PERSON">Presencial</option>
+                <option value="ONLINE">Virtual</option>
+                <option value="HYBRID">Híbrido</option>
+              </select>
+            </label>
+            <label class="event-field">
+              <span class="event-field-heading">Alcance
+                <span class="event-context-help">
+                  <button type="button" aria-label="Ayuda sobre el alcance" aria-describedby="event-scope-help">?</button>
+                  <span id="event-scope-help" role="tooltip">Define quién puede administrar y recibir recomendaciones del evento: una iglesia, una región, un país o toda la comunidad global.</span>
+                </span>
+              </span>
               <select name="scope" id="event-scope">
                 <option value="LOCAL">Local</option>
                 <option value="REGIONAL">Regional</option>
@@ -147,9 +198,27 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <option value="GLOBAL">Global</option>
               </select>
             </label>
+          </div>
+
+          <div id="event-scope-selectors" class="grid gap-4 sm:grid-cols-2">
+            <div id="event-scope-country-wrapper" class="hidden">
+              <label class="event-field">País del alcance
+                <select id="event-scope-country-select"><option value="">Selecciona un país</option></select>
+              </label>
+            </div>
             <div id="event-scope-region-wrapper" class="hidden">
               <label class="event-field">Región
                 <select name="region_id" id="event-region-select"><option value="">Selecciona una región</option></select>
+              </label>
+            </div>
+            <div id="event-scope-local-region-wrapper" class="hidden">
+              <label class="event-field">Filtrar por región
+                <select id="event-local-region-filter"><option value="">Todas las regiones</option></select>
+              </label>
+            </div>
+            <div id="event-scope-city-wrapper" class="hidden">
+              <label class="event-field">Ciudad
+                <select id="event-scope-city-select"><option value="">Selecciona una ciudad</option></select>
               </label>
             </div>
             <div id="event-scope-church-wrapper" class="hidden">
@@ -159,22 +228,29 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="event-field">Lugar
-              <input type="text" name="location_name" maxlength="160" placeholder="Auditorio principal" />
-            </label>
-            <label class="event-field">Dirección
-              <input type="text" name="location_address" maxlength="160" placeholder="Dirección del encuentro" />
-            </label>
+          <div id="event-virtual-guidance" class="hidden rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-4">
+            <strong class="block text-sm text-[#293C74]">Evento virtual · sin dirección física</strong>
+            <p class="mt-2 text-xs leading-relaxed text-slate-600">Agrega la plataforma, el enlace y las instrucciones de acceso en “Antes de asistir”. No publiques claves privadas; envíalas después de confirmar la inscripción.</p>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="event-field">Ciudad
-              <input type="text" name="city" maxlength="160" placeholder="Ciudad" />
-            </label>
-            <label class="event-field">País
-              <input type="text" name="country" maxlength="160" placeholder="País" />
-            </label>
+          <div id="event-physical-location-fields" class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Lugar físico
+                <input type="text" name="location_name" maxlength="160" placeholder="Auditorio principal" />
+              </label>
+              <label class="event-field">Dirección
+                <input type="text" name="location_address" maxlength="160" placeholder="Dirección del encuentro" />
+              </label>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="event-field">Ciudad
+                <input type="text" name="city" maxlength="160" placeholder="Ciudad" />
+              </label>
+              <label class="event-field">País
+                <input type="text" name="country" maxlength="160" placeholder="País" />
+              </label>
+            </div>
           </div>
 
           <div class="event-field">
@@ -206,7 +282,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <select id="event-visibility" name="visibility" data-platform-field disabled aria-describedby="event-visibility-help">
                   <option value="UNLISTED">Solo por enlace</option>
                   <option value="PUBLIC">Público en la agenda</option>
-                  <option value="PRIVATE">Privado</option>
+                  <option value="PRIVATE">Interno · sin página pública</option>
                 </select>
               </label>
               <label class="event-field">Categoría
@@ -234,7 +310,13 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-              <label class="event-field">Inscripción
+              <label class="event-field">
+                <span class="event-field-heading">Registro de asistentes
+                  <span class="event-context-help">
+                    <button type="button" aria-label="Ayuda sobre el registro" aria-describedby="event-registration-mode-help">?</button>
+                    <span id="event-registration-mode-help" role="tooltip">“Sin formulario” publica solo información. “Formulario Maná” administra cupos, asistentes y pagos. “Enlace externo” envía a un formulario de otra plataforma.</span>
+                  </span>
+                </span>
                 <select name="registration_mode" id="event-registration-mode" data-platform-field disabled>
                   <option value="NONE">Sin formulario · solo información</option>
                   <option value="INTERNAL">Formulario de inscripción en Maná</option>
@@ -244,6 +326,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <label id="event-capacity-wrapper" class="event-field">Cupo
                 <input type="number" name="capacity" data-platform-field disabled min="0" max="1000000" step="1" placeholder="Sin límite" />
               </label>
+            </div>
+
+            <div id="event-registration-mode-guidance" class="rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-4" role="status" aria-live="polite">
+              <strong class="block text-sm text-[#293C74]" data-help-title>Sin formulario · invitación informativa</strong>
+              <p class="mt-2 text-xs leading-relaxed text-slate-600" data-help-description>La landing muestra toda la información, pero no solicita datos ni reserva cupos.</p>
             </div>
 
             <div id="event-registration-url-wrapper" class="hidden">
@@ -389,17 +476,10 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
           <section id="event-finance-settings" class="hidden space-y-4 border-t border-slate-200 pt-6" aria-labelledby="event-finance-title">
             <div>
-              <h3 id="event-finance-title" class="text-sm font-bold text-[#293C74]">Modalidad y cobro</h3>
-              <p id="event-finance-registration-hint" class="mt-2 text-xs text-slate-500">Selecciona “Inscripción en Maná” para configurar cobros y aprobación.</p>
+              <h3 id="event-finance-title" class="text-sm font-bold text-[#293C74]">Cobro y confirmación</h3>
+              <p id="event-finance-registration-hint" class="mt-2 text-xs leading-relaxed text-slate-500">Para cobrar, Maná necesita identificar al pagador y relacionar el aporte con una inscripción. Selecciona “Formulario de inscripción en Maná”; así se evitan pagos duplicados o sin responsable.</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
-              <label class="event-field">Modalidad
-                <select name="attendance_mode" data-finance-field disabled>
-                  <option value="IN_PERSON">Presencial</option>
-                  <option value="ONLINE">Virtual</option>
-                  <option value="HYBRID">Híbrido</option>
-                </select>
-              </label>
               <label class="event-field">Tipo de precio
                 <select id="event-pricing-model" name="pricing_model" data-finance-field disabled>
                   <option value="FREE">Gratuito</option>
@@ -573,6 +653,141 @@ import Sidebar from '@components/portal/Sidebar.astro';
       color: rgb(var(--portal-control-muted));
       font-size: 0.75rem;
       font-weight: 800;
+    }
+
+    .event-field-heading {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .event-field-support {
+      display: block;
+      margin-top: var(--space-1);
+      color: #64748b;
+      font-size: 0.7rem;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    .event-context-help {
+      position: relative;
+      display: inline-flex;
+      flex: 0 0 auto;
+    }
+
+    .event-context-help > button {
+      display: inline-grid;
+      width: 24px;
+      height: 24px;
+      place-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      background: #fff;
+      color: #526174;
+      font-size: 0.75rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .event-context-help > button:hover,
+    .event-context-help > button:focus-visible {
+      border-color: #293c74;
+      color: #293c74;
+      outline: 3px solid rgb(58 193 212 / 24%);
+      outline-offset: 1px;
+    }
+
+    .event-context-help [role="tooltip"] {
+      position: absolute;
+      z-index: 30;
+      top: calc(100% + var(--space-1));
+      left: 50%;
+      visibility: hidden;
+      width: min(280px, calc(100vw - var(--space-6)));
+      border: 1px solid rgb(41 60 116 / 18%);
+      border-radius: var(--portal-control-radius);
+      background: #172553;
+      box-shadow: 0 14px 34px rgb(15 23 42 / 20%);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1.5;
+      opacity: 0;
+      padding: var(--space-2);
+      pointer-events: none;
+      transform: translate(-50%, -4px);
+      transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+    }
+
+    .event-context-help:hover [role="tooltip"],
+    .event-context-help:focus-within [role="tooltip"] {
+      visibility: visible;
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .event-choice-group {
+      min-width: 0;
+      border: 0;
+      padding: 0;
+    }
+
+    .event-choice-group > legend {
+      color: rgb(var(--portal-control-muted));
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .event-choice-options {
+      display: grid;
+      gap: var(--space-2);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: var(--space-1);
+    }
+
+    .event-choice-options label {
+      position: relative;
+      display: flex;
+      min-height: var(--control-min-size);
+      align-items: center;
+      gap: var(--space-2);
+      border: 1px solid rgb(var(--portal-control-border));
+      border-radius: var(--portal-control-radius);
+      background: rgb(var(--portal-control-bg-muted));
+      padding: var(--space-2);
+      cursor: pointer;
+    }
+
+    .event-choice-options label:has(input:checked) {
+      border-color: #293c74;
+      background: #f1f5ff;
+      box-shadow: inset 0 0 0 1px #293c74;
+    }
+
+    .event-choice-options input {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+      accent-color: #293c74;
+    }
+
+    .event-choice-options span {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+    }
+
+    .event-choice-options strong {
+      color: #293c74;
+      font-size: 0.85rem;
+    }
+
+    .event-choice-options small {
+      color: #64748b;
+      font-size: 0.7rem;
+      line-height: 1.4;
     }
 
     :global(.event-field :is(input, select, textarea)) {
@@ -933,6 +1148,25 @@ import Sidebar from '@components/portal/Sidebar.astro';
     }
 
     @media (max-width: 640px) {
+      .event-choice-options {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .event-context-help [role="tooltip"] {
+        position: fixed;
+        top: auto;
+        right: var(--space-2);
+        bottom: var(--space-2);
+        left: var(--space-2);
+        width: auto;
+        transform: translateY(4px);
+      }
+
+      .event-context-help:hover [role="tooltip"],
+      .event-context-help:focus-within [role="tooltip"] {
+        transform: translateY(0);
+      }
+
       .event-required-fields,
       :global(.event-custom-field-grid) {
         grid-template-columns: minmax(0, 1fr);

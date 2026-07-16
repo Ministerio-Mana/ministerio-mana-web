@@ -36,8 +36,12 @@ const startDate = new Date(startDateValue);
 const endDate = new Date(endDateValue);
 const isValidDate = Number.isFinite(startDate.getTime());
 const isCompleted = Number.isFinite(endDate.getTime()) && endDate.getTime() < Date.now();
-const location = contentEntry?.data.location || [databaseEvent?.location_name, databaseEvent?.city, databaseEvent?.country].filter(Boolean).join(' · ');
-const address = databaseEvent?.location_address || '';
+const attendanceMode = String(databaseEvent?.attendance_mode || 'IN_PERSON').toUpperCase();
+const isOnlineEvent = attendanceMode === 'ONLINE';
+const location = isOnlineEvent
+  ? 'Evento virtual'
+  : contentEntry?.data.location || [databaseEvent?.location_name, databaseEvent?.city, databaseEvent?.country].filter(Boolean).join(' · ');
+const address = isOnlineEvent ? '' : databaseEvent?.location_address || '';
 const image = contentEntry?.data.heroImage || databaseEvent?.banner_url || undefined;
 const imageLayout = contentEntry ? 'HORIZONTAL' : databaseEvent?.banner_layout || 'HORIZONTAL';
 const useImageHero = Boolean(image && !image.toLowerCase().endsWith('.svg'));
@@ -135,7 +139,7 @@ const whatsappHref = contactWhatsApp
   : '';
 const calendarHref = databaseEvent ? `/api/events/${databaseEvent.id}/calendar.ics` : '';
 const mapsQuery = [address, location].filter(Boolean).join(', ');
-const mapsHref = mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : '';
+const mapsHref = !isOnlineEvent && mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : '';
 const formattedDate = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: eventTimeZone }).format(startDate)
   : 'Fecha por confirmar';
@@ -148,9 +152,9 @@ const heroDay = isValidDate
 const heroMonth = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { month: 'short', timeZone: eventTimeZone }).format(startDate).replace('.', '').toUpperCase()
   : '';
-const attendanceLabel = databaseEvent?.attendance_mode === 'ONLINE'
+const attendanceLabel = attendanceMode === 'ONLINE'
   ? 'Virtual'
-  : databaseEvent?.attendance_mode === 'HYBRID'
+  : attendanceMode === 'HYBRID'
     ? 'Híbrido'
     : 'Presencial';
 const priceLabel = pricingModel === 'DONATION'
@@ -172,12 +176,16 @@ const structured = (contentEntry || databaseEvent) ? {
   startDate: isValidDate ? startDate.toISOString() : undefined,
   endDate: Number.isFinite(endDate.getTime()) ? endDate.toISOString() : undefined,
   eventStatus: isCompleted ? 'https://schema.org/EventCompleted' : 'https://schema.org/EventScheduled',
-  eventAttendanceMode: databaseEvent?.attendance_mode === 'ONLINE'
+  eventAttendanceMode: attendanceMode === 'ONLINE'
     ? 'https://schema.org/OnlineEventAttendanceMode'
-    : databaseEvent?.attendance_mode === 'HYBRID'
+    : attendanceMode === 'HYBRID'
       ? 'https://schema.org/MixedEventAttendanceMode'
       : 'https://schema.org/OfflineEventAttendanceMode',
-  location: location ? { '@type': 'Place', name: location, address: address || undefined } : undefined,
+  location: isOnlineEvent
+    ? { '@type': 'VirtualLocation', url: canonical }
+    : location
+      ? { '@type': 'Place', name: location, address: address || undefined }
+      : undefined,
   image: image ? [new URL(image, Astro.url.origin).toString()] : undefined,
   url: canonical,
   organizer: {
@@ -280,7 +288,7 @@ const structured = (contentEntry || databaseEvent) ? {
             {(calendarHref || mapsHref) && (
               <div class="event-public-plan mt-6">
                 <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">Planifica tu asistencia</p>
-                <p class="mt-2 text-sm leading-relaxed text-slate-600">Guarda la fecha y revisa la ruta antes de salir.</p>
+                <p class="mt-2 text-sm leading-relaxed text-slate-600">{isOnlineEvent ? 'Guarda la fecha y revisa las instrucciones de acceso antes de comenzar.' : 'Guarda la fecha y revisa la ruta antes de salir.'}</p>
                 <div class="mt-4 grid gap-2">
                   {calendarHref && <a href={calendarHref} class="event-public-contact-action">Guardar en mi calendario</a>}
                   {mapsHref && <a href={mapsHref} target="_blank" rel="noopener noreferrer" class="event-public-contact-action">Abrir ubicación</a>}

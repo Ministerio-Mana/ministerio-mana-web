@@ -156,6 +156,14 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /id="event-manual-payment-qr-dropzone"[^>]*role="button"/);
   assert.match(eventsView, /id="event-publication-help"[^>]*role="status"[^>]*aria-live="polite"/);
   assert.match(eventsView, /id="event-visibility-help"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(eventsView, /id="event-title-help"[^>]*role="tooltip"/);
+  assert.match(eventsView, /name="ui_duration_mode" value="ONE_DAY" checked/);
+  assert.match(eventsView, /name="ui_duration_mode" value="MULTI_DAY"/);
+  assert.match(eventsView, /id="event-attendance-mode"[\s\S]*?Presencial[\s\S]*?Virtual[\s\S]*?Híbrido/);
+  assert.match(eventsView, /id="event-scope-country-select"/);
+  assert.match(eventsView, /id="event-local-region-filter"/);
+  assert.match(eventsView, /id="event-scope-city-select"/);
+  assert.match(eventsView, /Formulario de inscripción en Maná[\s\S]*?evitan pagos duplicados o sin responsable/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
@@ -174,8 +182,12 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /data\.signed_url/);
   assert.match(eventsLogic, /PUBLIC:[\s\S]*?En agenda pública/);
   assert.match(eventsLogic, /UNLISTED:[\s\S]*?Solo por enlace/);
-  assert.match(eventsLogic, /PRIVATE:[\s\S]*?Privado/);
+  assert.match(eventsLogic, /PRIVATE:[\s\S]*?Interno/);
   assert.match(eventsLogic, /visibility !== 'PRIVATE'/);
+  assert.match(eventsLogic, /function syncEventDurationFields/);
+  assert.match(eventsLogic, /function syncAttendanceFields/);
+  assert.match(eventsLogic, /listPortalCountries\(getScopedChurches\(\), getScopedRegions\(\)\)/);
+  assert.match(eventsLogic, /payload\.attendance_mode === 'ONLINE'[\s\S]*?payload\.location_name = null[\s\S]*?payload\.location_address = null/);
   assert.match(eventsLogic, /id="btn-retry-events" class="mt-4 min-h-11/);
   assert.match(eventsApi, /Selecciona el país del evento nacional/);
   assert.match(eventsApi, /Selecciona una región para el evento regional/);
@@ -264,6 +276,8 @@ test('la landing pública describe modalidad y bloquea el registro privado en el
   assert.match(publicView, /OnlineEventAttendanceMode/);
   assert.match(publicView, /MixedEventAttendanceMode/);
   assert.match(publicView, /OfflineEventAttendanceMode/);
+  assert.match(publicView, /'@type': 'VirtualLocation'/);
+  assert.match(publicView, /const mapsHref = !isOnlineEvent/);
   assert.match(publicView, /data-copy-event-link/);
   assert.match(registerApi, /publicRegistrationAllowed:[\s\S]*?status[\s\S]*?PUBLISHED[\s\S]*?visibility[\s\S]*?PRIVATE[\s\S]*?registration_mode[\s\S]*?INTERNAL/);
 });

@@ -30,6 +30,12 @@ import {
 import { normalizeEventInvitationLayout } from '@lib/eventInvitationLayout.js';
 import { normalizeEventLandingSettings } from '@lib/eventLanding';
 import {
+    listPortalCities,
+    listPortalCountries,
+    normalizePortalCountryKey,
+    normalizeTerritoryKey,
+} from '@lib/portalGeography';
+import {
     EVENT_CUSTOM_FIELD_TYPES,
     MAX_EVENT_CUSTOM_FIELDS,
     isEventCustomChoiceField,
@@ -59,9 +65,25 @@ const eventStatusSelect = eventForm?.querySelector('[name="status"]');
 const eventVisibilitySelect = document.getElementById('event-visibility');
 const eventPublicationHelp = document.getElementById('event-publication-help');
 const eventVisibilityHelp = document.getElementById('event-visibility-help');
+const eventRegistrationModeGuidance = document.getElementById('event-registration-mode-guidance');
 const eventCountryInput = eventForm?.querySelector('[name="country"]');
+const eventCityInput = eventForm?.querySelector('[name="city"]');
+const eventLocationNameInput = eventForm?.querySelector('[name="location_name"]');
+const eventLocationAddressInput = eventForm?.querySelector('[name="location_address"]');
+const eventDurationModeInputs = eventForm?.querySelectorAll('[name="ui_duration_mode"]') || [];
+const eventEndDateWrapper = document.getElementById('event-end-date-wrapper');
+const eventStartDateLabel = document.getElementById('event-start-date-label');
+const eventAttendanceMode = document.getElementById('event-attendance-mode');
+const eventPhysicalLocationFields = document.getElementById('event-physical-location-fields');
+const eventVirtualGuidance = document.getElementById('event-virtual-guidance');
+const eventScopeCountryWrapper = document.getElementById('event-scope-country-wrapper');
+const eventScopeCountrySelect = document.getElementById('event-scope-country-select');
 const eventRegionWrapper = document.getElementById('event-scope-region-wrapper');
 const eventRegionSelect = document.getElementById('event-region-select');
+const eventLocalRegionWrapper = document.getElementById('event-scope-local-region-wrapper');
+const eventLocalRegionFilter = document.getElementById('event-local-region-filter');
+const eventScopeCityWrapper = document.getElementById('event-scope-city-wrapper');
+const eventScopeCitySelect = document.getElementById('event-scope-city-select');
 const eventChurchWrapper = document.getElementById('event-scope-church-wrapper');
 const eventChurchSelect = document.getElementById('event-church-select');
 const eventPlatformPending = document.getElementById('event-platform-pending');
@@ -163,7 +185,7 @@ const LIFECYCLE_TONES = {
 const VISIBILITY_LABELS = {
     PUBLIC: 'En agenda pública',
     UNLISTED: 'Solo por enlace',
-    PRIVATE: 'Privado',
+    PRIVATE: 'Interno',
 };
 const VISIBILITY_TONES = {
     PUBLIC: 'border-teal-200 bg-teal-50 text-teal-700',
@@ -322,8 +344,23 @@ const EVENT_VISIBILITY_GUIDANCE = {
         description: 'Al publicarlo, cualquier persona que reciba la URL puede abrir la invitación e inscribirse. No aparece en la agenda pública ni en las recomendaciones y se marca para no indexarse en buscadores.',
     },
     PRIVATE: {
-        title: 'Privado · solo para el equipo autorizado',
+        title: 'Interno · sin página pública',
         description: 'No crea una landing pública, no aparece en la agenda, no ofrece enlace ni formulario público. Úsalo para planeación interna, reuniones de equipo o eventos cerrados gestionados desde el Portal.',
+    },
+};
+
+const EVENT_REGISTRATION_GUIDANCE = {
+    NONE: {
+        title: 'Sin formulario · invitación informativa',
+        description: 'La landing muestra toda la información, pero no solicita datos ni reserva cupos. Es útil para reuniones abiertas que no necesitan control de asistencia.',
+    },
+    INTERNAL: {
+        title: 'Formulario Maná · registro, cupos y seguimiento en un solo lugar',
+        description: 'Solicita los datos configurados, crea una ficha por asistente y permite exportar o actualizar el Excel en OneDrive. Es obligatorio si el evento recibe aportes o pagos desde Maná.',
+    },
+    EXTERNAL: {
+        title: 'Enlace externo · el registro ocurre fuera de Maná',
+        description: 'La invitación envía a Microsoft Forms, Google Forms u otra página HTTPS. Maná no recibe sus respuestas, no controla cupos y no puede relacionarlas automáticamente con un pago.',
     },
 };
 
@@ -341,6 +378,14 @@ function syncPublicationGuidance() {
     setGuidanceContent(eventPublicationHelp, EVENT_PUBLICATION_GUIDANCE[status] || EVENT_PUBLICATION_GUIDANCE.DRAFT);
     setGuidanceContent(eventVisibilityHelp, EVENT_VISIBILITY_GUIDANCE[visibility] || EVENT_VISIBILITY_GUIDANCE.UNLISTED);
     syncSlugInput();
+}
+
+function syncRegistrationGuidance() {
+    const mode = String(eventRegistrationMode?.value || 'NONE').toUpperCase();
+    setGuidanceContent(
+        eventRegistrationModeGuidance,
+        EVENT_REGISTRATION_GUIDANCE[mode] || EVENT_REGISTRATION_GUIDANCE.NONE,
+    );
 }
 
 function setPublicLinkFeedback(message = '', tone = 'success') {
@@ -730,6 +775,38 @@ function syncRegistrationFields() {
     syncDatePickerDisabledState();
     previewCta?.classList.toggle('hidden', !hasRegistration);
     previewCta?.classList.toggle('inline-flex', hasRegistration);
+    syncRegistrationGuidance();
+}
+
+function getEventDurationMode() {
+    return String(eventForm?.querySelector('[name="ui_duration_mode"]:checked')?.value || 'ONE_DAY').toUpperCase();
+}
+
+function syncEventDurationFields({ clearEnd = false } = {}) {
+    const usesRange = getEventDurationMode() === 'MULTI_DAY';
+    const endField = eventForm?.querySelector('[name="end_date"]');
+    eventEndDateWrapper?.classList.toggle('hidden', !usesRange);
+    if (eventStartDateLabel) eventStartDateLabel.textContent = usesRange ? 'Inicio' : 'Fecha y hora';
+    if (endField) {
+        endField.required = usesRange;
+        endField.disabled = !usesRange;
+    }
+    if (!usesRange && clearEnd) setEventDateTimeValue('end_date', '');
+    syncDatePickerDisabledState();
+}
+
+function syncAttendanceFields({ clearPhysical = false } = {}) {
+    const mode = normalizeAttendanceMode(eventAttendanceMode?.value);
+    const isOnline = mode === 'ONLINE';
+    eventPhysicalLocationFields?.classList.toggle('hidden', isOnline);
+    eventVirtualGuidance?.classList.toggle('hidden', !isOnline);
+    [eventLocationNameInput, eventLocationAddressInput].forEach((field) => {
+        if (field) field.disabled = isOnline;
+    });
+    if (isOnline && clearPhysical) {
+        if (eventLocationNameInput) eventLocationNameInput.value = '';
+        if (eventLocationAddressInput) eventLocationAddressInput.value = '';
+    }
 }
 
 function syncPlatformFields() {
@@ -1023,12 +1100,8 @@ async function saveManualPaymentOption(eventId) {
     if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el pago manual.');
 }
 
-function normalizeCountry(value) {
-    return String(value || '').trim().toLowerCase();
-}
-
 function sameCountry(left, right) {
-    return normalizeCountry(left) === normalizeCountry(right);
+    return normalizePortalCountryKey(left) === normalizePortalCountryKey(right);
 }
 
 function makeTimeoutError(label) {
@@ -1149,16 +1222,16 @@ function getAllowedScopes() {
     return scopes;
 }
 
-function getScopedRegions() {
+function getScopedRegions(country = '') {
     let scoped = regionsCatalog.filter((region) => region?.is_active !== false);
-    if (isAdminRole()) return scoped;
-    if (currentAllowedRegionIds.length) {
+    if (!isAdminRole() && currentAllowedRegionIds.length) {
         scoped = scoped.filter((region) => currentAllowedRegionIds.includes(region.id));
-    } else if (currentCountry) {
+    } else if (!isAdminRole() && currentCountry) {
         scoped = scoped.filter((region) => sameCountry(region.country, currentCountry));
-    } else {
+    } else if (!isAdminRole()) {
         scoped = [];
     }
+    if (country) scoped = scoped.filter((region) => sameCountry(region.country, country));
     return scoped;
 }
 
@@ -1182,9 +1255,32 @@ function getScopedChurches() {
     return scoped.sort((a, b) => `${a.country || ''}|${a.city || ''}|${a.name || ''}`.localeCompare(`${b.country || ''}|${b.city || ''}|${b.name || ''}`, 'es'));
 }
 
+function getScopeCountries() {
+    const countries = listPortalCountries(getScopedChurches(), getScopedRegions());
+    if (currentCountry && !countries.some((country) => sameCountry(country, currentCountry))) {
+        countries.push(String(currentCountry).trim());
+        countries.sort((a, b) => a.localeCompare(b, 'es'));
+    }
+    return countries;
+}
+
+function populateScopeCountryOptions(selectedCountry = '') {
+    if (!eventScopeCountrySelect) return;
+    const countries = getScopeCountries();
+    if (selectedCountry && !countries.some((country) => sameCountry(country, selectedCountry))) {
+        countries.push(selectedCountry);
+        countries.sort((a, b) => a.localeCompare(b, 'es'));
+    }
+    eventScopeCountrySelect.innerHTML = '<option value="">Selecciona un país</option>' + countries
+        .map((country) => `<option value="${escapeAttr(country)}"${sameCountry(selectedCountry, country) ? ' selected' : ''}>${escapeHtml(country)}</option>`)
+        .join('');
+    if (!eventScopeCountrySelect.value && countries.length === 1) eventScopeCountrySelect.value = countries[0];
+}
+
 function populateRegionOptions(selectedRegionId = '') {
     if (!eventRegionSelect) return;
-    eventRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' + getScopedRegions()
+    const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    eventRegionSelect.innerHTML = '<option value="">Selecciona una región</option>' + getScopedRegions(country)
         .map((region) => {
             const label = `${region.code || 'REG'} · ${region.name || 'Región'}${region.country ? ` (${region.country})` : ''}`;
             return `<option value="${escapeAttr(region.id || '')}"${selectedRegionId === region.id ? ' selected' : ''}>${escapeHtml(label)}</option>`;
@@ -1192,9 +1288,43 @@ function populateRegionOptions(selectedRegionId = '') {
         .join('');
 }
 
+function populateLocalRegionOptions(selectedRegionId = '') {
+    if (!eventLocalRegionFilter) return;
+    const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    const regionIds = new Set(getScopedChurches()
+        .filter((church) => !country || sameCountry(church.country, country))
+        .map((church) => String(church.region_id || '').trim())
+        .filter(Boolean));
+    const regions = getScopedRegions(country).filter((region) => regionIds.has(String(region.id || '')));
+    eventLocalRegionFilter.innerHTML = '<option value="">Todas las regiones</option>' + regions
+        .map((region) => `<option value="${escapeAttr(region.id || '')}"${selectedRegionId === region.id ? ' selected' : ''}>${escapeHtml(`${region.code || 'REG'} · ${region.name || 'Región'}`)}</option>`)
+        .join('');
+}
+
+function getFilteredLocalChurches({ ignoreCity = false } = {}) {
+    const country = String(eventScopeCountrySelect?.value || eventCountryInput?.value || '').trim();
+    const regionId = String(eventLocalRegionFilter?.value || '').trim();
+    const city = String(eventScopeCitySelect?.value || '').trim();
+    return getScopedChurches().filter((church) => {
+        if (country && !sameCountry(church.country, country)) return false;
+        if (regionId && String(church.region_id || '') !== regionId) return false;
+        if (!ignoreCity && city && normalizeTerritoryKey(church.city) !== normalizeTerritoryKey(city)) return false;
+        return true;
+    });
+}
+
+function populateScopeCityOptions(selectedCity = '') {
+    if (!eventScopeCitySelect) return;
+    const cities = listPortalCities(getFilteredLocalChurches({ ignoreCity: true }));
+    eventScopeCitySelect.innerHTML = '<option value="">Selecciona una ciudad</option>' + cities
+        .map((city) => `<option value="${escapeAttr(city)}"${selectedCity === city ? ' selected' : ''}>${escapeHtml(city)}</option>`)
+        .join('');
+    if (!eventScopeCitySelect.value && cities.length === 1) eventScopeCitySelect.value = cities[0];
+}
+
 function populateChurchOptions(selectedChurchId = '') {
     if (!eventChurchSelect) return;
-    eventChurchSelect.innerHTML = '<option value="">Selecciona una iglesia</option>' + getScopedChurches()
+    eventChurchSelect.innerHTML = '<option value="">Selecciona una iglesia</option>' + getFilteredLocalChurches()
         .map((church) => {
             const label = `${church.city || 'Ciudad'} · ${church.name || 'Iglesia'}${church.country ? ` · ${church.country}` : ''}`;
             return `<option value="${escapeAttr(church.id || '')}"${selectedChurchId === church.id ? ' selected' : ''}>${escapeHtml(label)}</option>`;
@@ -1202,10 +1332,23 @@ function populateChurchOptions(selectedChurchId = '') {
         .join('');
 }
 
+function syncLocationFromChurch({ overwrite = false } = {}) {
+    const church = churchesById.get(String(eventChurchSelect?.value || '').trim());
+    if (!church) return;
+    if (eventScopeCountrySelect && church.country) eventScopeCountrySelect.value = church.country;
+    if (eventCountryInput && church.country) eventCountryInput.value = church.country;
+    if (eventCityInput && church.city && (overwrite || !eventCityInput.value)) eventCityInput.value = church.city;
+    if (eventLocationNameInput && church.name && (overwrite || !eventLocationNameInput.value)) eventLocationNameInput.value = church.name;
+    if (eventLocationAddressInput && church.address && (overwrite || !eventLocationAddressInput.value)) eventLocationAddressInput.value = church.address;
+}
+
 function syncCountryFromRegion() {
     if (!eventRegionSelect || !eventCountryInput) return;
     const region = regionsById.get(String(eventRegionSelect.value || '').trim());
-    if (region?.country) eventCountryInput.value = region.country;
+    if (region?.country) {
+        eventCountryInput.value = region.country;
+        if (eventScopeCountrySelect) eventScopeCountrySelect.value = region.country;
+    }
 }
 
 function syncScopeInputs(options = {}) {
@@ -1214,9 +1357,30 @@ function syncScopeInputs(options = {}) {
     const scope = String(eventScopeSelect.value || '').toUpperCase();
     const currentRegion = String(eventRegionSelect?.value || '').trim();
     const currentChurch = String(eventChurchSelect?.value || '').trim();
+    const selectedChurch = churchesById.get(currentChurch);
+    const currentScopeCountry = String(
+        selectedChurch?.country
+        || eventScopeCountrySelect?.value
+        || eventCountryInput.value
+        || currentCountry
+        || '',
+    ).trim();
+    const currentLocalRegion = String(selectedChurch?.region_id || eventLocalRegionFilter?.value || '').trim();
+    const currentScopeCity = String(selectedChurch?.city || eventScopeCitySelect?.value || '').trim();
     const needsRegion = scope === 'REGIONAL';
     const needsChurch = scope === 'LOCAL';
-    eventCountryInput.required = scope === 'NATIONAL' && isAdminRole();
+    const needsCountryScope = scope !== 'GLOBAL';
+
+    if (eventScopeCountryWrapper && eventScopeCountrySelect) {
+        eventScopeCountryWrapper.classList.toggle('hidden', !needsCountryScope);
+        eventScopeCountrySelect.required = needsCountryScope;
+        eventScopeCountrySelect.disabled = !needsCountryScope || (!isAdminRole() && Boolean(currentCountry));
+        if (needsCountryScope) {
+            populateScopeCountryOptions(currentScopeCountry);
+            if (!isAdminRole() && currentCountry) eventScopeCountrySelect.value = currentCountry;
+            if (eventScopeCountrySelect.value) eventCountryInput.value = eventScopeCountrySelect.value;
+        }
+    }
 
     if (eventRegionWrapper && eventRegionSelect) {
         eventRegionWrapper.classList.toggle('hidden', !needsRegion);
@@ -1233,6 +1397,21 @@ function syncScopeInputs(options = {}) {
         }
     }
 
+    if (eventLocalRegionWrapper && eventLocalRegionFilter) {
+        eventLocalRegionWrapper.classList.toggle('hidden', !needsChurch);
+        eventLocalRegionFilter.disabled = !needsChurch;
+        if (needsChurch) populateLocalRegionOptions(preserveSelections ? currentLocalRegion : '');
+        else eventLocalRegionFilter.value = '';
+    }
+
+    if (eventScopeCityWrapper && eventScopeCitySelect) {
+        eventScopeCityWrapper.classList.toggle('hidden', !needsChurch);
+        eventScopeCitySelect.required = needsChurch;
+        eventScopeCitySelect.disabled = !needsChurch;
+        if (needsChurch) populateScopeCityOptions(preserveSelections ? currentScopeCity : '');
+        else eventScopeCitySelect.value = '';
+    }
+
     if (eventChurchWrapper && eventChurchSelect) {
         eventChurchWrapper.classList.toggle('hidden', !needsChurch);
         eventChurchSelect.required = needsChurch;
@@ -1243,25 +1422,27 @@ function syncScopeInputs(options = {}) {
                 eventChurchSelect.value = currentChurchId;
                 eventChurchSelect.disabled = true;
             }
+            syncLocationFromChurch();
         } else {
             eventChurchSelect.value = '';
         }
     }
 
     if (scope === 'GLOBAL') {
-        eventCountryInput.value = '';
-        eventCountryInput.disabled = true;
+        eventCountryInput.readOnly = false;
+        eventCountryInput.required = false;
     } else if (scope === 'REGIONAL') {
         syncCountryFromRegion();
-        eventCountryInput.disabled = true;
+        eventCountryInput.readOnly = true;
         if (!isAdminRole() && currentCountry) eventCountryInput.value = currentCountry;
-    } else if (!isAdminRole()) {
-        eventCountryInput.disabled = true;
-        if (currentCountry) eventCountryInput.value = currentCountry;
     } else {
-        eventCountryInput.disabled = false;
+        eventCountryInput.readOnly = true;
+        eventCountryInput.required = needsCountryScope;
+        if (eventScopeCountrySelect?.value) eventCountryInput.value = eventScopeCountrySelect.value;
     }
+    eventCountryInput.classList.toggle('bg-slate-100', eventCountryInput.readOnly);
 
+    syncAttendanceFields();
     updateEventPreview();
 }
 
@@ -1333,6 +1514,7 @@ function formatEventDate(event) {
 }
 
 function getLocationLabel(event) {
+    if (normalizeAttendanceMode(event?.attendance_mode) === 'ONLINE') return 'Evento virtual';
     return [event?.location_name, event?.city, event?.country].filter(Boolean).join(' · ') || 'Lugar por definir';
 }
 
@@ -1616,7 +1798,10 @@ function updateEventPreview() {
     const status = value('status').toUpperCase() || 'DRAFT';
     const start = eventDatePickers.get('start_date')?.selectedDates?.[0] || null;
     const imageUrl = invitationImagePreviewObjectUrl || sanitizeUrl(value('banner_url'));
-    const location = [value('location_name'), value('city'), value('country')].filter(Boolean).join(' · ');
+    const attendanceMode = normalizeAttendanceMode(eventAttendanceMode?.value || value('attendance_mode'));
+    const location = attendanceMode === 'ONLINE'
+        ? 'Evento virtual'
+        : [value('location_name'), value('city'), value('country')].filter(Boolean).join(' · ');
     const currency = value('currency').toUpperCase() || 'COP';
     const price = parseMoneyInput(value('price'), currency);
     const paymentMode = normalizeEventOnlinePaymentMode(eventOnlineProvider?.value);
@@ -1772,6 +1957,11 @@ function openEventModal(mode, eventData = null) {
     ['start_date', 'end_date', 'registration_opens_at', 'registration_closes_at'].forEach((name) => {
         setEventDateTimeValue(name, fieldValues[name]);
     });
+    const durationMode = fieldValues.end_date ? 'MULTI_DAY' : 'ONE_DAY';
+    eventDurationModeInputs.forEach((input) => {
+        input.checked = input.value === durationMode;
+    });
+    syncEventDurationFields();
     syncSlugInput();
     formatMoneyInput();
     const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
@@ -1932,13 +2122,49 @@ eventScopeSelect?.addEventListener('change', () => {
     syncFinanceFields();
     updateEventPreview();
 });
+eventScopeCountrySelect?.addEventListener('change', () => {
+    if (eventCountryInput) eventCountryInput.value = eventScopeCountrySelect.value;
+    if (eventRegionSelect) eventRegionSelect.value = '';
+    if (eventLocalRegionFilter) eventLocalRegionFilter.value = '';
+    if (eventScopeCitySelect) eventScopeCitySelect.value = '';
+    if (eventChurchSelect) eventChurchSelect.value = '';
+    syncScopeInputs();
+    syncFinanceFields();
+});
 eventRegionSelect?.addEventListener('change', () => {
     syncCountryFromRegion();
+    syncScopeInputs({ preserveSelections: true });
     syncFinanceFields();
     updateEventPreview();
 });
+eventLocalRegionFilter?.addEventListener('change', () => {
+    if (eventScopeCitySelect) eventScopeCitySelect.value = '';
+    if (eventChurchSelect) eventChurchSelect.value = '';
+    syncScopeInputs({ preserveSelections: true });
+});
+eventScopeCitySelect?.addEventListener('change', () => {
+    if (eventChurchSelect) eventChurchSelect.value = '';
+    syncScopeInputs({ preserveSelections: true });
+});
+eventChurchSelect?.addEventListener('change', () => {
+    syncLocationFromChurch({ overwrite: true });
+    syncScopeInputs({ preserveSelections: true });
+});
 eventCountryInput?.addEventListener('input', () => {
     syncFinanceFields();
+    updateEventPreview();
+});
+eventDurationModeInputs.forEach((input) => {
+    input.addEventListener('change', () => {
+        syncEventDurationFields({ clearEnd: true });
+        updateEventPreview();
+    });
+});
+eventAttendanceMode?.addEventListener('change', () => {
+    syncAttendanceFields({ clearPhysical: true });
+    if (normalizeAttendanceMode(eventAttendanceMode.value) !== 'ONLINE') {
+        syncLocationFromChurch();
+    }
     updateEventPreview();
 });
 eventRegistrationMode?.addEventListener('change', () => {
@@ -2131,9 +2357,15 @@ eventForm?.addEventListener('submit', async (event) => {
         }
         const eventId = String(payload.id || '');
         delete payload.id;
+        delete payload.ui_duration_mode;
         Object.keys(payload).forEach((key) => {
             if (payload[key] === '') delete payload[key];
         });
+        if (getEventDurationMode() === 'ONE_DAY') payload.end_date = null;
+        if (payload.attendance_mode === 'ONLINE') {
+            payload.location_name = null;
+            payload.location_address = null;
+        }
         if (eventPlatformReady) {
             ['contact_whatsapp', 'contact_whatsapp_message'].forEach((name) => {
                 const raw = String(eventForm.querySelector(`[name="${name}"]`)?.value || '').trim();
