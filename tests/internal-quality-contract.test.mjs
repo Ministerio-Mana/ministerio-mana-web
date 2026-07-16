@@ -156,6 +156,7 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /id="event-manual-payment-qr-dropzone"[^>]*role="button"/);
   assert.match(eventsView, /id="event-publication-help"[^>]*role="status"[^>]*aria-live="polite"/);
   assert.match(eventsView, /id="event-visibility-help"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(eventsView, /id="event-visibility-private-legacy"[^>]*value="PRIVATE"[^>]*hidden[^>]*disabled/);
   assert.match(eventsView, /id="event-title-help"[^>]*role="tooltip"/);
   assert.match(eventsView, /name="ui_duration_mode" value="ONE_DAY" checked/);
   assert.match(eventsView, /name="ui_duration_mode" value="MULTI_DAY"/);
@@ -183,6 +184,7 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /PUBLIC:[\s\S]*?En agenda pública/);
   assert.match(eventsLogic, /UNLISTED:[\s\S]*?Solo por enlace/);
   assert.match(eventsLogic, /PRIVATE:[\s\S]*?Interno/);
+  assert.match(eventsLogic, /function syncLegacyPrivateVisibilityOption\(eventData\)[\s\S]*?isLegacyPrivate[\s\S]*?hidden = !isLegacyPrivate[\s\S]*?disabled = !isLegacyPrivate/);
   assert.match(eventsLogic, /visibility !== 'PRIVATE'/);
   assert.match(eventsLogic, /function syncEventDurationFields/);
   assert.match(eventsLogic, /function syncAttendanceFields/);

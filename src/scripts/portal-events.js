@@ -63,6 +63,7 @@ const eventTitleInput = eventForm?.querySelector('[name="title"]');
 const eventScopeSelect = eventForm?.querySelector('[name="scope"]');
 const eventStatusSelect = eventForm?.querySelector('[name="status"]');
 const eventVisibilitySelect = document.getElementById('event-visibility');
+const eventLegacyPrivateVisibilityOption = document.getElementById('event-visibility-private-legacy');
 const eventPublicationHelp = document.getElementById('event-publication-help');
 const eventVisibilityHelp = document.getElementById('event-visibility-help');
 const eventRegistrationModeGuidance = document.getElementById('event-registration-mode-guidance');
@@ -344,10 +345,17 @@ const EVENT_VISIBILITY_GUIDANCE = {
         description: 'Al publicarlo, cualquier persona que reciba la URL puede abrir la invitación e inscribirse. No aparece en la agenda pública ni en las recomendaciones y se marca para no indexarse en buscadores.',
     },
     PRIVATE: {
-        title: 'Interno · sin página pública',
-        description: 'No crea una landing pública, no aparece en la agenda, no ofrece enlace ni formulario público. Úsalo para planeación interna, reuniones de equipo o eventos cerrados gestionados desde el Portal.',
+        title: 'Interno · evento heredado',
+        description: 'Esta opción se conserva únicamente para eventos antiguos. Puedes mantenerla mientras revisas el registro o cambiarla a “Solo por enlace” para compartir una invitación cerrada.',
     },
 };
+
+function syncLegacyPrivateVisibilityOption(eventData) {
+    if (!eventLegacyPrivateVisibilityOption) return;
+    const isLegacyPrivate = String(eventData?.visibility || '').toUpperCase() === 'PRIVATE';
+    eventLegacyPrivateVisibilityOption.hidden = !isLegacyPrivate;
+    eventLegacyPrivateVisibilityOption.disabled = !isLegacyPrivate;
+}
 
 const EVENT_REGISTRATION_GUIDANCE = {
     NONE: {
@@ -1933,6 +1941,7 @@ function openEventModal(mode, eventData = null) {
         archivedOption.hidden = mode !== 'edit';
         archivedOption.disabled = mode !== 'edit';
     }
+    syncLegacyPrivateVisibilityOption(eventData);
 
     const eventTimeZone = normalizeEventTimeZone(eventData?.timezone);
     const fieldValues = {

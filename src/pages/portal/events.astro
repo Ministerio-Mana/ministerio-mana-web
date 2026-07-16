@@ -282,7 +282,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <select id="event-visibility" name="visibility" data-platform-field disabled aria-describedby="event-visibility-help">
                   <option value="UNLISTED">Solo por enlace</option>
                   <option value="PUBLIC">Público en la agenda</option>
-                  <option value="PRIVATE">Interno · sin página pública</option>
+                  <option id="event-visibility-private-legacy" value="PRIVATE" hidden disabled>Interno · evento heredado</option>
                 </select>
               </label>
               <label class="event-field">Categoría

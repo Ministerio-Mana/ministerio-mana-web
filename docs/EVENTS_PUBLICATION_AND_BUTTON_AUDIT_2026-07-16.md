@@ -15,14 +15,14 @@ Son decisiones distintas. Elegir una visibilidad no publica un borrador.
 | Borrador | Cualquiera | No | No | No | No |
 | Publicado | Público en la agenda | Sí | Sí | Sí | Sí, si la inscripción está activa |
 | Publicado | Solo por enlace | No | Sí | No (`noindex`) | Sí, si la inscripción está activa |
-| Publicado | Interno | No | No | No | No |
 | Archivado | Cualquiera | No | No | No | No |
 
 ### Cuándo usar cada visibilidad
 
 - **Público en la agenda:** congresos, cultos, encuentros y convocatorias abiertas. Aparece con imagen, fecha, categoría, título, resumen y lugar. También puede recomendarse según el alcance local, regional, nacional o global.
 - **Solo por enlace:** reuniones dirigidas a un grupo, preinscripciones o invitaciones que se compartirán por WhatsApp. La persona que tenga el enlace puede abrir la landing, pero el evento no aparece en la agenda ni en recomendaciones.
-- **Interno · sin página pública:** planeación interna, reuniones de equipo y actividades cerradas que se administran dentro del Portal. No genera landing, enlace ni formulario público.
+
+**“Interno” ya no se ofrece al crear eventos.** Duplicaba el estado Borrador y no permitía convocar, registrar ni conciliar. El valor se conserva únicamente para abrir registros antiguos sin cambiarlos de forma automática. Un evento cerrado que sí necesita llegar a personas debe usar **Solo por enlace**; una actividad que todavía se está preparando debe permanecer en **Borrador**.
 
 ## Controles auditados
 
@@ -37,6 +37,8 @@ Son decisiones distintas. Elegir una visibilidad no publica un borrador.
 - **Publicar / Archivar / Restaurar:** actualizan el ciclo de vida sin eliminar el histórico.
 
 Cada tarjeta muestra ahora el resultado de visibilidad: **En agenda pública**, **Solo por enlace** o **Interno**.
+
+“Interno” solo puede aparecer en una tarjeta heredada. No está disponible en eventos nuevos.
 
 ### Editor
 
@@ -105,6 +107,54 @@ Mejoras posteriores, solo cuando el evento lo necesite:
 6. solicitudes privadas de acomodación, con recolección mínima de datos;
 7. galería posterior y memoria del evento separadas de los documentos internos.
 8. plantillas visuales Esencial, Historia y Mosaico reutilizando el sistema Stories Plus, con bloques guiados e imágenes adaptables sin permitir maquetación libre.
+
+## Estándar para la fase de plantillas
+
+Las tres plantillas comparten el mismo contenido y contrato de inscripción; cambia la composición visual, no la información ni los permisos.
+
+### Bloques obligatorios compartidos
+
+1. **Portada:** arte principal, título, resumen breve, fecha, modalidad, lugar y una sola acción primaria.
+2. **Razón para asistir:** descripción en párrafos breves y una imagen contextual opcional.
+3. **Agenda:** horarios o etapas, con inicio y finalización correctos para eventos de varios días.
+4. **Información práctica:** acceso, mapa o enlace virtual, zona horaria, accesibilidad, familias y recomendaciones.
+5. **Organiza y contacto:** equipo responsable, WhatsApp y correo.
+6. **Inscripción o aporte:** cupos, valor, moneda, métodos habilitados y estado del registro.
+7. **Preguntas frecuentes y condiciones:** cambios, cancelación y tratamiento del aporte.
+8. **Cierre:** compartir, calendario y acción de inscripción repetida cuando corresponda.
+
+### Esencial
+
+- Hero horizontal o composición adaptable con arte cuadrado/vertical sin deformarlo.
+- Lectura lineal, rápida y con secciones tradicionales.
+- Ideal para reuniones locales y páginas con poco contenido.
+
+### Historia · Stories Plus
+
+- Escenas de pantalla completa que avanzan con scroll y conservan una narrativa clara al retroceder.
+- Cada escena admite fondo de color o imagen con overlay calculado, texto breve y un recurso visual.
+- Indicador de progreso, navegación por teclado, alternativa sin movimiento y respeto de `prefers-reduced-motion`.
+- La inscripción nunca depende de terminar la animación: CTA visible al inicio y al cierre.
+
+### Mosaico
+
+- Portada editorial y tarjetas para agenda, protagonistas, imágenes e información práctica.
+- Reordena tarjetas en una sola columna en móvil sin scroll horizontal.
+- Ideal para congresos, encuentros de varios días y eventos con bastante contenido.
+
+### Reglas del editor visual
+
+- No habrá lienzo libre ni posiciones manuales. El pastor elige plantilla y completa bloques guiados.
+- Cada imagen declara su función: portada, arte de invitación, escena o galería. La interfaz muestra proporción recomendada, peso máximo y vista previa móvil/escritorio.
+- La aplicación selecciona texto claro u oscuro a partir del fondo y añade overlay cuando una foto no garantiza contraste AA; el usuario no puede publicar texto ilegible.
+- Las imágenes usan `object-fit` según la función: portada con recorte seguro y punto focal; arte de invitación completo con fondo adaptado; nunca se estiran.
+- Título, fecha, lugar, organizador, inscripción y datos estructurados permanecen iguales en las tres plantillas.
+
+### Referencias de producto y accesibilidad
+
+- Google exige una URL única por evento y datos correctos de nombre, inicio, finalización, lugar, precio, moneda y enlace de la oferta: https://developers.google.com/search/docs/appearance/structured-data/event
+- Eventbrite organiza la creación alrededor de portada, datos básicos, ubicación, agenda, entradas, formulario, vista previa, privacidad y publicación: https://www.eventbrite.com/help/en-us/articles/551351/how-to-create-an-event/
+- WCAG 2.2 exige contraste mínimo del texto y también aplica cuando el fondo es una imagen: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum y https://w3c.github.io/wcag/techniques/failures/F83
 
 ## Decisión Wompi que no se debe olvidar
 

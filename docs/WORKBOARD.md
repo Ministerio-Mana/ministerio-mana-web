@@ -51,8 +51,8 @@
   - Owner: Equipo web
   - Branch: `main`
   - Scope: `/portal/events`, operación, agenda pública, landing y recepción Wompi reenviada
-  - Description: Hacer comprensibles Borrador/Publicado/Archivado y Público/Solo por enlace/Privado, completar la landing y auditar todos los controles sin abrir datos privados.
-  - Status: Matriz funcional y auditoría en `docs/EVENTS_PUBLICATION_AND_BUTTON_AUDIT_2026-07-16.md`. El editor incluye ayuda contextual, duración de uno o varios días, modalidad independiente del cobro, ubicación condicional y selección territorial país → región → ciudad → iglesia. El servidor bloquea formularios internos, las tarjetas muestran la visibilidad, la landing incluye contenido práctico/FAQ/políticas y el receptor de 21 Retos enruta pagos `MM-EVT-*`. Pendiente QA productivo final con una inscripción autorizada y la fase de plantillas Esencial/Historia/Mosaico basada en Stories Plus.
+  - Description: Hacer comprensibles Borrador/Publicado/Archivado y Público/Solo por enlace, completar la landing y auditar todos los controles sin abrir datos privados.
+  - Status: Matriz funcional y auditoría en `docs/EVENTS_PUBLICATION_AND_BUTTON_AUDIT_2026-07-16.md`. “Interno” se retiró de eventos nuevos y solo se conserva para editar registros heredados sin alterarlos. El editor incluye ayuda contextual, duración de uno o varios días, modalidad independiente del cobro, ubicación condicional y selección territorial país → región → ciudad → iglesia. El servidor bloquea formularios internos, las tarjetas muestran la visibilidad, la landing incluye contenido práctico/FAQ/políticas y el receptor de 21 Retos enruta pagos `MM-EVT-*`. Pendiente QA productivo final con una inscripción autorizada y la fase de plantillas Esencial/Historia/Mosaico basada en Stories Plus, ya especificada por bloques y reglas visuales.
 
 - MANA-025 Carta de calidad y auditoría UX transversal
   - Owner: Equipo web
