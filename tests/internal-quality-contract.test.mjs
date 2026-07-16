@@ -196,13 +196,14 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
 });
 
 test('la inscripción pública separa cupos, asistentes e identidad financiera privada', async () => {
-  const [publicView, publicLogic, registerApi, operationApi, exportApi, sql] = await Promise.all([
+  const [publicView, publicLogic, registerApi, operationApi, exportApi, sql, cumbreIndex] = await Promise.all([
     readSource('src/pages/eventos/[slug].astro'),
     readSource('src/scripts/public-event-registration.js'),
     readSource('src/pages/api/events/register.ts'),
     readSource('src/pages/api/portal/event-payments/manual.ts'),
     readSource('src/pages/api/portal/events/export-registrations.ts'),
     readSource('docs/sql/event_registration_people_upgrade.sql'),
+    readSource('src/pages/eventos/cumbre-mundial-2026/index.astro'),
   ]);
 
   assert.match(publicView, /id="event-attendee-fields"[^>]*aria-live="polite"/);
@@ -219,6 +220,7 @@ test('la inscripción pública separa cupos, asistentes e identidad financiera p
   assert.match(sql, /enable row level security/);
   assert.match(sql, /revoke all on table public\.event_registration_payers from public, anon, authenticated/);
   assert.match(sql, /grant execute on function public\.save_event_registration_people_secure[^;]+to service_role/s);
+  assert.match(cumbreIndex, /<CumbreLayout[\s\S]*?backHref="\/eventos"/);
 });
 
 test('el editor de iglesias separa borrador, publicación, alcance e imágenes', async () => {
