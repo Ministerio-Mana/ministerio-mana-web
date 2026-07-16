@@ -41,6 +41,13 @@
 ---
 
 ## In Progress
+- MANA-027 Publicación y landing de Eventos
+  - Owner: Equipo web
+  - Branch: `main`
+  - Scope: `/portal/events`, operación, agenda pública, landing y recepción Wompi reenviada
+  - Description: Hacer comprensibles Borrador/Publicado/Archivado y Público/Solo por enlace/Privado, completar la landing y auditar todos los controles sin abrir datos privados.
+  - Status: Matriz funcional y auditoría en `docs/EVENTS_PUBLICATION_AND_BUTTON_AUDIT_2026-07-16.md`. El servidor bloquea formularios privados, las tarjetas muestran la visibilidad, la landing incluye contenido práctico/FAQ/políticas y el receptor de 21 Retos enruta pagos `MM-EVT-*`. Pendiente QA productivo final con una inscripción autorizada.
+
 - MANA-025 Carta de calidad y auditoría UX transversal
   - Owner: Equipo web
   - Branch: `main`
@@ -218,4 +225,5 @@ _Ningún ticket bloqueado actualmente_
 - ✅ **Animaciones**: GSAP ScrollTrigger (aprobado)
 - ✅ **Paleta de colores**: Beige/Navy original (mantener, NO cosmic)
 - ✅ **Mobile optimization**: Flujo estático y revelado ligero completados (MANA-005)
+- ✅ **Wompi Producción**: conservar el router central 21 Retos; Ministerio Maná recibe reenvíos autenticados y no reemplaza unilateralmente la URL productiva.
 - ✅ **Production testing**: Portada verificada en móvil y escritorio (MANA-007)

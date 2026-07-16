@@ -4,6 +4,7 @@ import { createWompiPaymentSource, verifyWompiWebhook } from '@lib/wompi';
 import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { markWompiEventProcessed, storeWompiEvent } from '@lib/wompiEventInbox';
+import { isEventPaymentReference, processEventProviderPayment } from '@lib/eventFinance';
 import { parseReferenceBookingId, parseReferencePlanId } from '@lib/cumbre2026';
 import { formatCurrency } from '@lib/fx';
 import {
@@ -98,6 +99,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const transaction = event?.data?.transaction;
+  const eventName = event?.event ?? 'wompi.forwarded';
   const reference = transaction?.reference ?? null;
   const amountInCents = transaction?.amount_in_cents ?? null;
   const txId = transaction?.id ?? null;
@@ -117,7 +119,35 @@ export const POST: APIRoute = async ({ request }) => {
     const planId = parseReferencePlanId(reference);
 
     if (!bookingId && !planId) {
-      const result = await processWompiDonationTransaction({ event, transaction });
+      const isGenericEventPayment = isEventPaymentReference(reference);
+      const result = isGenericEventPayment
+        ? await processEventProviderPayment({
+            provider: 'WOMPI',
+            reference,
+            providerTxId: String(transaction?.id || ''),
+            amount: Number(transaction?.amount_in_cents || 0) / 100,
+            currency: String(transaction?.currency || 'COP'),
+            status: String(transaction?.status || 'PENDING'),
+            method: transaction?.payment_method?.type
+              ? String(transaction.payment_method.type)
+              : transaction?.payment_method_type
+                ? String(transaction.payment_method_type)
+                : null,
+            requestId: bodySha256 || null,
+            payload: {
+              event: eventName,
+              environment: event?.environment || null,
+              transaction_id: transaction?.id || null,
+              reference,
+              status: transaction?.status || null,
+              amount_in_cents: transaction?.amount_in_cents || null,
+              currency: transaction?.currency || null,
+              payment_method_type: transaction?.payment_method?.type || transaction?.payment_method_type || null,
+              finalized_at: transaction?.finalized_at || null,
+              source: '21_RETOS_ROUTER',
+            },
+          })
+        : await processWompiDonationTransaction({ event, transaction });
       await markWompiEventProcessed({
         bodySha256,
         status: result.outcome === 'PROCESSED'

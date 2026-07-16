@@ -124,6 +124,9 @@ const landingSections = [
   { key: 'agenda', eyebrow: 'Programa', title: 'Agenda', text: landingSettings.agenda },
   { key: 'practical', eyebrow: 'Información práctica', title: 'Antes de asistir', text: landingSettings.practical_info },
   { key: 'host', eyebrow: 'Organiza', title: 'Quiénes acompañan', text: landingSettings.host_info },
+  { key: 'accessibility', eyebrow: 'Bienvenida para todos', title: 'Accesibilidad y necesidades familiares', text: landingSettings.accessibility_info },
+  { key: 'faq', eyebrow: 'Resolvemos tus dudas', title: 'Preguntas frecuentes', text: landingSettings.frequently_asked_questions },
+  { key: 'policy', eyebrow: 'Información importante', title: 'Cambios, cancelaciones y aportes', text: landingSettings.change_policy },
 ].filter((section) => section.text);
 const contactWhatsApp = normalizeWhatsAppNumber(databaseEvent?.contact_whatsapp);
 const whatsappMessage = String(databaseEvent?.contact_whatsapp_message || `Hola, quiero información sobre ${title}.`).trim();
@@ -160,6 +163,7 @@ const priceLabel = pricingModel === 'DONATION'
       ? formatEventPrice(Number(databaseEvent?.price), databaseEvent?.currency || 'COP')
       : 'Sin costo';
 const canonical = `${Astro.url.origin}/eventos/${slug}`;
+const shareWhatsAppHref = `https://wa.me/?text=${encodeURIComponent(`${title}\n${canonical}`)}`;
 const structured = (contentEntry || databaseEvent) ? {
   '@context': 'https://schema.org',
   '@type': 'Event',
@@ -168,6 +172,11 @@ const structured = (contentEntry || databaseEvent) ? {
   startDate: isValidDate ? startDate.toISOString() : undefined,
   endDate: Number.isFinite(endDate.getTime()) ? endDate.toISOString() : undefined,
   eventStatus: isCompleted ? 'https://schema.org/EventCompleted' : 'https://schema.org/EventScheduled',
+  eventAttendanceMode: databaseEvent?.attendance_mode === 'ONLINE'
+    ? 'https://schema.org/OnlineEventAttendanceMode'
+    : databaseEvent?.attendance_mode === 'HYBRID'
+      ? 'https://schema.org/MixedEventAttendanceMode'
+      : 'https://schema.org/OfflineEventAttendanceMode',
   location: location ? { '@type': 'Place', name: location, address: address || undefined } : undefined,
   image: image ? [new URL(image, Astro.url.origin).toString()] : undefined,
   url: canonical,
@@ -286,6 +295,15 @@ const structured = (contentEntry || databaseEvent) ? {
                 </div>
               </div>
             )}
+            <div class="event-public-contact mt-6">
+              <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">Compartir invitación</p>
+              <p class="mt-2 text-sm leading-relaxed text-slate-600">Envía la página oficial para que la información no se pierda ni cambie.</p>
+              <div class="mt-4 grid gap-2">
+                <a href={shareWhatsAppHref} target="_blank" rel="noopener noreferrer" class="event-public-contact-action event-public-contact-action--whatsapp">Compartir por WhatsApp</a>
+                <button type="button" class="event-public-contact-action" data-copy-event-link={canonical}>Copiar enlace</button>
+                <p class="hidden text-xs font-medium text-emerald-700" data-copy-event-feedback role="status" aria-live="polite"></p>
+              </div>
+            </div>
           </aside>
         </div>
       </section>

@@ -43,19 +43,30 @@ function registrationErrorMessage(message: string): { status: number; message: s
 }
 
 async function getRegistrationFormConfig(eventId: string) {
-  if (!supabaseAdmin) return { formConfig: DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, pricingModel: 'FREE' };
+  if (!supabaseAdmin) return {
+    formConfig: DEFAULT_EVENT_REGISTRATION_FORM_CONFIG,
+    pricingModel: 'FREE',
+    publicRegistrationAllowed: false,
+  };
   const { data, error } = await supabaseAdmin
     .from('events')
-    .select('registration_form_config,pricing_model,price')
+    .select('registration_form_config,pricing_model,price,status,visibility,registration_mode')
     .eq('id', eventId)
     .maybeSingle();
-  // El formulario básico sigue funcionando mientras una instalación antigua
-  // termina de aplicar la migración de campos configurables.
-  if (error?.code === '42703') return { formConfig: DEFAULT_EVENT_REGISTRATION_FORM_CONFIG, pricingModel: 'FREE' };
+  // Una instalación sin el contrato completo se cierra de forma segura: no
+  // debe aceptar inscripciones públicas sin verificar estado y visibilidad.
+  if (error?.code === '42703') return {
+    formConfig: DEFAULT_EVENT_REGISTRATION_FORM_CONFIG,
+    pricingModel: 'FREE',
+    publicRegistrationAllowed: false,
+  };
   if (error) throw new Error('No se pudo validar la configuración del formulario.');
   return {
     formConfig: normalizeEventRegistrationFormConfig(data?.registration_form_config),
     pricingModel: String(data?.pricing_model || (Number(data?.price || 0) > 0 ? 'PAID' : 'FREE')).toUpperCase(),
+    publicRegistrationAllowed: String(data?.status || '').toUpperCase() === 'PUBLISHED'
+      && String(data?.visibility || 'UNLISTED').toUpperCase() !== 'PRIVATE'
+      && String(data?.registration_mode || '').toUpperCase() === 'INTERNAL',
   };
 }
 
@@ -328,14 +339,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   let formConfig;
   let pricingModel = 'FREE';
+  let publicRegistrationAllowed = false;
   let attendees: Array<Record<string, unknown>> = [];
   let payer: Record<string, unknown> | null = null;
   try {
     const settings = await getRegistrationFormConfig(eventId);
     formConfig = settings.formConfig;
     pricingModel = settings.pricingModel;
+    publicRegistrationAllowed = settings.publicRegistrationAllowed;
   } catch {
     return json({ ok: false, error: 'No se pudo consultar la configuración del evento.' }, 503);
+  }
+  if (!publicRegistrationAllowed) {
+    return json({ ok: false, error: 'El formulario público no está disponible.' }, 404);
   }
   try {
     attendees = readAttendees(body.attendees, quantity, formConfig);

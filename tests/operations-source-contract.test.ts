@@ -39,3 +39,11 @@ test('Cumbre deduplica fallos y avisos de webhooks por referencia', () => {
   assert.match(wompiSource, /hasApprovedPaymentByReference/);
   assert.match(wompiSource, /!alreadyApproved/);
 });
+
+test('el receptor reenviado por 21 Retos procesa pagos de Eventos sin convertirlos en donaciones', () => {
+  const sourceCode = source('../src/pages/api/wompi/events-forwarded.ts');
+  assert.match(sourceCode, /isEventPaymentReference/);
+  assert.match(sourceCode, /processEventProviderPayment/);
+  assert.match(sourceCode, /source: '21_RETOS_ROUTER'/);
+  assert.ok(sourceCode.indexOf('isEventPaymentReference(reference)') < sourceCode.indexOf('processWompiDonationTransaction({ event, transaction })'));
+});

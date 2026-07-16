@@ -56,6 +56,9 @@ const eventSubmitBtn = eventForm?.querySelector('button[type="submit"]');
 const eventTitleInput = eventForm?.querySelector('[name="title"]');
 const eventScopeSelect = eventForm?.querySelector('[name="scope"]');
 const eventStatusSelect = eventForm?.querySelector('[name="status"]');
+const eventVisibilitySelect = document.getElementById('event-visibility');
+const eventPublicationHelp = document.getElementById('event-publication-help');
+const eventVisibilityHelp = document.getElementById('event-visibility-help');
 const eventCountryInput = eventForm?.querySelector('[name="country"]');
 const eventRegionWrapper = document.getElementById('event-scope-region-wrapper');
 const eventRegionSelect = document.getElementById('event-region-select');
@@ -90,6 +93,9 @@ const eventLandingExpect = document.getElementById('event-landing-expect');
 const eventLandingAgenda = document.getElementById('event-landing-agenda');
 const eventLandingPractical = document.getElementById('event-landing-practical');
 const eventLandingHost = document.getElementById('event-landing-host');
+const eventLandingAccessibility = document.getElementById('event-landing-accessibility');
+const eventLandingFaq = document.getElementById('event-landing-faq');
+const eventLandingPolicy = document.getElementById('event-landing-policy');
 const eventCustomFieldsContainer = document.getElementById('event-custom-fields');
 const eventCustomFieldAdd = document.getElementById('event-custom-field-add');
 const eventCustomFieldEmpty = document.getElementById('event-custom-field-empty');
@@ -153,6 +159,16 @@ const LIFECYCLE_TONES = {
     completed: 'bg-slate-100 text-slate-700',
     draft: 'bg-amber-50 text-amber-700',
     archived: 'bg-slate-200 text-slate-600',
+};
+const VISIBILITY_LABELS = {
+    PUBLIC: 'En agenda pública',
+    UNLISTED: 'Solo por enlace',
+    PRIVATE: 'Privado',
+};
+const VISIBILITY_TONES = {
+    PUBLIC: 'border-teal-200 bg-teal-50 text-teal-700',
+    UNLISTED: 'border-blue-200 bg-blue-50 text-blue-700',
+    PRIVATE: 'border-slate-200 bg-slate-100 text-slate-700',
 };
 
 function normalizeAttendanceMode(value) {
@@ -259,15 +275,18 @@ function syncSlugInput({ finalize = false } = {}) {
     const normalized = normalizeEventSlug(eventSlugInput.value, { trimTrailing: finalize });
     const finalSlug = normalizeEventSlug(normalized);
     const isPublished = String(eventStatusSelect?.value || '').toUpperCase() === 'PUBLISHED';
+    const isPrivate = String(eventVisibilitySelect?.value || '').toUpperCase() === 'PRIVATE';
     if (eventSlugInput.value !== normalized) eventSlugInput.value = normalized;
     if (eventSlugHint) {
         eventSlugHint.textContent = finalSlug
-            ? isPublished
+            ? isPrivate
+                ? `Identificador interno: ${finalSlug}. Los eventos privados no tienen invitación pública.`
+                : isPublished
                 ? `Enlace final: /eventos/${finalSlug}`
                 : `Enlace reservado: /eventos/${finalSlug}. Estará disponible cuando publiques el evento.`
             : 'Los espacios se convierten automáticamente en guiones.';
     }
-    const publicPath = finalSlug && isPublished ? `/eventos/${finalSlug}` : '';
+    const publicPath = finalSlug && isPublished && !isPrivate ? `/eventos/${finalSlug}` : '';
     if (eventPublicLinkCopy) eventPublicLinkCopy.disabled = !publicPath;
     if (eventPublicLinkOpen) {
         eventPublicLinkOpen.href = publicPath || '#';
@@ -276,6 +295,52 @@ function syncSlugInput({ finalize = false } = {}) {
         eventPublicLinkOpen.setAttribute('aria-disabled', publicPath ? 'false' : 'true');
     }
     setPublicLinkFeedback();
+}
+
+const EVENT_PUBLICATION_GUIDANCE = {
+    DRAFT: {
+        title: 'Borrador · solo para preparar',
+        description: 'Puedes completar y revisar el evento sin que nadie lo vea afuera del Portal. Aunque elijas “Público en la agenda”, no aparecerá hasta que lo publiques.',
+    },
+    PUBLISHED: {
+        title: 'Publicado · aplica la visibilidad elegida',
+        description: 'La invitación queda activa según la opción de visibilidad. Antes de compartir, revisa fecha, lugar, inscripción, contacto y método de aporte.',
+    },
+    ARCHIVED: {
+        title: 'Archivado · conservado, pero fuera de circulación',
+        description: 'Se oculta de la agenda y de la operación diaria. La información histórica permanece guardada para el equipo autorizado.',
+    },
+};
+
+const EVENT_VISIBILITY_GUIDANCE = {
+    PUBLIC: {
+        title: 'Público en la agenda · para convocatorias abiertas',
+        description: 'Al publicarlo aparece en /eventos con imagen, fecha, categoría, título, resumen y lugar. También puede recomendarse a usuarios según el alcance local, regional, nacional o global, y su landing se puede compartir e indexar.',
+    },
+    UNLISTED: {
+        title: 'Solo por enlace · para compartir con grupos específicos',
+        description: 'Al publicarlo, cualquier persona que reciba la URL puede abrir la invitación e inscribirse. No aparece en la agenda pública ni en las recomendaciones y se marca para no indexarse en buscadores.',
+    },
+    PRIVATE: {
+        title: 'Privado · solo para el equipo autorizado',
+        description: 'No crea una landing pública, no aparece en la agenda, no ofrece enlace ni formulario público. Úsalo para planeación interna, reuniones de equipo o eventos cerrados gestionados desde el Portal.',
+    },
+};
+
+function setGuidanceContent(container, guidance) {
+    if (!container || !guidance) return;
+    const title = container.querySelector('[data-help-title]');
+    const description = container.querySelector('[data-help-description]');
+    if (title) title.textContent = guidance.title;
+    if (description) description.textContent = guidance.description;
+}
+
+function syncPublicationGuidance() {
+    const status = String(eventStatusSelect?.value || 'DRAFT').toUpperCase();
+    const visibility = String(eventVisibilitySelect?.value || 'UNLISTED').toUpperCase();
+    setGuidanceContent(eventPublicationHelp, EVENT_PUBLICATION_GUIDANCE[status] || EVENT_PUBLICATION_GUIDANCE.DRAFT);
+    setGuidanceContent(eventVisibilityHelp, EVENT_VISIBILITY_GUIDANCE[visibility] || EVENT_VISIBILITY_GUIDANCE.UNLISTED);
+    syncSlugInput();
 }
 
 function setPublicLinkFeedback(message = '', tone = 'success') {
@@ -1026,7 +1091,7 @@ function showEventsError(error) {
     eventsLoading.innerHTML = `
         <p class="font-bold text-red-700">No se pudieron cargar los eventos</p>
         <p class="mt-2 text-sm text-slate-600">${escapeHtml(message)}</p>
-        <button type="button" id="btn-retry-events" class="mt-4 min-h-10 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74]">Reintentar</button>
+        <button type="button" id="btn-retry-events" class="mt-4 min-h-11 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74]">Reintentar</button>
     `;
     document.getElementById('btn-retry-events')?.addEventListener('click', () => void loadEvents());
 }
@@ -1326,7 +1391,10 @@ function updateStatsAndCounts() {
     document.querySelectorAll('[data-filter-count]').forEach((node) => {
         node.textContent = String(counts[node.dataset.filterCount] || 0);
     });
-    const visible = eventsCache.filter((event) => String(event.status || '').toUpperCase() === 'PUBLISHED').length;
+    const visible = eventsCache.filter((event) => (
+        String(event.status || '').toUpperCase() === 'PUBLISHED'
+        && String(event.visibility || 'UNLISTED').toUpperCase() !== 'PRIVATE'
+    )).length;
     const values = {
         'event-stat-visible': visible,
         'event-stat-upcoming': counts.upcoming,
@@ -1362,6 +1430,7 @@ function renderEvents() {
 
     eventsList.innerHTML = events.map((event) => {
         const lifecycle = getLifecycle(event);
+        const visibility = String(event.visibility || 'UNLISTED').toUpperCase();
         const bannerUrl = sanitizeUrl(event.banner_url);
         const bannerLayout = normalizeEventInvitationLayout(event.banner_layout);
         const start = new Date(event.start_date || '');
@@ -1374,7 +1443,7 @@ function renderEvents() {
         const editAction = canEditEvent(event)
             ? `<button type="button" class="event-edit event-action" data-event-id="${escapeAttr(event.id || '')}">${icon(pencilIconUrl)} Editar</button>`
             : '';
-        const publicPath = String(event.status || '').toUpperCase() === 'PUBLISHED' && event.visibility !== 'PRIVATE'
+        const publicPath = String(event.status || '').toUpperCase() === 'PUBLISHED' && visibility !== 'PRIVATE'
             ? getPublicEventPath(event)
             : '';
         const publicAction = publicPath
@@ -1390,6 +1459,7 @@ function renderEvents() {
                   <div class="min-w-0">
                     <div class="mb-2 flex flex-wrap items-center gap-2">
                       <span class="portal-chip ${LIFECYCLE_TONES[lifecycle]}">${escapeHtml(LIFECYCLE_LABELS[lifecycle])}</span>
+                      <span class="portal-chip border ${VISIBILITY_TONES[visibility] || VISIBILITY_TONES.UNLISTED}">${escapeHtml(VISIBILITY_LABELS[visibility] || VISIBILITY_LABELS.UNLISTED)}</span>
                       <span class="portal-chip border border-slate-200 bg-white text-slate-600">${escapeHtml(SCOPE_LABELS[getEventScope(event)] || getEventScope(event))}</span>
                       <span class="portal-chip border border-slate-200 bg-white text-slate-600">${escapeHtml(getEventEconomyLabel(event))}</span>
                       <span class="portal-chip border border-slate-200 bg-white text-slate-600">${escapeHtml(getEventRegistrationLabel(event))}</span>
@@ -1720,6 +1790,9 @@ function openEventModal(mode, eventData = null) {
     if (eventLandingAgenda) eventLandingAgenda.value = landingSettings.agenda;
     if (eventLandingPractical) eventLandingPractical.value = landingSettings.practical_info;
     if (eventLandingHost) eventLandingHost.value = landingSettings.host_info;
+    if (eventLandingAccessibility) eventLandingAccessibility.value = landingSettings.accessibility_info;
+    if (eventLandingFaq) eventLandingFaq.value = landingSettings.frequently_asked_questions;
+    if (eventLandingPolicy) eventLandingPolicy.value = landingSettings.change_policy;
 
     const presetScope = String(eventData?.scope || getAllowedScopes()[0] || 'LOCAL').toUpperCase();
     if (eventScopeSelect) eventScopeSelect.value = presetScope;
@@ -1734,6 +1807,7 @@ function openEventModal(mode, eventData = null) {
     syncScopeInputs({ preserveSelections: true });
     syncPlatformFields();
     syncFinanceFields();
+    syncPublicationGuidance();
     updateEventPreview();
 
     eventModal.classList.remove('hidden');
@@ -1912,7 +1986,8 @@ eventSlugInput?.addEventListener('input', () => {
     syncSlugInput();
 });
 eventSlugInput?.addEventListener('blur', () => syncSlugInput({ finalize: true }));
-eventStatusSelect?.addEventListener('change', () => syncSlugInput());
+eventStatusSelect?.addEventListener('change', syncPublicationGuidance);
+eventVisibilitySelect?.addEventListener('change', syncPublicationGuidance);
 eventPublicLinkCopy?.addEventListener('click', () => {
     void copyPublicEventLink().catch(() => setPublicLinkFeedback('No se pudo copiar el enlace. Selecciónalo manualmente.', 'error'));
 });
@@ -2040,6 +2115,9 @@ eventForm?.addEventListener('submit', async (event) => {
                 agenda: eventLandingAgenda?.value,
                 practical_info: eventLandingPractical?.value,
                 host_info: eventLandingHost?.value,
+                accessibility_info: eventLandingAccessibility?.value,
+                frequently_asked_questions: eventLandingFaq?.value,
+                change_policy: eventLandingPolicy?.value,
             });
         }
         payload.attendance_mode = normalizeAttendanceMode(eventForm.querySelector('[name="attendance_mode"]')?.value);

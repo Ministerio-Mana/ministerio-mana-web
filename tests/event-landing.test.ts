@@ -8,6 +8,9 @@ test('normaliza los bloques guiados sin aceptar markup ni estructura libre', () 
     agenda: '09:00 Registro\n\n\n10:00 Plenaria',
     practicalInfo: 'Trae tu documento',
     hostInfo: 'Equipo pastoral',
+    accessibilityInfo: 'Acceso por rampa',
+    frequentlyAskedQuestions: '¿Puedo ir con niños? Sí.',
+    changePolicy: 'Los cambios se informarán por correo.',
     arbitrary_html: '<script>alert(1)</script>',
   });
   assert.deepEqual(settings, {
@@ -15,6 +18,9 @@ test('normaliza los bloques guiados sin aceptar markup ni estructura libre', () 
     agenda: '09:00 Registro\n\n10:00 Plenaria',
     practical_info: 'Trae tu documento',
     host_info: 'Equipo pastoral',
+    accessibility_info: 'Acceso por rampa',
+    frequently_asked_questions: '¿Puedo ir con niños? Sí.',
+    change_policy: 'Los cambios se informarán por correo.',
   });
   assert.equal(hasEventLandingContent(settings), true);
 });

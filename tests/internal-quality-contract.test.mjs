@@ -154,6 +154,8 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /id="event-public-link-copy"[^>]*min-h-11/);
   assert.match(eventsView, /id="event-public-link-open"[^>]*min-h-11/);
   assert.match(eventsView, /id="event-manual-payment-qr-dropzone"[^>]*role="button"/);
+  assert.match(eventsView, /id="event-publication-help"[^>]*role="status"[^>]*aria-live="polite"/);
+  assert.match(eventsView, /id="event-visibility-help"[^>]*role="status"[^>]*aria-live="polite"/);
 
   assert.match(eventsLogic, /function getEventModalFocusableElements\(\)/);
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
@@ -170,6 +172,11 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /async function copyPublicEventLink\(\)/);
   assert.match(eventsLogic, /function setPendingManualQr\(file\)/);
   assert.match(eventsLogic, /data\.signed_url/);
+  assert.match(eventsLogic, /PUBLIC:[\s\S]*?En agenda pública/);
+  assert.match(eventsLogic, /UNLISTED:[\s\S]*?Solo por enlace/);
+  assert.match(eventsLogic, /PRIVATE:[\s\S]*?Privado/);
+  assert.match(eventsLogic, /visibility !== 'PRIVATE'/);
+  assert.match(eventsLogic, /id="btn-retry-events" class="mt-4 min-h-11/);
   assert.match(eventsApi, /Selecciona el país del evento nacional/);
   assert.match(eventsApi, /Selecciona una región para el evento regional/);
   assert.match(eventsLogic, /window\.addEventListener\('beforeunload'/);
@@ -235,6 +242,20 @@ test('la inscripción pública separa cupos, asistentes e identidad financiera p
   assert.match(sql, /revoke all on table public\.event_registration_payers from public, anon, authenticated/);
   assert.match(sql, /grant execute on function public\.save_event_registration_people_secure[^;]+to service_role/s);
   assert.match(cumbreIndex, /<CumbreLayout[\s\S]*?backHref="\/eventos"/);
+});
+
+test('la landing pública describe modalidad y bloquea el registro privado en el servidor', async () => {
+  const [publicView, registerApi] = await Promise.all([
+    readSource('src/pages/eventos/[slug].astro'),
+    readSource('src/pages/api/events/register.ts'),
+  ]);
+
+  assert.match(publicView, /eventAttendanceMode/);
+  assert.match(publicView, /OnlineEventAttendanceMode/);
+  assert.match(publicView, /MixedEventAttendanceMode/);
+  assert.match(publicView, /OfflineEventAttendanceMode/);
+  assert.match(publicView, /data-copy-event-link/);
+  assert.match(registerApi, /publicRegistrationAllowed:[\s\S]*?status[\s\S]*?PUBLISHED[\s\S]*?visibility[\s\S]*?PRIVATE[\s\S]*?registration_mode[\s\S]*?INTERNAL/);
 });
 
 test('el editor de iglesias separa borrador, publicación, alcance e imágenes', async () => {

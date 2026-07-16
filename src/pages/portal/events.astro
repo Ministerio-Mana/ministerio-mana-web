@@ -29,7 +29,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
           </header>
 
           <section aria-label="Resumen de eventos" class="portal-stat-grid grid-cols-2 lg:grid-cols-4">
-            <div class="portal-stat"><p class="portal-stat-label">Visibles</p><p id="event-stat-visible" class="portal-stat-value">0</p></div>
+            <div class="portal-stat"><p class="portal-stat-label">Invitaciones activas</p><p id="event-stat-visible" class="portal-stat-value">0</p></div>
             <div class="portal-stat"><p class="portal-stat-label">Próximos</p><p id="event-stat-upcoming" class="portal-stat-value">0</p></div>
             <div class="portal-stat"><p class="portal-stat-label">Terminados</p><p id="event-stat-completed" class="portal-stat-value">0</p></div>
             <div class="portal-stat"><p class="portal-stat-label">Borradores</p><p id="event-stat-drafts" class="portal-stat-value">0</p></div>
@@ -120,6 +120,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
             </label>
           </div>
 
+          <div id="event-publication-help" class="rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-4" role="status" aria-live="polite">
+            <strong class="block text-sm text-[#293C74]" data-help-title>Borrador · solo para preparar</strong>
+            <p class="mt-2 text-xs leading-relaxed text-slate-600" data-help-description>Puedes completar y revisar el evento sin que nadie lo vea afuera del Portal. Publicarlo será una decisión aparte.</p>
+          </div>
+
           <label class="event-field">Descripción
             <textarea name="description" rows="3" maxlength="600" placeholder="Información principal para los asistentes"></textarea>
           </label>
@@ -198,7 +203,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
             <div class="grid gap-4 sm:grid-cols-2">
               <label class="event-field">Visibilidad
-                <select name="visibility" data-platform-field disabled>
+                <select id="event-visibility" name="visibility" data-platform-field disabled aria-describedby="event-visibility-help">
                   <option value="UNLISTED">Solo por enlace</option>
                   <option value="PUBLIC">Público en la agenda</option>
                   <option value="PRIVATE">Privado</option>
@@ -207,6 +212,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
               <label class="event-field">Categoría
                 <input type="text" name="category" data-platform-field disabled maxlength="80" placeholder="Familias, jóvenes, formación..." />
               </label>
+            </div>
+
+            <div id="event-visibility-help" class="rounded-md border border-[#293C74]/15 bg-[#F7F9FF] px-4 py-4" role="status" aria-live="polite">
+              <strong class="block text-sm text-[#293C74]" data-help-title>Solo por enlace · para compartir con grupos específicos</strong>
+              <p class="mt-2 text-xs leading-relaxed text-slate-600" data-help-description>La invitación funciona para quien reciba el enlace, pero no aparece en la agenda pública ni en las recomendaciones del Portal.</p>
             </div>
 
             <div class="event-field">
@@ -221,7 +231,6 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <a id="event-public-link-open" href="#" target="_blank" rel="noopener noreferrer" class="pointer-events-none inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-[#293C74] opacity-50 hover:bg-slate-50" aria-disabled="true">Abrir invitación</a>
               </div>
               <span id="event-public-link-feedback" class="mt-2 hidden text-xs font-medium" role="status" aria-live="polite"></span>
-              <p class="mt-2 text-xs leading-relaxed text-slate-500"><strong>Solo por enlace</strong> significa que el evento no aparece en la agenda pública: copia este enlace y compártelo por WhatsApp, correo o redes.</p>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -301,6 +310,16 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 </label>
                 <label class="event-field">Quién organiza o acompaña
                   <textarea id="event-landing-host" data-platform-field disabled rows="4" maxlength="900" placeholder="Equipo pastoral, invitados o ministerio responsable..."></textarea>
+                </label>
+                <label class="event-field">Accesibilidad y necesidades familiares
+                  <textarea id="event-landing-accessibility" data-platform-field disabled rows="4" maxlength="1000" placeholder="Acceso para movilidad reducida, interpretación, cuidado de niños, alimentación..."></textarea>
+                </label>
+                <label class="event-field">Preguntas frecuentes
+                  <textarea id="event-landing-faq" data-platform-field disabled rows="4" maxlength="1600" placeholder="¿Puedo asistir con niños?&#10;Sí, tendremos..."></textarea>
+                </label>
+                <label class="event-field sm:col-span-2">Cambios, cancelaciones y aportes
+                  <textarea id="event-landing-policy" data-platform-field disabled rows="4" maxlength="1000" placeholder="Explica qué ocurre si cambia la fecha, se cancela el evento o la persona ya realizó un aporte."></textarea>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Usa el lenguaje y las reglas aprobadas por el equipo financiero y pastoral. No prometas devoluciones si no están definidas.</span>
                 </label>
               </div>
             </details>

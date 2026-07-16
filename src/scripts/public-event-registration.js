@@ -2,11 +2,31 @@ const registrationForm = document.getElementById('public-event-registration-form
 const registrationStatus = document.getElementById('event-registration-status');
 const registrationTotal = document.getElementById('event-registration-total');
 const paymentResult = document.getElementById('event-payment-result');
+const copyEventLink = document.querySelector('[data-copy-event-link]');
+const copyEventFeedback = document.querySelector('[data-copy-event-feedback]');
 
 const REQUEST_TIMEOUT_MS = 20_000;
 const MAX_EVIDENCE_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_EVIDENCE_PDF_BYTES = 2 * 1024 * 1024;
 const EVIDENCE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+
+copyEventLink?.addEventListener('click', async () => {
+  const url = String(copyEventLink.dataset.copyEventLink || window.location.href);
+  try {
+    await navigator.clipboard.writeText(url);
+    if (copyEventFeedback) {
+      copyEventFeedback.textContent = 'Enlace copiado.';
+      copyEventFeedback.classList.remove('hidden');
+    }
+  } catch {
+    if (copyEventFeedback) {
+      copyEventFeedback.textContent = 'No se pudo copiar. Usa la dirección del navegador.';
+      copyEventFeedback.classList.remove('hidden');
+      copyEventFeedback.classList.remove('text-emerald-700');
+      copyEventFeedback.classList.add('text-red-700');
+    }
+  }
+});
 
 function createRequestId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
