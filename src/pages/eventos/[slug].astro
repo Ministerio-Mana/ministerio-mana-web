@@ -249,7 +249,7 @@ const structured = (contentEntry || databaseEvent) ? {
       </section>
 
       <section class="container-tight py-10 sm:py-14">
-        <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div class="grid items-start gap-8">
           <article class="event-public-about min-w-0">
             <p class="event-public-section-label">Información del evento</p>
             {Content ? <div class="prose max-w-none prose-slate"><Content /></div> : (
@@ -270,11 +270,13 @@ const structured = (contentEntry || databaseEvent) ? {
               </div>
             )}
           </article>
-          <aside class="event-public-sidebar border-l-0 border-slate-200 lg:border-l lg:pl-6">
-            <h2 class="text-sm font-bold uppercase tracking-[0.12em] text-slate-500">Estado</h2>
-            <p class="mt-2 text-lg font-bold text-slate-900">{isCompleted ? 'Finalizado' : 'Programado'}</p>
-            {databaseEvent?.capacity != null && databaseEvent.capacity > 0 && <p class="mt-2 text-sm text-slate-600">Cupo: {databaseEvent.capacity} personas</p>}
-            <p class="mt-2 text-sm font-bold text-[#293C74]">{priceLabel}</p>
+          <aside class="event-public-sidebar" aria-label="Acciones e información práctica del evento">
+            <section class="event-public-status-card" aria-labelledby="event-public-status-title">
+              <h2 id="event-public-status-title" class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Estado</h2>
+              <p class="mt-2 text-lg font-bold text-slate-900">{isCompleted ? 'Finalizado' : 'Programado'}</p>
+              {databaseEvent?.capacity != null && databaseEvent.capacity > 0 && <p class="mt-2 text-sm text-slate-600">Cupo: {databaseEvent.capacity} personas</p>}
+              <p class="mt-2 text-sm font-bold text-[#293C74]">{priceLabel}</p>
+            </section>
             {(calendarHref || mapsHref) && (
               <div class="event-public-plan mt-6">
                 <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">Planifica tu asistencia</p>
@@ -344,11 +346,11 @@ const structured = (contentEntry || databaseEvent) ? {
 
       {internalRegistrationIsOpen && databaseEvent && (
         <section id="inscripcion" class="scroll-mt-24 border-t border-slate-200 bg-white" aria-labelledby="event-registration-title">
-          <div class="container-tight grid gap-8 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(320px,520px)] lg:items-start">
-            <div class="max-w-xl">
+          <div class="event-public-registration-layout container-tight gap-8 py-10 sm:py-14 lg:items-start">
+            <div class="event-public-registration-intro">
               <p class="text-xs font-bold uppercase text-slate-500">Inscripción</p>
               <h2 id="event-registration-title" class="mt-2 text-2xl font-bold text-[#293C74] sm:text-3xl">Reserva tu lugar</h2>
-              <p class="mt-4 leading-relaxed text-slate-600">
+              <p class="mt-4 max-w-2xl leading-relaxed text-slate-600">
                 {pricingModel === 'FREE'
                   ? 'Completa tus datos para registrar la asistencia.'
                   : 'Elige un método de pago. Las transferencias manuales se confirman después de que el organizador las revise.'}
@@ -363,12 +365,20 @@ const structured = (contentEntry || databaseEvent) ? {
                   <dd class="mt-2 text-slate-900">{priceLabel}</dd>
                 </div>
               </dl>
+              <div class="event-public-registration-steps mt-6">
+                <p class="text-xs font-bold uppercase tracking-[0.08em] text-[#293C74]">Cómo funciona</p>
+                <ol class="mt-4 grid gap-4 text-sm leading-relaxed text-slate-600">
+                  <li><span>1</span><p>Completa tus datos y los de cada asistente.</p></li>
+                  {pricingModel !== 'FREE' && <li><span>2</span><p>Elige el método de pago disponible para tu país.</p></li>}
+                  <li><span>{pricingModel === 'FREE' ? '2' : '3'}</span><p>Recibirás la confirmación con los datos de tu inscripción.</p></li>
+                </ol>
+              </div>
             </div>
 
             {internalRegistrationReady ? (
               <form
                 id="public-event-registration-form"
-                class="event-public-registration-card rounded-md border border-slate-200 bg-white p-6 shadow-sm sm:p-6"
+                class="event-public-registration-card rounded-md border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
                 data-event-id={databaseEvent.id}
                 data-pricing-model={pricingModel}
                 data-unit-price={Number(databaseEvent.price || 0)}
@@ -380,6 +390,10 @@ const structured = (contentEntry || databaseEvent) ? {
                 data-attendee-gender-mode={registrationFormConfig.attendee_gender}
                 data-payer-document-mode={registrationFormConfig.payer_document}
                 novalidate>
+                <div class="mb-6 max-w-2xl">
+                  <h3 class="text-lg font-bold text-[#293C74]">Datos de contacto</h3>
+                  <p class="mt-2 text-sm leading-relaxed text-slate-600">Aquí enviaremos la confirmación y cualquier información importante del evento.</p>
+                </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <label class="text-sm font-bold text-slate-700 sm:col-span-2">Nombre completo
                     <input name="contact_name" type="text" required minlength="3" maxlength="120" autocomplete="name" class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />
@@ -406,7 +420,7 @@ const structured = (contentEntry || databaseEvent) ? {
                     </label>
                   )}
                   {registrationCustomFields.map((field) => (
-                    <fieldset class:list={['min-w-0', field.type === 'LONG_TEXT' || field.type === 'MULTIPLE_CHOICE' ? 'sm:col-span-2' : '']} data-custom-field-id={field.id} data-custom-field-type={field.type} data-custom-field-required={field.required ? 'true' : 'false'}>
+                    <fieldset class="min-w-0 sm:col-span-2" data-custom-field-id={field.id} data-custom-field-type={field.type} data-custom-field-required={field.required ? 'true' : 'false'}>
                       <legend class="text-sm font-bold text-slate-700">{field.label}{field.required && <span aria-hidden="true" class="ml-2 text-[#293C74]">*</span>}</legend>
                       {field.help_text && <p class="mt-2 text-xs leading-relaxed text-slate-500">{field.help_text}</p>}
                       {field.type === 'SHORT_TEXT' && <input name={`custom_${field.id}`} type="text" maxlength="160" required={field.required} class="mt-2 block min-h-11 w-full rounded-md border-slate-300" />}
@@ -459,12 +473,10 @@ const structured = (contentEntry || databaseEvent) ? {
                 </div>
 
                 <section class="mt-6 rounded-md border border-[#293C74]/15 bg-[#F7F9FF] p-4" aria-labelledby="event-attendees-title">
-                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 id="event-attendees-title" class="text-sm font-bold text-[#293C74]">Información de los asistentes</h3>
-                      <p class="mt-2 text-xs leading-relaxed text-slate-600">Se crea una ficha por cada cupo. El nombre sí es necesario; edad y género solo aparecen si el organizador los activó.</p>
-                    </div>
-                    <label class="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
+                  <div>
+                    <h3 id="event-attendees-title" class="text-sm font-bold text-[#293C74]">Información de los asistentes</h3>
+                    <p class="mt-2 max-w-2xl text-xs leading-relaxed text-slate-600">Se crea una ficha por cada cupo. El nombre sí es necesario; edad y género solo aparecen si el organizador los activó.</p>
+                    <label class="mt-4 flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-700">
                       <input id="event-contact-is-attendee" name="contact_is_attendee" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                       <span>El responsable también asiste</span>
                     </label>
@@ -829,7 +841,73 @@ const structured = (contentEntry || databaseEvent) ? {
     text-transform: uppercase;
   }
 
-  .event-public-sidebar { align-self: start; padding-top: var(--space-2); }
+  .event-public-sidebar {
+    display: grid;
+    align-self: start;
+    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  }
+
+  .event-public-status-card,
+  .event-public-contact,
+  .event-public-plan {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    border-radius: 1rem;
+    padding: var(--space-3);
+  }
+
+  .event-public-status-card {
+    border: 1px solid rgb(41 60 116 / 16%);
+    background: linear-gradient(145deg, #fff, #f6f8ff);
+  }
+
+  .event-public-sidebar :is(.event-public-plan, .event-public-contact) {
+    margin-top: 0;
+  }
+
+  .event-public-sidebar :is(.event-public-plan, .event-public-contact) > div {
+    margin-top: auto;
+    padding-top: var(--space-2);
+  }
+
+  .event-public-registration-intro {
+    border: 1px solid rgb(41 60 116 / 14%);
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #fff, #f7f9ff);
+    padding: var(--space-3);
+  }
+
+  .event-public-registration-layout {
+    --event-public-summary-min-width: 15rem;
+    --event-public-summary-max-width: 20rem;
+    display: grid;
+  }
+
+  .event-public-registration-steps {
+    border-top: 1px solid rgb(41 60 116 / 12%);
+    padding-top: var(--space-3);
+  }
+
+  .event-public-registration-steps li {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-1);
+  }
+
+  .event-public-registration-steps li > span {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: 999px;
+    background: #e8f8fb;
+    color: #245f75;
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
 
   .event-public-registration-card {
     position: relative;
@@ -848,18 +926,34 @@ const structured = (contentEntry || databaseEvent) ? {
     content: '';
   }
 
+  .event-public-registration-card label,
+  .event-public-registration-card legend {
+    line-height: 1.45;
+  }
+
+  .event-public-registration-card :is(input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea) {
+    min-height: 3rem;
+    border-color: #cbd5e1;
+    border-radius: 0.5rem;
+    background: #fff;
+    font-size: 1rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .event-public-registration-card :is(input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea):focus {
+    border-color: #293c74;
+    box-shadow: 0 0 0 3px rgb(58 193 212 / 24%);
+    outline: none;
+  }
+
   .event-public-contact {
     border: 1px solid rgb(58 193 212 / 25%);
-    border-radius: 0.85rem;
     background: linear-gradient(145deg, #effbfc, #f6f8ff);
-    padding: var(--space-2);
   }
 
   .event-public-plan {
     border: 1px solid rgb(41 60 116 / 16%);
-    border-radius: 0.85rem;
     background: #fff;
-    padding: var(--space-2);
   }
 
   .event-public-contact-action { border: 1px solid #d9e3f4; background: #fff; color: #293c74; }
@@ -915,5 +1009,13 @@ const structured = (contentEntry || databaseEvent) ? {
     .event-public-hero-orbit--one { right: -14rem; }
     .event-public-hero-orbit--two { right: -4rem; }
     .event-public-content-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (min-width: 1024px) {
+    .event-public-registration-layout {
+      grid-template-columns:
+        minmax(var(--event-public-summary-min-width), var(--event-public-summary-max-width))
+        minmax(0, 1fr);
+    }
   }
 </style>

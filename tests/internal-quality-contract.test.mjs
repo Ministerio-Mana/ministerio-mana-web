@@ -230,6 +230,16 @@ test('la inscripción pública separa cupos, asistentes e identidad financiera p
   assert.match(publicView, /Las inscripciones abrirán pronto/);
   assert.match(publicView, /Podrás reservar tu lugar desde el/);
   assert.match(publicView, /id="inscripcion"/);
+  assert.match(publicView, /event-public-sidebar[^>]*aria-label="Acciones e información práctica del evento"/);
+  assert.match(publicView, /grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 16rem\), 1fr\)\)/);
+  assert.match(publicView, /event-public-registration-layout/);
+  assert.match(publicView, /--event-public-summary-min-width: 15rem/);
+  assert.match(publicView, /--event-public-summary-max-width: 20rem/);
+  assert.match(publicView, /minmax\(var\(--event-public-summary-min-width\), var\(--event-public-summary-max-width\)\)/);
+  assert.match(publicView, /event-public-registration-intro/);
+  assert.match(publicView, /Datos de contacto/);
+  assert.match(publicView, /fieldset class="min-w-0 sm:col-span-2"/);
+  assert.doesNotMatch(publicView, /lg:grid-cols-\[minmax\(0,1fr\)_280px\]/);
   assert.match(publicLogic, /attendees,/);
   assert.match(publicLogic, /payer,/);
   assert.match(registerApi, /save_event_registration_people_secure/);
