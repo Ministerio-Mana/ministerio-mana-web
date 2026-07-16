@@ -1,4 +1,9 @@
-import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
+import {
+    ensureAuthenticated,
+    getPortalSession,
+    redirectToLogin,
+    refreshPortalAuthentication,
+} from '@lib/portalAuthClient';
 
 const gateEl = document.getElementById('donations-gate');
 const secureContentEl = document.getElementById('donations-secure-content');
@@ -99,6 +104,32 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEO
     } finally {
         window.clearTimeout(timeoutId);
     }
+}
+
+async function fetchAuthorizedJsonWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS, label = 'La solicitud') {
+    const withAuth = () => ({
+        ...options,
+        headers: { ...(options.headers || {}), ...currentAuthHeaders },
+        credentials: 'include',
+    });
+    let result = await fetchJsonWithTimeout(url, withAuth(), timeoutMs, label);
+    if (result.response.status !== 401) return result;
+
+    const refreshedAuth = await refreshPortalAuthentication();
+    if (!refreshedAuth.isAuthenticated) {
+        redirectToLogin();
+        throw new Error('Tu sesión venció. Inicia sesión nuevamente.');
+    }
+
+    const session = await getPortalSession({ auth: refreshedAuth, force: true, cacheMs: 0 });
+    if (!session.ok) {
+        if (session.response?.status === 401 || session.response?.status === 403) redirectToLogin();
+        throw new Error(session.data?.error || 'No se pudo renovar la sesión del portal.');
+    }
+
+    currentAuthHeaders = session.headers;
+    result = await fetchJsonWithTimeout(url, withAuth(), timeoutMs, label);
+    return result;
 }
 
 function showLoadError(error) {
@@ -238,8 +269,7 @@ async function ensureFinanceAccess() {
         return false;
     }
 
-    const effectiveRole = String(data.profile?.effective_role || data.profile?.role || 'user');
-    canManageDonations = effectiveRole === 'admin' || effectiveRole === 'superadmin';
+    canManageDonations = Boolean(data.permissions?.can_access_finances) && data.mode !== 'password';
 
     financeSessionChecked = true;
     showSecureContent();
@@ -286,10 +316,12 @@ async function loadDonations({ append = false, restoreFocus = null } = {}) {
         params.set('pageSize', String(pageSize));
         if (domainEl?.value) params.set('domain', domainEl.value);
 
-        const { response, data } = await fetchJsonWithTimeout(`/api/portal/donations?${params.toString()}`, {
-            headers: currentAuthHeaders,
-            credentials: 'include',
-        }, REQUEST_TIMEOUT_MS, 'La carga de donaciones');
+        const { response, data } = await fetchAuthorizedJsonWithTimeout(
+            `/api/portal/donations?${params.toString()}`,
+            {},
+            REQUEST_TIMEOUT_MS,
+            'La carga de donaciones',
+        );
 
         if (response.status === 403) {
             window.location.href = '/portal';
@@ -536,13 +568,11 @@ async function reconcileWompi({ manualApprove = false } = {}) {
     setSyncBusy(true);
     setSyncFeedback(manualApprove ? 'Registrando la verificación manual...' : 'Consultando el estado oficial en Wompi...');
     try {
-        const { response, data: payload } = await fetchJsonWithTimeout('/api/portal/donations/sync-wompi', {
+        const { response, data: payload } = await fetchAuthorizedJsonWithTimeout('/api/portal/donations/sync-wompi', {
             method: 'POST',
             headers: {
-                ...currentAuthHeaders,
                 'Content-Type': 'application/json',
             },
-            credentials: 'include',
             body: JSON.stringify({
                 reference: syncState.reference,
                 transactionId: transactionId || undefined,

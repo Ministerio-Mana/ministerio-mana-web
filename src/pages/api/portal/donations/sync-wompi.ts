@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '@lib/supabaseAdmin';
-import { getUserFromRequest } from '@lib/supabaseAuth';
-import { readPasswordSession } from '@lib/portalPasswordSession';
+import { getFinanceAccessContext } from '@lib/financeAccess';
+import { financeScopeCanAccessRecord } from '@lib/financeScope';
 import {
   getDonationByReference,
   updateDonationByReference,
@@ -11,8 +11,15 @@ import { processWompiDonationTransaction } from '@lib/wompiDonationEvents';
 
 export const prerender = false;
 
-function isAdminRole(role?: string | null): boolean {
-  return role === 'admin' || role === 'superadmin';
+function json(payload: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'private, no-store, max-age=0',
+      'x-content-type-options': 'nosniff',
+    },
+  });
 }
 
 function env(key: string): string | undefined {
@@ -48,33 +55,24 @@ function extractTransactionId(value: unknown): string | null {
 
 export const POST: APIRoute = async ({ request }) => {
   if (!supabaseAdmin) {
-    return new Response(JSON.stringify({ ok: false, error: 'Server Config Error' }), { status: 500 });
+    return json({ ok: false, error: 'La conexión financiera del servidor no está configurada.' }, 500);
   }
 
-  const user = await getUserFromRequest(request);
-  const passwordSession = user ? null : readPasswordSession(request);
-  if (!user && !passwordSession) {
-    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
-  }
-  if (passwordSession) {
-    return new Response(JSON.stringify({ ok: false, error: 'Esta operación requiere una cuenta administrativa individual' }), {
-      status: 403,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
-  if (!user) {
-    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), { status: 401 });
+  const requestUrl = new URL(request.url);
+  const origin = request.headers.get('origin');
+  if (origin && origin !== requestUrl.origin) {
+    return json({ ok: false, error: 'Origen de solicitud inválido.' }, 403);
   }
 
-  const { data: profile } = await supabaseAdmin
-    .from('user_profiles')
-    .select('role')
-    .eq('user_id', user.id)
-    .single();
-  const role = profile?.role || 'user';
-
-  if (!isAdminRole(role)) {
-    return new Response(JSON.stringify({ ok: false, error: 'Forbidden' }), { status: 403 });
+  const financeContext = await getFinanceAccessContext(request);
+  if (!financeContext.ok) {
+    return json({ ok: false, error: financeContext.error }, financeContext.status);
+  }
+  if (financeContext.isPasswordSession || !financeContext.userId) {
+    return json({
+      ok: false,
+      error: 'Esta operación requiere iniciar sesión con una cuenta administrativa individual.',
+    }, 403);
   }
 
   const body = await request.json().catch(() => null);
@@ -82,28 +80,25 @@ export const POST: APIRoute = async ({ request }) => {
   const submittedTransactionId = extractTransactionId(body?.transactionId);
   const manualApprove = body?.manualApprove === true;
   if (!reference) {
-    return new Response(JSON.stringify({ ok: false, error: 'Referencia requerida' }), {
-      status: 400,
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: false, error: 'Referencia requerida' }, 400);
   }
   if (submittedTransactionId && submittedTransactionId === reference) {
-    return new Response(JSON.stringify({
+    return json({
       ok: false,
       code: 'REFERENCE_IS_NOT_TRANSACTION_ID',
       error: 'Pegaste la referencia del Portal. Abre el detalle del pago en Wompi y copia el valor “Transacción #”, por ejemplo 1178211-1783194180-26798.',
-    }), {
-      status: 400,
-      headers: { 'content-type': 'application/json' },
-    });
+    }, 400);
   }
 
   const donation = await getDonationByReference('wompi', reference);
   if (!donation) {
-    return new Response(JSON.stringify({ ok: false, error: 'No se encontró la donación local' }), {
-      status: 404,
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: false, error: 'No se encontró la donación local' }, 404);
+  }
+  if (!financeScopeCanAccessRecord(financeContext.access, donation)) {
+    return json({
+      ok: false,
+      error: 'No tienes alcance financiero para conciliar esta donación.',
+    }, 403);
   }
 
   const storedEvent = await findStoredWompiEvent(reference);
@@ -127,15 +122,12 @@ export const POST: APIRoute = async ({ request }) => {
   if (!transaction) {
     if (manualApprove && transactionId) {
       if (!allowsManualApproval()) {
-        return new Response(JSON.stringify({
+        return json({
           ok: false,
           code: 'MANUAL_APPROVAL_DISABLED',
           error: 'La aprobación manual está deshabilitada. Revisa la configuración de Wompi o reenvía el evento desde Wompi.',
           detail: lookupError,
-        }), {
-          status: 403,
-          headers: { 'content-type': 'application/json' },
-        });
+        }, 403);
       }
 
       const updatedRows = await updateDonationByReference({
@@ -157,24 +149,18 @@ export const POST: APIRoute = async ({ request }) => {
         },
       });
       if (updatedRows !== 1) {
-        return new Response(JSON.stringify({ ok: false, error: 'La referencia local no es única' }), {
-          status: 409,
-          headers: { 'content-type': 'application/json' },
-        });
+        return json({ ok: false, error: 'La referencia local no es única' }, 409);
       }
 
-      return new Response(JSON.stringify({
+      return json({
         ok: true,
         status: 'APPROVED',
         providerTxId: transactionId,
         manual: true,
-      }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({
+    return json({
       ok: false,
       code: transactionId ? 'WOMPI_LOOKUP_FAILED' : 'TRANSACTION_ID_REQUIRED',
       error: transactionId
@@ -182,10 +168,7 @@ export const POST: APIRoute = async ({ request }) => {
         : 'Wompi no entregó el ID de esta referencia. Abre el detalle del pago y copia el valor “Transacción #”; no copies la referencia.',
       detail: lookupError,
       manualAvailable: allowsManualApproval(),
-    }), {
-      status: 400,
-      headers: { 'content-type': 'application/json' },
-    });
+    }, 400);
   }
 
   const event = transaction === storedTransaction && storedEvent?.payload
@@ -198,31 +181,22 @@ export const POST: APIRoute = async ({ request }) => {
       };
   const result = await processWompiDonationTransaction({ event, transaction });
   if (result.outcome === 'REJECTED') {
-    return new Response(JSON.stringify({
+    return json({
       ok: false,
       code: 'WOMPI_TRANSACTION_MISMATCH',
       error: 'La transacción de Wompi no coincide con la referencia, el monto o la moneda local',
       detail: result.reason || null,
-    }), {
-      status: 409,
-      headers: { 'content-type': 'application/json' },
-    });
+    }, 409);
   }
   if (!result.processed) {
-    return new Response(JSON.stringify({ ok: false, error: 'No se pudo conciliar la donación local' }), {
-      status: 409,
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: false, error: 'No se pudo conciliar la donación local' }, 409);
   }
 
   transactionId = extractTransactionId(transaction.id) || transactionId;
 
-  return new Response(JSON.stringify({
+  return json({
     ok: true,
     status: result.status,
     providerTxId: transactionId,
-  }), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
   });
 };

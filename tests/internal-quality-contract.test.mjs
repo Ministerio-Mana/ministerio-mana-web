@@ -445,12 +445,18 @@ test('donaciones separa proveedores, protege filtros y concilia Wompi con contex
   assert.match(donationsLogic, /manualApprove/);
   assert.match(donationsLogic, /transactionId && transactionId === syncState\.reference/);
   assert.match(donationsLogic, /REFERENCE_IS_NOT_TRANSACTION_ID/);
+  assert.match(donationsLogic, /refreshPortalAuthentication/);
+  assert.match(donationsLogic, /fetchAuthorizedJsonWithTimeout/);
+  assert.match(donationsLogic, /data\.mode !== 'password'/);
   assert.doesNotMatch(donationsLogic, /window\.prompt/);
 
   assert.match(donationsApi, /if \(domain\) \{[\s\S]*?El filtro por concepto todavía no está activo/);
   assert.match(donationsApi, /applyFinanceScopeFilter\(query, financeContext\.access\)/);
   assert.match(syncWompiApi, /submittedTransactionId && submittedTransactionId === reference/);
   assert.match(syncWompiApi, /REFERENCE_IS_NOT_TRANSACTION_ID/);
+  assert.match(syncWompiApi, /getFinanceAccessContext\(request\)/);
+  assert.match(syncWompiApi, /financeScopeCanAccessRecord\(financeContext\.access, donation\)/);
+  assert.match(syncWompiApi, /financeContext\.isPasswordSession \|\| !financeContext\.userId/);
 });
 
 test('campus respeta asignaciones, alcance financiero y contactos táctiles', async () => {
