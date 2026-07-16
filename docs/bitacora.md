@@ -14,6 +14,21 @@
 
 ## Entradas
 
+### 2026-07-16 (Wompi: cobertura multimedio y arquitectura paraguas)
+- Responsable: Equipo web
+- Cambios:
+  - Se dejó explícito que la conciliación Wompi cubre cualquier medio recibido y no solo PSE; el estado final, la referencia, el monto y la moneda son el contrato de aprobación.
+  - Se documentó el router 21 Retos como arquitectura vigente y temporal, sin cambiar unilateralmente la URL productiva.
+  - Se definió Ministerio Maná como futuro paraguas global para 21 Retos, Escuela Bíblica, Devocional, Agenda/Eventos, Campus, Donaciones y productos posteriores.
+  - Se registró una migración gradual, reversible y por producto, con ingreso en sombra, idempotencia y comparación contable antes de retirar el router actual.
+- Pruebas:
+  - La API oficial de Wompi confirmó el caso PSE revisado como `APPROVED`; el portal quedó igualmente `APPROVED` después de validar ID, referencia, monto y moneda.
+  - Producción conserva configurados el secreto del router, el secreto del cron y el conciliador periódico.
+- Pendientes:
+  - Terminar la auditoría prioritaria de Ministerio Maná.
+  - Inventariar el repositorio y todos los consumidores del router 21 Retos antes de iniciar MANA-028.
+  - Probar de forma controlada cada medio de pago que se decida habilitar en el checkout.
+
 ### 2026-07-13 (Home: movimiento adaptable y rendimiento móvil)
 - Responsable: Equipo web
 - Cambios:

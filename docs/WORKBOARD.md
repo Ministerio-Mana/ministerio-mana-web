@@ -16,6 +16,12 @@
   - Scope: Contenido de `src/components/home/**`
   - Description: Refinar textos con tono espiritual/moderno
 
+- MANA-028 Hub global de operaciones y migración del router 21 Retos
+  - Owner: Equipo web
+  - Scope: ingreso de eventos Wompi, catálogo de productos, enrutamiento, idempotencia, auditoría y observabilidad
+  - Description: Convertir Ministerio Maná en el paraguas global para 21 Retos, Escuela Bíblica, Devocional, Agenda/Eventos, Campus, Donaciones y futuros productos.
+  - Notes: No iniciar la migración hasta terminar y auditar la fase prioritaria de `ministeriomana.org`. Arquitectura, cobertura de medios de pago y secuencia segura en `docs/WOMPI_ROUTER_21_RETOS_ARCHITECTURE.md`.
+
 ---
 
 ## Ready
@@ -226,4 +232,5 @@ _Ningún ticket bloqueado actualmente_
 - ✅ **Paleta de colores**: Beige/Navy original (mantener, NO cosmic)
 - ✅ **Mobile optimization**: Flujo estático y revelado ligero completados (MANA-005)
 - ✅ **Wompi Producción**: conservar el router central 21 Retos; Ministerio Maná recibe reenvíos autenticados y no reemplaza unilateralmente la URL productiva.
+- ✅ **Paraguas futuro**: Ministerio Maná será el concentrador global; la sustitución de 21 Retos será gradual, por producto, reversible y posterior al cierre de la fase actual.
 - ✅ **Production testing**: Portada verificada en móvil y escritorio (MANA-007)
