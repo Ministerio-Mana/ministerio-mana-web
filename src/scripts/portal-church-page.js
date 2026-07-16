@@ -2,8 +2,10 @@ import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
 
 const API_URL = '/api/portal/church-pages';
 const MEDIA_URL = '/api/portal/church-media';
-const MAX_GALLERY = 6;
+const MAX_GALLERY = 8;
 const MAX_SCENES = 6;
+const REQUEST_TIMEOUT_MS = 15000;
+const UPLOAD_TIMEOUT_MS = 60000;
 
 let authHeaders = {};
 
@@ -213,16 +215,25 @@ async function fetchJson(url, options = {}) {
   const headers = new Headers(options.headers || {});
   Object.entries(authHeaders).forEach(([key, value]) => headers.set(key, value));
   if (options.body && !(options.body instanceof FormData)) headers.set('content-type', 'application/json');
-  const response = await fetch(url, { credentials: 'include', ...options, headers });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    if (response.status === 401) redirectToLogin();
-    const error = new Error(payload.error || 'No se pudo completar la operación.');
-    error.payload = payload;
-    error.status = response.status;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { credentials: 'include', ...options, headers, signal: controller.signal });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) redirectToLogin();
+      const error = new Error(payload.error || 'No se pudo completar la operación.');
+      error.payload = payload;
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('La solicitud tardó demasiado. Revisa tu conexión e intenta de nuevo.');
     throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
   }
-  return payload;
 }
 
 function markDirty() {
@@ -471,7 +482,17 @@ async function uploadMediaFile(file, target = state.mediaTarget) {
     form.append('file', file);
     Object.entries(authorization.upload_payload || {}).forEach(([key, value]) => form.append(key, String(value)));
     form.append('token', authorization.token);
-    const uploadResponse = await fetch(authorization.upload_url, { method: 'POST', body: form });
+    const uploadController = new AbortController();
+    const uploadTimeoutId = window.setTimeout(() => uploadController.abort(), UPLOAD_TIMEOUT_MS);
+    let uploadResponse;
+    try {
+      uploadResponse = await fetch(authorization.upload_url, { method: 'POST', body: form, signal: uploadController.signal });
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error('La carga tardó demasiado. Revisa tu conexión e intenta de nuevo.');
+      throw error;
+    } finally {
+      window.clearTimeout(uploadTimeoutId);
+    }
     const uploaded = await uploadResponse.json().catch(() => ({}));
     if (!uploadResponse.ok || !uploaded.fileId) throw new Error(uploaded?.message || 'ImageKit rechazó la imagen.');
     const registered = await fetchJson('/api/portal/church-media-register', {

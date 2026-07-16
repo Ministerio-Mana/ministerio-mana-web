@@ -43,6 +43,16 @@
   --layout-stack-lg: var(--space-3);
   --layout-grid-gap: var(--space-3);
 
+  /* Área mínima táctil: usa el siguiente paso de la escala de 8 px (48 px). */
+  --control-min-size: var(--space-6);
+
+  /* Capas compartidas: contenido < navegación < diálogos < controles flotantes. */
+  --layer-content: 10;
+  --layer-sticky: 30;
+  --layer-modal: 50;
+  --layer-popover: 70;
+  --layer-skip-link: 1000;
+
   /* Gradiente principal */
   --mana-gradient: linear-gradient(135deg,
       rgb(var(--mana-navy)) 0%,

@@ -126,9 +126,10 @@ test('el selector de iglesias y el registro manual protegen foco, datos y formul
 });
 
 test('gestión de eventos protege el formulario largo y mantiene controles táctiles', async () => {
-  const [eventsView, eventsLogic] = await Promise.all([
+  const [eventsView, eventsLogic, eventsApi] = await Promise.all([
     readSource('src/pages/portal/events.astro'),
     readSource('src/scripts/portal-events.js'),
+    readSource('src/pages/api/portal/events.ts'),
   ]);
 
   assert.match(eventsView, /id="event-filters"[^>]*role="group"[^>]*aria-label="Estado del evento"/);
@@ -151,9 +152,13 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /position: 'below left',[\s\S]*?static: true/);
   assert.match(eventsLogic, /recommendedMode = scope === 'GLOBAL'[\s\S]*?'DUAL'/);
   assert.match(eventsLogic, /function requestCloseEventModal\(\)/);
-  assert.match(eventsLogic, /event\.key === 'Escape'[\s\S]*?closeModal\?\.focus\(\)/);
+  assert.match(eventsLogic, /event\.key === 'Escape'[\s\S]*?requestCloseEventModal\(\)/);
+  assert.match(eventsView, /id="event-form-error"[^>]*role="alert"[^>]*tabindex="-1"/);
   assert.match(eventsLogic, /event\.key !== 'Tab'/);
   assert.match(eventsLogic, /eventModalReturnFocus/);
+  assert.match(eventsLogic, /selectedScope !== 'GLOBAL' && selectedCountry/);
+  assert.match(eventsApi, /Selecciona el país del evento nacional/);
+  assert.match(eventsApi, /Selecciona una región para el evento regional/);
   assert.match(eventsLogic, /window\.addEventListener\('beforeunload'/);
   assert.doesNotMatch(eventsLogic, /event\.target === eventModal\) closeEventModal\(\)/);
 });
@@ -210,13 +215,14 @@ test('la inscripción pública separa cupos, asistentes e identidad financiera p
 });
 
 test('el editor de iglesias separa borrador, publicación, alcance e imágenes', async () => {
-  const [view, logic, api, mediaRegister, sql, publicPage] = await Promise.all([
+  const [view, logic, api, mediaRegister, sql, publicPage, theme] = await Promise.all([
     readSource('src/pages/portal/church-page.astro'),
     readSource('src/scripts/portal-church-page.js'),
     readSource('src/pages/api/portal/church-pages.ts'),
     readSource('src/pages/api/portal/church-media-register.ts'),
     readSource('docs/sql/church_public_pages.sql'),
     readSource('src/lib/churchPublic.ts'),
+    readSource('src/styles/theme.css'),
   ]);
 
   assert.equal([...view.matchAll(/<h1\b/g)].length, 1);
@@ -227,8 +233,14 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.match(logic, /Object\.entries\(authHeaders\)/);
   assert.match(logic, /event\.key !== 'Tab'/);
   assert.match(logic, /state\.modalTrigger\?\.focus\?\.\(\)/);
+  assert.match(logic, /REQUEST_TIMEOUT_MS/);
+  assert.match(logic, /UPLOAD_TIMEOUT_MS/);
   assert.match(logic, /expected_version: Number\(state\.page\.version \|\| 0\)/);
   assert.match(view, /id="church-page-themes"/);
+  assert.match(view, /Hasta 8 fotos de la comunidad/);
+  assert.match(view, /:global\(\.church-field input\)[\s\S]*?min-height: var\(--control-min-size\)/);
+  assert.match(view, /:global\(\[data-scene-action\]\)[\s\S]*?min-height: var\(--control-min-size\)/);
+  assert.match(theme, /--control-min-size: var\(--space-6\)/);
   assert.match(view, /data-image-drop-target="hero"/);
   assert.match(logic, /async function uploadMediaFile\(file, target = state\.mediaTarget\)/);
   assert.match(logic, /state\.page\.story_config\.theme = input\.value/);

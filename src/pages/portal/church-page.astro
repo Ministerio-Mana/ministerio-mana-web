@@ -131,7 +131,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                   <div class="space-y-6 border-t border-slate-100 p-4 md:p-6">
                     <div>
                       <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div><h3 class="font-black text-[#293C74]">Galería</h3><p class="mt-2 text-xs text-slate-500">Hasta 6 fotos de la comunidad.</p></div>
+                        <div><h3 class="font-black text-[#293C74]">Galería</h3><p class="mt-2 text-xs text-slate-500">Hasta 8 fotos de la comunidad.</p></div>
                         <button type="button" data-image-target="gallery" class="church-secondary-button"><PortalIcon name="plus" size={17} /> Agregar foto</button>
                       </div>
                       <div id="church-page-gallery" class="mt-4 grid gap-4 sm:grid-cols-2"></div>
@@ -199,9 +199,9 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
 </script>
 
 <style>
-  .church-field { color: #475569; display: block; font-size: .75rem; font-weight: 800; }
-  .church-field input, .church-field textarea, .church-field select { background: #f8fafc; border: 1px solid #dce4ec; border-radius: 12px; color: #172151; display: block; font-size: .875rem; font-weight: 500; margin-top: var(--space-1); min-height: 44px; padding: var(--space-2); width: 100%; }
-  .church-field input:focus, .church-field textarea:focus, .church-field select:focus { border-color: #293c74; outline: 3px solid rgba(41,60,116,.14); }
+  :global(.church-field) { color: #475569; display: block; font-size: .75rem; font-weight: 800; }
+  :global(.church-field input), :global(.church-field textarea), :global(.church-field select) { background: #f8fafc; border: 1px solid #dce4ec; border-radius: 12px; color: #172151; display: block; font-size: .875rem; font-weight: 500; margin-top: var(--space-1); min-height: var(--control-min-size); padding: var(--space-2); width: 100%; }
+  :global(.church-field input:focus), :global(.church-field textarea:focus), :global(.church-field select:focus) { border-color: #293c74; outline: 3px solid rgba(41,60,116,.14); }
   .church-slug { align-items: center; display: flex; margin-top: var(--space-1); }
   .church-slug span { background: #eef2f7; border: 1px solid #dce4ec; border-radius: 12px 0 0 12px; color: #64748b; min-height: 44px; padding: var(--space-2); }
   .church-slug input { border-left: 0; border-radius: 0 12px 12px 0; margin: 0; }
@@ -225,7 +225,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   .church-theme-swatch--navy { background: linear-gradient(135deg,#111936 0 55%,#28a6bd 55%); }
   .church-theme-swatch--light { background: linear-gradient(135deg,#edf6f4 0 55%,#246a84 55%); }
   .church-theme-swatch--warm { background: linear-gradient(135deg,#f7f2e7 0 55%,#9a5c28 55%); }
-  .church-secondary-button { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: 44px; padding: var(--space-1) var(--space-2); }
+  :global(.church-secondary-button) { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: var(--control-min-size); padding: var(--space-1) var(--space-2); }
   .church-image-guide { background: #f7f9ff; border: 1px solid rgba(41,60,116,.16); border-radius: 16px; color: #475569; padding: var(--space-2); }
   .church-image-guide > strong { color: #293c74; font-size: .85rem; }
   .church-image-guide ul { display: grid; gap: var(--space-1); list-style: disc; margin: var(--space-2) 0 0 var(--space-3); }
@@ -270,6 +270,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   :global(.preview-mosaic-card small) { color: #f2c94c; font-size: .6rem; text-transform: uppercase; }
   :global(.preview-mosaic-card strong) { color: #fff !important; line-height: 1.05; margin-top: var(--space-1); text-shadow: 0 2px 14px rgba(7,17,28,.34); }
   :global(.church-scene-card) { border: 1px solid #dce4ec; border-radius: 16px; padding: var(--space-2); }
+  :global([data-scene-action]) { min-height: var(--control-min-size); min-width: var(--control-min-size); }
   :global(.church-scene-grid) { display: grid; gap: var(--space-2); grid-template-columns: repeat(2,minmax(0,1fr)); }
   :global(.church-scene-image) { aspect-ratio: 16 / 9; background: #eef2f7 center/cover; border: 1px dashed #94a3b8; border-radius: 12px; cursor: pointer; margin-top: var(--space-2); overflow: hidden; position: relative; }
   :global(.church-scene-image:focus-visible), :global(.church-scene-image.is-dragging) { border-color: #293c74; box-shadow: 0 0 0 4px rgba(40,166,189,.18); outline: none; }

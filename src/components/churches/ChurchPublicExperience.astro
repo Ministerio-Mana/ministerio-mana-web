@@ -25,10 +25,10 @@ const gallery = page.gallery.map((image) => ({
   srcset: responsivePublicImageSrcset(image.url, [480, 720, 960, 1200], 82),
 }));
 const scenes = page.story_config.scenes;
-const formatEventDate = (value: string) => new Intl.DateTimeFormat('es-CO', {
+const formatEventDate = (value: string, timeZone = 'America/Bogota') => new Intl.DateTimeFormat('es-CO', {
   dateStyle: 'long',
   timeStyle: 'short',
-  timeZone: 'America/Bogota',
+  timeZone,
 }).format(new Date(value));
 ---
 
@@ -184,7 +184,7 @@ const formatEventDate = (value: string) => new Intl.DateTimeFormat('es-CO', {
         <div class="church-events__grid">
           {events.map((event) => (
             <article>
-              <p>{formatEventDate(event.start_date)}</p>
+              <p>{formatEventDate(event.start_date, event.timezone || 'America/Bogota')}</p>
               <h3>{event.title}</h3>
               {event.description && <span>{event.description}</span>}
               <a href={getPublicEventPath(event)}>Ver información</a>

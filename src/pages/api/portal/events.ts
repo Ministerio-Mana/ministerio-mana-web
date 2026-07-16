@@ -657,24 +657,47 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response(JSON.stringify({ ok: false, error: 'Solo puedes crear eventos para tu país.' }), { status: 403 });
       }
       payload.country = ctx.country;
-      if (payload.scope === 'REGIONAL' && requestedRegionId) {
+      if (payload.scope === 'REGIONAL') {
+        if (!requestedRegionId) {
+          return new Response(JSON.stringify({ ok: false, error: 'Selecciona una región para el evento regional.' }), { status: 400 });
+        }
         const { data: region, error: regionError } = await supabaseAdmin
           .from('regions')
           .select('id, country')
           .eq('id', requestedRegionId)
           .maybeSingle();
-        if (!regionError && region?.id && region.country === ctx.country) {
+        if (regionError) {
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar la región.' }), { status: 500 });
+        }
+        if (region?.id && region.country === ctx.country) {
           payload.region_id = region.id;
-        } else if (!regionError && !region?.id) {
+        } else if (!region?.id) {
           return new Response(JSON.stringify({ ok: false, error: 'Región no encontrada.' }), { status: 404 });
-        } else if (!regionError) {
+        } else {
           return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta región.' }), { status: 403 });
         }
       }
-    } else if (payload.scope === 'REGIONAL' && requestedRegionId) {
-      payload.region_id = requestedRegionId;
-    } else if (!payload.country) {
-      payload.country = 'Colombia';
+    } else if (ctx.isAdmin) {
+      if (payload.scope === 'REGIONAL') {
+        if (!requestedRegionId) {
+          return new Response(JSON.stringify({ ok: false, error: 'Selecciona una región para el evento regional.' }), { status: 400 });
+        }
+        const { data: region, error: regionError } = await supabaseAdmin
+          .from('regions')
+          .select('id, country')
+          .eq('id', requestedRegionId)
+          .maybeSingle();
+        if (regionError) {
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar la región.' }), { status: 500 });
+        }
+        if (!region?.id) {
+          return new Response(JSON.stringify({ ok: false, error: 'Región no encontrada.' }), { status: 404 });
+        }
+        payload.region_id = region.id;
+        payload.country = region.country;
+      } else if (!payload.country) {
+        return new Response(JSON.stringify({ ok: false, error: 'Selecciona el país del evento nacional.' }), { status: 400 });
+      }
     }
     payload.church_id = null;
     if (payload.scope === 'NATIONAL') {
@@ -872,30 +895,54 @@ export const PATCH: APIRoute = async ({ request }) => {
     } else if (ctx.isNational) {
       payload.country = ctx.country;
       if (resultingScope === 'REGIONAL') {
-        if (requestedRegionId) {
-          const { data: region, error: regionError } = await supabaseAdmin
-            .from('regions')
-            .select('id, country')
-            .eq('id', requestedRegionId)
-            .maybeSingle();
-          if (!regionError && region?.id && region.country === ctx.country) {
-            payload.region_id = region.id;
-          } else if (!regionError && !region?.id) {
-            return new Response(JSON.stringify({ ok: false, error: 'Región no encontrada.' }), { status: 404 });
-          } else if (!regionError) {
-            return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta región.' }), { status: 403 });
-          }
-        } else if (!payload.region_id) {
-          payload.region_id = eventRow.region_id || null;
+        const targetRegionId = requestedRegionId || payload.region_id || eventRow.region_id;
+        if (!targetRegionId) {
+          return new Response(JSON.stringify({ ok: false, error: 'Selecciona una región para el evento regional.' }), { status: 400 });
+        }
+        const { data: region, error: regionError } = await supabaseAdmin
+          .from('regions')
+          .select('id, country')
+          .eq('id', targetRegionId)
+          .maybeSingle();
+        if (regionError) {
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar la región.' }), { status: 500 });
+        }
+        if (region?.id && region.country === ctx.country) {
+          payload.region_id = region.id;
+        } else if (!region?.id) {
+          return new Response(JSON.stringify({ ok: false, error: 'Región no encontrada.' }), { status: 404 });
+        } else {
+          return new Response(JSON.stringify({ ok: false, error: 'No autorizado para esta región.' }), { status: 403 });
         }
       } else {
         payload.region_id = null;
       }
-    } else if (!payload.country) {
-      payload.country = eventRow.country || 'Colombia';
-      if (resultingScope !== 'REGIONAL') payload.region_id = null;
-    } else if (resultingScope === 'NATIONAL') {
-      payload.region_id = null;
+    } else if (ctx.isAdmin) {
+      if (resultingScope === 'REGIONAL') {
+        const targetRegionId = requestedRegionId || payload.region_id || eventRow.region_id;
+        if (!targetRegionId) {
+          return new Response(JSON.stringify({ ok: false, error: 'Selecciona una región para el evento regional.' }), { status: 400 });
+        }
+        const { data: region, error: regionError } = await supabaseAdmin
+          .from('regions')
+          .select('id, country')
+          .eq('id', targetRegionId)
+          .maybeSingle();
+        if (regionError) {
+          return new Response(JSON.stringify({ ok: false, error: 'No se pudo validar la región.' }), { status: 500 });
+        }
+        if (!region?.id) {
+          return new Response(JSON.stringify({ ok: false, error: 'Región no encontrada.' }), { status: 404 });
+        }
+        payload.region_id = region.id;
+        payload.country = region.country;
+      } else {
+        payload.country = payload.country || eventRow.country || null;
+        if (!payload.country) {
+          return new Response(JSON.stringify({ ok: false, error: 'Selecciona el país del evento nacional.' }), { status: 400 });
+        }
+        payload.region_id = null;
+      }
     }
     payload.church_id = null;
   }

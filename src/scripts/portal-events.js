@@ -927,6 +927,12 @@ function showFormError(message = '') {
     if (!eventFormError) return;
     eventFormError.textContent = message;
     eventFormError.classList.toggle('hidden', !message);
+    if (message) {
+        window.requestAnimationFrame(() => {
+            eventFormError.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            eventFormError.focus({ preventScroll: true });
+        });
+    }
 }
 
 function isAdminRole() {
@@ -1037,6 +1043,7 @@ function syncScopeInputs(options = {}) {
     const currentChurch = String(eventChurchSelect?.value || '').trim();
     const needsRegion = scope === 'REGIONAL';
     const needsChurch = scope === 'LOCAL';
+    eventCountryInput.required = scope === 'NATIONAL' && isAdminRole();
 
     if (eventRegionWrapper && eventRegionSelect) {
         eventRegionWrapper.classList.toggle('hidden', !needsRegion);
@@ -1651,7 +1658,7 @@ function handleEventModalKeydown(event) {
     if (!eventModal?.classList.contains('flex')) return;
     if (event.key === 'Escape') {
         event.preventDefault();
-        closeModal?.focus();
+        requestCloseEventModal();
         return;
     }
     if (event.key !== 'Tab') return;
@@ -1873,6 +1880,10 @@ eventForm?.addEventListener('submit', async (event) => {
     try {
         const formData = new FormData(eventForm);
         const payload = Object.fromEntries(formData.entries());
+        const selectedScope = String(eventScopeSelect?.value || payload.scope || 'LOCAL').toUpperCase();
+        const selectedCountry = String(eventCountryInput?.value || '').trim();
+        payload.scope = selectedScope;
+        if (selectedScope !== 'GLOBAL' && selectedCountry) payload.country = selectedCountry;
         const approvalField = eventForm.querySelector('[name="registration_requires_approval"]');
         const registrationMode = eventPlatformReady
             ? String(eventRegistrationMode?.value || 'NONE').toUpperCase()
