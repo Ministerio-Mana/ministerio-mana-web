@@ -119,6 +119,8 @@ const eventLandingHost = document.getElementById('event-landing-host');
 const eventLandingAccessibility = document.getElementById('event-landing-accessibility');
 const eventLandingFaq = document.getElementById('event-landing-faq');
 const eventLandingPolicy = document.getElementById('event-landing-policy');
+const eventLandingTemplateInputs = [...(eventForm?.querySelectorAll('[name="page_template"]') || [])];
+const eventLandingThemeInputs = [...(eventForm?.querySelectorAll('[name="page_theme"]') || [])];
 const eventCustomFieldsContainer = document.getElementById('event-custom-fields');
 const eventCustomFieldAdd = document.getElementById('event-custom-field-add');
 const eventCustomFieldEmpty = document.getElementById('event-custom-field-empty');
@@ -159,6 +161,8 @@ const previewDescription = document.getElementById('event-preview-description');
 const previewLocation = document.getElementById('event-preview-location');
 const previewPrice = document.getElementById('event-preview-price');
 const previewCta = document.getElementById('event-preview-cta');
+const previewCard = document.getElementById('event-preview-card');
+const previewTemplateLabel = document.getElementById('event-preview-template-label');
 
 const REQUEST_TIMEOUT_MS = 15000;
 const MIN_EVENT_YEAR = 2000;
@@ -1831,6 +1835,20 @@ function updateEventPreview() {
     const copPrice = parseMoneyInput(eventPriceCopInput?.value, 'COP');
     const usdPrice = parseMoneyInput(eventPriceUsdInput?.value, 'USD');
     const usesInternalRegistration = value('registration_mode').toUpperCase() === 'INTERNAL';
+    const landingSettings = normalizeEventLandingSettings({
+        template: eventLandingTemplateInputs.find((input) => input.checked)?.value,
+        theme: eventLandingThemeInputs.find((input) => input.checked)?.value,
+    });
+    const templateLabels = { ESSENTIAL: 'Esencial', STORY: 'Historia', MOSAIC: 'Mosaico' };
+    const themeLabels = { navy: 'Azul Maná', light: 'Claro editorial', warm: 'Cálido' };
+
+    if (previewCard) {
+        previewCard.dataset.template = landingSettings.template;
+        previewCard.dataset.theme = landingSettings.theme;
+    }
+    if (previewTemplateLabel) {
+        previewTemplateLabel.textContent = `${templateLabels[landingSettings.template]} · ${themeLabels[landingSettings.theme]}`;
+    }
 
     if (previewTitle) previewTitle.textContent = title || 'Título del evento';
     if (previewDescription) previewDescription.textContent = description || 'La descripción aparecerá aquí.';
@@ -2000,6 +2018,12 @@ function openEventModal(mode, eventData = null) {
     eventCustomFields = formConfig.fields.map((field) => ({ ...field, options: [...field.options] }));
     renderCustomFieldBuilder();
     const landingSettings = normalizeEventLandingSettings(eventData?.page_settings);
+    eventLandingTemplateInputs.forEach((input) => {
+        input.checked = input.value === landingSettings.template;
+    });
+    eventLandingThemeInputs.forEach((input) => {
+        input.checked = input.value === landingSettings.theme;
+    });
     if (eventLandingExpect) eventLandingExpect.value = landingSettings.what_to_expect;
     if (eventLandingAgenda) eventLandingAgenda.value = landingSettings.agenda;
     if (eventLandingPractical) eventLandingPractical.value = landingSettings.practical_info;
@@ -2361,6 +2385,8 @@ eventForm?.addEventListener('submit', async (event) => {
                 fields: registrationMode === 'INTERNAL' ? getCustomFieldsForSaving() : [],
             };
             payload.page_settings = normalizeEventLandingSettings({
+                template: eventLandingTemplateInputs.find((input) => input.checked)?.value,
+                theme: eventLandingThemeInputs.find((input) => input.checked)?.value,
                 what_to_expect: eventLandingExpect?.value,
                 agenda: eventLandingAgenda?.value,
                 practical_info: eventLandingPractical?.value,

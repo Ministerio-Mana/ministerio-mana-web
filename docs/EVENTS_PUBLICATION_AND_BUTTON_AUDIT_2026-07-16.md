@@ -159,3 +159,24 @@ Las tres plantillas comparten el mismo contenido y contrato de inscripción; cam
 ## Decisión Wompi que no se debe olvidar
 
 Wompi Producción mantiene la URL del router central **21 Retos**. Ministerio Maná consume los eventos que ese router reenvía; no se debe sustituir el endpoint en Wompi de forma unilateral. Ver `docs/WOMPI_ROUTER_21_RETOS_ARCHITECTURE.md`.
+
+## Implementación de plantillas completada
+
+El editor de Gestión de Eventos ya guarda `template` y `theme` dentro de `page_settings`; no fue necesario ampliar el contrato SQL ni tocar pagos, documentos, asistentes o permisos. Las opciones admitidas son cerradas y normalizadas:
+
+- plantillas: `ESSENTIAL`, `STORY`, `MOSAIC`;
+- paletas: `navy`, `light`, `warm`.
+
+La página pública interpreta el mismo contenido de tres maneras:
+
+- Esencial conserva la lectura lineal;
+- Historia usa el motor accesible de Stories Plus y mantiene la información práctica fuera de la animación;
+- Mosaico convierte los bloques guiados en una composición editorial que vuelve a una columna en móvil.
+
+Verificación realizada el 16 de julio de 2026:
+
+- normalización y valores inválidos cubiertos por pruebas unitarias;
+- contrato editor → `page_settings` → página pública cubierto por prueba de fuente;
+- compilación de producción completada;
+- prueba visual en 1280 px y 390 px, sin scroll horizontal y sin controles visibles menores de 44 px;
+- Historia confirmó tres escenas con navegación accesible en el evento de contenido usado para la prueba.

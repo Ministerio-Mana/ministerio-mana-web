@@ -4,6 +4,8 @@ import { hasEventLandingContent, normalizeEventLandingSettings } from '../src/li
 
 test('normaliza los bloques guiados sin aceptar markup ni estructura libre', () => {
   const settings = normalizeEventLandingSettings({
+    template: 'STORY',
+    theme: 'warm',
     whatToExpect: '  Adoración   y palabra  ',
     agenda: '09:00 Registro\n\n\n10:00 Plenaria',
     practicalInfo: 'Trae tu documento',
@@ -14,6 +16,8 @@ test('normaliza los bloques guiados sin aceptar markup ni estructura libre', () 
     arbitrary_html: '<script>alert(1)</script>',
   });
   assert.deepEqual(settings, {
+    template: 'STORY',
+    theme: 'warm',
     what_to_expect: 'Adoración y palabra',
     agenda: '09:00 Registro\n\n10:00 Plenaria',
     practical_info: 'Trae tu documento',
@@ -28,4 +32,15 @@ test('normaliza los bloques guiados sin aceptar markup ni estructura libre', () 
 test('limita cada bloque y reconoce una landing vacía', () => {
   assert.equal(normalizeEventLandingSettings({ agenda: 'x'.repeat(3000) }).agenda.length, 1600);
   assert.equal(hasEventLandingContent({}), false);
+  assert.deepEqual(normalizeEventLandingSettings({ template: 'LIBRE', theme: 'neon' }), {
+    template: 'ESSENTIAL',
+    theme: 'navy',
+    what_to_expect: '',
+    agenda: '',
+    practical_info: '',
+    host_info: '',
+    accessibility_info: '',
+    frequently_asked_questions: '',
+    change_policy: '',
+  });
 });

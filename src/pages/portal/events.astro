@@ -380,6 +380,42 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </label>
             </div>
 
+            <section class="event-landing-design" aria-labelledby="event-landing-design-title">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[.14em] text-[#28A6BD]">Diseño protegido</p>
+                <h4 id="event-landing-design-title" class="mt-2 text-base font-black text-[#293C74]">Elige cómo se contará el evento</h4>
+                <p class="mt-2 text-xs leading-relaxed text-slate-600">Puedes cambiar de estilo sin perder textos, formulario, pagos ni asistentes. El sistema conserva contraste, espacios y adaptación móvil.</p>
+              </div>
+              <fieldset id="event-landing-templates" class="event-landing-template-grid">
+                <legend class="sr-only">Plantilla visual de la página pública</legend>
+                <label class="event-landing-template-card">
+                  <input type="radio" name="page_template" value="ESSENTIAL" data-platform-field disabled checked class="sr-only" />
+                  <span class="event-landing-template-thumb event-landing-template-thumb--essential" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <strong>Esencial</strong><small>Información directa, clara y fácil de recorrer.</small>
+                </label>
+                <label class="event-landing-template-card">
+                  <input type="radio" name="page_template" value="STORY" data-platform-field disabled class="sr-only" />
+                  <span class="event-landing-template-thumb event-landing-template-thumb--story" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <strong>Historia</strong><small>Escenas de pantalla completa con movimiento al hacer scroll.</small>
+                </label>
+                <label class="event-landing-template-card">
+                  <input type="radio" name="page_template" value="MOSAIC" data-platform-field disabled class="sr-only" />
+                  <span class="event-landing-template-thumb event-landing-template-thumb--mosaic" aria-hidden="true"><i></i><i></i><i></i></span>
+                  <strong>Mosaico</strong><small>Composición editorial con información en tarjetas visuales.</small>
+                </label>
+              </fieldset>
+              <div class="border-t border-[#293C74]/10 pt-4">
+                <h5 class="text-sm font-black text-[#293C74]">Paleta protegida</h5>
+                <p class="mt-2 text-xs leading-relaxed text-slate-500">La página calcula texto, capas y acentos legibles. Los organizadores no tienen que combinar colores.</p>
+                <fieldset id="event-landing-themes" class="event-landing-theme-grid">
+                  <legend class="sr-only">Paleta de la página pública</legend>
+                  <label class="event-landing-theme-card"><input type="radio" name="page_theme" value="navy" data-platform-field disabled checked class="sr-only" /><span class="event-landing-theme-swatch event-landing-theme-swatch--navy"></span><strong>Azul Maná</strong></label>
+                  <label class="event-landing-theme-card"><input type="radio" name="page_theme" value="light" data-platform-field disabled class="sr-only" /><span class="event-landing-theme-swatch event-landing-theme-swatch--light"></span><strong>Claro editorial</strong></label>
+                  <label class="event-landing-theme-card"><input type="radio" name="page_theme" value="warm" data-platform-field disabled class="sr-only" /><span class="event-landing-theme-swatch event-landing-theme-swatch--warm"></span><strong>Cálido</strong></label>
+                </fieldset>
+              </div>
+            </section>
+
             <details class="rounded-lg border border-[#293C74]/15 bg-[#F7F9FF]">
               <summary class="cursor-pointer list-none px-4 py-4 text-sm font-bold text-[#293C74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#293C74]">Contenido de la landing <span class="font-normal text-slate-500">(opcional)</span></summary>
               <div class="grid gap-4 border-t border-[#293C74]/10 p-4 sm:grid-cols-2">
@@ -582,8 +618,11 @@ import Sidebar from '@components/portal/Sidebar.astro';
 
         <aside class="border-t border-slate-200 bg-slate-50 p-4 sm:p-6 lg:border-l lg:border-t-0">
           <div class="lg:sticky lg:top-6">
-            <p class="mb-4 text-xs font-bold uppercase text-slate-500">Vista previa de la invitación</p>
-            <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="mb-4 flex items-end justify-between gap-4">
+              <p class="text-xs font-bold uppercase text-slate-500">Vista previa de la invitación</p>
+              <span id="event-preview-template-label" class="text-xs font-bold text-[#293C74]">Esencial · Azul Maná</span>
+            </div>
+            <article id="event-preview-card" class="event-preview-card overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm" data-template="ESSENTIAL" data-theme="navy">
             <div id="event-preview-media" class="relative aspect-[16/9] bg-[#293C74]">
               <div id="event-preview-image-backdrop" class="absolute -inset-4 hidden scale-110 bg-cover bg-center opacity-50 blur-xl" aria-hidden="true"></div>
               <div class="absolute inset-0 bg-[#172151]/25" aria-hidden="true"></div>
@@ -593,7 +632,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <strong class="block text-lg text-[#293C74]">Por definir</strong>
               </div>
             </div>
-            <div class="space-y-4 p-6">
+            <div class="event-preview-body space-y-4 p-6">
               <div class="flex flex-wrap items-center gap-2">
                 <span id="event-preview-scope" class="portal-chip bg-[#293C74]/10 text-[#293C74]">Local</span>
                 <span id="event-preview-status" class="portal-chip bg-amber-50 text-amber-700">Borrador</span>
@@ -645,6 +684,147 @@ import Sidebar from '@components/portal/Sidebar.astro';
     .event-filter.is-active span {
       background: rgb(255 255 255 / 16%);
       color: #fff;
+    }
+
+    .event-landing-design {
+      display: grid;
+      gap: var(--space-3);
+      border: 1px solid rgb(41 60 116 / 15%);
+      border-radius: var(--portal-card-radius);
+      background: #f7f9ff;
+      padding: var(--space-3);
+    }
+
+    .event-landing-template-grid {
+      display: grid;
+      gap: var(--space-2);
+      border: 0;
+      padding: 0;
+    }
+
+    .event-landing-template-card {
+      display: flex;
+      min-width: 0;
+      min-height: 11rem;
+      flex-direction: column;
+      border: 2px solid #dce4ec;
+      border-radius: var(--portal-card-radius);
+      background: #fff;
+      padding: var(--space-2);
+      cursor: pointer;
+    }
+
+    .event-landing-template-card:has(input:checked) {
+      border-color: #293c74;
+      box-shadow: 0 0 0 3px rgb(41 60 116 / 12%);
+    }
+
+    .event-landing-template-card:focus-within,
+    .event-landing-theme-card:focus-within {
+      outline: 3px solid rgb(40 166 189 / 35%);
+      outline-offset: 2px;
+    }
+
+    .event-landing-template-card strong {
+      margin-top: var(--space-2);
+      color: #293c74;
+      font-size: 0.9rem;
+    }
+
+    .event-landing-template-card small {
+      margin-top: var(--space-1);
+      color: #64748b;
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .event-landing-template-thumb {
+      display: grid;
+      height: 4.5rem;
+      gap: var(--space-1);
+      overflow: hidden;
+      border-radius: 0.625rem;
+      background: #111936;
+      padding: var(--space-1);
+    }
+
+    .event-landing-template-thumb i {
+      display: block;
+      border-radius: 0.25rem;
+      background: #28a6bd;
+    }
+
+    .event-landing-template-thumb--essential { grid-template-rows: 1.5fr 0.45fr 0.45fr; }
+    .event-landing-template-thumb--story { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; }
+    .event-landing-template-thumb--story i:nth-child(2) { background: #f2c94c; }
+    .event-landing-template-thumb--mosaic { grid-template-columns: 1.5fr 1fr; grid-template-rows: 1fr 1fr; }
+    .event-landing-template-thumb--mosaic i:first-child { grid-row: 1 / -1; }
+
+    .event-landing-theme-grid {
+      display: grid;
+      gap: var(--space-1);
+      margin-top: var(--space-2);
+      border: 0;
+      padding: 0;
+    }
+
+    .event-landing-theme-card {
+      display: flex;
+      min-height: var(--control-min-size);
+      align-items: center;
+      gap: var(--space-1);
+      border: 1px solid #dce4ec;
+      border-radius: var(--portal-control-radius);
+      background: #fff;
+      padding: var(--space-1);
+      cursor: pointer;
+    }
+
+    .event-landing-theme-card:has(input:checked) {
+      border-color: #293c74;
+      box-shadow: 0 0 0 3px rgb(41 60 116 / 12%);
+    }
+
+    .event-landing-theme-card strong {
+      color: #293c74;
+      font-size: 0.72rem;
+      line-height: 1.25;
+    }
+
+    .event-landing-theme-swatch {
+      display: block;
+      width: 2.625rem;
+      height: 2.125rem;
+      flex: 0 0 auto;
+      border: 1px solid rgb(23 33 81 / 14%);
+      border-radius: 0.5rem;
+    }
+
+    .event-landing-theme-swatch--navy { background: linear-gradient(135deg, #111936 0 55%, #28a6bd 55%); }
+    .event-landing-theme-swatch--light { background: linear-gradient(135deg, #edf6f4 0 55%, #246a84 55%); }
+    .event-landing-theme-swatch--warm { background: linear-gradient(135deg, #f7f2e7 0 55%, #9a5c28 55%); }
+
+    .event-preview-card {
+      transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+    }
+
+    .event-preview-card[data-theme="navy"] { --event-preview-bg: #fff; --event-preview-copy: #293c74; --event-preview-muted: #526174; --event-preview-accent: #28a6bd; }
+    .event-preview-card[data-theme="light"] { --event-preview-bg: #edf6f4; --event-preview-copy: #123d50; --event-preview-muted: #435f6a; --event-preview-accent: #246a84; }
+    .event-preview-card[data-theme="warm"] { --event-preview-bg: #f7f2e7; --event-preview-copy: #59351f; --event-preview-muted: #6b6258; --event-preview-accent: #9a5c28; }
+    .event-preview-card .event-preview-body { background: var(--event-preview-bg); }
+    .event-preview-card .event-preview-body :is(h3, #event-preview-price) { color: var(--event-preview-copy); }
+    .event-preview-card .event-preview-body :is(#event-preview-description, #event-preview-location) { color: var(--event-preview-muted); }
+    .event-preview-card #event-preview-cta { background: var(--event-preview-copy); }
+    .event-preview-card[data-template="STORY"] { border-color: var(--event-preview-accent); background: #111936; }
+    .event-preview-card[data-template="STORY"] #event-preview-media { aspect-ratio: 4 / 3; }
+    .event-preview-card[data-template="STORY"] .event-preview-body { border-top: 3px solid var(--event-preview-accent); }
+    .event-preview-card[data-template="MOSAIC"] .event-preview-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .event-preview-card[data-template="MOSAIC"] .event-preview-body > :is(h3, #event-preview-description, #event-preview-location, #event-preview-cta) { grid-column: 1 / -1; }
+    .event-preview-card[data-template="MOSAIC"] .event-preview-body > * { min-width: 0; }
+
+    @media (min-width: 640px) {
+      .event-landing-template-grid,
+      .event-landing-theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
 
     :global(.event-field) {

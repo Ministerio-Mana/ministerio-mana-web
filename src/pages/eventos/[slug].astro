@@ -6,7 +6,12 @@ import { getEventProviderPrice } from '@lib/eventPaymentContract.js';
 import { normalizeEventRegistrationFormConfig, normalizeWhatsAppNumber } from '@lib/eventRegistrationForm.js';
 import TurnstileProvider from '@components/TurnstileProvider.astro';
 import TurnstileWidget from '@components/TurnstileWidget.astro';
-import { normalizeEventLandingSettings } from '@lib/eventLanding';
+import CmsStorySection from '@components/cms/CmsStorySection.astro';
+import {
+  EVENT_LANDING_TEMPLATES,
+  EVENT_LANDING_THEMES,
+  normalizeEventLandingSettings,
+} from '@lib/eventLanding';
 
 type RegistrationCustomField = {
   id: string;
@@ -123,6 +128,16 @@ const eventTimeZone = databaseEvent?.timezone || 'America/Bogota';
 const registrationFormConfig = normalizeEventRegistrationFormConfig(databaseEvent?.registration_form_config);
 const registrationCustomFields = registrationFormConfig.fields as RegistrationCustomField[];
 const landingSettings = normalizeEventLandingSettings(databaseEvent?.page_settings);
+const devTemplateQuery = String(Astro.url.searchParams.get('template') || '').toUpperCase();
+const devThemeQuery = String(Astro.url.searchParams.get('theme') || '').toLowerCase();
+const devTemplate = import.meta.env.DEV && EVENT_LANDING_TEMPLATES.includes(devTemplateQuery as typeof EVENT_LANDING_TEMPLATES[number])
+  ? devTemplateQuery as typeof EVENT_LANDING_TEMPLATES[number]
+  : '';
+const devTheme = import.meta.env.DEV && EVENT_LANDING_THEMES.includes(devThemeQuery as typeof EVENT_LANDING_THEMES[number])
+  ? devThemeQuery as typeof EVENT_LANDING_THEMES[number]
+  : '';
+const landingTemplate = devTemplate || (contentEntry ? 'ESSENTIAL' : landingSettings.template);
+const landingTheme = devTheme || (contentEntry ? 'navy' : landingSettings.theme);
 const landingSections = [
   { key: 'expect', eyebrow: 'La experiencia', title: 'Qué vivirás', text: landingSettings.what_to_expect },
   { key: 'agenda', eyebrow: 'Programa', title: 'Agenda', text: landingSettings.agenda },
@@ -167,6 +182,63 @@ const priceLabel = pricingModel === 'DONATION'
       ? formatEventPrice(Number(databaseEvent?.price), databaseEvent?.currency || 'COP')
       : 'Sin costo';
 const canonical = `${Astro.url.origin}/eventos/${slug}`;
+const storyRegistrationHref = registrationDisplayHref?.startsWith('#')
+  ? `/eventos/${slug}${registrationDisplayHref}`
+  : registrationDisplayHref;
+const storyDetailScenes = landingSections.slice(0, 5).map((section, index) => ({
+  id: `detalle-${section.key}`,
+  eyebrow: section.eyebrow,
+  title: section.title,
+  text: section.text,
+  image: '',
+  imageAlt: '',
+  focalPoint: 'center',
+  layout: 'backdrop',
+  primaryLabel: '',
+  primaryHref: '',
+}));
+const eventStoryPayload = {
+  preset: 'editorial',
+  theme: landingTheme,
+  scenes: [
+    {
+      id: 'bienvenida',
+      eyebrow: isCompleted ? 'Evento finalizado' : databaseEvent?.category || 'Evento Maná',
+      title,
+      text: description,
+      image: useImageHero ? image : '',
+      imageAlt: useImageHero ? `Arte oficial de ${title}` : '',
+      focalPoint: 'center',
+      layout: imageLayout === 'HORIZONTAL' ? 'backdrop' : 'poster',
+      primaryLabel: storyRegistrationHref ? registrationCtaLabel : '',
+      primaryHref: storyRegistrationHref,
+    },
+    ...(storyDetailScenes.length > 0 ? storyDetailScenes : [{
+      id: 'informacion-practica',
+      eyebrow: 'Planifica tu asistencia',
+      title: formattedDate,
+      text: [formattedTime, location, address, attendanceLabel, priceLabel].filter(Boolean).join(' · '),
+      image: '',
+      imageAlt: '',
+      focalPoint: 'center',
+      layout: 'backdrop',
+      primaryLabel: '',
+      primaryHref: '',
+    }]),
+    {
+      id: 'invitacion',
+      eyebrow: 'Te esperamos',
+      title: isCompleted ? 'Gracias por ser parte' : 'Reserva este momento',
+      text: isCompleted ? 'Consulta la información y los canales oficiales del evento.' : `${formattedDate}${formattedTime ? ` · ${formattedTime}` : ''}. ${location || 'Pronto confirmaremos el lugar.'}`,
+      image: useImageHero ? image : '',
+      imageAlt: useImageHero ? `Invitación de ${title}` : '',
+      focalPoint: 'center',
+      layout: useImageHero ? 'poster' : 'backdrop',
+      primaryLabel: storyRegistrationHref ? registrationCtaLabel : whatsappHref ? 'Solicitar información' : '',
+      primaryHref: storyRegistrationHref || whatsappHref,
+    },
+  ].slice(0, 8),
+};
 const shareWhatsAppHref = `https://wa.me/?text=${encodeURIComponent(`${title}\n${canonical}`)}`;
 const structured = (contentEntry || databaseEvent) ? {
   '@context': 'https://schema.org',
@@ -198,7 +270,9 @@ const structured = (contentEntry || databaseEvent) ? {
 
 <BaseLayout title={`${title} — Evento`} description={description} image={image} type="event" structuredData={structured} noindex={!contentEntry && databaseEvent?.visibility === 'UNLISTED'}>
   {(contentEntry || databaseEvent) ? (
-    <div class="bg-slate-50">
+    <div class:list={["event-public-shell", `event-public--${landingTemplate.toLowerCase()}`, `event-public--theme-${landingTheme}`]}>
+      {landingTemplate === 'STORY' && <CmsStorySection payload={eventStoryPayload} label={`Historia de ${title}`} />}
+      {landingTemplate !== 'STORY' && (
       <header class:list={["event-public-hero relative overflow-hidden", `event-public-hero--${imageLayout.toLowerCase()}`, !useImageHero && "bg-[#293C74]"]}>
         {useImageHero && imageLayout === 'HORIZONTAL' && <img src={image} alt="" class="absolute inset-0 z-0 h-full w-full object-cover" fetchpriority="high" />}
         <div class="event-public-hero-scrim absolute inset-0 z-0" aria-hidden="true"></div>
@@ -231,6 +305,7 @@ const structured = (contentEntry || databaseEvent) ? {
           </div>
         </div>
       </header>
+      )}
 
       <section class="event-public-facts-band border-b border-slate-200 bg-white">
         <div class="container-tight grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.78fr_auto] lg:items-stretch">
@@ -258,15 +333,20 @@ const structured = (contentEntry || databaseEvent) ? {
 
       <section class="container-tight py-10 sm:py-14">
         <div class="grid items-start gap-8">
-          <article class="event-public-about min-w-0">
-            <p class="event-public-section-label">Información del evento</p>
-            {Content ? <div class="prose max-w-none prose-slate"><Content /></div> : (
+          <article class:list={["event-public-about min-w-0", landingTemplate === 'MOSAIC' && "event-public-about--mosaic", landingTemplate === 'STORY' && "event-public-about--story"]}>
+            <p class="event-public-section-label">{landingTemplate === 'STORY' ? 'Información práctica' : 'Información del evento'}</p>
+            {landingTemplate === 'STORY' ? (
+              <div>
+                <h2 class="text-2xl font-bold text-[#293C74]">Todo lo necesario para asistir</h2>
+                <p class="mt-4 max-w-3xl leading-relaxed text-slate-600">Revisa el estado, la ubicación, los canales de ayuda y la inscripción oficial en esta misma página.</p>
+              </div>
+            ) : Content ? <div class="prose max-w-none prose-slate"><Content /></div> : (
               <div>
                 <h2 class="text-2xl font-bold text-[#293C74]">Acerca del evento</h2>
                 <p class="mt-4 max-w-3xl whitespace-pre-line leading-relaxed text-slate-600">{description}</p>
               </div>
             )}
-            {landingSections.length > 0 && (
+            {landingTemplate !== 'STORY' && landingSections.length > 0 && (
               <div class="event-public-content-grid">
                 {landingSections.map((section) => (
                   <section aria-labelledby={`event-landing-${section.key}`}>
@@ -643,18 +723,52 @@ const structured = (contentEntry || databaseEvent) ? {
 </BaseLayout>
 
 <style>
+  .event-public-shell {
+    --event-accent: #3ac1d4;
+    --event-accent-strong: #28a6bd;
+    --event-hero-base: #172553;
+    --event-hero-mid: #293c74;
+    --event-surface: #fff;
+    --event-surface-soft: #f7faff;
+    --event-heading: #172553;
+    --event-copy: #526174;
+    background: #f8fafc;
+  }
+
+  .event-public--theme-light {
+    --event-accent: #72d5df;
+    --event-accent-strong: #246a84;
+    --event-hero-base: #17475b;
+    --event-hero-mid: #246a84;
+    --event-surface-soft: #edf6f4;
+    --event-heading: #123d50;
+    --event-copy: #435f6a;
+    background: #f5faf9;
+  }
+
+  .event-public--theme-warm {
+    --event-accent: #f2c94c;
+    --event-accent-strong: #9a5c28;
+    --event-hero-base: #4b2c20;
+    --event-hero-mid: #7a482d;
+    --event-surface-soft: #f7f2e7;
+    --event-heading: #59351f;
+    --event-copy: #6b6258;
+    background: #fbf8f1;
+  }
+
   .event-public-hero {
     display: flex;
     min-height: 420px;
     align-items: end;
     isolation: isolate;
-    background: #172553;
+    background: var(--event-hero-base);
   }
 
   .event-public-hero-scrim {
     background:
-      linear-gradient(90deg, rgb(9 21 54 / 96%) 0%, rgb(19 38 82 / 82%) 47%, rgb(14 29 59 / 58%) 100%),
-      linear-gradient(0deg, rgb(9 21 54 / 60%), transparent 60%);
+      linear-gradient(90deg, color-mix(in srgb, var(--event-hero-base) 96%, black) 0%, color-mix(in srgb, var(--event-hero-mid) 82%, transparent) 47%, color-mix(in srgb, var(--event-hero-base) 58%, transparent) 100%),
+      linear-gradient(0deg, color-mix(in srgb, var(--event-hero-base) 60%, transparent), transparent 60%);
   }
 
   .event-public-hero-orbit {
@@ -710,7 +824,7 @@ const structured = (contentEntry || databaseEvent) ? {
   .event-public-hero-kicker span {
     width: 1.75rem;
     height: 2px;
-    background: #3ac1d4;
+    background: var(--event-accent);
   }
 
   .event-public-hero-details {
@@ -730,7 +844,7 @@ const structured = (contentEntry || databaseEvent) ? {
     min-height: 3.2rem;
     place-content: center;
     border-radius: 0.5rem;
-    background: #32acc3;
+    background: var(--event-accent);
     color: #102149;
     line-height: 1;
     text-align: center;
@@ -753,7 +867,7 @@ const structured = (contentEntry || databaseEvent) ? {
   }
 
   .event-public-hero-action:hover { transform: translateY(-1px); }
-  .event-public-hero-action--primary { background: #3ac1d4; color: #102149; }
+  .event-public-hero-action--primary { background: var(--event-accent); color: #102149; }
   .event-public-hero-action--primary:hover { background: #64d1df; }
   .event-public-hero-action--secondary { border: 1px solid rgb(255 255 255 / 36%); background: rgb(9 25 60 / 42%); color: white; }
   .event-public-hero-action--secondary:hover { background: rgb(255 255 255 / 14%); }
@@ -766,7 +880,7 @@ const structured = (contentEntry || databaseEvent) ? {
 
   .event-public-fact {
     min-height: 6.2rem;
-    border-left: 3px solid #3ac1d4;
+    border-left: 3px solid var(--event-accent);
     border-radius: 0.35rem;
     background: linear-gradient(135deg, #fbfdff, #f4f8ff);
     padding: var(--space-2);
@@ -784,7 +898,7 @@ const structured = (contentEntry || databaseEvent) ? {
   .event-public-fact strong {
     display: block;
     margin-top: var(--space-1);
-    color: #172553;
+    color: var(--event-heading);
     font-size: 0.93rem;
     line-height: 1.35;
   }
@@ -799,7 +913,7 @@ const structured = (contentEntry || databaseEvent) ? {
 
   .event-public-about {
     border-radius: 1rem;
-    background: linear-gradient(135deg, #fff 0%, #f7faff 100%);
+    background: linear-gradient(135deg, var(--event-surface) 0%, var(--event-surface-soft) 100%);
     padding: clamp(var(--space-3), 3vw, var(--space-4));
     box-shadow: 0 15px 35px rgb(41 60 116 / 6%);
   }
@@ -828,16 +942,69 @@ const structured = (contentEntry || databaseEvent) ? {
 
   .event-public-content-grid h3 {
     margin-top: var(--space-1);
-    color: #172553;
+    color: var(--event-heading);
     font-size: 1.15rem;
     font-weight: 800;
   }
 
   .event-public-content-grid section > div {
     margin-top: var(--space-2);
-    color: #526174;
+    color: var(--event-copy);
     line-height: 1.65;
     white-space: pre-line;
+  }
+
+  .event-public--mosaic .event-public-hero {
+    min-height: 34rem;
+    border-bottom-right-radius: clamp(2rem, 7vw, 7rem);
+  }
+
+  .event-public--mosaic .event-public-title {
+    max-width: 10ch;
+  }
+
+  .event-public--mosaic .event-public-about {
+    background: var(--event-surface-soft);
+  }
+
+  .event-public--mosaic .event-public-content-grid {
+    grid-auto-flow: dense;
+  }
+
+  .event-public--mosaic .event-public-content-grid section {
+    min-height: 13rem;
+    border: 0;
+    background: var(--event-heading);
+    box-shadow: 0 18px 36px rgb(15 23 42 / 10%);
+  }
+
+  .event-public--mosaic .event-public-content-grid section:nth-child(3n + 2) {
+    background: var(--event-accent-strong);
+  }
+
+  .event-public--mosaic .event-public-content-grid section:nth-child(3n) {
+    background: var(--event-surface);
+    box-shadow: inset 0 0 0 1px rgb(41 60 116 / 14%);
+  }
+
+  .event-public--mosaic .event-public-content-grid section:not(:nth-child(3n)) :is(p, h3, div) {
+    color: #fff;
+  }
+
+  .event-public--mosaic .event-public-content-grid section:not(:nth-child(3n)) > p {
+    color: color-mix(in srgb, var(--event-accent) 82%, white);
+  }
+
+  .event-public--mosaic .event-public-content-grid section:nth-child(3n) > p {
+    color: var(--event-accent-strong);
+  }
+
+  .event-public--story .event-public-facts-band {
+    border-top: 1px solid rgb(255 255 255 / 12%);
+  }
+
+  .event-public-about--story {
+    border-left: 4px solid var(--event-accent);
   }
 
   .event-public-section-label {
@@ -1017,6 +1184,15 @@ const structured = (contentEntry || databaseEvent) ? {
     .event-public-hero-orbit--one { right: -14rem; }
     .event-public-hero-orbit--two { right: -4rem; }
     .event-public-content-grid { grid-template-columns: minmax(0, 1fr); }
+    .event-public--mosaic .event-public-hero { min-height: 0; border-bottom-right-radius: 2rem; }
+    .event-public--mosaic .event-public-content-grid section { min-height: 0; }
+  }
+
+  @media (min-width: 768px) {
+    .event-public--mosaic .event-public-content-grid section:first-child,
+    .event-public--mosaic .event-public-content-grid section:nth-child(5n) {
+      grid-column: span 2;
+    }
   }
 
   @media (min-width: 1024px) {
