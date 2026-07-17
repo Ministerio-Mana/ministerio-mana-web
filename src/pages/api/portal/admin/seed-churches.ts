@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     // Check Role in user_profiles
     const { data: profile } = await sb
         .from('user_profiles')
-        .select('role')
+        .select('role, email')
         .eq('user_id', user.id)
         .single();
 
@@ -75,6 +75,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         const payload = {
             code,
             name: church.name,
+            kind: 'CHURCH',
+            lifecycle_status: 'ACTIVE',
+            is_public: true,
+            show_on_map: typeof church.lat === 'number' && typeof church.lng === 'number',
             city,
             country,
             continent,
@@ -85,19 +89,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
             contact_name: church.contact?.name || null,
             contact_email: church.contact?.email || null,
             contact_phone: church.contact?.phone || church.whatsapp || null,
+            updated_by: user.id,
+            updated_at: new Date().toISOString(),
         };
 
         // Try to find existing by deterministic code; fallback by name+country+city
         const { data: existingByCode } = await sb
             .from('churches')
-            .select('id')
+            .select('*')
             .eq('code', code)
             .maybeSingle();
         let existing = existingByCode;
         if (!existing) {
             let query = sb
                 .from('churches')
-                .select('id')
+                .select('*')
                 .eq('name', church.name)
                 .eq('country', country);
             query = city ? query.eq('city', city) : query.is('city', null);
@@ -106,18 +112,54 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         }
 
         if (existing) {
-            const { error } = await sb
+            const previousVersion = Math.max(1, Number(existing.version || 1));
+            const nextPayload = { ...payload, version: previousVersion + 1 };
+            const { data: updatedChurch, error } = await sb
                 .from('churches')
-                .update(payload)
-                .eq('id', existing.id);
+                .update(nextPayload)
+                .eq('id', existing.id)
+                .eq('version', previousVersion)
+                .select('*')
+                .maybeSingle();
             if (error) errors.push(`${church.name} (Update): ${error.message}`);
-            else updated++;
+            else if (!updatedChurch) errors.push(`${church.name} (Update): cambió en otra sesión`);
+            else {
+                updated++;
+                const { error: auditError } = await sb.from('church_directory_audit_logs').insert({
+                    church_id: existing.id,
+                    action: 'church.seed.update',
+                    previous_snapshot: existing,
+                    next_snapshot: updatedChurch,
+                    actor_user_id: user.id,
+                    actor_email: profile?.email || user.email || null,
+                    request_ip: clientAddress || null,
+                });
+                if (auditError) errors.push(`${church.name} (Auditoría): ${auditError.message}`);
+            }
         } else {
-            const { error } = await sb
+            const { data: createdChurch, error } = await sb
                 .from('churches')
-                .insert(payload);
+                .insert({
+                    ...payload,
+                    version: 1,
+                    created_by: user.id,
+                    created_at: new Date().toISOString(),
+                })
+                .select('*')
+                .single();
             if (error) errors.push(`${church.name} (Insert): ${error.message}`);
-            else created++;
+            else if (createdChurch?.id) {
+                created++;
+                const { error: auditError } = await sb.from('church_directory_audit_logs').insert({
+                    church_id: createdChurch.id,
+                    action: 'church.seed.create',
+                    next_snapshot: createdChurch,
+                    actor_user_id: user.id,
+                    actor_email: profile?.email || user.email || null,
+                    request_ip: clientAddress || null,
+                });
+                if (auditError) errors.push(`${church.name} (Auditoría): ${auditError.message}`);
+            }
         }
     }
 

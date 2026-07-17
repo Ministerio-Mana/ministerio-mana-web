@@ -4,7 +4,6 @@ import { getUserFromRequest } from '@lib/supabaseAuth';
 import { ensureUserProfile, isAdminRole } from '@lib/portalAuth';
 import { readPasswordSession } from '@lib/portalPasswordSession';
 import { resolveBaseUrl } from '@lib/url';
-import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
 import { sanitizePlainText } from '@lib/validation';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
@@ -77,11 +76,21 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const fullName = sanitizePlainText(payload.fullName || '', 120) || null;
   const desiredRole = String(payload.role || 'admin');
   const churchRole = String(payload.churchRole || '');
-  const churchRaw = normalizeChurchName(payload.church || '');
+  const churchRaw = String(payload.church || '').trim();
 
   const ALLOWED_ADMIN_PANEL_ROLES = new Set(['admin', 'superadmin']);
   if (!ALLOWED_ADMIN_PANEL_ROLES.has(desiredRole)) {
     return new Response(JSON.stringify({ ok: false, error: 'Rol no permitido en este flujo' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  if (churchRole || churchRaw) {
+    return new Response(JSON.stringify({
+      ok: false,
+      error: 'Las iglesias se crean y asignan desde el directorio oficial. Este flujo solo invita administradores.',
+    }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
@@ -130,41 +139,6 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       role: desiredRole,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
-
-  if (churchRole && churchRaw) {
-    let churchId: string | null = null;
-    const { data: existingChurch } = await supabaseAdmin
-      .from('churches')
-      .select('id, name')
-      .ilike('name', churchRaw)
-      .maybeSingle();
-    if (existingChurch?.id) {
-      churchId = existingChurch.id;
-    } else {
-      const { data: created } = await supabaseAdmin
-        .from('churches')
-        .insert({
-          name: churchRaw,
-          city: normalizeCityName(payload.city || ''),
-          country: normalizeCountryRegion(payload.country || '') || null,
-          created_by: ctx.userId,
-        })
-        .select('id')
-        .single();
-      churchId = created?.id || null;
-    }
-
-    if (churchId) {
-      await supabaseAdmin
-        .from('church_memberships')
-        .upsert({
-          church_id: churchId,
-          user_id: userId,
-          role: churchRole,
-          status: 'active',
-        }, { onConflict: 'church_id,user_id' });
-    }
-  }
 
   return new Response(JSON.stringify({ ok: true, userId }), {
     status: 200,

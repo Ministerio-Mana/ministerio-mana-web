@@ -4,7 +4,6 @@ import { getPortalChurchAccessContext } from '@lib/portalAccess';
 import { canInviteChurchPeople, isCountryScopedRole } from '@lib/portalRbac';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { resolveBaseUrl } from '@lib/url';
-import { normalizeChurchName, normalizeCityName, normalizeCountryRegion } from '@lib/normalization';
 import { sendAuthLink } from '@lib/authMailer';
 import { findAuthUserByEmail } from '@lib/supabaseAdminUsers';
 
@@ -78,45 +77,23 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Church Resolution Logic
   if (isAdmin) {
-    // Admin can specify any church or create one
-    if (requestedChurchId) {
-      const { data: existing } = await supabaseAdmin
-        .from('churches')
-        .select('id, name')
-        .eq('id', requestedChurchId)
-        .maybeSingle();
-      if (!existing?.id) {
-        return new Response(JSON.stringify({ ok: false, error: 'Iglesia no encontrada' }), { status: 404 });
-      }
-      churchId = existing.id;
-      churchName = existing.name;
-    } else {
-      const churchRaw = normalizeChurchName(payload.church || '');
-      const churchCountry = normalizeCountryRegion(payload.country || '') || null;
-      if (churchRaw) {
-        let query = supabaseAdmin
-          .from('churches')
-          .select('id, name')
-          .ilike('name', churchRaw);
-        if (churchCountry) {
-          query = query.eq('country', churchCountry);
-        }
-        const { data: existing } = await query.maybeSingle();
-        if (existing?.id) {
-          churchId = existing.id;
-          churchName = existing.name;
-        } else {
-          const { data: created } = await supabaseAdmin.from('churches').insert({
-            name: churchRaw,
-            city: normalizeCityName(payload.city || ''),
-            country: churchCountry,
-            created_by: isUuid(access.userId) ? access.userId : null,
-          }).select('id, name').single();
-          churchId = created?.id || null;
-          churchName = created?.name || churchRaw;
-        }
-      }
+    // El alta oficial ocurre únicamente en el directorio. Aquí se asigna una sede existente.
+    if (!requestedChurchId) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: 'Selecciona una iglesia del directorio. Si aún no existe, créala primero en Página de mi iglesia.',
+      }), { status: 400 });
     }
+    const { data: existing } = await supabaseAdmin
+      .from('churches')
+      .select('id, name, lifecycle_status')
+      .eq('id', requestedChurchId)
+      .maybeSingle();
+    if (!existing?.id || existing.lifecycle_status === 'INACTIVE') {
+      return new Response(JSON.stringify({ ok: false, error: 'La iglesia no está disponible para asignaciones.' }), { status: 404 });
+    }
+    churchId = existing.id;
+    churchName = existing.name;
   } else if (isCountryScoped) {
     // Country/Region scoped roles must select a church in their authorized scope.
     if (requestedChurchId) {
@@ -142,6 +119,15 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!churchId) {
     return new Response(JSON.stringify({ ok: false, error: 'No se identificó la iglesia destino' }), { status: 400 });
+  }
+
+  const { data: availableChurch } = await supabaseAdmin
+    .from('churches')
+    .select('id, lifecycle_status')
+    .eq('id', churchId)
+    .maybeSingle();
+  if (!availableChurch?.id || availableChurch.lifecycle_status === 'INACTIVE') {
+    return new Response(JSON.stringify({ ok: false, error: 'La iglesia no está disponible para invitaciones.' }), { status: 409 });
   }
 
   // ... (User creation / Upsert membership logic remains same) ...

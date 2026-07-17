@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import {
   churchMediaFolder,
@@ -130,4 +132,20 @@ test('detecta coordenadas válidas desde enlaces de Google Maps', () => {
     { lat: 6.244203, lng: -75.581212 },
   );
   assert.equal(extractCoordinatesFromMapsUrl('https://maps.google.com/iglesia'), null);
+});
+
+test('solo el directorio y su importación explícita crean iglesias oficiales', () => {
+  const apiRoot = fileURLToPath(new URL('../src/pages/api/portal/', import.meta.url));
+  const mutationRoutes = (readdirSync(apiRoot, { recursive: true }) as string[])
+    .filter((route) => route.endsWith('.ts'))
+    .filter((route) => {
+      const source = readFileSync(`${apiRoot}/${route}`, 'utf8').replace(/\s+/g, '');
+      return /\.from\(['"]churches['"]\)\.insert\(/.test(source);
+    })
+    .sort();
+
+  assert.deepEqual(mutationRoutes, [
+    'admin/seed-churches.ts',
+    'churches/manage.ts',
+  ]);
 });

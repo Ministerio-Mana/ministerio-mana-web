@@ -470,7 +470,7 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 
 ## 13. Directorio jerárquico de iglesias — pendiente de Santiago
 
-- [ ] Ejecutar una sola vez `docs/sql/church_directory_management.sql` en Supabase. Es aditivo: conserva iglesias, páginas, eventos, roles y membresías existentes.
+- [x] Ejecutar una sola vez `docs/sql/church_directory_management.sql` en Supabase. Confirmado el 17/07/2026: existen `churches`, `church_directory_audit_logs` y 28 iglesias activas públicas.
 - [ ] En `/portal/church-page`, entrar como pastor nacional de prueba y crear una iglesia o grupo en su país. Confirmar que no puede escoger otro país.
 - [ ] Repetir con pastor regional: debe crear únicamente dentro de una de sus regiones. Un pastor local debe poder editar su propia sede, pero no crear otra ni entrar a una sede ajena.
 - [ ] Como pastor nacional o admin, asignar una región explícita a toda sede histórica que todavía esté sin `region_id`. Por seguridad, una cuenta regional no verá esas sedes hasta que se complete esa asignación.

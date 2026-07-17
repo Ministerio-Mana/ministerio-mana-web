@@ -349,21 +349,6 @@ export const POST: APIRoute = async ({ request }) => {
       if (existing?.id) {
         resolvedChurchId = existing.id;
         resolvedChurchName = existing.name || contactChurchRaw;
-      } else {
-        const { data: created } = await supabaseAdmin
-          .from('churches')
-          .insert({
-            name: contactChurchRaw,
-            city: contactCity || null,
-            country: contactCountry || null,
-            created_by: isUuid(userId) ? userId : null,
-          })
-          .select('id, name')
-          .single();
-        if (created?.id) {
-          resolvedChurchId = created.id;
-          resolvedChurchName = created.name || contactChurchRaw;
-        }
       }
     }
 
