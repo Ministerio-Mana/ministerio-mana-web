@@ -2,7 +2,7 @@ import { supabaseAdmin } from './supabaseAdmin.ts';
 import { isChurchPageSchemaMissingError, normalizeChurchPageDraft, normalizeChurchPageSlug } from './churchPage.ts';
 import { listPublicDatabaseEvents, type PublicEvent } from './publicEvents.ts';
 
-const CHURCH_FIELDS = 'id,code,name,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone';
+const CHURCH_FIELDS = 'id,code,name,kind,lifecycle_status,is_public,show_on_map,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone,service,notes';
 
 export type PublicChurchPage = {
   id: string;
@@ -59,11 +59,21 @@ export async function getPublicChurchPage(slug: string): Promise<PublicChurchPag
       .maybeSingle();
   }
   if (churchResult.error || !churchResult.data) return null;
+  const hasCanonicalDirectory = 'lifecycle_status' in churchResult.data;
+  if (hasCanonicalDirectory && (
+    churchResult.data.lifecycle_status !== 'ACTIVE'
+    || churchResult.data.is_public === false
+  )) return null;
 
+  const canonicalContact = churchResult.data as Record<string, any>;
   const page = normalizeChurchPageDraft({
     ...pageResult.data.published_snapshot,
     slug: pageResult.data.slug,
     status: 'PUBLISHED',
+    contact_whatsapp: hasCanonicalDirectory ? canonicalContact.contact_phone ?? '' : pageResult.data.published_snapshot.contact_whatsapp,
+    contact_email: hasCanonicalDirectory ? canonicalContact.contact_email ?? '' : pageResult.data.published_snapshot.contact_email,
+    pastor_name: hasCanonicalDirectory ? canonicalContact.contact_name ?? '' : pageResult.data.published_snapshot.pastor_name,
+    service_schedule: hasCanonicalDirectory ? canonicalContact.service ?? '' : pageResult.data.published_snapshot.service_schedule,
   });
   const now = Date.now();
   const events = (await listPublicDatabaseEvents())

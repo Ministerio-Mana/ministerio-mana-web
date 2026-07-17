@@ -1,7 +1,9 @@
 import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
+import { extractCoordinatesFromMapsUrl } from '@lib/churchManagement';
 
 const API_URL = '/api/portal/church-pages';
 const MEDIA_URL = '/api/portal/church-media';
+const MANAGEMENT_URL = '/api/portal/churches/manage';
 const MAX_GALLERY = 8;
 const MAX_SCENES = 6;
 const REQUEST_TIMEOUT_MS = 15000;
@@ -19,12 +21,46 @@ const state = {
   media: [],
   mediaTarget: '',
   modalTrigger: null,
+  management: {
+    schemaReady: false,
+    capabilities: {},
+    countries: [],
+    regions: [],
+    creating: false,
+    busy: false,
+  },
 };
 
 const el = {
   gate: document.getElementById('church-page-gate'),
   app: document.getElementById('church-page-app'),
   setup: document.getElementById('church-page-setup'),
+  directorySetup: document.getElementById('church-directory-setup'),
+  directoryCreate: document.getElementById('church-directory-create'),
+  directoryForm: document.getElementById('church-directory-form'),
+  directoryTitle: document.getElementById('church-directory-title'),
+  directoryScope: document.getElementById('church-directory-scope'),
+  directoryName: document.getElementById('church-directory-name'),
+  directoryKind: document.getElementById('church-directory-kind'),
+  directoryCountry: document.getElementById('church-directory-country'),
+  directoryRegion: document.getElementById('church-directory-region'),
+  directoryCity: document.getElementById('church-directory-city'),
+  directoryAddress: document.getElementById('church-directory-address'),
+  directoryMapsUrl: document.getElementById('church-directory-maps-url'),
+  directoryContactName: document.getElementById('church-directory-contact-name'),
+  directoryContactPhone: document.getElementById('church-directory-contact-phone'),
+  directoryContactEmail: document.getElementById('church-directory-contact-email'),
+  directoryService: document.getElementById('church-directory-service'),
+  directoryStatus: document.getElementById('church-directory-status'),
+  directoryNotes: document.getElementById('church-directory-notes'),
+  directoryPublic: document.getElementById('church-directory-public'),
+  directoryMap: document.getElementById('church-directory-map'),
+  directoryLat: document.getElementById('church-directory-lat'),
+  directoryLng: document.getElementById('church-directory-lng'),
+  directoryUseLocation: document.getElementById('church-directory-use-location'),
+  directoryLocationStatus: document.getElementById('church-directory-location-status'),
+  directoryCancel: document.getElementById('church-directory-cancel'),
+  directorySave: document.getElementById('church-directory-save'),
   form: document.getElementById('church-page-form'),
   church: document.getElementById('church-page-church'),
   alert: document.getElementById('church-page-alert'),
@@ -158,6 +194,10 @@ function normalizePage(page, church) {
   return {
     ...fallback,
     ...value,
+    pastor_name: String(church?.contact_name || value.pastor_name || fallback.pastor_name || ''),
+    service_schedule: String(church?.service || value.service_schedule || fallback.service_schedule || ''),
+    contact_whatsapp: normalizePhone(church?.contact_phone || value.contact_whatsapp || fallback.contact_whatsapp || ''),
+    contact_email: String(church?.contact_email || value.contact_email || fallback.contact_email || '').trim().toLowerCase(),
     template: ['ESSENTIAL', 'STORY', 'MOSAIC'].includes(String(value.template || '').toUpperCase()) ? String(value.template).toUpperCase() : 'ESSENTIAL',
     status: ['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(String(value.status || '').toUpperCase()) ? String(value.status).toUpperCase() : 'DRAFT',
     story_config: {
@@ -240,6 +280,251 @@ async function fetchJson(url, options = {}) {
   } finally {
     window.clearTimeout(timeoutId);
   }
+}
+
+function uniqueSorted(values) {
+  return Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+function refreshChurchSelector(selectedId = state.church?.id || '') {
+  if (!el.church) return;
+  el.church.innerHTML = state.churches.map((church) => (
+    `<option value="${escapeHtml(church.id)}">${escapeHtml([church.name, church.city, church.country].filter(Boolean).join(' · '))}</option>`
+  )).join('');
+  if (selectedId && state.churches.some((church) => church.id === selectedId)) el.church.value = selectedId;
+  el.church.disabled = state.churches.length <= 1 || state.management.creating;
+}
+
+function renderDirectoryCountries(selected = '') {
+  if (!el.directoryCountry) return;
+  const fixedCountry = String(state.management.capabilities.fixed_country || '').trim();
+  const countries = uniqueSorted([
+    ...state.management.countries,
+    ...state.churches.map((church) => church.country),
+    fixedCountry,
+    selected,
+  ]);
+  el.directoryCountry.innerHTML = '<option value="">Selecciona un país</option>'
+    + countries.map((country) => `<option value="${escapeHtml(country)}">${escapeHtml(country)}</option>`).join('');
+  el.directoryCountry.value = fixedCountry || selected || '';
+  const localOnly = state.management.capabilities.role === 'pastor';
+  el.directoryCountry.disabled = Boolean(fixedCountry) || localOnly;
+}
+
+function renderDirectoryRegions(selected = '') {
+  if (!el.directoryRegion) return;
+  const country = String(el.directoryCountry?.value || '').trim().toLocaleLowerCase('es');
+  const regions = state.management.regions.filter((region) => (
+    !country || String(region.country || '').trim().toLocaleLowerCase('es') === country
+  ));
+  el.directoryRegion.innerHTML = '<option value="">Sin región asignada</option>'
+    + regions.map((region) => `<option value="${escapeHtml(region.id)}">${escapeHtml(region.name || region.code || 'Región')}</option>`).join('');
+  if (selected && regions.some((region) => region.id === selected)) el.directoryRegion.value = selected;
+  const fixedRegions = state.management.capabilities.fixed_region_ids || [];
+  const localOnly = state.management.capabilities.role === 'pastor';
+  el.directoryRegion.disabled = localOnly || fixedRegions.length === 1;
+  if (!selected && fixedRegions.length === 1 && regions.some((region) => region.id === fixedRegions[0])) {
+    el.directoryRegion.value = fixedRegions[0];
+  }
+}
+
+function updateMapAvailability() {
+  const lat = Number(el.directoryLat?.value);
+  const lng = Number(el.directoryLng?.value);
+  const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng)
+    && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+  const isPublic = Boolean(el.directoryPublic?.checked);
+  if (el.directoryMap) {
+    el.directoryMap.disabled = !isPublic || !hasCoordinates;
+    if (el.directoryMap.disabled) el.directoryMap.checked = false;
+  }
+  if (el.directoryLocationStatus) {
+    el.directoryLocationStatus.textContent = hasCoordinates
+      ? 'Ubicación exacta confirmada. Ya puedes activar el pin en el mapa.'
+      : 'Confirma la ubicación para habilitar el pin. La dirección por sí sola no mueve el mapa.';
+  }
+}
+
+function applyCoordinatesFromMapsUrl() {
+  const coordinates = extractCoordinatesFromMapsUrl(el.directoryMapsUrl?.value || '');
+  if (!coordinates) {
+    updateMapAvailability();
+    return false;
+  }
+  if (el.directoryLat) el.directoryLat.value = String(coordinates.lat);
+  if (el.directoryLng) el.directoryLng.value = String(coordinates.lng);
+  updateMapAvailability();
+  return true;
+}
+
+function directoryScopeLabel() {
+  const role = state.management.capabilities.role;
+  if (role === 'national_pastor') return `País protegido · ${state.management.capabilities.fixed_country || ''}`;
+  if (role === 'regional_pastor') return 'Región protegida';
+  if (role === 'pastor') return 'Solo tu iglesia';
+  return 'Alcance global';
+}
+
+function clearDirectoryForm() {
+  el.directoryForm?.reset();
+  renderDirectoryCountries(state.management.capabilities.fixed_country || '');
+  renderDirectoryRegions('');
+  if (el.directoryKind) el.directoryKind.value = 'CHURCH';
+  if (el.directoryStatus) el.directoryStatus.value = 'DRAFT';
+  if (el.directoryPublic) el.directoryPublic.checked = false;
+  if (el.directoryMap) el.directoryMap.checked = false;
+  if (el.directoryTitle) el.directoryTitle.textContent = 'Crear una iglesia o grupo';
+  if (el.directoryScope) el.directoryScope.textContent = directoryScopeLabel();
+  updateMapAvailability();
+}
+
+function populateDirectoryForm() {
+  if (!el.directoryForm || !state.management.schemaReady || !state.management.capabilities.can_edit) {
+    el.directoryForm?.classList.add('hidden');
+    return;
+  }
+  el.directoryForm.classList.remove('hidden');
+  if (state.management.creating || !state.church) {
+    clearDirectoryForm();
+    el.directoryCancel?.classList.remove('hidden');
+    el.directoryCancel?.classList.add('inline-flex');
+    return;
+  }
+  const church = state.church;
+  if (el.directoryTitle) el.directoryTitle.textContent = 'Datos oficiales de la iglesia';
+  if (el.directoryScope) el.directoryScope.textContent = directoryScopeLabel();
+  if (el.directoryName) el.directoryName.value = church.name || '';
+  if (el.directoryKind) el.directoryKind.value = church.kind || 'CHURCH';
+  renderDirectoryCountries(church.country || '');
+  renderDirectoryRegions(church.region_id || '');
+  if (el.directoryCity) el.directoryCity.value = church.city || '';
+  if (el.directoryAddress) el.directoryAddress.value = church.address || '';
+  if (el.directoryMapsUrl) el.directoryMapsUrl.value = church.maps_url || '';
+  if (el.directoryContactName) el.directoryContactName.value = church.contact_name || '';
+  if (el.directoryContactPhone) el.directoryContactPhone.value = church.contact_phone || '';
+  if (el.directoryContactEmail) el.directoryContactEmail.value = church.contact_email || '';
+  if (el.directoryService) el.directoryService.value = church.service || '';
+  if (el.directoryStatus) el.directoryStatus.value = church.lifecycle_status || 'ACTIVE';
+  if (el.directoryNotes) el.directoryNotes.value = church.notes || '';
+  if (el.directoryPublic) el.directoryPublic.checked = church.is_public !== false;
+  if (el.directoryLat) el.directoryLat.value = church.lat ?? '';
+  if (el.directoryLng) el.directoryLng.value = church.lng ?? '';
+  if (el.directoryMap) el.directoryMap.checked = church.show_on_map !== false;
+  el.directoryCancel?.classList.add('hidden');
+  el.directoryCancel?.classList.remove('inline-flex');
+  updateMapAvailability();
+}
+
+function directoryPayload() {
+  const numberOrNull = (value) => {
+    if (String(value ?? '').trim() === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  return {
+    name: el.directoryName?.value || '',
+    kind: el.directoryKind?.value || 'CHURCH',
+    status: el.directoryStatus?.value || 'DRAFT',
+    country: el.directoryCountry?.value || '',
+    region_id: el.directoryRegion?.value || null,
+    city: el.directoryCity?.value || '',
+    address: el.directoryAddress?.value || '',
+    maps_url: el.directoryMapsUrl?.value || '',
+    lat: numberOrNull(el.directoryLat?.value),
+    lng: numberOrNull(el.directoryLng?.value),
+    contact_name: el.directoryContactName?.value || '',
+    contact_phone: el.directoryContactPhone?.value || '',
+    contact_email: el.directoryContactEmail?.value || '',
+    service: el.directoryService?.value || '',
+    notes: el.directoryNotes?.value || '',
+    is_public: Boolean(el.directoryPublic?.checked),
+    show_on_map: Boolean(el.directoryMap?.checked),
+  };
+}
+
+function setDirectoryBusy(busy) {
+  state.management.busy = busy;
+  if (el.directorySave) {
+    el.directorySave.disabled = busy;
+    el.directorySave.textContent = busy ? 'Guardando...' : 'Guardar datos oficiales';
+  }
+  if (el.directoryCancel) el.directoryCancel.disabled = busy;
+  if (el.directoryCreate) el.directoryCreate.disabled = busy;
+}
+
+function startDirectoryCreate() {
+  if (!state.management.capabilities.can_create || state.management.busy) return;
+  if (state.page) saveLocalDraft();
+  state.management.creating = true;
+  state.church = null;
+  state.page = null;
+  refreshChurchSelector('');
+  el.form?.classList.add('hidden');
+  populateDirectoryForm();
+  el.directoryForm?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.setTimeout(() => el.directoryName?.focus(), 250);
+}
+
+function cancelDirectoryCreate() {
+  if (state.management.busy) return;
+  state.management.creating = false;
+  const churchId = state.churches[0]?.id;
+  if (churchId) selectChurch(churchId);
+  else {
+    el.directoryForm?.classList.add('hidden');
+    showAlert('Todavía no hay iglesias dentro de tu alcance.', 'info');
+  }
+}
+
+async function saveDirectory(event) {
+  event.preventDefault();
+  if (state.management.busy || !el.directoryForm?.reportValidity()) return;
+  applyCoordinatesFromMapsUrl();
+  setDirectoryBusy(true);
+  try {
+    const creating = state.management.creating;
+    const body = {
+      ...directoryPayload(),
+      ...(creating ? {} : {
+        church_id: state.church?.id,
+        expected_version: Number(state.church?.version || 1),
+      }),
+    };
+    const payload = await fetchJson(MANAGEMENT_URL, {
+      method: creating ? 'POST' : 'PATCH',
+      body: JSON.stringify(body),
+    });
+    const church = payload.church;
+    const index = state.churches.findIndex((item) => item.id === church.id);
+    if (index >= 0) state.churches[index] = church; else state.churches.push(church);
+    state.churches.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'es'));
+    state.management.creating = false;
+    refreshChurchSelector(church.id);
+    selectChurch(church.id);
+    showAlert(creating
+      ? 'Iglesia creada dentro de tu alcance. Ya puedes completar y publicar su página.'
+      : 'Datos oficiales actualizados en el directorio, el mapa y los selectores.', 'success');
+  } catch (error) {
+    showAlert(error.message || 'No se pudieron guardar los datos oficiales.', 'error');
+  } finally {
+    setDirectoryBusy(false);
+  }
+}
+
+function useCurrentLocation() {
+  if (!navigator.geolocation || state.management.busy) {
+    showAlert('Este navegador no permite obtener la ubicación.', 'error');
+    return;
+  }
+  if (el.directoryLocationStatus) el.directoryLocationStatus.textContent = 'Solicitando ubicación...';
+  navigator.geolocation.getCurrentPosition((position) => {
+    if (el.directoryLat) el.directoryLat.value = position.coords.latitude.toFixed(6);
+    if (el.directoryLng) el.directoryLng.value = position.coords.longitude.toFixed(6);
+    updateMapAvailability();
+  }, () => {
+    if (el.directoryLocationStatus) el.directoryLocationStatus.textContent = 'No se pudo obtener la ubicación. Puedes pegar el enlace de Google Maps.';
+  }, { enableHighAccuracy: true, timeout: 12_000, maximumAge: 30_000 });
 }
 
 function markDirty() {
@@ -397,7 +682,10 @@ function selectChurch(churchId) {
   const localDraft = readLocalDraft(state.church);
   state.page = localDraft || normalizePage(serverPage || null, state.church);
   state.dirty = Boolean(localDraft);
+  state.management.creating = false;
   if (el.church) el.church.value = state.church.id;
+  el.form?.classList.remove('hidden');
+  populateDirectoryForm();
   populateForm();
 }
 
@@ -599,6 +887,16 @@ function bindEvents() {
   bindSimpleField(el.whatsappMessage, 'contact_whatsapp_message');
 
   el.church?.addEventListener('change', () => selectChurch(el.church.value));
+  el.directoryCreate?.addEventListener('click', startDirectoryCreate);
+  el.directoryCancel?.addEventListener('click', cancelDirectoryCreate);
+  el.directoryForm?.addEventListener('submit', saveDirectory);
+  el.directoryCountry?.addEventListener('change', () => renderDirectoryRegions(''));
+  el.directoryMapsUrl?.addEventListener('change', applyCoordinatesFromMapsUrl);
+  el.directoryMapsUrl?.addEventListener('blur', applyCoordinatesFromMapsUrl);
+  el.directoryPublic?.addEventListener('change', updateMapAvailability);
+  el.directoryLat?.addEventListener('input', updateMapAvailability);
+  el.directoryLng?.addEventListener('input', updateMapAvailability);
+  el.directoryUseLocation?.addEventListener('click', useCurrentLocation);
   el.templates?.addEventListener('change', (event) => {
     const input = event.target.closest('input[name="template"]');
     if (!input || !state.page) return;
@@ -752,24 +1050,39 @@ async function init() {
       return;
     }
     authHeaders = auth.token ? { Authorization: `Bearer ${auth.token}` } : {};
-    const payload = await fetchJson(API_URL);
+    const [payload, management] = await Promise.all([
+      fetchJson(API_URL),
+      fetchJson(MANAGEMENT_URL).catch((error) => ({ ok: false, error: error.message })),
+    ]);
     el.gate?.classList.add('hidden');
     el.app?.classList.remove('hidden');
     state.churches = payload.churches || [];
     state.pages = payload.pages || [];
+    if (management.ok) {
+      state.management.schemaReady = Boolean(management.schema_ready);
+      state.management.capabilities = management.capabilities || {};
+      state.management.countries = management.countries || [];
+      state.management.regions = management.regions || [];
+      if (!management.schema_ready) el.directorySetup?.classList.remove('hidden');
+      if (management.capabilities?.can_create) {
+        el.directoryCreate?.classList.remove('hidden');
+        el.directoryCreate?.classList.add('inline-flex');
+      }
+    }
     if (!payload.schema_ready) {
       el.setup?.classList.remove('hidden');
+      return;
+    }
+    if (!state.churches.length && state.management.capabilities.can_create) {
+      startDirectoryCreate();
+      showAlert('Crea la primera iglesia o grupo dentro de tu alcance.', 'info');
       return;
     }
     if (!state.churches.length) {
       showAlert('Tu cuenta todavía no tiene una iglesia asignada.', 'error');
       return;
     }
-    if (el.church) {
-      el.church.innerHTML = state.churches.map((church) => `<option value="${escapeHtml(church.id)}">${escapeHtml([church.name, church.city, church.country].filter(Boolean).join(' · '))}</option>`).join('');
-      el.church.disabled = state.churches.length === 1;
-    }
-    el.form?.classList.remove('hidden');
+    refreshChurchSelector(state.churches[0].id);
     selectChurch(state.churches[0].id);
   } catch (error) {
     if (el.gate) {

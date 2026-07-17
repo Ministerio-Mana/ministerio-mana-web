@@ -17,17 +17,15 @@ export type PublicChurchDirectoryItem = {
   whatsapp: string;
   service: string;
   notes: string;
+  kind?: 'CHURCH' | 'GROUP';
+  lifecycle_status?: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
+  is_public?: boolean;
+  show_on_map?: boolean;
   page_slug?: string;
 };
 
 function text(value: unknown): string {
   return String(value ?? '').trim();
-}
-
-function key(value: Record<string, unknown>): string {
-  return [value.country, value.city, value.name]
-    .map((part) => text(part).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ''))
-    .join('|');
 }
 
 function fallbackRow(value: Record<string, any>, index: number): PublicChurchDirectoryItem {
@@ -51,6 +49,10 @@ function fallbackRow(value: Record<string, any>, index: number): PublicChurchDir
     whatsapp: text(value.whatsapp || value.contact_phone),
     service: text(value.service),
     notes: text(value.notes),
+    kind: value.kind === 'GROUP' ? 'GROUP' : 'CHURCH',
+    lifecycle_status: value.lifecycle_status === 'DRAFT' || value.lifecycle_status === 'INACTIVE' ? value.lifecycle_status : 'ACTIVE',
+    is_public: value.is_public !== false,
+    show_on_map: value.show_on_map !== false,
   };
 }
 
@@ -64,7 +66,7 @@ function databaseRow(value: Record<string, any>, index: number): PublicChurchDir
       phone: value.contact_phone,
     },
   }, index);
-  row.continent = text(value.continent);
+  row.continent = text(value.continent) || 'América';
   return row;
 }
 
@@ -74,7 +76,9 @@ export async function listPublicChurchDirectory(): Promise<PublicChurchDirectory
 
   let result = await supabaseAdmin
     .from('churches')
-    .select('id,code,name,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone')
+    .select('id,code,name,kind,lifecycle_status,is_public,show_on_map,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone,service,notes')
+    .eq('lifecycle_status', 'ACTIVE')
+    .eq('is_public', true)
     .order('continent')
     .order('country')
     .order('city')
@@ -93,34 +97,7 @@ export async function listPublicChurchDirectory(): Promise<PublicChurchDirectory
   }
 
   const database = (result.data || []).map(databaseRow);
-  const merged = new Map<string, PublicChurchDirectoryItem>();
-  fallback.forEach((church) => merged.set(key(church as unknown as Record<string, unknown>), church));
-  database.forEach((church) => {
-    const identity = key(church as unknown as Record<string, unknown>);
-    const previous = merged.get(identity);
-    merged.set(identity, {
-      ...(previous || church),
-      ...church,
-      code: church.code || previous?.code || '',
-      name: church.name || previous?.name || '',
-      city: church.city || previous?.city || '',
-      country: church.country || previous?.country || '',
-      continent: church.continent || previous?.continent || 'América',
-      address: church.address || previous?.address || '',
-      maps_url: church.maps_url || previous?.maps_url || '',
-      lat: church.lat ?? previous?.lat ?? null,
-      lng: church.lng ?? previous?.lng ?? null,
-      service: church.service || previous?.service || '',
-      notes: church.notes || previous?.notes || '',
-      whatsapp: church.whatsapp || previous?.whatsapp || '',
-      contact: {
-        name: church.contact.name || previous?.contact.name || '',
-        email: church.contact.email || previous?.contact.email || '',
-        phone: church.contact.phone || previous?.contact.phone || '',
-      },
-    });
-  });
-  return Array.from(merged.values()).sort((a, b) => (
+  return database.sort((a, b) => (
     `${a.continent}|${a.country}|${a.city}|${a.name}`.localeCompare(`${b.continent}|${b.country}|${b.city}|${b.name}`, 'es')
   ));
 }

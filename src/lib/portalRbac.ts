@@ -224,6 +224,18 @@ const CREATABLE_BY_ROLE: Record<string, string[]> = {
   pastor: ['local_collaborator', 'user'],
 };
 
+const CHURCH_DIRECTORY_CREATE_ROLES = new Set([
+  'superadmin',
+  'admin',
+  'national_pastor',
+  'regional_pastor',
+]);
+
+const CHURCH_DIRECTORY_EDIT_ROLES = new Set([
+  ...CHURCH_DIRECTORY_CREATE_ROLES,
+  'pastor',
+]);
+
 export function normalizePortalRole(role?: string | null): string {
   return String(role || 'user');
 }
@@ -273,6 +285,14 @@ export function getCreatableRoles(creatorRole?: string | null): string[] {
 export function canCreateRole(creatorRole?: string | null, targetRole?: string | null): boolean {
   const normalizedTargetRole = normalizePortalRole(targetRole);
   return getCreatableRoles(creatorRole).includes(normalizedTargetRole);
+}
+
+export function canCreateChurchDirectory(role?: string | null): boolean {
+  return CHURCH_DIRECTORY_CREATE_ROLES.has(normalizePortalRole(role));
+}
+
+export function canEditChurchDirectory(role?: string | null): boolean {
+  return CHURCH_DIRECTORY_EDIT_ROLES.has(normalizePortalRole(role));
 }
 
 export function canManageEventScope(role?: string | null, scope?: string | null): boolean {

@@ -7,6 +7,14 @@ import {
   normalizeChurchPageSlug,
   validateChurchPageForPublish,
 } from '../src/lib/churchPage.ts';
+import {
+  canCreateChurch,
+  canEditChurch,
+  extractCoordinatesFromMapsUrl,
+  normalizeChurchManagementInput,
+} from '../src/lib/churchManagement.ts';
+import { canCreateRole } from '../src/lib/portalRbac.ts';
+import { isChurchScopeRowAllowed } from '../src/lib/churchScopePolicy.ts';
 
 test('la biblioteca usa un identificador estable y no el nombre editable', () => {
   assert.equal(
@@ -66,4 +74,60 @@ test('Historia y Mosaico requieren al menos dos escenas publicables', () => {
   });
   assert.equal(result.ok, false);
   assert.match(result.errors.join(' '), /al menos 2 escenas/i);
+});
+
+test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {
+  assert.equal(canCreateRole('national_pastor', 'regional_pastor'), true);
+  assert.equal(canCreateRole('regional_pastor', 'pastor'), true);
+  assert.equal(canCreateRole('regional_pastor', 'national_pastor'), false);
+  assert.equal(canCreateRole('pastor', 'regional_collaborator'), false);
+});
+
+test('la gestión de iglesias respeta la misma escalera de seguridad', () => {
+  const access = (role: string) => ({ role, isPasswordSession: false });
+  assert.equal(canCreateChurch(access('national_pastor')), true);
+  assert.equal(canCreateChurch(access('regional_pastor')), true);
+  assert.equal(canCreateChurch(access('pastor')), false);
+  assert.equal(canEditChurch(access('pastor')), true);
+  assert.equal(canEditChurch(access('local_collaborator')), false);
+  assert.equal(canCreateChurch({ role: 'superadmin', isPasswordSession: true }), false);
+});
+
+test('una sede sin región no se abre por respaldo a todo el país', () => {
+  const regional = {
+    isAdmin: false,
+    isNational: false,
+    isRegional: true,
+    allowedChurchId: null,
+    allowedCountry: 'Colombia',
+    allowedRegionIds: ['region-antioquia'],
+  };
+  assert.equal(isChurchScopeRowAllowed({ id: 'mana-medellin', country: 'Colombia', region_id: 'region-antioquia' }, regional), true);
+  assert.equal(isChurchScopeRowAllowed({ id: 'mana-cali', country: 'Colombia', region_id: 'region-valle' }, regional), false);
+  assert.equal(isChurchScopeRowAllowed({ id: 'mana-sin-region', country: 'Colombia', region_id: null }, regional), false);
+});
+
+test('normaliza los datos oficiales y protege el mapa sin coordenadas', () => {
+  const input = normalizeChurchManagementInput({
+    name: '  Iglesia   Maná Centro  ',
+    kind: 'church',
+    status: 'active',
+    country: 'colombia',
+    city: 'Medellín',
+    is_public: true,
+    show_on_map: true,
+  });
+  assert.equal(input.name, 'Iglesia Maná Centro');
+  assert.equal(input.country, 'Colombia');
+  assert.equal(input.kind, 'CHURCH');
+  assert.equal(input.status, 'ACTIVE');
+  assert.equal(input.show_on_map, false);
+});
+
+test('detecta coordenadas válidas desde enlaces de Google Maps', () => {
+  assert.deepEqual(
+    extractCoordinatesFromMapsUrl('https://www.google.com/maps/place/Maná/@6.244203,-75.581212,16z'),
+    { lat: 6.244203, lng: -75.581212 },
+  );
+  assert.equal(extractCoordinatesFromMapsUrl('https://maps.google.com/iglesia'), null);
 });

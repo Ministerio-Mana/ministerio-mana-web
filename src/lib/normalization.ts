@@ -1,4 +1,4 @@
-import { sanitizePlainText } from './validation';
+import { sanitizePlainText } from './validation.ts';
 
 const CITY_ALIASES: Record<string, string> = {
   cali: 'Cali',
@@ -66,7 +66,7 @@ export function normalizeCountryRegion(value: string | null | undefined): string
   if (!cleaned) return '';
   const key = stripAccents(cleaned).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (!key) return cleaned;
-  return COUNTRY_REGION_ALIASES[key] || cleaned;
+  return COUNTRY_REGION_ALIASES[key] || titleCase(cleaned);
 }
 
 export function normalizeChurchName(value: string | null | undefined): string {

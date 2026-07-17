@@ -1,4 +1,5 @@
 import { getPortalChurchAccessContext, mapPortalAccessError, type PortalChurchAccessContext, type PortalChurchRole } from './portalAccess.ts';
+import { isChurchScopeRowAllowed } from './churchScopePolicy.ts';
 import { supabaseAdmin } from './supabaseAdmin.ts';
 
 export const CHURCH_PAGE_EDITOR_ROLES: PortalChurchRole[] = [
@@ -16,6 +17,11 @@ export type ChurchDirectoryRow = {
   id: string;
   code?: string | null;
   name: string;
+  kind?: 'CHURCH' | 'GROUP' | null;
+  lifecycle_status?: 'DRAFT' | 'ACTIVE' | 'INACTIVE' | null;
+  is_public?: boolean | null;
+  show_on_map?: boolean | null;
+  version?: number | null;
   city?: string | null;
   country?: string | null;
   continent?: string | null;
@@ -27,6 +33,8 @@ export type ChurchDirectoryRow = {
   contact_name?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  service?: string | null;
+  notes?: string | null;
 };
 
 export async function requireChurchPageEditor(request: Request): Promise<
@@ -48,25 +56,26 @@ export async function requireChurchPageEditor(request: Request): Promise<
 }
 
 function applyChurchScope(rows: ChurchDirectoryRow[], access: PortalChurchAccessContext): ChurchDirectoryRow[] {
-  if (access.isAdmin) return rows;
-  if (access.allowedChurchId) return rows.filter((church) => church.id === access.allowedChurchId);
-  if (access.isRegional) {
-    return rows.filter((church) => (
-      (church.region_id && access.allowedRegionIds.includes(church.region_id))
-      || (!church.region_id && access.allowedCountry && church.country === access.allowedCountry)
-    ));
-  }
-  if (access.isNational && access.allowedCountry) {
-    return rows.filter((church) => church.country === access.allowedCountry);
-  }
-  return [];
+  return rows.filter((church) => isChurchScopeRowAllowed({
+    id: church.id,
+    country: church.country || null,
+    region_id: church.region_id || null,
+  }, access));
 }
 
 export async function listChurchesForPageEditor(access: PortalChurchAccessContext): Promise<ChurchDirectoryRow[]> {
   if (!supabaseAdmin) return [];
-  const fields = 'id,code,name,city,country,continent,address,maps_url,lat,lng,region_id,contact_name,contact_email,contact_phone';
+  const fields = 'id,code,name,kind,lifecycle_status,is_public,show_on_map,version,city,country,continent,address,maps_url,lat,lng,region_id,contact_name,contact_email,contact_phone,service,notes';
   let result = await supabaseAdmin.from('churches').select(fields).order('country').order('city').order('name');
   if (result.error?.code === '42703') {
+    result = await supabaseAdmin
+      .from('churches')
+      .select('id,code,name,city,country,continent,address,maps_url,lat,lng,region_id,contact_name,contact_email,contact_phone')
+      .order('country')
+      .order('city')
+      .order('name');
+  }
+  if (result.error?.code === '42703' && /region_id/i.test(result.error.message || '')) {
     result = await supabaseAdmin
       .from('churches')
       .select('id,code,name,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone')

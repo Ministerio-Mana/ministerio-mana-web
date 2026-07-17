@@ -193,6 +193,7 @@ const injectedChurches = Array.isArray(churches) ? churches : [];
     const allCoords = [];
 
     normalizedChurches.forEach((church) => {
+      if (church.show_on_map === false) return;
       if (typeof church.lat !== 'number' || typeof church.lng !== 'number') return;
 
       const continent = church.continent || 'América';

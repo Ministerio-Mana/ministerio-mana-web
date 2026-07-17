@@ -24,6 +24,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                   <select id="church-page-church" class="mt-2 min-h-11 w-full min-w-64 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#293C74]"></select>
                 </label>
                 <a id="church-page-public-link" class="hidden min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700" target="_blank" rel="noopener noreferrer"><PortalIcon name="external-link" size={17} /> Ver página</a>
+                <button id="church-directory-create" type="button" class="hidden min-h-11 items-center justify-center gap-2 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-black text-white"><PortalIcon name="plus" size={17} /> Nueva iglesia o grupo</button>
               </div>
             </div>
           </header>
@@ -35,7 +36,60 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
             <code class="mt-4 block overflow-x-auto rounded-xl bg-white px-4 py-4 text-sm font-bold text-[#293C74]">docs/sql/church_public_pages.sql</code>
           </section>
 
+          <section id="church-directory-setup" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-4 md:p-6">
+            <p class="text-xs font-black uppercase tracking-[.16em] text-amber-700">Directorio pendiente</p>
+            <h2 class="mt-2 text-xl font-black text-[#293C74]">Activa la creación y edición segura de iglesias</h2>
+            <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">Este paso conecta los cambios con el selector de eventos, el directorio y el mapa. Es aditivo y conserva las sedes actuales.</p>
+            <code class="mt-4 block overflow-x-auto rounded-xl bg-white px-4 py-4 text-sm font-bold text-[#293C74]">docs/sql/church_directory_management.sql</code>
+          </section>
+
           <div id="church-page-alert" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite" tabindex="-1"></div>
+
+          <form id="church-directory-form" class="hidden rounded-2xl border border-slate-200 bg-white shadow-sm" novalidate>
+            <div class="flex flex-col gap-4 border-b border-slate-100 p-4 md:flex-row md:items-start md:justify-between md:p-6">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[.14em] text-brand-teal">Directorio y mapa</p>
+                <h2 id="church-directory-title" class="mt-2 text-xl font-black text-[#293C74]">Datos oficiales de la iglesia</h2>
+                <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">Estos datos son la fuente única para el mapa, el directorio, los eventos y el contacto público.</p>
+              </div>
+              <span id="church-directory-scope" class="inline-flex min-h-11 items-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-black text-slate-600">Alcance protegido</span>
+            </div>
+            <div class="grid gap-4 p-4 md:grid-cols-2 md:p-6 xl:grid-cols-3">
+              <label class="church-field md:col-span-2"><span class="church-field-label">Nombre oficial <small>Obligatorio</small></span><input id="church-directory-name" maxlength="160" required placeholder="Iglesia Maná Cartago" /><span class="church-field-help">Se actualiza en directorio, mapa y selectores internos.</span></label>
+              <label class="church-field"><span class="church-field-label">Tipo</span><select id="church-directory-kind"><option value="CHURCH">Iglesia</option><option value="GROUP">Grupo en formación</option></select></label>
+              <label class="church-field"><span class="church-field-label">País <small>Obligatorio</small></span><select id="church-directory-country" required><option value="">Selecciona un país</option></select><span class="church-field-help">Solo aparecen países habilitados dentro de tu alcance.</span></label>
+              <label class="church-field"><span class="church-field-label">Región</span><select id="church-directory-region"><option value="">Sin región asignada</option></select></label>
+              <label class="church-field"><span class="church-field-label">Ciudad o municipio <small>Obligatorio</small></span><input id="church-directory-city" maxlength="120" required autocomplete="address-level2" /></label>
+              <label class="church-field md:col-span-2"><span class="church-field-label">Dirección</span><input id="church-directory-address" maxlength="320" autocomplete="street-address" placeholder="Calle, número, sector y referencia" /></label>
+              <label class="church-field"><span class="church-field-label">Enlace de Google Maps</span><input id="church-directory-maps-url" type="url" maxlength="1200" placeholder="https://maps.google.com/..." /><span class="church-field-help">Si el enlace contiene coordenadas, las detectamos automáticamente.</span></label>
+              <label class="church-field"><span class="church-field-label">Pastor o contacto responsable</span><input id="church-directory-contact-name" maxlength="160" autocomplete="name" /></label>
+              <label class="church-field"><span class="church-field-label">WhatsApp o teléfono</span><input id="church-directory-contact-phone" maxlength="32" inputmode="tel" autocomplete="tel" /></label>
+              <label class="church-field"><span class="church-field-label">Correo</span><input id="church-directory-contact-email" type="email" maxlength="254" autocomplete="email" /></label>
+              <label class="church-field md:col-span-2"><span class="church-field-label">Horarios</span><textarea id="church-directory-service" rows="3" maxlength="600" placeholder="Domingos · 10:00 a. m."></textarea><span class="church-field-help">Un horario por línea facilita la lectura en celular.</span></label>
+              <label class="church-field"><span class="church-field-label">Estado interno</span><select id="church-directory-status"><option value="DRAFT">Borrador</option><option value="ACTIVE">Activa</option><option value="INACTIVE">Inactiva</option></select></label>
+              <label class="church-field md:col-span-2"><span class="church-field-label">Nota interna</span><textarea id="church-directory-notes" rows="3" maxlength="900" placeholder="Información operativa que ayude al equipo."></textarea></label>
+
+              <fieldset class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 xl:col-span-3">
+                <legend class="px-2 text-sm font-black text-[#293C74]">Publicación</legend>
+                <label class="church-toggle"><input id="church-directory-public" type="checkbox" /><span><strong>Mostrar en el directorio público</strong><small>La sede podrá aparecer en /iglesias cuando esté activa.</small></span></label>
+                <label class="church-toggle"><input id="church-directory-map" type="checkbox" /><span><strong>Mostrar pin en el mapa</strong><small>Necesita una ubicación exacta confirmada.</small></span></label>
+              </fieldset>
+
+              <details class="rounded-2xl border border-slate-200 bg-slate-50 md:col-span-2 xl:col-span-3">
+                <summary class="flex min-h-11 cursor-pointer items-center justify-between gap-4 px-4 py-2 text-sm font-black text-[#293C74]">Ubicación exacta <span class="text-xs font-semibold text-slate-500">Para el pin del mapa</span></summary>
+                <div class="grid gap-4 border-t border-slate-200 p-4 md:grid-cols-2">
+                  <label class="church-field"><span class="church-field-label">Latitud</span><input id="church-directory-lat" inputmode="decimal" placeholder="4.7110" /></label>
+                  <label class="church-field"><span class="church-field-label">Longitud</span><input id="church-directory-lng" inputmode="decimal" placeholder="-74.0721" /></label>
+                  <button id="church-directory-use-location" type="button" class="church-secondary-button md:col-span-2"><PortalIcon name="map-pinned" size={17} /> Usar mi ubicación actual</button>
+                  <p id="church-directory-location-status" class="text-xs leading-relaxed text-slate-500 md:col-span-2" role="status" aria-live="polite">La ubicación se usa únicamente para poner el pin de esta sede.</p>
+                </div>
+              </details>
+            </div>
+            <div class="flex flex-col-reverse gap-2 border-t border-slate-100 p-4 sm:flex-row sm:justify-end md:p-6">
+              <button id="church-directory-cancel" type="button" class="hidden min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-slate-700">Cancelar nueva sede</button>
+              <button id="church-directory-save" type="submit" class="min-h-11 rounded-xl bg-[#293C74] px-4 py-2 text-sm font-black text-white">Guardar datos oficiales</button>
+            </div>
+          </form>
 
           <form id="church-page-form" class="hidden space-y-6">
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,.72fr)] xl:items-start">
@@ -256,6 +310,11 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   .church-theme-swatch--light { background: linear-gradient(135deg,#edf6f4 0 55%,#246a84 55%); }
   .church-theme-swatch--warm { background: linear-gradient(135deg,#f7f2e7 0 55%,#9a5c28 55%); }
   :global(.church-secondary-button) { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: var(--control-min-size); padding: var(--space-1) var(--space-2); }
+  .church-toggle { align-items: flex-start; color: rgb(var(--portal-control-copy)); cursor: pointer; display: grid; gap: var(--space-2); grid-template-columns: var(--control-min-size) minmax(0,1fr); min-height: var(--control-min-size); }
+  .church-toggle input { accent-color: rgb(var(--mana-navy)); height: var(--space-3); margin: calc((var(--control-min-size) - var(--space-3)) / 2) auto; width: var(--space-3); }
+  .church-toggle strong, .church-toggle small { display: block; }
+  .church-toggle strong { color: rgb(var(--mana-navy)); font-size: .85rem; font-weight: 900; line-height: 1.4; }
+  .church-toggle small { color: rgb(var(--portal-control-muted)); font-size: .72rem; line-height: 1.5; margin-top: var(--space-1); }
   .church-image-guide { background: #f7f9ff; border: 1px solid rgba(41,60,116,.16); border-radius: 16px; color: #475569; padding: var(--space-2); }
   .church-image-guide > strong { color: #293c74; font-size: .85rem; }
   .church-image-guide ul { display: grid; gap: var(--space-1); list-style: disc; margin: var(--space-2) 0 0 var(--space-3); }

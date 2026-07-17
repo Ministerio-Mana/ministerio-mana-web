@@ -1,21 +1,11 @@
 import { supabaseAdmin } from '@lib/supabaseAdmin';
 import type { PortalChurchAccessContext } from '@lib/portalAccess';
-import { normalizeCountryRegion } from '@lib/normalization';
+import { isChurchScopeRowAllowed, type ChurchScopeRow, type ScopedChurchAccess } from '@lib/churchScopePolicy';
 
 type ScopedAccess = Pick<
   PortalChurchAccessContext,
   'isAdmin' | 'isNational' | 'isRegional' | 'allowedChurchId' | 'allowedCountry' | 'allowedRegionIds'
->;
-
-type ChurchScopeRow = {
-  id: string;
-  country: string | null;
-  region_id?: string | null;
-};
-
-function normalizeCountry(value: string | null | undefined): string {
-  return normalizeCountryRegion(value || '').toLowerCase();
-}
+> & ScopedChurchAccess;
 
 async function getChurchScope(churchId: string): Promise<ChurchScopeRow | null> {
   if (!supabaseAdmin || !churchId) return null;
@@ -50,20 +40,10 @@ export async function listAccessibleChurchIds(access: ScopedAccess): Promise<str
 
   if (access.isRegional) {
     if (!access.allowedRegionIds.length) return [];
-    let { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('churches')
       .select('id')
       .in('region_id', access.allowedRegionIds);
-
-    if (error?.code === '42703' && access.allowedCountry) {
-      const fallback = await supabaseAdmin
-        .from('churches')
-        .select('id')
-        .eq('country', access.allowedCountry);
-      data = fallback.data;
-      error = fallback.error;
-    }
-
     if (error) return [];
     return Array.from(new Set((data || []).map((church: any) => church.id).filter(Boolean)));
   }
@@ -88,21 +68,5 @@ export async function isChurchAllowedForAccess(churchId: string | null | undefin
 
   const church = await getChurchScope(churchId);
   if (!church?.id) return false;
-
-  if (access.isRegional) {
-    if (access.allowedRegionIds.length && church.region_id) {
-      return access.allowedRegionIds.includes(church.region_id);
-    }
-    if (access.allowedCountry) {
-      return normalizeCountry(church.country) === normalizeCountry(access.allowedCountry);
-    }
-    return false;
-  }
-
-  if (access.isNational) {
-    if (!access.allowedCountry) return false;
-    return normalizeCountry(church.country) === normalizeCountry(access.allowedCountry);
-  }
-
-  return false;
+  return isChurchScopeRowAllowed(church, access);
 }

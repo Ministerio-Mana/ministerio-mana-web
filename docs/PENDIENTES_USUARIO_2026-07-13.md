@@ -468,4 +468,16 @@ La carta completa quedó consolidada en [`docs/UX_NON_NEGOTIABLES.md`](./UX_NON_
 - [ ] Repetir `/portal` con cuentas de prueba de usuario, pastor, finanzas y administrador; confirmar que cada persona solo ve los datos y acciones que le corresponden.
 - [ ] Reportar cualquier pantalla donde el contenido se vea amontonado o demasiado separado; indicar ruta y captura. La migración se hará por módulo sin aceptar valores aislados nuevos.
 
-No necesitas ejecutar SQL para esta carta ni para el contrato de espaciado. Primero aprueba las decisiones anteriores; después el equipo web convertirá cada brecha en tickets pequeños, verificables y desplegables.
+## 13. Directorio jerárquico de iglesias — pendiente de Santiago
+
+- [ ] Ejecutar una sola vez `docs/sql/church_directory_management.sql` en Supabase. Es aditivo: conserva iglesias, páginas, eventos, roles y membresías existentes.
+- [ ] En `/portal/church-page`, entrar como pastor nacional de prueba y crear una iglesia o grupo en su país. Confirmar que no puede escoger otro país.
+- [ ] Repetir con pastor regional: debe crear únicamente dentro de una de sus regiones. Un pastor local debe poder editar su propia sede, pero no crear otra ni entrar a una sede ajena.
+- [ ] Como pastor nacional o admin, asignar una región explícita a toda sede histórica que todavía esté sin `region_id`. Por seguridad, una cuenta regional no verá esas sedes hasta que se complete esa asignación.
+- [ ] Cambiar teléfono, dirección, horario y pastor responsable de una sede de prueba. Confirmar que el dato nuevo aparece en su página pública, `/iglesias`, el mapa y los selectores de eventos sin editarlo por separado.
+- [ ] Pegar un enlace de Google Maps con coordenadas o usar la ubicación actual; activar “Mostrar pin en el mapa” y confirmar el punto antes de publicar. Sin coordenadas exactas, el sistema debe mantener el pin desactivado.
+- [ ] Crear un grupo como borrador y confirmar que no aparece públicamente. Luego activarlo y publicarlo únicamente si los datos y la ubicación son correctos.
+- [ ] Revisar las tres plantillas de iglesia —Esencial, Historia y Mosaico— a 390 px, 768 px y escritorio. Confirmar ausencia de scroll horizontal, lectura clara, contraste protegido y controles táctiles de mínimo 44 px.
+- [ ] En `/portal/events`, abrir las ayudas `?` con mouse, teclado y touch; confirmar que el área táctil es de 44 px y que la explicación no tapa el campo activo.
+
+No necesitas ejecutar SQL para la carta de calidad ni para el contrato de espaciado. El único SQL nuevo de esta fase es el del primer punto de esta sección.
