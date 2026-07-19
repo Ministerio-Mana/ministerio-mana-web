@@ -402,6 +402,7 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersLogic, /Selecciona un rol/);
   assert.doesNotMatch(usersLogic, /roleSelect\.value = allowedRoles\[0\]/);
   assert.match(usersLogic, /function updateFinanceOnboardingFields\(\)/);
+  assert.match(usersLogic, /scopeChurchSelect\.required = needsChurch/);
   assert.match(usersLogic, /const body = Object\.fromEntries\(formData\)/);
   assert.match(usersLogic, /financeAssignmentCreated/);
   assert.match(usersLogic, /<details class="user-actions-menu relative w-full text-left lg:inline-block lg:w-auto">/);
