@@ -43,7 +43,8 @@ function safeHref(value: string): string {
       const isBackdrop = scene.layout === 'backdrop';
       const isPoster = scene.layout === 'poster';
       const isSplit = scene.layout === 'split-left' || scene.layout === 'split-right';
-      const panelTheme = story.theme === 'navy' || isBackdrop || isPoster ? 'dark' : 'light';
+      const hasBackdropMedia = Boolean(image) && (isBackdrop || isPoster);
+      const panelTheme = story.theme === 'navy' || hasBackdropMedia ? 'dark' : 'light';
       const href = safeHref(scene.primaryHref);
       const objectPosition = focalPositions[scene.focalPoint] || focalPositions.center;
 
@@ -53,12 +54,13 @@ function safeHref(value: string): string {
             'cms-story-panel',
             `cms-story-panel--${story.theme}`,
             `cms-story-panel--${scene.layout}`,
+            hasBackdropMedia && 'cms-story-panel--media',
           ]}
           data-cumbre-panel
           data-panel-theme={panelTheme}
           aria-labelledby={`cms-story-title-${scene.id}`}
         >
-          {(isBackdrop || isPoster) && image && (
+          {hasBackdropMedia && (
             <div class="cms-story-backdrop" data-panel-bg>
               <img
                 src={image}
@@ -75,7 +77,7 @@ function safeHref(value: string): string {
           )}
 
           <div class="cms-story-inner" data-panel-inner data-mobile-reveal-group>
-            <div class:list={['cms-story-grid', isSplit && 'cms-story-grid--split', scene.layout === 'split-right' && 'cms-story-grid--reverse', isPoster && 'cms-story-grid--poster']}>
+            <div class:list={['cms-story-grid', isSplit && 'cms-story-grid--split', scene.layout === 'split-right' && 'cms-story-grid--reverse', isPoster && image && 'cms-story-grid--poster']}>
               {isSplit && image && (
                 <figure class="cms-story-visual" data-reveal>
                   <img
@@ -190,7 +192,7 @@ function safeHref(value: string): string {
     position: absolute;
   }
 
-  .cms-story-panel--poster .cms-story-backdrop img {
+  .cms-story-panel--poster.cms-story-panel--media .cms-story-backdrop img {
     filter: blur(24px) saturate(0.8);
     opacity: 0.48;
     transform: scale(1.08);
@@ -256,9 +258,7 @@ function safeHref(value: string): string {
     max-width: 18ch;
   }
 
-  .cms-story-panel--navy .cms-story-title,
-  .cms-story-panel--backdrop .cms-story-title,
-  .cms-story-panel--poster .cms-story-title {
+  .cms-story-panel--navy .cms-story-title {
     color: #fff;
   }
 
@@ -267,18 +267,15 @@ function safeHref(value: string): string {
     color: #101827;
   }
 
-  .cms-story-panel--backdrop,
-  .cms-story-panel--poster {
+  .cms-story-panel--media {
     color: #fff;
   }
 
-  .cms-story-panel--backdrop .cms-story-eyebrow,
-  .cms-story-panel--poster .cms-story-eyebrow {
+  .cms-story-panel--media .cms-story-eyebrow {
     color: #f2c94c;
   }
 
-  .cms-story-panel--backdrop .cms-story-title,
-  .cms-story-panel--poster .cms-story-title {
+  .cms-story-panel--media .cms-story-title {
     color: #fff;
     text-shadow: 0 3px 24px rgba(7, 17, 28, 0.42);
   }

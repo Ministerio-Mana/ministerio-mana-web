@@ -155,12 +155,30 @@ const whatsappHref = contactWhatsApp
 const calendarHref = databaseEvent ? `/api/events/${databaseEvent.id}/calendar.ics` : '';
 const mapsQuery = [address, location].filter(Boolean).join(', ');
 const mapsHref = !isOnlineEvent && mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}` : '';
+const eventDateFormatter = new Intl.DateTimeFormat('es-CO', {
+  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: eventTimeZone,
+});
+const eventTimeFormatter = new Intl.DateTimeFormat('es-CO', {
+  hour: 'numeric', minute: '2-digit', timeZone: eventTimeZone,
+});
 const formattedDate = isValidDate
-  ? new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: eventTimeZone }).format(startDate)
+  ? eventDateFormatter.format(startDate)
   : 'Fecha por confirmar';
 const formattedTime = isValidDate
-  ? new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: eventTimeZone }).format(startDate)
+  ? eventTimeFormatter.format(startDate)
   : '';
+const isValidEndDate = Number.isFinite(endDate.getTime());
+const hasDistinctEnd = isValidDate && isValidEndDate && endDate.getTime() > startDate.getTime();
+const formattedEndDate = isValidEndDate ? eventDateFormatter.format(endDate) : '';
+const formattedEndTime = isValidEndDate ? eventTimeFormatter.format(endDate) : '';
+const isSameEventDay = hasDistinctEnd && formattedEndDate === formattedDate;
+const formattedSchedule = !isValidDate
+  ? formattedDate
+  : !hasDistinctEnd
+    ? `${formattedDate}${formattedTime ? ` · ${formattedTime}` : ''}`
+    : isSameEventDay
+      ? `${formattedDate} · ${formattedTime}–${formattedEndTime}`
+      : `${formattedDate} · ${formattedTime} — ${formattedEndDate} · ${formattedEndTime}`;
 const heroDay = isValidDate
   ? new Intl.DateTimeFormat('es-CO', { day: '2-digit', timeZone: eventTimeZone }).format(startDate)
   : '';
@@ -216,8 +234,8 @@ const eventStoryPayload = {
     ...(storyDetailScenes.length > 0 ? storyDetailScenes : [{
       id: 'informacion-practica',
       eyebrow: 'Planifica tu asistencia',
-      title: formattedDate,
-      text: [formattedTime, location, address, attendanceLabel, priceLabel].filter(Boolean).join(' · '),
+      title: formattedSchedule,
+      text: [location, address, attendanceLabel, priceLabel].filter(Boolean).join(' · '),
       image: '',
       imageAlt: '',
       focalPoint: 'center',
@@ -229,7 +247,7 @@ const eventStoryPayload = {
       id: 'invitacion',
       eyebrow: 'Te esperamos',
       title: isCompleted ? 'Gracias por ser parte' : 'Reserva este momento',
-      text: isCompleted ? 'Consulta la información y los canales oficiales del evento.' : `${formattedDate}${formattedTime ? ` · ${formattedTime}` : ''}. ${location || 'Pronto confirmaremos el lugar.'}`,
+      text: isCompleted ? 'Consulta la información y los canales oficiales del evento.' : `${formattedSchedule}. ${location || 'Pronto confirmaremos el lugar.'}`,
       image: useImageHero ? image : '',
       imageAlt: useImageHero ? `Invitación de ${title}` : '',
       focalPoint: 'center',
@@ -291,7 +309,7 @@ const structured = (contentEntry || databaseEvent) ? {
                   <span>{heroMonth}</span>
                 </div>
                 <div>
-                  <p class="font-semibold capitalize text-white">{formattedDate}{formattedTime && ` · ${formattedTime}`}</p>
+                  <p class="font-semibold capitalize text-white">{formattedSchedule}</p>
                   {location && <p class="mt-2 text-sm text-white/75">{location}</p>}
                 </div>
               </div>
@@ -311,7 +329,7 @@ const structured = (contentEntry || databaseEvent) ? {
         <div class="container-tight grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.78fr_auto] lg:items-stretch">
           <article class="event-public-fact">
             <p>Fecha</p>
-            <strong class="capitalize">{formattedDate}{formattedTime && ` · ${formattedTime}`}</strong>
+            <strong class="capitalize">{formattedSchedule}</strong>
           </article>
           <article class="event-public-fact">
             <p>Lugar</p>
@@ -680,14 +698,14 @@ const structured = (contentEntry || databaseEvent) ? {
                   </div>
                 )}
 
-                <label class="mt-6 flex items-start gap-4 text-sm text-slate-600">
-                  <input name="privacy_accepted" type="checkbox" required class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
-                  <span>Autorizo el tratamiento de mis datos según la <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="font-bold text-[#293C74] underline">política de privacidad</a>.</span>
+                <label class="mt-6 flex min-h-11 items-start gap-4 text-sm text-slate-600">
+                  <input name="privacy_accepted" type="checkbox" required class="mt-2 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                  <span>Autorizo el tratamiento de mis datos según la <a href="/privacidad" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center font-bold text-[#293C74] underline">política de privacidad</a>.</span>
                 </label>
 
                 {registrationFormConfig.whatsapp_updates && (
-                  <label class="mt-4 flex items-start gap-4 text-sm text-slate-600">
-                    <input name="whatsapp_updates" type="checkbox" class="mt-0 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
+                  <label class="mt-4 flex min-h-11 items-start gap-4 text-sm text-slate-600">
+                    <input name="whatsapp_updates" type="checkbox" class="mt-2 h-4 w-4 rounded border-slate-300 text-[#293C74] focus:ring-[#293C74]" />
                     <span>Quiero recibir recordatorios y novedades de este evento por WhatsApp.</span>
                   </label>
                 )}
@@ -703,7 +721,7 @@ const structured = (contentEntry || databaseEvent) ? {
             ) : (
               <div class="rounded-md border border-slate-200 bg-slate-50 px-6 py-6">
                 <p class="font-bold text-slate-800">Inscripciones temporalmente no disponibles</p>
-                {databaseEvent.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-4 inline-block text-sm font-bold text-[#293C74] underline">Contactar al organizador</a>}
+                {databaseEvent.contact_email && <a href={`mailto:${databaseEvent.contact_email}`} class="mt-4 inline-flex min-h-11 items-center text-sm font-bold text-[#293C74] underline">Contactar al organizador</a>}
               </div>
             )}
           </div>

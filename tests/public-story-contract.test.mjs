@@ -126,11 +126,14 @@ test('la ruta histórica en inglés de eventos conserva compatibilidad', async (
   assert.match(source, /Astro\.redirect\(destination, 301\)/);
 });
 
-test('las historias mantienen texto claro sobre fotos aunque la paleta base sea clara', async () => {
+test('las historias usan contraste oscuro solo cuando la escena realmente tiene foto', async () => {
   const source = await readProjectFile('src/components/cms/CmsStorySection.astro');
 
-  assert.match(source, /\.cms-story-panel--backdrop,[\s\S]*?\.cms-story-panel--poster \{[\s\S]*?color: #fff;/);
-  assert.match(source, /\.cms-story-panel--backdrop \.cms-story-title,[\s\S]*?color: #fff;/);
+  assert.match(source, /const hasBackdropMedia = Boolean\(image\) && \(isBackdrop \|\| isPoster\)/);
+  assert.match(source, /hasBackdropMedia && 'cms-story-panel--media'/);
+  assert.match(source, /\.cms-story-panel--media \{[\s\S]*?color: #fff;/);
+  assert.match(source, /\.cms-story-panel--media \.cms-story-title \{[\s\S]*?color: #fff;/);
+  assert.doesNotMatch(source, /\.cms-story-panel--backdrop,\s*\n\s*\.cms-story-panel--poster \{/);
 });
 
 test('Campus etiqueta los datos de pago y deshabilita la acción inválida', async () => {

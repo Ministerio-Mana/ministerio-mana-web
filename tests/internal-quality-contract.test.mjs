@@ -28,6 +28,8 @@ test('el diálogo global encierra el foco, cierra con Escape y devuelve el foco'
   assert.match(modal, /document\.addEventListener\('invalid'/);
   assert.match(modal, /queueMicrotask\(\(\) => \{/);
   assert.match(modal, /setAttribute\('aria-invalid', 'true'\)/);
+  assert.match(modal, /function getConciseLabelText\(label\)/);
+  assert.match(modal, /input, select, textarea, button, \[role="tooltip"\], small, \.event-field-support/);
 });
 
 test('la navegación interna conserva ubicación, permisos visibles y controles táctiles', async () => {
@@ -192,6 +194,14 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /eventScopeCitySelect\.innerHTML = '<option value="">Elige primero un país<\/option>'/);
   assert.match(eventsLogic, /eventChurchSelect\.disabled = !needsChurch \|\| !selectedScopeCountry/);
   assert.match(eventsLogic, /payload\.attendance_mode === 'ONLINE'[\s\S]*?payload\.location_name = null[\s\S]*?payload\.location_address = null/);
+  assert.match(eventsLogic, /payload\.attendance_mode === 'ONLINE'[\s\S]*?payload\.city = null/);
+  assert.match(eventsLogic, /const hasSavedEvent = Boolean\(String\(eventIdInput\?\.value/);
+  assert.match(eventsLogic, /control\.setAttribute\('role', 'button'\)[\s\S]*?control\.setAttribute\('aria-label', label\)/);
+  assert.match(eventsLogic, /const stageProtectedPublication = requestedStatus === 'PUBLISHED' && needsPostSaveSetup/);
+  assert.match(eventsLogic, /body: JSON\.stringify\(\{ id: savedEvent\.id, status: requestedStatus \}\)/);
+  assert.match(eventsLogic, /retainSavedEventForCorrection\(savedEvent, \{ asDraft: stageProtectedPublication \}\)/);
+  assert.match(eventsLogic, /option\[selected\][\s\S]*?removeAttribute\('selected'\)/);
+  assert.match(eventsView, /#event-modal \.event-context-help \[role="tooltip"\][\s\S]*?max-width: calc\(100vw - \(2 \* var\(--space-2\)\)\)/);
   assert.match(eventsLogic, /id="btn-retry-events" class="mt-4 min-h-11/);
   assert.match(eventsApi, /Selecciona el país del evento nacional/);
   assert.match(eventsApi, /Selecciona una región para el evento regional/);
@@ -283,7 +293,23 @@ test('la landing pública describe modalidad y bloquea el registro privado en el
   assert.match(publicView, /'@type': 'VirtualLocation'/);
   assert.match(publicView, /const mapsHref = !isOnlineEvent/);
   assert.match(publicView, /data-copy-event-link/);
+  assert.match(publicView, /const formattedSchedule =/);
+  assert.match(publicView, /formattedEndDate/);
+  assert.match(publicView, /name="privacy_accepted"[\s\S]*?inline-flex min-h-11 items-center font-bold/);
   assert.match(registerApi, /publicRegistrationAllowed:[\s\S]*?status[\s\S]*?PUBLISHED[\s\S]*?visibility[\s\S]*?PRIVATE[\s\S]*?registration_mode[\s\S]*?INTERNAL/);
+});
+
+test('el cobro dual reconoce la restricción faltante y la migración audita duplicados', async () => {
+  const [optionsApi, constraintsSql] = await Promise.all([
+    readSource('src/pages/api/portal/event-payments/options.ts'),
+    readSource('docs/sql/events_finance_constraints_upgrade.sql'),
+  ]);
+
+  assert.match(optionsApi, /function isMissingPaymentOptionConstraint\(error: any\)/);
+  assert.match(optionsApi, /String\(error\?\.code \|\| ''\) === '42P10'/);
+  assert.match(optionsApi, /events_finance_constraints_upgrade\.sql/);
+  assert.match(constraintsSql, /group by event_id, kind, provider, currency[\s\S]*?having count\(\*\) > 1/);
+  assert.match(constraintsSql, /create unique index if not exists idx_event_payment_options_unique/);
 });
 
 test('el editor de iglesias separa borrador, publicación, alcance e imágenes', async () => {

@@ -29,4 +29,6 @@ test('la página pública conecta Historia con Stories Plus y mantiene variantes
   assert.match(publicPageSource, /landingTemplate !== 'STORY'/);
   assert.match(publicPageSource, /event-public--mosaic/);
   assert.match(publicPageSource, /event-public--theme-/);
+  assert.match(publicPageSource, /const formattedSchedule =/);
+  assert.match(publicPageSource, /formattedEndDate/);
 });

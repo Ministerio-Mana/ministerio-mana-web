@@ -45,6 +45,10 @@ function isMissingDualPaymentRpc(error: any): boolean {
     || /set_event_online_payment_options_secure/i.test(String(error?.message || ''));
 }
 
+function isMissingPaymentOptionConstraint(error: any): boolean {
+  return String(error?.code || '') === '42P10';
+}
+
 export const GET: APIRoute = async ({ request, url }) => {
   if (!supabaseAdmin) return json({ ok: false, error: 'Server Config Error' }, 500);
   const db = supabaseAdmin;
@@ -308,7 +312,7 @@ export const PUT: APIRoute = async ({ request }) => {
       });
       return json({ ok: true, mode, providers });
     }
-    if (!isMissingDualPaymentRpc(configured.error)) {
+    if (!isMissingDualPaymentRpc(configured.error) && !isMissingPaymentOptionConstraint(configured.error)) {
       console.error('[event-payment-options] atomic update failed', configured.error);
       return json({ ok: false, error: 'No se pudo actualizar el método de pago.' }, 500);
     }
@@ -316,7 +320,9 @@ export const PUT: APIRoute = async ({ request }) => {
       return json({
         ok: false,
         code: 'EVENT_DUAL_PAYMENT_SETUP_REQUIRED',
-        error: 'Ejecuta docs/sql/events_dual_currency_payments.sql antes de activar el cobro dual.',
+        error: isMissingPaymentOptionConstraint(configured.error)
+          ? 'Ejecuta docs/sql/events_finance_constraints_upgrade.sql antes de activar el cobro dual.'
+          : 'Ejecuta docs/sql/events_dual_currency_payments.sql antes de activar el cobro dual.',
       }, 409);
     }
   }

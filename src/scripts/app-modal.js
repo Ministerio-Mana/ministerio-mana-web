@@ -78,22 +78,32 @@ function attachModalEvents() {
   });
 }
 
+function getConciseLabelText(label) {
+  if (!label) return '';
+  const copy = label.cloneNode(true);
+  copy.querySelectorAll('input, select, textarea, button, [role="tooltip"], small, .event-field-support')
+    .forEach((node) => node.remove());
+  return String(copy.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 function getLabelFromElement(el, form) {
   if (!el) return 'Campo';
+  const validationLabel = el.getAttribute?.('data-validation-label');
+  if (validationLabel) return validationLabel.trim();
   const ariaLabel = el.getAttribute?.('aria-label');
   if (ariaLabel) return ariaLabel.trim();
   const id = el.id;
   if (id && form) {
     try {
       const label = form.querySelector(`label[for="${CSS.escape(id)}"]`);
-      if (label) return label.textContent.trim();
+      if (label) return getConciseLabelText(label) || 'Campo';
     } catch {
       const label = form.querySelector(`label[for="${id}"]`);
-      if (label) return label.textContent.trim();
+      if (label) return getConciseLabelText(label) || 'Campo';
     }
   }
   const parentLabel = el.closest?.('label');
-  if (parentLabel) return parentLabel.textContent.trim();
+  if (parentLabel) return getConciseLabelText(parentLabel) || 'Campo';
   const placeholder = el.getAttribute?.('placeholder');
   if (placeholder) return placeholder.trim();
   const name = el.getAttribute?.('name');
