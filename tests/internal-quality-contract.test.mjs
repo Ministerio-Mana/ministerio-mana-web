@@ -30,6 +30,8 @@ test('el diálogo global encierra el foco, cierra con Escape y devuelve el foco'
   assert.match(modal, /setAttribute\('aria-invalid', 'true'\)/);
   assert.match(modal, /function getConciseLabelText\(label\)/);
   assert.match(modal, /input, select, textarea, button, \[role="tooltip"\], small, \.event-field-support/);
+  assert.match(modal, /el\.getAttribute\?\.\('type'\) === 'radio'/);
+  assert.match(modal, /fieldset, \[role="radiogroup"\]/);
 });
 
 test('la navegación interna conserva ubicación, permisos visibles y controles táctiles', async () => {
@@ -217,6 +219,8 @@ test('la operación del evento protege comprobantes, revisión y asistencia', as
   ]);
 
   assert.match(operationView, /href="\/portal\/events"[^>]*min-h-11/);
+  assert.match(operationView, /id="event-operation-title"[^>]*break-words/);
+  assert.doesNotMatch(operationView, /id="event-operation-title"[^>]*truncate/);
   assert.match(operationView, /id="event-documents-refresh"[^>]*min-h-11/);
   assert.match(operationView, /id="event-documents-dropzone"[^>]*role="button"/);
   assert.match(operationView, /Archivos privados del equipo/);

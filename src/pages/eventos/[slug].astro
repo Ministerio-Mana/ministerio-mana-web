@@ -309,7 +309,7 @@ const structured = (contentEntry || databaseEvent) ? {
                   <span>{heroMonth}</span>
                 </div>
                 <div>
-                  <p class="font-semibold capitalize text-white">{formattedSchedule}</p>
+                  <p class="font-semibold text-white">{formattedSchedule}</p>
                   {location && <p class="mt-2 text-sm text-white/75">{location}</p>}
                 </div>
               </div>
@@ -329,7 +329,7 @@ const structured = (contentEntry || databaseEvent) ? {
         <div class="container-tight grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_0.78fr_auto] lg:items-stretch">
           <article class="event-public-fact">
             <p>Fecha</p>
-            <strong class="capitalize">{formattedSchedule}</strong>
+            <strong>{formattedSchedule}</strong>
           </article>
           <article class="event-public-fact">
             <p>Lugar</p>

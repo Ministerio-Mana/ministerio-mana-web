@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   DEFAULT_EVENT_ATTENDANCE_MODE,
@@ -161,4 +162,12 @@ test('limita y normaliza las preguntas configurables de un evento', () => {
     { id: 'field_pregunta01', type: 'SHORT_TEXT', label: 'Ciudad de origen', help_text: '', required: true, options: [] },
     { id: 'field_opciones01', type: 'MULTIPLE_CHOICE', label: 'Intereses', help_text: '', required: false, options: ['Niños', 'Jóvenes'] },
   ]);
+});
+
+test('actualiza de inmediato las fichas cuando cambia la cantidad de asistentes', () => {
+  const source = readFileSync(new URL('../src/scripts/public-event-registration.js', import.meta.url), 'utf8');
+  assert.match(
+    source,
+    /registrationForm\.addEventListener\('input',[\s\S]*?event\.target === quantityInput\) renderAttendees\(\)/,
+  );
 });
