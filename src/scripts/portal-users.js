@@ -1730,7 +1730,7 @@ function setupModal(token) {
 
         // Populate Roles dynamically
         if (roleSelect) {
-            roleSelect.innerHTML = '';
+            roleSelect.innerHTML = '<option value="" disabled selected>Selecciona un rol</option>';
             const allowedRoles = roleOrder.filter((role) => (
                 currentCreatableRoles.includes(role)
                 && (role !== 'finance' || currentUserRole === 'superadmin')
@@ -1747,15 +1747,14 @@ function setupModal(token) {
                 alert('No tienes permisos para crear usuarios.');
                 return;
             }
-            roleSelect.value = allowedRoles[0];
             attachScopeListener();
             populateScopeOptions();
             populateRegionOptions();
-            updateScopeFields(roleSelect.value);
+            updateScopeFields('');
             void ensureScopeCatalogs(token).then(() => {
                 populateScopeOptions();
                 populateRegionOptions();
-                updateScopeFields(roleSelect.value);
+                updateScopeFields(roleSelect.value || '');
             });
         }
         createUserDirty = false;

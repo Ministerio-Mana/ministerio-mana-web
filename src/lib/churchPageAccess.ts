@@ -1,5 +1,6 @@
 import { getPortalChurchAccessContext, mapPortalAccessError, type PortalChurchAccessContext, type PortalChurchRole } from './portalAccess.ts';
 import { isChurchScopeRowAllowed } from './churchScopePolicy.ts';
+import { isOfficialPortalChurch } from './portalGeography.ts';
 import { supabaseAdmin } from './supabaseAdmin.ts';
 
 export const CHURCH_PAGE_EDITOR_ROLES: PortalChurchRole[] = [
@@ -87,7 +88,7 @@ export async function listChurchesForPageEditor(access: PortalChurchAccessContex
     console.error('[church-pages] church list failed', { code: result.error.code, message: result.error.message });
     return [];
   }
-  return applyChurchScope((result.data || []) as ChurchDirectoryRow[], access);
+  return applyChurchScope((result.data || []) as ChurchDirectoryRow[], access).filter(isOfficialPortalChurch);
 }
 
 export async function getChurchForPageEditor(

@@ -377,6 +377,7 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersView, /id="create-user-first-name"[^>]*name="firstName"[^>]*autocomplete="given-name"[^>]*min-h-11/);
   assert.match(usersView, /id="create-user-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar creación de usuario"/);
   assert.match(usersView, /id="create-user-feedback"[^>]*role="status" aria-live="polite"/);
+  assert.match(usersView, /id="user-role-select"[^>]*required/);
   assert.match(usersView, /id="finance-assignment-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="finance-assignment-title"[^>]*aria-describedby="finance-assignment-user"[^>]*aria-hidden="true"/);
   assert.match(usersView, /id="finance-assignment-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar alcances financieros"/);
   assert.match(usersView, /id="user-finance-scope"/);
@@ -398,6 +399,8 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(usersLogic, /roleValue === 'finance' && !hasFinanceAccess/);
   assert.match(usersLogic, /Administrar acceso financiero/);
   assert.match(usersLogic, /role !== 'finance' \|\| currentUserRole === 'superadmin'/);
+  assert.match(usersLogic, /Selecciona un rol/);
+  assert.doesNotMatch(usersLogic, /roleSelect\.value = allowedRoles\[0\]/);
   assert.match(usersLogic, /function updateFinanceOnboardingFields\(\)/);
   assert.match(usersLogic, /const body = Object\.fromEntries\(formData\)/);
   assert.match(usersLogic, /financeAssignmentCreated/);
