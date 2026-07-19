@@ -712,6 +712,7 @@ function updateScopeFields(role) {
 
     if (scopeChurchWrapper && scopeChurchSelect) {
         scopeChurchWrapper.classList.toggle('hidden', !needsChurch);
+        scopeChurchSelect.required = needsChurch;
         if (!needsChurch) {
             scopeChurchSelect.disabled = true;
             scopeChurchSelect.value = '';
