@@ -39,8 +39,10 @@ export function buildSafeChurchMapsUrl(church: ChurchMapsInput, fallbackCountry 
   const safeMapsUrl = getSafeMapsUrl(church.maps_url);
   if (safeMapsUrl) return safeMapsUrl;
 
-  const lat = typeof church.lat === 'number' ? church.lat : Number(church.lat);
-  const lng = typeof church.lng === 'number' ? church.lng : Number(church.lng);
+  const rawLat = church.lat;
+  const rawLng = church.lng;
+  const lat = rawLat === null || rawLat === undefined || String(rawLat).trim() === '' ? Number.NaN : Number(rawLat);
+  const lng = rawLng === null || rawLng === undefined || String(rawLng).trim() === '' ? Number.NaN : Number(rawLng);
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
     return `https://www.google.com/maps?q=${lat},${lng}`;
   }

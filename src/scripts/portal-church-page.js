@@ -1,5 +1,5 @@
 import { ensureAuthenticated, redirectToLogin } from '@lib/portalAuthClient';
-import { extractCoordinatesFromMapsUrl } from '@lib/churchManagement';
+import { extractCoordinatesFromMapsUrl, hasValidChurchCoordinates } from '@lib/churchManagement';
 
 const API_URL = '/api/portal/church-pages';
 const MEDIA_URL = '/api/portal/church-media';
@@ -330,10 +330,10 @@ function renderDirectoryRegions(selected = '') {
 }
 
 function updateMapAvailability() {
-  const lat = Number(el.directoryLat?.value);
-  const lng = Number(el.directoryLng?.value);
-  const hasCoordinates = Number.isFinite(lat) && Number.isFinite(lng)
-    && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+  const hasCoordinates = hasValidChurchCoordinates(
+    el.directoryLat?.value ?? '',
+    el.directoryLng?.value ?? '',
+  );
   const isPublic = Boolean(el.directoryPublic?.checked);
   if (el.directoryMap) {
     el.directoryMap.disabled = !isPublic || !hasCoordinates;

@@ -1,63 +1,15 @@
 import churchesFallback from '../data/churches.json';
 import { supabaseAdmin } from './supabaseAdmin.ts';
-import { normalizeChurchPageSlug } from './churchPage.ts';
+import {
+  isPublicChurchDirectoryReady,
+  normalizePublicChurchDirectoryItem,
+  type PublicChurchDirectoryItem,
+} from './churchDirectoryItem.ts';
 
-export type PublicChurchDirectoryItem = {
-  id: string;
-  code: string;
-  name: string;
-  city: string;
-  country: string;
-  continent: string;
-  address: string;
-  maps_url: string;
-  lat: number | null;
-  lng: number | null;
-  contact: { name: string; email: string; phone: string };
-  whatsapp: string;
-  service: string;
-  notes: string;
-  kind?: 'CHURCH' | 'GROUP';
-  lifecycle_status?: 'DRAFT' | 'ACTIVE' | 'INACTIVE';
-  is_public?: boolean;
-  show_on_map?: boolean;
-  page_slug?: string;
-};
-
-function text(value: unknown): string {
-  return String(value ?? '').trim();
-}
-
-function fallbackRow(value: Record<string, any>, index: number): PublicChurchDirectoryItem {
-  const code = normalizeChurchPageSlug(value.code || `${value.country}-${value.city}-${value.name}`);
-  return {
-    id: text(value.id) || `fallback-${index}-${code}`,
-    code,
-    name: text(value.name),
-    city: text(value.city),
-    country: text(value.country),
-    continent: text(value.continent) || 'América',
-    address: text(value.address),
-    maps_url: text(value.maps_url || value.mapsUrl),
-    lat: Number.isFinite(Number(value.lat)) ? Number(value.lat) : null,
-    lng: Number.isFinite(Number(value.lng)) ? Number(value.lng) : null,
-    contact: {
-      name: text(value.contact?.name || value.contact_name),
-      email: text(value.contact?.email || value.contact_email),
-      phone: text(value.contact?.phone || value.contact_phone),
-    },
-    whatsapp: text(value.whatsapp || value.contact_phone),
-    service: text(value.service),
-    notes: text(value.notes),
-    kind: value.kind === 'GROUP' ? 'GROUP' : 'CHURCH',
-    lifecycle_status: value.lifecycle_status === 'DRAFT' || value.lifecycle_status === 'INACTIVE' ? value.lifecycle_status : 'ACTIVE',
-    is_public: value.is_public !== false,
-    show_on_map: value.show_on_map !== false,
-  };
-}
+export type { PublicChurchDirectoryItem } from './churchDirectoryItem.ts';
 
 function databaseRow(value: Record<string, any>, index: number): PublicChurchDirectoryItem {
-  const row = fallbackRow({
+  const row = normalizePublicChurchDirectoryItem({
     ...value,
     whatsapp: value.contact_phone,
     contact: {
@@ -71,7 +23,7 @@ function databaseRow(value: Record<string, any>, index: number): PublicChurchDir
 }
 
 export async function listPublicChurchDirectory(): Promise<PublicChurchDirectoryItem[]> {
-  const fallback = (churchesFallback as Record<string, any>[]).map(fallbackRow);
+  const fallback = (churchesFallback as Record<string, any>[]).map(normalizePublicChurchDirectoryItem).filter(isPublicChurchDirectoryReady);
   if (!supabaseAdmin) return fallback;
 
   let result = await supabaseAdmin
@@ -96,7 +48,7 @@ export async function listPublicChurchDirectory(): Promise<PublicChurchDirectory
     return fallback;
   }
 
-  const database = (result.data || []).map(databaseRow);
+  const database = (result.data || []).map(databaseRow).filter(isPublicChurchDirectoryReady);
   return database.sort((a, b) => (
     `${a.continent}|${a.country}|${a.city}|${a.name}`.localeCompare(`${b.continent}|${b.country}|${b.city}|${b.name}`, 'es')
   ));
