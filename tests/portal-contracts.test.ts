@@ -11,6 +11,7 @@ import {
   filterPortalChurches,
   filterPortalRegions,
   findPortalCountry,
+  isAssignablePortalChurch,
   listPortalCities,
   listPortalCountries,
 } from '../src/lib/portalGeography.ts';
@@ -40,6 +41,8 @@ test('filtra país, región e iglesia en jerarquía sin duplicar países', () =>
     { id: 'c1', region_id: 'r1', country: 'colombia', city: 'Medellín', name: 'Maná Medellín' },
     { id: 'c2', region_id: 'r2', country: 'France', city: 'París', name: 'Maná París' },
     { id: 'c3', region_id: 'r1', country: 'CO', city: 'medellin', name: 'Maná Centro' },
+    { id: 'c4', region_id: 'r1', country: 'Colombia', city: '', name: 'No Asisto A Ninguna' },
+    { id: 'c5', region_id: 'r1', country: 'Colombia', city: 'Envigado', name: 'Maná Inactiva', lifecycle_status: 'INACTIVE' },
   ];
   assert.deepEqual(listPortalCountries(churches, regions), ['Colombia', 'Francia']);
   assert.equal(findPortalCountry('COLOMBIA', churches, regions), 'Colombia');
@@ -48,6 +51,8 @@ test('filtra país, región e iglesia en jerarquía sin duplicar países', () =>
   assert.deepEqual(filterPortalRegions(regions, { country: 'Colombia' }).map(({ id }) => id), ['r1']);
   assert.deepEqual(filterPortalChurches(churches, { country: 'Francia', regionId: 'r2' }).map(({ id }) => id), ['c2']);
   assert.deepEqual(listPortalCities(churches, { country: 'CO' }), ['Medellín']);
+  assert.equal(isAssignablePortalChurch(churches[3]), false);
+  assert.equal(isAssignablePortalChurch(churches[4]), false);
 });
 
 test('Stripe entrega neto exacto y Wompi requiere reporte de desembolso para completarlo', () => {

@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
+import { isAssignablePortalChurch } from '@lib/portalGeography';
 
 const supabaseUrl = (import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL) as string;
 const supabaseKey = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY) as string;
@@ -18,7 +19,7 @@ export const GET: APIRoute = async () => {
 
     let { data, error } = await sb
         .from('churches')
-        .select('id, name, city, country, region_id, continent, address, maps_url, lat, lng')
+        .select('id, name, city, country, region_id, continent, address, maps_url, lat, lng, lifecycle_status')
         .order('continent', { ascending: true, nullsFirst: false })
         .order('country', { ascending: true, nullsFirst: false })
         .order('city', { ascending: true, nullsFirst: false })
@@ -59,7 +60,7 @@ export const GET: APIRoute = async () => {
         });
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify((data || []).filter(isAssignablePortalChurch)), {
         status: 200,
         headers: {
             'Content-Type': 'application/json',

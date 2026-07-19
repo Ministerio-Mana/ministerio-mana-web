@@ -14,7 +14,16 @@ export type PortalChurchRecord = PortalCountryRecord & {
   region_id?: string | null;
   city?: string | null;
   name?: string | null;
+  lifecycle_status?: string | null;
 };
+
+const NON_CHURCH_DIRECTORY_NAMES = new Set([
+  'ninguna',
+  'no asisto a ninguna',
+  'no church',
+  'none',
+  'sin iglesia',
+]);
 
 const PORTAL_COUNTRY_ALIASES: Readonly<Record<string, { key: string; label: string }>> = Object.freeze({
   au: { key: 'australia', label: 'Australia' },
@@ -98,11 +107,22 @@ export function filterPortalChurches(
   const regionId = String(params.regionId || '').trim();
   const allowed = new Set((params.allowedRegionIds || []).filter(Boolean));
   return churches.filter((church) => {
+    if (!isAssignablePortalChurch(church)) return false;
     if (countryKey && normalizePortalCountryKey(church?.country) !== countryKey) return false;
     if (regionId && String(church?.region_id || '') !== regionId) return false;
     if (allowed.size && !allowed.has(String(church?.region_id || ''))) return false;
     return true;
   });
+}
+
+export function isOfficialPortalChurch(church?: PortalChurchRecord | null): boolean {
+  const name = normalizeTerritoryKey(church?.name).replace(/\s+/g, ' ');
+  return Boolean(name) && !NON_CHURCH_DIRECTORY_NAMES.has(name);
+}
+
+export function isAssignablePortalChurch(church?: PortalChurchRecord | null): boolean {
+  return isOfficialPortalChurch(church)
+    && String(church?.lifecycle_status || '').toUpperCase() !== 'INACTIVE';
 }
 
 export function listPortalCities(
