@@ -62,6 +62,10 @@ function coordinate(value: unknown, min: number, max: number): number | null {
   return Math.round(parsed * 1_000_000) / 1_000_000;
 }
 
+export function hasValidChurchCoordinates(lat: unknown, lng: unknown): boolean {
+  return coordinate(lat, -90, 90) !== null && coordinate(lng, -180, 180) !== null;
+}
+
 export function canCreateChurch(access: Pick<PortalChurchAccessContext, 'role' | 'isPasswordSession'>): boolean {
   return !access.isPasswordSession && canCreateChurchDirectory(access.role);
 }

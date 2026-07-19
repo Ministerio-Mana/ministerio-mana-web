@@ -13,8 +13,11 @@ import {
   canCreateChurch,
   canEditChurch,
   extractCoordinatesFromMapsUrl,
+  hasValidChurchCoordinates,
   normalizeChurchManagementInput,
 } from '../src/lib/churchManagement.ts';
+import { normalizePublicChurchDirectoryItem } from '../src/lib/churchDirectoryItem.ts';
+import { buildSafeChurchMapsUrl } from '../src/lib/mapsUrl.ts';
 import { canCreateRole } from '../src/lib/portalRbac.ts';
 import { isChurchScopeRowAllowed } from '../src/lib/churchScopePolicy.ts';
 
@@ -124,6 +127,27 @@ test('normaliza los datos oficiales y protege el mapa sin coordenadas', () => {
   assert.equal(input.kind, 'CHURCH');
   assert.equal(input.status, 'ACTIVE');
   assert.equal(input.show_on_map, false);
+  assert.equal(hasValidChurchCoordinates('', ''), false);
+  assert.equal(hasValidChurchCoordinates(null, undefined), false);
+  assert.equal(hasValidChurchCoordinates('6.244203', '-75.581212'), true);
+});
+
+test('el directorio no convierte coordenadas vacías en el punto 0,0', () => {
+  const church = normalizePublicChurchDirectoryItem({
+    name: 'Ministerio Maná Virtual',
+    country: 'Australia',
+    lat: null,
+    lng: null,
+    show_on_map: true,
+  });
+
+  assert.equal(church.lat, null);
+  assert.equal(church.lng, null);
+  assert.equal(church.show_on_map, false);
+  assert.equal(
+    buildSafeChurchMapsUrl({ lat: null, lng: null, city: 'Medellín', country: 'Colombia' }),
+    'https://www.google.com/maps/search/?api=1&query=Medell%C3%ADn%2C%20Colombia',
+  );
 });
 
 test('detecta coordenadas válidas desde enlaces de Google Maps', () => {
