@@ -202,7 +202,7 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsLogic, /body: JSON\.stringify\(\{ id: savedEvent\.id, status: requestedStatus \}\)/);
   assert.match(eventsLogic, /retainSavedEventForCorrection\(savedEvent, \{ asDraft: stageProtectedPublication \}\)/);
   assert.match(eventsLogic, /option\[selected\][\s\S]*?removeAttribute\('selected'\)/);
-  assert.match(eventsView, /#event-modal \.event-context-help \[role="tooltip"\][\s\S]*?max-width: calc\(100vw - \(2 \* var\(--space-2\)\)\)/);
+  assert.match(eventsView, /@media \(max-width: 1279px\)[\s\S]*?#event-modal \.event-context-help \[role="tooltip"\][\s\S]*?width: min\(28rem, calc\(100vw - \(2 \* var\(--space-2\)\)\)\)[\s\S]*?transform: translate\(-50%, 4px\)/);
   assert.match(eventsLogic, /id="btn-retry-events" class="mt-4 min-h-11/);
   assert.match(eventsApi, /Selecciona el país del evento nacional/);
   assert.match(eventsApi, /Selecciona una región para el evento regional/);
