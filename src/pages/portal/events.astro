@@ -1340,26 +1340,28 @@ import Sidebar from '@components/portal/Sidebar.astro';
       font-size: 0.875rem;
     }
 
-    @media (max-width: 640px) {
-      .event-choice-options {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
+    @media (max-width: 1279px) {
       #event-modal .event-context-help [role="tooltip"] {
         box-sizing: border-box;
         position: fixed;
         top: auto;
-        right: var(--space-2);
+        right: auto;
         bottom: var(--space-2);
-        left: var(--space-2);
-        width: auto;
+        left: 50%;
+        width: min(28rem, calc(100vw - (2 * var(--space-2))));
         max-width: calc(100vw - (2 * var(--space-2)));
-        transform: translateY(4px);
+        transform: translate(-50%, 4px);
       }
 
       #event-modal .event-context-help:hover [role="tooltip"],
       #event-modal .event-context-help:focus-within [role="tooltip"] {
-        transform: translateY(0);
+        transform: translate(-50%, 0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .event-choice-options {
+        grid-template-columns: minmax(0, 1fr);
       }
 
       .event-required-fields,
