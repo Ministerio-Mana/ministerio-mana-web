@@ -18,7 +18,6 @@ function databaseRow(value: Record<string, any>, index: number): PublicChurchDir
       phone: value.contact_phone,
     },
   }, index);
-  row.continent = text(value.continent) || 'América';
   return row;
 }
 
