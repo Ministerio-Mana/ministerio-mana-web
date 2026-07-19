@@ -364,11 +364,12 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
 });
 
 test('usuarios protege creación, roles y alcances financieros', async () => {
-  const [usersView, usersLogic, createUserApi, portalStyles] = await Promise.all([
+  const [usersView, usersLogic, createUserApi, portalStyles, churchCatalogApi] = await Promise.all([
     readSource('src/pages/portal/users.astro'),
     readSource('src/scripts/portal-users.js'),
     readSource('src/pages/api/portal/admin/users/create.ts'),
     readSource('src/styles/portal.css'),
+    readSource('src/pages/api/portal/churches/index.ts'),
   ]);
 
   assert.match(usersView, /id="btn-open-create-user" type="button"[^>]*min-h-11/);
@@ -420,6 +421,7 @@ test('usuarios protege creación, roles y alcances financieros', async () => {
   assert.match(createUserApi, /role: isFinanceOnboarding && !financeAssignmentCreated \? 'user' : targetRole/);
   assert.match(portalStyles, /\.portal-shell \.portal-responsive-table \[data-action\] \{\s*min-height: 44px;/);
   assert.match(portalStyles, /@media \(max-width: 639px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(churchCatalogApi, /Cache-Control': 'private, no-store, max-age=0'/);
 });
 
 test('regiones protege jerarquía territorial, edición y tablas móviles', async () => {
