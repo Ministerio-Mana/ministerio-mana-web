@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { hasEventLandingContent, normalizeEventLandingSettings } from '../src/lib/eventLanding.ts';
 
@@ -43,4 +44,9 @@ test('limita cada bloque y reconoce una landing vacía', () => {
     frequently_asked_questions: '',
     change_policy: '',
   });
+});
+
+test('conserva la capitalización natural de las fechas en español', () => {
+  const source = readFileSync(new URL('../src/pages/eventos/[slug].astro', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /class="[^"]*capitalize[^"]*"[^>]*>\{formattedSchedule\}/);
 });

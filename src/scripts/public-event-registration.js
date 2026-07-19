@@ -300,6 +300,7 @@ if (registrationForm) {
 
   registrationForm.addEventListener('input', (event) => {
     updateRegistrationTotal();
+    if (event.target === quantityInput) renderAttendees();
     if (event.target === contactNameInput) syncContactAttendee();
     if (event.target === contactNameInput || event.target === contactEmailInput) syncPayerContact();
   });

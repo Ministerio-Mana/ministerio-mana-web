@@ -92,6 +92,11 @@ function getLabelFromElement(el, form) {
   if (validationLabel) return validationLabel.trim();
   const ariaLabel = el.getAttribute?.('aria-label');
   if (ariaLabel) return ariaLabel.trim();
+  if (el.getAttribute?.('type') === 'radio') {
+    const groupLabel = el.closest?.('fieldset, [role="radiogroup"]')?.querySelector?.('legend');
+    const groupText = getConciseLabelText(groupLabel).replace(/\s*\*\s*$/, '').trim();
+    if (groupText) return groupText;
+  }
   const id = el.id;
   if (id && form) {
     try {
