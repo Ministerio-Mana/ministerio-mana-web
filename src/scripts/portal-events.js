@@ -2639,7 +2639,7 @@ eventForm?.addEventListener('submit', async (event) => {
                 eventsCache = eventsCache.map((item) => item.id === savedEvent.id ? savedEvent : item);
             } catch (publishError) {
                 retainSavedEventForCorrection(savedEvent, { asDraft: true });
-                showFormError(`El evento y su cobro quedaron guardados como borrador, pero ${publishError?.message || 'no se pudo publicar.'}`);
+                showFormError(`El evento y su configuración quedaron guardados como borrador, pero ${publishError?.message || 'no se pudo publicar.'}`);
                 return;
             }
         }

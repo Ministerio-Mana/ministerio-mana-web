@@ -144,7 +144,8 @@ test('gestión de eventos protege el formulario largo y mantiene controles táct
   assert.match(eventsView, /:global\(\.event-action\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar-confirm\) \{[\s\S]*?min-height: 44px;/);
   assert.match(eventsView, /:global\(\.event-calendar \.flatpickr-time input\) \{[\s\S]*?min-height: 44px;/);
-  assert.match(eventsView, /max-w-6xl overflow-clip/);
+  assert.doesNotMatch(eventsView, /max-w-6xl overflow-clip/);
+  assert.match(eventsView, /<aside[^>]*rounded-b-lg[^>]*lg:rounded-bl-none/);
   assert.match(eventsView, /<aside[^>]*>[\s\S]*?lg:sticky lg:top-6/);
   assert.match(eventsView, /id="event-preview-image-backdrop"[\s\S]*?id="event-preview-image"[^>]*object-contain/);
   assert.match(eventsView, /Nombre completo[\s\S]*?Correo[\s\S]*?Número de asistentes/);
