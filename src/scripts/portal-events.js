@@ -301,6 +301,7 @@ function syncSlugInput({ finalize = false } = {}) {
     if (!eventSlugInput) return;
     const normalized = normalizeEventSlug(eventSlugInput.value, { trimTrailing: finalize });
     const finalSlug = normalizeEventSlug(normalized);
+    const hasSavedEvent = Boolean(String(eventIdInput?.value || '').trim());
     const isPublished = String(eventStatusSelect?.value || '').toUpperCase() === 'PUBLISHED';
     const isPrivate = String(eventVisibilitySelect?.value || '').toUpperCase() === 'PRIVATE';
     if (eventSlugInput.value !== normalized) eventSlugInput.value = normalized;
@@ -308,12 +309,14 @@ function syncSlugInput({ finalize = false } = {}) {
         eventSlugHint.textContent = finalSlug
             ? isPrivate
                 ? `Identificador interno: ${finalSlug}. Los eventos privados no tienen invitación pública.`
-                : isPublished
+                : isPublished && hasSavedEvent
                 ? `Enlace final: /eventos/${finalSlug}`
+                : isPublished
+                ? `Enlace reservado: /eventos/${finalSlug}. Se activará cuando guardes el evento.`
                 : `Enlace reservado: /eventos/${finalSlug}. Estará disponible cuando publiques el evento.`
             : 'Los espacios se convierten automáticamente en guiones.';
     }
-    const publicPath = finalSlug && isPublished && !isPrivate ? `/eventos/${finalSlug}` : '';
+    const publicPath = finalSlug && hasSavedEvent && isPublished && !isPrivate ? `/eventos/${finalSlug}` : '';
     if (eventPublicLinkCopy) eventPublicLinkCopy.disabled = !publicPath;
     if (eventPublicLinkOpen) {
         eventPublicLinkOpen.href = publicPath || '#';
@@ -408,6 +411,14 @@ function setPublicLinkFeedback(message = '', tone = 'success') {
         : 'mt-2 hidden text-xs font-medium';
 }
 
+function retainSavedEventForCorrection(savedEvent, { asDraft = false } = {}) {
+    if (eventIdInput) eventIdInput.value = savedEvent?.id || '';
+    if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';
+    if (asDraft && eventStatusSelect) eventStatusSelect.value = 'DRAFT';
+    syncPublicationGuidance();
+    renderEvents();
+}
+
 async function copyPublicEventLink() {
     const slug = normalizeEventSlug(eventSlugInput?.value || '');
     if (!slug) return;
@@ -483,6 +494,20 @@ function initEventDatePickers() {
             onReady: (_dates, _value, instance) => {
                 instance.calendarContainer.classList.add('event-calendar');
                 if (instance._input) instance._input.placeholder = input.placeholder || 'Selecciona fecha y hora';
+                [
+                    [instance.prevMonthNav, 'Mes anterior'],
+                    [instance.nextMonthNav, 'Mes siguiente'],
+                ].forEach(([control, label]) => {
+                    if (!(control instanceof HTMLElement)) return;
+                    control.setAttribute('role', 'button');
+                    control.setAttribute('tabindex', '0');
+                    control.setAttribute('aria-label', label);
+                    control.addEventListener('keydown', (event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                        event.preventDefault();
+                        control.click();
+                    });
+                });
                 const confirmButton = document.createElement('button');
                 confirmButton.type = 'button';
                 confirmButton.className = 'event-calendar-confirm';
@@ -818,6 +843,7 @@ function syncAttendanceFields({ clearPhysical = false } = {}) {
     if (isOnline && clearPhysical) {
         if (eventLocationNameInput) eventLocationNameInput.value = '';
         if (eventLocationAddressInput) eventLocationAddressInput.value = '';
+        if (eventCityInput) eventCityInput.value = '';
     }
 }
 
@@ -1949,6 +1975,15 @@ function openEventModal(mode, eventData = null) {
     eventPaymentSelectionTouched = mode === 'edit';
     eventForm.reset();
     eventDatePickers.forEach((picker) => picker.clear(false));
+    if (mode === 'create') {
+        [eventScopeCountrySelect, eventRegionSelect, eventLocalRegionFilter, eventScopeCitySelect, eventChurchSelect]
+            .filter(Boolean)
+            .forEach((select) => {
+                select.querySelectorAll('option[selected]').forEach((option) => option.removeAttribute('selected'));
+                select.value = '';
+            });
+        eventForm.querySelectorAll('details[open]').forEach((details) => details.removeAttribute('open'));
+    }
     eventSlugManuallyEdited = Boolean(eventData?.slug);
     showFormError();
     if (eventIdInput) eventIdInput.value = eventData?.id || '';
@@ -2347,10 +2382,12 @@ eventInvitationImageDropzone?.addEventListener('drop', (event) => {
 });
 eventForm?.addEventListener('input', () => {
     eventFormDirty = true;
+    if (!eventFormError?.classList.contains('hidden')) showFormError();
     updateEventPreview();
 });
 eventForm?.addEventListener('change', () => {
     eventFormDirty = true;
+    if (!eventFormError?.classList.contains('hidden')) showFormError();
     updateEventPreview();
 });
 
@@ -2415,6 +2452,7 @@ eventForm?.addEventListener('submit', async (event) => {
         if (payload.attendance_mode === 'ONLINE') {
             payload.location_name = null;
             payload.location_address = null;
+            payload.city = null;
         }
         if (eventPlatformReady) {
             ['contact_whatsapp', 'contact_whatsapp_message'].forEach((name) => {
@@ -2514,6 +2552,10 @@ eventForm?.addEventListener('submit', async (event) => {
         payload.price = parsedPrice;
         payload.currency = currency;
         payload.registration_requires_approval = registrationMode === 'INTERNAL' && Boolean(approvalField?.checked);
+        const requestedStatus = String(payload.status || 'DRAFT').toUpperCase();
+        const needsPostSaveSetup = Boolean(pendingInvitationImageFile) || eventFinanceReady;
+        const stageProtectedPublication = requestedStatus === 'PUBLISHED' && needsPostSaveSetup;
+        if (stageProtectedPublication) payload.status = 'DRAFT';
         if (
             eventFinanceReady
             && registrationMode === 'INTERNAL'
@@ -2546,7 +2588,7 @@ eventForm?.addEventListener('submit', async (event) => {
         }, REQUEST_TIMEOUT_MS, 'El guardado del evento');
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el evento.');
 
-        const savedEvent = data.event;
+        let savedEvent = data.event;
         if (eventId) {
             eventsCache = eventsCache.map((item) => item.id === eventId ? savedEvent : item);
         } else {
@@ -2561,10 +2603,10 @@ eventForm?.addEventListener('submit', async (event) => {
                     eventsCache = eventsCache.map((item) => item.id === savedEvent.id ? savedEvent : item);
                 }
             } catch (imageError) {
-                if (eventIdInput) eventIdInput.value = savedEvent.id;
-                if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';
-                renderEvents();
-                showFormError(`El evento quedó guardado, pero ${imageError?.message || 'no se pudo cargar la invitación.'}`);
+                retainSavedEventForCorrection(savedEvent, { asDraft: stageProtectedPublication });
+                showFormError(stageProtectedPublication
+                    ? `El evento quedó guardado como borrador para no publicar una invitación incompleta. ${imageError?.message || 'No se pudo cargar la imagen.'}`
+                    : `El evento quedó guardado, pero ${imageError?.message || 'no se pudo cargar la invitación.'}`);
                 return;
             }
         }
@@ -2576,10 +2618,28 @@ eventForm?.addEventListener('submit', async (event) => {
                 await saveEventPaymentOption(savedEvent.id, mode);
                 await saveManualPaymentOption(savedEvent.id);
             } catch (paymentError) {
-                if (eventIdInput) eventIdInput.value = savedEvent.id;
-                if (eventModalTitle) eventModalTitle.textContent = 'Editar evento';
-                renderEvents();
-                showFormError(`El evento quedó guardado, pero ${paymentError?.message || 'no se pudo configurar el cobro.'}`);
+                retainSavedEventForCorrection(savedEvent, { asDraft: stageProtectedPublication });
+                showFormError(stageProtectedPublication
+                    ? `El evento quedó guardado como borrador para no publicar una inscripción sin cobro. ${paymentError?.message || 'No se pudo configurar el cobro.'}`
+                    : `El evento quedó guardado, pero ${paymentError?.message || 'no se pudo configurar el cobro.'}`);
+                return;
+            }
+        }
+        if (stageProtectedPublication && savedEvent?.id) {
+            try {
+                const { res: publishRes, data: publishData } = await fetchAuthorizedJsonWithTimeout('/api/portal/events', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: savedEvent.id, status: requestedStatus }),
+                }, REQUEST_TIMEOUT_MS, 'La publicación del evento');
+                if (!publishRes.ok || !publishData.ok) {
+                    throw new Error(publishData.error || 'No se pudo publicar el evento.');
+                }
+                savedEvent = publishData.event;
+                eventsCache = eventsCache.map((item) => item.id === savedEvent.id ? savedEvent : item);
+            } catch (publishError) {
+                retainSavedEventForCorrection(savedEvent, { asDraft: true });
+                showFormError(`El evento y su configuración quedaron guardados como borrador, pero ${publishError?.message || 'no se pudo publicar.'}`);
                 return;
             }
         }
