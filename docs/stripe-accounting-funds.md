@@ -57,6 +57,7 @@ La clasificación se aplica a Checkouts creados después del despliegue. Los pag
 El endpoint `POST /api/internal/stripe-accounting` falla cerrado y solo existe cuando producción configura `STRIPE_ACCOUNTING_MIGRATION_SECRET`. Acepta un Bearer token y las acciones `status`, `seed_catalog`, `payment_intents`, `charges` y `subscriptions`.
 
 - `apply` es `false` salvo que se envíe literalmente `true`.
+- `seed_catalog` acepta `exclude_fund_codes` para omitir fondos sintéticos o administrativos identificados durante el dry-run.
 - Cada página procesa máximo 10 objetos y entrega `next_cursor`.
 - Solo se modifican PaymentIntents o Charges exitosos.
 - Un objeto con `mana_schema=mana_fund_v1` y `fund_code` se omite.
