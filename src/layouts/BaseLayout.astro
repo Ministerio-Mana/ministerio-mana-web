@@ -7,7 +7,6 @@ import '../styles/global.css';
 import '../styles/portal.css';
 import appModalScript from '../scripts/app-modal.js?url';
 import devotionalFooterPlayerScript from '../scripts/devotional-footer-player.js?url';
-import vercelSpeedInsightsScript from '../scripts/vercel-speed-insights.js?url';
 
 const {
   title,
@@ -155,6 +154,8 @@ if (supabaseUrl) {
         window.history.replaceState(null, '', '#main-content');
       });
     </script>
-    <script type="module" src={vercelSpeedInsightsScript} nonce={cspNonce}></script>
+    <script type="module" nonce={cspNonce}>
+      import '@scripts/vercel-speed-insights.js';
+    </script>
   </body>
 </html>
