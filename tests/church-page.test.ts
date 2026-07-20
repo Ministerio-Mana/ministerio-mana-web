@@ -105,6 +105,13 @@ test('solo publica páginas de iglesias activas y visibles en el directorio', ()
   assert.equal(canPublishChurchPageForDirectory({ id: 'legacy', name: 'Maná Legacy' }), true);
 });
 
+test('recargar no convierte una página guardada en un borrador pendiente', () => {
+  const source = readFileSync(fileURLToPath(new URL('../src/scripts/portal-church-page.js', import.meta.url)), 'utf8');
+  assert.match(source, /if \(!key \|\| !state\.page \|\| !state\.dirty\) return;/);
+  assert.match(source, /JSON\.stringify\(localDraft\) !== JSON\.stringify\(normalizedServerPage\)/);
+  assert.match(source, /if \(localDraft && !hasLocalChanges\) clearLocalDraft\(\);/);
+});
+
 test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {
   assert.equal(canCreateRole('national_pastor', 'regional_pastor'), true);
   assert.equal(canCreateRole('regional_pastor', 'pastor'), true);

@@ -220,7 +220,7 @@ function draftKey() {
 
 function saveLocalDraft() {
   const key = draftKey();
-  if (!key || !state.page) return;
+  if (!key || !state.page || !state.dirty) return;
   try { sessionStorage.setItem(key, JSON.stringify({ page: state.page, ts: Date.now() })); } catch {}
 }
 
@@ -755,9 +755,12 @@ function selectChurch(churchId) {
   state.church = state.churches.find((church) => church.id === churchId) || state.churches[0] || null;
   if (!state.church) return;
   const serverPage = state.pages.find((page) => page.church_id === state.church.id);
+  const normalizedServerPage = normalizePage(serverPage || null, state.church);
   const localDraft = readLocalDraft(state.church);
-  state.page = localDraft || normalizePage(serverPage || null, state.church);
-  state.dirty = Boolean(localDraft);
+  const hasLocalChanges = Boolean(localDraft && JSON.stringify(localDraft) !== JSON.stringify(normalizedServerPage));
+  state.page = hasLocalChanges ? localDraft : normalizedServerPage;
+  state.dirty = hasLocalChanges;
+  if (localDraft && !hasLocalChanges) clearLocalDraft();
   state.media = [];
   if (el.mediaSearch) el.mediaSearch.value = '';
   if (el.saveStatus) {
