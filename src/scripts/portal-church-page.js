@@ -28,6 +28,7 @@ const state = {
     regions: [],
     creating: false,
     busy: false,
+    deleteArmedChurchId: '',
   },
 };
 
@@ -368,6 +369,7 @@ function directoryScopeLabel() {
 }
 
 function clearDirectoryForm() {
+  state.management.deleteArmedChurchId = '';
   el.directoryForm?.reset();
   renderDirectoryCountries(state.management.capabilities.fixed_country || '');
   renderDirectoryRegions('');
@@ -419,8 +421,13 @@ function populateDirectoryForm() {
     && church.lifecycle_status === 'INACTIVE'
     && church.is_public === false
     && church.show_on_map === false;
+  const deleteArmed = state.management.deleteArmedChurchId === church.id;
   el.directoryDeleteQa?.classList.toggle('hidden', !canDeleteQa);
   el.directoryDeleteQa?.classList.toggle('inline-flex', canDeleteQa);
+  if (el.directoryDeleteQa) {
+    el.directoryDeleteQa.textContent = deleteArmed ? 'Confirmar eliminación definitiva' : 'Eliminar registro de prueba QA';
+    el.directoryDeleteQa.setAttribute('aria-pressed', deleteArmed ? 'true' : 'false');
+  }
   el.directoryCancel?.classList.add('hidden');
   el.directoryCancel?.classList.remove('inline-flex');
   updateMapAvailability();
@@ -467,8 +474,16 @@ function setDirectoryBusy(busy) {
 async function deleteQaChurch() {
   const church = state.church;
   if (!church || state.management.busy || !state.management.capabilities.can_delete_qa) return;
-  const confirmed = window.confirm(`Eliminar definitivamente ${church.name} y sus imágenes de prueba? Esta acción no se puede deshacer.`);
-  if (!confirmed) return;
+  if (state.management.deleteArmedChurchId !== church.id) {
+    state.management.deleteArmedChurchId = church.id;
+    if (el.directoryDeleteQa) {
+      el.directoryDeleteQa.textContent = 'Confirmar eliminación definitiva';
+      el.directoryDeleteQa.setAttribute('aria-pressed', 'true');
+      el.directoryDeleteQa.focus();
+    }
+    showAlert(`Confirma una vez más para eliminar definitivamente ${church.name} y todas sus imágenes de prueba.`, 'error');
+    return;
+  }
   setDirectoryBusy(true);
   try {
     const payload = await fetchJson(MANAGEMENT_URL, {
@@ -495,6 +510,8 @@ async function deleteQaChurch() {
     }
     showAlert(`Prueba eliminada por completo. También se eliminaron ${Number(payload.deleted_media || 0)} imágenes de su biblioteca.`, 'success');
   } catch (error) {
+    state.management.deleteArmedChurchId = '';
+    populateDirectoryForm();
     showAlert(error.message || 'No se pudo eliminar la prueba QA.', 'error');
   } finally {
     setDirectoryBusy(false);
@@ -724,6 +741,7 @@ function populateForm() {
 
 function selectChurch(churchId) {
   if (state.page) saveLocalDraft();
+  if (state.church?.id !== churchId) state.management.deleteArmedChurchId = '';
   state.church = state.churches.find((church) => church.id === churchId) || state.churches[0] || null;
   if (!state.church) return;
   const serverPage = state.pages.find((page) => page.church_id === state.church.id);
