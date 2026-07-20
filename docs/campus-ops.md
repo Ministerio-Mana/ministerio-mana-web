@@ -40,6 +40,34 @@ Desde el portal, el donante puede:
 - Cancelar cobros futuros
 - Abrir el portal de Stripe para metodo de pago
 
+## Pushpay
+
+Cada misionero tiene un enlace corto oficial de Pushpay que redirige a un fondo
+distinto y bloqueado. En la tarjeta individual, la alternativa `Donar con
+Pushpay` aparece solamente cuando la persona elige USD; Wompi/COP y Stripe/USD
+mantienen su flujo actual sin cambios. El enlace se abre en una pestaña nueva
+para que Pushpay gestione monto, recurrencia, identidad y pago en su entorno
+seguro.
+
+No se carga el fragmento genérico de Embedded Giving recibido inicialmente:
+los seis fragmentos usan el mismo `handle` y el mismo `wgc`, por lo que no
+evidencian el fondo de cada misionero. Tampoco se incrustan los enlaces cortos
+en un `iframe`, porque Pushpay responde con `X-Frame-Options: SAMEORIGIN`.
+
+Esta fase conserva la separación contable dentro de Pushpay, pero no afirma que
+un pago completado allí haya quedado registrado en el Portal Maná. Para
+conciliar pagos, donantes y recurrencias en el Portal se requiere el acceso de
+lectura a Giving API, un webhook admitido por el plan o una importación
+periódica de reportes. No se crea una donación local solo por abrir el enlace.
+
+Los enlaces recibidos bloquean correctamente el fondo financiero de cada
+misionero. Sin embargo, el formulario de Pushpay también muestra el campo
+opcional `Socios de la Gran Comisión` sin un valor preseleccionado. El
+administrador de Pushpay debe ocultarlo en estos fondos o entregarlo
+preseleccionado y bloqueado con el mismo misionero para impedir reportes
+contradictorios. Ese campo auxiliar no cambia el fondo financiero bloqueado,
+pero no debe usarse como fuente canónica hasta corregirlo.
+
 ## Wompi
 
 Las siembras mensuales en COP empiezan con un pago inicial en Wompi. Si el pago

@@ -5,9 +5,13 @@ interface Props {
   missionaryName: string;
   slug: string;
   country?: string;
+  pushpayUrl?: string;
 }
 
-const { slug, missionaryName, country = 'CO' } = Astro.props;
+const { slug, missionaryName, country = 'CO', pushpayUrl: rawPushpayUrl } = Astro.props;
+const pushpayUrl = /^https:\/\/ppay\.co\/[A-Za-z0-9]+$/.test(String(rawPushpayUrl || ''))
+  ? rawPushpayUrl
+  : undefined;
 const initialCurrency = String(country).toUpperCase() === 'CO'
   ? {
       code: 'COP',
@@ -160,6 +164,32 @@ const donorDocumentNumberId = `campus-document-number-${slug}`;
          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
          Pago seguro vía <span class="provider-name text-gray-500 font-bold">{initialCurrency.provider}</span>
       </p>
+      {pushpayUrl && (
+        <div
+          class:list={[
+            'pushpay-option mt-4 border-t border-[#001B3A]/10 pt-4 text-center',
+            initialCurrency.code !== 'USD' && 'hidden',
+          ]}
+          aria-hidden={initialCurrency.code !== 'USD' ? 'true' : 'false'}
+        >
+          <p class="font-intro text-[10px] uppercase tracking-widest text-[#001B3A]">
+            ¿Ya eres socio en Pushpay?
+          </p>
+          <p class="mt-2 text-[10px] font-intro-reg leading-relaxed text-[#001B3A]/65">
+            Opción para aportes en Estados Unidos. El fondo de {missionaryName} queda fijado al abrir Pushpay.
+          </p>
+          <a
+            class="pushpay-link mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border-2 border-[#001B3A] bg-white px-4 py-2 font-intro text-[10px] uppercase tracking-widest text-[#001B3A] transition-colors hover:border-brand-teal hover:bg-brand-teal/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal"
+            href={pushpayUrl}
+            target="_blank"
+            rel="noopener noreferrer external"
+            aria-label={`Donar al fondo de ${missionaryName} con Pushpay; se abre en una pestaña nueva`}
+          >
+            Donar con Pushpay
+            <span aria-hidden="true" class="ml-2 text-sm">↗</span>
+          </a>
+        </div>
+      )}
       <p class="mt-2 text-center text-[10px] font-intro-reg text-gray-400">
         Al donar aceptas los <a href="/donaciones/terminos-suscripciones" class="inline-flex min-h-11 items-center font-bold text-[#001B3A] underline decoration-brand-teal/60 underline-offset-2">términos de donaciones y suscripciones</a>.
       </p>
