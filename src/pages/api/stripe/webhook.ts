@@ -41,6 +41,7 @@ import {
 import { upsertCampusDonationAllocations } from '@lib/campusDonationAllocations';
 import { isEventPaymentReference, processEventProviderPayment } from '@lib/eventFinance';
 import { resolveWebhookFailureTransition } from '@lib/paymentReliability';
+import { sanitizeStripeMetadata } from '@lib/stripeAccounting';
 
 export const prerender = false;
 
@@ -50,6 +51,44 @@ function env(key: string): string | undefined {
 
 function hasWhatsappProvider(): boolean {
   return Boolean(env('WHATSAPP_WEBHOOK_URL'));
+}
+
+function getInvoiceAccountingMetadata(invoice: Stripe.Invoice): Record<string, string> {
+  const raw = invoice as any;
+  const candidates = [
+    raw?.parent?.subscription_details?.metadata,
+    raw?.subscription_details?.metadata,
+    raw?.lines?.data?.find((line: any) => line?.metadata?.mana_schema)?.metadata,
+  ];
+  const selected = candidates.find((metadata) => metadata?.mana_schema === 'mana_fund_v1');
+  return sanitizeStripeMetadata(selected || {});
+}
+
+async function syncInvoiceAccountingToPaymentObjects(
+  stripe: ReturnType<typeof getStripeClient>,
+  invoice: Stripe.Invoice,
+): Promise<void> {
+  const metadata = getInvoiceAccountingMetadata(invoice);
+  if (!metadata.fund_code) return;
+  const description = `Ministerio Maná · ${metadata.fund_label || metadata.fund_code}`.slice(0, 180);
+  const paymentIntentId = invoice.payment_intent ? String(invoice.payment_intent) : '';
+  let chargeId = String((invoice as any).charge || '');
+
+  try {
+    if (paymentIntentId) {
+      const paymentIntent = await stripe.paymentIntents.update(paymentIntentId, { description, metadata });
+      if (!chargeId && paymentIntent.latest_charge) chargeId = String(paymentIntent.latest_charge);
+    }
+    if (chargeId) {
+      await stripe.charges.update(chargeId, { description, metadata });
+    }
+  } catch (error) {
+    console.error('[stripe.webhook] recurring accounting sync failed', {
+      invoiceId: invoice.id,
+      fundCode: metadata.fund_code,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 async function maybeSendWhatsappPaymentReceived(params: {
@@ -133,6 +172,9 @@ async function processEvent(event: Stripe.Event): Promise<void> {
         currency: session.currency,
         customer_email: session.customer_details?.email ?? session.customer_email,
         payment_status: session.payment_status,
+        fund_code: session.metadata?.fund_code,
+        fund_label: session.metadata?.fund_label,
+        payment_domain: session.metadata?.payment_domain,
       });
 
       const eventPaymentReference = session.metadata?.event_payment_reference;
@@ -310,6 +352,7 @@ async function processEvent(event: Stripe.Event): Promise<void> {
     }
     case 'invoice.paid': {
       const invoice = event.data.object as Stripe.Invoice;
+      await syncInvoiceAccountingToPaymentObjects(stripe, invoice);
       const subscriptionId = invoice.subscription ? String(invoice.subscription) : null;
       if (!subscriptionId) break;
       const plan = await getPlanByProviderSubscription(subscriptionId);
@@ -516,6 +559,7 @@ async function processEvent(event: Stripe.Event): Promise<void> {
     }
     case 'invoice.payment_failed': {
       const invoice = event.data.object as Stripe.Invoice;
+      await syncInvoiceAccountingToPaymentObjects(stripe, invoice);
       const subscriptionId = invoice.subscription ? String(invoice.subscription) : null;
       if (!subscriptionId) break;
       const plan = await getPlanByProviderSubscription(subscriptionId);
@@ -569,6 +613,9 @@ async function processEvent(event: Stripe.Event): Promise<void> {
         amount: intent.amount_received,
         currency: intent.currency,
         customer: intent.customer,
+        fund_code: intent.metadata?.fund_code,
+        fund_label: intent.metadata?.fund_label,
+        payment_domain: intent.metadata?.payment_domain,
         charges: intent.charges?.data?.map((charge) => ({
           id: charge.id,
           status: charge.status,

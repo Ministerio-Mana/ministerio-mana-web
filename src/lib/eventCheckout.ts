@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { resolveBaseUrl } from '@lib/url';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
+import { resolveEventStripeAccounting } from '@lib/stripeAccounting';
 import { buildEventPaymentReference, createEventPaymentId } from '@lib/eventFinance';
 import {
   getRequiredEventProviderCurrency,
@@ -196,10 +197,15 @@ export async function createEventCheckout(params: {
       const expiresAt = Number.isFinite(expiry)
         ? Math.floor(expiry / 1000)
         : Math.floor(Date.now() / 1000) + 30 * 60;
+      const accounting = resolveEventStripeAccounting({
+        eventId: event.id,
+        eventTitle: event.title,
+      });
       const session = await createStripeDonationSession({
         amountUsd: amount,
         currency,
         description: `Inscripción · ${String(event.title || 'Evento').slice(0, 100)}`,
+        accounting,
         successUrl: `${returnBase}?payment=success&reference=${encodeURIComponent(reference)}&session_id={CHECKOUT_SESSION_ID}`,
         cancelUrl: `${returnBase}?payment=cancelled&reference=${encodeURIComponent(reference)}`,
         customerEmail: registration.contact_email || undefined,
@@ -209,7 +215,14 @@ export async function createEventCheckout(params: {
         expiresAt,
         metadata: {
           payment_domain: 'EVENT',
+          fund_code: accounting.fundCode,
           event_id: event.id,
+          event_name: String(event.title || 'Evento').slice(0, 120),
+          event_slug: String(event.slug || ''),
+          event_scope: String(event.scope || ''),
+          church_id: String(event.church_id || ''),
+          region_id: String(event.region_id || ''),
+          country: String(event.country || ''),
           event_registration_id: registration.id,
           event_payment_id: paymentId,
           event_payment_reference: reference,

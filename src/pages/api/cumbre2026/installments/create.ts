@@ -14,9 +14,11 @@ import {
   updatePaymentPlan,
 } from '@lib/cumbreStore';
 import { createStripeDonationSession, createStripeInstallmentSession } from '@lib/stripe';
+import { resolveCumbreStripeAccounting } from '@lib/stripeAccounting';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 
 export const prerender = false;
+const CUMBRE_STRIPE_ACCOUNTING = resolveCumbreStripeAccounting();
 
 function env(key: string): string | undefined {
   return import.meta.env?.[key] ?? process.env?.[key];
@@ -147,11 +149,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           amount: schedule.installmentAmount,
           currency: 'USD',
           description: 'Cumbre Mundial 2026 - Cuotas',
+          accounting: CUMBRE_STRIPE_ACCOUNTING,
           interval,
           intervalCount,
           successUrl: statusUrl,
           cancelUrl: statusUrl,
           metadata: {
+            payment_domain: 'EVENT',
+            fund_code: CUMBRE_STRIPE_ACCOUNTING.fundCode,
             cumbre_booking_id: bookingId,
             cumbre_plan_id: plan.id,
             cumbre_frequency: frequency,
@@ -197,10 +202,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
           amountUsd: firstInstallment.amount,
           currency: 'USD',
           description: 'Cumbre Mundial 2026 - Cuota 1',
+          accounting: CUMBRE_STRIPE_ACCOUNTING,
           successUrl: statusUrl,
           cancelUrl: statusUrl,
           customerEmail: booking.contact_email || undefined,
           metadata: {
+            payment_domain: 'EVENT',
+            fund_code: CUMBRE_STRIPE_ACCOUNTING.fundCode,
             cumbre_booking_id: bookingId,
             cumbre_plan_id: plan.id,
             cumbre_installment_id: installmentRow?.id || '',

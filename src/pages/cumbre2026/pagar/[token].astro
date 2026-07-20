@@ -3,11 +3,13 @@ import CumbreLayout from '@components/cumbre2026/CumbreLayout.astro';
 import { buildInstallmentReference } from '@lib/cumbre2026';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
+import { resolveCumbreStripeAccounting } from '@lib/stripeAccounting';
 import { resolveBaseUrl } from '@lib/url';
 import { getInstallmentByLinkToken, listActivePendingPayments, recordPayment, updateInstallment } from '@lib/cumbreStore';
 
 const token = Astro.params.token ?? '';
 const baseUrl = resolveBaseUrl(Astro.request);
+const cumbreStripeAccounting = resolveCumbreStripeAccounting();
 
 const formatCurrency = (amount: number, currency: string) => {
   if (currency === 'COP') {
@@ -85,10 +87,13 @@ if (token) {
             amountUsd: amount,
             currency: 'USD',
             description,
+            accounting: cumbreStripeAccounting,
             successUrl: statusUrl,
             cancelUrl: statusUrl,
             customerEmail: booking.contact_email || undefined,
             metadata: {
+              payment_domain: 'EVENT',
+              fund_code: cumbreStripeAccounting.fundCode,
               cumbre_booking_id: booking.id,
               cumbre_plan_id: plan.id,
               cumbre_installment_id: installment.id,
