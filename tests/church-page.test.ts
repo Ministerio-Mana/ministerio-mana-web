@@ -112,6 +112,14 @@ test('recargar no convierte una página guardada en un borrador pendiente', () =
   assert.match(source, /if \(localDraft && !hasLocalChanges\) clearLocalDraft\(\);/);
 });
 
+test('una página publicada se puede retirar desde el mismo editor', () => {
+  const script = readFileSync(fileURLToPath(new URL('../src/scripts/portal-church-page.js', import.meta.url)), 'utf8');
+  const page = readFileSync(fileURLToPath(new URL('../src/pages/portal/church-page.astro', import.meta.url)), 'utf8');
+  assert.match(page, /id="church-page-unpublish"[^>]*>.*Retirar publicación/);
+  assert.match(script, /action: 'unpublish'/);
+  assert.match(script, /el\.unpublish\?\.addEventListener\('click', unpublishPage\)/);
+});
+
 test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {
   assert.equal(canCreateRole('national_pastor', 'regional_pastor'), true);
   assert.equal(canCreateRole('regional_pastor', 'pastor'), true);
