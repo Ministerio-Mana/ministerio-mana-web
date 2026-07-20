@@ -206,6 +206,40 @@ async function expandInvoiceMetadata(
   }
 }
 
+async function expandCheckoutEvidenceMetadata(
+  stripe: Stripe,
+  intent: Stripe.PaymentIntent,
+  metadata: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  try {
+    const sessions = await stripe.checkout.sessions.list({ payment_intent: intent.id, limit: 10 });
+    const sessionMetadata: Record<string, unknown> = {};
+    const lineItemNames: string[] = [];
+    for (const session of sessions.data) {
+      Object.assign(sessionMetadata, session.metadata || {});
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+        limit: 100,
+        expand: ['data.price.product'],
+      });
+      for (const item of lineItems.data) {
+        const product = item.price?.product;
+        const productName = product && typeof product !== 'string' && !('deleted' in product)
+          ? text(product.name)
+          : '';
+        const name = productName || text(item.description);
+        if (name) lineItemNames.push(name);
+      }
+    }
+    return {
+      ...sessionMetadata,
+      ...(lineItemNames.length ? { event_name: lineItemNames.join(' · ').slice(0, 500) } : {}),
+      ...metadata,
+    };
+  } catch {
+    return metadata;
+  }
+}
+
 async function buildEvidence(params: {
   metadata: Record<string, unknown>;
   providerObjectIds: string[];
@@ -222,19 +256,31 @@ async function resolveIntent(
   stripe: Stripe,
   intent: Stripe.PaymentIntent,
 ): Promise<{ resolution: HistoricalStripeResolution; metadata: Record<string, unknown> }> {
-  let metadata: Record<string, unknown> = { ...(intent.metadata || {}) };
+  const metadata: Record<string, unknown> = { ...(intent.metadata || {}) };
+  let evidenceMetadata = metadata;
   let evidence = await buildEvidence({
-    metadata,
+    metadata: evidenceMetadata,
     providerObjectIds: [intent.id, objectId(intent.latest_charge)],
   });
   let resolution = resolveHistoricalStripeAccounting(evidence);
   if (resolution.confidence === 'UNASSIGNED') {
-    metadata = await expandInvoiceMetadata(stripe, intent, metadata);
+    evidenceMetadata = await expandInvoiceMetadata(stripe, intent, evidenceMetadata);
     evidence = await buildEvidence({
-      metadata,
+      metadata: evidenceMetadata,
       providerObjectIds: [intent.id, objectId(intent.latest_charge)],
     });
     resolution = resolveHistoricalStripeAccounting(evidence);
+  }
+  if (resolution.confidence === 'UNASSIGNED') {
+    evidenceMetadata = await expandCheckoutEvidenceMetadata(stripe, intent, evidenceMetadata);
+    evidence = await buildEvidence({
+      metadata: evidenceMetadata,
+      providerObjectIds: [intent.id, objectId(intent.latest_charge)],
+    });
+    resolution = resolveHistoricalStripeAccounting(evidence);
+    if (resolution.confidence === 'EXACT_METADATA') {
+      resolution = { ...resolution, reason: `checkout_session:${resolution.reason}` };
+    }
   }
   return { resolution, metadata };
 }
