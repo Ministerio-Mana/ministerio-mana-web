@@ -2124,6 +2124,12 @@ const i18n = JSON.stringify(c.js);
     text-align: center;
   }
 
+  #muro,
+  #peticion {
+    --layout-prayer-anchor-offset: calc(var(--space-4) + var(--space-4) + var(--space-4) + var(--space-2));
+    scroll-margin-top: var(--layout-prayer-anchor-offset);
+  }
+
   [data-prayer-reveal] {
     opacity: 0;
     transform: translateY(1.35rem);
