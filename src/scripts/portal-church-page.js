@@ -94,6 +94,7 @@ const el = {
   save: document.getElementById('church-page-save'),
   publish: document.getElementById('church-page-publish'),
   publishLabel: document.getElementById('church-page-publish-label'),
+  unpublish: document.getElementById('church-page-unpublish'),
   saveStatus: document.getElementById('church-page-save-status'),
   mediaModal: document.getElementById('church-media-modal'),
   mediaClose: document.getElementById('church-media-close'),
@@ -256,7 +257,7 @@ function showAlert(message, mode = 'info') {
 
 function setBusy(busy, message = '') {
   state.busy = busy;
-  [el.save, el.publish].forEach((button) => { if (button) button.disabled = busy; });
+  [el.save, el.publish, el.unpublish].forEach((button) => { if (button) button.disabled = busy; });
   if (el.saveStatus && message) el.saveStatus.textContent = message;
 }
 
@@ -625,6 +626,10 @@ function renderStatus() {
     el.status.className = `rounded-full px-4 py-2 text-xs font-black ${published && !pending ? 'bg-emerald-100 text-emerald-800' : pending ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`;
   }
   if (el.publishLabel) el.publishLabel.textContent = published ? 'Publicar cambios' : 'Publicar';
+  if (el.unpublish) {
+    el.unpublish.classList.toggle('hidden', !published);
+    el.unpublish.classList.toggle('inline-flex', published);
+  }
   if (el.publicLink) {
     el.publicLink.href = `/iglesias/${state.page.slug}`;
     el.publicLink.classList.toggle('hidden', !published);
@@ -961,6 +966,30 @@ async function publishPage() {
   }
 }
 
+async function unpublishPage() {
+  if (!state.page || !state.church || state.busy || state.page.status !== 'PUBLISHED') return;
+  setBusy(true, 'Retirando publicación...');
+  try {
+    const payload = await fetchJson(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ church_id: state.church.id, expected_version: Number(state.page.version || 0), action: 'unpublish' }),
+    });
+    state.page = normalizePage(payload.page, state.church);
+    const index = state.pages.findIndex((page) => page.church_id === state.church.id);
+    if (index >= 0) state.pages[index] = payload.page;
+    state.dirty = false;
+    clearLocalDraft();
+    populateForm();
+    showAlert('Publicación retirada. La página dejó de estar visible y el borrador sigue disponible.', 'success');
+    if (el.saveStatus) el.saveStatus.textContent = 'Publicación retirada correctamente.';
+  } catch (error) {
+    showAlert(error.message || 'No se pudo retirar la publicación.', 'error');
+    if (el.saveStatus) el.saveStatus.textContent = 'La página sigue publicada; puedes reintentar.';
+  } finally {
+    setBusy(false);
+  }
+}
+
 function bindEvents() {
   bindSimpleField(el.name, 'display_name');
   bindSimpleField(el.tagline, 'tagline');
@@ -1082,6 +1111,7 @@ function bindEvents() {
   });
   el.form?.addEventListener('submit', (event) => { event.preventDefault(); savePage(); });
   el.publish?.addEventListener('click', publishPage);
+  el.unpublish?.addEventListener('click', unpublishPage);
   el.mediaClose?.addEventListener('click', closeMedia);
   el.mediaModal?.addEventListener('click', (event) => { if (event.target === el.mediaModal) closeMedia(); });
   el.mediaList?.addEventListener('click', (event) => {
