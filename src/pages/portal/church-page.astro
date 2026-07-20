@@ -216,7 +216,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                 </details>
               </div>
 
-              <aside class="space-y-4 xl:sticky xl:top-6">
+              <aside class="church-page-preview-rail space-y-4 xl:sticky xl:top-6">
                 <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div class="flex items-center justify-between border-b border-slate-100 px-4 py-4">
                     <div><p class="text-xs font-black uppercase tracking-[.14em] text-brand-teal">Vista previa</p><p id="church-page-preview-label" class="mt-2 text-xs text-slate-500">Esencial</p></div>
@@ -313,6 +313,9 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   .church-theme-swatch--warm { background: linear-gradient(135deg,#f7f2e7 0 55%,#9a5c28 55%); }
   :global(.church-secondary-button) { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: var(--control-min-size); padding: var(--space-1) var(--space-2); }
   :global(.church-secondary-button:disabled) { cursor: not-allowed; opacity: .5; }
+  @media (min-width: 1280px) and (max-height: 899px) {
+    .church-page-preview-rail { position: static !important; }
+  }
   .church-toggle { align-items: flex-start; color: rgb(var(--portal-control-copy)); cursor: pointer; display: grid; gap: var(--space-2); grid-template-columns: var(--control-min-size) minmax(0,1fr); min-height: var(--control-min-size); }
   .church-toggle input { accent-color: rgb(var(--mana-navy)); height: var(--space-3); margin: calc((var(--control-min-size) - var(--space-3)) / 2) auto; width: var(--space-3); }
   .church-toggle strong, .church-toggle small { display: block; }
