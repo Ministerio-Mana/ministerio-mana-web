@@ -62,7 +62,7 @@ test('el detalle público de Peticiones anuncia el diálogo y devuelve el foco',
   assert.match(logic, /trigger instanceof HTMLElement && trigger\.isConnected/);
 });
 
-test('Peticiones reserva ranuras reales y mantiene papeles accesibles', async () => {
+test('Peticiones encaja papeles en ranuras reales y mantiene las peticiones accesibles', async () => {
   const [view, logic] = await Promise.all([
     readProjectFile('src/components/PrayerWall.astro'),
     readProjectFile('src/scripts/prayer-wall.js'),
@@ -76,7 +76,11 @@ test('Peticiones reserva ranuras reales y mantiene papeles accesibles', async ()
   assert.match(view, /\.prayer-note\[data-paper-orientation="vertical"\]/);
   assert.match(view, /#muro,[\s\S]*?#peticion[\s\S]*?--layout-prayer-anchor-offset:[\s\S]*?var\(--space-4\)[\s\S]*?scroll-margin-top: var\(--layout-prayer-anchor-offset\)/);
   assert.match(view, /min-height: 2\.75rem/);
-  assert.match(view, /font-family: "Summer Loving", "Segoe Print", cursive/);
+  assert.match(view, /Grupos de papeles encajados en las juntas oscuras/);
+  assert.match(view, /class="paper-slip__back"/);
+  assert.match(view, /--note-paper-width: 3\.8rem/);
+  assert.match(view, /\.prayer-note:hover header,[\s\S]*?\.prayer-note\.is-open header[\s\S]*?opacity: 1/);
+  assert.match(view, /\.prayer-note header[\s\S]*?opacity: 0/);
 });
 
 test('el mapa público mantiene marcadores y acciones con área táctil accesible', async () => {

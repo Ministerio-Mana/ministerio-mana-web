@@ -65,13 +65,25 @@ const wallCrevices = [
   'M506 452 C574 443 650 454 732 451',
 ];
 const wallPaperSlips: Array<[number, number, number, number, number, number]> = [
-  // Estos papeles ambientan el muro sin invadir las siete ranuras reservadas
-  // para peticiones reales. La separación evita superposiciones impredecibles.
-  [76, 148, 12, 34, 6, 0], [356, 186, 10, 30, -7, 1],
-  [708, 72, 34, 10, 8, 2], [892, 112, 12, 34, -6, 0],
-  [392, 352, 38, 9, -4, 1], [842, 384, 11, 32, 7, 2],
-  [82, 540, 36, 10, -8, 0], [386, 536, 22, 13, 14, 1],
-  [852, 548, 34, 10, 6, 2],
+  // Grupos de papeles encajados en las juntas oscuras. Los vacíos deliberados
+  // de cada grupo corresponden a las ranuras que reciben peticiones reales.
+  [150, 96, 48, 17, -5, 0], [177, 103, 58, 14, 3, 1],
+  [449, 96, 52, 16, 5, 2], [481, 102, 56, 14, -4, 0],
+  [566, 96, 49, 17, 6, 3], [594, 103, 44, 14, -7, 1],
+  [698, 182, 48, 16, -5, 0], [726, 188, 58, 14, 4, 2],
+  [817, 182, 47, 17, -4, 1], [845, 188, 54, 14, 6, 0],
+  [120, 272, 51, 16, 4, 1], [150, 279, 63, 14, -5, 0],
+  [280, 272, 52, 17, 6, 2], [311, 279, 47, 14, -4, 3],
+  [498, 272, 54, 16, -5, 0], [530, 279, 48, 14, 5, 2],
+  [634, 272, 57, 17, 4, 1], [666, 279, 43, 14, -6, 0],
+  [208, 446, 48, 16, 5, 2], [297, 446, 45, 17, -5, 0],
+  [500, 446, 54, 16, -4, 1], [534, 453, 49, 14, 5, 3],
+  [662, 446, 57, 17, 4, 0], [696, 453, 46, 14, -6, 2],
+  // Algunas juntas verticales también acumulan plegarias, como en el muro real.
+  [141, 117, 16, 49, 5, 0], [88, 208, 15, 53, -4, 2],
+  [491, 310, 16, 51, 6, 1], [573, 387, 15, 49, -5, 3],
+  [76, 532, 58, 14, -7, 0], [379, 530, 48, 17, 6, 1],
+  [844, 532, 56, 14, 5, 2],
 ];
 const wallHoles = [
   [84, 73, 3], [254, 60, 2], [420, 78, 2], [602, 56, 3], [744, 78, 2], [884, 60, 2],
@@ -411,6 +423,7 @@ const i18n = JSON.stringify(c.js);
               {wallPaperSlips.map(([x, y, width, height, rotate, tone]) => (
                 <g class={`prayer-wall-sketch__paper-slip prayer-wall-sketch__paper-slip--${tone}`} transform={`translate(${x} ${y}) rotate(${rotate})`}>
                   <path class="paper-slip__shadow" d={`M2 3 L${width + 1} 1 L${width - 1} ${height + 3} L0 ${height + 2} Z`} />
+                  <path class="paper-slip__back" d={`M${width * -0.06} ${height * 0.18} L${width * 0.72} ${height * -0.06} L${width * 0.78} ${height * 0.76} L${width * 0.02} ${height * 0.92} Z`} />
                   <path class="paper-slip__sheet" d={`M0 2 C${width * 0.28} -1 ${width * 0.68} 4 ${width} 1 L${width - 2} ${height} C${width * 0.62} ${height - 2} ${width * 0.3} ${height + 3} 1 ${height} Z`} />
                   <path class="paper-slip__fold" d={`M${width * 0.24} 2 C${width * 0.34} ${height * 0.46} ${width * 0.22} ${height * 0.72} ${width * 0.08} ${height}`} />
                   <path class="paper-slip__crease" d={`M${width * 0.48} ${height * 0.38} C${width * 0.62} ${height * 0.25} ${width * 0.72} ${height * 0.45} ${width * 0.86} ${height * 0.3}`} />
@@ -563,6 +576,7 @@ const i18n = JSON.stringify(c.js);
                     {wallPaperSlips.map(([x, y, width, height, rotate, tone]) => (
                       <g class={`prayer-wall-sketch__paper-slip prayer-wall-sketch__paper-slip--${tone}`} transform={`translate(${x} ${y}) rotate(${rotate})`}>
                         <path class="paper-slip__shadow" d={`M2 3 L${width + 1} 1 L${width - 1} ${height + 3} L0 ${height + 2} Z`} />
+                        <path class="paper-slip__back" d={`M${width * -0.06} ${height * 0.18} L${width * 0.72} ${height * -0.06} L${width * 0.78} ${height * 0.76} L${width * 0.02} ${height * 0.92} Z`} />
                         <path class="paper-slip__sheet" d={`M0 2 C${width * 0.28} -1 ${width * 0.68} 4 ${width} 1 L${width - 2} ${height} C${width * 0.62} ${height - 2} ${width * 0.3} ${height + 3} 1 ${height} Z`} />
                         <path class="paper-slip__fold" d={`M${width * 0.24} 2 C${width * 0.34} ${height * 0.46} ${width * 0.22} ${height * 0.72} ${width * 0.08} ${height}`} />
                         <path class="paper-slip__crease" d={`M${width * 0.48} ${height * 0.38} C${width * 0.62} ${height * 0.25} ${width * 0.72} ${height * 0.45} ${width * 0.86} ${height * 0.3}`} />
@@ -1107,9 +1121,9 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-stage {
     background:
-      radial-gradient(circle at 18% 10%, rgba(255, 248, 229, 0.58), transparent 25rem),
-      radial-gradient(circle at 88% 86%, rgba(40, 166, 189, 0.16), transparent 18rem),
-      linear-gradient(180deg, #e6e0cf, #c3c9bd 58%, #9eaaa1);
+      radial-gradient(circle at 18% 10%, rgba(255, 244, 214, 0.68), transparent 25rem),
+      radial-gradient(circle at 88% 86%, rgba(92, 66, 35, 0.18), transparent 18rem),
+      linear-gradient(180deg, #dfcfb2, #c9b895 58%, #a99472);
     height: 42rem;
     max-height: 72svh;
     min-height: 32rem;
@@ -1164,28 +1178,28 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-sketch__wash {
-    fill: rgba(234, 227, 208, 0.54);
+    fill: rgba(222, 205, 174, 0.42);
   }
 
   .prayer-wall-sketch__stones rect {
-    fill: #d9d5c4;
-    stroke: rgba(89, 68, 32, 0.24);
-    stroke-width: 1.65;
+    fill: #cfbd9e;
+    stroke: rgba(65, 45, 25, 0.46);
+    stroke-width: 2.15;
     vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__stones rect:nth-child(4n + 2) {
-    fill: #cfd9d1;
+    fill: #ddcdae;
   }
 
   .prayer-wall-sketch__stones rect:nth-child(5n + 1) {
-    fill: #e3dbc4;
+    fill: #bca787;
   }
 
   .prayer-wall-sketch__shade path,
   .prayer-wall-sketch__hatch path {
     fill: none;
-    stroke: rgba(26, 37, 92, 0.14);
+    stroke: rgba(77, 52, 27, 0.24);
     stroke-linecap: round;
     stroke-width: 1.8;
     vector-effect: non-scaling-stroke;
@@ -1193,7 +1207,7 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-sketch__scars path {
     fill: none;
-    stroke: rgba(74, 55, 29, 0.22);
+    stroke: rgba(74, 51, 28, 0.32);
     stroke-linecap: round;
     stroke-width: 1.4;
     vector-effect: non-scaling-stroke;
@@ -1201,41 +1215,54 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-sketch__crevices path {
     fill: none;
-    stroke: rgba(56, 39, 22, 0.54);
+    stroke: rgba(45, 30, 18, 0.78);
     stroke-linecap: round;
-    stroke-width: 8.8;
-    filter: drop-shadow(0 3px 0 rgba(255, 248, 229, 0.2));
+    stroke-width: 10.5;
+    filter: drop-shadow(0 3px 0 rgba(255, 239, 203, 0.28));
     vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__paper-slip {
-    opacity: 0.86;
+    filter: drop-shadow(0 2px 2px rgba(38, 27, 17, 0.34));
+    opacity: 0.98;
   }
 
   .prayer-wall-sketch__paper-slip .paper-slip__shadow {
-    fill: rgba(38, 31, 24, 0.24);
+    fill: rgba(38, 27, 17, 0.4);
+  }
+
+  .prayer-wall-sketch__paper-slip .paper-slip__back {
+    fill: #d8d0c1;
+    stroke: rgba(72, 49, 27, 0.38);
+    stroke-linejoin: round;
+    stroke-width: 0.9;
+    vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__paper-slip .paper-slip__sheet {
-    fill: rgba(255, 250, 238, 0.9);
-    stroke: rgba(72, 54, 30, 0.32);
+    fill: #fffaf0;
+    stroke: rgba(72, 49, 27, 0.46);
     stroke-linejoin: round;
     stroke-width: 1;
     vector-effect: non-scaling-stroke;
   }
 
   .prayer-wall-sketch__paper-slip--1 .paper-slip__sheet {
-    fill: rgba(233, 238, 244, 0.86);
+    fill: #e7e3d9;
   }
 
   .prayer-wall-sketch__paper-slip--2 .paper-slip__sheet {
-    fill: rgba(245, 232, 218, 0.9);
+    fill: #e7edf2;
+  }
+
+  .prayer-wall-sketch__paper-slip--3 .paper-slip__sheet {
+    fill: #e8d97f;
   }
 
   .prayer-wall-sketch__paper-slip .paper-slip__fold,
   .prayer-wall-sketch__paper-slip .paper-slip__crease {
     fill: none;
-    stroke: rgba(32, 45, 99, 0.22);
+    stroke: rgba(72, 49, 27, 0.34);
     stroke-linecap: round;
     stroke-width: 0.9;
     vector-effect: non-scaling-stroke;
@@ -1243,7 +1270,7 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-sketch__cracks path {
     fill: none;
-    stroke: rgba(7, 17, 28, 0.28);
+    stroke: rgba(45, 30, 18, 0.46);
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-width: 2.4;
@@ -1251,7 +1278,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-wall-sketch__holes circle {
-    fill: rgba(7, 17, 28, 0.26);
+    fill: rgba(45, 30, 18, 0.46);
   }
 
   .prayer-wall-sketch__caper-bush .bush-mass {
@@ -1324,8 +1351,10 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note {
-    --note-height: 3.25rem;
-    --note-width: 6.5rem;
+    --note-height: 2.75rem;
+    --note-paper-height: 1.3rem;
+    --note-paper-width: 3.8rem;
+    --note-width: 4.4rem;
     background: transparent;
     border: 0;
     border-radius: 0;
@@ -1354,22 +1383,26 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note[data-paper-orientation="vertical"] {
-    --note-height: 4.75rem;
-    --note-width: 3.75rem;
+    --note-height: 5.25rem;
+    --note-paper-height: 4.6rem;
+    --note-paper-width: 1.45rem;
+    --note-width: 2.75rem;
   }
 
   .prayer-note::before {
-    background: rgba(32, 24, 18, 0.68);
+    background: linear-gradient(180deg, rgba(31, 20, 12, 0.88), rgba(73, 50, 27, 0.76));
     border-radius: 999px;
-    box-shadow: 0 3px 5px rgba(7, 17, 28, 0.32);
+    box-shadow:
+      0 3px 3px rgba(255, 237, 199, 0.18),
+      inset 0 2px 2px rgba(13, 8, 5, 0.34);
     content: "";
     display: block;
-    height: 0.3rem;
+    height: 0.38rem;
     left: 50%;
     position: absolute;
-    top: -0.16rem;
+    top: 50%;
     transform: translateX(-50%);
-    width: calc(100% + 0.75rem);
+    width: calc(var(--note-paper-width) + 0.7rem);
     z-index: 0;
   }
 
@@ -1389,11 +1422,11 @@ const i18n = JSON.stringify(c.js);
   .prayer-note:focus-within,
   .prayer-note.is-open {
     transform:
-      translate(-50%, -50%)
+      translate(-50%, calc(-50% - 0.12rem))
       rotate(var(--r))
       rotateX(var(--tilt-y, 0deg))
       rotateY(var(--tilt-x, 0deg))
-      scale(1.025);
+      scale(1.08);
     z-index: 4;
   }
 
@@ -1401,6 +1434,7 @@ const i18n = JSON.stringify(c.js);
   .prayer-note:focus-within .prayer-note__paper,
   .prayer-note.is-open .prayer-note__paper {
     filter: drop-shadow(0 8px 9px rgba(7, 17, 28, 0.28));
+    transform: translate(-50%, -38%);
   }
 
   .prayer-note:focus-visible {
@@ -1414,15 +1448,16 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note__pin {
-    background: linear-gradient(90deg, rgba(32, 24, 18, 0.66), rgba(32, 45, 99, 0.2));
+    background: linear-gradient(90deg, transparent, rgba(31, 20, 12, 0.72) 14% 86%, transparent);
     border-radius: 999px;
-    height: 0.12rem;
+    box-shadow: 0 2px 1px rgba(255, 235, 198, 0.2);
+    height: 0.16rem;
     left: 50%;
     position: absolute;
-    top: 0.2rem;
+    top: calc(50% - 0.02rem);
     transform: translateX(-50%);
-    width: 56%;
-    z-index: 2;
+    width: calc(var(--note-paper-width) + 0.34rem);
+    z-index: 5;
   }
 
   .prayer-note__pin::after {
@@ -1431,13 +1466,15 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note__paper {
     display: block;
-    filter: drop-shadow(0 5px 6px rgba(7, 17, 28, 0.2));
-    height: 100%;
-    inset: 0;
+    filter: drop-shadow(0 4px 4px rgba(38, 27, 17, 0.3));
+    height: var(--note-paper-height);
+    left: 50%;
     pointer-events: none;
     position: absolute;
-    transition: filter 180ms ease;
-    width: 100%;
+    top: 50%;
+    transform: translate(-50%, -20%);
+    transition: filter 180ms ease, transform 180ms ease;
+    width: var(--note-paper-width);
     z-index: 3;
   }
 
@@ -1450,9 +1487,9 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note__paper-body {
     fill: #fff8e5;
-    stroke: rgba(32, 45, 99, 0.34);
+    stroke: rgba(82, 56, 28, 0.48);
     stroke-linejoin: round;
-    stroke-width: 1.35;
+    stroke-width: 1.1;
   }
 
   .prayer-note__paper-body--back {
@@ -1472,13 +1509,13 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-note__paper-shadow {
-    fill: rgba(7, 17, 28, 0.22);
+    fill: rgba(38, 27, 17, 0.34);
   }
 
   .prayer-note__paper-fold,
   .prayer-note__paper-line {
     fill: none;
-    stroke: rgba(125, 94, 35, 0.34);
+    stroke: rgba(82, 56, 28, 0.42);
     stroke-linecap: round;
     stroke-width: 1.25;
   }
@@ -1489,38 +1526,57 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-note header {
     align-items: center;
-    background: transparent;
-    border: 0;
+    background: rgba(17, 25, 54, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    box-shadow: 0 7px 18px rgba(7, 17, 28, 0.22);
     display: flex;
-    inset: 0.45rem 0.62rem 0.38rem;
     justify-content: center;
+    left: 50%;
     margin: 0;
+    max-width: 8rem;
     min-width: 0;
-    padding: 0;
+    opacity: 0;
+    padding: var(--space-1) var(--space-2);
+    pointer-events: none;
     position: absolute;
     text-align: center;
-    z-index: 4;
+    top: calc(50% + 1.55rem);
+    transform: translate(-50%, -0.2rem);
+    transition: opacity 160ms ease, transform 160ms ease;
+    width: max-content;
+    z-index: 6;
+  }
+
+  .prayer-note:hover header,
+  .prayer-note:focus-visible header,
+  .prayer-note:focus-within header,
+  .prayer-note.is-open header {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 
   .prayer-note[data-paper-orientation="vertical"] header {
-    inset: 0.62rem 0.4rem 0.48rem;
+    top: calc(50% + 2.8rem);
+    transform: translate(-50%, -0.2rem);
+    width: max-content;
   }
 
   .prayer-note h3 {
-    color: var(--prayer-navy);
-    display: -webkit-box;
-    font-family: "Summer Loving", "Segoe Print", cursive;
-    font-size: 1.08rem;
-    font-weight: 400;
+    color: white;
+    display: block;
+    font-family: inherit;
+    font-size: 0.64rem;
+    font-weight: 800;
     letter-spacing: 0.02em;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-height: 0.92;
+    line-height: 1;
     margin: 0;
     max-width: 100%;
     overflow: hidden;
     overflow-wrap: anywhere;
+    text-overflow: ellipsis;
     text-transform: none;
+    white-space: nowrap;
   }
 
   .prayer-note small {
@@ -2291,14 +2347,18 @@ const i18n = JSON.stringify(c.js);
 
     .prayer-note {
       --note-height: 2.75rem;
-      --note-width: 5rem;
+      --note-paper-height: 1.2rem;
+      --note-paper-width: 3.35rem;
+      --note-width: 4rem;
       height: var(--note-height);
       min-height: 2.75rem;
     }
 
     .prayer-note[data-paper-orientation="vertical"] {
-      --note-height: 4rem;
-      --note-width: 3rem;
+      --note-height: 4.75rem;
+      --note-paper-height: 4.1rem;
+      --note-paper-width: 1.25rem;
+      --note-width: 2.75rem;
     }
 
     .prayer-note p {
@@ -2313,20 +2373,22 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-note header {
-      inset: 0.38rem 0.44rem 0.3rem;
+      top: calc(50% + 1.45rem);
+      width: max-content;
     }
 
     .prayer-note[data-paper-orientation="vertical"] header {
-      inset: 0.52rem 0.32rem 0.4rem;
+      top: calc(50% + 2.55rem);
+      width: max-content;
     }
 
     .prayer-note__pin {
-      top: 0.16rem;
-      width: 52%;
+      top: calc(50% - 0.02rem);
+      width: calc(var(--note-paper-width) + 0.3rem);
     }
 
     .prayer-note h3 {
-      font-size: 0.94rem;
+      font-size: 0.62rem;
       max-width: 100%;
     }
 
