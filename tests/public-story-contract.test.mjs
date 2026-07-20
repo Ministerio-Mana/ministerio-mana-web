@@ -74,6 +74,7 @@ test('Peticiones reserva ranuras reales y mantiene papeles accesibles', async ()
   assert.match(logic, /MOBILE_SLOTS\.length : DESKTOP_SLOTS\.length/);
   assert.doesNotMatch(logic, /dataset\.labelSide/);
   assert.match(view, /\.prayer-note\[data-paper-orientation="vertical"\]/);
+  assert.match(view, /#muro,[\s\S]*?#peticion[\s\S]*?--layout-prayer-anchor-offset:[\s\S]*?var\(--space-4\)[\s\S]*?scroll-margin-top: var\(--layout-prayer-anchor-offset\)/);
   assert.match(view, /min-height: 2\.75rem/);
   assert.match(view, /font-family: "Summer Loving", "Segoe Print", cursive/);
 });
