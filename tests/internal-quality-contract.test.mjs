@@ -383,6 +383,7 @@ test('eventos y contenido exponen promoción pública sin filtrar términos inte
   assert.match(contentView, /id="cms-church-promotions"/);
   assert.match(contentView, /value="promotion"/);
   assert.match(contentLogic, /page_key: 'church-promotions'/);
+  assert.match(contentLogic, /mediaFolder\.value = 'church-promotions'/);
   assert.match(contentLogic, /modalSectionKind\.value = 'promotion'/);
   assert.match(contentLogic, /function validatePromotionPayload\(payload\)/);
   assert.match(contentLogic, /La fecha final debe ser posterior a la fecha inicial/);
