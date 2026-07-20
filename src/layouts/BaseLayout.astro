@@ -7,6 +7,7 @@ import '../styles/global.css';
 import '../styles/portal.css';
 import appModalScript from '../scripts/app-modal.js?url';
 import devotionalFooterPlayerScript from '../scripts/devotional-footer-player.js?url';
+import vercelSpeedInsightsScript from '../scripts/vercel-speed-insights.js?url';
 
 const {
   title,
@@ -143,7 +144,7 @@ if (supabaseUrl) {
     )}
     {!hideFooter && <script src={devotionalFooterPlayerScript} nonce={cspNonce} defer></script>}
     <script type="module" src={appModalScript} nonce={cspNonce}></script>
-    <script>
+    <script nonce={cspNonce}>
       const skipLink = document.querySelector('.skip-link');
       const mainContent = document.getElementById('main-content');
       skipLink?.addEventListener('click', (event) => {
@@ -154,8 +155,6 @@ if (supabaseUrl) {
         window.history.replaceState(null, '', '#main-content');
       });
     </script>
-    <script>
-      import '@scripts/vercel-speed-insights.js';
-    </script>
+    <script type="module" src={vercelSpeedInsightsScript} nonce={cspNonce}></script>
   </body>
 </html>

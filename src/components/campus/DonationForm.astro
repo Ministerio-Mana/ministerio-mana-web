@@ -11,7 +11,7 @@ interface Props {
 
 const { slug, missionaryName, country = 'CO', pushpayUrl: rawPushpayUrl } = Astro.props;
 const normalizedCountry = String(country).trim().toUpperCase();
-const pushpayUrl = resolveCampusPushpayUrl(normalizedCountry, rawPushpayUrl);
+const pushpayUrl = resolveCampusPushpayUrl(rawPushpayUrl);
 const initialCurrency = normalizedCountry === 'CO'
   ? {
       code: 'COP',

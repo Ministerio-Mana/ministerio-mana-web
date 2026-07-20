@@ -44,12 +44,17 @@ Desde el portal, el donante puede:
 
 Cada misionero tiene un enlace corto oficial de Pushpay que redirige a un fondo
 distinto y bloqueado. En la tarjeta individual, la alternativa `Donar con
-Pushpay` solo se renderiza para visitas detectadas en Estados Unidos y se
-mantiene visible mientras la persona usa USD. En Colombia no se envía ese
-enlace al navegador, incluso si alguien cambia manualmente el selector a USD.
-Wompi/COP y Stripe/USD mantienen su flujo actual sin cambios. El enlace se abre
-en una pestaña nueva para que Pushpay gestione monto, recurrencia, identidad y
-pago en su entorno seguro.
+Pushpay` se mantiene oculta mientras la persona usa COP y aparece junto a
+Stripe cuando selecciona USD. Por eso, una visita de Colombia comienza solo
+con COP/Wompi, pero puede elegir voluntariamente USD y entonces ver Stripe y
+Pushpay. Una visita de Estados Unidos comienza en USD y ve ambos desde el
+inicio. El enlace se abre en una pestaña nueva para que Pushpay gestione monto,
+recurrencia, identidad y pago en su entorno seguro.
+
+Stripe y Pushpay son dos proveedores distintos aunque sus desembolsos lleguen
+a la misma cuenta bancaria de Estados Unidos. Los reportes conservan el
+proveedor de origen para que Finanzas pueda conciliarlos sin mezclar
+transacciones.
 
 No se carga el fragmento genérico de Embedded Giving recibido inicialmente:
 los seis fragmentos usan el mismo `handle` y el mismo `wgc`, por lo que no

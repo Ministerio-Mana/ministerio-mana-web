@@ -18,6 +18,7 @@ const SCRIPT_SRC_BASE = [
   'https://js.stripe.com',
   'https://checkout.wompi.co',
   'https://unpkg.com',
+  'https://va.vercel-scripts.com',
   'https://www.youtube.com',
   'https://s.ytimg.com',
 ];
@@ -259,6 +260,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     'https://checkout.stripe.com',
     'https://checkout.wompi.co',
     'https://js.stripe.com',
+    'https://vitals.vercel-insights.com',
     'https://www.youtube.com',
     'https://www.youtube-nocookie.com',
     'https://*.googlevideo.com',
@@ -270,6 +272,7 @@ const appMiddleware: MiddlewareHandler = async (context, next) => {
     'https://*.tile.openstreetmap.org',
     'https://*.basemaps.cartocdn.com',
     'https://i.ytimg.com',
+    'https://www.transparenttextures.com',
   ];
   const frameSrc = [...FRAME_SRC];
   if (IS_VERCEL_PREVIEW) {

@@ -41,12 +41,9 @@ test('Pushpay es una alternativa USD accesible y no reemplaza el checkout existe
   assert.doesNotMatch(formSource, /embedded\.pushpay\.com/);
 });
 
-test('solo Estados Unidos puede renderizar la alternativa Pushpay', () => {
+test('Pushpay se habilita por USD y solo acepta enlaces oficiales', () => {
   const arielPushpayUrl = EXPECTED_PUSHPAY_LINKS.get('ariel-guzman');
 
-  assert.equal(resolveCampusPushpayUrl('US', arielPushpayUrl), arielPushpayUrl);
-  assert.equal(resolveCampusPushpayUrl('us', arielPushpayUrl), arielPushpayUrl);
-  assert.equal(resolveCampusPushpayUrl('CO', arielPushpayUrl), undefined);
-  assert.equal(resolveCampusPushpayUrl('CA', arielPushpayUrl), undefined);
-  assert.equal(resolveCampusPushpayUrl('US', 'https://example.com/falso'), undefined);
+  assert.equal(resolveCampusPushpayUrl(arielPushpayUrl), arielPushpayUrl);
+  assert.equal(resolveCampusPushpayUrl('https://example.com/falso'), undefined);
 });
