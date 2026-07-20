@@ -1903,6 +1903,7 @@ async function openChurchPromotions() {
       showAlert('Se creó el espacio de promociones. Agrega la primera pieza y publícala cuando esté lista.', 'success', 8000);
     }
     if (el.filter) el.filter.value = '';
+    if (el.mediaFolder) el.mediaFolder.value = 'church-promotions';
     state.selectedPageId = page.id;
     await loadPages();
     el.newSection?.focus();
