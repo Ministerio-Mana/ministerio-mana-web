@@ -52,4 +52,18 @@ El endpoint de webhook debe recibir al menos `checkout.session.completed`, `invo
 
 La clasificación se aplica a Checkouts creados después del despliegue. Los pagos históricos no se modifican automáticamente. Cualquier backfill sobre objetos históricos de Stripe debe ejecutarse aparte, primero en modo de lectura y con una muestra aprobada por contabilidad.
 
+## Catálogo anticipado y migración histórica
+
+El endpoint `POST /api/internal/stripe-accounting` falla cerrado y solo existe cuando producción configura `STRIPE_ACCOUNTING_MIGRATION_SECRET`. Acepta un Bearer token y las acciones `status`, `seed_catalog`, `payment_intents`, `charges` y `subscriptions`.
+
+- `apply` es `false` salvo que se envíe literalmente `true`.
+- Cada página procesa máximo 10 objetos y entrega `next_cursor`.
+- Solo se modifican PaymentIntents o Charges exitosos.
+- Un objeto con `mana_schema=mana_fund_v1` y `fund_code` se omite.
+- Un resultado sin evidencia suficiente queda `UNASSIGNED` y nunca se adivina.
+- Los cambios históricos se limitan a descripción y metadata de PaymentIntent, Charge y Subscription. Las sesiones de Checkout terminadas se consultan como evidencia, pero Stripe no permite reescribir sus productos históricos.
+- No se cambian importes, monedas, Prices, Subscription Items, fechas, reembolsos ni payouts.
+
+El catálogo se puede sembrar antes del primer pago. Incluye los fondos fijos, cada misionero Campus, Cumbre, Turquía e Islas Griegas 2026 y los eventos que tengan Stripe activo. Cuando se activa Stripe para un evento nuevo, el producto se crea inmediatamente; si cambia el nombre o arte del evento, el producto se sincroniza sin crear otro fondo.
+
 Referencias: [metadata de Stripe](https://docs.stripe.com/metadata), [Checkout Sessions](https://docs.stripe.com/api/checkout/sessions/create), [PaymentIntents](https://docs.stripe.com/payments/payment-intents), [facturas de suscripciones](https://docs.stripe.com/billing/invoices/subscription) y [búsqueda de Products](https://docs.stripe.com/api/products/search).

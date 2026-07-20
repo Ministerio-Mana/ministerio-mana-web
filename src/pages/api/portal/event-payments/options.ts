@@ -10,6 +10,7 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { canActorOperateEventPayments, getEventAccessContext } from '@lib/eventAccess';
 import { enforceRateLimit } from '@lib/rateLimit';
 import { containsBlockedSequence, sanitizePlainText } from '@lib/validation';
+import { ensureEventStripeProduct } from '@lib/eventStripeProduct';
 
 export const prerender = false;
 
@@ -304,13 +305,16 @@ export const PUT: APIRoute = async ({ request }) => {
       p_actor_user_id: ctx.userId,
     });
     if (!configured.error) {
+      const stripeProductId = providers.includes('STRIPE')
+        ? await ensureEventStripeProduct(event)
+        : null;
       await supabaseAdmin.from('event_finance_audit_logs').insert({
         event_id: event.id,
         actor_user_id: ctx.userId,
         action: 'PAYMENT_OPTIONS_UPDATED',
         after_data: { mode, providers },
       });
-      return json({ ok: true, mode, providers });
+      return json({ ok: true, mode, providers, stripe_product_id: stripeProductId });
     }
     if (!isMissingDualPaymentRpc(configured.error) && !isMissingPaymentOptionConstraint(configured.error)) {
       console.error('[event-payment-options] atomic update failed', configured.error);
@@ -376,5 +380,8 @@ export const PUT: APIRoute = async ({ request }) => {
     action: 'PAYMENT_OPTION_UPDATED',
     after_data: { mode, provider, currency },
   });
-  return json({ ok: true, mode, providers });
+  const stripeProductId = providers.includes('STRIPE')
+    ? await ensureEventStripeProduct(event)
+    : null;
+  return json({ ok: true, mode, providers, stripe_product_id: stripeProductId });
 };
