@@ -3,6 +3,7 @@ import { enforceRateLimit } from '@lib/rateLimit';
 import { sanitizeDescription, validateCopAmount, validateUsdAmount } from '@lib/donations';
 import { resolveBaseUrl } from '@lib/url';
 import { createStripeCustomer, createStripeDonationSession, createStripeInstallmentSession } from '@lib/stripe';
+import { buildStripeAccountingMetadata, resolveCampusStripeAccounting } from '@lib/stripeAccounting';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { buildDonationReference, createDonation } from '@lib/donationsStore';
@@ -423,6 +424,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
             const successUrl = `${baseUrl}/campus/gracias?ref=${reference}&provider=stripe`;
             const cancelUrl = `${baseUrl}/campus`;
+            const stripeDestinations = selectedMissionaries.map((missionary) => ({
+                slug: missionary.slug,
+                name: missionary.name,
+            }));
+            const stripeAccounting = resolveCampusStripeAccounting(stripeDestinations);
+            const stripeLineItems = selectedMissionaries.map((missionary) => ({
+                amount: allocationBySlug.get(missionary.slug) || 0,
+                description: `Siembra Campus Maná · ${missionary.name}`,
+                accounting: resolveCampusStripeAccounting([{ slug: missionary.slug, name: missionary.name }]),
+            }));
 
             const metadata = {
                 source: 'campus-multi-donation',
@@ -441,8 +452,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                     email: donorEmail,
                     name: donorFullName,
                     metadata: {
+                        ...buildStripeAccountingMetadata(stripeAccounting),
                         portal_user_id: user?.id || '',
-                        source: 'campus-monthly',
+                        recurring: 'true',
                     },
                 });
                 stripeCustomerId = customer.id;
@@ -478,6 +490,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                     amount: totalAmount,
                     currency: 'USD',
                     description,
+                    accounting: stripeAccounting,
+                    lineItems: stripeLineItems,
                     interval: 'month',
                     intervalCount: 1,
                     successUrl,
@@ -493,6 +507,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
                     amountUsd: totalAmount,
                     currency: 'USD',
                     description,
+                    accounting: stripeAccounting,
+                    lineItems: stripeLineItems,
                     successUrl,
                     cancelUrl,
                     metadata,

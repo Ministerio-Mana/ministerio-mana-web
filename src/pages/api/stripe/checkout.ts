@@ -4,6 +4,11 @@ import { enforceRateLimit } from '@lib/rateLimit';
 import { sanitizeDescription, validateUsdAmount } from '@lib/donations';
 import { resolveBaseUrl } from '@lib/url';
 import { createStripeCustomer, createStripeDonationSession, createStripeInstallmentSession } from '@lib/stripe';
+import {
+  buildStripeAccountingMetadata,
+  resolveDonationStripeAccounting,
+  resolveStripeDonationSource,
+} from '@lib/stripeAccounting';
 import { logPaymentEvent, logSecurityEvent } from '@lib/securityEvents';
 import { stripeSupportedCurrencyCodes } from '@lib/geo';
 import { DOCUMENT_TYPES_ANY, parseDonationFormBase } from '@lib/donationInput';
@@ -140,6 +145,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
     const certificateFlag = String(data.get('needCertificate') || '').toLowerCase();
     const needCertificate = ['true', '1', 'on', 'yes'].includes(certificateFlag);
+    const stripeSource = resolveStripeDonationSource(data.get('source'));
+    const accounting = resolveDonationStripeAccounting({
+      source: stripeSource,
+      donationType: donorInfo.donationType,
+      projectName: donorInfo.projectName,
+    });
+    const donationSource = stripeSource === 'primicias_stripe' ? 'primicias-stripe' : 'donaciones-stripe';
 
     const baseUrl = resolveBaseUrl(request);
     const user = isRecurring ? await getUserFromRequest(request) : null;
@@ -192,7 +204,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         .eq('user_id', user.id);
     }
 
-    const reference = buildDonationReference();
+    const reference = buildDonationReference({
+      domain: accounting.paymentDomain === 'PRIMICIAS'
+        ? 'PRIMICIAS'
+        : accounting.paymentDomain === 'CAMPUS'
+          ? 'CAMPUS'
+          : 'DONATION',
+    });
     const successUrl = buildReturnUrl(baseUrl, {
       ref: reference,
       provider: 'stripe',
@@ -225,10 +243,14 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       donor_city: donorInfo.city,
       donation_description: description,
       need_certificate: needCertificate,
-      source: 'donaciones-stripe',
+      source: donationSource,
       cumbre_booking_id: null,
+      payment_domain: accounting.paymentDomain,
+      concept_code: accounting.conceptCode,
+      concept_label: accounting.conceptLabel,
       raw_event: {
         frequency: isRecurring ? frequencyConfig.value : null,
+        stripe_fund_code: accounting.fundCode,
       },
     });
 
@@ -240,8 +262,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         email: donorEmail,
         name: donorInfo.fullName,
         metadata: {
+          ...buildStripeAccountingMetadata(accounting),
           portal_user_id: user?.id || '',
-          source: 'donation-recurring',
+          recurring: 'true',
         },
       });
       stripeCustomerId = customer.id;
@@ -270,7 +293,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         providerReference: reference,
         lastDonationId: donation.id,
         metadata: {
-          source: 'donations-form',
+          source: donationSource,
+          stripe_fund_code: accounting.fundCode,
           frequency_label: frequencyConfig.label,
         },
       });
@@ -280,13 +304,19 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         amount: amountUsd,
         currency,
         description,
+        accounting,
         interval: frequencyConfig.stripeInterval,
         intervalCount: frequencyConfig.stripeIntervalCount,
         successUrl,
         cancelUrl,
         metadata: {
           country: donorInfo.country,
-          source: 'donations_form',
+          source: donationSource,
+          donation_type: donorInfo.donationType,
+          project_name: donorInfo.projectName,
+          event_name: donorInfo.eventName,
+          campus_name: donorInfo.campus,
+          church_name: donorInfo.church,
           donation_reference: reference,
           donation_id: donation.id,
           donation_subscription_id: recurringSubscriptionId,
@@ -300,11 +330,17 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         amountUsd,
         currency,
         description,
+        accounting,
         successUrl,
         cancelUrl,
         metadata: {
           country: donorInfo.country,
-          source: 'donations_form',
+          source: donationSource,
+          donation_type: donorInfo.donationType,
+          project_name: donorInfo.projectName,
+          event_name: donorInfo.eventName,
+          campus_name: donorInfo.campus,
+          church_name: donorInfo.church,
           donation_reference: reference,
           donation_id: donation.id,
         },
@@ -320,6 +356,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       session_id: session.id,
       payment_status: session.payment_status,
       donation_subscription_id: recurringSubscriptionId || null,
+      fund_code: accounting.fundCode,
+      fund_label: accounting.fundLabel,
     });
 
     if (!session.url) {

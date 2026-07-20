@@ -4,6 +4,7 @@ import { enforceRateLimit } from '@lib/rateLimit';
 import { resolveBaseUrl } from '@lib/url';
 import { buildWompiCheckoutUrl } from '@lib/wompi';
 import { createStripeDonationSession } from '@lib/stripe';
+import { resolveCumbreStripeAccounting } from '@lib/stripeAccounting';
 import { logSecurityEvent } from '@lib/securityEvents';
 import { buildPaymentReference, hashToken } from '@lib/cumbre2026';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@lib/cumbreStore';
 
 export const prerender = false;
+const CUMBRE_STRIPE_ACCOUNTING = resolveCumbreStripeAccounting();
 
 function acceptsJson(request: Request): boolean {
   const accept = request.headers.get('accept') || '';
@@ -187,9 +189,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       amountUsd: amount,
       currency: 'USD',
       description: 'Cumbre Mundial 2026',
+      accounting: CUMBRE_STRIPE_ACCOUNTING,
       successUrl: statusUrl,
       cancelUrl: statusUrl,
       metadata: {
+        payment_domain: 'EVENT',
+        fund_code: CUMBRE_STRIPE_ACCOUNTING.fundCode,
         cumbre_booking_id: bookingId,
         cumbre_reference: reference,
         payment_index: String(paymentIndex),

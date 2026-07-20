@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "prebuild": "npm run test:spacing",
+    "prebuild": "npm run test:spacing && npm run test:stripe-accounting",
     "build": "astro build",
     "preview": "astro preview",
     "test:spacing": "node scripts/check-spacing-contract.mjs",
@@ -20,6 +20,7 @@
     "test:finance-scope": "node --experimental-strip-types --test tests/finance-scope.test.ts",
     "test:finance-reporting": "node --experimental-strip-types --test tests/finance-reporting.test.ts",
     "test:provider-reports": "node --experimental-strip-types --test tests/provider-report-import.test.ts",
+    "test:stripe-accounting": "node --experimental-strip-types --test tests/stripe-accounting.test.ts",
     "test:portal-contracts": "node --experimental-strip-types --test tests/portal-contracts.test.ts",
     "test:event-documents": "node --experimental-strip-types --test tests/event-document-presentation.test.ts",
     "test:internal-quality": "node --test tests/internal-quality-contract.test.mjs",
