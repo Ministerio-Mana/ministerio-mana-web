@@ -890,7 +890,9 @@ async function uploadMediaFile(file, target = state.mediaTarget) {
       window.clearTimeout(uploadTimeoutId);
     }
     const uploaded = await uploadResponse.json().catch(() => ({}));
-    if (!uploadResponse.ok || !uploaded.fileId) throw new Error(uploaded?.message || 'ImageKit rechazó la imagen.');
+    if (!uploadResponse.ok || !uploaded.fileId) {
+      throw new Error('No pudimos procesar esa imagen. Verifica que sea un JPG, PNG o WebP válido e intenta de nuevo.');
+    }
     const registered = await fetchJson('/api/portal/church-media-register', {
       method: 'POST',
       body: JSON.stringify({ church_id: state.church.id, file_id: uploaded.fileId, registration_token: authorization.registration_token, original_name: file.name }),

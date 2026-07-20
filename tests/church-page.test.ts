@@ -127,6 +127,12 @@ test('la vista previa no oculta acciones en escritorios con poca altura', () => 
   assert.match(page, /\.church-page-preview-rail \{ position: static !important; \}/);
 });
 
+test('los rechazos del proveedor de imágenes se explican en español', () => {
+  const script = readFileSync(fileURLToPath(new URL('../src/scripts/portal-church-page.js', import.meta.url)), 'utf8');
+  assert.match(script, /No pudimos procesar esa imagen\. Verifica que sea un JPG, PNG o WebP válido e intenta de nuevo\./);
+  assert.doesNotMatch(script, /uploaded\?\.message/);
+});
+
 test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {
   assert.equal(canCreateRole('national_pastor', 'regional_pastor'), true);
   assert.equal(canCreateRole('regional_pastor', 'pastor'), true);
