@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { MISIONEROS } from '../src/data/misioneros.ts';
+import { resolveCampusPushpayUrl } from '../src/lib/campusPushpay.ts';
 
 const EXPECTED_PUSHPAY_LINKS = new Map([
   ['amaury-padilla', 'https://ppay.co/kTQL9jo0ulA'],
@@ -38,4 +39,14 @@ test('Pushpay es una alternativa USD accesible y no reemplaza el checkout existe
   assert.match(scriptSource, /this\.currency !== 'USD'/);
   assert.match(scriptSource, /fetch\('\/api\/campus\/checkout'/);
   assert.doesNotMatch(formSource, /embedded\.pushpay\.com/);
+});
+
+test('solo Estados Unidos puede renderizar la alternativa Pushpay', () => {
+  const arielPushpayUrl = EXPECTED_PUSHPAY_LINKS.get('ariel-guzman');
+
+  assert.equal(resolveCampusPushpayUrl('US', arielPushpayUrl), arielPushpayUrl);
+  assert.equal(resolveCampusPushpayUrl('us', arielPushpayUrl), arielPushpayUrl);
+  assert.equal(resolveCampusPushpayUrl('CO', arielPushpayUrl), undefined);
+  assert.equal(resolveCampusPushpayUrl('CA', arielPushpayUrl), undefined);
+  assert.equal(resolveCampusPushpayUrl('US', 'https://example.com/falso'), undefined);
 });

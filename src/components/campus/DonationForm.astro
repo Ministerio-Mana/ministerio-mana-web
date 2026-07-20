@@ -1,5 +1,6 @@
 ---
 import SowingIcon from '@components/icons/SowingIcon.astro';
+import { resolveCampusPushpayUrl } from '@lib/campusPushpay';
 
 interface Props {
   missionaryName: string;
@@ -9,10 +10,9 @@ interface Props {
 }
 
 const { slug, missionaryName, country = 'CO', pushpayUrl: rawPushpayUrl } = Astro.props;
-const pushpayUrl = /^https:\/\/ppay\.co\/[A-Za-z0-9]+$/.test(String(rawPushpayUrl || ''))
-  ? rawPushpayUrl
-  : undefined;
-const initialCurrency = String(country).toUpperCase() === 'CO'
+const normalizedCountry = String(country).trim().toUpperCase();
+const pushpayUrl = resolveCampusPushpayUrl(normalizedCountry, rawPushpayUrl);
+const initialCurrency = normalizedCountry === 'CO'
   ? {
       code: 'COP',
       context: 'Monto en pesos colombianos (COP)',
