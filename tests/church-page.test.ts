@@ -120,6 +120,13 @@ test('una página publicada se puede retirar desde el mismo editor', () => {
   assert.match(script, /el\.unpublish\?\.addEventListener\('click', unpublishPage\)/);
 });
 
+test('la vista previa no oculta acciones en escritorios con poca altura', () => {
+  const page = readFileSync(fileURLToPath(new URL('../src/pages/portal/church-page.astro', import.meta.url)), 'utf8');
+  assert.match(page, /church-page-preview-rail space-y-4 xl:sticky xl:top-6/);
+  assert.match(page, /@media \(min-width: 1280px\) and \(max-height: 899px\)/);
+  assert.match(page, /\.church-page-preview-rail \{ position: static !important; \}/);
+});
+
 test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {
   assert.equal(canCreateRole('national_pastor', 'regional_pastor'), true);
   assert.equal(canCreateRole('regional_pastor', 'pastor'), true);
