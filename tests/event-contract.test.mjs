@@ -171,3 +171,15 @@ test('actualiza de inmediato las fichas cuando cambia la cantidad de asistentes'
     /registrationForm\.addEventListener\('input',[\s\S]*?event\.target === quantityInput\) renderAttendees\(\)/,
   );
 });
+
+test('la imagen de invitación se puede descartar o retirar también de SharePoint', () => {
+  const page = readFileSync(new URL('../src/pages/portal/events.astro', import.meta.url), 'utf8');
+  const script = readFileSync(new URL('../src/scripts/portal-events.js', import.meta.url), 'utf8');
+  const endpoint = readFileSync(new URL('../src/pages/api/portal/event-invitation-image.ts', import.meta.url), 'utf8');
+  assert.match(page, /id="event-invitation-image-remove"[^>]*>.*Quitar imagen/);
+  assert.match(script, /eventInvitationImageRemove\?\.addEventListener\('click', removeInvitationImage\)/);
+  assert.match(script, /method: 'DELETE'/);
+  assert.match(endpoint, /export const DELETE: APIRoute/);
+  assert.match(endpoint, /deleteMicrosoftEventDocument/);
+  assert.match(endpoint, /action: 'invitation\.image\.removed'/);
+});

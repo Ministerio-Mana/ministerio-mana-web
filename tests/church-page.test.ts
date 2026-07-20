@@ -120,6 +120,18 @@ test('una página publicada se puede retirar desde el mismo editor', () => {
   assert.match(script, /el\.unpublish\?\.addEventListener\('click', unpublishPage\)/);
 });
 
+test('un borrador incompleto se guarda sin validación de publicación y permite quitar imágenes', () => {
+  const script = readFileSync(fileURLToPath(new URL('../src/scripts/portal-church-page.js', import.meta.url)), 'utf8');
+  const page = readFileSync(fileURLToPath(new URL('../src/pages/portal/church-page.astro', import.meta.url)), 'utf8');
+  assert.match(page, /id="church-page-save"[^>]*formnovalidate/);
+  assert.match(page, /id="church-page-hero-clear"[^>]*data-image-clear="hero"[^>]*>.*Quitar imagen/);
+  assert.match(page, /id="church-page-pastor-clear"[^>]*data-image-clear="pastor"[^>]*>.*Quitar imagen/);
+  assert.match(script, /state\.page\.hero_image_url = '';/);
+  assert.match(script, /state\.page\.hero_image_alt = '';/);
+  assert.match(script, /state\.page\.pastor_image_url = '';/);
+  assert.match(script, /state\.page\.pastor_image_alt = '';/);
+});
+
 test('la vista previa no oculta acciones en escritorios con poca altura', () => {
   const page = readFileSync(fileURLToPath(new URL('../src/pages/portal/church-page.astro', import.meta.url)), 'utf8');
   assert.match(page, /church-page-preview-rail space-y-4 xl:sticky xl:top-6/);

@@ -15,7 +15,13 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const IMAGE_FORMATS = new Set(['jpeg', 'png', 'webp']);
 
-type EventRecord = ScopedEvent & { id: string; title?: string | null; slug?: string | null };
+type EventRecord = ScopedEvent & {
+  id: string;
+  title?: string | null;
+  slug?: string | null;
+  banner_url?: string | null;
+  banner_layout?: string | null;
+};
 
 function json(payload: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(payload), {
@@ -64,7 +70,7 @@ async function loadManageableEvent(request: Request, eventId: string) {
 
   const { data: event, error } = await supabaseAdmin
     .from('events')
-    .select('id,title,slug,scope,church_id,region_id,country')
+    .select('id,title,slug,scope,church_id,region_id,country,banner_url,banner_layout')
     .eq('id', eventId)
     .maybeSingle();
   if (error) return { error: json({ ok: false, error: 'No se pudo consultar el evento.' }, 500) };
@@ -212,4 +218,81 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     console.error('[event-invitation-image] upload failed', error);
     return json({ ok: false, error: 'SharePoint no pudo guardar la imagen de invitación.' }, 502);
   }
+};
+
+export const DELETE: APIRoute = async ({ request, clientAddress }) => {
+  if (!supabaseAdmin) return json({ ok: false, error: 'Supabase no configurado.' }, 500);
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: 'No se pudo leer la solicitud.' }, 400);
+  }
+  const eventId = String(body.event_id || '').trim();
+  if (!UUID_PATTERN.test(eventId)) return json({ ok: false, error: 'Evento inválido.' }, 400);
+  const access = await loadManageableEvent(request, eventId);
+  if (access.error || !access.ctx || !access.event) return access.error || json({ ok: false, error: 'No autorizado.' }, 403);
+
+  const allowed = await enforceRateLimit(`event-invitation-image-delete:${access.ctx.userId}:${clientAddress || 'unknown'}`, 600, 24, { failOpen: false });
+  if (!allowed) return json({ ok: false, error: 'Demasiados intentos. Intenta de nuevo más tarde.' }, 429);
+
+  const { data: stored, error: storedError } = await supabaseAdmin
+    .from('event_invitation_images')
+    .select('*')
+    .eq('event_id', eventId)
+    .maybeSingle();
+  if (storedError && !isSchemaMissing(storedError)) {
+    return json({ ok: false, error: 'No se pudo consultar la imagen actual.' }, 500);
+  }
+
+  const now = new Date().toISOString();
+  const { error: eventUpdateError } = await supabaseAdmin
+    .from('events')
+    .update({ banner_url: null, banner_layout: null, updated_at: now })
+    .eq('id', eventId);
+  if (eventUpdateError) return json({ ok: false, error: 'No se pudo retirar la imagen del evento.' }, 500);
+
+  if (!storedError) {
+    const { error: deleteRecordError } = await supabaseAdmin
+      .from('event_invitation_images')
+      .delete()
+      .eq('event_id', eventId);
+    if (deleteRecordError) {
+      await supabaseAdmin.from('events').update({
+        banner_url: access.event.banner_url || null,
+        banner_layout: access.event.banner_layout || null,
+        updated_at: now,
+      }).eq('id', eventId);
+      return json({ ok: false, error: 'No se pudo retirar el registro de la imagen.' }, 500);
+    }
+  }
+
+  if (stored?.sharepoint_drive_id && stored?.sharepoint_item_id) {
+    try {
+      await deleteMicrosoftEventDocument(String(stored.sharepoint_drive_id), String(stored.sharepoint_item_id));
+    } catch (error) {
+      console.error('[event-invitation-image] SharePoint delete failed', error);
+      const { error: restoreRecordError } = await supabaseAdmin
+        .from('event_invitation_images')
+        .upsert(stored, { onConflict: 'event_id' });
+      const { error: restoreEventError } = await supabaseAdmin.from('events').update({
+        banner_url: access.event.banner_url || null,
+        banner_layout: access.event.banner_layout || null,
+        updated_at: now,
+      }).eq('id', eventId);
+      if (restoreRecordError || restoreEventError) {
+        console.error('[event-invitation-image] rollback after SharePoint delete failed', { restoreRecordError, restoreEventError });
+      }
+      return json({ ok: false, error: 'SharePoint no pudo retirar la imagen. No se aplicaron cambios.' }, 502);
+    }
+  }
+
+  const { error: auditError } = await supabaseAdmin.from('event_invitation_image_audit_logs').insert({
+    event_id: eventId,
+    actor_user_id: access.ctx.userId,
+    action: 'invitation.image.removed',
+    metadata: { sharepoint_deleted: true },
+  });
+  if (auditError) console.error('[event-invitation-image] audit insert failed', auditError);
+  return json({ ok: true, sharepoint_deleted: true });
 };
