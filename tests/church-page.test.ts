@@ -10,6 +10,7 @@ import {
   validateChurchPageForPublish,
 } from '../src/lib/churchPage.ts';
 import {
+  canPublishChurchPageForDirectory,
   canCreateChurch,
   canEditChurch,
   extractCoordinatesFromMapsUrl,
@@ -80,6 +81,28 @@ test('Historia y Mosaico requieren al menos dos escenas publicables', () => {
   });
   assert.equal(result.ok, false);
   assert.match(result.errors.join(' '), /al menos 2 escenas/i);
+});
+
+test('solo publica páginas de iglesias activas y visibles en el directorio', () => {
+  assert.equal(canPublishChurchPageForDirectory({
+    id: 'mana-publica',
+    name: 'Maná Pública',
+    lifecycle_status: 'ACTIVE',
+    is_public: true,
+  }), true);
+  assert.equal(canPublishChurchPageForDirectory({
+    id: 'mana-borrador',
+    name: 'Maná Borrador',
+    lifecycle_status: 'DRAFT',
+    is_public: true,
+  }), false);
+  assert.equal(canPublishChurchPageForDirectory({
+    id: 'mana-privada',
+    name: 'Maná Privada',
+    lifecycle_status: 'ACTIVE',
+    is_public: false,
+  }), false);
+  assert.equal(canPublishChurchPageForDirectory({ id: 'legacy', name: 'Maná Legacy' }), true);
 });
 
 test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {

@@ -87,6 +87,7 @@ const el = {
   scenes: document.getElementById('church-page-scenes'),
   addScene: document.getElementById('church-page-add-scene'),
   gallery: document.getElementById('church-page-gallery'),
+  galleryAdd: document.getElementById('church-page-gallery-add'),
   preview: document.getElementById('church-page-preview'),
   previewLabel: document.getElementById('church-page-preview-label'),
   status: document.getElementById('church-page-status'),
@@ -524,6 +525,9 @@ function startDirectoryCreate() {
   state.management.creating = true;
   state.church = null;
   state.page = null;
+  state.media = [];
+  if (el.mediaSearch) el.mediaSearch.value = '';
+  if (el.saveStatus) el.saveStatus.textContent = 'Los cambios se conservan en este dispositivo hasta guardarlos.';
   refreshChurchSelector('');
   el.form?.classList.add('hidden');
   populateDirectoryForm();
@@ -680,6 +684,12 @@ function renderGallery() {
       <button type="button" data-gallery-remove>Quitar foto</button>
     </article>
   `).join('');
+  if (el.galleryAdd) {
+    const isFull = state.page.gallery.length >= MAX_GALLERY;
+    el.galleryAdd.disabled = isFull;
+    el.galleryAdd.title = isFull ? `La galería ya tiene el máximo de ${MAX_GALLERY} imágenes.` : '';
+    el.galleryAdd.setAttribute('aria-label', isFull ? `Galería completa: máximo ${MAX_GALLERY} imágenes` : 'Agregar foto');
+  }
 }
 
 function previewScene(scene, index, mosaic = false) {
@@ -748,6 +758,15 @@ function selectChurch(churchId) {
   const localDraft = readLocalDraft(state.church);
   state.page = localDraft || normalizePage(serverPage || null, state.church);
   state.dirty = Boolean(localDraft);
+  state.media = [];
+  if (el.mediaSearch) el.mediaSearch.value = '';
+  if (el.saveStatus) {
+    el.saveStatus.textContent = state.dirty
+      ? 'Cambios conservados en este dispositivo; falta guardar.'
+      : state.page.status === 'PUBLISHED'
+        ? 'Página publicada. Guarda y publica cualquier cambio nuevo.'
+        : 'Borrador listo para editar.';
+  }
   state.management.creating = false;
   if (el.church) el.church.value = state.church.id;
   el.form?.classList.remove('hidden');
@@ -807,6 +826,7 @@ async function loadMedia() {
 function openMedia(target, trigger) {
   state.mediaTarget = target;
   state.modalTrigger = trigger || document.activeElement;
+  if (el.mediaSearch) el.mediaSearch.value = '';
   el.mediaModal?.classList.remove('hidden');
   el.mediaModal?.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';

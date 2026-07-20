@@ -203,7 +203,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
                     <div>
                       <div class="flex flex-wrap items-center justify-between gap-4">
                         <div><h3 class="font-black text-[#293C74]">Galería</h3><p class="mt-2 text-xs text-slate-500">Hasta 8 fotos de la comunidad.</p></div>
-                        <button type="button" data-image-target="gallery" class="church-secondary-button"><PortalIcon name="plus" size={17} /> Agregar foto</button>
+                        <button id="church-page-gallery-add" type="button" data-image-target="gallery" class="church-secondary-button"><PortalIcon name="plus" size={17} /> Agregar foto</button>
                       </div>
                       <div id="church-page-gallery" class="mt-4 grid gap-4 sm:grid-cols-2"></div>
                     </div>
@@ -311,6 +311,7 @@ import PortalIcon from '@components/portal/PortalIcon.astro';
   .church-theme-swatch--light { background: linear-gradient(135deg,#edf6f4 0 55%,#246a84 55%); }
   .church-theme-swatch--warm { background: linear-gradient(135deg,#f7f2e7 0 55%,#9a5c28 55%); }
   :global(.church-secondary-button) { align-items: center; border: 1px solid #cbd5e1; border-radius: 12px; color: #293c74; display: inline-flex; font-size: .8rem; font-weight: 900; gap: var(--space-1); justify-content: center; min-height: var(--control-min-size); padding: var(--space-1) var(--space-2); }
+  :global(.church-secondary-button:disabled) { cursor: not-allowed; opacity: .5; }
   .church-toggle { align-items: flex-start; color: rgb(var(--portal-control-copy)); cursor: pointer; display: grid; gap: var(--space-2); grid-template-columns: var(--control-min-size) minmax(0,1fr); min-height: var(--control-min-size); }
   .church-toggle input { accent-color: rgb(var(--mana-navy)); height: var(--space-3); margin: calc((var(--control-min-size) - var(--space-3)) / 2) auto; width: var(--space-3); }
   .church-toggle strong, .church-toggle small { display: block; }

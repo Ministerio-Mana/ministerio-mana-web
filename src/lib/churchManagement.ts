@@ -36,6 +36,18 @@ type QaChurchDeletionCandidate = {
   show_on_map?: unknown;
 };
 
+type ChurchPagePublicationCandidate = {
+  lifecycle_status?: unknown;
+  is_public?: unknown;
+};
+
+export function canPublishChurchPageForDirectory(church: ChurchPagePublicationCandidate): boolean {
+  const hasCanonicalVisibility = Object.prototype.hasOwnProperty.call(church, 'lifecycle_status')
+    || Object.prototype.hasOwnProperty.call(church, 'is_public');
+  if (!hasCanonicalVisibility) return true;
+  return church.lifecycle_status === 'ACTIVE' && church.is_public === true;
+}
+
 export function isQaChurchDeletionCandidate(church: QaChurchDeletionCandidate): boolean {
   return String(church.name || '').startsWith(QA_CHURCH_NAME_PREFIX)
     && String(church.lifecycle_status || '').toUpperCase() === 'INACTIVE'
