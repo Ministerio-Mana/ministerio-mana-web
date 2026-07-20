@@ -30,7 +30,7 @@
     "test:cms-story": "node --experimental-strip-types --test tests/cms-story.test.ts",
     "test:church-page": "node --experimental-strip-types --test tests/church-page.test.ts tests/church-promotions.test.ts",
     "audit:public-ui": "node scripts/public-ui-audit.mjs",
-    "test:operations": "node --experimental-strip-types --test tests/cron-auth.test.ts tests/payment-reliability.test.ts tests/campus-payment-contract.test.ts tests/operations-source-contract.test.ts",
+    "test:operations": "node --experimental-strip-types --test tests/cron-auth.test.ts tests/payment-reliability.test.ts tests/campus-payment-contract.test.ts tests/campus-pushpay-contract.test.ts tests/operations-source-contract.test.ts",
     "campaign:cumbre:welcome": "node scripts/cumbre-welcome-campaign.mjs",
     "security:scan": "node scripts/security-monitor.cjs",
     "security:alert": "node scripts/security-alert.cjs"

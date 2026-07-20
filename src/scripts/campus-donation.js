@@ -106,6 +106,7 @@ class DonationWidget {
             currencyContext: this.el.querySelector('.currency-context'),
             amountMinLabel: this.el.querySelector('.amount-min-label'),
             providerName: this.el.querySelectorAll('.provider-name'),
+            pushpayOption: this.el.querySelector('.pushpay-option'),
             donorSection: this.el.querySelector('.donor-info-section'),
             donorName: this.el.querySelector('.donor-name-input'),
             donorEmail: this.el.querySelector('.donor-email-input'),
@@ -319,6 +320,8 @@ class DonationWidget {
         }
         this.updateAmountControls();
         this.updateDocumentFields();
+        this.dom.pushpayOption?.classList.toggle('hidden', this.currency !== 'USD');
+        this.dom.pushpayOption?.setAttribute('aria-hidden', this.currency === 'USD' ? 'false' : 'true');
 
         // Update CTA state
         const hasAmount = this.amount >= config.min;
