@@ -126,6 +126,9 @@ test('la operación remota falla cerrada, pagina y no cambia importes ni precios
   assert.match(endpoint, /paymentIntents\.update\([^,]+, \{ description, metadata \}\)/);
   assert.match(endpoint, /charges\.update\([^,]+, \{ description, metadata \}\)/);
   assert.match(endpoint, /SKIPPED_HAS_PAYMENT_INTENT/);
+  assert.match(endpoint, /checkout\.sessions\.listLineItems/);
+  assert.match(endpoint, /checkout_session:\$\{resolution\.reason\}/);
+  assert.match(endpoint, /const metadata: Record<string, unknown> = \{ \.\.\.\(intent\.metadata \|\| \{\}\) \}/);
   const subscriptionUpdate = endpoint.match(/subscriptions\.update\(subscription\.id, \{([\s\S]*?)\n    \}\);/)?.[1] || '';
   assert.ok(subscriptionUpdate, 'falta la actualización controlada de suscripción');
   assert.doesNotMatch(subscriptionUpdate, /\bitems\s*:/);

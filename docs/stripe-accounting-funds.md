@@ -62,6 +62,7 @@ El endpoint `POST /api/internal/stripe-accounting` falla cerrado y solo existe c
 - Solo se modifican PaymentIntents o Charges exitosos.
 - Un objeto con `mana_schema=mana_fund_v1` y `fund_code` se omite.
 - Un resultado sin evidencia suficiente queda `UNASSIGNED` y nunca se adivina.
+- La evidencia histórica puede provenir del registro interno, metadata existente o el nombre exacto del artículo de una sesión Checkout; los datos enriquecidos se usan para clasificar, pero no se copian al objeto de pago.
 - Los cambios históricos se limitan a descripción y metadata de PaymentIntent, Charge y Subscription. Las sesiones de Checkout terminadas se consultan como evidencia, pero Stripe no permite reescribir sus productos históricos.
 - No se cambian importes, monedas, Prices, Subscription Items, fechas, reembolsos ni payouts.
 
