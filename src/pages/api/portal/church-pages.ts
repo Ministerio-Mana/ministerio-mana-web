@@ -15,6 +15,7 @@ import {
   listChurchesForPageEditor,
   requireChurchPageEditor,
 } from '@lib/churchPageAccess';
+import { canPublishChurchPageForDirectory } from '@lib/churchManagement';
 
 const MAX_BODY_CHARS = 48_000;
 
@@ -262,6 +263,12 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   }
   const church = await getChurchForPageEditor(churchId, auth.access);
   if (!church) return json({ ok: false, error: 'No tienes permiso sobre esta iglesia.' }, 403);
+  if (action === 'publish' && !canPublishChurchPageForDirectory(church)) {
+    return json({
+      ok: false,
+      error: 'Activa la iglesia y habilita su aparición en el directorio antes de publicar la página.',
+    }, 409);
+  }
 
   const current = await supabaseAdmin.from('church_public_pages').select('*').eq('church_id', churchId).maybeSingle();
   if (isChurchPageSchemaMissingError(current.error)) {
