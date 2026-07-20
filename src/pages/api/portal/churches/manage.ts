@@ -6,9 +6,12 @@ import { supabaseAdmin } from '@lib/supabaseAdmin';
 import { requireChurchPageEditor } from '@lib/churchPageAccess';
 import { isChurchAllowedForAccess } from '@lib/portalScope';
 import { normalizeCountryRegion } from '@lib/normalization';
+import { churchMediaFolder } from '@lib/churchPage';
+import { deleteImageKitFile, getImageKitConfig, purgeImageKitUrl } from '@lib/imageKit';
 import {
   canCreateChurch,
   canEditChurch,
+  isQaChurchDeletionCandidate,
   normalizeChurchCode,
   normalizeChurchManagementInput,
   validateChurchManagementInput,
@@ -16,6 +19,19 @@ import {
 
 const MANAGED_FIELDS = 'id,code,name,kind,lifecycle_status,is_public,show_on_map,city,country,continent,region_id,address,maps_url,lat,lng,contact_name,contact_email,contact_phone,service,notes,version,created_at,updated_at';
 const MAX_BODY_CHARS = 16_000;
+
+const QA_REFERENCE_CHECKS = [
+  { table: 'user_profiles', column: 'church_id', label: 'perfiles' },
+  { table: 'user_profiles', column: 'portal_church_id', label: 'perfiles del portal' },
+  { table: 'church_memberships', column: 'church_id', label: 'membresías' },
+  { table: 'portal_admin_selections', column: 'church_id', label: 'selecciones administrativas' },
+  { table: 'events', column: 'church_id', label: 'eventos' },
+  { table: 'event_registrations', column: 'church_id', label: 'inscripciones de eventos' },
+  { table: 'cumbre_bookings', column: 'church_id', label: 'reservas' },
+  { table: 'donations', column: 'church_id', label: 'donaciones' },
+  { table: 'portal_profile_bootstrap_queue', column: 'church_id', label: 'activaciones pendientes' },
+  { table: 'finance_transaction_allocations', column: 'finance_church_id', label: 'asignaciones financieras' },
+] as const;
 
 function json(payload: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(payload), {
@@ -32,6 +48,78 @@ function isManagementSchemaMissing(error: any): boolean {
   const code = String(error?.code || '');
   const message = String(error?.message || '').toLowerCase();
   return code === '42703' || code === '42P01' || message.includes('church_directory_audit_logs');
+}
+
+function isOptionalReferenceMissing(error: any): boolean {
+  return ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(String(error?.code || ''));
+}
+
+async function findQaReferenceBlockers(churchId: string): Promise<{ ok: true; labels: string[] } | { ok: false }> {
+  if (!supabaseAdmin) return { ok: false };
+  const labels: string[] = [];
+  for (const check of QA_REFERENCE_CHECKS) {
+    const result = await supabaseAdmin
+      .from(check.table)
+      .select('*', { count: 'exact', head: true })
+      .eq(check.column, churchId);
+    if (result.error && !isOptionalReferenceMissing(result.error)) {
+      console.error('[church-management] QA reference check failed', {
+        table: check.table,
+        code: result.error.code,
+        message: result.error.message,
+      });
+      return { ok: false };
+    }
+    if (Number(result.count || 0) > 0) labels.push(check.label);
+  }
+  return { ok: true, labels: Array.from(new Set(labels)) };
+}
+
+async function deleteQaMedia(church: Record<string, unknown>): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  if (!supabaseAdmin) return { ok: false, error: 'Supabase no configurado.' };
+  const folder = churchMediaFolder(church);
+  const result = await supabaseAdmin
+    .from('cms_media')
+    .select('id,provider,provider_file_id,bucket,path,public_url')
+    .eq('folder', folder);
+  if (result.error && !isOptionalReferenceMissing(result.error)) {
+    return { ok: false, error: 'No se pudo revisar la biblioteca de imágenes de esta prueba.' };
+  }
+  const rows = result.data || [];
+  const imageKitRows = rows.filter((row: any) => row.provider === 'imagekit' || row.bucket === 'imagekit');
+  const storageRows = rows.filter((row: any) => row.provider !== 'imagekit' && row.bucket !== 'imagekit');
+  if (imageKitRows.length) {
+    const config = getImageKitConfig();
+    if (!config) return { ok: false, error: 'ImageKit no está configurado para limpiar esta prueba.' };
+    for (const row of imageKitRows) {
+      const fileId = String((row as any).provider_file_id || '');
+      if (!fileId) return { ok: false, error: 'Una imagen de prueba no tiene identificador de ImageKit.' };
+      try {
+        await deleteImageKitFile(config, fileId);
+        const publicUrl = String((row as any).public_url || '');
+        if (publicUrl) await purgeImageKitUrl(config, publicUrl).catch(() => undefined);
+      } catch (error) {
+        console.error('[church-management] QA ImageKit cleanup failed', error);
+        return { ok: false, error: 'No se pudo eliminar una imagen de prueba en ImageKit.' };
+      }
+    }
+  }
+  const storageGroups = new Map<string, string[]>();
+  for (const row of storageRows) {
+    const bucket = String((row as any).bucket || 'cms-media');
+    const path = String((row as any).path || '');
+    if (!path) continue;
+    storageGroups.set(bucket, [...(storageGroups.get(bucket) || []), path]);
+  }
+  for (const [bucket, paths] of storageGroups) {
+    const removed = await supabaseAdmin.storage.from(bucket).remove(paths);
+    if (removed.error) return { ok: false, error: 'No se pudo eliminar una imagen de prueba del almacenamiento.' };
+  }
+  if (rows.length) {
+    const deleted = await supabaseAdmin.from('cms_media').delete().eq('folder', folder);
+    if (deleted.error) return { ok: false, error: 'Las imágenes se eliminaron, pero falta limpiar su registro.' };
+  }
+  return { ok: true, count: rows.length };
 }
 
 function normalizeComparableCountry(value: unknown): string {
@@ -162,6 +250,7 @@ export const GET: APIRoute = async ({ request }) => {
     capabilities: {
       can_create: schemaReady && canCreateChurch(auth.access),
       can_edit: schemaReady && canEditChurch(auth.access),
+      can_delete_qa: schemaReady && auth.access.role === 'superadmin',
       role: auth.access.role,
       fixed_country: auth.access.allowedCountry,
       fixed_region_ids: auth.access.allowedRegionIds,
@@ -267,4 +356,66 @@ export const PATCH: APIRoute = async ({ request, clientAddress }) => {
   }
   await audit({ churchId, action: 'church.update', previous: currentResult.data, next: result.data, actorUserId: auth.access.userId!, actorEmail: auth.access.email, requestIp: clientAddress });
   return json({ ok: true, church: result.data });
+};
+
+export const DELETE: APIRoute = async ({ request }) => {
+  if (!supabaseAdmin) return json({ ok: false, error: 'Supabase no configurado.' }, 500);
+  const auth = await requireChurchPageEditor(request);
+  if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+  if (auth.access.role !== 'superadmin') {
+    return json({ ok: false, error: 'Solo una cuenta superadmin puede eliminar registros de prueba QA.' }, 403);
+  }
+  const allowed = await enforceRateLimit(`church-qa-delete:${auth.access.userId}`, 600, 20, { failOpen: false });
+  if (!allowed) return json({ ok: false, error: 'Demasiadas eliminaciones seguidas. Espera un momento.' }, 429);
+
+  const rawBody = await request.text();
+  if (rawBody.length > MAX_BODY_CHARS) return json({ ok: false, error: 'La información supera el tamaño permitido.' }, 413);
+  let body: Record<string, unknown> = {};
+  try { body = JSON.parse(rawBody || '{}'); } catch { return json({ ok: false, error: 'La información no es válida.' }, 400); }
+  const churchId = String(body.church_id || '').trim();
+  const expectedVersion = Number(body.expected_version || 0);
+  const confirmName = String(body.confirm_name || '').trim();
+  if (!churchId || !Number.isInteger(expectedVersion)) {
+    return json({ ok: false, error: 'Selecciona una prueba QA válida.' }, 400);
+  }
+
+  const current = await supabaseAdmin.from('churches').select(MANAGED_FIELDS).eq('id', churchId).maybeSingle();
+  if (current.error || !current.data) return json({ ok: false, error: 'No se encontró la iglesia de prueba.' }, 404);
+  if (expectedVersion !== Number(current.data.version || 1)) {
+    return json({ ok: false, conflict: true, error: 'La iglesia cambió en otra sesión. Recarga antes de eliminar.' }, 409);
+  }
+  if (confirmName !== String(current.data.name || '') || !isQaChurchDeletionCandidate(current.data)) {
+    return json({
+      ok: false,
+      error: 'Solo se eliminan pruebas cuyo nombre inicia por PRUEBA QA, inactivas, privadas y sin pin.',
+    }, 409);
+  }
+
+  const references = await findQaReferenceBlockers(churchId);
+  if (!references.ok) return json({ ok: false, error: 'No se pudieron verificar todas las relaciones de esta prueba.' }, 500);
+  if (references.labels.length) {
+    return json({
+      ok: false,
+      error: `No se puede eliminar: tiene ${references.labels.join(', ')} vinculados.`,
+      blockers: references.labels,
+    }, 409);
+  }
+
+  const media = await deleteQaMedia(current.data as Record<string, unknown>);
+  if (!media.ok) return json({ ok: false, error: media.error }, 502);
+  const deleted = await supabaseAdmin
+    .from('churches')
+    .delete()
+    .eq('id', churchId)
+    .eq('version', expectedVersion)
+    .select('id')
+    .maybeSingle();
+  if (!deleted.data && !deleted.error) {
+    return json({ ok: false, conflict: true, error: 'La iglesia cambió en otra sesión. Recarga antes de eliminar.' }, 409);
+  }
+  if (deleted.error) {
+    console.error('[church-management] QA church cleanup failed', { code: deleted.error.code, message: deleted.error.message });
+    return json({ ok: false, error: 'La iglesia conserva una relación protegida y no se eliminó.' }, 409);
+  }
+  return json({ ok: true, deleted_church_id: churchId, deleted_media: media.count });
 };

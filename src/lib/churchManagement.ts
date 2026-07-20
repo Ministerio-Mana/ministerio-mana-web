@@ -4,6 +4,7 @@ import { canCreateChurchDirectory, canEditChurchDirectory } from './portalRbac.t
 
 export const CHURCH_KINDS = ['CHURCH', 'GROUP'] as const;
 export const CHURCH_STATUSES = ['DRAFT', 'ACTIVE', 'INACTIVE'] as const;
+export const QA_CHURCH_NAME_PREFIX = 'PRUEBA QA ';
 
 export type ChurchKind = (typeof CHURCH_KINDS)[number];
 export type ChurchStatus = (typeof CHURCH_STATUSES)[number];
@@ -27,6 +28,20 @@ export type ChurchManagementInput = {
   is_public: boolean;
   show_on_map: boolean;
 };
+
+type QaChurchDeletionCandidate = {
+  name?: unknown;
+  lifecycle_status?: unknown;
+  is_public?: unknown;
+  show_on_map?: unknown;
+};
+
+export function isQaChurchDeletionCandidate(church: QaChurchDeletionCandidate): boolean {
+  return String(church.name || '').startsWith(QA_CHURCH_NAME_PREFIX)
+    && String(church.lifecycle_status || '').toUpperCase() === 'INACTIVE'
+    && church.is_public === false
+    && church.show_on_map === false;
+}
 
 function cleanText(value: unknown, maxLength: number): string {
   return String(value ?? '').trim().replace(/\s+/g, ' ').slice(0, maxLength);

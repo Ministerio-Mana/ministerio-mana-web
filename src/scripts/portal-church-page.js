@@ -59,6 +59,7 @@ const el = {
   directoryLng: document.getElementById('church-directory-lng'),
   directoryUseLocation: document.getElementById('church-directory-use-location'),
   directoryLocationStatus: document.getElementById('church-directory-location-status'),
+  directoryDeleteQa: document.getElementById('church-directory-delete-qa'),
   directoryCancel: document.getElementById('church-directory-cancel'),
   directorySave: document.getElementById('church-directory-save'),
   form: document.getElementById('church-page-form'),
@@ -387,6 +388,8 @@ function populateDirectoryForm() {
   el.directoryForm.classList.remove('hidden');
   if (state.management.creating || !state.church) {
     clearDirectoryForm();
+    el.directoryDeleteQa?.classList.add('hidden');
+    el.directoryDeleteQa?.classList.remove('inline-flex');
     el.directoryCancel?.classList.remove('hidden');
     el.directoryCancel?.classList.add('inline-flex');
     return;
@@ -411,6 +414,13 @@ function populateDirectoryForm() {
   if (el.directoryLat) el.directoryLat.value = church.lat ?? '';
   if (el.directoryLng) el.directoryLng.value = church.lng ?? '';
   if (el.directoryMap) el.directoryMap.checked = church.show_on_map !== false;
+  const canDeleteQa = state.management.capabilities.can_delete_qa
+    && String(church.name || '').startsWith('PRUEBA QA ')
+    && church.lifecycle_status === 'INACTIVE'
+    && church.is_public === false
+    && church.show_on_map === false;
+  el.directoryDeleteQa?.classList.toggle('hidden', !canDeleteQa);
+  el.directoryDeleteQa?.classList.toggle('inline-flex', canDeleteQa);
   el.directoryCancel?.classList.add('hidden');
   el.directoryCancel?.classList.remove('inline-flex');
   updateMapAvailability();
@@ -451,6 +461,44 @@ function setDirectoryBusy(busy) {
   }
   if (el.directoryCancel) el.directoryCancel.disabled = busy;
   if (el.directoryCreate) el.directoryCreate.disabled = busy;
+  if (el.directoryDeleteQa) el.directoryDeleteQa.disabled = busy;
+}
+
+async function deleteQaChurch() {
+  const church = state.church;
+  if (!church || state.management.busy || !state.management.capabilities.can_delete_qa) return;
+  const confirmed = window.confirm(`Eliminar definitivamente ${church.name} y sus imágenes de prueba? Esta acción no se puede deshacer.`);
+  if (!confirmed) return;
+  setDirectoryBusy(true);
+  try {
+    const payload = await fetchJson(MANAGEMENT_URL, {
+      method: 'DELETE',
+      body: JSON.stringify({
+        church_id: church.id,
+        expected_version: Number(church.version || 1),
+        confirm_name: church.name,
+      }),
+    });
+    clearLocalDraft();
+    state.churches = state.churches.filter((item) => item.id !== church.id);
+    state.pages = state.pages.filter((page) => page.church_id !== church.id);
+    state.media = [];
+    state.church = null;
+    state.page = null;
+    const nextChurch = state.churches[0];
+    if (nextChurch) {
+      refreshChurchSelector(nextChurch.id);
+      selectChurch(nextChurch.id);
+    } else {
+      el.form?.classList.add('hidden');
+      el.directoryForm?.classList.add('hidden');
+    }
+    showAlert(`Prueba eliminada por completo. También se eliminaron ${Number(payload.deleted_media || 0)} imágenes de su biblioteca.`, 'success');
+  } catch (error) {
+    showAlert(error.message || 'No se pudo eliminar la prueba QA.', 'error');
+  } finally {
+    setDirectoryBusy(false);
+  }
 }
 
 function startDirectoryCreate() {
@@ -888,6 +936,7 @@ function bindEvents() {
 
   el.church?.addEventListener('change', () => selectChurch(el.church.value));
   el.directoryCreate?.addEventListener('click', startDirectoryCreate);
+  el.directoryDeleteQa?.addEventListener('click', deleteQaChurch);
   el.directoryCancel?.addEventListener('click', cancelDirectoryCreate);
   el.directoryForm?.addEventListener('submit', saveDirectory);
   el.directoryCountry?.addEventListener('change', () => renderDirectoryRegions(''));

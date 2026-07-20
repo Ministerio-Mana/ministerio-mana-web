@@ -14,6 +14,7 @@ import {
   canEditChurch,
   extractCoordinatesFromMapsUrl,
   hasValidChurchCoordinates,
+  isQaChurchDeletionCandidate,
   normalizeChurchManagementInput,
 } from '../src/lib/churchManagement.ts';
 import { normalizePublicChurchDirectoryItem } from '../src/lib/churchDirectoryItem.ts';
@@ -96,6 +97,27 @@ test('la gestión de iglesias respeta la misma escalera de seguridad', () => {
   assert.equal(canEditChurch(access('pastor')), true);
   assert.equal(canEditChurch(access('local_collaborator')), false);
   assert.equal(canCreateChurch({ role: 'superadmin', isPasswordSession: true }), false);
+});
+
+test('el borrado total queda limitado a pruebas QA ya retiradas del público', () => {
+  assert.equal(isQaChurchDeletionCandidate({
+    name: 'PRUEBA QA Iglesia Esencial',
+    lifecycle_status: 'INACTIVE',
+    is_public: false,
+    show_on_map: false,
+  }), true);
+  assert.equal(isQaChurchDeletionCandidate({
+    name: 'Iglesia Maná Medellín',
+    lifecycle_status: 'INACTIVE',
+    is_public: false,
+    show_on_map: false,
+  }), false);
+  assert.equal(isQaChurchDeletionCandidate({
+    name: 'PRUEBA QA Iglesia todavía visible',
+    lifecycle_status: 'ACTIVE',
+    is_public: true,
+    show_on_map: true,
+  }), false);
 });
 
 test('una sede sin región no se abre por respaldo a todo el país', () => {
