@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@lib/supabaseAdmin';
+import { supabaseAdmin } from './supabaseAdmin.ts';
 
 export const CUMBRE_EVENT_ID = '0b4a8ee9-3e4d-4e16-a2a9-7a62a4a0c202';
 const EVENT_PAYMENT_ASSETS_BUCKET = String(
@@ -23,8 +23,9 @@ const LEGACY_PUBLIC_FIELDS = [
   'status',
 ].join(',');
 
-const PLATFORM_PUBLIC_FIELDS_BASE = [
-  LEGACY_PUBLIC_FIELDS,
+const REGIONAL_PUBLIC_FIELDS = [LEGACY_PUBLIC_FIELDS, 'region_id'].join(',');
+
+const PLATFORM_EXPERIENCE_FIELDS = [
   'slug',
   'visibility',
   'category',
@@ -39,7 +40,10 @@ const PLATFORM_PUBLIC_FIELDS_BASE = [
   'pricing_model',
   'registration_requires_approval',
   'page_settings',
-].join(',');
+];
+
+const PLATFORM_PUBLIC_FIELDS_BASE = [REGIONAL_PUBLIC_FIELDS, ...PLATFORM_EXPERIENCE_FIELDS].join(',');
+const PLATFORM_PUBLIC_FIELDS_WITHOUT_REGION = [LEGACY_PUBLIC_FIELDS, ...PLATFORM_EXPERIENCE_FIELDS].join(',');
 
 const PLATFORM_PUBLIC_FIELDS_BEFORE_EXPERIENCE = [PLATFORM_PUBLIC_FIELDS_BASE, 'banner_layout'].join(',');
 const PLATFORM_PUBLIC_FIELDS = [
@@ -56,6 +60,7 @@ export type PublicEvent = {
   description: string | null;
   scope: string;
   church_id?: string | null;
+  region_id?: string | null;
   start_date: string;
   end_date: string | null;
   banner_url: string | null;
@@ -178,6 +183,17 @@ export async function listPublicDatabaseEvents(): Promise<PublicEvent[]> {
     ));
   }
 
+  const withoutRegion = await supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS_WITHOUT_REGION)
+    .eq('status', 'PUBLISHED')
+    .order('start_date', { ascending: true });
+  if (!withoutRegion.error) {
+    return normalizeRows(withoutRegion.data).filter((event) => (
+      event.visibility === 'PUBLIC' || event.id === CUMBRE_EVENT_ID
+    ));
+  }
+
   // Before the platform upgrade, only the known global Cumbre event is listed.
   // Other legacy events remain shareable by their UUID without becoming discoverable.
   const legacy = await supabaseAdmin
@@ -258,6 +274,19 @@ export async function getPublicDatabaseEvent(identifier: string): Promise<Public
   const beforeLayout = await beforeLayoutQuery.maybeSingle();
   if (!beforeLayout.error) {
     const event = beforeLayout.data as PublicEvent | null;
+    return event && event.visibility !== 'PRIVATE' ? event : null;
+  }
+
+  let withoutRegionQuery = supabaseAdmin
+    .from('events')
+    .select(PLATFORM_PUBLIC_FIELDS_WITHOUT_REGION)
+    .eq('status', 'PUBLISHED');
+  withoutRegionQuery = isUuid(normalized)
+    ? withoutRegionQuery.eq('id', normalized)
+    : withoutRegionQuery.eq('slug', normalized);
+  const withoutRegion = await withoutRegionQuery.maybeSingle();
+  if (!withoutRegion.error) {
+    const event = withoutRegion.data as PublicEvent | null;
     return event && event.visibility !== 'PRIVATE' ? event : null;
   }
 

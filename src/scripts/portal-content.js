@@ -1,6 +1,6 @@
 import { ensureAuthenticated, getPortalSession, redirectToLogin } from '@lib/portalAuthClient';
 
-const SECTION_KINDS = ['hero', 'story', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'custom'];
+const SECTION_KINDS = ['hero', 'story', 'rich_text', 'gallery', 'cta', 'video', 'cards', 'promotion', 'custom'];
 const SECTION_STATUSES = ['draft', 'published', 'archived'];
 const SECTION_KIND_LABELS = {
   hero: 'Portada',
@@ -10,6 +10,7 @@ const SECTION_KIND_LABELS = {
   cta: 'Llamado a la acción',
   video: 'Video',
   cards: 'Tarjetas',
+  promotion: 'Promoción global',
   custom: 'Avanzado',
 };
 const STORY_PRESET_LABELS = {
@@ -84,6 +85,7 @@ const el = {
   pages: document.getElementById('cms-pages'),
   pagesEmpty: document.getElementById('cms-pages-empty'),
   newPage: document.getElementById('cms-new-page'),
+  churchPromotions: document.getElementById('cms-church-promotions'),
   pageSave: document.getElementById('cms-page-save'),
   pagePublish: document.getElementById('cms-page-publish'),
   pageUnpublish: document.getElementById('cms-page-unpublish'),
@@ -831,8 +833,18 @@ function renderStatusOptions(value) {
 
 function clientSafeUrl(value) {
   const url = String(value || '').trim();
-  if (url.startsWith('/') && !url.startsWith('//')) return url;
+  if (/^\/(?!\/)[^\\\s]*$/.test(url)) return url;
   if (/^https:\/\//i.test(url)) return url;
+  return '';
+}
+
+function validatePromotionPayload(payload) {
+  if (!String(payload?.title || '').trim()) return 'Escribe el título principal de la promoción.';
+  if (!clientSafeUrl(payload?.image)) return 'Selecciona una imagen válida de ImageKit para la promoción.';
+  if (!clientSafeUrl(payload?.ctaHref)) return 'Escribe un enlace HTTPS o una ruta interna que empiece por /.';
+  const startsAt = String(payload?.startsAt || '').trim();
+  const endsAt = String(payload?.endsAt || '').trim();
+  if (startsAt && endsAt && endsAt < startsAt) return 'La fecha final debe ser posterior a la fecha inicial.';
   return '';
 }
 
@@ -1113,6 +1125,12 @@ async function swapSectionsOrder(sectionId, direction) {
 
 function renderPayloadField(label, key, value, options = {}) {
   const inputClass = 'mt-2 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm';
+  const constraints = [
+    options.min !== undefined ? `min="${escapeAttr(options.min)}"` : '',
+    options.max !== undefined ? `max="${escapeAttr(options.max)}"` : '',
+    options.step !== undefined ? `step="${escapeAttr(options.step)}"` : '',
+    options.placeholder ? `placeholder="${escapeAttr(options.placeholder)}"` : '',
+  ].filter(Boolean).join(' ');
   if (options.multiline) {
     return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
       <textarea data-payload-field="${escapeAttr(key)}" rows="${options.rows || 3}" class="${inputClass}">${escapeHtml(value || '')}</textarea>
@@ -1127,7 +1145,7 @@ function renderPayloadField(label, key, value, options = {}) {
     </label>`;
   }
   return `<label class="text-xs font-bold text-slate-600 ${options.wide ? 'md:col-span-2' : ''}">${escapeHtml(label)}
-    <input data-payload-field="${escapeAttr(key)}" type="${options.type || 'text'}" class="${inputClass}" value="${escapeAttr(value || '')}" />
+    <input data-payload-field="${escapeAttr(key)}" type="${options.type || 'text'}" class="${inputClass}" value="${escapeAttr(value ?? '')}" ${constraints} />
   </label>`;
 }
 
@@ -1170,6 +1188,20 @@ function renderPayloadEditor(section) {
       renderPayloadField('Enlace principal', 'primaryHref', payload.primaryHref, { type: 'url' }),
       renderPayloadField('Botón secundario', 'secondaryLabel', payload.secondaryLabel),
       renderPayloadField('Enlace secundario', 'secondaryHref', payload.secondaryHref, { type: 'url' }),
+    ].join('');
+  } else if (section.kind === 'promotion') {
+    fields = [
+      '<p class="rounded-lg border border-[#28A6BD]/20 bg-[#F2FBFC] px-4 py-4 text-xs leading-relaxed text-slate-600 md:col-span-2"><strong class="text-[#293C74]">Promoción global:</strong> aparecerá en las páginas publicadas de todas las iglesias únicamente durante las fechas indicadas. Si no defines fechas, seguirá visible hasta enviarla a borrador o archivarla.</p>',
+      renderPayloadField('Texto superior', 'eyebrow', payload.eyebrow, { placeholder: 'Para toda la familia Maná' }),
+      renderPayloadField('Título principal', 'title', payload.title || section.title),
+      renderPayloadField('Descripción', 'description', payload.description, { multiline: true, wide: true, rows: 4 }),
+      renderPayloadField('Imagen para escritorio', 'image', payload.image, { media: true, wide: true }),
+      renderPayloadField('Imagen vertical para celular (opcional)', 'mobileImage', payload.mobileImage, { media: true, wide: true }),
+      renderPayloadField('Texto del botón', 'ctaLabel', payload.ctaLabel, { placeholder: 'Conocer más' }),
+      renderPayloadField('Enlace del botón', 'ctaHref', payload.ctaHref, { type: 'url', placeholder: 'https://... o /ruta/' }),
+      renderPayloadField('Visible desde (opcional)', 'startsAt', payload.startsAt, { type: 'datetime-local' }),
+      renderPayloadField('Visible hasta (opcional)', 'endsAt', payload.endsAt, { type: 'datetime-local' }),
+      renderPayloadField('Prioridad (0 aparece primero)', 'priority', payload.priority ?? 50, { type: 'number', min: 0, max: 100, step: 1 }),
     ].join('');
   }
 
@@ -1312,6 +1344,13 @@ function renderSections() {
           if (value) payload[key] = value;
           else delete payload[key];
         });
+        if (selectedKind === 'promotion') {
+          const validationMessage = validatePromotionPayload(payload);
+          if (validationMessage) {
+            showAlert(validationMessage, 'error', 6500);
+            return;
+          }
+        }
       }
 
       const body = {
@@ -1841,6 +1880,37 @@ async function createPageFromModal() {
   }
 }
 
+async function openChurchPromotions() {
+  if (hasUnsavedEditorDrafts()) {
+    showAlert('Guarda los cambios pendientes antes de abrir las promociones globales.', 'error', 6500);
+    return;
+  }
+  setBusy(true, 'Abriendo promociones globales...');
+  try {
+    let page = state.pages.find((item) => item.page_key === 'church-promotions');
+    if (!page) {
+      const data = await fetchJson('/api/portal/content/pages', {
+        method: 'POST',
+        body: JSON.stringify({
+          page_key: 'church-promotions',
+          title: 'Promociones globales para iglesias',
+          description: 'Campañas editoriales que aparecen automáticamente en todas las páginas públicas de iglesias.',
+          route_path: '/promociones-iglesias',
+          locale: 'es',
+        }),
+      });
+      page = data.page;
+      showAlert('Se creó el espacio de promociones. Agrega la primera pieza y publícala cuando esté lista.', 'success', 8000);
+    }
+    if (el.filter) el.filter.value = '';
+    state.selectedPageId = page.id;
+    await loadPages();
+    el.newSection?.focus();
+  } finally {
+    setBusy(false);
+  }
+}
+
 async function createSectionFromModal() {
   if (!state.selectedPageId) {
     showAlert('Selecciona una página primero.', 'error', 5000);
@@ -1864,6 +1934,22 @@ async function createSectionFromModal() {
 
   setBusy(true, 'Creando sección...');
   try {
+    const defaultPayload = kind === 'story'
+      ? defaultStoryPayload(title || 'Nuestra historia')
+      : kind === 'promotion'
+        ? {
+            eyebrow: 'Para toda la familia Maná',
+            title: title || '',
+            description: '',
+            image: '',
+            mobileImage: '',
+            ctaLabel: 'Conocer más',
+            ctaHref: '',
+            startsAt: '',
+            endsAt: '',
+            priority: 50,
+          }
+        : { text: '', image: '', cta: null };
     await fetchJson('/api/portal/content/sections', {
       method: 'POST',
       body: JSON.stringify({
@@ -1872,7 +1958,7 @@ async function createSectionFromModal() {
         kind,
         title: title || key,
         position: state.sections.length,
-        payload: kind === 'story' ? defaultStoryPayload(title || 'Nuestra historia') : { text: '', image: '', cta: null },
+        payload: defaultPayload,
       }),
     });
 
@@ -2040,6 +2126,11 @@ function bindModalEvents() {
       showAlert('Selecciona una página primero.', 'error', 5000);
       return;
     }
+    if (state.page?.page_key === 'church-promotions') {
+      if (el.modalSectionKind) el.modalSectionKind.value = 'promotion';
+      if (el.modalSectionKey && !el.modalSectionKey.value) el.modalSectionKey.value = `promocion-${state.sections.length + 1}`;
+      if (el.modalSectionTitle) el.modalSectionTitle.value = '';
+    }
     openEditorModal(el.sectionModal, event.currentTarget);
   });
 
@@ -2114,6 +2205,9 @@ async function boot() {
 }
 
 el.filter?.addEventListener('input', renderPages);
+el.churchPromotions?.addEventListener('click', () => {
+  openChurchPromotions().catch((error) => showAlert(parseError(error, 'No se pudieron abrir las promociones globales.'), 'error', 7000));
+});
 PAGE_DRAFT_FIELDS.forEach((field) => {
   el[field]?.addEventListener('input', persistPageDraft);
   el[field]?.addEventListener('change', persistPageDraft);

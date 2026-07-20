@@ -25,6 +25,10 @@ const directoryPickerAttributes: Record<string, boolean> = { webkitdirectory: tr
                 <p class="mt-2 text-sm text-slate-600 md:text-base">Páginas, bloques, imágenes y publicación.</p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
+                <button id="cms-church-promotions" type="button" data-cms-action class="inline-flex min-h-11 items-center gap-2 rounded-md border border-[#293C74]/25 bg-white px-4 py-2 text-sm font-bold text-[#293C74] transition hover:bg-[#293C74]/5">
+                  <PortalIcon name="image" size={18} />
+                  Promociones globales
+                </button>
                 <button id="cms-new-page" type="button" data-cms-action class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#293C74] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1f2f63]">
                   <PortalIcon name="plus" size={18} />
                   Nueva página
@@ -222,6 +226,7 @@ const directoryPickerAttributes: Record<string, boolean> = { webkitdirectory: tr
             <option value="cta">Llamado a la acción</option>
             <option value="video">Video</option>
             <option value="cards">Tarjetas</option>
+            <option value="promotion">Promoción global</option>
             <option value="custom">Avanzado</option>
           </select>
         </label>

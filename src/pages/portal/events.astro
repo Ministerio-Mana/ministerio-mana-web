@@ -416,6 +416,30 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </div>
             </section>
 
+            <section class="rounded-lg border border-[#28A6BD]/30 bg-[#F2FBFC] p-4" aria-labelledby="event-church-promotion-title">
+              <div class="grid gap-4 lg:grid-cols-[1fr_15rem] lg:items-end">
+                <label class="flex min-h-11 cursor-pointer items-start gap-4 rounded-lg border border-[#28A6BD]/20 bg-white p-4">
+                  <input id="event-promote-on-church-pages" type="checkbox" data-platform-field disabled checked class="mt-2 h-5 w-5 shrink-0 rounded border-slate-300 text-[#293C74] focus:ring-[#28A6BD]" />
+                  <span>
+                    <strong id="event-church-promotion-title" class="block text-sm font-black text-[#293C74]">Promocionar en páginas de iglesias</strong>
+                    <small class="mt-2 block text-xs font-normal leading-relaxed text-slate-600">El evento aparecerá automáticamente donde corresponda: esta iglesia, su región, el país o toda la familia Maná. Si tiene imagen, también podrá entrar en el carrusel destacado.</small>
+                  </span>
+                </label>
+                <label class="event-field">Prioridad promocional
+                  <select id="event-promotion-priority" data-platform-field disabled>
+                    <option value="10">Alta</option>
+                    <option value="50" selected>Normal</option>
+                    <option value="80">Baja</option>
+                  </select>
+                  <span class="mt-2 block text-xs font-normal text-slate-500">Solo organiza varias promociones que coincidan al mismo tiempo.</span>
+                </label>
+              </div>
+              <label class="event-field mt-4">Texto superior de la promoción <span class="font-normal text-slate-500">(opcional)</span>
+                <input id="event-promotion-eyebrow" data-platform-field disabled maxlength="80" placeholder="Ejemplo: Una experiencia para recordar" />
+                <span class="mt-2 block text-xs font-normal text-slate-500">Si lo dejas vacío, se mostrará “En tu iglesia”, “En tu región”, “En Colombia” o “Para toda la familia Maná”.</span>
+              </label>
+            </section>
+
             <details class="rounded-lg border border-[#293C74]/15 bg-[#F7F9FF]">
               <summary class="cursor-pointer list-none px-4 py-4 text-sm font-bold text-[#293C74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#293C74]">Contenido de la landing <span class="font-normal text-slate-500">(opcional)</span></summary>
               <div class="grid gap-4 border-t border-[#293C74]/10 p-4 sm:grid-cols-2">

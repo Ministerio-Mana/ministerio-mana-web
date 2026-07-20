@@ -23,6 +23,17 @@ function safeUrl(value: string | null | undefined): string {
   return '';
 }
 
+function safePromotionUrl(value: string | null | undefined): string {
+  const raw = String(value || '').trim();
+  if (/^\/(?!\/)[^\\\s]*$/.test(raw)) return raw;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 function youtubeEmbed(url: string): string {
   try {
     const parsed = new URL(url);
@@ -166,6 +177,31 @@ function toEmbedUrl(raw: string): string {
       );
     }
 
+    if (kind === 'promotion') {
+      const image = safePromotionUrl(payload.image || payload.image_url);
+      const mobileImage = safePromotionUrl(payload.mobileImage || payload.mobile_image);
+      const href = safePromotionUrl(payload.ctaHref || payload.cta_href);
+      const imageSrc = image ? optimizedPublicImageUrl(image, 1600, 84) : '';
+      const imageSrcset = image ? responsivePublicImageSrcset(image, [640, 960, 1280, 1600], 84) : undefined;
+      return (
+        <section class="cms-promotion">
+          {image && (
+            <picture>
+              {mobileImage && <source media="(max-width: 639px)" srcset={optimizedPublicImageUrl(mobileImage, 800, 82)} />}
+              <img src={imageSrc} srcset={imageSrcset} sizes="100vw" alt="" loading="lazy" decoding="async" />
+            </picture>
+          )}
+          <div class="cms-promotion__veil"></div>
+          <div class="cms-promotion__copy">
+            {payload.eyebrow && <p>{String(payload.eyebrow)}</p>}
+            <h2>{String(payload.title || section.title || 'Promoción Maná')}</h2>
+            {payload.description && <span>{String(payload.description)}</span>}
+            {payload.ctaLabel && href && <a href={href}>{String(payload.ctaLabel)}</a>}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section class="rounded-[2rem] border border-slate-200 bg-white px-6 py-8 md:px-8 md:py-10">
         <h2 class="text-xl font-bold text-[#293C74]">{String(section.title || 'Bloque')}</h2>
@@ -188,6 +224,21 @@ function toEmbedUrl(raw: string): string {
   .cms-page-renderer :global(.cms-story-deck) {
     justify-self: center;
     width: 100vw;
+  }
+
+  .cms-promotion { border-radius: 2rem; color: #fff; min-height: min(42rem, 75svh); overflow: hidden; position: relative; }
+  .cms-promotion picture, .cms-promotion img { height: 100%; inset: 0; position: absolute; width: 100%; }
+  .cms-promotion img { object-fit: cover; }
+  .cms-promotion__veil { background: linear-gradient(90deg, rgba(7,17,28,.95), rgba(7,17,28,.25)); inset: 0; position: absolute; }
+  .cms-promotion__copy { bottom: 0; display: grid; gap: var(--space-2); left: 0; max-width: 46rem; padding: clamp(var(--space-3), 5vw, var(--space-8)); position: absolute; z-index: 1; }
+  .cms-promotion__copy p { color: #73d7e4; font-size: .75rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+  .cms-promotion__copy h2 { font-family: var(--font-display); font-size: clamp(2.5rem, 7vw, 5.5rem); font-weight: 900; letter-spacing: -.045em; line-height: .95; }
+  .cms-promotion__copy span { color: rgba(255,255,255,.86); line-height: 1.65; }
+  .cms-promotion__copy a { align-items: center; background: #fff; border-radius: 999px; color: #172151; display: inline-flex; font-weight: 900; justify-content: center; min-height: 48px; padding: var(--space-2) var(--space-3); width: fit-content; }
+  .cms-promotion__copy a:focus-visible { outline: 3px solid #f2c94c; outline-offset: 3px; }
+
+  @media (max-width: 639px) {
+    .cms-promotion__veil { background: linear-gradient(0deg, rgba(7,17,28,.97), rgba(7,17,28,.16)); }
   }
 
   @media (max-width: 767px) {

@@ -1,8 +1,15 @@
 import { supabaseAdmin } from './supabaseAdmin.ts';
 import { isChurchPageSchemaMissingError, normalizeChurchPageDraft, normalizeChurchPageSlug } from './churchPage.ts';
+import { discoverEventsForProfile, type DiscoveredEvent } from './eventDiscovery.ts';
+import {
+  buildEventChurchPromotions,
+  listCmsChurchPromotions,
+  mergeChurchPromotions,
+  type ChurchPromotion,
+} from './churchPromotions.ts';
 import { listPublicDatabaseEvents, type PublicEvent } from './publicEvents.ts';
 
-const CHURCH_FIELDS = 'id,code,name,kind,lifecycle_status,is_public,show_on_map,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone,service,notes';
+const CHURCH_FIELDS = 'id,code,name,kind,lifecycle_status,is_public,show_on_map,region_id,city,country,continent,address,maps_url,lat,lng,contact_name,contact_email,contact_phone,service,notes';
 
 export type PublicChurchPage = {
   id: string;
@@ -11,7 +18,8 @@ export type PublicChurchPage = {
   published_at: string | null;
   page: ReturnType<typeof normalizeChurchPageDraft>;
   church: Record<string, any>;
-  events: PublicEvent[];
+  events: Array<DiscoveredEvent<PublicEvent>>;
+  promotions: ChurchPromotion[];
 };
 
 export async function listPublishedChurchPageSummaries(): Promise<Array<{ church_id: string; slug: string; display_name: string }>> {
@@ -76,13 +84,17 @@ export async function getPublicChurchPage(slug: string): Promise<PublicChurchPag
     service_schedule: hasCanonicalDirectory ? canonicalContact.service ?? '' : pageResult.data.published_snapshot.service_schedule,
   });
   const now = Date.now();
-  const events = (await listPublicDatabaseEvents())
-    .filter((event) => {
-      if (event.church_id !== pageResult.data.church_id) return false;
-      const lastMoment = new Date(event.end_date || event.start_date).getTime();
-      return Number.isFinite(lastMoment) && lastMoment >= now;
-    })
-    .slice(0, 6);
+  const [publicEvents, campaigns] = await Promise.all([
+    listPublicDatabaseEvents(),
+    listCmsChurchPromotions({ now }),
+  ]);
+  const events = discoverEventsForProfile(publicEvents, {
+    churchId: pageResult.data.church_id,
+    regionId: churchResult.data.region_id || null,
+    city: churchResult.data.city || null,
+    country: churchResult.data.country || null,
+  }, { now, limit: 50 });
+  const promotions = mergeChurchPromotions(campaigns, buildEventChurchPromotions(events, { now, limit: 6 }), 4);
   return {
     id: pageResult.data.id,
     church_id: pageResult.data.church_id,
@@ -91,5 +103,6 @@ export async function getPublicChurchPage(slug: string): Promise<PublicChurchPag
     page,
     church: churchResult.data,
     events,
+    promotions,
   };
 }

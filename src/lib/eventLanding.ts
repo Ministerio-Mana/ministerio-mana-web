@@ -7,6 +7,9 @@ export type EventLandingTheme = (typeof EVENT_LANDING_THEMES)[number];
 export type EventLandingSettings = {
   template: EventLandingTemplate;
   theme: EventLandingTheme;
+  promote_on_church_pages: boolean;
+  promotion_priority: number;
+  promotion_eyebrow: string;
   what_to_expect: string;
   agenda: string;
   practical_info: string;
@@ -39,11 +42,26 @@ function normalizeLongText(value: unknown, maxLength: number): string {
     .slice(0, maxLength);
 }
 
+function normalizeBoolean(value: unknown, fallback = false): boolean {
+  if (typeof value === 'boolean') return value;
+  if (value === undefined || value === null || value === '') return fallback;
+  return ['true', '1', 'on', 'yes', 'si', 'sí'].includes(String(value).trim().toLowerCase());
+}
+
+function normalizePriority(value: unknown): number {
+  if (value === undefined || value === null || String(value).trim() === '') return 50;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(100, Math.round(parsed))) : 50;
+}
+
 export function normalizeEventLandingSettings(value: unknown): EventLandingSettings {
   const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
   return {
     template: includesValue(EVENT_LANDING_TEMPLATES, input.template) ? input.template : 'ESSENTIAL',
     theme: includesValue(EVENT_LANDING_THEMES, input.theme) ? input.theme : 'navy',
+    promote_on_church_pages: normalizeBoolean(input.promote_on_church_pages ?? input.promoteOnChurchPages, true),
+    promotion_priority: normalizePriority(input.promotion_priority ?? input.promotionPriority),
+    promotion_eyebrow: normalizeLongText(input.promotion_eyebrow || input.promotionEyebrow, 80),
     what_to_expect: normalizeLongText(input.what_to_expect || input.whatToExpect, 1200),
     agenda: normalizeLongText(input.agenda, 1600),
     practical_info: normalizeLongText(input.practical_info || input.practicalInfo, 1200),

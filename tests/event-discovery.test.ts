@@ -31,6 +31,7 @@ test('ordena por cercanía territorial y excluye privados o finalizados', () => 
     { id: 'local', slug: 'evento-local', scope: 'LOCAL', church_id: 'church-medellin', status: 'PUBLISHED', visibility: 'PUBLIC', start_date: '2026-08-01T10:00:00-05:00' },
     { id: 'private', scope: 'GLOBAL', status: 'PUBLISHED', visibility: 'PRIVATE', start_date: '2026-07-16T10:00:00-05:00' },
     { id: 'past', scope: 'GLOBAL', status: 'PUBLISHED', visibility: 'PUBLIC', start_date: '2026-07-01T10:00:00-05:00', end_date: '2026-07-01T12:00:00-05:00' },
+    { id: 'invalid-date', scope: 'GLOBAL', status: 'PUBLISHED', visibility: 'PUBLIC', start_date: 'por definir' },
   ];
   const result = discoverEventsForProfile(events, profile, { now, limit: 10 });
   assert.deepEqual(result.map((event) => event.id), ['local', 'national', 'global']);
