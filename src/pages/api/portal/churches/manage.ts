@@ -57,11 +57,14 @@ function isOptionalReferenceMissing(error: any): boolean {
 async function findQaReferenceBlockers(churchId: string): Promise<{ ok: true; labels: string[] } | { ok: false }> {
   if (!supabaseAdmin) return { ok: false };
   const labels: string[] = [];
-  for (const check of QA_REFERENCE_CHECKS) {
-    const result = await supabaseAdmin
+  const checked = await Promise.all(QA_REFERENCE_CHECKS.map(async (check) => ({
+    check,
+    result: await supabaseAdmin
       .from(check.table)
       .select('*', { count: 'exact', head: true })
-      .eq(check.column, churchId);
+      .eq(check.column, churchId),
+  })));
+  for (const { check, result } of checked) {
     if (result.error && !isOptionalReferenceMissing(result.error)) {
       console.error('[church-management] QA reference check failed', {
         table: check.table,
