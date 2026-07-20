@@ -1983,7 +1983,7 @@ async function removeInvitationImage() {
         if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo quitar la imagen de invitación.');
         if (bannerField) bannerField.value = '';
         eventsCache = eventsCache.map((item) => item.id === eventId
-            ? { ...item, banner_url: '', banner_layout: null }
+            ? { ...item, banner_url: '', banner_layout: 'HORIZONTAL' }
             : item);
         updateEventPreview();
         setInvitationImageStatus('Imagen retirada correctamente.', 'success');

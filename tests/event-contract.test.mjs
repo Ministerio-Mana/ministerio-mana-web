@@ -180,6 +180,7 @@ test('la imagen de invitación se puede descartar o retirar también de SharePoi
   assert.match(script, /eventInvitationImageRemove\?\.addEventListener\('click', removeInvitationImage\)/);
   assert.match(script, /method: 'DELETE'/);
   assert.match(endpoint, /export const DELETE: APIRoute/);
+  assert.match(endpoint, /banner_url: null, banner_layout: 'HORIZONTAL'/);
   assert.match(endpoint, /deleteMicrosoftEventDocument/);
   assert.match(endpoint, /action: 'invitation\.image\.removed'/);
 });

@@ -248,7 +248,7 @@ export const DELETE: APIRoute = async ({ request, clientAddress }) => {
   const now = new Date().toISOString();
   const { error: eventUpdateError } = await supabaseAdmin
     .from('events')
-    .update({ banner_url: null, banner_layout: null, updated_at: now })
+    .update({ banner_url: null, banner_layout: 'HORIZONTAL', updated_at: now })
     .eq('id', eventId);
   if (eventUpdateError) return json({ ok: false, error: 'No se pudo retirar la imagen del evento.' }, 500);
 
@@ -260,7 +260,7 @@ export const DELETE: APIRoute = async ({ request, clientAddress }) => {
     if (deleteRecordError) {
       await supabaseAdmin.from('events').update({
         banner_url: access.event.banner_url || null,
-        banner_layout: access.event.banner_layout || null,
+        banner_layout: access.event.banner_layout || 'HORIZONTAL',
         updated_at: now,
       }).eq('id', eventId);
       return json({ ok: false, error: 'No se pudo retirar el registro de la imagen.' }, 500);
@@ -277,7 +277,7 @@ export const DELETE: APIRoute = async ({ request, clientAddress }) => {
         .upsert(stored, { onConflict: 'event_id' });
       const { error: restoreEventError } = await supabaseAdmin.from('events').update({
         banner_url: access.event.banner_url || null,
-        banner_layout: access.event.banner_layout || null,
+        banner_layout: access.event.banner_layout || 'HORIZONTAL',
         updated_at: now,
       }).eq('id', eventId);
       if (restoreRecordError || restoreEventError) {
