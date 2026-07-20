@@ -119,6 +119,8 @@ test('la operación remota falla cerrada, pagina y no cambia importes ni precios
   assert.match(endpoint, /STRIPE_ACCOUNTING_MIGRATION_SECRET/);
   assert.match(endpoint, /allowWithoutSecretInDevelopment:\s*false/);
   assert.match(endpoint, /const apply = body\.apply === true/);
+  assert.match(endpoint, /exclude_fund_codes/);
+  assert.match(endpoint, /\^\[A-Z0-9_-\]\{1,100\}\$/);
   assert.match(endpoint, /MAX_PAGE_SIZE = 10/);
   assert.match(endpoint, /intent\.status !== 'succeeded'/);
   assert.match(endpoint, /paymentIntents\.update\([^,]+, \{ description, metadata \}\)/);

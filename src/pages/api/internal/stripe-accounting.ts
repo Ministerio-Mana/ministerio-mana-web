@@ -69,6 +69,14 @@ function pageSize(value: unknown): number {
   return Number.isFinite(parsed) ? Math.max(1, Math.min(MAX_PAGE_SIZE, parsed)) : MAX_PAGE_SIZE;
 }
 
+function excludedFundCodes(value: unknown): Set<string> {
+  if (!Array.isArray(value)) return new Set();
+  return new Set(value
+    .slice(0, 50)
+    .map((entry) => text(entry).toUpperCase())
+    .filter((entry) => /^[A-Z0-9_-]{1,100}$/.test(entry)));
+}
+
 function publicSiteUrl(): string {
   const raw = text(env('PUBLIC_SITE_URL')) || 'https://ministeriomana.org';
   try {
@@ -525,8 +533,8 @@ async function buildCatalog() {
   return dedupeCatalog(items);
 }
 
-async function seedCatalog(apply: boolean) {
-  const catalog = await buildCatalog();
+async function seedCatalog(apply: boolean, excluded = new Set<string>()) {
+  const catalog = (await buildCatalog()).filter((item) => !excluded.has(item.accounting.fundCode));
   const rows = [];
   for (const item of catalog) {
     if (!apply) {
@@ -583,10 +591,19 @@ export const POST: APIRoute = async ({ request }) => {
   const apply = body.apply === true;
   const limit = pageSize(body.limit);
   const cursor = text(body.cursor);
+  const excluded = excludedFundCodes(body.exclude_fund_codes);
 
   try {
     if (action === 'status') return json({ ok: true, action, ...(await status()) });
-    if (action === 'seed_catalog') return json({ ok: true, action, apply, ...(await seedCatalog(apply)) });
+    if (action === 'seed_catalog') {
+      return json({
+        ok: true,
+        action,
+        apply,
+        excluded_fund_codes: [...excluded],
+        ...(await seedCatalog(apply, excluded)),
+      });
+    }
     if (action === 'payment_intents') {
       return json({ ok: true, action, apply, ...(await runPaymentIntentPage({ apply, limit, cursor })) });
     }
