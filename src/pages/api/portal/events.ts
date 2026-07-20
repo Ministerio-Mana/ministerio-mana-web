@@ -11,6 +11,7 @@ import {
 } from '@lib/portalRbac';
 import { sanitizePlainText } from '@lib/validation';
 import { enforceRateLimit } from '@lib/rateLimit';
+import { ensureEventStripeProduct } from '@lib/eventStripeProduct';
 import {
   DEFAULT_EVENT_TIMEZONE,
   EVENT_ATTENDANCE_MODES,
@@ -1011,6 +1012,19 @@ export const PATCH: APIRoute = async ({ request }) => {
   if (error) {
     console.error('Event Update Error:', error);
     return new Response(JSON.stringify({ ok: false, error: 'No se pudo actualizar el evento' }), { status: 500 });
+  }
+
+  const { data: activeStripeOption } = await supabaseAdmin
+    .from('event_payment_options')
+    .select('id')
+    .eq('event_id', eventId)
+    .eq('provider', 'STRIPE')
+    .eq('kind', 'ONLINE')
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle();
+  if (activeStripeOption?.id && data) {
+    await ensureEventStripeProduct(data);
   }
 
   return new Response(JSON.stringify({ ok: true, event: data }), { status: 200 });

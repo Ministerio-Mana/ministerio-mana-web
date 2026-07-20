@@ -23,6 +23,7 @@ interface ImportMetaEnv {
   readonly TURNSTILE_SECRET_KEY?: string;
   readonly STRIPE_SECRET_KEY?: string;
   readonly STRIPE_WEBHOOK_SECRET?: string;
+  readonly STRIPE_ACCOUNTING_MIGRATION_SECRET?: string;
   readonly STRIPE_SUCCESS_URL?: string;
   readonly STRIPE_CANCEL_URL?: string;
   readonly WOMPI_PUBLIC_KEY?: string;

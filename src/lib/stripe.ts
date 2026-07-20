@@ -25,7 +25,7 @@ function getWebhookSecret(): string {
 }
 
 let client: Stripe | null = null;
-const fundProductCache = new Map<string, Promise<string | null>>();
+const fundProductCache = new Map<string, Promise<Stripe.Product | null>>();
 const ZERO_DECIMAL_CURRENCIES = new Set(['CLP']);
 
 export function getStripeClient(): Stripe {
@@ -67,11 +67,26 @@ function checkoutSubmitType(accounting: StripeAccountingDescriptor): 'donate' | 
   return accounting.paymentDomain === 'EVENT' ? 'pay' : 'donate';
 }
 
-async function findOrCreateFundProduct(
-  stripe: Stripe,
-  accounting: StripeAccountingDescriptor,
-): Promise<string | null> {
-  const cached = fundProductCache.get(accounting.fundCode);
+function productDescription(accounting: StripeAccountingDescriptor): string {
+  return `Fondo contable · ${accounting.fundLabel}`.slice(0, 500);
+}
+
+function normalizeProductImages(images: string[] | undefined): string[] {
+  return Array.from(new Set((images || [])
+    .map((image) => String(image || '').trim())
+    .filter((image) => /^https:\/\/[^\s]+$/i.test(image))))
+    .slice(0, 8);
+}
+
+export async function ensureStripeFundProduct(params: {
+  accounting: StripeAccountingDescriptor;
+  imageUrls?: string[];
+}): Promise<Stripe.Product | null> {
+  const stripe = getStripeClient();
+  const { accounting } = params;
+  const images = normalizeProductImages(params.imageUrls);
+  const cacheKey = `${accounting.fundCode}|${accounting.productName}|${images.join('|')}`;
+  const cached = fundProductCache.get(cacheKey);
   if (cached) return cached;
 
   const lookup = (async () => {
@@ -80,19 +95,38 @@ async function findOrCreateFundProduct(
         query: `active:'true' AND metadata['mana_fund_code']:'${accounting.fundCode}'`,
         limit: 1,
       });
-      if (existing.data[0]?.id) return existing.data[0].id;
+      const desiredMetadata = {
+        ...buildStripeAccountingMetadata(accounting),
+        mana_fund_code: accounting.fundCode,
+      };
+      const current = existing.data[0];
+      if (current?.id) {
+        const metadataChanged = Object.entries(desiredMetadata)
+          .some(([key, value]) => current.metadata?.[key] !== value);
+        const imagesChanged = images.length > 0
+          && (current.images.length !== images.length || current.images.some((image, index) => image !== images[index]));
+        const detailsChanged = current.name !== accounting.productName
+          || current.description !== productDescription(accounting)
+          || metadataChanged
+          || imagesChanged;
+        if (!detailsChanged) return current;
+        return stripe.products.update(current.id, {
+          name: accounting.productName,
+          description: productDescription(accounting),
+          metadata: { ...current.metadata, ...desiredMetadata },
+          ...(images.length ? { images } : {}),
+        });
+      }
 
       const product = await stripe.products.create({
         name: accounting.productName,
-        description: `Fondo contable · ${accounting.fundLabel}`.slice(0, 500),
-        metadata: {
-          ...buildStripeAccountingMetadata(accounting),
-          mana_fund_code: accounting.fundCode,
-        },
+        description: productDescription(accounting),
+        metadata: desiredMetadata,
+        ...(images.length ? { images } : {}),
       }, {
         idempotencyKey: `mana-fund-product-v1:${accounting.fundCode}`,
       });
-      return product.id;
+      return product;
     } catch (error) {
       console.error('[stripe.accounting] fund product resolution failed', {
         fundCode: accounting.fundCode,
@@ -101,14 +135,13 @@ async function findOrCreateFundProduct(
       return null;
     }
   })();
-  fundProductCache.set(accounting.fundCode, lookup);
-  const productId = await lookup;
-  if (!productId) fundProductCache.delete(accounting.fundCode);
-  return productId;
+  fundProductCache.set(cacheKey, lookup);
+  const product = await lookup;
+  if (!product) fundProductCache.delete(cacheKey);
+  return product;
 }
 
 async function buildStripeLineItems(params: {
-  stripe: Stripe;
   amount: number;
   currency: string;
   description: string;
@@ -130,7 +163,7 @@ async function buildStripeLineItems(params: {
     if (!Number.isInteger(unitAmount) || unitAmount <= 0) {
       throw new Error('El monto de un fondo de Stripe no es válido.');
     }
-    const productId = await findOrCreateFundProduct(params.stripe, item.accounting);
+    const productId = (await ensureStripeFundProduct({ accounting: item.accounting }))?.id || null;
     const recurring = params.recurring
       ? {
           recurring: {
@@ -144,7 +177,7 @@ async function buildStripeLineItems(params: {
       : {
           product_data: {
             name: item.accounting.productName,
-            description: `Fondo contable · ${item.accounting.fundLabel}`.slice(0, 500),
+            description: productDescription(item.accounting),
             metadata: {
               ...buildStripeAccountingMetadata(item.accounting),
               mana_fund_code: item.accounting.fundCode,
@@ -167,7 +200,6 @@ export async function createStripeDonationSession(params: StripeSessionParams): 
   const stripe = getStripeClient();
   const metadata = mergeStripeAccountingMetadata(params.accounting, params.metadata);
   const lineItems = await buildStripeLineItems({
-    stripe,
     amount: params.amountUsd,
     currency: params.currency,
     description: params.description,
@@ -217,7 +249,6 @@ export async function createStripeInstallmentSession(params: {
   const stripe = getStripeClient();
   const metadata = mergeStripeAccountingMetadata(params.accounting, params.metadata);
   const lineItems = await buildStripeLineItems({
-    stripe,
     amount: params.amount,
     currency: params.currency,
     description: params.description,

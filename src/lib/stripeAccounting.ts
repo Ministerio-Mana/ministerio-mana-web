@@ -8,7 +8,7 @@ export type StripeAccountingDescriptor = {
   fundLabel: string;
   productName: string;
   source: string;
-  beneficiaryType: 'MINISTRY' | 'MISSIONARY' | 'EVENT' | 'MULTIPLE';
+  beneficiaryType: 'MINISTRY' | 'MISSIONARY' | 'EVENT' | 'PILGRIMAGE' | 'MULTIPLE';
   beneficiaryCode: string;
   beneficiaryLabel: string;
 };
@@ -208,6 +208,44 @@ export function resolveCumbreStripeAccounting(): StripeAccountingDescriptor {
     beneficiaryCode: 'CUMBRE_2026',
     beneficiaryLabel: 'Cumbre Mundial 2026',
   };
+}
+
+export function resolvePilgrimageStripeAccounting(params: {
+  pilgrimageId: unknown;
+  pilgrimageTitle: unknown;
+}): StripeAccountingDescriptor {
+  const pilgrimageId = normalizeCodeSegment(params.pilgrimageId, 'GENERAL');
+  const pilgrimageTitle = compactLabel(params.pilgrimageTitle, 'Peregrinación Maná');
+  return {
+    paymentDomain: 'DONATION',
+    conceptCode: 'PILGRIMAGE',
+    conceptLabel: 'Peregrinaciones',
+    fundCode: `PILGRIMAGE_${pilgrimageId}`.slice(0, 100),
+    fundLabel: `Peregrinación · ${pilgrimageTitle}`.slice(0, 120),
+    productName: `Peregrinación · ${pilgrimageTitle}`.slice(0, 120),
+    source: 'pilgrimage_checkout',
+    beneficiaryType: 'PILGRIMAGE',
+    beneficiaryCode: pilgrimageId,
+    beneficiaryLabel: pilgrimageTitle,
+  };
+}
+
+export function getFixedStripeAccountingCatalog(): StripeAccountingDescriptor[] {
+  return [
+    resolveDonationStripeAccounting({ donationType: 'general' }),
+    resolveDonationStripeAccounting({ donationType: 'diezmos' }),
+    resolveDonationStripeAccounting({ donationType: 'ofrendas' }),
+    resolveDonationStripeAccounting({ donationType: 'misiones' }),
+    resolveDonationStripeAccounting({ donationType: 'evento' }),
+    resolveDonationStripeAccounting({ donationType: 'peregrinaciones' }),
+    resolveDonationStripeAccounting({ source: 'primicias-stripe', donationType: 'ofrendas', projectName: 'Primicias' }),
+    resolveCampusStripeAccounting([]),
+    resolveCumbreStripeAccounting(),
+    resolvePilgrimageStripeAccounting({
+      pilgrimageId: 'TURQUIA_ISLAS_GRIEGAS_2026',
+      pilgrimageTitle: 'Turquía e Islas Griegas 2026',
+    }),
+  ];
 }
 
 export function buildStripeAccountingMetadata(accounting: StripeAccountingDescriptor): Record<string, string> {
