@@ -39,7 +39,7 @@
   "src/components/_root": {
     "tailwindOffScale": 50,
     "tailwindArbitrary": 0,
-    "cssMagicValue": 197
+    "cssMagicValue": 196
   },
   "src/components/campus": {
     "tailwindOffScale": 45,

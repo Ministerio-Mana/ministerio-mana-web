@@ -57,7 +57,10 @@ test('el detalle público de Peticiones anuncia el diálogo y devuelve el foco',
   ]);
 
   assert.match(view, /data-prayer-detail hidden aria-live="polite" role="dialog" aria-modal="false"/);
+  assert.match(view, /data-prayer-detail-backdrop hidden aria-label=\{c\.js\.close\}/);
   assert.match(logic, /detail\.querySelector\('\[data-prayer-detail-close\]'\)\?\.focus\(\)/);
+  assert.match(logic, /positionPrayerDetail\(note, detail\)/);
+  assert.match(logic, /backdrop\.addEventListener\('click', \(\) => closePrayerDetail\(root\)\)/);
   assert.match(logic, /event\.key !== 'Escape'/);
   assert.match(logic, /trigger instanceof HTMLElement && trigger\.isConnected/);
 });
@@ -76,9 +79,15 @@ test('Peticiones encaja papeles en ranuras reales y mantiene las peticiones acce
   assert.match(view, /\.prayer-note\[data-paper-orientation="vertical"\]/);
   assert.match(view, /#muro,[\s\S]*?#peticion[\s\S]*?--layout-prayer-anchor-offset:[\s\S]*?var\(--space-4\)[\s\S]*?scroll-margin-top: var\(--layout-prayer-anchor-offset\)/);
   assert.match(view, /min-height: 2\.75rem/);
-  assert.match(view, /Grupos de papeles encajados en las juntas oscuras/);
+  assert.match(view, /Las juntas se llenan por tramos, no con papeles sueltos/);
+  assert.match(view, /horizontalPaperRuns\.flatMap/);
+  assert.match(view, /verticalPaperRuns\.flatMap/);
   assert.match(view, /class="paper-slip__back"/);
   assert.match(view, /--note-paper-width: 3\.8rem/);
+  assert.match(view, /class="prayer-wall-guide" role="note"/);
+  assert.match(view, /\.prayer-note::after[\s\S]*?prayer-marker-breathe/);
+  assert.match(view, /\.prayer-note\.is-open header\s*\{[\s\S]*?opacity:\s*0/);
+  assert.match(view, /clip-path: polygon\(1\.4% 2\.2%/);
   assert.match(view, /\.prayer-note:hover header,[\s\S]*?\.prayer-note\.is-open header[\s\S]*?opacity: 1/);
   assert.match(view, /\.prayer-note header[\s\S]*?opacity: 0/);
 });

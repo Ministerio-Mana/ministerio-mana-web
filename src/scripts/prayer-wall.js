@@ -196,6 +196,46 @@ async function handlePrayerAction(root, row, count, button) {
   }
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function positionPrayerDetail(note, detail) {
+  const stage = note.closest('[data-wall-stage]');
+  if (!(stage instanceof HTMLElement)) return;
+
+  const stageRect = stage.getBoundingClientRect();
+  const noteRect = note.getBoundingClientRect();
+  const edge = 12;
+  const availableWidth = Math.max(0, stageRect.width - edge * 2);
+  const narrow = window.matchMedia('(max-width: 767px)').matches;
+  const preferredWidth = narrow
+    ? availableWidth
+    : Math.min(384, Math.max(280, stageRect.width * 0.44));
+  const detailWidth = Math.min(availableWidth, preferredWidth);
+
+  detail.style.width = `${detailWidth}px`;
+  detail.style.left = `${edge}px`;
+  detail.style.right = 'auto';
+  detail.style.top = `${edge}px`;
+
+  const detailHeight = detail.offsetHeight;
+  const anchorX = noteRect.left - stageRect.left + noteRect.width / 2;
+  const anchorY = noteRect.top - stageRect.top + noteRect.height / 2;
+  const preferredLeft = narrow
+    ? (stageRect.width - detailWidth) / 2
+    : anchorX <= stageRect.width / 2
+      ? anchorX + 20
+      : anchorX - detailWidth - 20;
+  const left = clamp(preferredLeft, edge, Math.max(edge, stageRect.width - detailWidth - edge));
+  const top = clamp(anchorY - detailHeight / 2, edge, Math.max(edge, stageRect.height - detailHeight - edge));
+
+  detail.style.left = `${Math.round(left)}px`;
+  detail.style.top = `${Math.round(top)}px`;
+  detail.style.setProperty('--detail-origin-x', `${Math.round(clamp(anchorX - left, 0, detailWidth))}px`);
+  detail.style.setProperty('--detail-origin-y', `${Math.round(clamp(anchorY - top, 0, detailHeight))}px`);
+}
+
 function showPrayerDetail(root, row, note) {
   const detail = root.querySelector('[data-prayer-detail]');
   if (!detail) return;
@@ -226,14 +266,25 @@ function showPrayerDetail(root, row, note) {
   button.disabled = hasPrayed(row.id);
   button.addEventListener('click', () => handlePrayerAction(root, row, count, button));
   oldButton.replaceWith(button);
+  detail.classList.remove('is-unfolding');
   detail.hidden = false;
+  root.querySelectorAll('[data-prayer-detail-backdrop]').forEach((backdrop) => {
+    backdrop.hidden = false;
+  });
+  positionPrayerDetail(note, detail);
+  void detail.offsetWidth;
+  detail.classList.add('is-unfolding');
   root.__prayerDetailTrigger = note;
   detail.querySelector('[data-prayer-detail-close]')?.focus();
 }
 
 function closePrayerDetail(root, restoreFocus = true) {
   root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
+    detail.classList.remove('is-unfolding');
     detail.hidden = true;
+  });
+  root.querySelectorAll('[data-prayer-detail-backdrop]').forEach((backdrop) => {
+    backdrop.hidden = true;
   });
   root.querySelectorAll('[data-prayer-card].is-open').forEach((note) => {
     note.classList.remove('is-open');
@@ -274,7 +325,7 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   const title = document.createElement('h3');
   title.textContent = row.first_name;
   const meta = document.createElement('small');
-  meta.textContent = prayerLocation(root, row) || text(root, 'prayerRequest');
+  meta.textContent = row.request_text;
   header.append(title, meta);
 
   const request = document.createElement('p');
@@ -332,7 +383,11 @@ function renderPrayers(root, prayers, newPrayerId = '') {
 
   list.replaceChildren();
   root.querySelectorAll('[data-prayer-detail]').forEach((detail) => {
+    detail.classList.remove('is-unfolding');
     detail.hidden = true;
+  });
+  root.querySelectorAll('[data-prayer-detail-backdrop]').forEach((backdrop) => {
+    backdrop.hidden = true;
   });
   const pageSize = getPageSize(root);
   const slots = getSlotPositions(root);
@@ -416,6 +471,9 @@ function setupPagination(root) {
 function setupPrayerDetail(root) {
   root.querySelectorAll('[data-prayer-detail-close]').forEach((button) => {
     button.addEventListener('click', () => closePrayerDetail(root));
+  });
+  root.querySelectorAll('[data-prayer-detail-backdrop]').forEach((backdrop) => {
+    backdrop.addEventListener('click', () => closePrayerDetail(root));
   });
   root.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape' || !root.querySelector('[data-prayer-detail]:not([hidden])')) return;
