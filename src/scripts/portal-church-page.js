@@ -80,7 +80,9 @@ const el = {
   email: document.getElementById('church-page-email'),
   whatsappMessage: document.getElementById('church-page-whatsapp-message'),
   heroPreview: document.getElementById('church-page-hero-preview'),
+  heroClear: document.getElementById('church-page-hero-clear'),
   pastorPreview: document.getElementById('church-page-pastor-preview'),
+  pastorClear: document.getElementById('church-page-pastor-clear'),
   templates: document.getElementById('church-page-templates'),
   themes: document.getElementById('church-page-themes'),
   storySection: document.getElementById('church-page-story-section'),
@@ -747,6 +749,8 @@ function populateForm() {
   el.themes?.querySelectorAll('input[name="story_theme"]').forEach((input) => { input.checked = input.value === page.story_config.theme; });
   setImagePreview(el.heroPreview, page.hero_image_url, 'Sin portada');
   setImagePreview(el.pastorPreview, page.pastor_image_url, 'Sin imagen');
+  el.heroClear?.classList.toggle('hidden', !safeUrl(page.hero_image_url));
+  el.pastorClear?.classList.toggle('hidden', !safeUrl(page.pastor_image_url));
   renderScenes();
   renderGallery();
   renderPreview();
@@ -1026,6 +1030,22 @@ function bindEvents() {
     markDirty();
   });
   document.addEventListener('click', (event) => {
+    const clearButton = event.target instanceof Element ? event.target.closest('[data-image-clear]') : null;
+    if (clearButton && state.page) {
+      const target = clearButton.dataset.imageClear;
+      if (target === 'hero') {
+        state.page.hero_image_url = '';
+        state.page.hero_image_alt = '';
+      } else if (target === 'pastor') {
+        state.page.pastor_image_url = '';
+        state.page.pastor_image_alt = '';
+      } else {
+        return;
+      }
+      populateForm();
+      markDirty();
+      return;
+    }
     const imageButton = event.target instanceof Element ? event.target.closest('[data-image-target]') : null;
     if (imageButton) openMedia(imageButton.dataset.imageTarget, imageButton);
   });

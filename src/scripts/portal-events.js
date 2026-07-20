@@ -154,6 +154,7 @@ const eventManualPaymentQrPreview = document.getElementById('event-manual-paymen
 const eventInvitationImage = document.getElementById('event-invitation-image');
 const eventInvitationImageDropzone = document.getElementById('event-invitation-image-dropzone');
 const eventInvitationImageStatus = document.getElementById('event-invitation-image-status');
+const eventInvitationImageRemove = document.getElementById('event-invitation-image-remove');
 const previewImage = document.getElementById('event-preview-image');
 const previewImageBackdrop = document.getElementById('event-preview-image-backdrop');
 const previewDate = document.getElementById('event-preview-date');
@@ -1908,7 +1909,16 @@ function updateEventPreview() {
         previewImageBackdrop.classList.toggle('hidden', !imageUrl);
         previewImageBackdrop.style.backgroundImage = imageUrl ? `url("${imageUrl.replace(/"/g, '%22')}")` : '';
     }
+    syncInvitationImageRemove();
     syncRegistrationFields();
+}
+
+function syncInvitationImageRemove() {
+    if (!eventInvitationImageRemove || !eventForm) return;
+    const bannerUrl = sanitizeUrl(eventForm.querySelector('[name="banner_url"]')?.value || '');
+    const visible = Boolean(pendingInvitationImageFile || bannerUrl);
+    eventInvitationImageRemove.classList.toggle('hidden', !visible);
+    eventInvitationImageRemove.classList.toggle('inline-flex', visible);
 }
 
 function setInvitationImageStatus(message = '', tone = 'info') {
@@ -1925,6 +1935,7 @@ function clearPendingInvitationImage() {
     invitationImagePreviewObjectUrl = '';
     if (eventInvitationImage) eventInvitationImage.value = '';
     setInvitationImageStatus();
+    syncInvitationImageRemove();
 }
 
 function setPendingInvitationImage(file) {
@@ -1939,6 +1950,49 @@ function setPendingInvitationImage(file) {
     invitationImagePreviewObjectUrl = URL.createObjectURL(file);
     setInvitationImageStatus(`${file.name} lista para guardarse en SharePoint.`, 'success');
     updateEventPreview();
+}
+
+async function removeInvitationImage() {
+    if (!eventForm || !eventInvitationImageRemove) return;
+    if (pendingInvitationImageFile) {
+        clearPendingInvitationImage();
+        setInvitationImageStatus('La nueva imagen pendiente fue descartada.', 'success');
+        updateEventPreview();
+        return;
+    }
+
+    const bannerField = eventForm.querySelector('[name="banner_url"]');
+    const bannerUrl = sanitizeUrl(bannerField?.value || '');
+    if (!bannerUrl) return;
+    const eventId = String(eventIdInput?.value || '').trim();
+    if (!eventId) {
+        if (bannerField) bannerField.value = '';
+        updateEventPreview();
+        return;
+    }
+    if (!window.confirm('¿Quitar la imagen de invitación? El archivo asociado también se retirará de SharePoint.')) return;
+
+    eventInvitationImageRemove.disabled = true;
+    setInvitationImageStatus('Quitando imagen…');
+    try {
+        const { res, data } = await fetchAuthorizedJsonWithTimeout('/api/portal/event-invitation-image', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event_id: eventId }),
+        }, REQUEST_TIMEOUT_MS, 'El retiro de la imagen de invitación');
+        if (!res.ok || !data.ok) throw new Error(data.error || 'No se pudo quitar la imagen de invitación.');
+        if (bannerField) bannerField.value = '';
+        eventsCache = eventsCache.map((item) => item.id === eventId
+            ? { ...item, banner_url: '', banner_layout: null }
+            : item);
+        updateEventPreview();
+        setInvitationImageStatus('Imagen retirada correctamente.', 'success');
+    } catch (error) {
+        setInvitationImageStatus(error?.message || 'No se pudo quitar la imagen de invitación.', 'error');
+    } finally {
+        eventInvitationImageRemove.disabled = false;
+        syncInvitationImageRemove();
+    }
 }
 
 async function uploadInvitationImage(eventId) {
@@ -2369,6 +2423,7 @@ eventPriceUsdInput?.addEventListener('blur', () => {
     updateEventPreview();
 });
 eventInvitationImage?.addEventListener('change', () => setPendingInvitationImage(eventInvitationImage.files?.[0]));
+eventInvitationImageRemove?.addEventListener('click', removeInvitationImage);
 eventInvitationImageDropzone?.addEventListener('click', () => eventInvitationImage?.click());
 eventInvitationImageDropzone?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
