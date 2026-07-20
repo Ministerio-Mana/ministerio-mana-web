@@ -4,7 +4,7 @@ import { extractCoordinatesFromMapsUrl, hasValidChurchCoordinates } from '@lib/c
 const API_URL = '/api/portal/church-pages';
 const MEDIA_URL = '/api/portal/church-media';
 const MANAGEMENT_URL = '/api/portal/churches/manage';
-const MAX_GALLERY = 8;
+const MAX_GALLERY = 16;
 const MAX_SCENES = 6;
 const REQUEST_TIMEOUT_MS = 15000;
 const UPLOAD_TIMEOUT_MS = 60000;

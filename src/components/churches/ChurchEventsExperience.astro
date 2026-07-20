@@ -1,0 +1,286 @@
+---
+import { optimizedPublicImageUrl, responsivePublicImageSrcset } from '@lib/publicMedia';
+import type { ChurchPromotion } from '@lib/churchPromotions';
+import type { DiscoveredEvent } from '@lib/eventDiscovery';
+import { getPublicEventPath, type PublicEvent } from '@lib/publicEvents';
+
+const { events, promotions, mode = 'all' } = Astro.props as {
+  events: Array<DiscoveredEvent<PublicEvent>>;
+  promotions: ChurchPromotion[];
+  mode?: 'all' | 'promotions' | 'agenda';
+};
+const showPromotions = mode !== 'agenda';
+const showAgenda = mode !== 'promotions';
+
+const formatEventDate = (value: string, timeZone = 'America/Bogota') => new Intl.DateTimeFormat('es-CO', {
+  dateStyle: 'long',
+  timeStyle: 'short',
+  timeZone,
+}).format(new Date(value));
+const formatPromotionDate = (value: string | null) => value
+  ? new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value))
+  : '';
+const eventLocation = (event: PublicEvent) => event.attendance_mode === 'ONLINE'
+  ? 'Evento virtual'
+  : [event.location_name, event.city].filter(Boolean).join(' · ');
+const calendarEventLocation = (event: DiscoveredEvent<PublicEvent>) => event.attendance_mode === 'ONLINE'
+  ? 'Evento virtual'
+  : [event.location_name, event.audience_kind === 'NEARBY' ? '' : event.city].filter(Boolean).join(' · ');
+const calendarPayload = events.map((event) => ({
+  id: event.id,
+  title: event.title,
+  start: event.start_date,
+  end: event.end_date,
+  timezone: event.timezone || 'America/Bogota',
+  audience: event.audience_label,
+  href: getPublicEventPath(event),
+  location: calendarEventLocation(event),
+}));
+const calendarJson = JSON.stringify(calendarPayload).replace(/</g, '\\u003c');
+const visibleEvents = events.slice(0, 9);
+---
+
+{showPromotions && promotions.length > 0 && (
+  <section class="church-promotions" aria-labelledby="church-promotions-title" data-church-promotions>
+    <div class="church-experience-shell">
+      <div class="church-experience-heading church-experience-heading--light">
+        <div>
+          <p class="church-experience-kicker">Para vivir juntos</p>
+          <h2 id="church-promotions-title">Historias y encuentros que queremos compartir</h2>
+        </div>
+        {promotions.length > 1 && (
+          <div class="church-promotion-controls" aria-label="Controles de promociones">
+            <button type="button" data-promotion-previous aria-label="Promoción anterior">←</button>
+            <span data-promotion-status aria-live="polite">1 de {promotions.length}</span>
+            <button type="button" data-promotion-next aria-label="Siguiente promoción">→</button>
+          </div>
+        )}
+      </div>
+
+      <div class="church-promotion-track" data-promotion-track tabindex="0" aria-label="Promociones destacadas">
+        {promotions.map((promotion, index) => {
+          const image = optimizedPublicImageUrl(promotion.image_url, 1600, 84);
+          const imageSrcset = responsivePublicImageSrcset(promotion.image_url, [640, 960, 1280, 1600], 84);
+          const mobileImage = optimizedPublicImageUrl(promotion.mobile_image_url, 800, 82);
+          return (
+            <article
+              id={`church-promotion-${index + 1}`}
+              class="church-promotion-card"
+              data-promotion-card
+              role="group"
+              aria-roledescription="diapositiva"
+              aria-label={`${index + 1} de ${promotions.length}`}
+            >
+              <picture>
+                {mobileImage && <source media="(max-width: 639px)" srcset={mobileImage} />}
+                <img
+                  src={image}
+                  srcset={imageSrcset}
+                  sizes="(min-width: 1200px) 1120px, 100vw"
+                  alt=""
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </picture>
+              <div class="church-promotion-veil"></div>
+              <div class="church-promotion-copy">
+                <p>{promotion.eyebrow}</p>
+                <h3>{promotion.title}</h3>
+                {promotion.description && <span>{promotion.description}</span>}
+                {promotion.source === 'EVENT' && promotion.starts_at && <time datetime={promotion.starts_at}>{formatPromotionDate(promotion.starts_at)}</time>}
+                <a href={promotion.cta_href}>{promotion.cta_label}</a>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {promotions.length > 1 && (
+        <div class="church-promotion-dots" aria-label="Elegir promoción">
+          {promotions.map((promotion, index) => (
+            <button
+              type="button"
+              data-promotion-dot={index}
+              aria-label={`Mostrar ${promotion.title}`}
+              aria-current={index === 0 ? 'true' : 'false'}
+            ></button>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+
+{showAgenda && <section class="church-agenda" aria-labelledby="church-agenda-title">
+  <div class="church-experience-shell">
+    <div class="church-experience-heading">
+      <div>
+        <p class="church-experience-kicker">Nuestra agenda</p>
+        <h2 id="church-agenda-title">Lo que viene en nuestra comunidad</h2>
+        <p class="church-agenda-intro">Revisa este mes y los próximos encuentros que también están abiertos para ti.</p>
+      </div>
+      <a class="church-events-all" href="/eventos/">Ver agenda completa</a>
+    </div>
+
+    {events.length ? (
+      <>
+        <div class="church-calendar" data-church-calendar>
+          <script is:inline type="application/json" data-church-calendar-events set:html={calendarJson}></script>
+          <div class="church-calendar-panel">
+            <div class="church-calendar-toolbar">
+              <button type="button" data-calendar-previous aria-label="Ver mes anterior">←</button>
+              <h3 data-calendar-title aria-live="polite">Calendario</h3>
+              <button type="button" data-calendar-next aria-label="Ver mes siguiente">→</button>
+            </div>
+            <div class="church-calendar-weekdays" aria-hidden="true">
+              <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
+            </div>
+            <div class="church-calendar-grid" data-calendar-grid role="grid" aria-label="Calendario mensual"></div>
+            <p class="church-calendar-mobile-note">Elige el mes y revisa sus fechas en la lista.</p>
+          </div>
+          <aside class="church-calendar-list" aria-labelledby="church-calendar-list-title">
+            <p class="church-experience-kicker">Fechas del mes</p>
+            <h3 id="church-calendar-list-title" data-calendar-list-title>Próximos encuentros</h3>
+            <div data-calendar-list aria-live="polite"></div>
+          </aside>
+        </div>
+
+        <div class="church-event-grid" aria-label="Próximos eventos">
+          {visibleEvents.map((event) => {
+            const banner = optimizedPublicImageUrl(event.banner_url || '', 900, 82);
+            const bannerSrcset = responsivePublicImageSrcset(event.banner_url || '', [480, 720, 900], 82);
+            return (
+              <article class="church-event-card">
+                {banner ? (
+                  <figure><img src={banner} srcset={bannerSrcset} sizes="(min-width: 900px) 33vw, 100vw" alt="" loading="lazy" decoding="async" /></figure>
+                ) : (
+                  <div class="church-event-card-placeholder" aria-hidden="true"><span>{new Date(event.start_date).getDate()}</span></div>
+                )}
+                <div class="church-event-card-copy">
+                  <p class="church-event-audience">{event.audience_label}</p>
+                  <time datetime={event.start_date}>{formatEventDate(event.start_date, event.timezone || 'America/Bogota')}</time>
+                  <h3>{event.title}</h3>
+                  {eventLocation(event) && <span>{eventLocation(event)}</span>}
+                  <a href={getPublicEventPath(event)}>Ver información</a>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </>
+    ) : (
+      <div class="church-agenda-empty">
+        <strong>Estamos preparando los próximos encuentros.</strong>
+        <span>Cuando se publique una nueva fecha para esta iglesia, región o país, aparecerá aquí automáticamente.</span>
+      </div>
+    )}
+  </div>
+</section>}
+
+<script>
+  import { initChurchEventExperiences } from '../../scripts/church-events.js';
+  initChurchEventExperiences();
+</script>
+
+<style>
+  .church-experience-shell { margin-inline: auto; max-width: 1180px; padding-inline: clamp(var(--space-2), 4vw, var(--space-5)); }
+  .church-experience-heading { align-items: end; display: flex; gap: var(--space-4); justify-content: space-between; }
+  .church-experience-heading h2 { color: var(--church-blue); font-family: var(--font-display); font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; letter-spacing: -.035em; line-height: 1; margin-top: var(--space-2); max-width: 18ch; }
+  .church-experience-heading--light h2, .church-experience-heading--light .church-experience-kicker { color: #fff; }
+  .church-experience-kicker { color: var(--church-teal); font-size: .75rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+  .church-promotions { background: #0d1430; color: #fff; overflow: hidden; padding-block: clamp(var(--space-8), 8vw, var(--space-14)); }
+  .church-promotion-track { display: grid; gap: var(--space-2); grid-auto-columns: 100%; grid-auto-flow: column; margin-top: var(--space-4); overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; scroll-snap-type: inline mandatory; }
+  .church-promotion-track::-webkit-scrollbar { display: none; }
+  .church-promotion-track:focus-visible { outline: 3px solid #f2c94c; outline-offset: 6px; }
+  .church-promotion-card { border: 1px solid rgba(255,255,255,.16); border-radius: clamp(1.25rem, 4vw, 2.5rem); min-height: clamp(31rem, 62vw, 42rem); overflow: hidden; position: relative; scroll-snap-align: start; }
+  .church-promotion-card picture, .church-promotion-card img { height: 100%; inset: 0; position: absolute; width: 100%; }
+  .church-promotion-card img { object-fit: cover; }
+  .church-promotion-veil { background: linear-gradient(90deg, rgba(7,17,28,.96) 0%, rgba(7,17,28,.72) 48%, rgba(7,17,28,.12) 100%); inset: 0; position: absolute; }
+  .church-promotion-copy { align-items: flex-start; display: flex; flex-direction: column; inset: auto auto 0 0; max-width: 46rem; padding: clamp(var(--space-3), 5vw, var(--space-8)); position: absolute; z-index: 1; }
+  .church-promotion-copy > p { color: #73d7e4; font-size: .75rem; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
+  .church-promotion-copy h3 { color: #fff; font-family: var(--font-display); font-size: clamp(2.3rem, 6vw, 5rem); font-weight: 900; letter-spacing: -.045em; line-height: .94; margin-top: var(--space-2); text-wrap: balance; }
+  .church-promotion-copy > span { color: rgba(255,255,255,.84); font-size: clamp(.95rem, 2vw, 1.15rem); line-height: 1.65; margin-top: var(--space-2); max-width: 56ch; }
+  .church-promotion-copy time { color: #fff; font-size: .85rem; font-weight: 800; margin-top: var(--space-2); }
+  .church-promotion-copy a { align-items: center; background: #fff; border-radius: 999px; color: #172151; display: inline-flex; font-size: .9rem; font-weight: 900; justify-content: center; margin-top: var(--space-3); min-height: 48px; padding: var(--space-2) var(--space-3); }
+  .church-promotion-copy a:focus-visible, .church-promotion-controls button:focus-visible, .church-promotion-dots button:focus-visible { outline: 3px solid #f2c94c; outline-offset: 3px; }
+  .church-promotion-controls { align-items: center; display: flex; flex: 0 0 auto; gap: var(--space-2); }
+  .church-promotion-controls button { align-items: center; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; display: inline-flex; font-size: 1.2rem; height: 48px; justify-content: center; width: 48px; }
+  .church-promotion-controls span { color: rgba(255,255,255,.78); font-size: .75rem; font-weight: 900; min-width: 3.5rem; text-align: center; }
+  .church-promotion-dots { display: flex; gap: var(--space-1); justify-content: center; margin-top: var(--space-3); }
+  .church-promotion-dots button { background: rgba(255,255,255,.3); border-radius: 999px; height: 12px; min-height: 44px; position: relative; width: 44px; }
+  .church-promotion-dots button::after { background: currentColor; border-radius: 999px; content: ''; height: 8px; inset: 18px 12px; position: absolute; width: 20px; }
+  .church-promotion-dots button[aria-current="true"] { color: #73d7e4; }
+
+  .church-agenda { background: var(--church-paper); color: #172151; padding-block: clamp(var(--space-8), 8vw, var(--space-14)); }
+  .church-agenda-intro { color: #526174; line-height: 1.65; margin-top: var(--space-2); max-width: 56ch; }
+  .church-events-all { align-items: center; color: var(--church-blue); display: inline-flex; font-weight: 900; min-height: 44px; }
+  .church-events-all:focus-visible, .church-event-card a:focus-visible, .church-calendar button:focus-visible { outline: 3px solid var(--church-teal); outline-offset: 3px; }
+  .church-calendar { display: grid; gap: var(--space-2); grid-template-columns: minmax(0, 1.45fr) minmax(17rem, .55fr); margin-top: var(--space-5); }
+  .church-calendar-panel, .church-calendar-list { background: #fff; border: 1px solid #dce4ec; border-radius: 2rem; box-shadow: 0 18px 50px rgba(17,25,54,.07); padding: clamp(var(--space-2), 3vw, var(--space-4)); }
+  .church-calendar-toolbar { align-items: center; display: grid; gap: var(--space-2); grid-template-columns: 48px 1fr 48px; }
+  .church-calendar-toolbar button { align-items: center; border: 1px solid #dce4ec; border-radius: 999px; color: var(--church-blue); display: inline-flex; font-size: 1.1rem; height: 48px; justify-content: center; }
+  .church-calendar-toolbar button:disabled { cursor: not-allowed; opacity: .35; }
+  .church-calendar-toolbar h3 { color: var(--church-blue); font-size: clamp(1rem, 3vw, 1.35rem); font-weight: 900; text-align: center; }
+  .church-calendar-weekdays, .church-calendar-grid { display: grid; gap: var(--space-1); grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .church-calendar-weekdays { color: #64748b; font-size: .68rem; font-weight: 900; margin-top: var(--space-3); text-align: center; }
+  .church-calendar-grid { margin-top: var(--space-2); }
+  .church-calendar-mobile-note { color: #64748b; display: none; line-height: 1.6; text-align: center; }
+  :global(.church-calendar-day) { align-items: center; aspect-ratio: 1; border-radius: .9rem; color: #526174; display: flex; flex-direction: column; font-size: .8rem; font-weight: 800; justify-content: center; min-height: 44px; min-width: 0; position: relative; }
+  :global(button.church-calendar-day) { background: #eef8fa; color: var(--church-blue); cursor: pointer; }
+  :global(button.church-calendar-day:hover), :global(button.church-calendar-day[aria-pressed="true"]) { background: var(--church-blue); color: #fff; }
+  :global(.church-calendar-day--today) { box-shadow: inset 0 0 0 2px var(--church-teal); }
+  :global(.church-calendar-dots) { bottom: .3rem; display: flex; gap: calc(var(--space-1) / 4); position: absolute; }
+  :global(.church-calendar-dots i) { background: currentColor; border-radius: 999px; height: 3px; width: 3px; }
+  .church-calendar-list h3 { color: var(--church-blue); font-size: 1.35rem; font-weight: 900; margin-top: var(--space-1); }
+  :global(.church-calendar-list-item) { border-top: 1px solid #e5eaf0; display: grid; gap: var(--space-1); padding-block: var(--space-2); }
+  :global(.church-calendar-list-item:first-child) { border-top: 0; }
+  :global(.church-calendar-list-item time) { color: var(--church-teal); font-size: .72rem; font-weight: 900; text-transform: uppercase; }
+  :global(.church-calendar-list-item strong) { color: var(--church-blue); line-height: 1.3; }
+  :global(.church-calendar-list-item span) { color: #64748b; font-size: .8rem; line-height: 1.5; }
+  :global(.church-calendar-list-item a) { align-items: center; color: var(--church-blue); display: inline-flex; font-size: .82rem; font-weight: 900; min-height: 44px; width: fit-content; }
+  :global(.church-calendar-list-empty) { color: #64748b; line-height: 1.6; padding-block: var(--space-3); }
+  .church-event-grid { display: grid; gap: var(--space-2); grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--space-4); }
+  .church-event-card { background: #fff; border: 1px solid #dce4ec; border-radius: 1.5rem; box-shadow: 0 14px 40px rgba(17,25,54,.06); min-width: 0; overflow: hidden; }
+  .church-event-card figure, .church-event-card-placeholder { aspect-ratio: 16 / 9; background: #111936; overflow: hidden; }
+  .church-event-card figure img { height: 100%; object-fit: cover; transition: transform .35s ease; width: 100%; }
+  .church-event-card:hover figure img { transform: scale(1.035); }
+  .church-event-card-placeholder { align-items: center; background: linear-gradient(145deg, var(--church-blue), var(--church-teal)); color: #fff; display: flex; justify-content: center; }
+  .church-event-card-placeholder span { font-family: var(--font-display); font-size: 4rem; font-weight: 900; }
+  .church-event-card-copy { padding: var(--space-3); }
+  .church-event-audience { color: var(--church-teal); font-size: .7rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+  .church-event-card time { color: #64748b; display: block; font-size: .78rem; font-weight: 700; line-height: 1.5; margin-top: var(--space-2); }
+  .church-event-card h3 { color: var(--church-blue); font-size: 1.25rem; font-weight: 900; line-height: 1.2; margin-top: var(--space-1); }
+  .church-event-card-copy > span { color: #64748b; display: block; font-size: .85rem; line-height: 1.5; margin-top: var(--space-1); }
+  .church-event-card a { align-items: center; color: var(--church-blue); display: inline-flex; font-size: .85rem; font-weight: 900; margin-top: var(--space-2); min-height: 44px; }
+  .church-agenda-empty { background: #fff; border: 1px dashed #cbd5e1; border-radius: 1.5rem; display: grid; gap: var(--space-1); margin-top: var(--space-4); padding: var(--space-4); }
+  .church-agenda-empty strong { color: var(--church-blue); font-size: 1.1rem; }
+  .church-agenda-empty span { color: #64748b; line-height: 1.6; }
+
+  @media (max-width: 899px) {
+    .church-experience-heading { align-items: flex-start; flex-direction: column; gap: var(--space-2); }
+    .church-promotion-controls { align-self: stretch; justify-content: space-between; }
+    .church-calendar { grid-template-columns: minmax(0, 1fr); }
+    .church-event-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 639px) {
+    .church-promotion-card { min-height: 34rem; }
+    .church-promotion-veil { background: linear-gradient(0deg, rgba(7,17,28,.98) 0%, rgba(7,17,28,.68) 58%, rgba(7,17,28,.1) 100%); }
+    .church-promotion-copy h3 { font-size: clamp(2.25rem, 12vw, 3.5rem); }
+    .church-promotion-copy > span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    .church-calendar-panel, .church-calendar-list { border-radius: 1.25rem; }
+    .church-calendar-weekdays, .church-calendar-grid { gap: calc(var(--space-1) / 4); }
+    :global(.church-calendar-day) { border-radius: .65rem; font-size: .72rem; min-height: 40px; }
+    .church-event-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (max-width: 379px) {
+    .church-calendar-weekdays, .church-calendar-grid { display: none; }
+    .church-calendar-mobile-note { display: block; margin-top: var(--space-3); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .church-promotion-track { scroll-behavior: auto; }
+    .church-event-card figure img { transition: none; }
+  }
+</style>

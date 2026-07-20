@@ -85,7 +85,7 @@ function normalizeEmail(value: unknown): string {
 function normalizeGallery(value: unknown): ChurchGalleryImage[] {
   if (!Array.isArray(value)) return [];
   return value
-    .slice(0, 8)
+    .slice(0, 16)
     .map((entry) => {
       const image = entry && typeof entry === 'object' ? entry as Record<string, unknown> : {};
       return {

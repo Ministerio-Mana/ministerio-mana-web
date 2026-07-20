@@ -340,7 +340,8 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.match(logic, /UPLOAD_TIMEOUT_MS/);
   assert.match(logic, /expected_version: Number\(state\.page\.version \|\| 0\)/);
   assert.match(view, /id="church-page-themes"/);
-  assert.match(view, /Hasta 8 fotos de la comunidad/);
+  assert.match(view, /Selecciona hasta 16 fotos/);
+  assert.match(logic, /const MAX_GALLERY = 16/);
   assert.match(view, /:global\(\.church-field input\)[\s\S]*?min-height: var\(--control-min-size\)/);
   assert.match(view, /:global\(\[data-scene-action\]\)[\s\S]*?min-height: var\(--control-min-size\)/);
   assert.match(view, /:global\(\.church-scene-grid\)[\s\S]*?grid-template-columns: minmax\(0,1fr\)/);
@@ -361,6 +362,32 @@ test('el editor de iglesias separa borrador, publicación, alcance e imágenes',
   assert.match(sql, /revoke all on table public\.church_public_pages from anon, authenticated/);
   assert.match(publicPage, /\.eq\('status', 'PUBLISHED'\)/);
   assert.match(publicPage, /published_snapshot/);
+});
+
+test('eventos y contenido exponen promoción pública sin filtrar términos internos', async () => {
+  const [eventsView, eventsLogic, contentView, contentLogic, publicExperience, discovery] = await Promise.all([
+    readSource('src/pages/portal/events.astro'),
+    readSource('src/scripts/portal-events.js'),
+    readSource('src/pages/portal/content.astro'),
+    readSource('src/scripts/portal-content.js'),
+    readSource('src/components/churches/ChurchEventsExperience.astro'),
+    readSource('src/lib/eventDiscovery.ts'),
+  ]);
+
+  assert.match(eventsView, /id="event-promote-on-church-pages"/);
+  assert.match(eventsView, /id="event-promotion-priority"/);
+  assert.match(eventsView, /id="event-promotion-eyebrow"/);
+  assert.match(eventsLogic, /promote_on_church_pages:/);
+  assert.match(eventsLogic, /promotion_priority:/);
+  assert.match(eventsLogic, /promotion_eyebrow:/);
+  assert.match(contentView, /id="cms-church-promotions"/);
+  assert.match(contentView, /value="promotion"/);
+  assert.match(contentLogic, /page_key: 'church-promotions'/);
+  assert.match(contentLogic, /modalSectionKind\.value = 'promotion'/);
+  assert.match(contentLogic, /function validatePromotionPayload\(payload\)/);
+  assert.match(contentLogic, /La fecha final debe ser posterior a la fecha inicial/);
+  assert.match(discovery, /Para toda la familia Maná/);
+  assert.doesNotMatch(publicExperience, />\s*(?:LOCAL|REGIONAL|NATIONAL|GLOBAL)\s*</);
 });
 
 test('usuarios protege creación, roles y alcances financieros', async () => {

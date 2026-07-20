@@ -45,11 +45,11 @@ test('limita galerías, URLs y teléfono a valores públicos válidos', () => {
     display_name: 'Iglesia Prueba',
     hero_image_url: 'javascript:alert(1)',
     contact_whatsapp: '+57 (300) 123-4567',
-    gallery: Array.from({ length: 12 }, (_, index) => ({ url: `https://ik.imagekit.io/test/${index}.jpg`, alt: `Foto ${index}` })),
+    gallery: Array.from({ length: 20 }, (_, index) => ({ url: `https://ik.imagekit.io/test/${index}.jpg`, alt: `Foto ${index}` })),
   });
   assert.equal(page.hero_image_url, '');
   assert.equal(page.contact_whatsapp, '573001234567');
-  assert.equal(page.gallery.length, 8);
+  assert.equal(page.gallery.length, 16);
 });
 
 test('la plantilla esencial publica información completa sin exigir escenas', () => {
@@ -131,6 +131,39 @@ test('los rechazos del proveedor de imágenes se explican en español', () => {
   const script = readFileSync(fileURLToPath(new URL('../src/scripts/portal-church-page.js', import.meta.url)), 'utf8');
   assert.match(script, /No pudimos procesar esa imagen\. Verifica que sea un JPG, PNG o WebP válido e intenta de nuevo\./);
   assert.doesNotMatch(script, /uploaded\?\.message/);
+});
+
+test('las páginas públicas sincronizan la jerarquía completa de eventos', () => {
+  const source = readFileSync(fileURLToPath(new URL('../src/lib/churchPublic.ts', import.meta.url)), 'utf8');
+  assert.match(source, /region_id,city,country/);
+  assert.match(source, /discoverEventsForProfile\(publicEvents/);
+  assert.match(source, /churchId: pageResult\.data\.church_id/);
+  assert.match(source, /regionId: churchResult\.data\.region_id/);
+  assert.match(source, /country: churchResult\.data\.country/);
+  assert.match(source, /limit: 50/);
+});
+
+test('promociones y calendario comparten una experiencia accesible en todas las plantillas', () => {
+  const component = readFileSync(fileURLToPath(new URL('../src/components/churches/ChurchEventsExperience.astro', import.meta.url)), 'utf8');
+  const script = readFileSync(fileURLToPath(new URL('../src/scripts/church-events.js', import.meta.url)), 'utf8');
+  const publicPage = readFileSync(fileURLToPath(new URL('../src/components/churches/ChurchPublicExperience.astro', import.meta.url)), 'utf8');
+  assert.match(publicPage, /ChurchEventsExperience events=\{\[\]\} \{promotions\} mode="promotions"/);
+  assert.match(publicPage, /ChurchEventsExperience \{events\} promotions=\{\[\]\} mode="agenda"/);
+  assert.match(component, /aria-roledescription="diapositiva"/);
+  assert.match(component, /data-calendar-grid role="grid"/);
+  assert.match(component, /data-calendar-list aria-live="polite"/);
+  assert.match(component, /min-height: 48px/);
+  assert.match(script, /event\.key !== 'ArrowLeft' && event\.key !== 'ArrowRight'/);
+  assert.doesNotMatch(script, /setInterval|autoplay/i);
+});
+
+test('la galería ofrece más libertad sin convertir toda la página en un muro de fotos', () => {
+  const page = readFileSync(fileURLToPath(new URL('../src/components/churches/ChurchPublicExperience.astro', import.meta.url)), 'utf8');
+  const editor = readFileSync(fileURLToPath(new URL('../src/scripts/portal-church-page.js', import.meta.url)), 'utf8');
+  assert.match(editor, /const MAX_GALLERY = 16;/);
+  assert.match(page, /const primaryGallery = gallery\.slice\(0, 9\)/);
+  assert.match(page, /const extraGallery = gallery\.slice\(9\)/);
+  assert.match(page, /church-gallery__more/);
 });
 
 test('la jerarquía delega personas únicamente hacia niveles permitidos', () => {

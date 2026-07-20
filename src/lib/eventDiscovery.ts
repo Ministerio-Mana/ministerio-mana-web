@@ -113,7 +113,11 @@ export function discoverEventsForProfile<T extends DiscoverableEvent>(
     .filter((event) => {
       const status = String(event.status || 'PUBLISHED').toUpperCase();
       const visibility = String(event.visibility || 'PUBLIC').toUpperCase();
-      return status === 'PUBLISHED' && visibility === 'PUBLIC' && lastEventMoment(event) >= now;
+      const startsAt = new Date(String(event.start_date || '')).getTime();
+      return status === 'PUBLISHED'
+        && visibility === 'PUBLIC'
+        && Number.isFinite(startsAt)
+        && lastEventMoment(event) >= now;
     })
     .map((event) => {
       const audience = getEventAudience(event, profile);

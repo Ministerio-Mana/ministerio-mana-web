@@ -119,6 +119,9 @@ const eventLandingHost = document.getElementById('event-landing-host');
 const eventLandingAccessibility = document.getElementById('event-landing-accessibility');
 const eventLandingFaq = document.getElementById('event-landing-faq');
 const eventLandingPolicy = document.getElementById('event-landing-policy');
+const eventPromoteOnChurchPages = document.getElementById('event-promote-on-church-pages');
+const eventPromotionPriority = document.getElementById('event-promotion-priority');
+const eventPromotionEyebrow = document.getElementById('event-promotion-eyebrow');
 const eventLandingTemplateInputs = [...(eventForm?.querySelectorAll('[name="page_template"]') || [])];
 const eventLandingThemeInputs = [...(eventForm?.querySelectorAll('[name="page_theme"]') || [])];
 const eventCustomFieldsContainer = document.getElementById('event-custom-fields');
@@ -2066,6 +2069,9 @@ function openEventModal(mode, eventData = null) {
     if (eventLandingAccessibility) eventLandingAccessibility.value = landingSettings.accessibility_info;
     if (eventLandingFaq) eventLandingFaq.value = landingSettings.frequently_asked_questions;
     if (eventLandingPolicy) eventLandingPolicy.value = landingSettings.change_policy;
+    if (eventPromoteOnChurchPages) eventPromoteOnChurchPages.checked = landingSettings.promote_on_church_pages;
+    if (eventPromotionPriority) eventPromotionPriority.value = String(landingSettings.promotion_priority);
+    if (eventPromotionEyebrow) eventPromotionEyebrow.value = landingSettings.promotion_eyebrow;
 
     const presetScope = String(eventData?.scope || getAllowedScopes()[0] || 'LOCAL').toUpperCase();
     if (eventScopeSelect) eventScopeSelect.value = presetScope;
@@ -2424,6 +2430,9 @@ eventForm?.addEventListener('submit', async (event) => {
             payload.page_settings = normalizeEventLandingSettings({
                 template: eventLandingTemplateInputs.find((input) => input.checked)?.value,
                 theme: eventLandingThemeInputs.find((input) => input.checked)?.value,
+                promote_on_church_pages: eventPromoteOnChurchPages?.checked,
+                promotion_priority: eventPromotionPriority?.value,
+                promotion_eyebrow: eventPromotionEyebrow?.value,
                 what_to_expect: eventLandingExpect?.value,
                 agenda: eventLandingAgenda?.value,
                 practical_info: eventLandingPractical?.value,
