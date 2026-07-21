@@ -769,7 +769,7 @@ const i18n = JSON.stringify(c.js);
               </div>
             </div>
 
-            {showTurnstile && <TurnstileWidget appearance="always" theme="dark" />}
+            {showTurnstile && <TurnstileWidget appearance="always" theme="light" />}
 
             <button class="prayer-submit" type="submit" data-prayer-submit>
               {c.submit}
@@ -842,8 +842,10 @@ const i18n = JSON.stringify(c.js);
     --prayer-gold: #F2C94C;
     --prayer-paper: #fff8e5;
     --prayer-stone: #d8dfdf;
-    --prayer-warm: #f5efeb;
-    background: var(--prayer-night);
+    --prayer-warm: #f7f3ed;
+    --prayer-mist: #e8f0f1;
+    --prayer-line: rgba(32, 45, 99, 0.14);
+    background: var(--prayer-warm);
     color: var(--prayer-navy);
     isolation: isolate;
     font-family: "Intro", system-ui, sans-serif;
@@ -1050,8 +1052,8 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-action--primary {
-    background: var(--prayer-teal);
-    border: 1px solid rgba(63, 167, 187, 0.9);
+    background: #2b8091;
+    border: 1px solid #2b8091;
     box-shadow: 0 26px 70px rgba(63, 167, 187, 0.28);
     color: white;
   }
@@ -1063,10 +1065,10 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-action--primary:hover {
-    background: #5ccbe0;
-    border-color: #5ccbe0;
-    box-shadow: 0 18px 42px rgba(63, 167, 187, 0.38);
-    color: var(--prayer-night);
+    background: #236d7c;
+    border-color: #236d7c;
+    box-shadow: 0 18px 42px rgba(35, 109, 124, 0.34);
+    color: white;
     transform: translateY(-2px);
   }
 
@@ -1123,11 +1125,21 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-main {
     background:
-      linear-gradient(90deg, rgba(216, 232, 240, 0.11) 0 1px, transparent 1px) 0 0 / clamp(72px, 9vw, 130px) 100%,
-      radial-gradient(circle at 90% 8%, rgba(63, 167, 187, 0.16), transparent 18rem),
-      linear-gradient(135deg, #19244f 0%, #24396f 52%, #111936 100%);
+      linear-gradient(90deg, rgba(32, 45, 99, 0.055) 0 1px, transparent 1px) 0 0 / clamp(72px, 9vw, 130px) 100%,
+      radial-gradient(circle at 90% 8%, rgba(63, 167, 187, 0.15), transparent 21rem),
+      radial-gradient(circle at 4% 78%, rgba(242, 201, 76, 0.11), transparent 18rem),
+      linear-gradient(145deg, #fbf8f3 0%, #f3f0ea 56%, #e8f0f1 100%);
     padding: 6rem 0;
     position: relative;
+  }
+
+  .prayer-main .prayer-display-title--section {
+    --display-outline-color: rgba(32, 45, 99, 0.58);
+    --display-script-color: #a9760b;
+  }
+
+  .prayer-main .prayer-display-title--section .prayer-display-title__solid {
+    color: var(--prayer-navy);
   }
 
   .prayer-main__intro {
@@ -1135,8 +1147,8 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-main__copy {
-    border-left: 2px solid rgba(63, 167, 187, 0.82);
-    color: rgba(255, 255, 255, 0.76);
+    border-left: 2px solid #2d8293;
+    color: rgba(15, 24, 56, 0.72);
     font-size: 1rem;
     line-height: 1.65;
     margin-top: 1.25rem;
@@ -1154,10 +1166,10 @@ const i18n = JSON.stringify(c.js);
   .prayer-wall-panel,
   .prayer-form,
   .prayer-compact {
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--prayer-line);
+    background: rgba(255, 255, 255, 0.92);
     border-radius: 8px;
-    box-shadow: 0 28px 70px rgba(9, 16, 39, 0.28);
+    box-shadow: 0 24px 64px rgba(26, 37, 92, 0.12);
     overflow: hidden;
   }
 
@@ -2120,15 +2132,26 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-form {
     background:
-      radial-gradient(circle at 90% 0%, rgba(63, 167, 187, 0.18), transparent 12rem),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0)),
-      rgba(17, 25, 54, 0.86);
-    color: white;
+      radial-gradient(circle at 90% 0%, rgba(63, 167, 187, 0.13), transparent 13rem),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 243, 237, 0.98));
+    color: var(--prayer-ink);
     display: grid;
     gap: 1rem;
     padding: 1.25rem;
     position: sticky;
     top: 6rem;
+  }
+
+  .prayer-form .prayer-display-title--form {
+    --display-outline-color: rgba(32, 45, 99, 0.5);
+  }
+
+  .prayer-form .prayer-display-title--form .prayer-display-title__script {
+    color: #a9760b;
+  }
+
+  .prayer-form .prayer-display-title--form .prayer-display-title__solid {
+    color: var(--prayer-navy);
   }
 
   .prayer-form__heading {
@@ -2137,7 +2160,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-form p:not(.prayer-kicker):not(.prayer-status) {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(15, 24, 56, 0.68);
     font-size: 0.9rem;
     line-height: 1.58;
     margin-top: 0.55rem;
@@ -2155,7 +2178,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-field label {
-    color: rgba(255, 255, 255, 0.76);
+    color: rgba(15, 24, 56, 0.76);
     font-size: 0.78rem;
     font-weight: 900;
     text-transform: uppercase;
@@ -2165,10 +2188,10 @@ const i18n = JSON.stringify(c.js);
   .prayer-field textarea,
   .prayer-field select {
     appearance: none;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(32, 45, 99, 0.2);
     border-radius: 8px;
-    color: white;
+    color: var(--prayer-ink);
     font: inherit;
     min-height: 3rem;
     outline: none;
@@ -2183,8 +2206,8 @@ const i18n = JSON.stringify(c.js);
   .prayer-field input:hover,
   .prayer-field textarea:hover,
   .prayer-field select:hover {
-    background: rgba(255, 255, 255, 0.11);
-    border-color: rgba(255, 255, 255, 0.34);
+    background: white;
+    border-color: rgba(45, 130, 147, 0.48);
   }
 
   .prayer-field textarea {
@@ -2194,11 +2217,11 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-field input::placeholder,
   .prayer-field textarea::placeholder {
-    color: rgba(255, 255, 255, 0.38);
+    color: rgba(15, 24, 56, 0.42);
   }
 
   .prayer-field select {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   .prayer-field input:focus,
@@ -2217,7 +2240,7 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-visibility legend {
-    color: rgba(255, 255, 255, 0.76);
+    color: rgba(15, 24, 56, 0.76);
     font-size: 0.78rem;
     font-weight: 900;
     margin-bottom: 0.42rem;
@@ -2226,8 +2249,8 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-visibility label {
     align-items: flex-start;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(232, 240, 241, 0.58);
+    border: 1px solid rgba(32, 45, 99, 0.13);
     border-radius: 8px;
     cursor: pointer;
     display: grid;
@@ -2242,14 +2265,14 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-visibility label:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(92, 203, 224, 0.52);
+    background: rgba(216, 238, 241, 0.78);
+    border-color: rgba(45, 130, 147, 0.42);
     transform: translateY(-1px);
   }
 
   .prayer-visibility label:has(input:checked) {
-    background: rgba(63, 167, 187, 0.16);
-    border-color: rgba(92, 203, 224, 0.72);
+    background: #e1f1f3;
+    border-color: rgba(45, 130, 147, 0.72);
     box-shadow: inset 3px 0 0 var(--prayer-gold);
   }
 
@@ -2270,21 +2293,21 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-visibility strong {
-    color: white;
+    color: var(--prayer-navy);
     font-size: 0.86rem;
     font-weight: 900;
   }
 
   .prayer-visibility small {
-    color: rgba(255, 255, 255, 0.62);
+    color: rgba(15, 24, 56, 0.62);
     font-size: 0.76rem;
     margin-top: 0.18rem;
   }
 
   .prayer-submit {
     align-items: center;
-    background: var(--prayer-teal);
-    border: 1px solid rgba(63, 167, 187, 0.9);
+    background: #2b8091;
+    border: 1px solid #2b8091;
     border-radius: 8px;
     color: white;
     cursor: pointer;
@@ -2303,9 +2326,9 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-submit:hover:not(:disabled) {
-    background: #5ccbe0;
-    box-shadow: 0 14px 30px rgba(63, 167, 187, 0.3);
-    color: var(--prayer-night);
+    background: #236d7c;
+    box-shadow: 0 14px 30px rgba(35, 109, 124, 0.28);
+    color: white;
     transform: translateY(-2px);
   }
 
@@ -2473,25 +2496,27 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-status {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(15, 24, 56, 0.7);
     font-size: 0.85rem;
     line-height: 1.4;
     min-height: 1.2rem;
   }
 
   .prayer-status.is-error {
-    color: #fecaca;
+    color: #a61b1b;
     font-weight: 800;
   }
 
   .prayer-status.is-success {
-    color: #bbf7d0;
+    color: #166534;
     font-weight: 800;
   }
 
   .prayer-rhythm {
-    background: var(--prayer-night);
-    color: white;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(63, 167, 187, 0.16), transparent 18rem),
+      var(--prayer-mist);
+    color: var(--prayer-navy);
     padding: 5.5rem 0;
   }
 
@@ -2500,8 +2525,12 @@ const i18n = JSON.stringify(c.js);
     gap: 2rem;
   }
 
+  .prayer-rhythm .prayer-kicker {
+    color: #8a6200;
+  }
+
   .prayer-rhythm h2 {
-    color: white;
+    color: var(--prayer-navy);
     font-size: 3rem;
     font-weight: 900;
     line-height: 1.04;
@@ -2516,28 +2545,29 @@ const i18n = JSON.stringify(c.js);
   }
 
   .prayer-rhythm__steps article {
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--prayer-line);
+    background: rgba(255, 255, 255, 0.78);
     border-radius: 0.85rem;
+    box-shadow: 0 14px 34px rgba(32, 45, 99, 0.07);
     padding: 1.25rem;
   }
 
   .prayer-rhythm__steps span {
-    color: var(--prayer-gold);
+    color: #8a6200;
     display: block;
     font-size: 0.78rem;
     font-weight: 900;
   }
 
   .prayer-rhythm__steps h3 {
-    color: white;
+    color: var(--prayer-navy);
     font-size: 1.2rem;
     font-weight: 900;
     margin-top: 0.75rem;
   }
 
   .prayer-rhythm__steps p {
-    color: rgba(255, 255, 255, 0.68);
+    color: rgba(15, 24, 56, 0.66);
     font-size: 0.9rem;
     line-height: 1.55;
     margin-top: 0.45rem;
