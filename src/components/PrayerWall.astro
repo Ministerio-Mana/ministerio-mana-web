@@ -826,6 +826,14 @@ const i18n = JSON.stringify(c.js);
     font-display: swap;
   }
 
+  @font-face {
+    font-family: "Kalam";
+    src: url("/fonts/kalam/Kalam-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
   .prayer-wall-experience {
     --prayer-navy: #202d63;
     --prayer-night: #111936;
@@ -1033,6 +1041,12 @@ const i18n = JSON.stringify(c.js);
     min-height: 3.25rem;
     padding: 0.95rem 1.35rem;
     text-transform: uppercase;
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      color 180ms ease,
+      transform 180ms ease;
   }
 
   .prayer-action--primary {
@@ -1046,6 +1060,30 @@ const i18n = JSON.stringify(c.js);
     border: 1px solid rgba(255, 255, 255, 0.7);
     background: rgba(255, 255, 255, 0.04);
     color: white;
+  }
+
+  .prayer-action--primary:hover {
+    background: #5ccbe0;
+    border-color: #5ccbe0;
+    box-shadow: 0 18px 42px rgba(63, 167, 187, 0.38);
+    color: var(--prayer-night);
+    transform: translateY(-2px);
+  }
+
+  .prayer-action--ghost:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: var(--prayer-teal);
+    box-shadow: 0 14px 32px rgba(8, 12, 28, 0.22);
+    transform: translateY(-2px);
+  }
+
+  .prayer-action:active {
+    transform: translateY(0);
+  }
+
+  .prayer-action:focus-visible {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 4px;
   }
 
   .prayer-verse {
@@ -1165,7 +1203,24 @@ const i18n = JSON.stringify(c.js);
     display: inline-flex;
     height: 2.75rem;
     justify-content: center;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
     width: 2.75rem;
+  }
+
+  .prayer-wall-panel__bar button:hover {
+    background: rgba(63, 167, 187, 0.24);
+    border-color: rgba(92, 203, 224, 0.72);
+    box-shadow: 0 8px 22px rgba(3, 11, 30, 0.24);
+    transform: rotate(14deg);
+  }
+
+  .prayer-wall-panel__bar button:focus-visible {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 3px;
   }
 
   .prayer-wall-panel__bar svg {
@@ -1941,10 +1996,11 @@ const i18n = JSON.stringify(c.js);
 
   .prayer-wall-detail p {
     color: rgba(20, 32, 71, 0.9);
-    font-family: "Summer Loving", "Brush Script MT", cursive;
-    font-size: clamp(1.7rem, 3.2vw, 2.2rem);
+    font-family: "Kalam", "Segoe Print", "Bradley Hand", cursive;
+    font-size: clamp(1.45rem, 2.6vw, 1.85rem);
     font-weight: 400;
-    line-height: 1.02;
+    letter-spacing: 0.005em;
+    line-height: 1.28;
     margin-top: var(--space-4);
     max-height: 10rem;
     overflow: auto;
@@ -2117,7 +2173,18 @@ const i18n = JSON.stringify(c.js);
     min-height: 3rem;
     outline: none;
     padding: 0.85rem 0.95rem;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
     width: 100%;
+  }
+
+  .prayer-field input:hover,
+  .prayer-field textarea:hover,
+  .prayer-field select:hover {
+    background: rgba(255, 255, 255, 0.11);
+    border-color: rgba(255, 255, 255, 0.34);
   }
 
   .prayer-field textarea {
@@ -2167,6 +2234,28 @@ const i18n = JSON.stringify(c.js);
     gap: 0.65rem;
     grid-template-columns: auto minmax(0, 1fr);
     padding: 0.78rem;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .prayer-visibility label:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(92, 203, 224, 0.52);
+    transform: translateY(-1px);
+  }
+
+  .prayer-visibility label:has(input:checked) {
+    background: rgba(63, 167, 187, 0.16);
+    border-color: rgba(92, 203, 224, 0.72);
+    box-shadow: inset 3px 0 0 var(--prayer-gold);
+  }
+
+  .prayer-visibility label:has(input:focus-visible) {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 3px;
   }
 
   .prayer-visibility input {
@@ -2198,6 +2287,7 @@ const i18n = JSON.stringify(c.js);
     border: 1px solid rgba(63, 167, 187, 0.9);
     border-radius: 8px;
     color: white;
+    cursor: pointer;
     display: inline-flex;
     font-size: 0.88rem;
     font-weight: 900;
@@ -2205,6 +2295,27 @@ const i18n = JSON.stringify(c.js);
     min-height: 3.15rem;
     padding: 0.9rem 1.2rem;
     text-transform: uppercase;
+    transition:
+      background-color 180ms ease,
+      box-shadow 180ms ease,
+      color 180ms ease,
+      transform 180ms ease;
+  }
+
+  .prayer-submit:hover:not(:disabled) {
+    background: #5ccbe0;
+    box-shadow: 0 14px 30px rgba(63, 167, 187, 0.3);
+    color: var(--prayer-night);
+    transform: translateY(-2px);
+  }
+
+  .prayer-submit:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .prayer-submit:focus-visible {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 3px;
   }
 
   .prayer-submit:disabled {
@@ -2248,12 +2359,23 @@ const i18n = JSON.stringify(c.js);
     color: white;
     display: inline-flex;
     font-size: 1.1rem;
-    height: 2rem;
+    height: 2.75rem;
     justify-content: center;
     position: absolute;
     right: 1rem;
     top: 1rem;
-    width: 2rem;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      transform 160ms ease;
+    width: 2.75rem;
+  }
+
+  .prayer-confirm__close:hover,
+  .prayer-confirm__close:focus-visible {
+    background: var(--prayer-teal);
+    border-color: var(--prayer-teal);
+    transform: rotate(5deg);
   }
 
   .prayer-confirm span {
@@ -2302,6 +2424,12 @@ const i18n = JSON.stringify(c.js);
     min-height: 2.8rem;
     padding: 0.72rem 0.9rem;
     text-transform: uppercase;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
   }
 
   .prayer-confirm__switch,
@@ -2315,6 +2443,28 @@ const i18n = JSON.stringify(c.js);
     background: var(--prayer-teal);
     border: 1px solid rgba(63, 167, 187, 0.9);
     color: white;
+  }
+
+  .prayer-confirm__switch:hover,
+  .prayer-confirm__back:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(92, 203, 224, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .prayer-confirm__send:hover:not(:disabled) {
+    background: #5ccbe0;
+    box-shadow: 0 10px 24px rgba(63, 167, 187, 0.28);
+    color: var(--prayer-night);
+    transform: translateY(-1px);
+  }
+
+  .prayer-confirm__close:focus-visible,
+  .prayer-confirm__switch:focus-visible,
+  .prayer-confirm__send:focus-visible,
+  .prayer-confirm__back:focus-visible {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 3px;
   }
 
   .prayer-confirm__back {
@@ -2504,6 +2654,25 @@ const i18n = JSON.stringify(c.js);
     .prayer-note {
       transition: none;
     }
+
+    .prayer-action,
+    .prayer-wall-panel__bar button,
+    .prayer-field input,
+    .prayer-field textarea,
+    .prayer-field select,
+    .prayer-visibility label,
+    .prayer-submit,
+    .prayer-confirm button {
+      transition: none;
+    }
+
+    .prayer-action:hover,
+    .prayer-wall-panel__bar button:hover,
+    .prayer-visibility label:hover,
+    .prayer-submit:hover:not(:disabled),
+    .prayer-confirm button:hover {
+      transform: none;
+    }
   }
 
   @media (max-width: 1023px) {
@@ -2677,8 +2846,8 @@ const i18n = JSON.stringify(c.js);
     }
 
     .prayer-wall-detail p {
-      font-size: 1.55rem;
-      line-height: 1.02;
+      font-size: 1.42rem;
+      line-height: 1.3;
       max-height: 8.2rem;
     }
 

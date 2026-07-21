@@ -26,7 +26,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:w-auto">
               <div class="space-y-2">
                 <label for="prayers-status" class="block text-xs font-black uppercase tracking-wider text-slate-600">Estado</label>
-                <select id="prayers-status" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                <select id="prayers-status" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-brand-teal/60 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20">
                   <option value="all">Todos los estados</option>
                   <option value="private">Privadas</option>
                   <option value="pending">Pendientes</option>
@@ -37,7 +37,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
               </div>
               <div class="space-y-2">
                 <label for="prayers-visibility" class="block text-xs font-black uppercase tracking-wider text-slate-600">Visibilidad</label>
-                <select id="prayers-visibility" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                <select id="prayers-visibility" class="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-brand-teal/60 focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20">
                   <option value="all">Todas</option>
                   <option value="private">Solo privadas</option>
                   <option value="public">Solo públicas</option>
@@ -67,7 +67,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
                 <h2 class="font-display text-xl font-black text-[#293C74]">Bandeja de peticiones</h2>
                 <p id="prayers-role-note" class="text-sm text-slate-500">Cargando permisos...</p>
               </div>
-              <button id="prayers-refresh" type="button" class="min-h-11 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-black uppercase text-[#293C74] hover:bg-slate-100">
+              <button id="prayers-refresh" type="button" class="min-h-11 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-black uppercase text-[#293C74] transition-all hover:-translate-y-0.5 hover:border-brand-teal/40 hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30 focus-visible:ring-offset-2">
                 Actualizar
               </button>
             </div>
@@ -78,7 +78,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
             <div id="prayers-list" class="grid grid-cols-1 gap-4 hidden"></div>
             <div id="prayers-empty" class="hidden py-12 text-center text-sm text-slate-400">No hay peticiones para este filtro.</div>
             <div class="mt-4 flex justify-center">
-              <button id="prayers-load-more" type="button" class="hidden min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-black text-[#293C74] hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60">
+              <button id="prayers-load-more" type="button" class="hidden min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-black text-[#293C74] transition-all hover:-translate-y-0.5 hover:border-brand-teal/40 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60">
                 Cargar más
               </button>
             </div>
@@ -96,7 +96,7 @@ import Sidebar from '@components/portal/Sidebar.astro';
           <p class="mb-2 text-xs font-black uppercase tracking-[0.24em] text-brand-teal">Decisión pastoral</p>
           <h2 id="prayer-review-title" class="font-display text-2xl font-black text-[#293C74]">Revisar petición</h2>
         </div>
-        <button id="prayer-review-close" type="button" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 text-xl text-slate-600 hover:bg-slate-50" aria-label="Cerrar revisión de petición">×</button>
+        <button id="prayer-review-close" type="button" class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 text-xl text-slate-600 transition-all hover:rotate-6 hover:border-brand-teal/40 hover:bg-brand-teal/10 hover:text-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30" aria-label="Cerrar revisión de petición">×</button>
       </div>
 
       <p id="prayer-review-description" class="mt-4 text-sm leading-6 text-slate-600"></p>
@@ -112,8 +112,8 @@ import Sidebar from '@components/portal/Sidebar.astro';
         </div>
         <div id="prayer-review-feedback" class="hidden rounded-xl border px-4 py-4 text-sm font-semibold" role="status" aria-live="polite"></div>
         <div class="flex flex-col-reverse gap-4 sm:flex-row sm:justify-end">
-          <button id="prayer-review-cancel" type="button" class="min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">Cancelar</button>
-          <button id="prayer-review-submit" type="submit" class="min-h-11 rounded-md bg-brand-teal px-4 py-2 text-sm font-black text-white hover:brightness-105 disabled:cursor-wait disabled:opacity-60">Confirmar decisión</button>
+          <button id="prayer-review-cancel" type="button" class="min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition-all hover:-translate-y-0.5 hover:border-brand-teal/40 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30">Cancelar</button>
+          <button id="prayer-review-submit" type="submit" class="min-h-11 rounded-md bg-brand-teal px-4 py-2 text-sm font-black text-white transition-all hover:-translate-y-0.5 hover:brightness-105 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30 disabled:cursor-wait disabled:opacity-60">Confirmar decisión</button>
         </div>
       </form>
     </div>

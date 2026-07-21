@@ -577,18 +577,28 @@ function updateConfirmModal(root, form) {
   if (switchButton) switchButton.textContent = visibility === 'public' ? text(root, 'switchToPrivate') : text(root, 'switchToPublic');
 }
 
-function openConfirmModal(root, form) {
+function getConfirmModalFocusableElements(modal) {
+  return Array.from(
+    modal.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'),
+  ).filter((element) => element instanceof HTMLElement && !element.hidden);
+}
+
+function openConfirmModal(root, form, trigger) {
   const modal = root.querySelector('[data-prayer-confirm]');
   if (!modal) return false;
   updateConfirmModal(root, form);
+  root.__prayerConfirmTrigger = trigger instanceof HTMLElement ? trigger : document.activeElement;
   modal.hidden = false;
   modal.querySelector('[data-prayer-confirm-send]')?.focus();
   return true;
 }
 
-function closeConfirmModal(root) {
+function closeConfirmModal(root, restoreFocus = true) {
   const modal = root.querySelector('[data-prayer-confirm]');
   if (modal) modal.hidden = true;
+  const trigger = root.__prayerConfirmTrigger;
+  root.__prayerConfirmTrigger = null;
+  if (restoreFocus && trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
 }
 
 async function sendPrayerForm(root, form, submit) {
@@ -618,7 +628,7 @@ async function sendPrayerForm(root, form, submit) {
       renderPrayers(root, root.__prayerRows || []);
     }
     form.reset();
-    closeConfirmModal(root);
+    closeConfirmModal(root, false);
     if (root.querySelector('.cf-turnstile') && window.turnstile?.reset) {
       try {
         window.turnstile.reset();
@@ -649,12 +659,36 @@ function setupForm(root) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submit?.hasAttribute('disabled')) return;
-    if (openConfirmModal(root, form)) return;
+    if (openConfirmModal(root, form, submit)) return;
     await sendPrayerForm(root, form, submit);
   });
 
   confirm?.querySelectorAll('[data-prayer-confirm-cancel]').forEach((button) => {
     button.addEventListener('click', () => closeConfirmModal(root));
+  });
+
+  confirm?.addEventListener('click', (event) => {
+    if (event.target === confirm) closeConfirmModal(root);
+  });
+
+  confirm?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeConfirmModal(root);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = getConfirmModalFocusableElements(confirm);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 
   confirm?.querySelector('[data-prayer-confirm-switch]')?.addEventListener('click', () => {
