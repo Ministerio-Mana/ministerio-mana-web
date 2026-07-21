@@ -229,9 +229,9 @@ function actionButtons(row) {
   const name = escapeAttr(row.first_name || 'esta persona');
   return `
     <div class="flex flex-wrap gap-2">
-      <button type="button" data-prayer-action="approve" data-prayer-id="${id}" class="min-h-11 rounded-md bg-brand-teal px-4 py-2 text-xs font-black uppercase text-white hover:brightness-105" aria-label="Publicar petición de ${name}">Publicar</button>
-      <button type="button" data-prayer-action="keep_private" data-prayer-id="${id}" class="min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase text-[#293C74] hover:bg-slate-50" aria-label="Conservar privada la petición de ${name}">Pasar a privada</button>
-      <button type="button" data-prayer-action="reject" data-prayer-id="${id}" class="min-h-11 rounded-md border border-red-100 bg-red-50 px-4 py-2 text-xs font-black uppercase text-red-700 hover:bg-red-100" aria-label="Rechazar petición de ${name}">Rechazar</button>
+      <button type="button" data-prayer-action="approve" data-prayer-id="${id}" class="min-h-11 rounded-md bg-brand-teal px-4 py-2 text-xs font-black uppercase text-white transition-all hover:-translate-y-0.5 hover:brightness-105 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30" aria-label="Publicar petición de ${name}">Publicar</button>
+      <button type="button" data-prayer-action="keep_private" data-prayer-id="${id}" class="min-h-11 rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase text-[#293C74] transition-all hover:-translate-y-0.5 hover:border-brand-teal/40 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30" aria-label="Conservar privada la petición de ${name}">Pasar a privada</button>
+      <button type="button" data-prayer-action="reject" data-prayer-id="${id}" class="min-h-11 rounded-md border border-red-100 bg-red-50 px-4 py-2 text-xs font-black uppercase text-red-700 transition-all hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300" aria-label="Rechazar petición de ${name}">Rechazar</button>
     </div>
   `;
 }
@@ -360,19 +360,19 @@ function reviewConfig(decision) {
       title: 'Publicar petición',
       description: 'La petición quedará visible en el muro público. Confirma que no contenga teléfonos, correos, direcciones ni información sensible.',
       submit: 'Publicar petición',
-      submitClass: 'bg-brand-teal text-white hover:brightness-105',
+      submitClass: 'bg-brand-teal text-white transition-all hover:-translate-y-0.5 hover:brightness-105 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/30',
     },
     keep_private: {
       title: 'Conservar como privada',
       description: 'La petición seguirá disponible únicamente para el equipo autorizado de intercesión y no aparecerá en el muro público.',
       submit: 'Conservar privada',
-      submitClass: 'bg-[#293C74] text-white hover:brightness-105',
+      submitClass: 'bg-[#293C74] text-white transition-all hover:-translate-y-0.5 hover:brightness-105 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#293C74]/30',
     },
     reject: {
       title: 'Rechazar publicación',
       description: 'La petición no aparecerá en el muro público. Puedes dejar un motivo interno que no se enviará a la persona.',
       submit: 'Rechazar petición',
-      submitClass: 'bg-red-700 text-white hover:bg-red-800',
+      submitClass: 'bg-red-700 text-white transition-all hover:-translate-y-0.5 hover:bg-red-800 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300',
     },
   };
   return configs[decision] || null;

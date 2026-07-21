@@ -621,6 +621,8 @@ test('peticiones separa intercesión de moderación y protege cada decisión pas
   assert.match(prayersView, /id="prayer-review-modal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="prayer-review-title"[^>]*aria-describedby="prayer-review-description"[^>]*aria-hidden="true"/);
   assert.match(prayersView, /id="prayer-review-close"[^>]*h-11 w-11[^>]*aria-label="Cerrar revisión de petición"/);
   assert.match(prayersView, /label for="prayer-review-note"/);
+  assert.match(prayersView, /id="prayers-refresh"[^>]*hover:-translate-y-0\.5/);
+  assert.match(prayersView, /id="prayers-status"[^>]*hover:border-brand-teal\/60/);
 
   assert.match(prayersLogic, /session\.permissions\?\.can_access_prayers/);
   assert.match(prayersLogic, /requestRevision !== dataRevision \|\| requestAppendSequence !== appendSequence/);
@@ -629,6 +631,7 @@ test('peticiones separa intercesión de moderación y protege cada decisión pas
   assert.match(prayersLogic, /La nota se conservó/);
   assert.match(prayersLogic, /window\.addEventListener\('beforeunload'/);
   assert.match(prayersLogic, /data-prayer-action="approve"[^>]+min-h-11/);
+  assert.match(prayersLogic, /data-prayer-action="approve"[^>]+hover:-translate-y-0\.5/);
   assert.doesNotMatch(prayersLogic, /window\.(?:prompt|alert)/);
 
   assert.match(prayersGuard, /const PRAYER_REVIEW_ROLES = new Set\(\['superadmin', 'admin'\]\)/);

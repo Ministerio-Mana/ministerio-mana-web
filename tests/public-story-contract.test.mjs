@@ -93,12 +93,30 @@ test('Peticiones encaja papeles en ranuras reales y mantiene las peticiones acce
   assert.match(view, /class="prayer-wall-guide" role="note"/);
   assert.match(view, /\.prayer-note:not\(\.prayer-note--decorative\)::after[\s\S]*?prayer-marker-breathe/);
   assert.match(view, /@keyframes prayer-paper-breathe/);
-  assert.match(view, /font-family: "Summer Loving", "Brush Script MT", cursive/);
+  assert.match(view, /font-family: "Kalam", "Segoe Print", "Bradley Hand", cursive/);
   assert.match(view, /pageStatus: 'Muro \{current\} de \{total\}'/);
   assert.match(view, /\.prayer-note\.is-open header\s*\{[\s\S]*?opacity:\s*0/);
   assert.match(view, /clip-path: polygon\(1\.4% 2\.2%/);
   assert.match(view, /\.prayer-note:hover header,[\s\S]*?\.prayer-note\.is-open header[\s\S]*?opacity: 1/);
   assert.match(view, /\.prayer-note header[\s\S]*?opacity: 0/);
+});
+
+test('Peticiones usa escritura legible y feedback completo en sus controles', async () => {
+  const [view, logic] = await Promise.all([
+    readProjectFile('src/components/PrayerWall.astro'),
+    readProjectFile('src/scripts/prayer-wall.js'),
+  ]);
+
+  assert.match(view, /font-family:\s*"Kalam"/);
+  assert.match(view, /Kalam-Regular\.woff2/);
+  assert.match(view, /\.prayer-action--primary:hover/);
+  assert.match(view, /\.prayer-action--ghost:hover/);
+  assert.match(view, /\.prayer-submit:hover:not\(:disabled\)/);
+  assert.match(view, /\.prayer-visibility label:has\(input:checked\)/);
+  assert.match(view, /\.prayer-wall-panel__bar button:hover/);
+  assert.match(logic, /root\.__prayerConfirmTrigger/);
+  assert.match(logic, /event\.key === 'Escape'/);
+  assert.match(logic, /getConfirmModalFocusableElements/);
 });
 
 test('el mapa público mantiene marcadores y acciones con área táctil accesible', async () => {
