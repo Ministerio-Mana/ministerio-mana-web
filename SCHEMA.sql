@@ -15,6 +15,17 @@ create table if not exists prayer_requests (
   reviewed_by text,
   reviewed_at timestamptz,
   admin_note text,
+  ai_consent boolean not null default false,
+  ai_consent_at timestamptz,
+  ai_status text not null default 'not_run',
+  ai_recommendation text,
+  ai_reason_codes text[] not null default '{}',
+  ai_model text,
+  ai_policy_version text,
+  ai_reviewed_at timestamptz,
+  ai_urgent_pastoral_review boolean not null default false,
+  ai_auto_approved boolean not null default false,
+  ai_error_code text,
   updated_at timestamptz default now(),
   created_at timestamptz default now()
 );
@@ -25,6 +36,17 @@ alter table prayer_requests add column if not exists flagged boolean not null de
 alter table prayer_requests add column if not exists reviewed_by text;
 alter table prayer_requests add column if not exists reviewed_at timestamptz;
 alter table prayer_requests add column if not exists admin_note text;
+alter table prayer_requests add column if not exists ai_consent boolean not null default false;
+alter table prayer_requests add column if not exists ai_consent_at timestamptz;
+alter table prayer_requests add column if not exists ai_status text not null default 'not_run';
+alter table prayer_requests add column if not exists ai_recommendation text;
+alter table prayer_requests add column if not exists ai_reason_codes text[] not null default '{}';
+alter table prayer_requests add column if not exists ai_model text;
+alter table prayer_requests add column if not exists ai_policy_version text;
+alter table prayer_requests add column if not exists ai_reviewed_at timestamptz;
+alter table prayer_requests add column if not exists ai_urgent_pastoral_review boolean not null default false;
+alter table prayer_requests add column if not exists ai_auto_approved boolean not null default false;
+alter table prayer_requests add column if not exists ai_error_code text;
 alter table prayer_requests add column if not exists updated_at timestamptz default now();
 alter table prayer_requests alter column approved set default false;
 alter table prayer_requests drop constraint if exists prayer_requests_visibility_check;
@@ -33,12 +55,23 @@ alter table prayer_requests add constraint prayer_requests_visibility_check
 alter table prayer_requests drop constraint if exists prayer_requests_moderation_status_check;
 alter table prayer_requests add constraint prayer_requests_moderation_status_check
   check (moderation_status in ('pending', 'flagged', 'approved', 'rejected', 'private'));
+alter table prayer_requests drop constraint if exists prayer_requests_ai_status_check;
+alter table prayer_requests add constraint prayer_requests_ai_status_check
+  check (ai_status in ('not_run', 'safe', 'review', 'error'));
+alter table prayer_requests drop constraint if exists prayer_requests_ai_recommendation_check;
+alter table prayer_requests add constraint prayer_requests_ai_recommendation_check
+  check (ai_recommendation is null or ai_recommendation in ('approve', 'review'));
 create index if not exists prayer_requests_public_wall_idx
   on prayer_requests (created_at desc)
   where approved = true and visibility = 'public' and moderation_status = 'approved';
 create index if not exists prayer_requests_intercession_idx
   on prayer_requests (created_at desc)
   where visibility = 'private' or moderation_status in ('pending', 'flagged');
+create index if not exists prayer_requests_ai_review_idx
+  on prayer_requests (ai_status, ai_recommendation, created_at desc)
+  where visibility = 'public' and ai_consent = true;
+comment on column prayer_requests.ai_reason_codes is
+  'Códigos controlados de auditoría; nunca guardar prompts ni respuestas completas del proveedor.';
 alter table prayer_requests enable row level security;
 drop policy if exists "read_public" on prayer_requests;
 create policy "read_public" on prayer_requests for select using (

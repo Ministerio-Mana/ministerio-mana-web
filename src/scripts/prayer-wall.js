@@ -571,10 +571,17 @@ function updateConfirmModal(root, form) {
   const title = modal.querySelector('[data-prayer-confirm-title]');
   const body = modal.querySelector('[data-prayer-confirm-body]');
   const switchButton = modal.querySelector('[data-prayer-confirm-switch]');
+  const aiConsent = modal.querySelector('[data-prayer-ai-consent]');
+  const aiConsentInput = modal.querySelector('[data-prayer-ai-consent-input]');
 
   if (title) title.textContent = visibility === 'public' ? text(root, 'confirmPublicTitle') : text(root, 'confirmPrivateTitle');
   if (body) body.textContent = visibility === 'public' ? text(root, 'confirmPublicBody') : text(root, 'confirmPrivateBody');
   if (switchButton) switchButton.textContent = visibility === 'public' ? text(root, 'switchToPrivate') : text(root, 'switchToPublic');
+  if (aiConsent instanceof HTMLElement) aiConsent.hidden = visibility !== 'public';
+  if (aiConsentInput instanceof HTMLInputElement) {
+    aiConsentInput.disabled = visibility !== 'public';
+    if (visibility !== 'public') aiConsentInput.checked = false;
+  }
 }
 
 function getConfirmModalFocusableElements(modal) {
@@ -588,14 +595,18 @@ function openConfirmModal(root, form, trigger) {
   if (!modal) return false;
   updateConfirmModal(root, form);
   root.__prayerConfirmTrigger = trigger instanceof HTMLElement ? trigger : document.activeElement;
+  root.classList.add('is-confirming');
+  root.closest('main')?.classList.add('has-prayer-confirmation');
   modal.hidden = false;
-  modal.querySelector('[data-prayer-confirm-send]')?.focus();
+  modal.querySelector('[data-prayer-confirm-cancel]')?.focus();
   return true;
 }
 
 function closeConfirmModal(root, restoreFocus = true) {
   const modal = root.querySelector('[data-prayer-confirm]');
   if (modal) modal.hidden = true;
+  root.classList.remove('is-confirming');
+  root.closest('main')?.classList.remove('has-prayer-confirmation');
   const trigger = root.__prayerConfirmTrigger;
   root.__prayerConfirmTrigger = null;
   if (restoreFocus && trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
