@@ -1,4 +1,4 @@
-const DESKTOP_SLOTS = [
+const WALL_SLOTS = [
   [24.2, 16.45, -3, 0, 'horizontal'],
   [56.05, 16.45, 3, 1, 'horizontal'],
   [82.3, 30.16, -2, 2, 'horizontal'],
@@ -8,59 +8,51 @@ const DESKTOP_SLOTS = [
   [64.6, 72.9, -2, 2, 'horizontal'],
 ];
 
-const MOBILE_SLOTS = [
-  [24.2, 16.45, -3, 0, 'horizontal'],
-  [56.05, 16.45, 3, 1, 'horizontal'],
-  [82.3, 30.16, -2, 2, 'horizontal'],
-  [24.5, 44.84, 2, 3, 'horizontal'],
-  [62.3, 44.84, -3, 0, 'horizontal'],
-  [28.2, 72.9, 2, 1, 'horizontal'],
-];
+const PAGE_SIZE_COMPACT = 5;
+const PAGE_SIZE_TABLET = 6;
+const PAGE_SIZE_DESKTOP = WALL_SLOTS.length;
 
 const NOTE_PAPERS = [
   `
     <svg viewBox="0 0 132 40" preserveAspectRatio="none" focusable="false">
-      <path class="prayer-note__paper-shadow" d="M8 14 L128 11 L126 35 L9 37 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M2 9 L99 7 L101 27 L3 30 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M31 5 L128 10 L125 31 L28 27 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M9 12 C43 7 89 15 122 9 L124 30 C86 26 46 36 10 31 Z" />
-      <path class="prayer-note__paper-fold" d="M35 10 C43 17 38 24 31 29 M100 11 C94 18 99 24 106 29" />
-      <path class="prayer-note__paper-line" d="M50 19 C67 16 82 21 96 18 M47 25 C65 23 81 27 99 23" />
+      <path class="prayer-note__paper-shadow" d="M6 13 L128 10 L126 35 L8 37 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M5 10 C39 6 87 14 127 8 L125 32 C88 28 45 37 7 32 Z" />
+      <path class="prayer-note__paper-corner" d="M108 10 L127 8 L125 21 Z" />
+      <path class="prayer-note__paper-fold" d="M35 10 C43 17 38 24 31 31 M101 11 C95 18 99 24 107 30" />
+      <path class="prayer-note__paper-line" d="M46 19 C64 16 83 21 101 18 M45 25 C64 23 83 27 100 23" />
     </svg>
   `,
   `
     <svg viewBox="0 0 132 40" preserveAspectRatio="none" focusable="false">
-      <path class="prayer-note__paper-shadow" d="M6 13 L127 14 L129 34 L7 37 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M5 7 L93 10 L96 29 L4 27 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M38 6 C65 10 96 5 128 11 L126 31 L36 28 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M8 12 C44 16 85 8 124 14 L126 31 C88 36 45 26 7 32 Z" />
-      <path class="prayer-note__paper-fold" d="M31 13 C38 19 34 25 27 31 M103 13 C96 19 101 25 110 31" />
-      <path class="prayer-note__paper-line" d="M49 20 C66 23 82 18 98 21 M47 26 C65 29 83 23 101 26" />
+      <path class="prayer-note__paper-shadow" d="M6 13 L127 13 L129 34 L7 37 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M6 10 C43 14 86 7 126 12 L127 31 C89 36 44 27 7 32 Z" />
+      <path class="prayer-note__paper-corner" d="M7 10 L25 12 L8 23 Z" />
+      <path class="prayer-note__paper-fold" d="M32 12 C39 19 35 25 28 31 M103 12 C97 19 101 25 109 30" />
+      <path class="prayer-note__paper-line" d="M47 19 C65 22 83 18 101 21 M46 25 C65 28 83 23 102 26" />
     </svg>
   `,
   `
     <svg viewBox="0 0 132 40" preserveAspectRatio="none" focusable="false">
       <path class="prayer-note__paper-shadow" d="M7 14 L129 10 L126 35 L8 37 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M3 8 L87 6 L91 28 L2 30 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--front" d="M42 8 L129 12 L126 30 L39 27 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M8 12 C43 8 88 16 123 9 L125 31 C86 27 46 36 9 31 Z" />
-      <path class="prayer-note__paper-fold" d="M29 11 C37 18 33 25 25 31 M99 12 C93 18 98 24 106 29" />
-      <path class="prayer-note__paper-line" d="M48 19 C66 16 82 21 99 18 M46 25 C64 23 82 27 101 23" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M7 11 C43 7 88 15 125 9 L126 31 C87 27 46 36 8 32 Z" />
+      <path class="prayer-note__paper-corner" d="M106 11 L125 9 L126 22 Z" />
+      <path class="prayer-note__paper-fold" d="M30 11 C38 18 34 25 26 31 M100 12 C94 18 99 24 107 29" />
+      <path class="prayer-note__paper-line" d="M47 19 C65 16 83 21 100 18 M46 25 C65 23 83 27 102 23" />
     </svg>
   `,
   `
     <svg viewBox="0 0 132 40" preserveAspectRatio="none" focusable="false">
       <path class="prayer-note__paper-shadow" d="M7 13 L128 13 L127 35 L8 37 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--blue" d="M4 7 L95 10 L97 29 L3 27 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--back" d="M37 6 L129 11 L126 30 L35 27 Z" />
-      <path class="prayer-note__paper-body prayer-note__paper-body--pink" d="M8 12 C45 16 86 8 124 14 L126 31 C88 36 45 26 7 32 Z" />
+      <path class="prayer-note__paper-body prayer-note__paper-body--warm" d="M7 11 C44 15 86 8 125 13 L126 31 C88 36 45 27 7 32 Z" />
+      <path class="prayer-note__paper-corner" d="M8 11 L27 13 L8 24 Z" />
       <path class="prayer-note__paper-fold" d="M32 13 C39 19 35 25 28 31 M102 13 C96 19 101 25 109 31" />
-      <path class="prayer-note__paper-line" d="M49 20 C66 23 83 18 99 21 M47 26 C65 29 83 23 101 26" />
+      <path class="prayer-note__paper-line" d="M48 20 C66 23 83 18 100 21 M47 26 C65 29 84 23 102 26" />
     </svg>
   `,
 ];
 
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mobileWallQuery = window.matchMedia('(max-width: 767px)');
 const compactWallQuery = window.matchMedia('(max-width: 1023px)');
 
 function getI18n(root) {
@@ -80,12 +72,12 @@ function isCompact(root) {
 }
 
 function getSlotPositions(root) {
-  return compactWallQuery.matches ? MOBILE_SLOTS : DESKTOP_SLOTS;
+  return WALL_SLOTS;
 }
 
 function getPageSize(root) {
-  if (isCompact(root)) return 5;
-  return compactWallQuery.matches ? MOBILE_SLOTS.length : DESKTOP_SLOTS.length;
+  if (isCompact(root) || mobileWallQuery.matches) return PAGE_SIZE_COMPACT;
+  return compactWallQuery.matches ? PAGE_SIZE_TABLET : PAGE_SIZE_DESKTOP;
 }
 
 function formatPager(root, current, total) {
@@ -132,6 +124,14 @@ function prayerCountLabel(root, count) {
   return `${count} ${count === 1 ? text(root, 'prayerSingular') : text(root, 'prayerPlural')}`;
 }
 
+function setPrayButtonLabel(root, button, acknowledged) {
+  const icon = document.createElement('span');
+  icon.className = 'prayer-action-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = acknowledged ? '✓' : '♡';
+  button.replaceChildren(icon, document.createTextNode(acknowledged ? text(root, 'prayed') : text(root, 'prayButton')));
+}
+
 function hasPrayed(id) {
   try {
     return localStorage.getItem(`mana-prayed:${id}`) === 'true';
@@ -173,7 +173,7 @@ async function handlePrayerAction(root, row, count, button) {
   button.disabled = true;
   row.prayers_count += 1;
   count.textContent = prayerCountLabel(root, row.prayers_count);
-  button.textContent = text(root, 'prayed');
+  setPrayButtonLabel(root, button, true);
   markPrayed(row.id);
   updateStats(root, root.__prayerRows || []);
 
@@ -262,8 +262,9 @@ function showPrayerDetail(root, row, note) {
   body.textContent = row.request_text;
   count.textContent = prayerCountLabel(root, row.prayers_count);
   button.type = 'button';
-  button.textContent = hasPrayed(row.id) ? text(root, 'prayed') : text(root, 'prayButton');
-  button.disabled = hasPrayed(row.id);
+  const acknowledged = hasPrayed(row.id);
+  setPrayButtonLabel(root, button, acknowledged);
+  button.disabled = acknowledged;
   button.addEventListener('click', () => handlePrayerAction(root, row, count, button));
   oldButton.replaceWith(button);
   detail.classList.remove('is-unfolding');
@@ -295,6 +296,37 @@ function closePrayerDetail(root, restoreFocus = true) {
   if (restoreFocus && trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
 }
 
+function applyPrayerSlot(element, position, index) {
+  element.style.setProperty('--x', `${position[0]}%`);
+  element.style.setProperty('--y', `${position[1]}%`);
+  element.style.setProperty('--r', `${position[2]}deg`);
+  const paperType = Number.isFinite(Number(position[3])) ? Number(position[3]) : index % NOTE_PAPERS.length;
+  element.dataset.paperType = String(paperType);
+  element.dataset.paperOrientation = position[4] === 'vertical' ? 'vertical' : 'horizontal';
+  return paperType;
+}
+
+function createPaperVisual(paperType) {
+  const paper = document.createElement('span');
+  paper.className = 'prayer-note__paper';
+  paper.setAttribute('aria-hidden', 'true');
+  paper.innerHTML = NOTE_PAPERS[paperType % NOTE_PAPERS.length];
+  return paper;
+}
+
+function createDecorativePaperSlot(position, index) {
+  const slot = document.createElement('span');
+  slot.className = 'prayer-note prayer-note--decorative';
+  slot.setAttribute('aria-hidden', 'true');
+  const paperType = applyPrayerSlot(slot, position, index);
+
+  const pin = document.createElement('span');
+  pin.className = 'prayer-note__pin';
+  pin.setAttribute('aria-hidden', 'true');
+  slot.append(pin, createPaperVisual(paperType));
+  return slot;
+}
+
 function createPrayerNote(root, row, index, slots, isNew = false) {
   const position = slots[index % slots.length];
   const note = document.createElement('article');
@@ -305,21 +337,13 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
   note.setAttribute('aria-haspopup', 'dialog');
   note.setAttribute('aria-expanded', 'false');
   note.setAttribute('aria-label', `${row.first_name}. ${row.request_text}`);
-  note.style.setProperty('--x', `${position[0]}%`);
-  note.style.setProperty('--y', `${position[1]}%`);
-  note.style.setProperty('--r', `${position[2]}deg`);
-  const paperType = Number.isFinite(Number(position[3])) ? Number(position[3]) : index % NOTE_PAPERS.length;
-  note.dataset.paperType = String(paperType);
-  note.dataset.paperOrientation = position[4] === 'vertical' ? 'vertical' : 'horizontal';
+  const paperType = applyPrayerSlot(note, position, index);
 
   const pin = document.createElement('span');
   pin.className = 'prayer-note__pin';
   pin.setAttribute('aria-hidden', 'true');
 
-  const paper = document.createElement('span');
-  paper.className = 'prayer-note__paper';
-  paper.setAttribute('aria-hidden', 'true');
-  paper.innerHTML = NOTE_PAPERS[paperType % NOTE_PAPERS.length];
+  const paper = createPaperVisual(paperType);
 
   const header = document.createElement('header');
   const title = document.createElement('h3');
@@ -338,8 +362,9 @@ function createPrayerNote(root, row, index, slots, isNew = false) {
 
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = hasPrayed(row.id) ? text(root, 'prayed') : text(root, 'prayButton');
-  button.disabled = hasPrayed(row.id);
+  const acknowledged = hasPrayed(row.id);
+  setPrayButtonLabel(root, button, acknowledged);
+  button.disabled = acknowledged;
 
   button.addEventListener('click', () => handlePrayerAction(root, row, count, button));
 
@@ -397,8 +422,11 @@ function renderPrayers(root, prayers, newPrayerId = '') {
   const start = nextPage * pageSize;
   const visibleRows = prayers.slice(start, start + pageSize);
 
-  visibleRows.forEach((row, index) => {
-    list.append(createPrayerNote(root, row, index, slots, row.id === newPrayerId));
+  slots.forEach((position, index) => {
+    const row = visibleRows[index];
+    list.append(row
+      ? createPrayerNote(root, row, index, slots, row.id === newPrayerId)
+      : createDecorativePaperSlot(position, index));
   });
 
   if (empty) {
@@ -461,11 +489,13 @@ function setupPagination(root) {
   });
 
   const rerender = () => renderPrayers(root, root.__prayerRows || []);
-  if (compactWallQuery.addEventListener) {
-    compactWallQuery.addEventListener('change', rerender);
-  } else {
-    compactWallQuery.addListener?.(rerender);
-  }
+  [mobileWallQuery, compactWallQuery].forEach((query) => {
+    if (query.addEventListener) {
+      query.addEventListener('change', rerender);
+    } else {
+      query.addListener?.(rerender);
+    }
+  });
 }
 
 function setupPrayerDetail(root) {
