@@ -117,6 +117,18 @@ test('Peticiones usa escritura legible y feedback completo en sus controles', as
   assert.match(logic, /root\.__prayerConfirmTrigger/);
   assert.match(logic, /event\.key === 'Escape'/);
   assert.match(logic, /getConfirmModalFocusableElements/);
+  assert.match(logic, /modal\.querySelector\('\[data-prayer-confirm-cancel\]'\)\?\.focus\(\)/);
+  assert.match(logic, /root\.classList\.add\('is-confirming'\)/);
+  assert.match(logic, /root\.classList\.remove\('is-confirming'\)/);
+  assert.match(logic, /root\.closest\('main'\)\?\.classList\.add\('has-prayer-confirmation'\)/);
+  assert.match(logic, /root\.closest\('main'\)\?\.classList\.remove\('has-prayer-confirmation'\)/);
+  assert.match(view, /data-prayer-ai-consent hidden/);
+  assert.match(view, /name="aiConsent" value="true" type="checkbox" form="peticion"/);
+  assert.match(view, /proveedor de IA/);
+  assert.match(view, /nunca tu nombre ni ubicación/);
+  assert.match(view, /href="\/privacidad" target="_blank" rel="noopener noreferrer"/);
+  assert.match(logic, /aiConsentInput\.disabled = visibility !== 'public'/);
+  assert.match(logic, /if \(visibility !== 'public'\) aiConsentInput\.checked = false/);
 });
 
 test('el mapa público mantiene marcadores y acciones con área táctil accesible', async () => {

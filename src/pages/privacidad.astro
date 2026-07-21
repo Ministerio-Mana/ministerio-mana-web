@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 
-const lastUpdated = '4 de febrero de 2026';
+const lastUpdated = '20 de julio de 2026';
 const contactEmail = 'info@ministeriomana.org';
 const siteUrl = 'https://ministeriomana.org';
 ---
@@ -39,6 +39,7 @@ const siteUrl = 'https://ministeriomana.org';
             <li>Identificacion y contacto: nombre, correo, telefono, pais, ciudad.</li>
             <li>Datos de donacion: monto, referencia de pago, estado, metodo de pago.</li>
             <li>Datos de eventos: inscripciones, participantes y preferencias de contacto.</li>
+            <li>Datos de oración: el texto y la privacidad elegida para una petición o agradecimiento.</li>
             <li>Datos requeridos por autoridades: tipo y numero de documento cuando aplique.</li>
             <li>Datos tecnicos de seguridad: IP, dispositivo y registros de acceso.</li>
           </ul>
@@ -52,7 +53,25 @@ const siteUrl = 'https://ministeriomana.org';
             <li>Enviar recordatorios por email o WhatsApp cuando el usuario lo autorice.</li>
             <li>Cumplir obligaciones legales y requerimientos de entidades gubernamentales.</li>
             <li>Prevenir fraude, abuso y proteger la seguridad del portal.</li>
+            <li>Recibir peticiones privadas para intercesión y revisar las que solicitan publicación.</li>
           </ul>
+        </section>
+
+        <section class="space-y-4">
+          <h2 class="text-lg font-bold text-[#293C74]">Asistencia automatizada en peticiones públicas</h2>
+          <p>
+            Una petición privada nunca se envía a un proveedor de inteligencia artificial. Si
+            solicitas que una petición sea pública, puedes autorizar de forma opcional el análisis
+            automatizado de su texto para detectar abuso, datos personales o contenido que requiera
+            cuidado pastoral. Sin esa autorización, la revisión es completamente humana.
+          </p>
+          <p>
+            Cuando autorizas, se transmite únicamente el texto de la petición al proveedor de IA;
+            no enviamos tu nombre, ciudad, país ni dirección IP. El sistema conserva códigos de
+            auditoría y la recomendación, pero no guarda la conversación ni la respuesta completa
+            del proveedor. Durante la fase inicial, ninguna recomendación publica automáticamente:
+            una persona autorizada toma la decisión final.
+          </p>
         </section>
 
         <section class="space-y-3">
@@ -68,7 +87,7 @@ const siteUrl = 'https://ministeriomana.org';
           <h2 class="text-lg font-bold text-[#293C74]">Compartir con terceros</h2>
           <p>
             Usamos proveedores para operar el portal, enviar comunicaciones y procesar pagos.
-            Entre ellos: Supabase, Vercel, SendGrid, Twilio (WhatsApp), Wompi y Stripe, asi
+            Entre ellos: Supabase, Vercel, SendGrid, Twilio (WhatsApp), Wompi, Stripe y OpenAI, asi
             como proveedores de autenticacion (Google, Meta, Microsoft) cuando se habiliten.
             Estos proveedores actuan bajo contratos y solo para los fines descritos.
           </p>

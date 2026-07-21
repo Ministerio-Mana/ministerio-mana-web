@@ -604,12 +604,15 @@ test('campus respeta asignaciones, alcance financiero y contactos táctiles', as
 });
 
 test('peticiones separa intercesión de moderación y protege cada decisión pastoral', async () => {
-  const [prayersView, prayersLogic, prayersGuard, prayersListApi, prayersReviewApi] = await Promise.all([
+  const [prayersView, prayersLogic, prayersGuard, prayersListApi, prayersReviewApi, prayersSubmitApi, prayerAi, prayerSchema] = await Promise.all([
     readSource('src/pages/portal/peticiones.astro'),
     readSource('src/scripts/portal-prayers.js'),
     readSource('src/lib/portalPrayerGuard.ts'),
     readSource('src/pages/api/prayer/admin/list.ts'),
     readSource('src/pages/api/prayer/admin/review.ts'),
+    readSource('src/pages/api/prayer/submit.ts'),
+    readSource('src/lib/prayerAiModeration.ts'),
+    readSource('docs/sql/prayer_wall_schema.sql'),
   ]);
 
   for (const id of ['prayers-status', 'prayers-visibility', 'prayers-refresh', 'prayers-load-more']) {
@@ -635,13 +638,25 @@ test('peticiones separa intercesión de moderación y protege cada decisión pas
   assert.doesNotMatch(prayersLogic, /window\.(?:prompt|alert)/);
 
   assert.match(prayersGuard, /const PRAYER_REVIEW_ROLES = new Set\(\['superadmin', 'admin'\]\)/);
-  assert.match(prayersListApi, /select\(fields, \{ count: 'exact' \}\)/);
+  assert.match(prayersListApi, /select\(selectedFields, \{ count: 'exact' \}\)/);
   assert.doesNotMatch(prayersListApi, /reviewed_by,reviewed_at/);
   assert.match(prayersListApi, /cache-control': 'private, no-store'/);
   assert.match(prayersListApi, /hasNextPage: visibleTo < totalRows/);
   assert.match(prayersReviewApi, /\.in\('moderation_status', \['pending', 'flagged'\]\)/);
   assert.match(prayersReviewApi, /La petición cambió mientras la revisabas/);
   assert.match(prayersReviewApi, /cache-control': 'private, no-store'/);
+  assert.match(prayersSubmitApi, /visibility === 'public' && normalizeAiConsent/);
+  assert.match(prayersSubmitApi, /shouldRunPrayerAiModeration\(\{/);
+  assert.match(prayersSubmitApi, /moderatePrayerText\(requestText/);
+  assert.doesNotMatch(prayersSubmitApi, /moderatePrayerText\([^\n]*(?:firstName|city|country|clientAddress)/);
+  assert.match(prayerAi, /model: 'omni-moderation-latest'/);
+  assert.match(prayerAi, /store: false/);
+  assert.match(prayerAi, /additionalProperties: false/);
+  assert.match(prayerAi, /recommendation: 'review'/);
+  assert.match(prayerSchema, /ai_consent boolean not null default false/);
+  assert.match(prayerSchema, /nunca guardar prompts ni respuestas completas del proveedor/);
+  assert.match(prayersLogic, /IA recomienda publicar/);
+  assert.match(prayersLogic, /Modo sombra: todavía requiere decisión humana/);
 });
 
 test('contenido editorial preserva borradores, evita colisiones y confirma cambios públicos', async () => {

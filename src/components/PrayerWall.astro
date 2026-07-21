@@ -283,6 +283,9 @@ const copy = {
       confirmPrivateBody: 'Elegiste enviar esta petición privada. No aparecerá en el muro público; la recibirá el equipo de intercesión para orar por ti.',
       confirmPublicTitle: 'Confirmar petición pública',
       confirmPublicBody: 'Elegiste pedir que esta petición sea pública. Primero pasará por revisión y solo aparecerá en el muro si un administrador la aprueba.',
+      aiConsentTitle: 'Autorizo que el texto de mi petición sea analizado por un proveedor de IA.',
+      aiConsentBody: 'Se envía únicamente el texto, nunca tu nombre ni ubicación. Si no autorizas, la revisión será completamente humana.',
+      privacyPolicy: 'Consultar política de privacidad',
       switchToPublic: 'Cambiar a pública',
       switchToPrivate: 'Cambiar a privada',
       confirmSend: 'Confirmar envío',
@@ -397,6 +400,9 @@ const copy = {
       confirmPrivateBody: 'You chose to send this request privately. It will not appear on the public wall; the intercession team will receive it and pray for you.',
       confirmPublicTitle: 'Confirm public request',
       confirmPublicBody: 'You chose to ask for this request to be public. It will be reviewed first and will only appear on the wall if an administrator approves it.',
+      aiConsentTitle: 'I authorize an AI provider to analyze my prayer request text.',
+      aiConsentBody: 'Only the text is sent, never your name or location. If you do not consent, the review will be entirely human.',
+      privacyPolicy: 'Read the privacy policy',
       switchToPublic: 'Change to public',
       switchToPrivate: 'Change to private',
       confirmSend: 'Confirm submission',
@@ -783,6 +789,16 @@ const i18n = JSON.stringify(c.js);
               <span data-prayer-confirm-eyebrow>{c.visibilityLegend}</span>
               <h3 id="prayer-confirm-title" data-prayer-confirm-title></h3>
               <p data-prayer-confirm-body></p>
+              <div class="prayer-confirm__ai-consent" data-prayer-ai-consent hidden>
+                <label for="prayer-ai-consent">
+                  <input id="prayer-ai-consent" name="aiConsent" value="true" type="checkbox" form="peticion" data-prayer-ai-consent-input />
+                  <span class="prayer-confirm__ai-copy">
+                    <strong>{c.js.aiConsentTitle}</strong>
+                    <small>{c.js.aiConsentBody}</small>
+                  </span>
+                </label>
+                <a class="prayer-confirm__privacy-link" href="/privacidad" target="_blank" rel="noopener noreferrer">{c.js.privacyPolicy}</a>
+              </div>
               <div class="prayer-confirm__actions">
                 <button type="button" class="prayer-confirm__switch" data-prayer-confirm-switch></button>
                 <button type="button" class="prayer-confirm__send" data-prayer-confirm-send>{c.js.confirmSend}</button>
@@ -847,6 +863,15 @@ const i18n = JSON.stringify(c.js);
     color: var(--prayer-navy);
     isolation: isolate;
     font-family: "Intro", system-ui, sans-serif;
+  }
+
+  .prayer-wall-experience.is-confirming {
+    position: relative;
+    z-index: 50;
+  }
+
+  #main-content.has-prayer-confirmation {
+    z-index: 50;
   }
 
   .prayer-wall-experience h1,
@@ -2332,9 +2357,16 @@ const i18n = JSON.stringify(c.js);
     display: flex;
     inset: 0;
     justify-content: center;
+    overflow-y: auto;
     padding: 1rem;
     position: fixed;
     z-index: 70;
+  }
+
+  @media (max-height: 44rem) {
+    .prayer-confirm {
+      align-items: flex-start;
+    }
   }
 
   .prayer-confirm__panel {
@@ -2406,6 +2438,84 @@ const i18n = JSON.stringify(c.js);
     line-height: 1.58;
     margin-top: 1rem;
     padding-left: 0.9rem;
+  }
+
+  .prayer-confirm__ai-consent[hidden] {
+    display: none;
+  }
+
+  .prayer-confirm__ai-consent {
+    background: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(92, 203, 224, 0.3);
+    border-radius: 8px;
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+  }
+
+  .prayer-confirm__ai-consent label {
+    align-items: flex-start;
+    cursor: pointer;
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .prayer-confirm__ai-consent input {
+    accent-color: var(--prayer-teal);
+    height: 1.25rem;
+    margin: var(--space-1) 0 0;
+    width: 1.25rem;
+  }
+
+  .prayer-confirm__ai-consent input:focus-visible {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 3px;
+  }
+
+  .prayer-confirm .prayer-confirm__ai-copy {
+    color: white;
+    display: block;
+    letter-spacing: normal;
+    margin: 0;
+    padding: 0;
+    text-transform: none;
+  }
+
+  .prayer-confirm__ai-copy strong,
+  .prayer-confirm__ai-copy small {
+    display: block;
+  }
+
+  .prayer-confirm__ai-copy strong {
+    color: white;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .prayer-confirm__ai-copy small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.76rem;
+    line-height: 1.5;
+    margin-top: var(--space-1);
+  }
+
+  .prayer-confirm__privacy-link {
+    color: var(--prayer-gold);
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-top: var(--space-2);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .prayer-confirm__privacy-link:hover {
+    color: white;
+  }
+
+  .prayer-confirm__privacy-link:focus-visible {
+    outline: 3px solid var(--prayer-gold);
+    outline-offset: 3px;
   }
 
   .prayer-confirm__actions {

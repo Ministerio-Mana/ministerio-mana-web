@@ -34,8 +34,17 @@ function isMissingModerationColumn(error: any): boolean {
   );
 }
 
+function isMissingPrayerAiColumn(error: any): boolean {
+  const message = String(error?.message || '');
+  return (
+    (error?.code === '42703' || error?.code === 'PGRST204') &&
+    /ai_(?:consent|status|recommendation|reason|model|policy|reviewed|urgent|error)/i.test(message)
+  );
+}
+
 export const GET: APIRoute = async ({ request, clientAddress }) => {
-  if (!supabaseAdmin) return json({ ok: false, error: 'Supabase no configurado' }, 500);
+  const db = supabaseAdmin;
+  if (!db) return json({ ok: false, error: 'Supabase no configurado' }, 500);
 
   const guard = await enforcePortalPrayerGuard({
     request,
@@ -52,34 +61,42 @@ export const GET: APIRoute = async ({ request, clientAddress }) => {
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
   const canReview = canReviewPrayerModeration(guard.role);
-  const fields = canReview
+  const baseFields = canReview
     ? 'id,first_name,request_text,city,country,visibility,moderation_status,admin_note,created_at'
     : 'id,first_name,request_text,city,country,visibility,moderation_status,created_at';
+  const aiAuditFields = 'ai_consent,ai_status,ai_recommendation,ai_reason_codes,ai_model,ai_policy_version,ai_reviewed_at,ai_urgent_pastoral_review,ai_error_code';
+  const fields = canReview ? `${baseFields},${aiAuditFields}` : baseFields;
 
-  let query = supabaseAdmin
-    .from('prayer_requests')
-    .select(fields, { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const buildRowsQuery = (selectedFields: string) => {
+    let rowsQuery = db
+      .from('prayer_requests')
+      .select(selectedFields, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (status !== 'all') rowsQuery = rowsQuery.eq('moderation_status', status);
+    if (visibility !== 'all') rowsQuery = rowsQuery.eq('visibility', visibility);
+    return rowsQuery;
+  };
 
-  if (status !== 'all') query = query.eq('moderation_status', status);
-  if (visibility !== 'all') query = query.eq('visibility', visibility);
-
-  const [rowsResult, totalResult, privateResult, reviewResult] = await Promise.all([
-    query,
-    supabaseAdmin
+  let [rowsResult, totalResult, privateResult, reviewResult] = await Promise.all([
+    buildRowsQuery(fields),
+    db
       .from('prayer_requests')
       .select('id', { count: 'exact', head: true }),
-    supabaseAdmin
+    db
       .from('prayer_requests')
       .select('id', { count: 'exact', head: true })
       .eq('visibility', 'private'),
-    supabaseAdmin
+    db
       .from('prayer_requests')
       .select('id', { count: 'exact', head: true })
       .eq('visibility', 'public')
       .in('moderation_status', ['pending', 'flagged']),
   ]);
+
+  if (rowsResult.error && canReview && isMissingPrayerAiColumn(rowsResult.error)) {
+    rowsResult = await buildRowsQuery(baseFields);
+  }
 
   const queryError = rowsResult.error || totalResult.error || privateResult.error || reviewResult.error;
   if (queryError) {

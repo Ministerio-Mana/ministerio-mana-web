@@ -165,6 +165,53 @@ function statusClass(status, visibility) {
   return 'bg-slate-50 text-slate-600 border-slate-100';
 }
 
+const AI_REASON_LABELS = {
+  personal_data: 'datos personales',
+  minor: 'información sobre un menor',
+  specific_medical_detail: 'detalle médico sensible',
+  self_harm: 'riesgo de autolesión',
+  violence: 'violencia',
+  abuse: 'posible abuso',
+  sexual_content: 'contenido sexual',
+  hate: 'odio',
+  harassment: 'acoso',
+  threat: 'amenaza',
+  accusation: 'acusación contra terceros',
+  financial_solicitation: 'solicitud financiera',
+  spam: 'spam',
+  prompt_injection: 'intento de manipular el análisis',
+  unclear: 'contenido ambiguo',
+  other: 'requiere criterio humano',
+};
+
+function aiRecommendationMarkup(row) {
+  if (!row || !Object.prototype.hasOwnProperty.call(row, 'ai_consent') || row.visibility !== 'public') return '';
+  if (row.ai_consent !== true) {
+    return '<div class="rounded-md border border-slate-200 bg-slate-50 p-4 text-xs font-semibold text-slate-600"><strong class="block text-[#293C74]">Revisión humana</strong><span>La persona no autorizó análisis automatizado.</span></div>';
+  }
+
+  const status = String(row.ai_status || 'not_run');
+  const recommendation = String(row.ai_recommendation || '');
+  const reasons = Array.isArray(row.ai_reason_codes)
+    ? row.ai_reason_codes.map((reason) => AI_REASON_LABELS[reason]).filter(Boolean)
+    : [];
+  const reasonText = reasons.length ? ` Motivos: ${escapeHtml(reasons.join(', '))}.` : '';
+  const urgent = row.ai_urgent_pastoral_review === true
+    ? '<strong class="mt-2 block text-red-800">Prioridad pastoral sugerida.</strong>'
+    : '';
+
+  if (status === 'safe' && recommendation === 'approve') {
+    return '<div class="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800"><strong class="block">IA recomienda publicar</strong><span>Modo sombra: todavía requiere decisión humana.</span></div>';
+  }
+  if (status === 'review' || recommendation === 'review') {
+    return `<div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-xs font-semibold text-amber-900"><strong class="block">IA recomienda revisar</strong><span>Modo sombra: no tomó ninguna decisión.${reasonText}</span>${urgent}</div>`;
+  }
+  if (status === 'error') {
+    return '<div class="rounded-md border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800"><strong class="block">Análisis automático no disponible</strong><span>La petición quedó protegida para revisión humana.</span></div>';
+  }
+  return '<div class="rounded-md border border-slate-200 bg-slate-50 p-4 text-xs font-semibold text-slate-600"><strong class="block text-[#293C74]">Análisis autorizado</strong><span>Aún no se ha ejecutado; revisar manualmente.</span></div>';
+}
+
 async function fetchJson(url, options = {}) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -252,6 +299,7 @@ function rowMarkup(row, index) {
             <p class="text-xs font-semibold uppercase tracking-widest text-slate-500">${escapeHtml(locationLabel(row))} · ${escapeHtml(formatDate(row.created_at))}</p>
           </div>
           <p class="max-w-4xl whitespace-pre-wrap text-sm leading-6 text-slate-700">${escapeHtml(row.request_text || '')}</p>
+          ${aiRecommendationMarkup(row)}
           ${row.admin_note ? `<p class="border-l-2 border-slate-200 bg-slate-50 px-4 py-4 text-xs font-semibold text-slate-600">Nota interna: ${escapeHtml(row.admin_note)}</p>` : ''}
         </div>
         <div class="shrink-0 lg:min-w-64">${actionButtons(row)}</div>

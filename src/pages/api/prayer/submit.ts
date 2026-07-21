@@ -6,6 +6,7 @@ import { logSecurityEvent } from '@lib/securityEvents';
 import { safeCountry } from '@lib/donations';
 import { sanitizePlainText, containsBlockedSequence } from '@lib/validation';
 import { isSendgridEnabled, sendSendgridEmail } from '@lib/sendgrid';
+import { getPrayerAiConfig, moderatePrayerText, shouldRunPrayerAiModeration } from '@lib/prayerAiModeration';
 
 export const prerender = false;
 
@@ -25,6 +26,10 @@ function normalizeVisibility(value: FormDataEntryValue | null): 'private' | 'pub
   return String(value || 'private').toLowerCase() === 'public' ? 'public' : 'private';
 }
 
+function normalizeAiConsent(value: FormDataEntryValue | null): boolean {
+  return ['1', 'true', 'on', 'yes'].includes(String(value || '').trim().toLowerCase());
+}
+
 function hasPublicModerationFlag(value: string): boolean {
   const normalized = value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   return PUBLIC_MODERATION_PATTERNS.some((pattern) => pattern.test(normalized));
@@ -36,6 +41,14 @@ function isMissingModerationColumn(error: any): boolean {
     error?.code === '42703' ||
     error?.code === 'PGRST204' ||
     /visibility|moderation_status|flagged/i.test(message)
+  );
+}
+
+function isMissingPrayerAiColumn(error: any): boolean {
+  const message = String(error?.message || '');
+  return (
+    (error?.code === '42703' || error?.code === 'PGRST204') &&
+    /ai_(?:consent|status|recommendation|reason|model|policy|reviewed|urgent|error)/i.test(message)
   );
 }
 
@@ -204,6 +217,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const cityRaw = (form.get('city') as string) || '';
     const countryRaw = (form.get('country') as string) || '';
     const visibility = normalizeVisibility(form.get('visibility'));
+    const aiConsent = visibility === 'public' && normalizeAiConsent(form.get('aiConsent'));
 
     if (
       containsBlockedSequence(firstNameRaw) ||
@@ -278,6 +292,16 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       visibility,
       moderation_status: moderationStatus,
       flagged,
+      ai_consent: aiConsent,
+      ai_consent_at: aiConsent ? new Date().toISOString() : null,
+      ai_status: 'not_run',
+      ai_recommendation: null,
+      ai_reason_codes: [],
+      ai_model: null,
+      ai_policy_version: null,
+      ai_reviewed_at: null,
+      ai_urgent_pastoral_review: false,
+      ai_error_code: null,
     };
 
     if (!supabaseAdmin) {
@@ -297,8 +321,32 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     let data = insertResult.data;
     let error = insertResult.error;
+    let aiSchemaAvailable = true;
+
+    if (error && isMissingPrayerAiColumn(error)) {
+      aiSchemaAvailable = false;
+      const moderationPayload = {
+        first_name: firstName,
+        request_text: requestText,
+        city: cityClean,
+        country: countryCode,
+        prayers_count: 0,
+        approved: false,
+        visibility,
+        moderation_status: moderationStatus,
+        flagged,
+      };
+      const fallback = await supabaseAdmin
+        .from('prayer_requests')
+        .insert(moderationPayload)
+        .select('id,first_name,request_text,city,country,prayers_count,visibility,moderation_status,approved,created_at')
+        .single();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error && isMissingModerationColumn(error)) {
+      aiSchemaAvailable = false;
       const legacyPayload = {
         first_name: firstName,
         request_text: requestText,
@@ -325,6 +373,39 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
         meta: { error: error.message },
       });
       return json({ ok: false, error: error.message }, 500);
+    }
+
+    const aiConfig = getPrayerAiConfig();
+    if (data?.id && shouldRunPrayerAiModeration({
+      visibility,
+      consent: aiConsent,
+      schemaAvailable: aiSchemaAvailable,
+      mode: aiConfig.mode,
+    })) {
+      const aiResult = await moderatePrayerText(requestText, {
+        apiKey: aiConfig.apiKey,
+        model: aiConfig.model,
+        timeoutMs: aiConfig.timeoutMs,
+        policyVersion: aiConfig.policyVersion,
+      });
+      const aiUpdate = await supabaseAdmin
+        .from('prayer_requests')
+        .update({
+          ai_status: aiResult.status,
+          ai_recommendation: aiResult.recommendation,
+          ai_reason_codes: aiResult.reasonCodes,
+          ai_model: aiResult.model,
+          ai_policy_version: aiResult.policyVersion,
+          ai_reviewed_at: aiResult.reviewedAt,
+          ai_urgent_pastoral_review: aiResult.urgentPastoralReview,
+          ai_error_code: aiResult.errorCode,
+        })
+        .eq('id', data.id)
+        .eq('visibility', 'public');
+
+      if (aiUpdate.error) {
+        console.warn('[prayer.submit] AI audit update failed', aiUpdate.error.code || 'unknown');
+      }
     }
 
     await notifyIntercession({
